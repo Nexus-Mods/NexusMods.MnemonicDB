@@ -1,8 +1,8 @@
 site_name: Nexus Mods App Template
-site_url: https://nexus-mods.github.io/NexusMods.App.Template
+site_url: https://nexus-mods.github.io/NexusMods.EventSourcing
 
-repo_name: Nexus-Mods/NexusMods.App.Template
-repo_url: https://github.com/Nexus-Mods/NexusMods.App.Template
+repo_name: Nexus-Mods/NexusMods.App.EventSourcing
+repo_url: https://github.com/Nexus-Mods/NexusMods.EventSourcing
 
 extra:
   social:

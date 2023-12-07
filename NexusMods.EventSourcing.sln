@@ -24,9 +24,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{6ED01F9D
 		tests\SharedUsings.cs = tests\SharedUsings.cs
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.Template", "src\NexusMods.Template\NexusMods.Template.csproj", "{A92DED3D-BC67-4E04-9A06-9A1B302B3070}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.EventSourcing", "src\NexusMods.EventSourcing\NexusMods.EventSourcing.csproj", "{A92DED3D-BC67-4E04-9A06-9A1B302B3070}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.Template.Tests", "tests\NexusMods.Template.Tests\NexusMods.Template.Tests.csproj", "{30CBEB4A-E0C0-4B11-A0CF-F97BFACEEF89}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.EventSourcing.Tests", "tests\NexusMods.EventSourcing.Tests\NexusMods.EventSourcing.Tests.csproj", "{30CBEB4A-E0C0-4B11-A0CF-F97BFACEEF89}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

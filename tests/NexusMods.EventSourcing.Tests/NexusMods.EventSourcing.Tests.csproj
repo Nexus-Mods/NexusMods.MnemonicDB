@@ -2,5 +2,6 @@
     <PropertyGroup>
         <!-- https://github.com/pengweiqhca/Xunit.DependencyInjection#how-to-disable-xunitdependencyinjection -->
         <EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>false</EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>
+        <RootNamespace>NexusMods.EventSourcing.Tests</RootNamespace>
     </PropertyGroup>
 </Project>

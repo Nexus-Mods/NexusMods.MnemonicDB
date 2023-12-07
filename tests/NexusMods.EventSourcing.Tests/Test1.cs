@@ -1,4 +1,4 @@
-namespace NexusMods.Template.Tests;
+namespace NexusMods.EventSourcing.Tests;
 
 public class Test1
 {
