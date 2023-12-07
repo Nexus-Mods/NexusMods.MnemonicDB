@@ -1,0 +1,38 @@
+<Project>
+    <PropertyGroup>
+        <!-- Overwrites IsPackable from global Directory.Build.props -->
+        <IsPackable>true</IsPackable>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <Authors>Nexus Mods</Authors>
+
+        <PackageReadmeFile>docs/README.md</PackageReadmeFile>
+        <PackageIcon>assets/icon.png</PackageIcon>
+        <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+        <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
+
+        <!-- This is the URL to the main project, not the individual package. -->
+        <PackageProjectUrl>https://github.com/Nexus-Mods/NexusMods.App</PackageProjectUrl>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+        <!-- https://github.com/dotnet/sourcelink/tree/main/docs#publishrepositoryurl -->
+        <!-- Source Link will set RepositoryUrl for us in a CI environment -->
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+        <!-- https://github.com/dotnet/sourcelink/tree/main/docs#embeduntrackedsources -->
+        <EmbedUntrackedSources>false</EmbedUntrackedSources>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="$(MSBuildThisFileDirectory)icon.png" Pack="true" PackagePath="assets" />
+        <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="docs" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.*" PrivateAssets="all" />
+    </ItemGroup>
+</Project>

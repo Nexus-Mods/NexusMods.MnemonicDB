@@ -1,0 +1,19 @@
+name: .NET build and test
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - ".github/workflows/dotnet-build-and-test.yaml"
+      - "src/**"
+      - "tests/**"
+  pull_request:
+    branches: [ main ]
+    paths:
+      - ".github/workflows/dotnet-build-and-test.yaml"
+      - "src/**"
+      - "tests/**"
+
+jobs:
+  build-and-test:
+    uses: Nexus-Mods/NexusMods.App.Meta/.github/workflows/dotnet-build-and-test.yaml@780d2001be902a9523de8331da2c77c687abbddb

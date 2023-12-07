@@ -1,0 +1,13 @@
+name: Update meta-submodule
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "18 9 * * *"
+
+jobs:
+  update:
+    permissions:
+      pull-requests: write
+      contents: write
+    uses: Nexus-Mods/NexusMods.App.Meta/.github/workflows/update-from-meta.yaml@fc9c9eae43a7c70eaa4d66b3717cd9cd35cc2bbb
