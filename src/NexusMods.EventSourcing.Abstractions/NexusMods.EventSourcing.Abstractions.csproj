@@ -1,9 +1,12 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <RootNamespace>NexusMods.EventSourcing</RootNamespace>
+        <RootNamespace>NexusMods.EventSourcing.Abstractions</RootNamespace>
     </PropertyGroup>
+
     <ItemGroup>
+      <PackageReference Include="MemoryPack.Core" Version="1.10.0" />
       <PackageReference Include="TransparentValueObjects" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
     </ItemGroup>
+
     <Import Project="$([MSBuild]::GetPathOfFileAbove('NuGet.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 </Project>
