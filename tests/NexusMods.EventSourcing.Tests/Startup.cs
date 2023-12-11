@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using NexusMods.EventSourcing.TestModel;
 using NexusMods.EventSourcing.Tests.Contexts;
 using Xunit.DependencyInjection.Logging;
 
@@ -10,6 +11,9 @@ public class Startup
     {
         container
             .AddSingleton<TestContext>()
+            .AddEvents()
+            .AddEventSourcing()
+
             .AddLogging(builder => builder.AddXunitOutput());
     }
 }

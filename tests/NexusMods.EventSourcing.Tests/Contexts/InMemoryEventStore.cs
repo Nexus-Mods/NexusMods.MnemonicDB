@@ -1,7 +1,7 @@
 using MemoryPack;
 using MemoryPack.Formatters;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Tests.Events;
+using NexusMods.EventSourcing.TestModel.Events;
 
 namespace NexusMods.EventSourcing.Tests.Contexts;
 
@@ -13,8 +13,9 @@ public class InMemoryEventStore : IEventStore
     {
         var formatter = new DynamicUnionFormatter<IEvent>(new[]
         {
-            ( (ushort)1, typeof(CreateCountedEntity)),
-            ( (ushort)2, typeof(IncrementCount))
+            ( (ushort)3, typeof(CreateLoadout)),
+            ( (ushort)4, typeof(AddMod)),
+            ( (ushort)5, typeof(SwapModEnabled))
         });
         MemoryPackFormatterProvider.Register(formatter);
     }

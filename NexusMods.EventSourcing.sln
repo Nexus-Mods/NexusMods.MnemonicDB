@@ -30,6 +30,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.EventSourcing.Tes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.EventSourcing.Abstractions", "src\NexusMods.EventSourcing.Abstractions\NexusMods.EventSourcing.Abstractions.csproj", "{6737673E-5898-42EC-B0B2-60DE2CFFF0AF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.EventSourcing.TestModel", "tests\NexusMods.EventSourcing.TestModel\NexusMods.EventSourcing.TestModel.csproj", "{66DCB10E-1D80-4A83-8380-B2E08BEEE7AE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,7 @@ Global
 		{A92DED3D-BC67-4E04-9A06-9A1B302B3070} = {0377EBE6-F147-4233-86AD-32C821B9567E}
 		{30CBEB4A-E0C0-4B11-A0CF-F97BFACEEF89} = {6ED01F9D-5E12-4EB2-9601-64A2ADC719DE}
 		{6737673E-5898-42EC-B0B2-60DE2CFFF0AF} = {0377EBE6-F147-4233-86AD-32C821B9567E}
+		{66DCB10E-1D80-4A83-8380-B2E08BEEE7AE} = {6ED01F9D-5E12-4EB2-9601-64A2ADC719DE}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{A92DED3D-BC67-4E04-9A06-9A1B302B3070}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -53,5 +56,9 @@ Global
 		{6737673E-5898-42EC-B0B2-60DE2CFFF0AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6737673E-5898-42EC-B0B2-60DE2CFFF0AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6737673E-5898-42EC-B0B2-60DE2CFFF0AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66DCB10E-1D80-4A83-8380-B2E08BEEE7AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66DCB10E-1D80-4A83-8380-B2E08BEEE7AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66DCB10E-1D80-4A83-8380-B2E08BEEE7AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66DCB10E-1D80-4A83-8380-B2E08BEEE7AE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
