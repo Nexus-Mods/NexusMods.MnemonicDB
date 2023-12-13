@@ -12,6 +12,12 @@ public interface IAccumulator
     public void Add(object value);
 
     /// <summary>
+    /// Retracts a value from the accumulator.
+    /// </summary>
+    /// <param name="value"></param>
+    public void Retract(object value);
+
+    /// <summary>
     /// Gets the accumulated value.
     /// </summary>
     /// <returns></returns>

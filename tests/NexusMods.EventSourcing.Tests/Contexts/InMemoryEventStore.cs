@@ -44,17 +44,26 @@ public class InMemoryEventStore(EventSerializer serializer) : IEventStore
             Entities.Add(entity.Value);
         }
 
+        public void Retract<TOwner, TVal>(EntityId<TOwner> entity, AttributeDefinition<TOwner, TVal> attr, TVal value) where TOwner : IEntity
+        {
+            Entities.Add(entity.Value);
+        }
+
+        public void Retract<TOwner, TVal>(EntityId<TOwner> entity, MultiEntityAttributeDefinition<TOwner, TVal> attr, EntityId<TVal> value) where TOwner : IEntity where TVal : IEntity
+        {
+            Entities.Add(entity.Value);
+        }
+
         public void New<TType>(EntityId<TType> id) where TType : IEntity
         {
             Entities.Add(id.Value);
         }
     }
 
-
-    public void EventsForEntity<TEntity, TIngester>(EntityId<TEntity> entityId, TIngester ingester)
-        where TEntity : IEntity where TIngester : IEventIngester
+    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester)
+        where TIngester : IEventIngester
     {
-        foreach (var data in _events[entityId.Value])
+        foreach (var data in _events[entityId])
         {
             var @event = serializer.Deserialize(data)!;
             ingester.Ingest(@event);

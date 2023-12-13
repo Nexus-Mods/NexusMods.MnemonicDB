@@ -30,6 +30,11 @@ public abstract class AScalarAttribute<TOwner, TType>(string attrName) : IAttrib
             _value = (TVal) value;
         }
 
+        public void Retract(object value)
+        {
+            _value = default!;
+        }
+
         public object Get()
         {
             return _value!;

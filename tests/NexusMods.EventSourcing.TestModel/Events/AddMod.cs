@@ -21,6 +21,7 @@ public partial class AddMod : IEvent
         context.Emit(Id, Mod._enabled, Enabled);
         context.Emit(Id, Mod._loadout, LoadoutId);
         context.Emit(LoadoutId, Loadout._mods, Id);
-
     }
+
+    public static AddMod Create(string name, EntityId<Loadout> loadoutId) => new() { Name = name, Enabled = true, Id = EntityId<Mod>.NewId(), LoadoutId = loadoutId };
 }

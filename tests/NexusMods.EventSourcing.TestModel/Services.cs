@@ -16,6 +16,7 @@ public static class Services
         coll.AddEvent<Events.AddMod>();
         coll.AddEvent<Events.SwapModEnabled>();
         coll.AddEvent<Events.RenameLoadout>();
+        coll.AddEvent<Events.DeleteMod>();
         return coll;
     }
 

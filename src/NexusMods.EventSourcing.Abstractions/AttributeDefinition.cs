@@ -17,5 +17,5 @@ where TOwner : IEntity
     /// <param name="owner"></param>
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
-    public TType Get(TOwner owner) => (TType)owner.Context.GetAccumulator(owner.Id, this).Get();
+    public TType Get(TOwner owner) => (TType)owner.Context.GetAccumulator<TOwner, AttributeDefinition<TOwner, TType>>(owner.Id, this).Get();
 }

@@ -16,7 +16,7 @@ public class EntityContext : IEntityContext
         throw new System.NotImplementedException();
     }
 
-    public IAccumulator GetAccumulator<TType, TOwner>(EntityId ownerId, AttributeDefinition<TOwner, TType> attributeDefinition) where TOwner : IEntity
+    public IAccumulator GetAccumulator<TOwner, TAttribute>(EntityId ownerId, TAttribute attributeDefinition) where TOwner : IEntity where TAttribute : IAttribute
     {
         throw new System.NotImplementedException();
     }

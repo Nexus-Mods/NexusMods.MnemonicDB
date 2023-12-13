@@ -34,4 +34,43 @@ public class BasicFunctionalityTests
         await _ctx.Add(RenameLoadout.Create(createEvent.Id, "New Name"));
         loadout.Name.Should().Be("New Name");
     }
+
+    [Fact]
+    public async void CanLinkEntities()
+    {
+        var loadoutEvent = CreateLoadout.Create("Test");
+        await _ctx.Add(loadoutEvent);
+        var loadout = _ctx.Get(loadoutEvent.Id);
+        loadout.Name.Should().Be("Test");
+
+        var modEvent = AddMod.Create("First Mod", loadoutEvent.Id);
+        await _ctx.Add(modEvent);
+
+        loadout.Mods.First().Name.Should().Be("First Mod");
+        loadout.Mods.First().Loadout.Should().BeSameAs(loadout);
+    }
+
+
+    [Fact]
+    public async void CanDeleteEntities()
+    {
+        var loadoutEvent = CreateLoadout.Create("Test");
+        await _ctx.Add(loadoutEvent);
+        var loadout = _ctx.Get(loadoutEvent.Id);
+        loadout.Name.Should().Be("Test");
+
+        var modEvent1 = AddMod.Create("First Mod", loadoutEvent.Id);
+        await _ctx.Add(modEvent1);
+
+        var modEvent2 = AddMod.Create("Second Mod", loadoutEvent.Id);
+        await _ctx.Add(modEvent2);
+
+        loadout.Mods.Count().Should().Be(2);
+
+        await _ctx.Add(new DeleteMod(modEvent1.Id, loadoutEvent.Id));
+
+        loadout.Mods.Count().Should().Be(1);
+
+        loadout.Mods.First().Name.Should().Be("Second Mod");
+    }
 }

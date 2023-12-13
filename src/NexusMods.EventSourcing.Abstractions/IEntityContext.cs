@@ -33,7 +33,10 @@ public interface IEntityContext
     /// <param name="attributeDefinition"></param>
     /// <typeparam name="TType"></typeparam>
     /// <typeparam name="TOwner"></typeparam>
+    /// <typeparam name="TAttribute"></typeparam>
     /// <returns></returns>
-    IAccumulator GetAccumulator<TType, TOwner>(EntityId ownerId, AttributeDefinition<TOwner,TType> attributeDefinition) where TOwner : IEntity;
+    IAccumulator GetAccumulator<TOwner, TAttribute>(EntityId ownerId, TAttribute attributeDefinition)
+        where TOwner : IEntity
+        where TAttribute : IAttribute;
 
 }

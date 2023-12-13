@@ -19,36 +19,38 @@ public class TestContext(ILogger<TestContext> logger, EventSerializer serializer
             return (TEntity)entity;
         }
 
-        var ingester = new Ingester(id.Value);
+        var values = LoadValues(id.Value);
 
-        _store.EventsForEntity(id, ingester);
-
-        var type = (Type)ingester.Values[IEntity.TypeAttribute].Get();
-
+        var type = (Type)values[IEntity.TypeAttribute].Get();
         var createdEntity = (TEntity)Activator.CreateInstance(type, this, id.Value)!;
         _entities.Add(id.Value, createdEntity);
-        _values.Add(id.Value, ingester.Values);
 
         return createdEntity;
     }
 
+    private Dictionary<IAttribute, IAccumulator> LoadValues(EntityId id)
+    {
+        var ingester = new Ingester(id);
+        _store.EventsForEntity(id, ingester);
+        _values.Add(id, ingester.Values);
+        return ingester.Values;
+    }
+
     public async ValueTask Add<TEvent>(TEvent entity) where TEvent : IEvent
     {
-        _entities.Clear();
         _values.Clear();
         await _store.Add(entity);
     }
 
-    public IAccumulator GetAccumulator<TType, TOwner>(EntityId ownerId, AttributeDefinition<TOwner, TType> attributeDefinition)
-        where TOwner : IEntity
+    public IAccumulator GetAccumulator<TOwner, TAttribute>(EntityId ownerId, TAttribute attributeDefinition)
+        where TOwner: IEntity
+        where TAttribute : IAttribute
     {
         if (_values.TryGetValue(ownerId, out var values))
             return values[attributeDefinition];
 
-        Get(EntityId<TOwner>.From(ownerId.Value));
-        values = _values[ownerId];
-
-        return values[attributeDefinition];
+        var loadedValues = LoadValues(ownerId);
+        return loadedValues[attributeDefinition];
     }
 
     private readonly struct Ingester(EntityId id) : IEventIngester, IEventContext
@@ -94,7 +96,29 @@ public class TestContext(ILogger<TestContext> logger, EventSerializer serializer
 
         public void Emit<TOwner, TVal>(EntityId<TOwner> entity, MultiEntityAttributeDefinition<TOwner, TVal> attr, EntityId<TVal> value) where TOwner : IEntity where TVal : IEntity
         {
-            throw new NotImplementedException();
+            if (entity.Value != id.Value)
+                return;
+
+            var accumulator = GetAccumulator(attr);
+            accumulator.Add(value);
+        }
+
+        public void Retract<TOwner, TVal>(EntityId<TOwner> entity, AttributeDefinition<TOwner, TVal> attr, TVal value) where TOwner : IEntity
+        {
+            if (entity.Value != id.Value)
+                return;
+
+            var accumulator = GetAccumulator(attr);
+            accumulator.Retract(value!);
+        }
+
+        public void Retract<TOwner, TVal>(EntityId<TOwner> entity, MultiEntityAttributeDefinition<TOwner, TVal> attr, EntityId<TVal> value) where TOwner : IEntity where TVal : IEntity
+        {
+            if (entity.Value != id.Value)
+                return;
+
+            var accumulator = GetAccumulator(attr);
+            accumulator.Retract(value);
         }
 
         public void New<TType>(EntityId<TType> newId) where TType : IEntity
