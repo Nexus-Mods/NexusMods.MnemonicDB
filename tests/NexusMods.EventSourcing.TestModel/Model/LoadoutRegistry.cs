@@ -4,21 +4,20 @@ using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.TestModel.Model;
 
-public class LoadoutRegistry : IEntity
+public class LoadoutRegistry(IEntityContext context, EntityId id) : AEntity(context, id)
 {
-    internal readonly SourceCache<Loadout, EntityId> _loadouts = new(x => x.Id);
+    /// <summary>
+    /// Gets the instance of the loadout registry from the entity context.
+    /// </summary>
+    /// <param name="context"></param>
+    /// <returns></returns>
+    public static LoadoutRegistry GetInstance(IEntityContext context) =>
+        context.Get(EntityId<LoadoutRegistry>.From("10BAE6BA-D5F9-40F4-AF7F-CCA1417C3BB0"));
 
-    private ReadOnlyObservableCollection<Loadout> _loadoutsConnected;
-    public ReadOnlyObservableCollection<Loadout> Loadouts => _loadoutsConnected;
+    /// <summary>
+    /// The loadouts in the registry.
+    /// </summary>
+    public IEnumerable<Loadout> Loadouts => _loadouts.GetAll(this);
+    internal static readonly MultiEntityAttributeDefinition<LoadoutRegistry, Loadout> _loadouts = new(nameof(Loadouts));
 
-    public LoadoutRegistry()
-    {
-        _loadouts.Connect()
-            .Bind(out _loadoutsConnected)
-            .Subscribe();
-    }
-
-    public static EntityId<LoadoutRegistry> StaticId = new(EntityId.From(Guid.Parse("7F3E3745-51B9-44CB-BBDA-B1555191330E")));
-
-    public EntityId Id { get; } = StaticId.Value;
 }

@@ -5,27 +5,18 @@ using NexusMods.EventSourcing.TestModel.Events;
 
 namespace NexusMods.EventSourcing.Tests.Contexts;
 
-public class InMemoryEventStore : IEventStore
+public class InMemoryEventStore(EventSerializer serializer) : IEventStore
 {
     private readonly Dictionary<EntityId,IList<byte[]>> _events = new();
 
-    public InMemoryEventStore()
+    public async ValueTask Add<T>(T entity) where T : IEvent
     {
-        var formatter = new DynamicUnionFormatter<IEvent>(new[]
-        {
-            ( (ushort)3, typeof(CreateLoadout)),
-            ( (ushort)4, typeof(AddMod)),
-            ( (ushort)5, typeof(SwapModEnabled))
-        });
-        MemoryPackFormatterProvider.Register(formatter);
-    }
-
-    public ValueTask Add<T>(T entity) where T : IEvent
-    {
+        var data = serializer.Serialize(entity);
+        var logger = new ModifiedEntityLogger();
+        await entity.Apply(logger);
         lock (_events)
         {
-            var data = MemoryPackSerializer.Serialize(entity);
-            entity.ModifiedEntities(id =>
+            foreach (var id in logger.Entities)
             {
                 if (!_events.TryGetValue(id, out var value))
                 {
@@ -33,20 +24,40 @@ public class InMemoryEventStore : IEventStore
                     _events.Add(id, value);
                 }
                 value.Add(data);
-            });
+            }
         }
-        return ValueTask.CompletedTask;
+    }
+
+    /// <summary>
+    /// Simplistic context that just logs the entities that were modified.
+    /// </summary>
+    private readonly struct ModifiedEntityLogger() : IEventContext
+    {
+        public readonly HashSet<EntityId> Entities  = new();
+        public void Emit<TOwner, TVal>(EntityId<TOwner> entity, AttributeDefinition<TOwner, TVal> attr, TVal value) where TOwner : IEntity
+        {
+            Entities.Add(entity.Value);
+        }
+
+        public void Emit<TOwner, TVal>(EntityId<TOwner> entity, MultiEntityAttributeDefinition<TOwner, TVal> attr, EntityId<TVal> value) where TOwner : IEntity where TVal : IEntity
+        {
+            Entities.Add(entity.Value);
+        }
+
+        public void New<TType>(EntityId<TType> id) where TType : IEntity
+        {
+            Entities.Add(id.Value);
+        }
     }
 
 
-    public ValueTask EventsForEntity<TEntity, TIngester>(EntityId<TEntity> entityId, TIngester ingester)
+    public void EventsForEntity<TEntity, TIngester>(EntityId<TEntity> entityId, TIngester ingester)
         where TEntity : IEntity where TIngester : IEventIngester
     {
         foreach (var data in _events[entityId.Value])
         {
-            var @event = MemoryPackSerializer.Deserialize<IEvent>(data)!;
+            var @event = serializer.Deserialize(data)!;
             ingester.Ingest(@event);
         }
-        return ValueTask.CompletedTask;
     }
 }

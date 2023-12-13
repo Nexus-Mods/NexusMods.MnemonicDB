@@ -17,8 +17,9 @@ public class BasicFunctionalityTests
     public async void CanSetupBasicLoadout()
     {
         var createEvent = CreateLoadout.Create("Test");
-        await _ctx.Transact(createEvent);
-        var loadout = await _ctx.Retrieve(createEvent.Id);
+        await _ctx.Add(createEvent);
+        var loadout = _ctx.Get(createEvent.Id);
+        loadout.Should().NotBeNull();
         loadout.Name.Should().Be("Test");
     }
 }

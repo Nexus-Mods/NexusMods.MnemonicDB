@@ -16,14 +16,8 @@ public partial class CreateLoadout : IEvent
 
     public async ValueTask Apply<T>(T context) where T : IEventContext
     {
-        var registry = await context.Retrieve(LoadoutRegistry.StaticId);
-        var loadout = new Loadout
-        {
-            Id = Id.Value,
-            Name = Name
-        };
-        registry._loadouts.AddOrUpdate(loadout);
-        context.AttachEntity(Id, loadout);
+        context.New(Id);
+        context.Emit(Id, Loadout._name, Name);
     }
 
     public static CreateLoadout Create(string name) => new() { Name = name, Id = EntityId<Loadout>.NewId() };

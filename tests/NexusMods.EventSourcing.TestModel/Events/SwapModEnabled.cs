@@ -9,21 +9,17 @@ namespace NexusMods.EventSourcing.TestModel.Events;
 public partial class SwapModEnabled : IEvent
 {
     public required EntityId<Mod> Id { get; init; }
+    public required bool Enabled { get; init; }
     public async ValueTask Apply<T>(T context) where T : IEventContext
     {
-        var mod = await context.Retrieve(Id);
-        mod.Enabled = !mod.Enabled;
+        context.Emit(Id, Mod._enabled, Enabled);
     }
 
     /// <summary>
     /// Helper method to create a new event instance.
     /// </summary>
     /// <param name="id"></param>
+    /// <param name="enabled"></param>
     /// <returns></returns>
-    public static SwapModEnabled Create(EntityId<Mod> id) => new() { Id = id };
-
-    public void ModifiedEntities(Action<EntityId> handler)
-    {
-        handler(Id.Value);
-    }
+    public static SwapModEnabled Create(EntityId<Mod> id, bool enabled) => new() { Id = id, Enabled = enabled};
 }

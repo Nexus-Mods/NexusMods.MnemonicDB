@@ -1,88 +1,93 @@
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Tests.Contexts;
 
-public class TestContext(ILogger<TestContext> logger) : IEventContext, IEntityContext
+public class TestContext(ILogger<TestContext> logger, EventSerializer serializer) : IEntityContext
 {
-    private readonly InMemoryEventStore _store = new();
-    private readonly Dictionary<EntityId, (IEntity Entity, TransactionId AsOf)> _entities = new();
+    private readonly InMemoryEventStore _store = new(serializer);
+    private readonly Dictionary<EntityId, IEntity> _entities = new();
+    private readonly Dictionary<EntityId, Dictionary<IAttribute, IAccumulator>> _values = new();
 
     private TransactionId _currentTransactionId = TransactionId.From(0);
 
-
-    public void AttachEntity<TEntity>(EntityId<TEntity> entityId, TEntity entity) where TEntity : IEntity
+    public TEntity Get<TEntity>(EntityId<TEntity> id) where TEntity : IEntity
     {
-        if (_entities.ContainsKey(entityId.Value))
+        if (_entities.TryGetValue(id.Value, out var entity))
         {
-            throw new InvalidOperationException($"Entity with id {entityId} already exists in the context");
+            return (TEntity)entity;
         }
-        _entities.Add(entityId.Value, (entity, _currentTransactionId));
+
+        var ingester = new Ingester();
+
+        _store.EventsForEntity(id, ingester);
+
+        var type = (Type)ingester.Values[IEntity.TypeAttribute].Get();
+
+        var createdEntity = (TEntity)Activator.CreateInstance(type, this, id.Value)!;
+        _entities.Add(id.Value, createdEntity);
+        _values.Add(id.Value, ingester.Values);
+
+        return createdEntity;
     }
 
-    /// <summary>
-    /// Resets the cache of entities, this is useful for testing purposes
-    /// </summary>
-    public void ResetCache()
+    public async ValueTask Add<TEvent>(TEvent entity) where TEvent : IEvent
     {
         _entities.Clear();
+        _values.Clear();
+        await _store.Add(entity);
     }
 
-    public ValueTask Transact(IEvent @event)
+    public IAccumulator GetAccumulator<TType, TOwner>(EntityId ownerId, AttributeDefinition<TOwner, TType> attributeDefinition)
+        where TOwner : IEntity
     {
-        var newId = _currentTransactionId.Next();
-        _currentTransactionId = newId;
-        _store.Add(@event);
-        @event.Apply(this);
-        logger.LogInformation("Applied {Event} to context txId {Tx}", @event, _currentTransactionId);
-        return ValueTask.CompletedTask;
+        return _values[ownerId][attributeDefinition];
     }
 
-    public ValueTask<T> Retrieve<T>(EntityId<T> entityId) where T : IEntity
+    private struct Ingester() : IEventIngester, IEventContext
     {
-        if (_entities.TryGetValue(entityId.Value, out var entity))
+        public Dictionary<IAttribute,IAccumulator> Values { get; set; } = new();
+
+        public ValueTask Ingest(IEvent @event)
         {
-            return new ValueTask<T>((T)entity.Entity);
+            @event.Apply(this);
+            return ValueTask.CompletedTask;
         }
 
-        return LoadEntity(entityId);
-    }
-
-    private async ValueTask<T> LoadEntity<T>(EntityId<T> entityId) where T : IEntity
-    {
-        logger.LogInformation("Loading entity {EntityId} replaying events", entityId);
-        var ingester = new Ingester(this);
-        await _store.EventsForEntity(entityId, ingester);
-        var result = (T)_entities[entityId.Value].Entity;
-        logger.LogInformation("Loaded entity {EntityId} with {EventCount} events", entityId, ingester.EventCount);
-        return result;
-    }
-
-    private class Ingester : IEventIngester
-    {
-        private readonly TestContext _ctx;
-        public int EventCount { get; private set; }
-
-        public Ingester(TestContext ctx)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private IAccumulator GetAccumulator(IAttribute attribute)
         {
-            _ctx = ctx;
+            if (!Values.TryGetValue(attribute, out var accumulator))
+            {
+                accumulator = attribute.CreateAccumulator();
+                Values.Add(attribute, accumulator);
+            }
+            return accumulator;
         }
 
-        public async ValueTask Ingest(IEvent @event)
+        public void Emit<TOwner, TVal>(EntityId<TOwner> entity, AttributeDefinition<TOwner, TVal> attr, TVal value)
+            where TOwner : IEntity
         {
-            EventCount++;
-            await @event.Apply(_ctx);
+            var accumulator = GetAccumulator(attr);
+            accumulator.Add(value!);
         }
-    }
 
-    public TransactionId AsOf { get; }
-    public ValueTask Advance(TransactionId transactionId)
-    {
-        throw new NotImplementedException();
-    }
+        public void Emit<TOwner, TVal>(EntityId entity, AttributeDefinition<TOwner, TVal> attr, TVal value)
+            where TOwner : IEntity
+        {
+            var accumulator = GetAccumulator(attr);
+            accumulator.Add(value!);
+        }
 
-    public ValueTask Advance()
-    {
-        throw new NotImplementedException();
+        public void Emit<TOwner, TVal>(EntityId<TOwner> entity, MultiEntityAttributeDefinition<TOwner, TVal> attr, EntityId<TVal> value) where TOwner : IEntity where TVal : IEntity
+        {
+            throw new NotImplementedException();
+        }
+
+        public void New<TType>(EntityId<TType> id) where TType : IEntity
+        {
+            Emit(id.Value, IEntity.TypeAttribute, typeof(TType));
+        }
     }
 }

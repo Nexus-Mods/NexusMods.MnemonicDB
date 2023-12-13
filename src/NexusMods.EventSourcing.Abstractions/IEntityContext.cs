@@ -9,39 +9,31 @@ namespace NexusMods.EventSourcing.Abstractions;
 public interface IEntityContext
 {
     /// <summary>
-    /// Adds the event to the event store, and advances the "as of" transaction id to the transaction id of the event.
+    /// Gets the entity with the specified id.
     /// </summary>
-    /// <param name="event"></param>
+    /// <param name="id"></param>
+    /// <typeparam name="TEntity"></typeparam>
     /// <returns></returns>
-    public ValueTask Transact(IEvent @event);
+    public TEntity Get<TEntity>(EntityId<TEntity> id) where TEntity : IEntity;
+
 
     /// <summary>
-    /// Get the entity with the given id from the context, the entity will be up-to-date as of the current "as of" transaction id.
+    /// Transacts a new event into the context.
     /// </summary>
-    /// <param name="entityId"></param>
-    /// <typeparam name="T"></typeparam>
+    /// <param name="entity"></param>
+    /// <typeparam name="TEvent"></typeparam>
     /// <returns></returns>
-    public ValueTask<T> Retrieve<T>(EntityId<T> entityId) where T : IEntity;
+    public ValueTask Add<TEvent>(TEvent entity) where TEvent : IEvent;
+
 
     /// <summary>
-    /// The current "as of" transaction id. The entities in this context are up-to-date as of this transaction id.
+    /// Gets the value of the attribute for the given entity.
     /// </summary>
-    public TransactionId AsOf { get; }
-
-    /// <summary>
-    /// Advances the "as of" transaction id to the given transaction id, all objects in this context will be updated
-    /// to reflect the new transaction id.
-    /// </summary>
-    /// <param name="transactionId"></param>
+    /// <param name="ownerId"></param>
+    /// <param name="attributeDefinition"></param>
+    /// <typeparam name="TType"></typeparam>
+    /// <typeparam name="TOwner"></typeparam>
     /// <returns></returns>
-    public ValueTask Advance(TransactionId transactionId);
-
-    /// <summary>
-    /// Advances the "as of" transaction id to the most recent transaction id, all objects in this context will be updated
-    /// to reflect the new transaction id.
-    /// </summary>
-    /// <returns></returns>
-    public ValueTask Advance();
-
+    IAccumulator GetAccumulator<TType, TOwner>(EntityId ownerId, AttributeDefinition<TOwner,TType> attributeDefinition) where TOwner : IEntity;
 
 }

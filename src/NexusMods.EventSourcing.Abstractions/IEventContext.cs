@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 
 namespace NexusMods.EventSourcing.Abstractions;
@@ -7,21 +8,35 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// </summary>
 public interface IEventContext
 {
-
     /// <summary>
-    /// Attach an entity to the context, this entity will be tracked by the context and should only be used in events
-    /// that intend to create an entity from scratch.
+    /// Emits a new value for the given attribute on the given entity
     /// </summary>
-    /// <param name="entityId"></param>
     /// <param name="entity"></param>
-    /// <typeparam name="TEntity"></typeparam>
-    public void AttachEntity<TEntity>(EntityId<TEntity> entityId, TEntity entity) where TEntity : IEntity;
+    /// <param name="attr"></param>
+    /// <param name="value"></param>
+    /// <typeparam name="TOwner"></typeparam>
+    /// <typeparam name="TVal"></typeparam>
+    public void Emit<TOwner, TVal>(EntityId<TOwner> entity, AttributeDefinition<TOwner, TVal> attr, TVal value)
+        where TOwner : IEntity;
 
     /// <summary>
-    /// Retrieve an entity from the context, this may require the context to load the entity via replaying
-    /// the events up to the current transaction.
+    /// Emits a new member value for the given attribute on the given entity
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <param name="attr"></param>
+    /// <param name="value"></param>
+    /// <typeparam name="TOwner"></typeparam>
+    /// <typeparam name="TVal"></typeparam>
+    public void Emit<TOwner, TVal>(EntityId<TOwner> entity, MultiEntityAttributeDefinition<TOwner, TVal> attr,
+        EntityId<TVal> value)
+        where TOwner : IEntity
+        where TVal : IEntity;
+
+    /// <summary>
+    /// Emits the type attribute for the given entity so that polymorphic queries can be performed
     /// </summary>
     /// <param name="id"></param>
-    /// <typeparam name="T"></typeparam>
-    public ValueTask<T> Retrieve<T>(EntityId<T> id) where T : IEntity;
+    /// <typeparam name="TType"></typeparam>
+    /// <exception cref="NotImplementedException"></exception>
+    public void New<TType>(EntityId<TType> id) where TType : IEntity;
 }

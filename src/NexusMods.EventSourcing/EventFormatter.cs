@@ -15,8 +15,9 @@ public class EventFormatter : MemoryPackFormatter<IEvent>
 
     public EventFormatter(IEnumerable<EventDefinition> events)
     {
-       _eventByGuid = events.ToDictionary(e => e.Guid, e => e.Type);
-       _eventsByType = events.ToDictionary(e => e.Type, e => e.Guid);
+        var eventsArray = events.ToArray();
+       _eventByGuid = eventsArray.ToDictionary(e => e.Guid, e => e.Type);
+       _eventsByType = eventsArray.ToDictionary(e => e.Type, e => e.Guid);
     }
 
     public override void Serialize<TBufferWriter>(ref MemoryPackWriter<TBufferWriter> writer, scoped ref IEvent? value)
@@ -29,7 +30,7 @@ public class EventFormatter : MemoryPackFormatter<IEvent>
 
         var type = value.GetType();
         writer.WriteValue(_eventsByType[type]);
-        writer.WriteValue(type, (object)value);
+        writer.WriteValue(type, value);
     }
 
     public override void Deserialize(ref MemoryPackReader reader, scoped ref IEvent? value)

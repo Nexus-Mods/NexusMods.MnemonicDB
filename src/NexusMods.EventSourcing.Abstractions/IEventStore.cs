@@ -7,7 +7,7 @@ public interface IEventStore
 {
     public ValueTask Add<T>(T eventEntity) where T : IEvent;
 
-    public ValueTask EventsForEntity<TEntity, TIngester>(EntityId<TEntity> entityId, TIngester ingester)
+    public void EventsForEntity<TEntity, TIngester>(EntityId<TEntity> entityId, TIngester ingester)
         where TEntity : IEntity
         where TIngester : IEventIngester;
 }

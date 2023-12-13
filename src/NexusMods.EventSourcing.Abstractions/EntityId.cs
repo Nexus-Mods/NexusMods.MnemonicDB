@@ -23,6 +23,24 @@ public readonly struct EntityId<T> where T : IEntity
     /// <returns></returns>
     public static EntityId<T> NewId() => new(EntityId.NewId());
 
+
+    /// <summary>
+    /// Gets the <see cref="EntityId{T}"/> from the specified <paramref name="id"/>.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    public static EntityId<T> From(Guid id) => new(EntityId.From(id));
+
+
+
+    /// <summary>
+    /// Gets the <see cref="EntityId{T}"/> from the specified <paramref name="id"/>.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    public static EntityId<T> From(string id) => From(Guid.Parse(id));
+
+
     /// <summary>
     /// Creates a new instance of <see cref="EntityId{T}"/>.
     /// </summary>

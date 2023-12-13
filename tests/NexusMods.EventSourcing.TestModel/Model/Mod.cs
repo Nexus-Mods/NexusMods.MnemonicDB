@@ -3,16 +3,21 @@ using ReactiveUI.Fody.Helpers;
 
 namespace NexusMods.EventSourcing.TestModel.Model;
 
-public class Mod : IEntity
+public class Mod(IEntityContext context, EntityId id) : AEntity(context, id)
 {
-    public EntityId Id { get; internal set; }
 
-    [Reactive]
-    public string Name { get; internal set; } = string.Empty;
+    public Loadout Loadout => _loadout.GetEntity(this);
+    internal static readonly EntityAttributeDefinition<Mod, Loadout> _loadout = new(nameof(Loadout));
 
-    [Reactive]
-    public bool Enabled { get; internal set; }
+    /// <summary>
+    /// The human readable name of the mod.
+    /// </summary>
+    public string Name => _name.Get(this);
+    internal static readonly AttributeDefinition<Mod, string> _name = new(nameof(Name));
 
-    [Reactive]
-    public Collection? Collection { get; internal set; }
+    /// <summary>
+    /// The enabled state of the mod.
+    /// </summary>
+    public bool Enabled => _enabled.Get(this);
+    internal static readonly AttributeDefinition<Mod, bool> _enabled = new(nameof(Enabled));
 }

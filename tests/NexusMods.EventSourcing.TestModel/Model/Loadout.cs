@@ -3,11 +3,18 @@ using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.TestModel.Model;
 
-public class Loadout : IEntity
+public class Loadout(IEntityContext context, EntityId id) : AEntity(context, id)
 {
-    public EntityId Id { get; internal set; }
+    /// <summary>
+    /// The human readable name of the loadout.
+    /// </summary>
+    public string Name => _name.Get(this);
+    internal static readonly AttributeDefinition<Loadout, string> _name = new(nameof(Name));
 
-    public string Name { get; internal set; } = string.Empty;
+    /// <summary>
+    /// The mods in the loadout.
+    /// </summary>
+    public IEnumerable<Mod> Mods => _mods.GetAll(this);
+    internal static readonly MultiEntityAttributeDefinition<Loadout, Mod> _mods = new(nameof(Mods));
 
-    internal SourceCache<Mod, EntityId> _mods = new(x => x.Id);
 }

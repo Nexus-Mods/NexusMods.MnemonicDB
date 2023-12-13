@@ -12,25 +12,15 @@ public partial class AddMod : IEvent
     public required string Name { get; init; } = string.Empty;
     public required bool Enabled { get; init; } = true;
     public required EntityId<Mod> Id { get; init; }
-    public required EntityId<Loadout> Loadout { get; init; }
+    public required EntityId<Loadout> LoadoutId { get; init; }
 
     public async ValueTask Apply<T>(T context) where T : IEventContext
     {
-        var loadout = await context.Retrieve(Loadout);
-        var mod = new Mod
-        {
-            Id = Id.Value,
-            Name = Name,
-            Enabled = Enabled,
-        };
-        loadout._mods.AddOrUpdate(mod);
-        context.AttachEntity(Id, mod);
+        context.New(Id);
+        context.Emit(Id, Mod._name, Name);
+        context.Emit(Id, Mod._enabled, Enabled);
+        context.Emit(Id, Mod._loadout, LoadoutId);
+        context.Emit(LoadoutId, Loadout._mods, Id);
 
-    }
-
-    public void ModifiedEntities(Action<EntityId> handler)
-    {
-        handler(Id.Value);
-        handler(Loadout.Value);
     }
 }
