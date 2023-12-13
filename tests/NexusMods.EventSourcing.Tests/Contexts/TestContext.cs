@@ -1,12 +1,13 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.TestModel;
 
 namespace NexusMods.EventSourcing.Tests.Contexts;
 
 public class TestContext(ILogger<TestContext> logger, EventSerializer serializer) : IEntityContext
 {
-    private readonly InMemoryEventStore _store = new(serializer);
+    private readonly InMemoryEventStore<EventSerializer> _store = new(serializer);
     private readonly Dictionary<EntityId, IEntity> _entities = new();
     private readonly Dictionary<EntityId, Dictionary<IAttribute, IAccumulator>> _values = new();
 

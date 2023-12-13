@@ -8,5 +8,10 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// </summary>
 public interface IEventIngester
 {
+    /// <summary>
+    /// Ingests the given event into the context.
+    /// </summary>
+    /// <param name="event"></param>
+    /// <returns></returns>
     public ValueTask Ingest(IEvent @event);
 }

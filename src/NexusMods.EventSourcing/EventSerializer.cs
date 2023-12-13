@@ -8,7 +8,7 @@ using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing;
 
-public class EventSerializer
+public class EventSerializer : IEventSerializer
 {
     public EventSerializer(IEnumerable<EventDefinition> events)
     {

@@ -1,11 +1,9 @@
-using MemoryPack;
-using MemoryPack.Formatters;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.TestModel.Events;
 
-namespace NexusMods.EventSourcing.Tests.Contexts;
+namespace NexusMods.EventSourcing.TestModel;
 
-public class InMemoryEventStore(EventSerializer serializer) : IEventStore
+public class InMemoryEventStore<TSerializer>(TSerializer serializer) : IEventStore
+where TSerializer : IEventSerializer
 {
     private readonly Dictionary<EntityId,IList<byte[]>> _events = new();
 

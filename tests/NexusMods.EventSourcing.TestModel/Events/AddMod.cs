@@ -7,21 +7,24 @@ namespace NexusMods.EventSourcing.TestModel.Events;
 
 [EventId("7DC8F80B-50B6-43B7-B805-43450E9F0C2B")]
 [MemoryPackable]
-public partial class AddMod : IEvent
+public partial record AddMod(string Name, bool Enabled, EntityId<Mod> ModId, EntityId<Loadout> LoadoutId) : IEvent
 {
-    public required string Name { get; init; } = string.Empty;
-    public required bool Enabled { get; init; } = true;
-    public required EntityId<Mod> Id { get; init; }
-    public required EntityId<Loadout> LoadoutId { get; init; }
-
     public async ValueTask Apply<T>(T context) where T : IEventContext
     {
-        context.New(Id);
-        context.Emit(Id, Mod._name, Name);
-        context.Emit(Id, Mod._enabled, Enabled);
-        context.Emit(Id, Mod._loadout, LoadoutId);
-        context.Emit(LoadoutId, Loadout._mods, Id);
+        context.New(ModId);
+        context.Emit(ModId, Mod._name, Name);
+        context.Emit(ModId, Mod._enabled, Enabled);
+        context.Emit(ModId, Mod._loadout, LoadoutId);
+        context.Emit(LoadoutId, Loadout._mods, ModId);
     }
 
-    public static AddMod Create(string name, EntityId<Loadout> loadoutId) => new() { Name = name, Enabled = true, Id = EntityId<Mod>.NewId(), LoadoutId = loadoutId };
+    /// <summary>
+    /// Creates a event that adds a new mod to the given loadout giving it the given name.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="loadoutId"></param>
+    /// <param name="enabled"></param>
+    /// <returns></returns>
+    public static AddMod Create(string name, EntityId<Loadout> loadoutId, bool enabled = true)
+        => new(name, enabled, EntityId<Mod>.NewId(), loadoutId);
 }

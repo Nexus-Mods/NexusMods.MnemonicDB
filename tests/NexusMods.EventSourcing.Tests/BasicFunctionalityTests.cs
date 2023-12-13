@@ -67,7 +67,7 @@ public class BasicFunctionalityTests
 
         loadout.Mods.Count().Should().Be(2);
 
-        await _ctx.Add(new DeleteMod(modEvent1.Id, loadoutEvent.Id));
+        await _ctx.Add(new DeleteMod(modEvent1.ModId, loadoutEvent.Id));
 
         loadout.Mods.Count().Should().Be(1);
 
