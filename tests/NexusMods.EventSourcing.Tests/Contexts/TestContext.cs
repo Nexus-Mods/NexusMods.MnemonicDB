@@ -19,7 +19,7 @@ public class TestContext(ILogger<TestContext> logger, EventSerializer serializer
             return (TEntity)entity;
         }
 
-        var ingester = new Ingester();
+        var ingester = new Ingester(id.Value);
 
         _store.EventsForEntity(id, ingester);
 
@@ -51,9 +51,9 @@ public class TestContext(ILogger<TestContext> logger, EventSerializer serializer
         return values[attributeDefinition];
     }
 
-    private struct Ingester() : IEventIngester, IEventContext
+    private readonly struct Ingester(EntityId id) : IEventIngester, IEventContext
     {
-        public Dictionary<IAttribute,IAccumulator> Values { get; set; } = new();
+        public readonly Dictionary<IAttribute,IAccumulator> Values  = new();
 
         public ValueTask Ingest(IEvent @event)
         {
@@ -75,6 +75,9 @@ public class TestContext(ILogger<TestContext> logger, EventSerializer serializer
         public void Emit<TOwner, TVal>(EntityId<TOwner> entity, AttributeDefinition<TOwner, TVal> attr, TVal value)
             where TOwner : IEntity
         {
+            if (entity.Value != id.Value)
+                return;
+
             var accumulator = GetAccumulator(attr);
             accumulator.Add(value!);
         }
@@ -82,6 +85,9 @@ public class TestContext(ILogger<TestContext> logger, EventSerializer serializer
         public void Emit<TOwner, TVal>(EntityId entity, AttributeDefinition<TOwner, TVal> attr, TVal value)
             where TOwner : IEntity
         {
+            if (entity.Value != id.Value)
+                return;
+
             var accumulator = GetAccumulator(attr);
             accumulator.Add(value!);
         }
@@ -91,9 +97,12 @@ public class TestContext(ILogger<TestContext> logger, EventSerializer serializer
             throw new NotImplementedException();
         }
 
-        public void New<TType>(EntityId<TType> id) where TType : IEntity
+        public void New<TType>(EntityId<TType> newId) where TType : IEntity
         {
-            Emit(id.Value, IEntity.TypeAttribute, typeof(TType));
+            if (newId.Value != id.Value)
+                return;
+
+            Emit(newId.Value, IEntity.TypeAttribute, typeof(TType));
         }
     }
 }
