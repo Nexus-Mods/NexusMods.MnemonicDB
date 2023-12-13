@@ -1,4 +1,5 @@
 using NexusMods.EventSourcing.TestModel.Events;
+using NexusMods.EventSourcing.TestModel.Model;
 using NexusMods.EventSourcing.Tests.Contexts;
 
 namespace NexusMods.EventSourcing.Tests;
@@ -72,5 +73,12 @@ public class BasicFunctionalityTests
         loadout.Mods.Count().Should().Be(1);
 
         loadout.Mods.First().Name.Should().Be("Second Mod");
+    }
+
+    [Fact]
+    public async void CanGetSingletonEntities()
+    {
+        var entity = _ctx.Get<LoadoutRegistry>();
+        entity.Should().NotBeNull();
     }
 }

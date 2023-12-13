@@ -7,7 +7,7 @@ using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing;
 
-public class EventFormatter : MemoryPackFormatter<IEvent>
+internal class EventFormatter : MemoryPackFormatter<IEvent>
 {
     private static Guid _zeroGuid = Guid.Empty;
     private readonly Dictionary<Guid,Type> _eventByGuid;

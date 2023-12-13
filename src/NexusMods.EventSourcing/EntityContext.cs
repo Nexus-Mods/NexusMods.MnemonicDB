@@ -11,6 +11,11 @@ public class EntityContext : IEntityContext
         throw new System.NotImplementedException();
     }
 
+    public TEntity Get<TEntity>() where TEntity : ISingletonEntity
+    {
+        throw new System.NotImplementedException();
+    }
+
     public ValueTask Add<TEvent>(TEvent entity) where TEvent : IEvent
     {
         throw new System.NotImplementedException();

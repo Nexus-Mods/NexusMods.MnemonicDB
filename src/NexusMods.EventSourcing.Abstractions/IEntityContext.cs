@@ -18,6 +18,14 @@ public interface IEntityContext
 
 
     /// <summary>
+    /// Gets the singleton entity of the specified type.
+    /// </summary>
+    /// <typeparam name="TEntity"></typeparam>
+    /// <returns></returns>
+    public TEntity Get<TEntity>() where TEntity : ISingletonEntity;
+
+
+    /// <summary>
     /// Transacts a new event into the context.
     /// </summary>
     /// <param name="entity"></param>

@@ -29,6 +29,19 @@ public class TestContext(ILogger<TestContext> logger, EventSerializer serializer
         return createdEntity;
     }
 
+    public TEntity Get<TEntity>() where TEntity : ISingletonEntity
+    {
+        var id = TEntity.SingletonId;
+        if (_entities.TryGetValue(id, out var entity))
+        {
+            return (TEntity)entity;
+        }
+
+        var instance = (TEntity)Activator.CreateInstance(typeof(TEntity), this)!;
+        _entities.Add(id, instance);
+        return instance;
+    }
+
     private Dictionary<IAttribute, IAccumulator> LoadValues(EntityId id)
     {
         var ingester = new Ingester(id);

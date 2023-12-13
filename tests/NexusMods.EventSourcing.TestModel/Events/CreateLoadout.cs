@@ -18,6 +18,7 @@ public partial class CreateLoadout : IEvent
     {
         context.New(Id);
         context.Emit(Id, Loadout._name, Name);
+        context.Emit(LoadoutRegistry.SingletonId, LoadoutRegistry._loadouts, Id);
     }
 
     public static CreateLoadout Create(string name) => new() { Name = name, Id = EntityId<Loadout>.NewId() };
