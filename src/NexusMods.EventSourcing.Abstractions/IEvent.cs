@@ -13,5 +13,5 @@ public interface IEvent
     /// <summary>
     /// Applies the event to the entities attached to the event.
     /// </summary>
-    ValueTask Apply<T>(T context) where T : IEventContext;
+    void Apply<T>(T context) where T : IEventContext;
 }

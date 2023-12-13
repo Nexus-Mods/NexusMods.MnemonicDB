@@ -9,7 +9,7 @@ namespace NexusMods.EventSourcing.TestModel.Events;
 [MemoryPackable]
 public partial record AddMod(string Name, bool Enabled, EntityId<Mod> ModId, EntityId<Loadout> LoadoutId) : IEvent
 {
-    public async ValueTask Apply<T>(T context) where T : IEventContext
+    public void Apply<T>(T context) where T : IEventContext
     {
         context.New(ModId);
         context.Emit(ModId, Mod._name, Name);

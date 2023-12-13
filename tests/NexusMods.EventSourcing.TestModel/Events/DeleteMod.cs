@@ -8,10 +8,9 @@ namespace NexusMods.EventSourcing.TestModel.Events;
 [MemoryPackable]
 public partial record DeleteMod(EntityId<Mod> ModId, EntityId<Loadout> LoadoutId) : IEvent
 {
-    public ValueTask Apply<T>(T context) where T : IEventContext
+    public void Apply<T>(T context) where T : IEventContext
     {
         context.Retract(LoadoutId, Loadout._mods, ModId);
         context.Retract(ModId, Mod._loadout, LoadoutId);
-        return ValueTask.CompletedTask;
     }
 }

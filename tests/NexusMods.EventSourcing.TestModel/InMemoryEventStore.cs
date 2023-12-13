@@ -11,7 +11,7 @@ where TSerializer : IEventSerializer
     {
         var data = serializer.Serialize(entity);
         var logger = new ModifiedEntityLogger();
-        await entity.Apply(logger);
+        entity.Apply(logger);
         lock (_events)
         {
             foreach (var id in logger.Entities)

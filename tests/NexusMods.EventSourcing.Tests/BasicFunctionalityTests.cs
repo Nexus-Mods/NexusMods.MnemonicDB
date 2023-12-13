@@ -32,7 +32,7 @@ public class BasicFunctionalityTests
         var loadout = _ctx.Get(createEvent.Id);
         loadout.Name.Should().Be("Test");
 
-        await _ctx.Add(RenameLoadout.Create(createEvent.Id, "New Name"));
+        await _ctx.Add(new RenameLoadout(createEvent.Id, "New Name"));
         loadout.Name.Should().Be("New Name");
     }
 

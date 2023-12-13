@@ -19,11 +19,9 @@ public class TransactionEvent : IEvent
     /// <param name="context"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public ValueTask Apply<T>(T context) where T : IEventContext
+    public void Apply<T>(T context) where T : IEventContext
     {
         foreach (var evt in Events)
             evt.Event.Apply(context);
-
-        return ValueTask.CompletedTask;
     }
 }
