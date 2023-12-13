@@ -22,4 +22,16 @@ public class BasicFunctionalityTests
         loadout.Should().NotBeNull();
         loadout.Name.Should().Be("Test");
     }
+
+    [Fact]
+    public async void ChangingPropertyChangesTheValue()
+    {
+        var createEvent = CreateLoadout.Create("Test");
+        await _ctx.Add(createEvent);
+        var loadout = _ctx.Get(createEvent.Id);
+        loadout.Name.Should().Be("Test");
+
+        await _ctx.Add(RenameLoadout.Create(createEvent.Id, "New Name"));
+        loadout.Name.Should().Be("New Name");
+    }
 }

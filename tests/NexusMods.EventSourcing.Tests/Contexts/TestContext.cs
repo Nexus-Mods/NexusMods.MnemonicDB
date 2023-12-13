@@ -42,7 +42,13 @@ public class TestContext(ILogger<TestContext> logger, EventSerializer serializer
     public IAccumulator GetAccumulator<TType, TOwner>(EntityId ownerId, AttributeDefinition<TOwner, TType> attributeDefinition)
         where TOwner : IEntity
     {
-        return _values[ownerId][attributeDefinition];
+        if (_values.TryGetValue(ownerId, out var values))
+            return values[attributeDefinition];
+
+        Get(EntityId<TOwner>.From(ownerId.Value));
+        values = _values[ownerId];
+
+        return values[attributeDefinition];
     }
 
     private struct Ingester() : IEventIngester, IEventContext
