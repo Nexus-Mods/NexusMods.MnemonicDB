@@ -71,10 +71,9 @@ public class TestContext(ILogger<TestContext> logger, EventSerializer serializer
     {
         public readonly Dictionary<IAttribute,IAccumulator> Values  = new();
 
-        public ValueTask Ingest(IEvent @event)
+        public void Ingest(IEvent @event)
         {
             @event.Apply(this);
-            return ValueTask.CompletedTask;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

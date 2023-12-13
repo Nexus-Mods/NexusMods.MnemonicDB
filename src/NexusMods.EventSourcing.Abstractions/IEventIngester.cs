@@ -13,5 +13,5 @@ public interface IEventIngester
     /// </summary>
     /// <param name="event"></param>
     /// <returns></returns>
-    public ValueTask Ingest(IEvent @event);
+    public void Ingest(IEvent @event);
 }
