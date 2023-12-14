@@ -8,6 +8,7 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// </summary>
 public interface IEventContext
 {
+
     /// <summary>
     /// Emits a new value for the given attribute on the given entity
     /// </summary>

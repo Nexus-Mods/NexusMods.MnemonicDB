@@ -5,15 +5,17 @@ namespace NexusMods.EventSourcing.TestModel;
 public class InMemoryEventStore<TSerializer>(TSerializer serializer) : IEventStore
 where TSerializer : IEventSerializer
 {
+    private TransactionId _tx = TransactionId.From(0);
     private readonly Dictionary<EntityId,IList<byte[]>> _events = new();
 
-    public async ValueTask Add<T>(T entity) where T : IEvent
+    public TransactionId Add<T>(T entity) where T : IEvent
     {
-        var data = serializer.Serialize(entity);
-        var logger = new ModifiedEntityLogger();
-        entity.Apply(logger);
-        lock (_events)
+        lock (this)
         {
+            _tx = _tx.Next();
+            var data = serializer.Serialize(entity);
+            var logger = new ModifiedEntityLogger();
+            entity.Apply(logger);
             foreach (var id in logger.Entities)
             {
                 if (!_events.TryGetValue(id, out var value))
@@ -21,8 +23,11 @@ where TSerializer : IEventSerializer
                     value = new List<byte[]>();
                     _events.Add(id, value);
                 }
+
                 value.Add(data);
             }
+
+            return _tx;
         }
     }
 

@@ -62,7 +62,7 @@ public class WriteBenchmarks
         for (var i = 0; i < EventCount; i++)
         {
             var evnt = _events[i % _events.Length];
-            await _eventStore.Add(evnt);
+            _eventStore.Add(evnt);
         }
     }
 }

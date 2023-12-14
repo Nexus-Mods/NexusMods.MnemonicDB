@@ -50,10 +50,10 @@ public class TestContext(ILogger<TestContext> logger, EventSerializer serializer
         return ingester.Values;
     }
 
-    public async ValueTask Add<TEvent>(TEvent entity) where TEvent : IEvent
+    public TransactionId Add<TEvent>(TEvent entity) where TEvent : IEvent
     {
         _values.Clear();
-        await _store.Add(entity);
+        return _store.Add(entity);
     }
 
     public IAccumulator GetAccumulator<TOwner, TAttribute>(EntityId ownerId, TAttribute attributeDefinition)

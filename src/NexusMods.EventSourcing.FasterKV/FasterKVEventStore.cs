@@ -57,10 +57,15 @@ public class FasterKVEventStore<TSerializer> : IEventStore
         await _kvStore.CompleteCheckpointAsync();
     }
 
-    public async ValueTask Add<T>(T eventEntity) where T : IEvent
+    public TransactionId Add<T>(T eventEntity) where T : IEvent
     {
-        using var session = _kvStore.NewSession(_functions);
-        WriteInner(eventEntity, session);
+        lock (this)
+        {
+            _tx = _tx.Next();
+            using var session = _kvStore.NewSession(_functions);
+            WriteInner(eventEntity, session);
+            return _tx;
+        }
     }
 
     private void WriteInner<T>(T eventEntity, ClientSession<byte[], byte[], byte[], byte[], Empty, IFunctions<byte[], byte[], byte[], byte[], Empty>> session) where T : IEvent

@@ -66,7 +66,7 @@ public class ReadBenchmarks
         for (var e = 0; e < EntityCount; e++)
         {
             var evt = new CreateLoadout(EntityId<Loadout>.NewId(), $"Loadout {e}");
-            _eventStore.Add(evt).GetAwaiter().GetResult();
+            _eventStore.Add(evt);
             _ids[e] = evt.Id;
         }
 
@@ -75,7 +75,7 @@ public class ReadBenchmarks
         {
             for (var e = 0; e < EntityCount; e++)
             {
-                _eventStore.Add(new RenameLoadout(_ids[e], $"Loadout {e} {ev}")).GetAwaiter().GetResult();
+                _eventStore.Add(new RenameLoadout(_ids[e], $"Loadout {e} {ev}"));
             }
         }
     }

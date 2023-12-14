@@ -31,7 +31,7 @@ public interface IEntityContext
     /// <param name="entity"></param>
     /// <typeparam name="TEvent"></typeparam>
     /// <returns></returns>
-    public ValueTask Add<TEvent>(TEvent entity) where TEvent : IEvent;
+    public TransactionId Add<TEvent>(TEvent entity) where TEvent : IEvent;
 
 
     /// <summary>

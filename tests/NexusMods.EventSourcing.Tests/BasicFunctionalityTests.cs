@@ -15,37 +15,37 @@ public class BasicFunctionalityTests
 
 
     [Fact]
-    public async void CanSetupBasicLoadout()
+    public void CanSetupBasicLoadout()
     {
         var createEvent = CreateLoadout.Create("Test");
-        await _ctx.Add(createEvent);
+        _ctx.Add(createEvent);
         var loadout = _ctx.Get(createEvent.Id);
         loadout.Should().NotBeNull();
         loadout.Name.Should().Be("Test");
     }
 
     [Fact]
-    public async void ChangingPropertyChangesTheValue()
+    public void ChangingPropertyChangesTheValue()
     {
         var createEvent = CreateLoadout.Create("Test");
-        await _ctx.Add(createEvent);
+        _ctx.Add(createEvent);
         var loadout = _ctx.Get(createEvent.Id);
         loadout.Name.Should().Be("Test");
 
-        await _ctx.Add(new RenameLoadout(createEvent.Id, "New Name"));
+        _ctx.Add(new RenameLoadout(createEvent.Id, "New Name"));
         loadout.Name.Should().Be("New Name");
     }
 
     [Fact]
-    public async void CanLinkEntities()
+    public void CanLinkEntities()
     {
         var loadoutEvent = CreateLoadout.Create("Test");
-        await _ctx.Add(loadoutEvent);
+        _ctx.Add(loadoutEvent);
         var loadout = _ctx.Get(loadoutEvent.Id);
         loadout.Name.Should().Be("Test");
 
         var modEvent = AddMod.Create("First Mod", loadoutEvent.Id);
-        await _ctx.Add(modEvent);
+        _ctx.Add(modEvent);
 
         loadout.Mods.First().Name.Should().Be("First Mod");
         loadout.Mods.First().Loadout.Should().BeSameAs(loadout);
@@ -56,19 +56,19 @@ public class BasicFunctionalityTests
     public async void CanDeleteEntities()
     {
         var loadoutEvent = CreateLoadout.Create("Test");
-        await _ctx.Add(loadoutEvent);
+        _ctx.Add(loadoutEvent);
         var loadout = _ctx.Get(loadoutEvent.Id);
         loadout.Name.Should().Be("Test");
 
         var modEvent1 = AddMod.Create("First Mod", loadoutEvent.Id);
-        await _ctx.Add(modEvent1);
+        _ctx.Add(modEvent1);
 
         var modEvent2 = AddMod.Create("Second Mod", loadoutEvent.Id);
-        await _ctx.Add(modEvent2);
+        _ctx.Add(modEvent2);
 
         loadout.Mods.Count().Should().Be(2);
 
-        await _ctx.Add(new DeleteMod(modEvent1.ModId, loadoutEvent.Id));
+        _ctx.Add(new DeleteMod(modEvent1.ModId, loadoutEvent.Id));
 
         loadout.Mods.Count().Should().Be(1);
 
@@ -76,7 +76,7 @@ public class BasicFunctionalityTests
     }
 
     [Fact]
-    public async void CanGetSingletonEntities()
+    public void CanGetSingletonEntities()
     {
         var entity = _ctx.Get<LoadoutRegistry>();
         entity.Should().NotBeNull();
