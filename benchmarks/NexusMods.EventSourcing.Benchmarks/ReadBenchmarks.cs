@@ -4,9 +4,11 @@ using BenchmarkDotNet.Attributes;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.FasterKV;
 using NexusMods.EventSourcing.TestModel;
 using NexusMods.EventSourcing.TestModel.Events;
 using NexusMods.EventSourcing.TestModel.Model;
+using NexusMods.Paths;
 
 namespace NexusMods.EventSourcing.Benchmarks;
 
@@ -14,16 +16,17 @@ namespace NexusMods.EventSourcing.Benchmarks;
 public class ReadBenchmarks
 {
     private readonly IServiceProvider _services;
-    private InMemoryEventStore<EventSerializer> _eventStore = null!;
+    private IEventStore _eventStore = null!;
     private EntityId<Loadout>[] _ids = Array.Empty<EntityId<Loadout>>();
 
-    [Params(typeof(InMemoryEventStore<EventSerializer>))]
+    [Params(typeof(InMemoryEventStore<EventSerializer>),
+        typeof(FasterKVEventStore<EventSerializer>))]
     public Type EventStoreType { get; set; } = typeof(InMemoryEventStore<EventSerializer>);
 
-    [Params(100, 10000)]
+    [Params(100, 1000)]
     public int EventCount { get; set; }
 
-    [Params(100, 10000)]
+    [Params(100, 1000)]
     public int EntityCount { get; set; }
 
     public ReadBenchmarks()
@@ -46,6 +49,14 @@ public class ReadBenchmarks
         {
             _eventStore = new InMemoryEventStore<EventSerializer>(_services.GetRequiredService<EventSerializer>());
         }
+        else if (EventStoreType == typeof(FasterKVEventStore<EventSerializer>))
+        {
+            _eventStore = new FasterKVEventStore<EventSerializer>(_services.GetRequiredService<EventSerializer>(),
+                new Settings
+            {
+                StorageLocation = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("FasterKV.EventStore" + Guid.NewGuid())
+            });
+        }
         else
         {
             throw new NotSupportedException($"EventStoreType '{EventStoreType}' is not supported.");
@@ -67,7 +78,6 @@ public class ReadBenchmarks
                 _eventStore.Add(new RenameLoadout(_ids[e], $"Loadout {e} {ev}")).GetAwaiter().GetResult();
             }
         }
-
     }
 
     [Benchmark]
