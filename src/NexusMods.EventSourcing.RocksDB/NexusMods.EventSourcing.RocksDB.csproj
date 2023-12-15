@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="NexusMods.Paths" Version="0.4.0" />
+      <PackageReference Include="RocksDB" Version="8.8.1.43919" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\NexusMods.EventSourcing.Abstractions\NexusMods.EventSourcing.Abstractions.csproj" />
+      <ProjectReference Include="..\NexusMods.EventSourcing\NexusMods.EventSourcing.csproj" />
+    </ItemGroup>
+
+    <Import Project="$([MSBuild]::GetPathOfFileAbove('NuGet.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+</Project>
