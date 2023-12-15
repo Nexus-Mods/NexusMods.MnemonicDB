@@ -63,7 +63,7 @@ public struct EntityContextIngester(Dictionary<IAttribute, IAccumulator> values,
         if (newId.Value != id) return;
 
         var accumulator = GetAccumulator(IEntity.TypeAttribute);
-        accumulator.Add(id);
+        accumulator.Add(typeof(TType));
     }
 
 }

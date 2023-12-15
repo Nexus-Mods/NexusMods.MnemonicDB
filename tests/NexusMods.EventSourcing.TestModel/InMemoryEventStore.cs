@@ -24,7 +24,7 @@ where TSerializer : IEventSerializer
                     _events.Add(id, value);
                 }
 
-                value.Add(data);
+                value.Add(data.ToArray());
             }
 
             return _tx;

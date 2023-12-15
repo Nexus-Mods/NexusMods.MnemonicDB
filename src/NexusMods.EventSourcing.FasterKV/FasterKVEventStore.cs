@@ -70,8 +70,7 @@ public class FasterKVEventStore<TSerializer> : IEventStore
 
     private void WriteInner<T>(T eventEntity, ClientSession<byte[], byte[], byte[], byte[], Empty, IFunctions<byte[], byte[], byte[], byte[], Empty>> session) where T : IEvent
     {
-        _tx = _tx.Next();
-        var ingester = new ModifiedEntityLogger();
+        var ingester = new ModifiedEntitiesIngester();
         eventEntity.Apply(ingester);
         {
             var key = new byte[16];
@@ -84,7 +83,8 @@ public class FasterKVEventStore<TSerializer> : IEventStore
                 session.RMW(ref key, ref value);
             }
 
-            var eventBytes = _serializer.Serialize(eventEntity);
+            Console.WriteLine($"Wrote event to {ingester.Entities.Count} entities {eventEntity.ToString()}, {_tx.Value}");
+            var eventBytes = _serializer.Serialize(eventEntity).ToArray();
             var eventKey = new byte[8];
             BinaryPrimitives.WriteUInt64BigEndian(eventKey, _tx.Value);
             session.RMW(ref eventKey, ref eventBytes);
@@ -92,37 +92,7 @@ public class FasterKVEventStore<TSerializer> : IEventStore
     }
 
 
-    /// <summary>
-    /// Simplistic context that just logs the entities that were modified.
-    /// </summary>
-    private readonly struct ModifiedEntityLogger() : IEventContext
-    {
-        public readonly HashSet<EntityId> Entities  = new();
-        public void Emit<TOwner, TVal>(EntityId<TOwner> entity, AttributeDefinition<TOwner, TVal> attr, TVal value) where TOwner : IEntity
-        {
-            Entities.Add(entity.Value);
-        }
 
-        public void Emit<TOwner, TVal>(EntityId<TOwner> entity, MultiEntityAttributeDefinition<TOwner, TVal> attr, EntityId<TVal> value) where TOwner : IEntity where TVal : IEntity
-        {
-            Entities.Add(entity.Value);
-        }
-
-        public void Retract<TOwner, TVal>(EntityId<TOwner> entity, AttributeDefinition<TOwner, TVal> attr, TVal value) where TOwner : IEntity
-        {
-            Entities.Add(entity.Value);
-        }
-
-        public void Retract<TOwner, TVal>(EntityId<TOwner> entity, MultiEntityAttributeDefinition<TOwner, TVal> attr, EntityId<TVal> value) where TOwner : IEntity where TVal : IEntity
-        {
-            Entities.Add(entity.Value);
-        }
-
-        public void New<TType>(EntityId<TType> id) where TType : IEntity
-        {
-            Entities.Add(id.Value);
-        }
-    }
 
     public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester) where TIngester : IEventIngester
     {
@@ -134,7 +104,7 @@ public class FasterKVEventStore<TSerializer> : IEventStore
         Debug.Assert(result.Found);
 
 
-        for (var idx = 0; idx < (value.Length / 8); idx += 8)
+        for (var idx = 0; idx < value.Length; idx += 8)
         {
             var span = value.AsSpan(idx, 8).ToArray();
             var eventArray = Array.Empty<byte>();

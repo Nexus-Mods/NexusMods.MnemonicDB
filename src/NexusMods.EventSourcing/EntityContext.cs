@@ -26,7 +26,7 @@ public class EntityContext(IEventStore store) : IEntityContext
         var values = GetValues(id.Value);
         var type = (Type)values[IEntity.TypeAttribute].Get();
 
-        var newEntity = (TEntity)Activator.CreateInstance(type, this, id)!;
+        var newEntity = (TEntity)Activator.CreateInstance(type, this, id.Value)!;
         if (_entities.TryAdd(id.Value, newEntity))
         {
             return newEntity;
@@ -62,7 +62,7 @@ public class EntityContext(IEventStore store) : IEntityContext
             return (TEntity) entity;
         }
 
-        var newEntity = (TEntity)Activator.CreateInstance(typeof(TEntity), this, id)!;
+        var newEntity = (TEntity)Activator.CreateInstance(typeof(TEntity), this)!;
         if (_entities.TryAdd(id, newEntity))
         {
             return newEntity;

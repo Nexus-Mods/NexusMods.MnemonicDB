@@ -38,6 +38,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.EventSourcing.Ben
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.EventSourcing.FasterKV", "src\NexusMods.EventSourcing.FasterKV\NexusMods.EventSourcing.FasterKV.csproj", "{AFB69777-0A6A-4C61-A621-32C894673002}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.EventSourcing.RocksDB", "src\NexusMods.EventSourcing.RocksDB\NexusMods.EventSourcing.RocksDB.csproj", "{B8D0772A-FAD1-49AD-A85B-B2B6C5B14420}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -50,6 +52,7 @@ Global
 		{66DCB10E-1D80-4A83-8380-B2E08BEEE7AE} = {6ED01F9D-5E12-4EB2-9601-64A2ADC719DE}
 		{96977D99-BF4B-4952-B594-6E44CCD826B9} = {72AFE85F-8C12-436A-894E-638ED2C92A76}
 		{AFB69777-0A6A-4C61-A621-32C894673002} = {0377EBE6-F147-4233-86AD-32C821B9567E}
+		{B8D0772A-FAD1-49AD-A85B-B2B6C5B14420} = {0377EBE6-F147-4233-86AD-32C821B9567E}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{A92DED3D-BC67-4E04-9A06-9A1B302B3070}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -76,5 +79,9 @@ Global
 		{AFB69777-0A6A-4C61-A621-32C894673002}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AFB69777-0A6A-4C61-A621-32C894673002}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AFB69777-0A6A-4C61-A621-32C894673002}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8D0772A-FAD1-49AD-A85B-B2B6C5B14420}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8D0772A-FAD1-49AD-A85B-B2B6C5B14420}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8D0772A-FAD1-49AD-A85B-B2B6C5B14420}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8D0772A-FAD1-49AD-A85B-B2B6C5B14420}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

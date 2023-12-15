@@ -11,21 +11,28 @@ namespace NexusMods.EventSourcing;
 
 public class EventSerializer : IEventSerializer
 {
+    private readonly PooledMemoryBufferWriter _writer;
+
     public EventSerializer(IEnumerable<EventDefinition> events)
     {
         var formatter = new EventFormatter(events);
         if (!MemoryPackFormatterProvider.IsRegistered<IEvent>())
             MemoryPackFormatterProvider.Register(formatter);
+        _writer = new PooledMemoryBufferWriter(1024 * 10); // 10kb
     }
 
-    public byte[] Serialize(IEvent @event)
+    public ReadOnlySpan<byte> Serialize(IEvent @event)
     {
-        return MemoryPackSerializer.Serialize(@event);
+        _writer.Reset();
+        MemoryPackSerializer.Serialize(_writer, @event);
+        return _writer.GetWrittenSpan();
     }
 
-    public IEvent Deserialize(byte[] data)
+    public IEvent Deserialize(ReadOnlySpan<byte> data)
     {
         return MemoryPackSerializer.Deserialize<IEvent>(data)!;
     }
+
+
 
 }

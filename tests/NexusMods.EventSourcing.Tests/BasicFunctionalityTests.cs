@@ -1,3 +1,4 @@
+using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.TestModel.Events;
 using NexusMods.EventSourcing.TestModel.Model;
 using NexusMods.EventSourcing.Tests.Contexts;
@@ -6,8 +7,8 @@ namespace NexusMods.EventSourcing.Tests;
 
 public class BasicFunctionalityTests
 {
-    private readonly TestContext _ctx;
-    public BasicFunctionalityTests(TestContext ctx)
+    private readonly IEntityContext _ctx;
+    public BasicFunctionalityTests(IEntityContext ctx)
     {
         _ctx = ctx;
     }

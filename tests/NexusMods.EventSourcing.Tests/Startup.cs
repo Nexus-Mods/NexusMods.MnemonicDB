@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.TestModel;
 using NexusMods.EventSourcing.Tests.Contexts;
 using Xunit.DependencyInjection.Logging;
@@ -10,7 +11,7 @@ public class Startup
     public void ConfigureServices(IServiceCollection container)
     {
         container
-            .AddSingleton<TestContext>()
+            .AddSingleton<IEventStore, InMemoryEventStore<EventSerializer>>()
             .AddEvents()
             .AddEventSourcing()
 

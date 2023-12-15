@@ -9,6 +9,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\NexusMods.EventSourcing.Abstractions\NexusMods.EventSourcing.Abstractions.csproj" />
+      <ProjectReference Include="..\NexusMods.EventSourcing\NexusMods.EventSourcing.csproj" />
     </ItemGroup>
 
     <ItemGroup>
