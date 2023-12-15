@@ -17,14 +17,14 @@ public class RocksDBEventStore<TSerializer> : IEventStore
     private readonly TSerializer _serializer;
     private readonly SpanDeserializer<TSerializer> _deserializer;
 
-    public RocksDBEventStore(Settings settings, TSerializer serializer)
+    public RocksDBEventStore(TSerializer serializer, Settings settings)
     {
         _serializer = serializer;
         _families = new ColumnFamilies();
         _families.Add("events", new ColumnFamilyOptions());
         _families.Add("entityIndex", new ColumnFamilyOptions());
         var options = new DbOptions();
-        options.SetCreateIfMissing(true);
+        options.SetCreateIfMissing();
         _db = RocksDb.Open(options,
             settings.StorageLocation.ToString(), new ColumnFamilies());
         _eventsColumn = _db.CreateColumnFamily(new ColumnFamilyOptions(), "events");
@@ -82,7 +82,7 @@ public class RocksDBEventStore<TSerializer> : IEventStore
                 {
                     options.SetIterateUpperBound(endKeyPtr, 24);
                     options.SetIterateLowerBound(startKeyPtr, 24);
-                    var iterator = _db.NewIterator(_entityIndexColumn, options);
+                    using var iterator = _db.NewIterator(_entityIndexColumn, options);
 
                     iterator.Seek(startKeyPtr, 24);
                     while (iterator.Valid())

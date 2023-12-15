@@ -5,12 +5,13 @@ using BenchmarkDotNet.Running;
 using NexusMods.EventSourcing;
 using NexusMods.EventSourcing.Benchmarks;
 using NexusMods.EventSourcing.FasterKV;
+using NexusMods.EventSourcing.RocksDB;
 using NexusMods.EventSourcing.TestModel;
 
 
 #if DEBUG
 var readBenchmarks = new EntityContextBenchmarks();
-readBenchmarks.EventStoreType = typeof(InMemoryEventStore<EventSerializer>);
+readBenchmarks.EventStoreType = typeof(RocksDBEventStore<EventSerializer>);
 readBenchmarks.EventCount = 10;
 readBenchmarks.EntityCount = 10;
 Console.WriteLine("Setup");

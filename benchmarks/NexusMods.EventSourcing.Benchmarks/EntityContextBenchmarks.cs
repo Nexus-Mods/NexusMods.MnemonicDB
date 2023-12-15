@@ -4,22 +4,25 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.FasterKV;
+using NexusMods.EventSourcing.RocksDB;
 using NexusMods.EventSourcing.TestModel;
 using NexusMods.EventSourcing.TestModel.Events;
 using NexusMods.EventSourcing.TestModel.Model;
 using NexusMods.Paths;
+using Settings = NexusMods.EventSourcing.FasterKV.Settings;
 
 namespace NexusMods.EventSourcing.Benchmarks;
 
-public class EntityContextBenchmarks
+
+[MemoryDiagnoser]
+public class EntityContextBenchmarks : ABenchmark
 {
-    private readonly IServiceProvider _services;
-    private IEventStore _eventStore = null!;
     private EntityId<Loadout>[] _ids = Array.Empty<EntityId<Loadout>>();
     private EntityContext _context = null!;
 
     [Params(typeof(InMemoryEventStore<EventSerializer>),
-        typeof(FasterKVEventStore<EventSerializer>))]
+        //typeof(FasterKVEventStore<EventSerializer>),
+        typeof(RocksDBEventStore<EventSerializer>))]
     public Type EventStoreType { get; set; } = typeof(InMemoryEventStore<EventSerializer>);
 
     [Params(100, 1000)]
@@ -28,46 +31,16 @@ public class EntityContextBenchmarks
     [Params(100, 1000)]
     public int EntityCount { get; set; }
 
-    public EntityContextBenchmarks()
-    {
-        var host = new HostBuilder()
-            .ConfigureServices((context, services) =>
-            {
-                services.AddEventSourcing()
-                    .AddEvents();
-            })
-            .Build();
-
-        _services = host.Services;
-    }
-
     [GlobalSetup]
     public void Setup()
     {
-        if (EventStoreType == typeof(InMemoryEventStore<EventSerializer>))
-        {
-            _eventStore = new InMemoryEventStore<EventSerializer>(_services.GetRequiredService<EventSerializer>());
-        }
-        else if (EventStoreType == typeof(FasterKVEventStore<EventSerializer>))
-        {
-            _eventStore = new FasterKVEventStore<EventSerializer>(_services.GetRequiredService<EventSerializer>(),
-                new Settings
-            {
-                StorageLocation = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("FasterKV.EventStore" + Guid.NewGuid())
-            });
-        }
-        else
-        {
-            throw new NotSupportedException($"EventStoreType '{EventStoreType}' is not supported.");
-        }
-
-        _context = new EntityContext(_eventStore);
+        _context = new EntityContext(EventStore);
 
         _ids = new EntityId<Loadout>[EntityCount];
         for (var e = 0; e < EntityCount; e++)
         {
             var evt = new CreateLoadout(EntityId<Loadout>.NewId(), $"Loadout {e}");
-            _eventStore.Add(evt);
+            EventStore.Add(evt);
             _ids[e] = evt.Id;
         }
 
@@ -76,7 +49,7 @@ public class EntityContextBenchmarks
         {
             for (var e = 0; e < EntityCount; e++)
             {
-                _eventStore.Add(new RenameLoadout(_ids[e], $"Loadout {e} {ev}"));
+                EventStore.Add(new RenameLoadout(_ids[e], $"Loadout {e} {ev}"));
             }
         }
     }
