@@ -34,6 +34,7 @@ public class EntityContextBenchmarks : ABenchmark
     [GlobalSetup]
     public void Setup()
     {
+        MakeStore(EventStoreType);
         _context = new EntityContext(EventStore);
 
         _ids = new EntityId<Loadout>[EntityCount];
@@ -52,6 +53,12 @@ public class EntityContextBenchmarks : ABenchmark
                 EventStore.Add(new RenameLoadout(_ids[e], $"Loadout {e} {ev}"));
             }
         }
+    }
+
+    [IterationSetup]
+    public void Cleanup()
+    {
+        _context.EmptyCaches();
     }
 
     [Benchmark]

@@ -47,4 +47,9 @@ public interface IEntityContext
         where TOwner : IEntity
         where TAttribute : IAttribute;
 
+    /// <summary>
+    /// Use only for testing, clears all caches, any existing entities will be stale and likely no longer work
+    /// </summary>
+    void EmptyCaches();
+
 }

@@ -12,8 +12,8 @@ using NexusMods.EventSourcing.TestModel;
 #if DEBUG
 var readBenchmarks = new EntityContextBenchmarks();
 readBenchmarks.EventStoreType = typeof(RocksDBEventStore<EventSerializer>);
-readBenchmarks.EventCount = 10;
-readBenchmarks.EntityCount = 10;
+readBenchmarks.EventCount = 1000;
+readBenchmarks.EntityCount = 1000;
 Console.WriteLine("Setup");
 readBenchmarks.Setup();
 Console.WriteLine("LoadAllEntities");

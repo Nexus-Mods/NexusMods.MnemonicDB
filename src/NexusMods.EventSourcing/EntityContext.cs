@@ -91,4 +91,10 @@ public class EntityContext(IEventStore store) : IEntityContext
         return values[attributeDefinition];
 
     }
+
+    public void EmptyCaches()
+    {
+        _entities.Clear();
+        _values.Clear();
+    }
 }
