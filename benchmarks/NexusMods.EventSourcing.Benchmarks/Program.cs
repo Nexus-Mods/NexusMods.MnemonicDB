@@ -20,5 +20,5 @@ Console.WriteLine("LoadAllEntities");
 readBenchmarks.LoadAllEntities();
 Console.WriteLine("LoadAllEntities done");
 #else
-BenchmarkRunner.Run<EntityContextBenchmarks>();
+BenchmarkRunner.Run<EventStoreBenchmarks>();
 #endif

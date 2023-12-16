@@ -67,6 +67,11 @@ public class TestContext(ILogger<TestContext> logger, EventSerializer serializer
         return loadedValues[attributeDefinition];
     }
 
+    public void EmptyCaches()
+    {
+        throw new NotImplementedException();
+    }
+
     private readonly struct Ingester(EntityId id) : IEventIngester, IEventContext
     {
         public readonly Dictionary<IAttribute,IAccumulator> Values  = new();
