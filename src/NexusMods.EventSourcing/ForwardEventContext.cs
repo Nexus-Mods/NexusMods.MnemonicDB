@@ -4,50 +4,35 @@ using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing;
 
-public readonly struct ForwardEventContext(ConcurrentDictionary<EntityId, Dictionary<IAttribute, IAccumulator>> trackedValues) : IEventContext
+/// <summary>
+/// An event context that forwards events to a dictionary of accumulators, and is tuned for adding new values to existing
+/// accumulators and entities. In other words is for moving a
+/// </summary>
+/// <param name="trackedValues"></param>
+public readonly struct ForwardEventContext(ConcurrentDictionary<EntityId, Dictionary<IAttribute, IAccumulator>> trackedEntities) : IEventContext
 {
+    /// <inheritdoc />
+    public bool GetAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> entityId, TAttribute attributeDefinition, out TAccumulator accumulator)
+        where TOwner : IEntity
+        where TAttribute : IAttribute<TAccumulator>
+        where TAccumulator : IAccumulator
 
-    private IAccumulator? GetAccumulator<TAttribute>(EntityId id, TAttribute attributeDefinition)
-        where TAttribute : IAttribute
     {
-        if (!trackedValues.TryGetValue(id, out var values)) return null;
-
-        if (values.TryGetValue(attributeDefinition, out var accumulator))
+        if (!trackedEntities.TryGetValue(entityId.Value, out var values))
         {
-            return accumulator;
+            accumulator = default!;
+            return false;
+        }
+
+        if (values.TryGetValue(attributeDefinition, out var found))
+        {
+            accumulator = (TAccumulator)found;
+            return true;
         }
 
         var newAccumulator = attributeDefinition.CreateAccumulator();
         values.Add(attributeDefinition, newAccumulator);
-        return newAccumulator;
-    }
-
-    public void Emit<TOwner, TVal>(EntityId<TOwner> entity, AttributeDefinition<TOwner, TVal> attr, TVal value) where TOwner : IEntity
-    {
-        var accumulator = GetAccumulator(entity.Value, attr);
-        accumulator?.Add(value!);
-    }
-
-    public void Emit<TOwner, TVal>(EntityId<TOwner> entity, MultiEntityAttributeDefinition<TOwner, TVal> attr, EntityId<TVal> value) where TOwner : IEntity where TVal : IEntity
-    {
-        var accumulator = GetAccumulator(entity.Value, attr);
-        accumulator?.Add(value!);
-    }
-
-    public void Retract<TOwner, TVal>(EntityId<TOwner> entity, AttributeDefinition<TOwner, TVal> attr, TVal value) where TOwner : IEntity
-    {
-        var accumulator = GetAccumulator(entity.Value, attr);
-        accumulator?.Retract(value!);
-    }
-
-    public void Retract<TOwner, TVal>(EntityId<TOwner> entity, MultiEntityAttributeDefinition<TOwner, TVal> attr, EntityId<TVal> value) where TOwner : IEntity where TVal : IEntity
-    {
-        var accumulator = GetAccumulator(entity.Value, attr);
-        accumulator?.Retract(value!);
-    }
-
-    public void New<TType>(EntityId<TType> id) where TType : IEntity
-    {
-        // Do nothing, as this entity should be pulled fresh from the store when needed
+        accumulator = newAccumulator;
+        return true;
     }
 }

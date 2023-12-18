@@ -8,11 +8,6 @@ namespace NexusMods.EventSourcing.Abstractions;
 public interface IAttribute
 {
     /// <summary>
-    /// True if the attribute is a scalar, false if it is a collection.
-    /// </summary>
-    public bool IsScalar { get; }
-
-    /// <summary>
     /// The data type of the entity that owns the attribute.
     /// </summary>
     public Type Owner { get; }
@@ -21,13 +16,20 @@ public interface IAttribute
     /// The name of the attribute, needs to be unique in a given entity but not unique across entities.
     /// </summary>
     public string Name { get; }
+}
 
-
+/// <summary>
+/// Marker interface for attributes that expose an accumulator, (which is all of them), but this removes
+/// some of the
+/// </summary>
+/// <typeparam name="TAccumulator"></typeparam>
+public interface IAttribute<TAccumulator> : IAttribute where TAccumulator : IAccumulator
+{
     /// <summary>
-    /// Creates a new accumulator for the attribute.
+    /// Creates a new empty accumulator for the attribute, this is a factory method to allow the entity context
+    /// to lazily create accumulators.
     /// </summary>
     /// <returns></returns>
-    public IAccumulator CreateAccumulator();
-
+    public TAccumulator CreateAccumulator();
 }
 

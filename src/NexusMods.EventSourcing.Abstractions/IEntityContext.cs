@@ -43,9 +43,10 @@ public interface IEntityContext
     /// <typeparam name="TOwner"></typeparam>
     /// <typeparam name="TAttribute"></typeparam>
     /// <returns></returns>
-    IAccumulator GetAccumulator<TOwner, TAttribute>(EntityId ownerId, TAttribute attributeDefinition)
+    TAccumulator GetAccumulator<TOwner, TAttribute, TAccumulator>(EntityId ownerId, TAttribute attributeDefinition)
         where TOwner : IEntity
-        where TAttribute : IAttribute;
+        where TAttribute : IAttribute<TAccumulator>
+        where TAccumulator : IAccumulator;
 
     /// <summary>
     /// Use only for testing, clears all caches, any existing entities will be stale and likely no longer work

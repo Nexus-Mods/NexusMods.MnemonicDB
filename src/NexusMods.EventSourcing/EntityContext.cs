@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing;
@@ -16,37 +14,49 @@ public class EntityContext(IEventStore store) : IEntityContext
     private ConcurrentDictionary<EntityId, Dictionary<IAttribute, IAccumulator>> _values = new();
 
 
+    /// <summary>
+    /// Gets an entity by its id. The resulting entity type will be the type that was emitted by the event that created
+    /// the entity (via the <see cref="IEntity.TypeAttribute"/> attribute). The resulting entity will be cast to the
+    /// type specified by the generic parameter.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <typeparam name="TEntity"></typeparam>
+    /// <returns></returns>
     public TEntity Get<TEntity>(EntityId<TEntity> id) where TEntity : IEntity
     {
         if (_entities.TryGetValue(id.Value, out var entity))
-        {
             return (TEntity) entity;
-        }
 
-        var values = GetValues(id.Value);
-        var type = (Type)values[IEntity.TypeAttribute].Get();
-
+        var type = IEntity.TypeAttribute.Get(this, id.Value);
         var newEntity = (TEntity)Activator.CreateInstance(type, this, id.Value)!;
+
         if (_entities.TryAdd(id.Value, newEntity))
-        {
             return newEntity;
-        }
 
         return (TEntity)_entities[id.Value];
     }
 
-    private Dictionary<IAttribute, IAccumulator> GetValues(EntityId id)
+    /// <summary>
+    /// Gets all the accumulators for the given entity id. Will use the cache if available, otherwise will replay all
+    /// events for the entity id, via the LoadAccumulators method.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    private Dictionary<IAttribute, IAccumulator> GetAccumulators(EntityId id)
     {
         if (_values.TryGetValue(id, out var values))
-        {
             return values;
-        }
-        var newValues = LoadValues(id);
+
+        var newValues = LoadAccumulators(id);
         return _values.TryAdd(id, newValues) ? newValues : _values[id];
     }
 
-
-    private Dictionary<IAttribute, IAccumulator> LoadValues(EntityId id)
+    /// <summary>
+    /// Replays all the events for the given entity id and returns the resulting accumulators.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    private Dictionary<IAttribute, IAccumulator> LoadAccumulators(EntityId id)
     {
         var values = new Dictionary<IAttribute, IAccumulator>();
         var ingester = new EntityContextIngester(values, id);
@@ -54,19 +64,21 @@ public class EntityContext(IEventStore store) : IEntityContext
         return values;
     }
 
+    /// <summary>
+    /// Gets the singleton entity of the specified type. No entity id is required as there is only ever one singleton
+    /// and the entity Id is specified by the <see cref="ISingletonEntity.SingletonId"/> property.
+    /// </summary>
+    /// <typeparam name="TEntity"></typeparam>
+    /// <returns></returns>
     public TEntity Get<TEntity>() where TEntity : ISingletonEntity
     {
         var id = TEntity.SingletonId;
         if (_entities.TryGetValue(id, out var entity))
-        {
             return (TEntity) entity;
-        }
 
         var newEntity = (TEntity)Activator.CreateInstance(typeof(TEntity), this)!;
         if (_entities.TryAdd(id, newEntity))
-        {
             return newEntity;
-        }
 
         return (TEntity)_entities[id];
     }
@@ -84,14 +96,20 @@ public class EntityContext(IEventStore store) : IEntityContext
             return newId;
         }
     }
-    public IAccumulator GetAccumulator<TOwner, TAttribute>(EntityId ownerId, TAttribute attributeDefinition)
-        where TOwner : IEntity where TAttribute : IAttribute
-    {
-        var values = GetValues(ownerId);
-        return values[attributeDefinition];
 
+    /// <inheritdoc />
+    public TAccumulator GetAccumulator<TOwner, TAttribute, TAccumulator>(EntityId ownerId, TAttribute attributeDefinition)
+        where TOwner : IEntity
+        where TAttribute : IAttribute<TAccumulator>
+        where TAccumulator : IAccumulator
+    {
+        var values = GetAccumulators(ownerId);
+        return (TAccumulator) values[attributeDefinition];
     }
 
+    /// <summary>
+    /// Empties all caches, any existing entities will be stale and likely no longer work, use only for testing.
+    /// </summary>
     public void EmptyCaches()
     {
         _entities.Clear();

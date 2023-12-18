@@ -1,4 +1,5 @@
 using System;
+using NexusMods.EventSourcing.Abstractions.AttributeDefinitions;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -21,5 +22,5 @@ public interface IEntity
     /// <summary>
     /// The type descriptor for all entities. Emitted by the <see cref="IEventContext.New{TType}"/> method.
     /// </summary>
-    public static readonly AttributeDefinition<IEntity, Type> TypeAttribute = new("$Type");
+    public static readonly TypeAttributeDefinition TypeAttribute = new();
 }

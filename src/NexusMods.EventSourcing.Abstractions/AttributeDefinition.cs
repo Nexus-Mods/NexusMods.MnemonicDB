@@ -18,4 +18,5 @@ where TOwner : IEntity
     /// <returns></returns>
     /// <exception cref="NotImplementedException"></exception>
     public TType Get(TOwner owner) => (TType)owner.Context.GetAccumulator<TOwner, AttributeDefinition<TOwner, TType>>(owner.Id, this).Get();
+
 }

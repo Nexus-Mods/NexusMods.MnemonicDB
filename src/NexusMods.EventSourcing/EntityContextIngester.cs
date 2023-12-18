@@ -7,63 +7,35 @@ namespace NexusMods.EventSourcing;
 
 public struct EntityContextIngester(Dictionary<IAttribute, IAccumulator> values, EntityId id) : IEventContext, IEventIngester
 {
+    /// <inheritdoc />
     public void Ingest(IEvent @event)
     {
         @event.Apply(this);
     }
 
+    /// <inheritdoc />
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private IAccumulator GetAccumulator<TAttribute>(TAttribute attributeDefinition)
-        where TAttribute : IAttribute
+    public bool GetAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> entityId, TAttribute attributeDefinition, out TAccumulator accumulator)
+        where TOwner : IEntity
+        where TAttribute : IAttribute<TAccumulator>
+        where TAccumulator : IAccumulator
+
     {
-        if (values.TryGetValue(attributeDefinition, out var accumulator))
+        if (!entityId.Value.Equals(id))
         {
-            return accumulator;
+            accumulator = default!;
+            return false;
         }
 
-        accumulator = attributeDefinition.CreateAccumulator();
-        values.Add(attributeDefinition, accumulator);
-        return accumulator;
+        if (values.TryGetValue(attributeDefinition, out var found))
+        {
+            accumulator = (TAccumulator)found;
+            return true;
+        }
+
+        var newAccumulator = attributeDefinition.CreateAccumulator();
+        values.Add(attributeDefinition, newAccumulator);
+        accumulator = newAccumulator;
+        return true;
     }
-
-    public void Emit<TOwner, TVal>(EntityId<TOwner> entity, AttributeDefinition<TOwner, TVal> attr, TVal value) where TOwner : IEntity
-    {
-        if (entity.Value != id) return;
-
-        var accumulator = GetAccumulator(attr);
-        accumulator.Add(value!);
-    }
-
-    public void Emit<TOwner, TVal>(EntityId<TOwner> entity, MultiEntityAttributeDefinition<TOwner, TVal> attr, EntityId<TVal> value) where TOwner : IEntity where TVal : IEntity
-    {
-        if (entity.Value != id) return;
-
-        var accumulator = GetAccumulator(attr);
-        accumulator.Add(value!);
-    }
-
-    public void Retract<TOwner, TVal>(EntityId<TOwner> entity, AttributeDefinition<TOwner, TVal> attr, TVal value) where TOwner : IEntity
-    {
-        if (entity.Value != id) return;
-
-        var accumulator = GetAccumulator(attr);
-        accumulator.Retract(value!);
-    }
-
-    public void Retract<TOwner, TVal>(EntityId<TOwner> entity, MultiEntityAttributeDefinition<TOwner, TVal> attr, EntityId<TVal> value) where TOwner : IEntity where TVal : IEntity
-    {
-        if (entity.Value != id) return;
-
-        var accumulator = GetAccumulator(attr);
-        accumulator.Retract(value!);
-    }
-
-    public void New<TType>(EntityId<TType> newId) where TType : IEntity
-    {
-        if (newId.Value != id) return;
-
-        var accumulator = GetAccumulator(IEntity.TypeAttribute);
-        accumulator.Add(typeof(TType));
-    }
-
 }
