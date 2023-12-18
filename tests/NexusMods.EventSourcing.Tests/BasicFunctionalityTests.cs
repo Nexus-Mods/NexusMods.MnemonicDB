@@ -1,4 +1,6 @@
+using System.Collections.Specialized;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.TestModel;
 using NexusMods.EventSourcing.TestModel.Events;
 using NexusMods.EventSourcing.TestModel.Model;
 
@@ -7,9 +9,10 @@ namespace NexusMods.EventSourcing.Tests;
 public class BasicFunctionalityTests
 {
     private readonly IEntityContext _ctx;
-    public BasicFunctionalityTests(IEntityContext ctx)
+    public BasicFunctionalityTests(EventSerializer serializer)
     {
-        _ctx = ctx;
+        var store = new InMemoryEventStore<EventSerializer>(serializer);
+        _ctx = new EntityContext(store);
     }
 
 
@@ -100,5 +103,29 @@ public class BasicFunctionalityTests
         _ctx.Add(new RenameLoadout(createEvent.Id, "New Name"));
         loadout.Name.Should().Be("New Name");
         called.Should().BeTrue();
+    }
+
+    [Fact]
+    public void EntityCollectionsAreObservable()
+    {
+        var loadouts = _ctx.Get<LoadoutRegistry>();
+        _ctx.Add(CreateLoadout.Create("Test"));
+        loadouts.Loadouts.Should().NotBeEmpty();
+
+        var called = false;
+        ((INotifyCollectionChanged)loadouts.Loadouts).CollectionChanged += (sender, args) =>
+        {
+            called = true;
+            args.Action.Should().Be(NotifyCollectionChangedAction.Add);
+            args.NewItems.Should().NotBeNull();
+            args.NewItems!.Count.Should().Be(1);
+            args.NewItems!.OfType<Loadout>().First().Name.Should().Be("Test2");
+        };
+
+        _ctx.Add(CreateLoadout.Create("Test2"));
+        called.Should().BeTrue();
+
+        loadouts.Loadouts.Count.Should().Be(2);
+        loadouts.Loadouts.FirstOrDefault(l => l.Name == "Test2").Should().NotBeNull();
     }
 }

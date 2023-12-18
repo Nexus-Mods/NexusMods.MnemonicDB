@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
 using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing;
@@ -9,11 +10,10 @@ namespace NexusMods.EventSourcing;
 public class EntityContext(IEventStore store) : IEntityContext
 {
     private TransactionId asOf = TransactionId.From(0);
-    private object _lock = new object();
+    private object _lock = new();
 
     private ConcurrentDictionary<EntityId, IEntity> _entities = new();
     private ConcurrentDictionary<EntityId, Dictionary<IAttribute, IAccumulator>> _values = new();
-
 
     /// <summary>
     /// Gets an entity by its id. The resulting entity type will be the type that was emitted by the event that created

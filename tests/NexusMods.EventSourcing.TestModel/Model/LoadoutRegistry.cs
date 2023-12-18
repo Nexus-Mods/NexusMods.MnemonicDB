@@ -11,7 +11,7 @@ public class LoadoutRegistry(IEntityContext context) : AEntity<LoadoutRegistry>(
     /// <summary>
     /// The loadouts in the registry.
     /// </summary>
-    public IEnumerable<Loadout> Loadouts => _loadouts.Get(this);
+    public ReadOnlyObservableCollection<Loadout> Loadouts => _loadouts.Get(this);
     internal static readonly MultiEntityAttributeDefinition<LoadoutRegistry, Loadout> _loadouts = new(nameof(Loadouts));
 
 }

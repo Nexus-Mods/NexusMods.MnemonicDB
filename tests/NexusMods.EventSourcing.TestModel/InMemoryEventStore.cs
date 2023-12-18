@@ -35,7 +35,9 @@ where TSerializer : IEventSerializer
     public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester)
         where TIngester : IEventIngester
     {
-        foreach (var data in _events[entityId])
+        if (!_events.TryGetValue(entityId, out var events))
+            return;
+        foreach (var data in events)
         {
             var @event = serializer.Deserialize(data)!;
             ingester.Ingest(@event);

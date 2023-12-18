@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using NexusMods.EventSourcing.Abstractions.Collections;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -12,7 +14,7 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// <typeparam name="TOther"></typeparam>
 public class MultiEntityAttributeDefinition<TOwner, TOther>(string name) : IAttribute<MultiEntityAccumulator<TOther>>
     where TOwner : AEntity<TOwner>, IEntity
-    where TOther : IEntity
+    where TOther : AEntity<TOther>
 {
     /// <inheritdoc />
     public MultiEntityAccumulator<TOther> CreateAccumulator()
@@ -31,7 +33,7 @@ public class MultiEntityAttributeDefinition<TOwner, TOther>(string name) : IAttr
         where TContext : IEventContext
     {
         if (context.GetAccumulator<TOwner, MultiEntityAttributeDefinition<TOwner, TOther>, MultiEntityAccumulator<TOther>>(owner, this, out var accumulator))
-            accumulator.Ids.Add(value);
+            accumulator.Add(value);
     }
 
     /// <summary>
@@ -45,7 +47,7 @@ public class MultiEntityAttributeDefinition<TOwner, TOther>(string name) : IAttr
         where TContext : IEventContext
     {
         if (context.GetAccumulator<TOwner, MultiEntityAttributeDefinition<TOwner, TOther>, MultiEntityAccumulator<TOther>>(owner, this, out var accumulator))
-            accumulator.Ids.Remove(value);
+            accumulator.Remove(value);
     }
 
     /// <summary>
@@ -53,16 +55,15 @@ public class MultiEntityAttributeDefinition<TOwner, TOther>(string name) : IAttr
     /// </summary>
     /// <param name="entity"></param>
     /// <returns></returns>
-    public IEnumerable<TOther> Get(TOwner entity)
+    public ReadOnlyObservableCollection<TOther> Get(TOwner entity)
     {
         if (!entity.Context
                 .GetReadOnlyAccumulator<TOwner, MultiEntityAttributeDefinition<TOwner, TOther>,
                     MultiEntityAccumulator<TOther>>(entity.Id, this, out var accumulator))
-            yield break;
-        // This should eventually be cached, and implement INotifyCollectionChanged
-        foreach (var id in accumulator.Ids)
-            yield return entity.Context.Get(id);
+            throw new InvalidOperationException("No accumulator found for entity");
 
+        accumulator.Init(entity.Context);
+        return accumulator.TransformedReadOnly!;
     }
 
     /// <inheritdoc />
@@ -72,9 +73,48 @@ public class MultiEntityAttributeDefinition<TOwner, TOther>(string name) : IAttr
     public string Name => name;
 }
 
+/// <inheritdoc />
 public class MultiEntityAccumulator<TType> : IAccumulator
-where TType : IEntity
+    where TType : AEntity<TType>
 {
-    internal readonly HashSet<EntityId<TType>> Ids = new();
+    /// <summary>
+    /// The input ids
+    /// </summary>
+    public readonly ObservableCollection<EntityId<TType>> Ids = new();
 
+    /// <summary>
+    /// The transformed values.
+    /// </summary>
+    public TransformingObservableCollection<EntityId<TType>, TType>? Transformed = null!;
+
+    /// <summary>
+    /// The transformed values as a read only collection.
+    /// </summary>
+    public ReadOnlyObservableCollection<TType>? TransformedReadOnly = null;
+
+    public void Init(IEntityContext context)
+    {
+        if (Transformed != null)
+            return;
+        Transformed = new TransformingObservableCollection<EntityId<TType>, TType>(context.Get, Ids);
+        TransformedReadOnly = new ReadOnlyObservableCollection<TType>(Transformed);
+    }
+
+    /// <summary>
+    /// Adds an Entity to the accumulator.
+    /// </summary>
+    /// <param name="id"></param>
+    public void Add(EntityId<TType> id)
+    {
+        Ids.Add(id);
+    }
+
+    /// <summary>
+    /// Adds an Entity to the accumulator.
+    /// </summary>
+    /// <param name="id"></param>
+    public void Remove(EntityId<TType> id)
+    {
+        Ids.Remove(id);
+    }
 }
