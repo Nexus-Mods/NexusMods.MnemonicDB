@@ -33,6 +33,22 @@ public class TypeAttributeDefinition : IAttribute<TypeAccumulator>
         return context.GetAccumulator<IEntity, TypeAttributeDefinition, TypeAccumulator>(owner, this)
             .Get();
     }
+
+    /// <summary>
+    /// Emits information about the type of the entity for the given entity id. The type is emitted as the type of the
+    /// entity id.
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="id"></param>
+    /// <typeparam name="TEventCtx"></typeparam>
+    /// <typeparam name="TType"></typeparam>
+    public void New<TEventCtx, TType>(TEventCtx context, EntityId<TType> id)
+        where TEventCtx : IEventContext
+        where TType : IEntity
+    {
+        if (context.GetAccumulator<IEntity, TypeAttributeDefinition, TypeAccumulator>(EntityId<IEntity>.From(id.Value.Value), this, out var accumulator))
+            accumulator.Set(typeof(TType));
+    }
 }
 
 

@@ -14,16 +14,8 @@ public partial record AddMod(string Name, bool Enabled, EntityId<Mod> ModId, Ent
         IEntity.TypeAttribute.New(context, ModId);
         Mod._name.Set(context, ModId, Name);
         Mod._enabled.Set(context, ModId, Enabled);
-        Mod._loadout.Set(context, ModId, LoadoutId);
+        Mod._loadout.Link(context, ModId, LoadoutId);
         Loadout._mods.Add(context, LoadoutId, ModId);
-
-        /*
-        context.New(ModId);
-        context.Emit(ModId, Mod._name, Name);
-        context.Emit(ModId, Mod._enabled, Enabled);
-        context.Emit(ModId, Mod._loadout, LoadoutId);
-        context.Emit(LoadoutId, Loadout._mods, ModId);
-        */
     }
 
     /// <summary>

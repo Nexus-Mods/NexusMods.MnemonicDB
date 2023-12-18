@@ -39,11 +39,13 @@ public interface IEntityContext
     /// </summary>
     /// <param name="ownerId"></param>
     /// <param name="attributeDefinition"></param>
+    /// <param name="accumulator"></param>
     /// <typeparam name="TType"></typeparam>
     /// <typeparam name="TOwner"></typeparam>
     /// <typeparam name="TAttribute"></typeparam>
+    /// <typeparam name="TAccumulator"></typeparam>
     /// <returns></returns>
-    TAccumulator GetAccumulator<TOwner, TAttribute, TAccumulator>(EntityId ownerId, TAttribute attributeDefinition)
+    bool GetReadOnlyAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> ownerId, TAttribute attributeDefinition, out TAccumulator accumulator)
         where TOwner : IEntity
         where TAttribute : IAttribute<TAccumulator>
         where TAccumulator : IAccumulator;

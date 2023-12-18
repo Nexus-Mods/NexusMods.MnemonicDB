@@ -14,7 +14,7 @@ where TSerializer : IEventSerializer
         {
             _tx = _tx.Next();
             var data = serializer.Serialize(entity);
-            var logger = new ModifiedEntityLogger();
+            var logger = new ModifiedEntitiesIngester();
             entity.Apply(logger);
             foreach (var id in logger.Entities)
             {
@@ -31,37 +31,6 @@ where TSerializer : IEventSerializer
         }
     }
 
-    /// <summary>
-    /// Simplistic context that just logs the entities that were modified.
-    /// </summary>
-    private readonly struct ModifiedEntityLogger() : IEventContext
-    {
-        public readonly HashSet<EntityId> Entities  = new();
-        public void Emit<TOwner, TVal>(EntityId<TOwner> entity, AttributeDefinition<TOwner, TVal> attr, TVal value) where TOwner : IEntity
-        {
-            Entities.Add(entity.Value);
-        }
-
-        public void Emit<TOwner, TVal>(EntityId<TOwner> entity, MultiEntityAttributeDefinition<TOwner, TVal> attr, EntityId<TVal> value) where TOwner : IEntity where TVal : IEntity
-        {
-            Entities.Add(entity.Value);
-        }
-
-        public void Retract<TOwner, TVal>(EntityId<TOwner> entity, AttributeDefinition<TOwner, TVal> attr, TVal value) where TOwner : IEntity
-        {
-            Entities.Add(entity.Value);
-        }
-
-        public void Retract<TOwner, TVal>(EntityId<TOwner> entity, MultiEntityAttributeDefinition<TOwner, TVal> attr, EntityId<TVal> value) where TOwner : IEntity where TVal : IEntity
-        {
-            Entities.Add(entity.Value);
-        }
-
-        public void New<TType>(EntityId<TType> id) where TType : IEntity
-        {
-            Entities.Add(id.Value);
-        }
-    }
 
     public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester)
         where TIngester : IEventIngester

@@ -11,9 +11,9 @@ public partial record CreateLoadout(EntityId<Loadout> Id, string Name) : IEvent
 {
     public void Apply<T>(T context) where T : IEventContext
     {
-        context.New(Id);
-        context.Emit(Id, Loadout._name, Name);
-        context.Emit(LoadoutRegistry.SingletonId, LoadoutRegistry._loadouts, Id);
+        IEntity.TypeAttribute.New(context, Id);
+        Loadout._name.Set(context, Id, Name);
+        LoadoutRegistry._loadouts.Add(context, LoadoutRegistry.SingletonId, Id);
     }
     public static CreateLoadout Create(string name) => new(EntityId<Loadout>.NewId(), name);
 }

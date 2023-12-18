@@ -10,6 +10,6 @@ public partial record SwapModEnabled(EntityId<Mod> ModId, bool Enabled) : IEvent
 {
     public void Apply<T>(T context) where T : IEventContext
     {
-        context.Emit(ModId, Mod._enabled, Enabled);
+        Mod._enabled.Set(context, ModId, Enabled);
     }
 }

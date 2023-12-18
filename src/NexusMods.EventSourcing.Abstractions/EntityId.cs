@@ -57,4 +57,12 @@ public readonly struct EntityId<T> where T : IEntity
     {
         return typeof(T).Name + "<" + Value.Value + ">";
     }
+
+
+    /// <summary>
+    /// Converts the <see cref="EntityId{T}"/> to a <see cref="EntityId{T}"/> of another type.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public EntityId<T> Cast<T>() where T : IEntity => new(Value);
 }

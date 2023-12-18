@@ -10,6 +10,6 @@ public partial record RenameLoadout(EntityId<Loadout> Id, string Name) : IEvent
 {
     public void Apply<T>(T context) where T : IEventContext
     {
-        context.Emit(Id, Loadout._name, Name);
+        Loadout._name.Set(context, Id, Name);
     }
 }

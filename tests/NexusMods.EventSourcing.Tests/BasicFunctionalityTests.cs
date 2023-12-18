@@ -1,7 +1,6 @@
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.TestModel.Events;
 using NexusMods.EventSourcing.TestModel.Model;
-using NexusMods.EventSourcing.Tests.Contexts;
 
 namespace NexusMods.EventSourcing.Tests;
 

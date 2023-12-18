@@ -10,7 +10,7 @@ public partial record DeleteMod(EntityId<Mod> ModId, EntityId<Loadout> LoadoutId
 {
     public void Apply<T>(T context) where T : IEventContext
     {
-        context.Retract(LoadoutId, Loadout._mods, ModId);
-        context.Retract(ModId, Mod._loadout, LoadoutId);
+        Loadout._mods.Remove(context, LoadoutId, ModId);
+        Mod._loadout.Unlink(context, ModId);
     }
 }
