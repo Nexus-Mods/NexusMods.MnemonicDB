@@ -9,7 +9,7 @@ namespace NexusMods.EventSourcing;
 /// accumulators and entities. In other words is for moving a
 /// </summary>
 /// <param name="trackedValues"></param>
-public readonly struct ForwardEventContext(ConcurrentDictionary<EntityId, Dictionary<IAttribute, IAccumulator>> trackedEntities) : IEventContext
+public readonly struct ForwardEventContext(ConcurrentDictionary<EntityId, Dictionary<IAttribute, IAccumulator>> trackedEntities, HashSet<(EntityId, string)> updatedAttributes) : IEventContext
 {
     /// <inheritdoc />
     public bool GetAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> entityId, TAttribute attributeDefinition, out TAccumulator accumulator)
@@ -18,6 +18,8 @@ public readonly struct ForwardEventContext(ConcurrentDictionary<EntityId, Dictio
         where TAccumulator : IAccumulator
 
     {
+        updatedAttributes.Add((entityId.Value, attributeDefinition.Name));
+
         if (!trackedEntities.TryGetValue(entityId.Value, out var values))
         {
             accumulator = default!;

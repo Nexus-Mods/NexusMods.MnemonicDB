@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.ComponentModel;
 using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing;
@@ -90,8 +91,15 @@ public class EntityContext(IEventStore store) : IEntityContext
             var newId = store.Add(newEvent);
             asOf = newId;
 
-            var ingester = new ForwardEventContext(_values);
+            var updatedAttributes = new HashSet<(EntityId, string)>();
+            var ingester = new ForwardEventContext(_values, updatedAttributes);
             newEvent.Apply(ingester);
+
+            foreach (var (entityId, attributeName) in updatedAttributes)
+            {
+                if (_entities.TryGetValue(entityId, out var entity))
+                    entity.OnPropertyChanged(attributeName);
+            }
 
             return newId;
         }

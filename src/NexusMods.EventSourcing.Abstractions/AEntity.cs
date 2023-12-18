@@ -1,3 +1,7 @@
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
 namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
@@ -26,5 +30,18 @@ public abstract class AEntity<TEntity> : IEntity
     }
 
     IEntityContext IEntity.Context => Context;
+
+    /// <summary>
+    /// Called internally when a property of the entity has changed.
+    /// </summary>
+    /// <param name="name"></param>
+    public void OnPropertyChanged(string name)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+
     EntityId IEntity.Id => Id.Value;
+
+    /// <inheritdoc />
+    public event PropertyChangedEventHandler? PropertyChanged;
 }

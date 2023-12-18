@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using NexusMods.EventSourcing.Abstractions.AttributeDefinitions;
 
 namespace NexusMods.EventSourcing.Abstractions;
@@ -6,7 +7,7 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// <summary>
 /// The base interface for all entities.
 /// </summary>
-public interface IEntity
+public interface IEntity : INotifyPropertyChanged
 {
     /// <summary>
     /// The globally unique identifier of the entity.
@@ -23,4 +24,10 @@ public interface IEntity
     /// The type descriptor for all entities. Emitted by the <see cref="IEventContext.New{TType}"/> method.
     /// </summary>
     public static readonly TypeAttributeDefinition TypeAttribute = new();
+
+    /// <summary>
+    /// Called when a property of the entity has changed.
+    /// </summary>
+    /// <param name="name"></param>
+    public void OnPropertyChanged(string name);
 }

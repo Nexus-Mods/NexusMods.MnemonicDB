@@ -81,4 +81,24 @@ public class BasicFunctionalityTests
         var entity = _ctx.Get<LoadoutRegistry>();
         entity.Should().NotBeNull();
     }
+
+    [Fact]
+    public void UpdatingAValueCallesNotifyPropertyChanged()
+    {
+        var createEvent = CreateLoadout.Create("Test");
+        _ctx.Add(createEvent);
+        var loadout = _ctx.Get(createEvent.Id);
+        loadout.Name.Should().Be("Test");
+
+        var called = false;
+        loadout.PropertyChanged += (sender, args) =>
+        {
+            called = true;
+            args.PropertyName.Should().Be(nameof(Loadout.Name));
+        };
+
+        _ctx.Add(new RenameLoadout(createEvent.Id, "New Name"));
+        loadout.Name.Should().Be("New Name");
+        called.Should().BeTrue();
+    }
 }
