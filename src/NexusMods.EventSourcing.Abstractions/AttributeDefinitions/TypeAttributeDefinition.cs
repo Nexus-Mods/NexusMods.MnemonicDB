@@ -7,12 +7,12 @@ namespace NexusMods.EventSourcing.Abstractions.AttributeDefinitions;
 /// An attribute for the type of an entity.
 /// </summary>
 /// <param name="attrName"></param>
-public class TypeAttributeDefinition : IAttribute<TypeAccumulator>
+public class TypeAttributeDefinition : IAttribute<ScalarAccumulator<Type>>
 {
     /// <inheritdoc />
-    public TypeAccumulator CreateAccumulator()
+    public ScalarAccumulator<Type> CreateAccumulator()
     {
-        return new TypeAccumulator();
+        return new ScalarAccumulator<Type>();
     }
 
     /// <inheritdoc />
@@ -30,8 +30,11 @@ public class TypeAttributeDefinition : IAttribute<TypeAccumulator>
     /// <returns></returns>
     public Type Get<TCtx>(TCtx context, EntityId owner) where TCtx : IEntityContext
     {
-        return context.GetAccumulator<IEntity, TypeAttributeDefinition, TypeAccumulator>(owner, this)
-            .Get();
+        if (context.GetReadOnlyAccumulator<IEntity, TypeAttributeDefinition, ScalarAccumulator<Type>>(
+                new EntityId<IEntity>(owner), this, out var accumulator))
+            return accumulator.Value;
+        // TODO, make this a custom exception and extract it to another method
+        throw new InvalidOperationException("No type attribute found for entity");
     }
 
     /// <summary>
@@ -46,36 +49,7 @@ public class TypeAttributeDefinition : IAttribute<TypeAccumulator>
         where TEventCtx : IEventContext
         where TType : IEntity
     {
-        if (context.GetAccumulator<IEntity, TypeAttributeDefinition, TypeAccumulator>(EntityId<IEntity>.From(id.Value.Value), this, out var accumulator))
-            accumulator.Set(typeof(TType));
-    }
-}
-
-
-/// <summary>
-/// An accumulator for the type of an entity.
-/// </summary>
-public class TypeAccumulator : IAccumulator
-{
-    private Type _type = null!;
-
-    /// <summary>
-    /// Sets the value of the accumulator, can only ever be set once for a given accumulator.
-    /// </summary>
-    /// <param name="type"></param>
-    public void Set(Type type)
-    {
-        Debug.Assert(_type == null, "Type attribute can only ever be set once");
-        _type = type;
-    }
-
-    /// <summary>
-    /// Retrieves the value of the accumulator.
-    /// </summary>
-    /// <returns></returns>
-    public Type Get()
-    {
-        Debug.Assert(_type != null, "Type attribute must be set before it can be retrieved");
-        return _type;
+        if (context.GetAccumulator<IEntity, TypeAttributeDefinition, ScalarAccumulator<Type>>(EntityId<IEntity>.From(id.Value.Value), this, out var accumulator))
+            accumulator.Value = typeof(TType);
     }
 }

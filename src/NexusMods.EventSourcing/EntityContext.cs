@@ -28,7 +28,7 @@ public class EntityContext(IEventStore store) : IEntityContext
             return (TEntity) entity;
 
         var type = IEntity.TypeAttribute.Get(this, id.Value);
-        var newEntity = (TEntity)Activator.CreateInstance(type, this, id.Value)!;
+        var newEntity = (TEntity)Activator.CreateInstance(type, this, id)!;
 
         if (_entities.TryAdd(id.Value, newEntity))
             return newEntity;
@@ -98,13 +98,20 @@ public class EntityContext(IEventStore store) : IEntityContext
     }
 
     /// <inheritdoc />
-    public TAccumulator GetAccumulator<TOwner, TAttribute, TAccumulator>(EntityId ownerId, TAttribute attributeDefinition)
+    public bool GetReadOnlyAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> ownerId, TAttribute attributeDefinition,
+        out TAccumulator accumulator)
         where TOwner : IEntity
         where TAttribute : IAttribute<TAccumulator>
         where TAccumulator : IAccumulator
     {
-        var values = GetAccumulators(ownerId);
-        return (TAccumulator) values[attributeDefinition];
+        var values = GetAccumulators(ownerId.Value);
+        if (values.TryGetValue(attributeDefinition, out var value))
+        {
+            accumulator = (TAccumulator) value;
+            return true;
+        }
+        accumulator = default!;
+        return false;
     }
 
     /// <summary>

@@ -53,7 +53,7 @@ public class BasicFunctionalityTests
 
 
     [Fact]
-    public async void CanDeleteEntities()
+    public void CanDeleteEntities()
     {
         var loadoutEvent = CreateLoadout.Create("Test");
         _ctx.Add(loadoutEvent);
