@@ -19,4 +19,16 @@
       <PackageReference Include="BenchmarkDotNet" Version="0.13.11" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Remove="BenchmarkDotNet.Artifacts\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Remove="BenchmarkDotNet.Artifacts\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="BenchmarkDotNet.Artifacts\**" />
+    </ItemGroup>
+
 </Project>

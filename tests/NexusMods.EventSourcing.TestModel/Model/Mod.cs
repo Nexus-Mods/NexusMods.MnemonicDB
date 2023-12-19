@@ -1,5 +1,4 @@
 using NexusMods.EventSourcing.Abstractions;
-using ReactiveUI.Fody.Helpers;
 
 namespace NexusMods.EventSourcing.TestModel.Model;
 

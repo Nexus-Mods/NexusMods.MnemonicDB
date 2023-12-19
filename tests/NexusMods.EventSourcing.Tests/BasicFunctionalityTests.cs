@@ -125,11 +125,11 @@ public class BasicFunctionalityTests
         var modId = AddMod.Create(tx, "First Mod", loadoutId);
         tx.Commit();
 
-        var loadout = _ctx.Get<LoadoutRegistry>();
-        loadout.Loadouts.Should().NotBeEmpty();
+        var loadoutRegistry = _ctx.Get<LoadoutRegistry>();
+        loadoutRegistry.Loadouts.Should().NotBeEmpty();
 
         var called = false;
-        ((INotifyCollectionChanged)loadout.Loadouts).CollectionChanged += (sender, args) =>
+        ((INotifyCollectionChanged)loadoutRegistry.Loadouts).CollectionChanged += (sender, args) =>
         {
             called = true;
             args.Action.Should().Be(NotifyCollectionChangedAction.Add);
@@ -137,11 +137,11 @@ public class BasicFunctionalityTests
         };
 
         using var tx2 = _ctx.Begin();
-        var modId2 = AddMod.Create(tx2, "Second Mod", loadoutId);
+        var loadout2Id = CreateLoadout.Create(tx2, "Test 2");
         tx2.Commit();
 
         called.Should().BeTrue();
-        loadout.Loadouts.Should().NotBeEmpty();
+        loadoutRegistry.Loadouts.Should().NotBeEmpty();
     }
 
     [Fact]

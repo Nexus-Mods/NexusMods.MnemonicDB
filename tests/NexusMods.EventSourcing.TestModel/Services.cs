@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Events;
 
 namespace NexusMods.EventSourcing.TestModel;
 
