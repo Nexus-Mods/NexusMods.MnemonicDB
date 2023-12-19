@@ -1,5 +1,3 @@
-using System.Threading.Tasks;
-
 namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
@@ -33,6 +31,12 @@ public interface IEntityContext
     /// <returns></returns>
     public TransactionId Add<TEvent>(TEvent entity) where TEvent : IEvent;
 
+    /// <summary>
+    /// Starts a new transaction, events can be added to the transaction, then applied
+    /// at once by calling commit on the transaction.
+    /// </summary>
+    /// <returns></returns>
+    public ITransaction Begin();
 
     /// <summary>
     /// Gets the value of the attribute for the given entity.

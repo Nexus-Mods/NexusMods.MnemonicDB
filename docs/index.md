@@ -387,17 +387,199 @@ This interface is pretty simple, and is the only interface to KV stores like Roc
 In the future this interface may be updated to replay events in reverse, as some features like "Undo" may be much more efficient if events are read in reverse.
 
 
+## The IEvent Interface
+The `IEvent` interface is the core of the system, it defines a single `Apply` method that takes a IEventContext.
+
+!!!tip "Do not confuse the `IEventContext` with the similarly named `IEntityContext` the former defines the data that a `IEvent` needs to perform it write operations, while the latter defines the read-only side of the system."
+
+```csharp
+
+/// <summary>
+/// A single event that can be applied to an entity.
+/// </summary>
+[MemoryPackable(GenerateType.NoGenerate)]
+public interface IEvent
+{
+    /// <summary>
+    /// Applies the event to the entities attached to the event.
+    /// </summary>
+    void Apply<T>(T context) where T : IEventContext;
+}
+
+/// <summary>
+/// This is the context interface passed to event handlers, it allows the handler to attach new entities to the context
+/// </summary>
+public interface IEventContext
+{
+    /// <summary>
+    /// Gets the accumulator for the given attribute definition, if the accumulator does not exist it will be created. If
+    /// the context is not setup for this entityId then false will be returned and the accumulator should be ignored.
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <param name="entityId"></param>
+    /// <param name="attributeDefinition"></param>
+    /// <param name="accumulator"></param>
+    /// <typeparam name="TOwner"></typeparam>
+    /// <typeparam name="TAttribute"></typeparam>
+    /// <typeparam name="TAccumulator"></typeparam>
+    /// <returns></returns>
+    public bool GetAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> entityId,
+        TAttribute attributeDefinition,
+        [NotNullWhen(true)] out TAccumulator accumulator)
+        where TAttribute : IAttribute<TAccumulator>
+        where TAccumulator : IAccumulator
+        where TOwner : IEntity;
+}
+```
+
+Granted this code looks a bit like word salad, but thankfully the `IEventContext` is never used directly by event implementations, it is passed on to the attributes which are rarely implemented
+by end-user developers. The key thing to see here is that the `IEventContext` is responsible for creating and retrieving accumulators. The perhaps strange thing about this
+method is that it returns `bool` and the accumulator is an `out` parameter. This is because the context is free to ignore the accumulator request if the given context does not wish to process
+the accumulator change. Thus internally each attribute will check this value and short circuit if the accumulator is not needed. This pattern allows the framework to interrogate the event
+and gather information about it simply by calling `Apply` on the event, without having to actually apply the event to the read model.
+
+The most common form of interrogation is to log the `EntityId`s that are passed to the `GetAccumulator` method. Using this information the framework
+can quickly determine what entities are affected by the event, and thus how to index the event in the datastore.
+
+Armed with this knowledge, let's take a look at a simple attribute implementation, starting first with the `IAttribute` interface
+
+### IAttribute
+
+```csharp
+
+public interface IAttribute
+{
+    public Type Owner { get; }
+
+    public string Name { get; }
+}
+
+public interface IAttribute<TAccumulator> : IAttribute where TAccumulator : IAccumulator
+{
+    public TAccumulator CreateAccumulator();
+}
+
+public interface IAccumulator
+{
+}
+```
+
+Since most of the logic for attributes is contained in the attributes themselves, the interfaces here are quite simple and opaque.
+An attribute has a name and a type, and the typed version returns a new accumulator. The accumulator has no public methods as its implementation
+is hidden to the the attribute itself. The accumulator is simply a mutable object that is used to store mutable the data for the attribute for a given entity.
+
+Let's look an actual implementation:
+
+```csharp
+public class ScalarAttribute<TOwner, TType>(string attrName) : IAttribute<ScalarAccumulator<TType>>
+where TOwner : AEntity<TOwner>
+{
+    #region Framework API
+    public Type Owner => typeof(TOwner);
+    public string Name => attrName;
+
+    public ScalarAccumulator<TType> CreateAccumulator()
+    {
+        return new ScalarAccumulator<TType>();
+    }
+    #endregion
+
+    #region Attribute DSL
+    public void Set<TContext>(TContext context, EntityId<TOwner> owner, TType value)
+        where TContext : IEventContext
+    {
+        if (context.GetAccumulator<TOwner, ScalarAttribute<TOwner, TType>, ScalarAccumulator<TType>>(owner, this, out var accumulator))
+            accumulator.Value = value;
+    }
+
+    public void Unset<TContext>(TContext context, EntityId<TOwner> owner)
+        where TContext : IEventContext
+    {
+        if (context.GetAccumulator<TOwner, ScalarAttribute<TOwner, TType>, ScalarAccumulator<TType>>(owner, this, out var accumulator))
+            accumulator.Value = default!;
+    }
+
+    public TType Get(TOwner owner)
+    {
+        if (owner.Context.GetReadOnlyAccumulator<TOwner, ScalarAttribute<TOwner, TType>, ScalarAccumulator<TType>>(owner.Id, this, out var accumulator))
+            return accumulator.Value;
+        throw new InvalidOperationException($"Attribute not found for {Name} on {Owner.Name} with id {owner.Id}");
+    }
+    #endregion
+}
+
+public class ScalarAccumulator<TVal> : IAccumulator
+{
+    public TVal Value = default! ;
+}
+
+```
+
+The attribute is divided into two logical parts: the framework specific methods, and the attribute DSL. Each attribute is free
+to define its own DSL and is encouraged to make it as easy to use as possible. Note the `if` in every write method that short-circuts
+the work if the accumulator is not found. Also note the general DSL pattern: get an accumulator from the context, manipulate the context.
+
+!!!tip "The event ingestion for a given entity are always single threaded, thus it is not required to make accumulators explicitly thread-safe. It is assumed that they will only ever be modified by one thread at a time"
+
+### IEntityContext
+The final piece in this puzzle is the `IEntityContext` interface. This interface is responsible for creating and retrieving entities, as well
+as replaying events, and accepting new events from the application. This interface is the primary abstraction applications will use to interact
+with the framework.
+
+```csharp
+/// <summary>
+/// A context for working with entities and events. Multiple contexts can be used to work with different sets of entities
+/// as of different transaction ids.
+/// </summary>
+public interface IEntityContext
+{
+    public TEntity Get<TEntity>(EntityId<TEntity> id) where TEntity : IEntity;
+    public TEntity Get<TEntity>() where TEntity : ISingletonEntity;
 
 
+    public TransactionId Add<TEvent>(TEvent entity) where TEvent : IEvent;
+
+    // Used by attributes, not used directly by application developers
+    bool GetReadOnlyAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> ownerId, TAttribute attributeDefinition, out TAccumulator accumulator)
+        where TOwner : IEntity
+        where TAttribute : IAttribute<TAccumulator>
+        where TAccumulator : IAccumulator;
+}
+```
+
+To start with there are two gettters, one for singleton entities, and for non-singleton entities. These methods are often used
+for getting entities when the id of the entity is already known. Attributes may also use these methods to resolve entities and provide them
+to the application.
+
+The `Add` method is used to add new events to the datastore, and ratchet the state of the system forward.
+
+!!!info "It is assumed that the EntityContext will maintain a cache of the entities and accumulators in use by the system. Thus it is not required to cache these entities or restrict the amount of calls made to .Get()"
+
+The `GetReadOnlyAccumulator` method is used by attributes to get accumulators for entities. This method is not used directly by application developers.
 
 
+# Smaller features of the Framework
+
+## Reactive UI integration
+
+All entities support `INotifyPropertyChanged`, when the state of an entity changes via the ingestion of a new event, the entity will raise the `PropertyChanged` event for the modified attributes.
+This is the primary reason why all Attributes contain a `Name` field, as this field will be used to raise the `PropertyChanged` event.
+
+In addition, the multi-valued collection attributes implement `INotifyCollectionChanged` and will raise the `CollectionChanged` event when the collection is modified. The combination
+of these two interfaces means that the entities can be used directly with WPF, Avalonia, and other UI frameworks that support these interfaces.
 
 
+## Future areas for optimization
 
+### Dynamic lookup
+Currently calling a `Attribute.Get` method requires call to `IEntityContext.GetReadOnlyAccumulator`. In the current implementation of `EntityContext` this is a double dictionary lookup.
+The first lookup resolves the entity down to a collection of accumulators the second gets the accumulator for the given attribute. This fairly fast today, roughly 12ns per call, but it could likely be made
+faster via using the DLR to cache a revision of the entity state. In otherwords, setup a guard such as `if the entity cache is still valid, return this constant accumulator`. This would effectively make
+a call to `Attribute.Get` as performant as checking a field on the context and then a field lookup on an accumulator.
 
-
-
-
+### Weak Entities
+Currently once entities are loaded into a context they live forever. This is not a problem for initial testing, but the EntityContext should probably store these entities
+in a dictionary with weak references to the entities so they can be garbage collected if they are no longer in use.
 
 
 

@@ -1,27 +1,19 @@
-using System;
-using System.Threading.Tasks;
 using MemoryPack;
 using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Events;
 
+/// <summary>
+/// An aggregate event that groups together a set of events that should be applied together.
+/// </summary>
+[EventId("DFEC36C4-ACAB-405D-AAEE-2F6348BA108F")]
 [MemoryPackable]
-public class TransactionEvent : IEvent
+public partial record TransactionEvent(IEvent[] Events) : IEvent
 {
-    /// <summary>
-    /// A list of events that are part of the transaction.
-    /// </summary>
-    public required EventAndIds[] Events { get; init; }
-
-    /// <summary>
-    /// Applies all the events in the transaction to the entities attached to the events.
-    /// </summary>
-    /// <param name="context"></param>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
+    /// <inheritdoc />
     public void Apply<T>(T context) where T : IEventContext
     {
         foreach (var evt in Events)
-            evt.Event.Apply(context);
+            evt.Apply(context);
     }
 }

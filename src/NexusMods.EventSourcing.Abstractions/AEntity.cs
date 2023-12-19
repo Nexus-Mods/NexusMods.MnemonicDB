@@ -18,7 +18,7 @@ public abstract class AEntity<TEntity> : IEntity
     /// <summary>
     /// The typed entity id.
     /// </summary>
-    protected internal readonly EntityId<TEntity> Id;
+    public readonly EntityId<TEntity> Id;
 
     /// <summary>
     /// The base class for all entities.

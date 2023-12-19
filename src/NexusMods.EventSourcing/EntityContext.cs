@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing;
@@ -120,6 +118,12 @@ public class EntityContext(IEventStore store) : IEntityContext
         }
         accumulator = default!;
         return false;
+    }
+
+    /// <inheritdoc />
+    public ITransaction Begin()
+    {
+        return new Transaction(this, new List<IEvent>());
     }
 
     /// <summary>

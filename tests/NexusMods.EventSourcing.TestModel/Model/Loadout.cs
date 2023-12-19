@@ -18,4 +18,9 @@ public class Loadout(IEntityContext context, EntityId<Loadout> id) : AEntity<Loa
     public ReadOnlyObservableCollection<Mod> Mods => _mods.Get(this);
     internal static readonly MultiEntityAttributeDefinition<Loadout, Mod> _mods = new(nameof(Mods));
 
+    /// <summary>
+    /// The Collections contained in the loadout.
+    /// </summary>
+    public ReadOnlyObservableCollection<Collection> Collections => _collections.Get(this);
+    internal static readonly MultiEntityAttributeDefinition<Loadout, Collection> _collections = new(nameof(Collections));
 }

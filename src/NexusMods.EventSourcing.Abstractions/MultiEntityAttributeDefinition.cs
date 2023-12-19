@@ -37,6 +37,21 @@ public class MultiEntityAttributeDefinition<TOwner, TOther>(string name) : IAttr
     }
 
     /// <summary>
+    /// Adds multiple links to the other entity.
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="owner"></param>
+    /// <param name="value"></param>
+    /// <typeparam name="TContext"></typeparam>
+    public void AddAll<TContext>(TContext context, EntityId<TOwner> owner, EntityId<TOther>[] values)
+        where TContext : IEventContext
+    {
+        if (context.GetAccumulator<TOwner, MultiEntityAttributeDefinition<TOwner, TOther>, MultiEntityAccumulator<TOther>>(owner, this, out var accumulator))
+            foreach (var value in values)
+                accumulator.Add(value);
+    }
+
+    /// <summary>
     /// Removes a link to the other entity.
     /// </summary>
     /// <param name="context"></param>

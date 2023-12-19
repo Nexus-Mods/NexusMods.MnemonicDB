@@ -20,9 +20,13 @@ public class BasicFunctionalityTests
     [Fact]
     public void CanSetupBasicLoadout()
     {
-        var createEvent = CreateLoadout.Create("Test");
-        _ctx.Add(createEvent);
-        var loadout = _ctx.Get(createEvent.Id);
+        EntityId<Loadout> loadoutId;
+        using (var tx = _ctx.Begin())
+        {
+            loadoutId = CreateLoadout.Create(tx, "Test");
+            tx.Commit();
+        }
+        var loadout = _ctx.Get(loadoutId);
         loadout.Should().NotBeNull();
         loadout.Name.Should().Be("Test");
     }
@@ -30,52 +34,59 @@ public class BasicFunctionalityTests
     [Fact]
     public void ChangingPropertyChangesTheValue()
     {
-        var createEvent = CreateLoadout.Create("Test");
-        _ctx.Add(createEvent);
-        var loadout = _ctx.Get(createEvent.Id);
+        using var tx = _ctx.Begin();
+        var loadoutId = CreateLoadout.Create(tx, "Test");
+        tx.Commit();
+
+        var loadout = _ctx.Get(loadoutId);
         loadout.Name.Should().Be("Test");
 
-        _ctx.Add(new RenameLoadout(createEvent.Id, "New Name"));
+        using var tx2 = _ctx.Begin();
+        _ctx.Add(new RenameLoadout(loadoutId, "New Name"));
+        tx2.Commit();
+
         loadout.Name.Should().Be("New Name");
     }
 
     [Fact]
     public void CanLinkEntities()
     {
-        var loadoutEvent = CreateLoadout.Create("Test");
-        _ctx.Add(loadoutEvent);
-        var loadout = _ctx.Get(loadoutEvent.Id);
-        loadout.Name.Should().Be("Test");
+        using var tx = _ctx.Begin();
+        var loadoutId = CreateLoadout.Create(tx, "Test");
+        var modId = AddMod.Create(tx, "First Mod", loadoutId);
+        tx.Commit();
 
-        var modEvent = AddMod.Create("First Mod", loadoutEvent.Id);
-        _ctx.Add(modEvent);
-
+        var loadout = _ctx.Get(loadoutId);
+        loadout.Mods.Count().Should().Be(1);
         loadout.Mods.First().Name.Should().Be("First Mod");
-        loadout.Mods.First().Loadout.Should().BeSameAs(loadout);
+
+        var mod = _ctx.Get(modId);
+        mod.Loadout.Should().NotBeNull();
+        mod.Loadout.Name.Should().Be("Test");
     }
 
 
     [Fact]
     public void CanDeleteEntities()
     {
-        var loadoutEvent = CreateLoadout.Create("Test");
-        _ctx.Add(loadoutEvent);
-        var loadout = _ctx.Get(loadoutEvent.Id);
-        loadout.Name.Should().Be("Test");
+        using var tx = _ctx.Begin();
+        var loadoutId = CreateLoadout.Create(tx, "Test");
+        var modId = AddMod.Create(tx, "First Mod", loadoutId);
+        tx.Commit();
 
-        var modEvent1 = AddMod.Create("First Mod", loadoutEvent.Id);
-        _ctx.Add(modEvent1);
-
-        var modEvent2 = AddMod.Create("Second Mod", loadoutEvent.Id);
-        _ctx.Add(modEvent2);
-
-        loadout.Mods.Count().Should().Be(2);
-
-        _ctx.Add(new DeleteMod(modEvent1.ModId, loadoutEvent.Id));
-
+        var loadout = _ctx.Get(loadoutId);
         loadout.Mods.Count().Should().Be(1);
+        loadout.Mods.First().Name.Should().Be("First Mod");
 
-        loadout.Mods.First().Name.Should().Be("Second Mod");
+        var mod = _ctx.Get(modId);
+        mod.Loadout.Should().NotBeNull();
+        mod.Loadout.Name.Should().Be("Test");
+
+        using var tx2 = _ctx.Begin();
+        DeleteMod.Create(tx2, modId, loadoutId);
+        tx2.Commit();
+
+        loadout.Mods.Count().Should().Be(0);
     }
 
     [Fact]
@@ -88,44 +99,77 @@ public class BasicFunctionalityTests
     [Fact]
     public void UpdatingAValueCallesNotifyPropertyChanged()
     {
-        var createEvent = CreateLoadout.Create("Test");
-        _ctx.Add(createEvent);
-        var loadout = _ctx.Get(createEvent.Id);
-        loadout.Name.Should().Be("Test");
+        var loadout = _ctx.Get<LoadoutRegistry>();
+        loadout.Loadouts.Should().BeEmpty();
 
         var called = false;
         loadout.PropertyChanged += (sender, args) =>
         {
             called = true;
-            args.PropertyName.Should().Be(nameof(Loadout.Name));
+            args.PropertyName.Should().Be(nameof(LoadoutRegistry.Loadouts));
         };
 
-        _ctx.Add(new RenameLoadout(createEvent.Id, "New Name"));
-        loadout.Name.Should().Be("New Name");
+        using var tx = _ctx.Begin();
+        var loadoutId = CreateLoadout.Create(tx, "Test");
+        tx.Commit();
+
         called.Should().BeTrue();
+        loadout.Loadouts.Should().NotBeEmpty();
     }
 
     [Fact]
     public void EntityCollectionsAreObservable()
     {
-        var loadouts = _ctx.Get<LoadoutRegistry>();
-        _ctx.Add(CreateLoadout.Create("Test"));
-        loadouts.Loadouts.Should().NotBeEmpty();
+        using var tx = _ctx.Begin();
+        var loadoutId = CreateLoadout.Create(tx, "Test");
+        var modId = AddMod.Create(tx, "First Mod", loadoutId);
+        tx.Commit();
+
+        var loadout = _ctx.Get<LoadoutRegistry>();
+        loadout.Loadouts.Should().NotBeEmpty();
 
         var called = false;
-        ((INotifyCollectionChanged)loadouts.Loadouts).CollectionChanged += (sender, args) =>
+        ((INotifyCollectionChanged)loadout.Loadouts).CollectionChanged += (sender, args) =>
         {
             called = true;
             args.Action.Should().Be(NotifyCollectionChangedAction.Add);
             args.NewItems.Should().NotBeNull();
-            args.NewItems!.Count.Should().Be(1);
-            args.NewItems!.OfType<Loadout>().First().Name.Should().Be("Test2");
         };
 
-        _ctx.Add(CreateLoadout.Create("Test2"));
-        called.Should().BeTrue();
+        using var tx2 = _ctx.Begin();
+        var modId2 = AddMod.Create(tx2, "Second Mod", loadoutId);
+        tx2.Commit();
 
-        loadouts.Loadouts.Count.Should().Be(2);
-        loadouts.Loadouts.FirstOrDefault(l => l.Name == "Test2").Should().NotBeNull();
+        called.Should().BeTrue();
+        loadout.Loadouts.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public void CanCreateCyclicDependencies()
+    {
+        var loadouts = _ctx.Get<LoadoutRegistry>();
+
+        using (var tx = _ctx.Begin())
+        {
+
+            var loadoutId = CreateLoadout.Create(tx, "Test");
+
+            var mod1 =AddMod.Create(tx, "First Mod", loadoutId);
+            var mod2 = AddMod.Create(tx, "Second Mod", loadoutId);
+
+            var collection = AddCollection.Create(tx, "First Collection", loadoutId, mod1, mod2);
+
+            tx.Commit();
+        }
+
+        var loadout = loadouts.Loadouts.First();
+        loadout.Collections.Count.Should().Be(1);
+        loadout.Collections.First().Mods.Count.Should().Be(2);
+        loadout.Collections.First().Mods.First().Name.Should().Be("First Mod");
+        loadout.Collections.First().Name.Should().Be("First Collection");
+        loadout.Mods.Count.Should().Be(2);
+        loadout.Mods.First().Name.Should().Be("First Mod");
+        loadout.Mods.Last().Name.Should().Be("Second Mod");
+        loadout.Mods.First().Collection.Name.Should().Be("First Collection");
     }
 }

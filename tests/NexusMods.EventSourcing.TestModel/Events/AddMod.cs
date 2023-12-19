@@ -25,6 +25,10 @@ public partial record AddMod(string Name, bool Enabled, EntityId<Mod> ModId, Ent
     /// <param name="loadoutId"></param>
     /// <param name="enabled"></param>
     /// <returns></returns>
-    public static AddMod Create(string name, EntityId<Loadout> loadoutId, bool enabled = true)
-        => new(name, enabled, EntityId<Mod>.NewId(), loadoutId);
+    public static EntityId<Mod> Create(ITransaction tx, string name, EntityId<Loadout> loadoutId, bool enabled = true)
+    {
+        var id = EntityId<Mod>.NewId();
+        tx.Add(new AddMod(name, enabled, id, loadoutId));
+        return id;
+    }
 }

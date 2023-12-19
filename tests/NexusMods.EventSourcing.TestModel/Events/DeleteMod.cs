@@ -13,4 +13,8 @@ public partial record DeleteMod(EntityId<Mod> ModId, EntityId<Loadout> LoadoutId
         Loadout._mods.Remove(context, LoadoutId, ModId);
         Mod._loadout.Unlink(context, ModId);
     }
+    public static void Create(ITransaction tx, EntityId<Mod> modId, EntityId<Loadout> loadoutId)
+    {
+        tx.Add(new DeleteMod(modId, loadoutId));
+    }
 }

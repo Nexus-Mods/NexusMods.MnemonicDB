@@ -5,7 +5,6 @@ namespace NexusMods.EventSourcing.TestModel.Model;
 
 public class Mod(IEntityContext context, EntityId<Mod> id) : AEntity<Mod>(context, id)
 {
-
     public Loadout Loadout => _loadout.Get(this);
     internal static readonly EntityAttributeDefinition<Mod, Loadout> _loadout = new(nameof(Loadout));
 
@@ -20,4 +19,11 @@ public class Mod(IEntityContext context, EntityId<Mod> id) : AEntity<Mod>(contex
     /// </summary>
     public bool Enabled => _enabled.Get(this);
     internal static readonly ScalarAttribute<Mod, bool> _enabled = new(nameof(Enabled));
+
+    /// <summary>
+    /// The Collection the mod is in, if any
+    /// </summary>
+    public Collection Collection => _collection.Get(this);
+    internal static readonly EntityAttributeDefinition<Mod, Collection> _collection = new(nameof(Collection));
+
 }

@@ -15,5 +15,10 @@ public partial record CreateLoadout(EntityId<Loadout> Id, string Name) : IEvent
         Loadout._name.Set(context, Id, Name);
         LoadoutRegistry._loadouts.Add(context, LoadoutRegistry.SingletonId, Id);
     }
-    public static CreateLoadout Create(string name) => new(EntityId<Loadout>.NewId(), name);
+    public static EntityId<Loadout> Create(ITransaction tx, string name)
+    {
+        var id = EntityId<Loadout>.NewId();
+        tx.Add(new CreateLoadout(id, name));
+        return id;
+    }
 }
