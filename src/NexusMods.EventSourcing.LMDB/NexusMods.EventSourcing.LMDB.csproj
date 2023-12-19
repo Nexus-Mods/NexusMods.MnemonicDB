@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="LightningDB" Version="0.16.0" />
+      <PackageReference Include="NexusMods.Paths" Version="0.4.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\NexusMods.EventSourcing.Abstractions\NexusMods.EventSourcing.Abstractions.csproj" />
+      <ProjectReference Include="..\NexusMods.EventSourcing\NexusMods.EventSourcing.csproj" />
+    </ItemGroup>
+
+</Project>

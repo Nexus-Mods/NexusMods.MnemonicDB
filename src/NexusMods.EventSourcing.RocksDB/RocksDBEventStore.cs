@@ -40,29 +40,29 @@ public class RocksDBEventStore<TSerializer> : IEventStore
     public TransactionId Add<T>(T eventValue) where T : IEvent
     {
         lock (this)
-        {
-            _tx = _tx.Next();
+         {
+             _tx = _tx.Next();
 
-            {
-                Span<byte> keySpan = stackalloc byte[8];
-                BinaryPrimitives.WriteUInt64BigEndian(keySpan, _tx.Value);
-                var serialized = _serializer.Serialize(eventValue);
-                _db.Put(keySpan, serialized, _eventsColumn);
-            }
+             {
+                 Span<byte> keySpan = stackalloc byte[8];
+                 BinaryPrimitives.WriteUInt64BigEndian(keySpan, _tx.Value);
+                 var serialized = _serializer.Serialize(eventValue);
+                 _db.Put(keySpan, serialized, _eventsColumn);
+             }
 
-            {
-                var ingester = new ModifiedEntitiesIngester();
-                eventValue.Apply(ingester);
-                Span<byte> keySpan = stackalloc byte[24];
-                BinaryPrimitives.WriteUInt64BigEndian(keySpan[16..], _tx.Value);
-                foreach (var entityId in ingester.Entities)
-                {
-                    entityId.Value.TryWriteBytes(keySpan);
-                    _db.Put(keySpan, keySpan, _entityIndexColumn);
-                }
-            }
-            return _tx;
-        }
+             {
+                 var ingester = new ModifiedEntitiesIngester();
+                 eventValue.Apply(ingester);
+                 Span<byte> keySpan = stackalloc byte[24];
+                 BinaryPrimitives.WriteUInt64BigEndian(keySpan[16..], _tx.Value);
+                 foreach (var entityId in ingester.Entities)
+                 {
+                     entityId.Value.TryWriteBytes(keySpan);
+                     _db.Put(keySpan, keySpan, _entityIndexColumn);
+                 }
+             }
+             return _tx;
+         }
     }
 
     public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester) where TIngester : IEventIngester
