@@ -8,7 +8,7 @@ using NexusMods.EventSourcing.FasterKV;
 using NexusMods.EventSourcing.RocksDB;
 using NexusMods.EventSourcing.TestModel;
 
-
+/*
 #if DEBUG
 var readBenchmarks = new EntityContextBenchmarks();
 readBenchmarks.EventStoreType = typeof(RocksDBEventStore<EventSerializer>);
@@ -21,4 +21,16 @@ readBenchmarks.LoadAllEntities();
 Console.WriteLine("LoadAllEntities done");
 #else
 BenchmarkRunner.Run<EntityContextBenchmarks>();
+#endif
+*/
+
+#if DEBUG
+var benchmarks = new AccumulatorBenchmarks();
+for (int i = 0; i < 10_000_000; i++)
+{
+    benchmarks.GetMultiAttributeItems();
+}
+
+#else
+BenchmarkRunner.Run<AccumulatorBenchmarks>();
 #endif

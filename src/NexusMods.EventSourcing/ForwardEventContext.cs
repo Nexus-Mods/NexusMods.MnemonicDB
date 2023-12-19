@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing;
@@ -9,7 +10,7 @@ namespace NexusMods.EventSourcing;
 /// accumulators and entities. In other words is for moving a
 /// </summary>
 /// <param name="trackedValues"></param>
-public readonly struct ForwardEventContext(ConcurrentDictionary<EntityId, Dictionary<IAttribute, IAccumulator>> trackedEntities, HashSet<(EntityId, string)> updatedAttributes) : IEventContext
+public readonly struct ForwardEventContext(ImmutableDictionary<EntityId, Dictionary<IAttribute, IAccumulator>> trackedEntities, HashSet<(EntityId, string)> updatedAttributes) : IEventContext
 {
     /// <inheritdoc />
     public bool GetAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> entityId, TAttribute attributeDefinition, out TAccumulator accumulator)
