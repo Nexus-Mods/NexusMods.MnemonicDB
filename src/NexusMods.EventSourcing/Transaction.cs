@@ -17,7 +17,9 @@ internal class Transaction(IEntityContext context, List<IEvent> events) : ITrans
     {
         if (events.Count == 1)
             return context.Add(events[0]);
-        return context.Add(new TransactionEvent(events.ToArray()));
+        var id = context.Add(new TransactionEvent(events.ToArray()));
+        events.Clear();
+        return id;
     }
 
     public void Dispose()

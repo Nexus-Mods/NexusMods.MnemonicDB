@@ -12,4 +12,9 @@ public partial record RenameLoadout(EntityId<Loadout> Id, string Name) : IEvent
     {
         Loadout._name.Set(context, Id, Name);
     }
+
+    public static void Create(ITransaction tx, EntityId<Loadout> id, string name)
+    {
+        tx.Add(new RenameLoadout(id, name));
+    }
 }

@@ -105,7 +105,7 @@ public class EntityContext(IEventStore store) : IEntityContext
 
     /// <inheritdoc />
     public bool GetReadOnlyAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> ownerId, TAttribute attributeDefinition,
-        out TAccumulator accumulator)
+        out TAccumulator accumulator, bool createIfMissing = false)
         where TOwner : IEntity
         where TAttribute : IAttribute<TAccumulator>
         where TAccumulator : IAccumulator
@@ -116,6 +116,19 @@ public class EntityContext(IEventStore store) : IEntityContext
             accumulator = (TAccumulator) value;
             return true;
         }
+
+        if (createIfMissing)
+        {
+            var newAccumulator = attributeDefinition.CreateAccumulator();
+            if (values.TryAdd(attributeDefinition, newAccumulator))
+            {
+                accumulator = newAccumulator;
+                return true;
+            }
+            accumulator = (TAccumulator) values[attributeDefinition];
+            return true;
+        }
+
         accumulator = default!;
         return false;
     }

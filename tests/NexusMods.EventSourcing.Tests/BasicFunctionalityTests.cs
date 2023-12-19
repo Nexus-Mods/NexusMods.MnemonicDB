@@ -99,22 +99,28 @@ public class BasicFunctionalityTests
     [Fact]
     public void UpdatingAValueCallesNotifyPropertyChanged()
     {
-        var loadout = _ctx.Get<LoadoutRegistry>();
-        loadout.Loadouts.Should().BeEmpty();
-
-        var called = false;
-        loadout.PropertyChanged += (sender, args) =>
-        {
-            called = true;
-            args.PropertyName.Should().Be(nameof(LoadoutRegistry.Loadouts));
-        };
+        var loadouts = _ctx.Get<LoadoutRegistry>();
+        loadouts.Loadouts.Should().BeEmpty();
 
         using var tx = _ctx.Begin();
         var loadoutId = CreateLoadout.Create(tx, "Test");
         tx.Commit();
 
+        var loadout = _ctx.Get(loadoutId);
+
+        var called = false;
+        loadout.PropertyChanged += (sender, args) =>
+        {
+            called = true;
+            args.PropertyName.Should().Be(nameof(Loadout.Name));
+        };
+
+        using var tx2 = _ctx.Begin();
+        RenameLoadout.Create(tx2, loadoutId, "New Name");
+        tx2.Commit();
+
         called.Should().BeTrue();
-        loadout.Loadouts.Should().NotBeEmpty();
+        loadout.Name.Should().Be("New Name");
     }
 
     [Fact]

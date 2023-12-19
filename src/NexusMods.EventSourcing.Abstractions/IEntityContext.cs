@@ -39,17 +39,19 @@ public interface IEntityContext
     public ITransaction Begin();
 
     /// <summary>
-    /// Gets the value of the attribute for the given entity.
+    /// Gets the value of the attribute for the given entity. If createIfMissing is true, then the attribute will be
+    /// created if it does not exist, this is useful for attributes that have a default "empty" value.
     /// </summary>
     /// <param name="ownerId"></param>
     /// <param name="attributeDefinition"></param>
     /// <param name="accumulator"></param>
+    /// <param name="createIfMissing"></param>
     /// <typeparam name="TType"></typeparam>
     /// <typeparam name="TOwner"></typeparam>
     /// <typeparam name="TAttribute"></typeparam>
     /// <typeparam name="TAccumulator"></typeparam>
     /// <returns></returns>
-    bool GetReadOnlyAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> ownerId, TAttribute attributeDefinition, out TAccumulator accumulator)
+    bool GetReadOnlyAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> ownerId, TAttribute attributeDefinition, out TAccumulator accumulator, bool createIfMissing = false)
         where TOwner : IEntity
         where TAttribute : IAttribute<TAccumulator>
         where TAccumulator : IAccumulator;
