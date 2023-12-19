@@ -234,9 +234,157 @@ different ways. The attributes cannot be renamed because they are in several ind
 most of these indexes are useless for our use case, we only ever need to know the state of an entity at a given time. The only index we ever need is
 `eavt` and we don't need anything but `et` on the datom.
 
+Let's condense all we've learned into a new model.
+
+### The "Nexus" pattern
+The pattern used by this library takes *heavy* inspiration from Datomic, but is much more opinionated about the shape of the data. Instead
+of storing datoms we store events. Events are C# objects with a single `Apply` method. The read model for the framework is a
+collection of `IEntity` objects. These objects define static attributes which are C# instances of `IAttribute`. These entity objects
+then get their property methods by calling `IAttribute.Get` with the entity instance. This allows the framework to define how
+attributes are stored, and how they are retrieved.
+
+What is serialized to disk is the state of the events, not the attributes, or the entities. This means that if we change the shape
+of an event at any time, and the change will retroactively be applied to all events. Each event may store one or more entity IDs.
+This is the primary issue with this model, it is not possible to have an event add entity IDs from its list of dependencies. If a need
+for this arises the entire store would have to reindex the events. But to start with, let's take a look at some example code.
+
+```csharp
+public class LoadoutRegistry(IEntityContext context) : AEntity<LoadoutRegistry>(context, SingletonId), ISingletonEntity
+{
+    /// <summary>
+    /// A singleton id for the loadout registry
+    /// </summary>
+    public static EntityId<LoadoutRegistry> SingletonId => EntityId<LoadoutRegistry>.From("10BAE6BA-D5F9-40F4-AF7F-CCA1417C3BB0");
+
+    /// <summary>
+    /// The loadouts in the registry.
+    /// </summary>
+    public ReadOnlyObservableCollection<Loadout> Loadouts => _loadouts.Get(this);
+    internal static readonly MultiEntityAttributeDefinition<LoadoutRegistry, Loadout> _loadouts = new(nameof(Loadouts));
+
+}
+
+public class Loadout(IEntityContext context, EntityId<Loadout> id) : AEntity<Loadout>(context, id)
+{
+    /// <summary>
+    /// The human readable name of the loadout.
+    /// </summary>
+    public string Name => _name.Get(this);
+    internal static readonly ScalarAttribute<Loadout, string> _name = new(nameof(Name));
+
+    /// <summary>
+    /// The mods in the loadout.
+    /// </summary>
+    public ReadOnlyObservableCollection<Mod> Mods => _mods.Get(this);
+    internal static readonly MultiEntityAttributeDefinition<Loadout, Mod> _mods = new(nameof(Mods));
+
+}
+
+[EventId("63A4CB90-27E2-468A-BE94-CB01A38D8C09")]
+[MemoryPackable]
+public partial record CreateLoadout(EntityId<Loadout> Id, string Name) : IEvent
+{
+    public void Apply<T>(T context) where T : IEventContext
+    {
+        IEntity.TypeAttribute.New(context, Id);
+        Loadout._name.Set(context, Id, Name);
+        LoadoutRegistry._loadouts.Add(context, LoadoutRegistry.SingletonId, Id);
+    }
+    // Helper method to create the event with a new id
+    public static CreateLoadout Create(string name) => new(EntityId<Loadout>.NewId(), name);
+}
 
 
+var ctx = <get context from somewhere>;
+var registry = ctx.Get<LoadoutRegistry>(); // No ID needed, it's a singleton
+ctx.Add(CreateLoadout.Create("My Loadout"));
 
+Debug.Assert(registry.Loadouts.First().Name == "My Loadout");
+```
+
+There's a lot here, so let's start with the Entities. Entities are mostly wrappers over the context. We start by inheriting from `AEntity<T>`
+where `T` is the type of the entity. This is a helper class that provides some common functionality.
+And we must also pass in the context and the id (if it's not a singleton, singletons have their id as a static member).
+
+Next we define the attributes of the entity. These are static members of the entity class, and are instances of `IAttribute`. For simple scalar
+values we can use `ScalarAttribute<T, V>` where `T` is the type of the entity, and `V` is the type of the value. For collections of entities there are other attribute types.
+
+Finally we have to provide a getter for the attribute. This is done by calling `IAttribute.Get` with the entity instance. Since we are passing control
+to the attribute, the attribute itself has a lot of control over how the value is stored, and processed.
+
+!!!tip "Note that the only thing in this example that is written to the database is the event, attribute data, and entity data is *not* written to the datastore, this means we can redefine the rest of this logic on a whim, as long as the rest of the code compiles, the data should adapt to the new changes, more on this later"
+
+The next class we have is an event, this is a simple record type that implements `IEvent`. The event has a single `Apply` method that takes
+a Event Context. The apply method is generic so that we can reduce the amount of virtual calls performed in this method.
+Next we simply call methods on the attributes to "emit" changes to the model. Each attribute is free to define its own language for manipulation:
+the type attribute wants `.New` to be called to set the concrete type of the entity (yes polymorphic entities are supported). Scalar values simply have
+a `.Set` method that takes the entity id and the value. Multi entity attributes have a `.Add` method that takes the entity id and the value to add.
+
+Internally these attributes implement what is called an "accumulator", this can be considered an attribute specific "box" of data. How that box is manipulated is up
+to the attribute. When the getters on the attribute ask for a value, the attribute askes the entity context for the accumulator, and then return the value from that
+accumulator.
+
+!!! tip "The accumulator is a mutable object, but it is only mutated by the attribute itself, and the only time the attribute can be asked to modify the value is during the ingestion of events either from the datastore or from new events being inserted into the store".
+
+Each event must define a unique ID, this is used to identify the event in the datastore. If in the future the event needs to be renames, the old guid can be kept to make the
+code backwards compatible. The event also has a `[MemoryPackable]` attribute, this is used to tell the framework that this event can be serialized to memory.
+
+!!! tip "In Rider, if you need a new guid, you can create an empty string `""` then inside the string type `nguid` and press Enter, the IDE will auto-generate a new guid for you and insert it into the string"
+
+The `ctx.Add()` method is used to add a new event to the datastore, and "ratchet" the state of the system forward. In some cases
+events my define a static `Create` method that processes data and creates a new event. This is useful for creating events that need a
+certain amount of preprocessing or data massaging logic.
+
+
+## The parts of the system
+
+!!!info "This system makes heavy use of generics to remove virtual calls and improve performance. This does make the code a bit more verbose in some locations, but the inner parts of this framework are designed to reply thousands of events in a few milliseconds, where every last bit of performance is important"
+
+### The Event Store (IEventStore)
+The Event store interface is quite simple, it has a way to insert new events, and a way to get all events by entityID. Note that
+this interface does not return an `IEnumerable` and since it takes an generic ingester, the ingester can be (and often is) a struct
+wrapper around some sort of data structure.
+
+```csharp
+/// <summary>
+/// An event store is responsible for storing events and retrieving them (by entity id) for replay.
+/// </summary>
+public interface IEventStore
+{
+    /// <summary>
+    /// Add an event to the store, returns the transaction id of the insert.
+    /// </summary>
+    /// <param name="eventEntity"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public TransactionId Add<T>(T eventEntity) where T : IEvent;
+
+    /// <summary>
+    /// For each event for the given entity id, call the ingester.
+    /// </summary>
+    /// <param name="entityId"></param>
+    /// <param name="ingester"></param>
+    /// <typeparam name="TIngester"></typeparam>
+    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester)
+        where TIngester : IEventIngester;
+}
+
+/// <summary>
+/// A mostly internal interface that is used to ingest events from the event store.
+/// </summary>
+public interface IEventIngester
+{
+    /// <summary>
+    /// Ingests the given event into the context.
+    /// </summary>
+    /// <param name="event"></param>
+    /// <returns></returns>
+    public void Ingest(IEvent @event);
+}
+```
+
+This interface is pretty simple, and is the only interface to KV stores like RocksDB, FasterKV, etc. Infact most backends like RocksDB can be implemented in an hour of work, and be fully compliant with the interface.
+In the future this interface may be updated to replay events in reverse, as some features like "Undo" may be much more efficient if events are read in reverse.
 
 
 

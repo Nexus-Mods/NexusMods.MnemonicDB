@@ -6,6 +6,9 @@ namespace NexusMods.EventSourcing.TestModel.Model;
 
 public class LoadoutRegistry(IEntityContext context) : AEntity<LoadoutRegistry>(context, SingletonId), ISingletonEntity
 {
+    /// <summary>
+    /// A singleton id for the loadout registry
+    /// </summary>
     public static EntityId<LoadoutRegistry> SingletonId => EntityId<LoadoutRegistry>.From("10BAE6BA-D5F9-40F4-AF7F-CCA1417C3BB0");
 
     /// <summary>

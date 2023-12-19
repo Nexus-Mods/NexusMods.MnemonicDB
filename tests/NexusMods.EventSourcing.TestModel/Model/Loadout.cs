@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using DynamicData;
 using NexusMods.EventSourcing.Abstractions;
 
@@ -14,7 +15,7 @@ public class Loadout(IEntityContext context, EntityId<Loadout> id) : AEntity<Loa
     /// <summary>
     /// The mods in the loadout.
     /// </summary>
-    public IEnumerable<Mod> Mods => _mods.Get(this);
+    public ReadOnlyObservableCollection<Mod> Mods => _mods.Get(this);
     internal static readonly MultiEntityAttributeDefinition<Loadout, Mod> _mods = new(nameof(Mods));
 
 }
