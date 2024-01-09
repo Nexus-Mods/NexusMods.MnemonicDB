@@ -2,9 +2,7 @@
 
 using System;
 using BenchmarkDotNet.Running;
-using NexusMods.EventSourcing;
 using NexusMods.EventSourcing.Benchmarks;
-using NexusMods.EventSourcing.FasterKV;
 using NexusMods.EventSourcing.RocksDB;
 using NexusMods.EventSourcing.TestModel;
 

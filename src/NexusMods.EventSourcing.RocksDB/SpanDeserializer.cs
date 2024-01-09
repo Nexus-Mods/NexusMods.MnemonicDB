@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using NexusMods.EventSourcing.Abstractions;
 using RocksDbSharp;
 

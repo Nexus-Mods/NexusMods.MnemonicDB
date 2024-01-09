@@ -1,7 +1,11 @@
 using System;
+using System.Buffers;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
+/// <summary>
+/// A serializer for events, is typed to a specific writer type to reduce virtual calls internally
+/// </summary>
 public interface IEventSerializer
 {
     /// <summary>

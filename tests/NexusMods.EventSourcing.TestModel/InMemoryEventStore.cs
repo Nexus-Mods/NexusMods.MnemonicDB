@@ -1,3 +1,4 @@
+using System.Buffers;
 using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.TestModel;

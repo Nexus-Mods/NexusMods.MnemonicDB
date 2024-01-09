@@ -40,14 +40,14 @@ public class RocksDBEventStore<TSerializer> : IEventStore
     public TransactionId Add<T>(T eventValue) where T : IEvent
     {
         lock (this)
-         {
+        {
              _tx = _tx.Next();
 
              {
                  Span<byte> keySpan = stackalloc byte[8];
                  BinaryPrimitives.WriteUInt64BigEndian(keySpan, _tx.Value);
-                 var serialized = _serializer.Serialize(eventValue);
-                 _db.Put(keySpan, serialized, _eventsColumn);
+                 var span = _serializer.Serialize(eventValue);
+                 _db.Put(keySpan, span, _eventsColumn);
              }
 
              {
@@ -62,7 +62,7 @@ public class RocksDBEventStore<TSerializer> : IEventStore
                  }
              }
              return _tx;
-         }
+        }
     }
 
     public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester) where TIngester : IEventIngester

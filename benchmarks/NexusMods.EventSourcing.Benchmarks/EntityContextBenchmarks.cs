@@ -1,15 +1,10 @@
 using System;
 using BenchmarkDotNet.Attributes;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.FasterKV;
 using NexusMods.EventSourcing.RocksDB;
 using NexusMods.EventSourcing.TestModel;
 using NexusMods.EventSourcing.TestModel.Events;
 using NexusMods.EventSourcing.TestModel.Model;
-using NexusMods.Paths;
-using Settings = NexusMods.EventSourcing.FasterKV.Settings;
 
 namespace NexusMods.EventSourcing.Benchmarks;
 

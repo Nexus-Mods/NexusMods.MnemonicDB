@@ -8,7 +8,7 @@ public class PooledMemoryBufferWriter : IBufferWriter<byte>
     private IMemoryOwner<byte> _data;
     private int _idx;
 
-    public PooledMemoryBufferWriter(int initialCapacity)
+    public PooledMemoryBufferWriter(int initialCapacity = 1024)
     {
         _data = MemoryPool<byte>.Shared.Rent(initialCapacity);
         _idx = 0;
