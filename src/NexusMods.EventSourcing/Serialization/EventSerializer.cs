@@ -15,21 +15,19 @@ namespace NexusMods.EventSourcing.Serialization;
 
 using MemberDefinition = (ParameterInfo Ref, ParameterInfo Base, ParameterExpression Variable, ISerializer Serializer);
 
-public sealed class BinaryEventSerializer : IEventSerializer
+public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSerializer<IEvent>
 {
     private readonly PooledMemoryBufferWriter _writer;
 
     private readonly Dictionary<Type, EventSerializerDelegate> _serializerDelegates = new();
     private readonly Dictionary<UInt128, EventDeserializerDelegate> _deserializerDelegates = new();
 
-    private static readonly GuidSerializer _guidSerializer = new();
-
     /// <summary>
     /// Write an event to the given writer, and return the
     /// </summary>
     internal delegate void EventSerializerDelegate(IEvent @event);
 
-    private delegate IEvent EventDeserializerDelegate(ReadOnlySpan<byte> data);
+    private delegate int EventDeserializerDelegate(ReadOnlySpan<byte> data, out IEvent @event);
 
     public BinaryEventSerializer(IEnumerable<ISerializer> diInjectedSerializers, IEnumerable<EventDefinition> eventDefinitions)
     {
@@ -58,7 +56,8 @@ public sealed class BinaryEventSerializer : IEventSerializer
     public IEvent Deserialize(ReadOnlySpan<byte> data)
     {
         var id = BinaryPrimitives.ReadUInt128BigEndian(data);
-        return _deserializerDelegates[id](SliceFastStart(data, 16));
+        var used = _deserializerDelegates[id](SliceFastStart(data, 16), out var @event);
+        return @event;
     }
 
 
@@ -165,6 +164,9 @@ public sealed class BinaryEventSerializer : IEventSerializer
     private EventDeserializerDelegate BuildVariableSizeDeserializer(EventDefinition definition, MemberDefinition[] allParams,
         List<MemberDefinition> fixedParams, int fixedSize, List<MemberDefinition> unfixedParams)
     {
+
+        var outParam = Expression.Parameter(typeof(IEvent).MakeByRefType(), "output");
+
         var spanParam = Expression.Parameter(typeof(ReadOnlySpan<byte>));
 
         var ctorExpressions = new List<Expression>();
@@ -204,16 +206,22 @@ public sealed class BinaryEventSerializer : IEventSerializer
         var ctorCall = Expression.New(definition.Type.GetConstructors().First(c => c.GetParameters().Length == ctorParams.Length),
             ctorParams);
 
-        var casted = Expression.Convert(ctorCall, typeof(IEvent));
+        var casted = Expression.Assign(outParam, Expression.Convert(ctorCall, typeof(IEvent)));
         blockExprs.Add(casted);
+        blockExprs.Add(offsetVariable);
 
         var outerBlock = Expression.Block(ctorParams.Append(offsetVariable), blockExprs);
-        var lambda = Expression.Lambda<EventDeserializerDelegate>(outerBlock, spanParam);
+        var lambda = Expression.Lambda<EventDeserializerDelegate>(outerBlock, [spanParam, outParam]);
         return lambda.Compile();
     }
 
     private ISerializer GetSerializer(ISerializer[] serializers, Type type)
     {
+        if (type == typeof(IEvent))
+        {
+            return this;
+        }
+
         var result = serializers.FirstOrDefault(s => s.CanSerialize(type));
         if (result != null)
         {
@@ -225,11 +233,19 @@ public sealed class BinaryEventSerializer : IEventSerializer
             var genericMakers = serializers.OfType<IGenericSerializer>();
             foreach (var maker in genericMakers)
             {
-                if (maker.TrySpecialze(type.GetGenericTypeDefinition(), type.GetGenericArguments(), out var serializer))
+                if (maker.TrySpecialze(type.GetGenericTypeDefinition(),
+                        type.GetGenericArguments(), t => GetSerializer(serializers, t), out var serializer))
                 {
                     return serializer;
                 }
             }
+        }
+
+        if (type.IsArray)
+        {
+            var arrayMaker = serializers.OfType<GenericArraySerializer>().First();
+            arrayMaker.TrySpecialze(type, [type.GetElementType()!], t => GetSerializer(serializers, t), out var serializer);
+            return serializer!;
         }
 
         throw new Exception($"No serializer found for {type}");
@@ -237,6 +253,8 @@ public sealed class BinaryEventSerializer : IEventSerializer
 
     private EventDeserializerDelegate BuildFixedSizeDeserializer(EventDefinition definitions, MemberDefinition[] allDefinitions, List<MemberDefinition> fixedParams, int fixedSize)
     {
+        var outParam = Expression.Parameter(typeof(IEvent).MakeByRefType());
+
         var spanParam = Expression.Parameter(typeof(ReadOnlySpan<byte>));
 
         var blockExprs = new List<Expression>();
@@ -256,11 +274,13 @@ public sealed class BinaryEventSerializer : IEventSerializer
 
         var ctorCall = Expression.New(definitions.Type.GetConstructors().First(c => c.GetParameters().Length == allDefinitions.Length),
             allDefinitions.Select(d => d.Variable));
-        var casted = Expression.Convert(ctorCall, typeof(IEvent));
+        var casted = Expression.Assign(outParam, Expression.Convert(ctorCall, typeof(IEvent)));
         blockExprs.Add(casted);
 
+        blockExprs.Add(Expression.Constant(fixedSize));
+
         var outerBlock = Expression.Block(allDefinitions.Select(d => d.Variable), blockExprs);
-        var lambda = Expression.Lambda<EventDeserializerDelegate>(outerBlock, spanParam);
+        var lambda = Expression.Lambda<EventDeserializerDelegate>(outerBlock, [spanParam, outParam]);
         return lambda.Compile();
 
     }
@@ -406,4 +426,25 @@ public sealed class BinaryEventSerializer : IEventSerializer
     }
 
 
+    public bool CanSerialize(Type valueType)
+    {
+        return valueType == typeof(IEvent);
+    }
+
+    public bool TryGetFixedSize(Type valueType, out int size)
+    {
+        size = 0;
+        return false;
+    }
+
+    public void Serialize<TWriter>(IEvent value, TWriter output) where TWriter : IBufferWriter<byte>
+    {
+        _serializerDelegates[value.GetType()](value);
+    }
+
+    public int Deserialize(ReadOnlySpan<byte> from, out IEvent value)
+    {
+        var used = _deserializerDelegates[BinaryPrimitives.ReadUInt128BigEndian(from)](SliceFastStart(from, 16), out value);
+        return 16 + used;
+    }
 }

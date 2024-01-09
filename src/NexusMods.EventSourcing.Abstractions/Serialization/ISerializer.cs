@@ -30,5 +30,5 @@ public interface IVariableSizeSerializer<T> : ISerializer
 /// </summary>
 public interface IGenericSerializer : ISerializer
 {
-    public bool TrySpecialze(Type baseType, Type[] argTypes, [NotNullWhen(true)] out ISerializer? serializer);
+    public bool TrySpecialze(Type baseType, Type[] argTypes, Func<Type, ISerializer> serializerFinder, [NotNullWhen(true)] out ISerializer? serializer);
 }

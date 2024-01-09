@@ -11,6 +11,7 @@ public static class Services
     public static IServiceCollection AddEventSourcing(this IServiceCollection services)
     {
         return services
+            .AddSingleton<ISerializer, GenericArraySerializer>()
             .AddSingleton<ISerializer, GenericEntityIdSerializer>()
             .AddSingleton<ISerializer, StringSerializer>()
             .AddSingleton<ISerializer, BoolSerializer>()
