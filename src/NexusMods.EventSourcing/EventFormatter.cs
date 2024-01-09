@@ -10,14 +10,14 @@ namespace NexusMods.EventSourcing;
 internal class EventFormatter : MemoryPackFormatter<IEvent>
 {
     private static Guid _zeroGuid = Guid.Empty;
-    private readonly Dictionary<Guid,Type> _eventByGuid;
-    private readonly Dictionary<Type,Guid> _eventsByType;
+    private readonly Dictionary<UInt128,Type> _eventByGuid;
+    private readonly Dictionary<Type,UInt128> _eventsByType;
 
     public EventFormatter(IEnumerable<EventDefinition> events)
     {
         var eventsArray = events.ToArray();
-       _eventByGuid = eventsArray.ToDictionary(e => e.Guid, e => e.Type);
-       _eventsByType = eventsArray.ToDictionary(e => e.Type, e => e.Guid);
+       _eventByGuid = eventsArray.ToDictionary(e => e.Id, e => e.Type);
+       _eventsByType = eventsArray.ToDictionary(e => e.Type, e => e.Id);
     }
 
     public override void Serialize<TBufferWriter>(ref MemoryPackWriter<TBufferWriter> writer, scoped ref IEvent? value)
@@ -35,7 +35,9 @@ internal class EventFormatter : MemoryPackFormatter<IEvent>
 
     public override void Deserialize(ref MemoryPackReader reader, scoped ref IEvent? value)
     {
-        var readValue = reader.ReadValue<Guid>();
+        throw new NotImplementedException();
+        /*
+        var readValue = reader.ReadValue<UInt128>();
         if (readValue == _zeroGuid)
         {
             value = null;
@@ -43,5 +45,6 @@ internal class EventFormatter : MemoryPackFormatter<IEvent>
         }
         var mappedType = _eventByGuid[readValue];
         value = (IEvent)reader.ReadValue(mappedType)!;
+        */
     }
 }

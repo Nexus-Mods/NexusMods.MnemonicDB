@@ -4,7 +4,7 @@ using NexusMods.EventSourcing.Abstractions.Serialization;
 
 namespace NexusMods.EventSourcing.Serialization;
 
-public class UInt32Serializer : IFixedSizeSerializer<uint>
+public sealed class UInt32Serializer : IFixedSizeSerializer<uint>
 {
     public bool CanSerialize(Type valueType) => valueType == typeof(uint);
 
@@ -19,7 +19,7 @@ public class UInt32Serializer : IFixedSizeSerializer<uint>
         BinaryPrimitives.WriteUInt32BigEndian(output, value);
     }
 
-    public uint Deserialize(Span<byte> from)
+    public uint Deserialize(ReadOnlySpan<byte> from)
     {
         return BinaryPrimitives.ReadUInt32BigEndian(from);
     }

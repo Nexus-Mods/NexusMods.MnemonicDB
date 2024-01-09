@@ -14,6 +14,11 @@ public class SerializationTests(BinaryEventSerializer serializer)
     public void CanSerializeEvents()
     {
 
+        var evnt = new SimpleTestEvent(420000, 112);
+        var serialized = serializer.Serialize(evnt);
+
+        var deserialized = serializer.Deserialize(serialized);
+        deserialized.Should().Be(evnt);
 
     }
 

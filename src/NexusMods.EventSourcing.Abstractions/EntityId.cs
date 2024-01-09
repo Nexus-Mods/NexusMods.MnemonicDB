@@ -1,13 +1,30 @@
 using System;
+using System.Buffers.Binary;
+using System.Globalization;
 using TransparentValueObjects;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
-[ValueObject<Guid>]
+[ValueObject<UInt128>]
 public readonly partial struct EntityId
 {
     public EntityId<T> Cast<T>() where T : IEntity => new(this);
 
+    public static EntityId NewId()
+    {
+        var guid = Guid.NewGuid();
+        Span<byte> bytes = stackalloc byte[16];
+        guid.TryWriteBytes(bytes);
+        var value = BinaryPrimitives.ReadUInt128BigEndian(bytes);
+        return From(value);
+    }
+    
+    public static EntityId From(ReadOnlySpan<byte> data) => new(BinaryPrimitives.ReadUInt128BigEndian(data));
+
+    public void TryWriteBytes(Span<byte> span)
+    {
+        BinaryPrimitives.WriteUInt128BigEndian(span, Value);
+    }
 }
 
 
@@ -29,7 +46,7 @@ public readonly struct EntityId<T> where T : IEntity
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
-    public static EntityId<T> From(Guid id) => new(EntityId.From(id));
+    public static EntityId<T> From(UInt128 id) => new(EntityId.From(id));
 
 
 
@@ -38,7 +55,7 @@ public readonly struct EntityId<T> where T : IEntity
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
-    public static EntityId<T> From(string id) => From(Guid.Parse(id));
+    public static EntityId<T> From(string id) => From(UInt128.Parse(id, NumberStyles.HexNumber));
 
 
     /// <summary>
@@ -55,7 +72,7 @@ public readonly struct EntityId<T> where T : IEntity
     /// <inheritdoc />
     public override string ToString()
     {
-        return typeof(T).Name + "<" + Value.Value + ">";
+        return typeof(T).Name + "<" + Value.Value.ToString("X") + ">";
     }
 
 

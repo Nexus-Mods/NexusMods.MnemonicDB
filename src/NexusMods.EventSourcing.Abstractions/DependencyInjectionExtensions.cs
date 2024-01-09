@@ -1,4 +1,5 @@
 using System;
+using System.Buffers.Binary;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -23,7 +24,12 @@ public static class DependencyInjectionExtensions
         {
             throw new ArgumentException($"Event type {type.Name} does not have an EventIdAttribute.");
         }
-        collection.AddSingleton(s => new EventDefinition(attribute.Guid, type));
+
+        Span<byte> span = stackalloc byte[16];
+        attribute.Guid.TryWriteBytes(span);
+        var id = BinaryPrimitives.ReadUInt128BigEndian(span);
+
+        collection.AddSingleton(s => new EventDefinition(id, type));
         return collection;
     }
 

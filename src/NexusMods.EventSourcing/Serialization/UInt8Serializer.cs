@@ -18,7 +18,7 @@ public sealed class UInt8Serializer : IFixedSizeSerializer<byte>
         output[0] = value;
     }
 
-    public byte Deserialize(Span<byte> from)
+    public byte Deserialize(ReadOnlySpan<byte> from)
     {
         return from[0];
     }

@@ -57,7 +57,7 @@ public class RocksDBEventStore<TSerializer> : IEventStore
                  BinaryPrimitives.WriteUInt64BigEndian(keySpan[16..], _tx.Value);
                  foreach (var entityId in ingester.Entities)
                  {
-                     entityId.Value.TryWriteBytes(keySpan);
+                     entityId.TryWriteBytes(keySpan);
                      _db.Put(keySpan, keySpan, _entityIndexColumn);
                  }
              }
@@ -68,9 +68,9 @@ public class RocksDBEventStore<TSerializer> : IEventStore
     public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester) where TIngester : IEventIngester
     {
         Span<byte> startKey = stackalloc byte[24];
-        entityId.Value.TryWriteBytes(startKey);
+        entityId.TryWriteBytes(startKey);
         Span<byte> endKey = stackalloc byte[24];
-        entityId.Value.TryWriteBytes(endKey);
+        entityId.TryWriteBytes(endKey);
         BinaryPrimitives.WriteUInt64BigEndian(endKey[16..], ulong.MaxValue);
 
         var options = new ReadOptions();

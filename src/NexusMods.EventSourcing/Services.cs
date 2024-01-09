@@ -11,9 +11,13 @@ public static class Services
     public static IServiceCollection AddEventSourcing(this IServiceCollection services)
     {
         return services
+            .AddSingleton<ISerializer, GenericEntityIdSerializer>()
+            .AddSingleton<ISerializer, StringSerializer>()
+            .AddSingleton<ISerializer, BoolSerializer>()
             .AddSingleton<EventSerializer>()
             .AddSingleton<ISerializer, UInt8Serializer>()
             .AddSingleton<ISerializer, UInt32Serializer>()
+            .AddSingleton<ISerializer, EntityIdSerializer>()
             .AddEvent<TransactionEvent>()
             .AddSingleton<IEntityContext, EntityContext>();
     }

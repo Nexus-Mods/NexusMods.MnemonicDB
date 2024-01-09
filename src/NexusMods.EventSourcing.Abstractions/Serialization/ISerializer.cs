@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Buffers;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 
 namespace NexusMods.EventSourcing.Abstractions.Serialization;
@@ -13,5 +15,20 @@ public interface ISerializer
 public interface IFixedSizeSerializer<T> : ISerializer
 {
     public void Serialize(T value, Span<byte> output);
-    public T Deserialize(Span<byte> from);
+    public T Deserialize(ReadOnlySpan<byte> from);
+}
+
+public interface IVariableSizeSerializer<T> : ISerializer
+{
+    public void Serialize<TWriter>(T value, TWriter output) where TWriter : IBufferWriter<byte>;
+    public int Deserialize(ReadOnlySpan<byte> from, out T value);
+}
+
+
+/// <summary>
+/// If the serializer can specialize (e.g. for a generic type), it should implement this interface.
+/// </summary>
+public interface IGenericSerializer : ISerializer
+{
+    public bool TrySpecialze(Type baseType, Type[] argTypes, [NotNullWhen(true)] out ISerializer? serializer);
 }
