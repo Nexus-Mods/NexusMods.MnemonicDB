@@ -41,6 +41,10 @@ public class SerializationTests(BinaryEventSerializer serializer)
             new object[]{new AddCollection(EntityId<Collection>.NewId(), "NewCollection", EntityId<Loadout>.NewId(),
                 [EntityId<Mod>.NewId()])
             },
+            new object[]{new DeleteMod(EntityId<Mod>.NewId(), EntityId<Loadout>.NewId())},
+            new object[]{new RenameLoadout(EntityId<Loadout>.NewId(), "Test")},
+            new object[]{new SwapModEnabled(EntityId<Mod>.NewId(), true)},
+
         };
         return events;
     }
