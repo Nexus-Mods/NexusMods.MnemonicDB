@@ -88,8 +88,9 @@ public class RocksDBEventStore<TSerializer> : IEventStore
                     while (iterator.Valid())
                     {
                         var key = iterator.GetKeySpan();
+                        var txId = TransactionId.From(key);
                         var evt = _db.Get(key[16..], _deserializer, _eventsColumn);
-                        ingester.Ingest(evt);
+                        if (!ingester.Ingest(txId, evt)) break;
                         iterator.Next();
                     }
 

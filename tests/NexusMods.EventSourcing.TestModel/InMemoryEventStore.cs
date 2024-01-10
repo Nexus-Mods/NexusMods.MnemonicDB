@@ -7,7 +7,7 @@ public class InMemoryEventStore<TSerializer>(TSerializer serializer) : IEventSto
 where TSerializer : IEventSerializer
 {
     private TransactionId _tx = TransactionId.From(0);
-    private readonly Dictionary<EntityId,IList<byte[]>> _events = new();
+    private readonly Dictionary<EntityId,IList<(TransactionId TxId, byte[] Data)>> _events = new();
 
     public TransactionId Add<T>(T entity) where T : IEvent
     {
@@ -21,11 +21,11 @@ where TSerializer : IEventSerializer
             {
                 if (!_events.TryGetValue(id, out var value))
                 {
-                    value = new List<byte[]>();
+                    value = new List<(TransactionId, byte[])>();
                     _events.Add(id, value);
                 }
 
-                value.Add(data.ToArray());
+                value.Add((_tx, data.ToArray()));
             }
 
             return _tx;
@@ -40,8 +40,8 @@ where TSerializer : IEventSerializer
             return;
         foreach (var data in events)
         {
-            var @event = serializer.Deserialize(data)!;
-            ingester.Ingest(@event);
+            var @event = serializer.Deserialize(data.Data)!;
+            if (!ingester.Ingest(data.TxId, @event)) break;
         }
     }
 }

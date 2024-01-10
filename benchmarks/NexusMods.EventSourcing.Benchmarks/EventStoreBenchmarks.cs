@@ -65,9 +65,10 @@ public class EventStoreBenchmarks : ABenchmark
     {
         public int Count { get; private set; }
 
-        public void Ingest(IEvent @event)
+        public bool Ingest(TransactionId id, IEvent @event)
         {
             Count++;
+            return true;
         }
     }
 

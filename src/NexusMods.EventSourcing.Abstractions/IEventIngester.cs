@@ -11,7 +11,8 @@ public interface IEventIngester
     /// <summary>
     /// Ingests the given event into the context.
     /// </summary>
-    /// <param name="event"></param>
-    /// <returns></returns>
-    public void Ingest(IEvent @event);
+    /// <param name="id">The transaction id of the event</param>
+    /// <param name="event">The event</param>
+    /// <returns>false if playback of events should be stopped, true if the next event should be read</returns>
+    public bool Ingest(TransactionId id, IEvent @event);
 }

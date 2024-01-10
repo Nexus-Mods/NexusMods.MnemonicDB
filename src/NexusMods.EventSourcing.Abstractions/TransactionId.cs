@@ -1,3 +1,5 @@
+using System;
+using System.Buffers.Binary;
 using TransparentValueObjects;
 
 namespace NexusMods.EventSourcing.Abstractions;
@@ -16,4 +18,23 @@ public readonly partial struct TransactionId
     /// </summary>
     /// <returns></returns>
     public TransactionId Next() => new(Value + 1);
+
+    /// <summary>
+    /// Write the transaction id to the given span.
+    /// </summary>
+    /// <param name="span"></param>
+    public void WriteTo(Span<byte> span)
+    {
+        BinaryPrimitives.WriteUInt64BigEndian(span, Value);
+    }
+
+    /// <summary>
+    /// Read a transaction id from the given span.
+    /// </summary>
+    /// <param name="span"></param>
+    /// <returns></returns>
+    public static TransactionId From(ReadOnlySpan<byte> span)
+    {
+        return new(BinaryPrimitives.ReadUInt64BigEndian(span));
+    }
 }

@@ -8,9 +8,10 @@ namespace NexusMods.EventSourcing;
 public struct EntityContextIngester(Dictionary<IAttribute, IAccumulator> values, EntityId id) : IEventContext, IEventIngester
 {
     /// <inheritdoc />
-    public void Ingest(IEvent @event)
+    public bool Ingest(TransactionId _, IEvent @event)
     {
         @event.Apply(this);
+        return true;
     }
 
     /// <inheritdoc />

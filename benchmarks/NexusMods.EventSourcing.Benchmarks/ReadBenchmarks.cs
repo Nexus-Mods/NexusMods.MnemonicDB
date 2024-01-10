@@ -59,9 +59,10 @@ public class ReadBenchmarks : ABenchmark
     private class Counter : IEventIngester
     {
         public int Count { get; private set; }
-        public void Ingest(IEvent @event)
+        public bool Ingest(TransactionId _, IEvent @event)
         {
             Count++;
+            return true;
         }
     }
 }

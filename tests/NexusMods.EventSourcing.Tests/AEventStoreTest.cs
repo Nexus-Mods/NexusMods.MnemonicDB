@@ -36,9 +36,10 @@ public abstract class AEventStoreTest<T> where T : IEventStore
     private class EventAccumulator : IEventIngester
     {
         public List<IEvent> Events { get; } = new();
-        public void Ingest(IEvent @event)
+        public bool Ingest(TransactionId _, IEvent @event)
         {
             Events.Add(@event);
+            return true;
         }
     }
 
