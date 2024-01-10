@@ -19,7 +19,30 @@ public class SerializationTests(BinaryEventSerializer serializer)
 
         var deserialized = serializer.Deserialize(serialized);
         deserialized.Should().Be(evnt);
+    }
 
+    [Theory]
+    [MemberData(nameof(ExampleEvents))]
+    public void CanSerializeAllEvents(IEvent @event)
+    {
+        var serialized = serializer.Serialize(@event);
+        var deserialized = serializer.Deserialize(serialized);
+        deserialized.Should()
+            .BeEquivalentTo(@event, opts => opts.RespectingRuntimeTypes());
+    }
+
+    public static IEnumerable<object[]> ExampleEvents()
+    {
+        var events = new List<object[]>
+        {
+            new object[]{new CreateLoadout(EntityId<Loadout>.NewId(), "Test")},
+            new object[]{new RenameLoadout(EntityId<Loadout>.NewId(), "Test")},
+            new object[]{new AddMod("New Mod", true, EntityId<Mod>.NewId(), new EntityId<Loadout>())},
+            new object[]{new AddCollection(EntityId<Collection>.NewId(), "NewCollection", EntityId<Loadout>.NewId(),
+                [EntityId<Mod>.NewId()])
+            },
+        };
+        return events;
     }
 
 

@@ -77,6 +77,6 @@ internal class EntityIdSerializer<T> : IFixedSizeSerializer<EntityId<T>> where T
 
     public EntityId<T> Deserialize(ReadOnlySpan<byte> from)
     {
-        return EntityId<T>.From(BinaryPrimitives.ReadUInt64BigEndian(from));
+        return EntityId<T>.From(from);
     }
 }

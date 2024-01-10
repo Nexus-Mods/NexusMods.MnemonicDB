@@ -11,8 +11,7 @@ public class Startup
     public void ConfigureServices(IServiceCollection container)
     {
         container
-            .AddSingleton<BinaryEventSerializer>()
-            .AddSingleton<IEventStore, InMemoryEventStore<EventSerializer>>()
+            .AddSingleton<IEventStore, InMemoryEventStore<BinaryEventSerializer>>()
             .AddEvents()
             .AddEvent<SimpleTestEvent>()
             .AddEventSourcing()

@@ -1,10 +1,11 @@
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Serialization;
 using NexusMods.EventSourcing.TestModel.Events;
 using NexusMods.EventSourcing.TestModel.Model;
 
 namespace NexusMods.EventSourcing.Tests;
 
-public class EventSerializerTests(EventSerializer serializer)
+public class EventSerializerTests(BinaryEventSerializer serializer)
 {
 
     [Fact]

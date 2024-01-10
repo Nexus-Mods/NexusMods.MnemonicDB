@@ -70,11 +70,13 @@ public class FixedItemSizeArraySerializer<TItem, TItemSerializer>(TItemSerialize
     {
         var totalSize = sizeof(ushort) + (itemSize * value.Length);
         var span = output.GetSpan(totalSize);
-        BinaryPrimitives.WriteUInt32BigEndian(span, (ushort)value.Length);
+        BinaryPrimitives.WriteUInt16BigEndian(span, (ushort)value.Length);
 
+        var offset = sizeof(ushort);
         foreach (var item in value)
         {
-            itemSerializer.Serialize(item, span.SliceFast(itemSize, itemSize));
+            itemSerializer.Serialize(item, span.SliceFast(offset, itemSize));
+            offset += itemSize;
         }
         output.Advance(totalSize);
     }

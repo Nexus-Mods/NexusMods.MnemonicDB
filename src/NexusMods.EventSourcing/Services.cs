@@ -15,7 +15,7 @@ public static class Services
             .AddSingleton<ISerializer, GenericEntityIdSerializer>()
             .AddSingleton<ISerializer, StringSerializer>()
             .AddSingleton<ISerializer, BoolSerializer>()
-            .AddSingleton<EventSerializer>()
+            .AddSingleton<BinaryEventSerializer>()
             .AddSingleton<ISerializer, UInt8Serializer>()
             .AddSingleton<ISerializer, UInt32Serializer>()
             .AddSingleton<ISerializer, EntityIdSerializer>()

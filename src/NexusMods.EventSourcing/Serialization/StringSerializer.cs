@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using NexusMods.EventSourcing.Abstractions.Serialization;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Serialization;
 
@@ -23,14 +24,14 @@ public class StringSerializer : IVariableSizeSerializer<string>
         var size = System.Text.Encoding.UTF8.GetByteCount(value);
         var span = output.GetSpan(size + 2);
         BinaryPrimitives.WriteUInt16LittleEndian(span, (ushort)size);
-        System.Text.Encoding.UTF8.GetBytes(value, span[2..]);
+        System.Text.Encoding.UTF8.GetBytes(value, span.SliceFast(2));
         output.Advance(size + 2);
     }
 
     public int Deserialize(ReadOnlySpan<byte> from, out string value)
     {
         var size = BinaryPrimitives.ReadUInt16LittleEndian(from);
-        value = System.Text.Encoding.UTF8.GetString(from[2..(2 + size)]);
+        value = System.Text.Encoding.UTF8.GetString(from.SliceFast(2, size));
         return size + 2;
     }
 }

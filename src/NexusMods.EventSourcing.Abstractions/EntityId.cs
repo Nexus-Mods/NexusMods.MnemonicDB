@@ -18,7 +18,7 @@ public readonly partial struct EntityId
         var value = BinaryPrimitives.ReadUInt128BigEndian(bytes);
         return From(value);
     }
-    
+
     public static EntityId From(ReadOnlySpan<byte> data) => new(BinaryPrimitives.ReadUInt128BigEndian(data));
 
     public void TryWriteBytes(Span<byte> span)
@@ -48,6 +48,13 @@ public readonly struct EntityId<T> where T : IEntity
     /// <returns></returns>
     public static EntityId<T> From(UInt128 id) => new(EntityId.From(id));
 
+    /// <summary>
+    /// Reads the <see cref="EntityId{T}"/> from the specified <paramref name="data"/>.
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns></returns>
+    public static EntityId<T> From(ReadOnlySpan<byte> data) => new(EntityId.From(data));
+
 
 
     /// <summary>
@@ -55,7 +62,16 @@ public readonly struct EntityId<T> where T : IEntity
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
-    public static EntityId<T> From(string id) => From(UInt128.Parse(id, NumberStyles.HexNumber));
+    public static EntityId<T> From(string id)
+    {
+        if (Guid.TryParse(id, out var guid))
+        {
+            Span<byte> bytes = stackalloc byte[16];
+            guid.TryWriteBytes(bytes);
+            return From(BinaryPrimitives.ReadUInt128BigEndian(bytes));
+        }
+        return From(UInt128.Parse(id, NumberStyles.HexNumber));
+    }
 
 
     /// <summary>

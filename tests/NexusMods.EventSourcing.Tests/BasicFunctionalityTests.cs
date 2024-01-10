@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Serialization;
 using NexusMods.EventSourcing.TestModel;
 using NexusMods.EventSourcing.TestModel.Events;
 using NexusMods.EventSourcing.TestModel.Model;
@@ -9,9 +10,9 @@ namespace NexusMods.EventSourcing.Tests;
 public class BasicFunctionalityTests
 {
     private readonly IEntityContext _ctx;
-    public BasicFunctionalityTests(EventSerializer serializer)
+    public BasicFunctionalityTests(BinaryEventSerializer serializer)
     {
-        var store = new InMemoryEventStore<EventSerializer>(serializer);
+        var store = new InMemoryEventStore<BinaryEventSerializer>(serializer);
         _ctx = new EntityContext(store);
     }
 
@@ -57,7 +58,7 @@ public class BasicFunctionalityTests
         tx.Commit();
 
         var loadout = _ctx.Get(loadoutId);
-        loadout.Mods.Count().Should().Be(1);
+        loadout.Mods.Count.Should().Be(1);
         loadout.Mods.First().Name.Should().Be("First Mod");
 
         var mod = _ctx.Get(modId);

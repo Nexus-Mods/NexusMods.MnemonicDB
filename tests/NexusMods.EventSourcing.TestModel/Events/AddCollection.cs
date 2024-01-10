@@ -5,8 +5,7 @@ using NexusMods.EventSourcing.TestModel.Model;
 namespace NexusMods.EventSourcing.TestModel.Events;
 
 [EventId("9C6CF87E-9469-4C9E-87AB-6FE7EF331358")]
-[MemoryPackable]
-public partial record AddCollection(EntityId<Collection> CollectionId, string Name, EntityId<Loadout> LoadoutId, EntityId<Mod>[] Mods) : IEvent
+public record AddCollection(EntityId<Collection> CollectionId, string Name, EntityId<Loadout> LoadoutId, EntityId<Mod>[] Mods) : IEvent
 {
     public void Apply<T>(T context) where T : IEventContext
     {
