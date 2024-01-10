@@ -33,11 +33,15 @@ where TSerializer : IEventSerializer
     }
 
 
-    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester)
+    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester, bool reverse = false)
         where TIngester : IEventIngester
     {
         if (!_events.TryGetValue(entityId, out var events))
             return;
+
+        if (reverse)
+            events = events.Reverse().ToList();
+
         foreach (var data in events)
         {
             var @event = serializer.Deserialize(data.Data)!;

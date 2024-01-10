@@ -233,7 +233,7 @@ public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSeria
             var genericMakers = serializers.OfType<IGenericSerializer>();
             foreach (var maker in genericMakers)
             {
-                if (maker.TrySpecialze(type.GetGenericTypeDefinition(),
+                if (maker.TrySpecialize(type.GetGenericTypeDefinition(),
                         type.GetGenericArguments(), t => GetSerializer(serializers, t), out var serializer))
                 {
                     return serializer;
@@ -244,7 +244,7 @@ public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSeria
         if (type.IsArray)
         {
             var arrayMaker = serializers.OfType<GenericArraySerializer>().First();
-            arrayMaker.TrySpecialze(type, [type.GetElementType()!], t => GetSerializer(serializers, t), out var serializer);
+            arrayMaker.TrySpecialize(type, [type.GetElementType()!], t => GetSerializer(serializers, t), out var serializer);
             return serializer!;
         }
 

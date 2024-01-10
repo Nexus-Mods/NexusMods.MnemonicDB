@@ -33,6 +33,39 @@ public abstract class AEventStoreTest<T> where T : IEventStore
         }
     }
 
+    [Fact]
+    public void CanIterateInReverse()
+    {
+        var entityId = EntityId<Loadout>.NewId();
+        var txIds = new List<(TransactionId Id, string Name)>();
+
+        for (var i = 0; i < 1000; i++)
+        {
+            var name = $"Test {i}";
+            var txid = Store.Add(new RenameLoadout(entityId, name));
+            txIds.Add((txid, name));
+        }
+
+        var accumulator = new InverseChecker(txIds.ToArray());
+        Store.EventsForEntity(entityId.Value, accumulator, true);
+
+        accumulator.Count.Should().Be(txIds.Count);
+    }
+
+    private class InverseChecker((TransactionId Id, string Name)[] txEs, int count = 0) : IEventIngester
+    {
+        public int Count => count;
+
+        public bool Ingest(TransactionId id, IEvent @event)
+        {
+            var current = txEs[^(count + 1)];
+            count += 1;
+            id.Should().Be(current.Id);
+            ((RenameLoadout) @event).Name.Should().Be(current.Name);
+            return true;
+        }
+    }
+
     private class EventAccumulator : IEventIngester
     {
         public List<IEvent> Events { get; } = new();

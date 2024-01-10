@@ -20,7 +20,7 @@ public class GenericArraySerializer : IGenericSerializer
         return false;
     }
 
-    public bool TrySpecialze(Type baseType, Type[] argTypes, Func<Type, ISerializer> serializerFinder, [NotNullWhen(true)] out ISerializer? serializer)
+    public bool TrySpecialize(Type baseType, Type[] argTypes, Func<Type, ISerializer> serializerFinder, [NotNullWhen(true)] out ISerializer? serializer)
     {
         if (!baseType.IsArray)
         {

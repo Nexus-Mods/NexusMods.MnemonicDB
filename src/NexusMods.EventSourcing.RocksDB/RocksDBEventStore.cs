@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.Buffers.Binary;
 using NexusMods.EventSourcing.Abstractions;
+using Reloaded.Memory.Extensions;
 using RocksDbSharp;
 
 namespace NexusMods.EventSourcing.RocksDB;
@@ -45,7 +46,7 @@ public class RocksDBEventStore<TSerializer> : IEventStore
 
              {
                  Span<byte> keySpan = stackalloc byte[8];
-                 BinaryPrimitives.WriteUInt64BigEndian(keySpan, _tx.Value);
+                 _tx.WriteTo(keySpan);
                  var span = _serializer.Serialize(eventValue);
                  _db.Put(keySpan, span, _eventsColumn);
              }
@@ -54,7 +55,7 @@ public class RocksDBEventStore<TSerializer> : IEventStore
                  var ingester = new ModifiedEntitiesIngester();
                  eventValue.Apply(ingester);
                  Span<byte> keySpan = stackalloc byte[24];
-                 BinaryPrimitives.WriteUInt64BigEndian(keySpan[16..], _tx.Value);
+                 _tx.WriteTo(keySpan.SliceFast(16..));
                  foreach (var entityId in ingester.Entities)
                  {
                      entityId.TryWriteBytes(keySpan);
@@ -65,7 +66,7 @@ public class RocksDBEventStore<TSerializer> : IEventStore
         }
     }
 
-    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester) where TIngester : IEventIngester
+    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester, bool reverse = false) where TIngester : IEventIngester
     {
         Span<byte> startKey = stackalloc byte[24];
         entityId.TryWriteBytes(startKey);
@@ -80,18 +81,40 @@ public class RocksDBEventStore<TSerializer> : IEventStore
             {
                 fixed (byte* endKeyPtr = endKey)
                 {
-                    options.SetIterateUpperBound(endKeyPtr, 24);
-                    options.SetIterateLowerBound(startKeyPtr, 24);
-                    using var iterator = _db.NewIterator(_entityIndexColumn, options);
-
-                    iterator.Seek(startKeyPtr, 24);
-                    while (iterator.Valid())
+                    if (!reverse)
                     {
-                        var key = iterator.GetKeySpan();
-                        var txId = TransactionId.From(key);
-                        var evt = _db.Get(key[16..], _deserializer, _eventsColumn);
-                        if (!ingester.Ingest(txId, evt)) break;
-                        iterator.Next();
+
+                        options.SetIterateUpperBound(endKeyPtr, 24);
+                        options.SetIterateLowerBound(startKeyPtr, 24);
+                        using var iterator = _db.NewIterator(_entityIndexColumn, options);
+
+                        iterator.SeekToFirst();
+                        while (iterator.Valid())
+                        {
+                            var key = iterator.GetKeySpan();
+                            var txId = TransactionId.From(key);
+                            var evt = _db.Get(key[16..], _deserializer, _eventsColumn);
+                            if (!ingester.Ingest(txId, evt)) break;
+                            iterator.Next();
+                        }
+                    }
+                    else
+                    {
+                        options.SetIterateUpperBound(endKeyPtr, 24);
+                        options.SetIterateLowerBound(startKeyPtr, 24);
+                        using var iterator = _db.NewIterator(_entityIndexColumn, options);
+
+                        iterator.SeekToLast();
+                        while (iterator.Valid())
+                        {
+                            var key = iterator.GetKeySpan();
+                            var keySpan = key.SliceFast(16);
+                            var txId = TransactionId.From(keySpan);
+                            var evt = _db.Get(keySpan, _deserializer, _eventsColumn);
+                            if (!ingester.Ingest(txId, evt)) break;
+                            iterator.Prev();
+                        }
+
                     }
 
                 }

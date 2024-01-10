@@ -18,9 +18,10 @@ public interface IEventStore
     /// <summary>
     /// For each event for the given entity id, call the ingester.
     /// </summary>
-    /// <param name="entityId"></param>
-    /// <param name="ingester"></param>
+    /// <param name="entityId">The Entity Id to playback events for</param>
+    /// <param name="ingester">The ingester to handle the events</param>
+    /// <param name="reverse">If true, plays the events in reverse</param>
     /// <typeparam name="TIngester"></typeparam>
-    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester)
+    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester, bool reverse = false)
         where TIngester : IEventIngester;
 }
