@@ -119,15 +119,14 @@ public class VariableItemSizeSerializer<TItem, TItemSerializer>(TItemSerializer 
 
     public void Serialize<TWriter>(TItem[] value, TWriter output) where TWriter : IBufferWriter<byte>
     {
-        var totalSize = sizeof(ushort) + (itemSize * value.Length);
-        var span = output.GetSpan(totalSize);
-        BinaryPrimitives.WriteUInt32BigEndian(span, (ushort)value.Length);
+        var span = output.GetSpan(sizeof(ushort));
+        BinaryPrimitives.WriteUInt16BigEndian(span, (ushort)value.Length);
+        output.Advance(sizeof(ushort));
 
         foreach (var item in value)
         {
             itemSerializer.Serialize(item, output);
         }
-        output.Advance(totalSize);
     }
 
     public int Deserialize(ReadOnlySpan<byte> from, out TItem[] value)
@@ -135,7 +134,6 @@ public class VariableItemSizeSerializer<TItem, TItemSerializer>(TItemSerializer 
         var size = BinaryPrimitives.ReadUInt16BigEndian(from);
         var array = GC.AllocateUninitializedArray<TItem>(size);
 
-        from = from.SliceFast(sizeof(ushort));
         var offset = sizeof(ushort);
         for (var i = 0; i < size; i++)
         {
