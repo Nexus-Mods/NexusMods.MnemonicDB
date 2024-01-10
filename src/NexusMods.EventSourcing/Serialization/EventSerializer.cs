@@ -308,12 +308,14 @@ public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSeria
         isFixedSize = unfixedParams.Count == 0;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static Span<byte> SliceFastStart(ReadOnlySpan<byte> data, int start)
     {
         return MemoryMarshal.CreateSpan(ref Unsafe.Add(ref MemoryMarshal.GetReference(data), start),
             data.Length - start);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static Span<byte> SliceFastStartLength(Span<byte> data, int start, int length)
     {
         return MemoryMarshal.CreateSpan(ref Unsafe.Add(ref MemoryMarshal.GetReference(data), start), length);
@@ -322,11 +324,13 @@ public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSeria
     private MethodInfo _sliceFastStartLengthMethodInfo =
         typeof(BinaryEventSerializer).GetMethod(nameof(SliceFastStartLength), BindingFlags.Static | BindingFlags.NonPublic)!;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static ReadOnlySpan<byte> ReadOnlySliceFastStartLength(ReadOnlySpan<byte> data, int start, int length)
     {
         return MemoryMarshal.CreateSpan(ref Unsafe.Add(ref MemoryMarshal.GetReference(data), start), length);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static ReadOnlySpan<byte> ReadOnlySliceFastStart(ReadOnlySpan<byte> data, int start)
     {
         return MemoryMarshal.CreateSpan(ref Unsafe.Add(ref MemoryMarshal.GetReference(data), start), data.Length - start);

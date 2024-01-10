@@ -2,6 +2,7 @@ using System;
 using BenchmarkDotNet.Attributes;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.RocksDB;
+using NexusMods.EventSourcing.Serialization;
 using NexusMods.EventSourcing.TestModel;
 using NexusMods.EventSourcing.TestModel.Events;
 using NexusMods.EventSourcing.TestModel.Model;
@@ -15,10 +16,10 @@ public class EntityContextBenchmarks : ABenchmark
     private EntityId<Loadout>[] _ids = Array.Empty<EntityId<Loadout>>();
     private EntityContext _context = null!;
 
-    [Params(typeof(InMemoryEventStore<EventSerializer>),
-        //typeof(FasterKVEventStore<EventSerializer>),
-        typeof(RocksDBEventStore<EventSerializer>))]
-    public Type EventStoreType { get; set; } = typeof(InMemoryEventStore<EventSerializer>);
+    [Params(typeof(InMemoryEventStore<BinaryEventSerializer>),
+        //typeof(FasterKVEventStore<BinaryEventSerializer>),
+        typeof(RocksDBEventStore<BinaryEventSerializer>))]
+    public Type EventStoreType { get; set; } = typeof(InMemoryEventStore<BinaryEventSerializer>);
 
     [Params(100, 1000)]
     public int EventCount { get; set; }

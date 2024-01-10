@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Runtime.CompilerServices;
 using DynamicData;
 using NexusMods.EventSourcing.Abstractions;
 
@@ -9,8 +10,16 @@ public class Loadout(IEntityContext context, EntityId<Loadout> id) : AEntity<Loa
     /// <summary>
     /// The human readable name of the loadout.
     /// </summary>
-    public string Name => _name.Get(this);
-    internal static readonly ScalarAttribute<Loadout, string> _name = new(nameof(Name));
+    public string Name
+    {
+        get
+        {
+            CallSite<Func<int, float>> site;
+            return _name.Get(this);
+        }
+    }
+
+    internal static readonly dynamic _name = new ScalarAttribute<Loadout, string>(nameof(Name));
 
     /// <summary>
     /// The mods in the loadout.

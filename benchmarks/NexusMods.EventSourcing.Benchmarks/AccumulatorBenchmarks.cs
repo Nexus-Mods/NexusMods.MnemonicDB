@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using BenchmarkDotNet.Attributes;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Serialization;
 using NexusMods.EventSourcing.TestModel;
 using NexusMods.EventSourcing.TestModel.Events;
 using NexusMods.EventSourcing.TestModel.Model;
@@ -15,10 +16,11 @@ public class AccumulatorBenchmarks : ABenchmark
     private readonly EntityContext _ctx;
     private readonly LoadoutRegistry _registry;
     private readonly Loadout[] _loadouts;
+    private readonly int _numLoadouts;
 
     public AccumulatorBenchmarks()
     {
-        MakeStore(typeof(InMemoryEventStore<EventSerializer>));
+        MakeStore(typeof(InMemoryEventStore<BinaryEventSerializer>));
 
         _ctx = new EntityContext(EventStore);
         _ctx.Add(new CreateLoadout(EntityId<Loadout>.NewId(), "Test"));
@@ -29,12 +31,18 @@ public class AccumulatorBenchmarks : ABenchmark
             throw new Exception("Bad state");
 
         _loadouts = _registry.Loadouts.ToArray();
+        _numLoadouts = _loadouts.Length;
 
     }
 
     [Benchmark]
-    public string GetMultiAttributeItems()
+    public int GetMultiAttributeItems()
     {
-        return _loadouts[0].Name;
+        var size = 0;
+        for (var j = 0; j < 10_000_000; j++)
+        {
+            size += _loadouts[0].Name.Length;
+        }
+        return size;
     }
 }
