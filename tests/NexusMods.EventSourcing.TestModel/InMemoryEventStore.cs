@@ -1,4 +1,5 @@
 using System.Buffers;
+using System.Buffers.Binary;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.Serialization;
 using Reloaded.Memory.Extensions;
@@ -15,11 +16,13 @@ where TSerializer : IEventSerializer
     private readonly IVariableSizeSerializer<string> _stringSerializer;
     private readonly PooledMemoryBufferWriter _writer;
     private readonly ISerializationRegistry _serializationRegistry;
+    private readonly IVariableSizeSerializer<EntityDefinition> _entityDefinitionSerializer;
 
     public InMemoryEventStore(TSerializer serializer, ISerializationRegistry serializationRegistry)
     {
         _serializer = serializer;
         _stringSerializer = (serializationRegistry.GetSerializer(typeof(string)) as IVariableSizeSerializer<string>)!;
+        _entityDefinitionSerializer = (serializationRegistry.GetSerializer(typeof(EntityDefinition)) as IVariableSizeSerializer<EntityDefinition>)!;
         _serializationRegistry = serializationRegistry;
         _writer = new PooledMemoryBufferWriter();
     }
@@ -48,7 +51,7 @@ where TSerializer : IEventSerializer
     }
 
 
-    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester)
+    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester, TransactionId fromId, TransactionId toId)
         where TIngester : IEventIngester
     {
         if (!_events.TryGetValue(entityId, out var events))
@@ -56,56 +59,89 @@ where TSerializer : IEventSerializer
 
         foreach (var data in events)
         {
+            if (data.TxId < fromId) continue;
+            if (data.TxId > toId) break;
+
             var @event = _serializer.Deserialize(data.Data)!;
             if (!ingester.Ingest(data.TxId, @event)) break;
         }
     }
 
-    public void EventsAndSnapshotForEntity<TIngester>(TransactionId asOf, EntityId entityId, TIngester ingester) where TIngester : ISnapshotEventIngester
+    public TransactionId EventsAndSnapshotForEntity(TransactionId asOf, EntityId entityId, ushort revision,
+        out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes)
     {
         if (!_snapshots.TryGetValue(entityId, out var snapshots))
-            return;
+        {
+            loadedAttributes = Array.Empty<(IAttribute, IAccumulator)>();
+            return default;
+        }
 
         var startPoint = snapshots.LastOrDefault(s => s.Key <= asOf);
 
-        if (startPoint != default)
+        if (startPoint.Value == default)
         {
-            var snapshot = startPoint.Value.AsSpanFast();
-
-            while (snapshot.Length > 0)
-            {
-                var attributeName = _stringSerializer.Deserialize(snapshot, out var read);
-                snapshot = snapshot.SliceFast(read);
-                var accumulator = _serializationRegistry.GetAccumulator(attributeName);
-                accumulator.ReadFrom(snapshot, _serializationRegistry, out read);
-                snapshot = snapshot.Slice(read);
-                ingester.IngestSnapshot(attributeName, accumulator);
-            }
-
+            loadedAttributes = Array.Empty<(IAttribute, IAccumulator)>();
+            return default;
         }
 
-        foreach (var (txId, data) in snapshots.)
+        var snapshot = (ReadOnlySpan<byte>)startPoint.Value.AsSpanFast();
+        var offset = _entityDefinitionSerializer.Deserialize(snapshot, out var entityDefinition);
+
+        if (entityDefinition.Revision != revision)
         {
-            var @event = _serializer.Deserialize(data)!;
-            if (!ingester.Ingest(txId, @event)) break;
+            loadedAttributes = Array.Empty<(IAttribute, IAccumulator)>();
+            return default;
         }
 
-        if (!_events.TryGetValue(entityId, out var events))
-            return;
+        snapshot = snapshot.SliceFast(offset);
 
-        foreach (var data in events)
+        var numberOfAttrs = BinaryPrimitives.ReadUInt16BigEndian(snapshot);
+        snapshot = snapshot.SliceFast(sizeof(ushort));
+
+        var results = GC.AllocateUninitializedArray<(IAttribute, IAccumulator)>(numberOfAttrs);
+
+        if (!EntityStructureRegistry.TryGetAttributes(entityDefinition.Type, out var attributes))
+            throw new Exception("Entity definition does not match the current structure registry.");
+
+        for (var i = 0; i < numberOfAttrs; i++)
         {
-            var @event = _serializer.Deserialize(data.Data)!;
-            if (!ingester.Ingest(data.TxId, @event)) break;
+            var read = _stringSerializer.Deserialize(snapshot, out var attributeName);
+            snapshot = snapshot.SliceFast(read);
+
+            if (!attributes.TryGetValue(attributeName, out var attribute))
+                throw new Exception("Entity definition does not match the current structure registry.");
+
+            var accumulator = attribute.CreateAccumulator();
+
+            accumulator.ReadFrom(ref snapshot, _serializationRegistry);
+            snapshot = snapshot.SliceFast(read);
+
+            results[i] = (attribute, accumulator);
         }
+
+        loadedAttributes = results;
+        return startPoint.Key;
     }
 
-    public void SetSnapshot(TransactionId txId, EntityId id, IEnumerable<(string AttributeName, IAccumulator Accumulator)> attributes)
+    public void SetSnapshot(TransactionId txId, EntityId id, IDictionary<IAttribute, IAccumulator> attributes)
     {
         _writer.Reset();
 
-        foreach (var (attributeName, accumulator) in attributes)
+        // Snapshot starts with the type attribute value
+        var typeAccumulator = attributes[IEntity.TypeAttribute];
+        typeAccumulator.WriteTo(_writer, _serializationRegistry);
+
+        var sizeSpan = _writer.GetSpan(sizeof(ushort));
+        BinaryPrimitives.WriteUInt16BigEndian(sizeSpan, (ushort) attributes.Count);
+        _writer.Advance(sizeof(ushort));
+
+
+        // And then each attribute in any order
+        foreach (var (attribute, accumulator) in attributes)
         {
+            if (attribute == IEntity.TypeAttribute) continue;
+
+            var attributeName = attribute.Name;
             _stringSerializer.Serialize(attributeName, _writer);
             accumulator.WriteTo(_writer, _serializationRegistry);
         }

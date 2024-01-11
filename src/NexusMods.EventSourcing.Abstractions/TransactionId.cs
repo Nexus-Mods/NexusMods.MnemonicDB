@@ -14,6 +14,16 @@ public readonly partial struct TransactionId
 {
 
     /// <summary>
+    /// The lowest possible (and default constructed) transaction id.
+    /// </summary>
+    public static readonly TransactionId Min = new(0);
+
+    /// <summary>
+    /// The highest possible transaction id.
+    /// </summary>
+    public static readonly TransactionId Max = new(ulong.MaxValue);
+
+    /// <summary>
     /// Get the next transaction id.
     /// </summary>
     /// <returns></returns>

@@ -5,10 +5,15 @@
 /// </summary>
 public interface ISnapshotEventIngester : IEventIngester
 {
+
     /// <summary>
-    /// This method will be called for each attribute snapshotted, before the normal event ingestion is called
+    /// Ingests a snapshot of an entity, a false return value means the snapshot is invalid
+    /// and the entity should be rebuilt from scratch (by replaying all events)
     /// </summary>
-    /// <param name="attributeName"></param>
-    /// <param name="attribute"></param>
-    public void IngestSnapshotAttribute(string attributeName, IAttribute attribute);
+    /// <param name="definition"></param>
+    /// <param name="attributes"></param>
+    /// <returns></returns>
+    public bool IngestSnapshot(EntityDefinition definition,
+        (IAttribute Attribute, IAccumulator Accumulator)[] attributes);
+
 }

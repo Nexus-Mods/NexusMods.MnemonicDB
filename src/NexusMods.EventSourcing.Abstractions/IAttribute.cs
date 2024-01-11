@@ -16,6 +16,12 @@ public interface IAttribute
     /// The name of the attribute, needs to be unique in a given entity but not unique across entities.
     /// </summary>
     public string Name { get; }
+
+    /// <summary>
+    /// Create an abstract accumulator for the attribute
+    /// </summary>
+    /// <returns></returns>
+    public IAccumulator CreateAccumulator();
 }
 
 /// <summary>
