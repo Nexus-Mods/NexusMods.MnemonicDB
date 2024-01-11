@@ -67,7 +67,7 @@ where TSerializer : IEventSerializer
         }
     }
 
-    public TransactionId EventsAndSnapshotForEntity(TransactionId asOf, EntityId entityId, ushort revision,
+    public TransactionId GetSnapshot(TransactionId asOf, EntityId entityId, ushort revision,
         out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes)
     {
         if (!_snapshots.TryGetValue(entityId, out var snapshots))

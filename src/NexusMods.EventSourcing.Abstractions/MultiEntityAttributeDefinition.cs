@@ -103,6 +103,11 @@ public class MultiEntityAttributeDefinition<TOwner, TOther> : IAttribute<MultiEn
 
     /// <inheritdoc />
     public string Name => _name;
+
+    IAccumulator IAttribute.CreateAccumulator()
+    {
+        return CreateAccumulator();
+    }
 }
 
 /// <inheritdoc />

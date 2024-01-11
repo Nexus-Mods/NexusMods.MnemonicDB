@@ -1,5 +1,6 @@
 using System.Collections.Specialized;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Serialization;
 using NexusMods.EventSourcing.Serialization;
 using NexusMods.EventSourcing.TestModel;
 using NexusMods.EventSourcing.TestModel.Events;
@@ -10,9 +11,9 @@ namespace NexusMods.EventSourcing.Tests;
 public class BasicFunctionalityTests
 {
     private readonly IEntityContext _ctx;
-    public BasicFunctionalityTests(BinaryEventSerializer serializer)
+    public BasicFunctionalityTests(BinaryEventSerializer serializer, ISerializationRegistry serializationRegistry)
     {
-        var store = new InMemoryEventStore<BinaryEventSerializer>(serializer);
+        var store = new InMemoryEventStore<BinaryEventSerializer>(serializer, serializationRegistry);
         _ctx = new EntityContext(store);
     }
 

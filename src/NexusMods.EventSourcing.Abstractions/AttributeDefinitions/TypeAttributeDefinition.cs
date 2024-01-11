@@ -24,6 +24,11 @@ public class TypeAttributeDefinition : IAttribute<ScalarAccumulator<EntityDefini
     /// <inheritdoc />
     public string Name => "$type";
 
+    IAccumulator IAttribute.CreateAccumulator()
+    {
+        return CreateAccumulator();
+    }
+
     /// <summary>
     /// Gets the type of the entity for the given entity id.
     /// </summary>

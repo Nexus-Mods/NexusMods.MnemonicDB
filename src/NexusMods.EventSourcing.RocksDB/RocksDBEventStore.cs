@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using Reloaded.Memory.Extensions;
 using RocksDbSharp;
@@ -64,6 +65,22 @@ public class RocksDBEventStore<TSerializer> : IEventStore
              }
              return _tx;
         }
+    }
+
+    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester, TransactionId fromId, TransactionId toId) where TIngester : IEventIngester
+    {
+        throw new NotImplementedException();
+    }
+
+    public TransactionId GetSnapshot(TransactionId asOf, EntityId entityId, ushort revision,
+        out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void SetSnapshot(TransactionId txId, EntityId id, IDictionary<IAttribute, IAccumulator> attributes)
+    {
+        throw new NotImplementedException();
     }
 
     public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester) where TIngester : IEventIngester

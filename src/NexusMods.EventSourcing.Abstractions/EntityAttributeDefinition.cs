@@ -9,7 +9,8 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// <param name="attrName"></param>
 /// <typeparam name="TOwner"></typeparam>
 /// <typeparam name="TOther"></typeparam>
-public class EntityAttributeDefinition<TOwner, TOther>(string attrName) : IAttribute<ScalarAccumulator<EntityId<TOther>>>
+public class EntityAttributeDefinition<TOwner, TOther>(string attrName) :
+    IAttribute<ScalarAccumulator<EntityId<TOther>>>
     where TOwner : AEntity<TOwner>
     where TOther : IEntity
 {
@@ -64,4 +65,8 @@ public class EntityAttributeDefinition<TOwner, TOther>(string attrName) : IAttri
 
     public Type Owner => typeof(TOwner);
     public string Name => attrName;
+    IAccumulator IAttribute.CreateAccumulator()
+    {
+        return CreateAccumulator();
+    }
 }

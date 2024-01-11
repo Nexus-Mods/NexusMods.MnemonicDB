@@ -2,6 +2,7 @@ using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Serialization;
 using NexusMods.EventSourcing.RocksDB;
 using NexusMods.EventSourcing.Serialization;
 using NexusMods.EventSourcing.TestModel;
@@ -34,7 +35,8 @@ public abstract class ABenchmark
         IEventStore eventStore;
         if (type == typeof(InMemoryEventStore<BinaryEventSerializer>))
         {
-            eventStore = new InMemoryEventStore<BinaryEventSerializer>(serializer);
+            eventStore = new InMemoryEventStore<BinaryEventSerializer>(serializer,
+                Services.GetRequiredService<ISerializationRegistry>());
         }
         else if (type == typeof(RocksDBEventStore<BinaryEventSerializer>))
         {

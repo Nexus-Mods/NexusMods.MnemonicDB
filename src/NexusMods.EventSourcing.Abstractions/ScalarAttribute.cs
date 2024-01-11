@@ -7,7 +7,8 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// <summary>
  /// A scalar attribute that can be exposed on an entity.
  /// </summary>
- public class ScalarAttribute<TOwner, TType>(string attrName) : IAttribute<ScalarAccumulator<TType>>
+ public class ScalarAttribute<TOwner, TType>(string attrName) :
+    IAttribute<ScalarAccumulator<TType>>
  where TOwner : AEntity<TOwner>
  {
      /// <inheritdoc />
@@ -15,6 +16,11 @@ namespace NexusMods.EventSourcing.Abstractions;
 
      /// <inheritdoc />
      public string Name => attrName;
+
+     IAccumulator IAttribute.CreateAccumulator()
+     {
+         return CreateAccumulator();
+     }
 
      /// <inheritdoc />
      public ScalarAccumulator<TType> CreateAccumulator()
