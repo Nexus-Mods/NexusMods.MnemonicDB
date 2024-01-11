@@ -66,7 +66,7 @@ public class RocksDBEventStore<TSerializer> : IEventStore
         }
     }
 
-    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester, bool reverse = false) where TIngester : IEventIngester
+    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester) where TIngester : IEventIngester
     {
         Span<byte> startKey = stackalloc byte[24];
         entityId.TryWriteBytes(startKey);
@@ -81,42 +81,19 @@ public class RocksDBEventStore<TSerializer> : IEventStore
             {
                 fixed (byte* endKeyPtr = endKey)
                 {
-                    if (!reverse)
+                    options.SetIterateUpperBound(endKeyPtr, 24);
+                    options.SetIterateLowerBound(startKeyPtr, 24);
+                    using var iterator = _db.NewIterator(_entityIndexColumn, options);
+
+                    iterator.SeekToFirst();
+                    while (iterator.Valid())
                     {
-
-                        options.SetIterateUpperBound(endKeyPtr, 24);
-                        options.SetIterateLowerBound(startKeyPtr, 24);
-                        using var iterator = _db.NewIterator(_entityIndexColumn, options);
-
-                        iterator.SeekToFirst();
-                        while (iterator.Valid())
-                        {
-                            var key = iterator.GetKeySpan();
-                            var txId = TransactionId.From(key);
-                            var evt = _db.Get(key[16..], _deserializer, _eventsColumn);
-                            if (!ingester.Ingest(txId, evt)) break;
-                            iterator.Next();
-                        }
+                        var key = iterator.GetKeySpan();
+                        var txId = TransactionId.From(key);
+                        var evt = _db.Get(key[16..], _deserializer, _eventsColumn);
+                        if (!ingester.Ingest(txId, evt)) break;
+                        iterator.Next();
                     }
-                    else
-                    {
-                        options.SetIterateUpperBound(endKeyPtr, 24);
-                        options.SetIterateLowerBound(startKeyPtr, 24);
-                        using var iterator = _db.NewIterator(_entityIndexColumn, options);
-
-                        iterator.SeekToLast();
-                        while (iterator.Valid())
-                        {
-                            var key = iterator.GetKeySpan();
-                            var keySpan = key.SliceFast(16);
-                            var txId = TransactionId.From(keySpan);
-                            var evt = _db.Get(keySpan, _deserializer, _eventsColumn);
-                            if (!ingester.Ingest(txId, evt)) break;
-                            iterator.Prev();
-                        }
-
-                    }
-
                 }
             }
         }

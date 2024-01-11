@@ -1,5 +1,8 @@
 using System;
+using System.Buffers;
+using System.Buffers.Binary;
 using System.Diagnostics;
+using NexusMods.EventSourcing.Abstractions.Serialization;
 
 namespace NexusMods.EventSourcing.Abstractions.AttributeDefinitions;
 
@@ -7,12 +10,12 @@ namespace NexusMods.EventSourcing.Abstractions.AttributeDefinitions;
 /// An attribute for the type of an entity.
 /// </summary>
 /// <param name="attrName"></param>
-public class TypeAttributeDefinition : IAttribute<ScalarAccumulator<Type>>
+public class TypeAttributeDefinition : IAttribute<ScalarAccumulator<EntityDefinition>>
 {
     /// <inheritdoc />
-    public ScalarAccumulator<Type> CreateAccumulator()
+    public ScalarAccumulator<EntityDefinition> CreateAccumulator()
     {
-        return new ScalarAccumulator<Type>();
+        return new ScalarAccumulator<EntityDefinition>();
     }
 
     /// <inheritdoc />
@@ -31,9 +34,9 @@ public class TypeAttributeDefinition : IAttribute<ScalarAccumulator<Type>>
     public Type Get<TCtx>(TCtx context, EntityId owner) where TCtx : IEntityContext
     {
         EntityStructureRegistry.Register(this);
-        if (context.GetReadOnlyAccumulator<IEntity, TypeAttributeDefinition, ScalarAccumulator<Type>>(
+        if (context.GetReadOnlyAccumulator<IEntity, TypeAttributeDefinition, ScalarAccumulator<EntityDefinition>>(
                 new EntityId<IEntity>(owner), this, out var accumulator))
-            return accumulator.Value;
+            return accumulator.Value.Type;
         // TODO, make this a custom exception and extract it to another method
         throw new InvalidOperationException("No type attribute found for entity");
     }
@@ -50,7 +53,8 @@ public class TypeAttributeDefinition : IAttribute<ScalarAccumulator<Type>>
         where TEventCtx : IEventContext
         where TType : IEntity
     {
-        if (context.GetAccumulator<IEntity, TypeAttributeDefinition, ScalarAccumulator<Type>>(EntityId<IEntity>.From(id.Value.Value), this, out var accumulator))
-            accumulator.Value = typeof(TType);
+        var definition = EntityStructureRegistry.GetDefinition<TType>();
+        if (context.GetAccumulator<IEntity, TypeAttributeDefinition, ScalarAccumulator<EntityDefinition>>(EntityId<IEntity>.From(id.Value.Value), IEntity.TypeAttribute, out var accumulator))
+            accumulator.Value = definition;
     }
 }

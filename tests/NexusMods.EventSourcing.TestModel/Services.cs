@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Events;
+using NexusMods.EventSourcing.TestModel.Model;
 
 namespace NexusMods.EventSourcing.TestModel;
 
@@ -13,12 +14,16 @@ public static class Services
     /// <returns></returns>
     public static IServiceCollection AddEvents(this IServiceCollection coll)
     {
-        coll.AddEvent<Events.CreateLoadout>();
-        coll.AddEvent<Events.AddMod>();
-        coll.AddEvent<Events.SwapModEnabled>();
-        coll.AddEvent<Events.RenameLoadout>();
-        coll.AddEvent<Events.DeleteMod>();
-        coll.AddEvent<Events.AddCollection>();
+        coll.AddEvent<Events.CreateLoadout>()
+            .AddEvent<Events.AddMod>()
+            .AddEvent<Events.SwapModEnabled>()
+            .AddEvent<Events.RenameLoadout>()
+            .AddEvent<Events.DeleteMod>()
+            .AddEvent<Events.AddCollection>()
+            .AddEntity<Loadout>()
+            .AddEntity<Mod>()
+            .AddEntity<Collection>()
+            .AddEntity<LoadoutRegistry>();
         return coll;
     }
 

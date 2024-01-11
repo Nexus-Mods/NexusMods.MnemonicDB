@@ -33,4 +33,25 @@ public static class DependencyInjectionExtensions
         return collection;
     }
 
+
+    /// <summary>
+    /// Registers an entity with the service collection, this is required for loading snapshots and properly
+    /// tracking entity revisions in the application
+    /// </summary>
+    /// <param name="collection"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    /// <exception cref="ArgumentException"></exception>
+    public static IServiceCollection AddEntity<T>(this IServiceCollection collection) where T : class, IEntity
+    {
+        var type = typeof(T);
+        var attribute = type.GetCustomAttribute<EntityAttribute>();
+        if (attribute is null)
+        {
+            throw new ArgumentException($"Entity type {type.Name} does not have an EntityAttribute.");
+        }
+        EntityStructureRegistry.Register(new EntityDefinition(type, attribute.UUID, attribute.Revision));
+        return collection;
+    }
+
 }

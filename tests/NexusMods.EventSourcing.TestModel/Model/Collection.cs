@@ -3,6 +3,7 @@ using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.TestModel.Model;
 
+[Entity("12055587-81CE-44F7-AF2B-6324B0CBB3C4", 0)]
 public class Collection : AEntity<Collection>
 {
     public Collection(IEntityContext context, EntityId<Collection> id) : base(context, id) { }

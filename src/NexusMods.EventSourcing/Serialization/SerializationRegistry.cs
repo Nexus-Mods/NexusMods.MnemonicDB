@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using NexusMods.EventSourcing.Abstractions.Serialization;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Serialization;
 
@@ -78,5 +80,46 @@ public class SerializationRegistry : ISerializationRegistry
     public void RegisterSerializer(Type serializedType, ISerializer serializer)
     {
         _cachedSerializers.TryAdd(serializedType, serializer);
+    }
+
+
+    /// <inheritdoc />
+    public void Serialize<TVal>(IBufferWriter<byte> writer, TVal value)
+    {
+        var serializer = GetSerializer(typeof(TVal));
+        if (serializer.TryGetFixedSize(typeof(TVal), out var size) && serializer is IFixedSizeSerializer<TVal> fixedSizeSerializer)
+        {
+            var span = writer.GetSpan(size);
+            fixedSizeSerializer.Serialize(value, span);
+            writer.Advance(size);
+        }
+        else if (serializer is IVariableSizeSerializer<TVal> variableSizeSerializer)
+        {
+            variableSizeSerializer.Serialize(value, writer);
+        }
+        else
+        {
+            throw new Exception($"Unknown serializer type {serializer.GetType().Name}");
+        }
+
+    }
+
+    /// <inheritdoc />
+    public int Deserialize<TVal>(ReadOnlySpan<byte> bytes, out TVal value)
+    {
+        var serializer = GetSerializer(typeof(TVal));
+        if (serializer.TryGetFixedSize(typeof(TVal), out var size) && serializer is IFixedSizeSerializer<TVal> fixedSizeSerializer)
+        {
+            value = fixedSizeSerializer.Deserialize(bytes.SliceFast(0, size));
+            return size;
+        }
+        else if (serializer is IVariableSizeSerializer<TVal> variableSizeSerializer)
+        {
+            return variableSizeSerializer.Deserialize(bytes, out value);
+        }
+        else
+        {
+            throw new Exception($"Unknown serializer type {serializer.GetType().Name}");
+        }
     }
 }
