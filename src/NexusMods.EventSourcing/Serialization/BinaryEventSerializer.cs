@@ -21,6 +21,7 @@ public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSeria
 
     private readonly Dictionary<Type, EventSerializerDelegate> _serializerDelegates = new();
     private readonly Dictionary<UInt128, EventDeserializerDelegate> _deserializerDelegates = new();
+    private readonly ISerializationRegistry _serializerRegistry;
 
     /// <summary>
     /// Write an event to the given writer, and return the
@@ -29,17 +30,19 @@ public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSeria
 
     private delegate int EventDeserializerDelegate(ReadOnlySpan<byte> data, out IEvent @event);
 
-    public BinaryEventSerializer(IEnumerable<ISerializer> diInjectedSerializers, IEnumerable<EventDefinition> eventDefinitions)
+    public BinaryEventSerializer(ISerializationRegistry registry, IEnumerable<EventDefinition> eventDefinitions)
     {
+        _serializerRegistry = registry;
         _writer = new PooledMemoryBufferWriter();
-        PopulateSerializers(diInjectedSerializers.ToArray(), eventDefinitions.ToArray());
+        _serializerRegistry.RegisterSerializer(typeof(IEvent), this);
+        PopulateSerializers(eventDefinitions.ToArray());
     }
 
-    private void PopulateSerializers(ISerializer[] diInjectedSerializers, EventDefinition[] eventDefinitions)
+    private void PopulateSerializers(EventDefinition[] eventDefinitions)
     {
         foreach (var eventDefinition in eventDefinitions)
         {
-            var (serializer, deserializer) = MakeSerializer(eventDefinition, diInjectedSerializers);
+            var (serializer, deserializer) = MakeSerializer(eventDefinition);
             _serializerDelegates[eventDefinition.Type] = serializer;
             _deserializerDelegates[eventDefinition.Id] = deserializer;
         }
@@ -60,8 +63,14 @@ public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSeria
         return @event;
     }
 
+    /// <summary>
+    /// Gets a serializer that can serialize the given type, for IEvent types, this class is returned.
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    private ISerializer GetSerializer(Type type) => type == typeof(IEvent) ? this : _serializerRegistry.GetSerializer(type);
 
-    private (EventSerializerDelegate, EventDeserializerDelegate) MakeSerializer(EventDefinition definition, ISerializer[] serializers)
+    private (EventSerializerDelegate, EventDeserializerDelegate) MakeSerializer(EventDefinition definition)
     {
         var deconstructParams = definition.Type.GetMethod("Deconstruct")?.GetParameters().ToArray()!;
         var ctorParams = definition.Type.GetConstructors()
@@ -69,7 +78,7 @@ public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSeria
             .GetParameters();
 
         var paramDefinitions = deconstructParams.Zip(ctorParams)
-            .Select(p => (p.First, p.Second, Expression.Variable(p.Second.ParameterType, p.Second.Name), GetSerializer(serializers, p.Second.ParameterType)))
+            .Select(p => (p.First, p.Second, Expression.Variable(p.Second.ParameterType, p.Second.Name), GetSerializer(p.Second.ParameterType)))
             .ToArray();
 
 
@@ -215,41 +224,7 @@ public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSeria
         return lambda.Compile();
     }
 
-    private ISerializer GetSerializer(ISerializer[] serializers, Type type)
-    {
-        if (type == typeof(IEvent))
-        {
-            return this;
-        }
 
-        var result = serializers.FirstOrDefault(s => s.CanSerialize(type));
-        if (result != null)
-        {
-            return result;
-        }
-
-        if (type.IsConstructedGenericType)
-        {
-            var genericMakers = serializers.OfType<IGenericSerializer>();
-            foreach (var maker in genericMakers)
-            {
-                if (maker.TrySpecialize(type.GetGenericTypeDefinition(),
-                        type.GetGenericArguments(), t => GetSerializer(serializers, t), out var serializer))
-                {
-                    return serializer;
-                }
-            }
-        }
-
-        if (type.IsArray)
-        {
-            var arrayMaker = serializers.OfType<GenericArraySerializer>().First();
-            arrayMaker.TrySpecialize(type, [type.GetElementType()!], t => GetSerializer(serializers, t), out var serializer);
-            return serializer!;
-        }
-
-        throw new Exception($"No serializer found for {type}");
-    }
 
     private EventDeserializerDelegate BuildFixedSizeDeserializer(EventDefinition definitions, MemberDefinition[] allDefinitions, List<MemberDefinition> fixedParams, int fixedSize)
     {
@@ -353,6 +328,7 @@ public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSeria
 
     private MethodInfo _readonlySliceFastStartMethodInfo =
         typeof(BinaryEventSerializer).GetMethod(nameof(ReadOnlySliceFastStart), BindingFlags.Static | BindingFlags.NonPublic)!;
+
 
     private Expression MakeReadonlyWindowExpression(Expression span, int offset)
     {

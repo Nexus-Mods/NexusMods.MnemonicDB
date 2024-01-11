@@ -32,6 +32,7 @@ namespace NexusMods.EventSourcing.Abstractions;
      {
          if (context.GetAccumulator<TOwner, ScalarAttribute<TOwner, TType>, ScalarAccumulator<TType>>(owner, this, out var accumulator))
              accumulator.Value = value;
+         EntityStructureRegistry.Register(this);
      }
 
      /// <summary>

@@ -9,13 +9,27 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// A collection of entity links to other entities. Think of this as a one to many FK relationship in a
 /// database.
 /// </summary>
-/// <param name="name"></param>
 /// <typeparam name="TOwner"></typeparam>
 /// <typeparam name="TOther"></typeparam>
-public class MultiEntityAttributeDefinition<TOwner, TOther>(string name) : IAttribute<MultiEntityAccumulator<TOther>>
+public class MultiEntityAttributeDefinition<TOwner, TOther> : IAttribute<MultiEntityAccumulator<TOther>>
     where TOwner : AEntity<TOwner>, IEntity
     where TOther : AEntity<TOther>
 {
+    private readonly string _name;
+
+    /// <summary>
+    /// A collection of entity links to other entities. Think of this as a one to many FK relationship in a
+    /// database.
+    /// </summary>
+    /// <param name="name"></param>
+    /// <typeparam name="TOwner"></typeparam>
+    /// <typeparam name="TOther"></typeparam>
+    public MultiEntityAttributeDefinition(string name)
+    {
+        _name = name;
+        EntityStructureRegistry.Register(this);
+    }
+
     /// <inheritdoc />
     public MultiEntityAccumulator<TOther> CreateAccumulator()
     {
@@ -85,7 +99,7 @@ public class MultiEntityAttributeDefinition<TOwner, TOther>(string name) : IAttr
     public Type Owner => typeof(TOwner);
 
     /// <inheritdoc />
-    public string Name => name;
+    public string Name => _name;
 }
 
 /// <inheritdoc />
