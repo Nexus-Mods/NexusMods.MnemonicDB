@@ -1,7 +1,10 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using NexusMods.EventSourcing.Abstractions.Collections;
+using NexusMods.EventSourcing.Abstractions.Serialization;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -145,5 +148,21 @@ public class MultiEntityAccumulator<TType> : IAccumulator
     public void Remove(EntityId<TType> id)
     {
         Ids.Remove(id);
+    }
+
+    /// <inheritdoc />
+    public void WriteTo(IBufferWriter<byte> writer, ISerializationRegistry registry)
+    {
+        registry.Serialize(writer, Ids.ToArray());
+    }
+
+    /// <inheritdoc />
+    public int ReadFrom(ref ReadOnlySpan<byte> reader, ISerializationRegistry registry)
+    {
+        var read = registry.Deserialize(reader, out EntityId<TType>[] ids);
+        Ids.Clear();
+        foreach (var id in ids)
+            Ids.Add(id);
+        return read;
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 
 namespace NexusMods.EventSourcing.Abstractions.Serialization;
 
@@ -22,4 +23,20 @@ public interface ISerializationRegistry
     /// <param name="serializedType"></param>
     /// <param name="serializer"></param>
     public void RegisterSerializer(Type serializedType, ISerializer serializer);
+
+    /// <summary>
+    /// Serializes the given value into the given buffer writer.
+    /// </summary>
+    /// <param name="writer"></param>
+    /// <param name="value"></param>
+    /// <typeparam name="TVal"></typeparam>
+    public void Serialize<TVal>(IBufferWriter<byte> writer, TVal value);
+
+    /// <summary>
+    /// Deserializes the given bytes into the given type, returning the number of bytes read.
+    /// </summary>
+    /// <param name="bytes"></param>
+    /// <typeparam name="TVal"></typeparam>
+    /// <returns></returns>
+    public int Deserialize<TVal>(ReadOnlySpan<byte> bytes, out TVal value);
 }

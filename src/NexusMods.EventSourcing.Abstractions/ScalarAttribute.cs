@@ -1,4 +1,6 @@
 using System;
+using System.Buffers;
+using NexusMods.EventSourcing.Abstractions.Serialization;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -74,4 +76,16 @@ namespace NexusMods.EventSourcing.Abstractions;
      /// The value of the accumulator
      /// </summary>
      public TVal Value = default! ;
+
+     /// <inheritdoc />
+     public void WriteTo(IBufferWriter<byte> writer, ISerializationRegistry registry)
+     {
+         registry.Serialize(writer, Value);
+     }
+
+     /// <inheritdoc />
+     public int ReadFrom(ref ReadOnlySpan<byte> span, ISerializationRegistry registry)
+     {
+         return registry.Deserialize(span, out Value);
+     }
  }
