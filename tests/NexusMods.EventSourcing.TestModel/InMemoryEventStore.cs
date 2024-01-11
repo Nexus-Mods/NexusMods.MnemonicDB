@@ -16,13 +16,13 @@ where TSerializer : IEventSerializer
     private readonly IVariableSizeSerializer<string> _stringSerializer;
     private readonly PooledMemoryBufferWriter _writer;
     private readonly ISerializationRegistry _serializationRegistry;
-    private readonly IVariableSizeSerializer<EntityDefinition> _entityDefinitionSerializer;
+    private readonly IFixedSizeSerializer<EntityDefinition> _entityDefinitionSerializer;
 
     public InMemoryEventStore(TSerializer serializer, ISerializationRegistry serializationRegistry)
     {
         _serializer = serializer;
         _stringSerializer = (serializationRegistry.GetSerializer(typeof(string)) as IVariableSizeSerializer<string>)!;
-        _entityDefinitionSerializer = (serializationRegistry.GetSerializer(typeof(EntityDefinition)) as IVariableSizeSerializer<EntityDefinition>)!;
+        _entityDefinitionSerializer = (serializationRegistry.GetSerializer(typeof(EntityDefinition)) as IFixedSizeSerializer<EntityDefinition>)!;
         _serializationRegistry = serializationRegistry;
         _writer = new PooledMemoryBufferWriter();
     }
@@ -67,13 +67,14 @@ where TSerializer : IEventSerializer
         }
     }
 
-    public TransactionId GetSnapshot(TransactionId asOf, EntityId entityId, ushort revision,
+    public TransactionId GetSnapshot(TransactionId asOf, EntityId entityId, out IAccumulator loadedDefinition,
         out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes)
     {
         if (!_snapshots.TryGetValue(entityId, out var snapshots))
         {
             loadedAttributes = Array.Empty<(IAttribute, IAccumulator)>();
-            return default;
+            loadedDefinition = default!;
+            return TransactionId.Min;
         }
 
         var startPoint = snapshots.LastOrDefault(s => s.Key <= asOf);
@@ -81,19 +82,27 @@ where TSerializer : IEventSerializer
         if (startPoint.Value == default)
         {
             loadedAttributes = Array.Empty<(IAttribute, IAccumulator)>();
+            loadedDefinition = default!;
             return default;
         }
 
         var snapshot = (ReadOnlySpan<byte>)startPoint.Value.AsSpanFast();
-        var offset = _entityDefinitionSerializer.Deserialize(snapshot, out var entityDefinition);
+        var entityDefinition = _entityDefinitionSerializer.Deserialize(snapshot.SliceFast(0, 18));
 
-        if (entityDefinition.Revision != revision)
+        var typeAccumulator = IEntity.TypeAttribute.CreateAccumulator();
+        typeAccumulator.ReadFrom(ref snapshot, _serializationRegistry);
+
+
+        var appDefinition = EntityStructureRegistry.GetDefinitionByUUID(entityDefinition.UUID);
+
+        if (entityDefinition.Revision != appDefinition.Revision)
         {
             loadedAttributes = Array.Empty<(IAttribute, IAccumulator)>();
+            loadedDefinition = default!;
             return default;
         }
 
-        snapshot = snapshot.SliceFast(offset);
+        snapshot = snapshot.SliceFast(18);
 
         var numberOfAttrs = BinaryPrimitives.ReadUInt16BigEndian(snapshot);
         snapshot = snapshot.SliceFast(sizeof(ushort));
@@ -120,6 +129,7 @@ where TSerializer : IEventSerializer
         }
 
         loadedAttributes = results;
+        loadedDefinition = typeAccumulator;
         return startPoint.Key;
     }
 

@@ -5,11 +5,14 @@ using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing;
 
-public struct EntityContextIngester(Dictionary<IAttribute, IAccumulator> values, EntityId id) : IEventContext, IEventIngester
+public class EntityContextIngester(Dictionary<IAttribute, IAccumulator> values, EntityId id) : IEventContext, IEventIngester
 {
+    public int ProcessedEvents = 0;
+
     /// <inheritdoc />
     public bool Ingest(TransactionId _, IEvent @event)
     {
+        ProcessedEvents++;
         @event.Apply(this);
         return true;
     }

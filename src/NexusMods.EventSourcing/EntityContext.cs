@@ -7,6 +7,8 @@ namespace NexusMods.EventSourcing;
 
 public class EntityContext(IEventStore store) : IEntityContext
 {
+    public const int MaxEventsBeforeSnapshotting = 250;
+
     private TransactionId asOf = TransactionId.From(0);
     private object _lock = new();
 
@@ -58,8 +60,28 @@ public class EntityContext(IEventStore store) : IEntityContext
     private Dictionary<IAttribute, IAccumulator> LoadAccumulators(EntityId id)
     {
         var values = new Dictionary<IAttribute, IAccumulator>();
+
+        var snapshotTxId = store.GetSnapshot(asOf, id, out var loadedDefinition, out var loadedAttributes);
+
+        if (snapshotTxId != TransactionId.Min)
+        {
+            values.Add(IEntity.TypeAttribute, loadedDefinition);
+            foreach (var (attr, accumulator) in loadedAttributes)
+                values.Add(attr, accumulator);
+        }
+
         var ingester = new EntityContextIngester(values, id);
-        store.EventsForEntity(id, ingester);
+        store.EventsForEntity(id, ingester, snapshotTxId, asOf);
+
+        if (ingester.ProcessedEvents > MaxEventsBeforeSnapshotting)
+        {
+            var snapshot = new Dictionary<IAttribute, IAccumulator>();
+            foreach (var (attr, accumulator) in values)
+                snapshot.Add(attr, accumulator);
+
+            store.SetSnapshot(asOf, id, snapshot);
+        }
+
         return values;
     }
 

@@ -72,16 +72,7 @@ public class RocksDBEventStore<TSerializer> : IEventStore
         throw new NotImplementedException();
     }
 
-    public TransactionId GetSnapshot(TransactionId asOf, EntityId entityId, ushort revision,
-        out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes)
-    {
-        throw new NotImplementedException();
-    }
 
-    public void SetSnapshot(TransactionId txId, EntityId id, IDictionary<IAttribute, IAccumulator> attributes)
-    {
-        throw new NotImplementedException();
-    }
 
     public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester) where TIngester : IEventIngester
     {
@@ -114,5 +105,16 @@ public class RocksDBEventStore<TSerializer> : IEventStore
                 }
             }
         }
+    }
+
+    public TransactionId GetSnapshot(TransactionId asOf, EntityId entityId, out IAccumulator loadedDefinition,
+        out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes)
+    {
+        throw new NotImplementedException();
+    }
+
+    public void SetSnapshot(TransactionId txId, EntityId id, IDictionary<IAttribute, IAccumulator> attributes)
+    {
+        throw new NotImplementedException();
     }
 }

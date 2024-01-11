@@ -1,3 +1,4 @@
+using Microsoft.VisualStudio.TestPlatform.ObjectModel.DataCollection;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.TestModel.Events;
 using NexusMods.EventSourcing.TestModel.Model;
@@ -11,7 +12,10 @@ public abstract class AEventStoreTest<T> where T : IEventStore
     public AEventStoreTest(T store)
     {
         Store = store;
+        Context = new EntityContext(store);
     }
+
+    public EntityContext Context { get; set; }
 
     [Fact]
     public void CanGetAndReturnEvents()
@@ -31,6 +35,31 @@ public abstract class AEventStoreTest<T> where T : IEventStore
         {
             accumulator.Events[i].Should().BeEquivalentTo(new RenameLoadout(enityId, $"Test {i - 1}"));
         }
+    }
+
+    [Fact]
+    public void CanGetSnapshots()
+    {
+        var id = EntityId<Loadout>.NewId();
+
+        Context.Add(new CreateLoadout(id, "Test"));
+
+        for (var i = 0; i < 1024; i++)
+        {
+            Context.Add(new RenameLoadout(id, $"Test {i}"));
+        }
+
+        Context.EmptyCaches();
+        var loadout = Context.Get(id);
+
+        loadout.Should().NotBeNull();
+        loadout.Name.Should().Be("Test 1023");
+
+
+        var snapshotId = Store.GetSnapshot(TransactionId.Max, id.Value, out var definition, out var attributes);
+
+        snapshotId.Should().Be(TransactionId.From(1024));
+
     }
 
     private class EventAccumulator : IEventIngester

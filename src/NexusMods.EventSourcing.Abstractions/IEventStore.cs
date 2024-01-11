@@ -51,7 +51,8 @@ public interface IEventStore
     /// <param name="revision"></param>
     /// <param name="loadedAttributes"></param>
     /// <returns></returns>
-    public TransactionId GetSnapshot(TransactionId asOf, EntityId entityId, ushort revision,
+    public TransactionId GetSnapshot(TransactionId asOf, EntityId entityId,
+        out IAccumulator loadedDefinition,
         out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes);
 
     /// <summary>
