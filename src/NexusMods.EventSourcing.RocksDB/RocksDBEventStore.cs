@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Serialization;
 using NexusMods.EventSourcing.Serialization;
 using Reloaded.Memory.Extensions;
 using RocksDbSharp;
@@ -21,7 +22,7 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore
     private readonly SpanDeserializer<TSerializer> _deserializer;
     private readonly ColumnFamilyHandle _snapshotColumn;
 
-    public RocksDBEventStore(TSerializer serializer, Settings settings, SerializationRegistry serializationRegistry) : base(serializationRegistry)
+    public RocksDBEventStore(TSerializer serializer, Settings settings, ISerializationRegistry serializationRegistry) : base(serializationRegistry)
     {
         _serializer = serializer;
         _families = new ColumnFamilies();
@@ -104,10 +105,60 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore
         }
     }
 
-    public TransactionId GetSnapshot(TransactionId asOf, EntityId entityId, out IAccumulator loadedDefinition,
+    public override TransactionId GetSnapshot(TransactionId asOf, EntityId entityId, out IAccumulator loadedDefinition,
         out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes)
     {
-        throw new NotImplementedException();
+        Span<byte> startKey = stackalloc byte[24];
+        entityId.TryWriteBytes(startKey);
+        BinaryPrimitives.WriteUInt64BigEndian(startKey.SliceFast(16), 0);
+        Span<byte> endKey = stackalloc byte[24];
+        entityId.TryWriteBytes(endKey);
+        BinaryPrimitives.WriteUInt64BigEndian(endKey.SliceFast(16), asOf.Value);
+
+        var options = new ReadOptions();
+        unsafe
+        {
+            fixed (byte* startKeyPtr = startKey)
+            {
+                fixed (byte* endKeyPtr = endKey)
+                {
+                    options.SetIterateUpperBound(endKeyPtr, 24);
+                    options.SetIterateLowerBound(startKeyPtr, 24);
+                    using var iterator = _db.NewIterator(_snapshotColumn, options);
+
+                    iterator.SeekToLast();
+                    while (iterator.Valid())
+                    {
+                        var key = iterator.GetKeySpan();
+                        var txId = TransactionId.From(key);
+                        var evt = _db.Get(key[16..], _eventsColumn);
+
+                        if (evt == null)
+                        {
+                            loadedAttributes = Array.Empty<(IAttribute, IAccumulator)>();
+                            loadedDefinition = default!;
+                            return TransactionId.Min;
+                        }
+
+                        if (!DeserializeSnapshot(out var foundDefinition, out var foundAttributes, evt))
+                        {
+                            loadedAttributes = Array.Empty<(IAttribute, IAccumulator)>();
+                            loadedDefinition = default!;
+                            return TransactionId.Min;
+                        }
+
+                        loadedAttributes = foundAttributes;
+                        loadedDefinition = foundDefinition;
+
+                        return txId;
+                    }
+                }
+            }
+        }
+
+        loadedAttributes = Array.Empty<(IAttribute, IAccumulator)>();
+        loadedDefinition = default!;
+        return TransactionId.Min;
     }
 
     public override void SetSnapshot(TransactionId txId, EntityId id, IDictionary<IAttribute, IAccumulator> attributes)

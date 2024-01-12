@@ -23,9 +23,8 @@ public abstract class AEventStore : IEventStore
 
     }
 
-    protected TransactionId DeserializeSnapshot(out IAccumulator loadedDefinition,
-        out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes, ReadOnlySpan<byte> snapshot,
-        KeyValuePair<TransactionId, byte[]> startPoint)
+    protected bool DeserializeSnapshot(out IAccumulator loadedDefinition,
+        out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes, ReadOnlySpan<byte> snapshot)
     {
         var entityDefinition = _entityDefinitionSerializer.Deserialize(snapshot.SliceFast(0, 18));
 
@@ -39,7 +38,7 @@ public abstract class AEventStore : IEventStore
         {
             loadedAttributes = Array.Empty<(IAttribute, IAccumulator)>();
             loadedDefinition = default!;
-            return default;
+            return false;
         }
 
         snapshot = snapshot.SliceFast(18);
@@ -70,7 +69,7 @@ public abstract class AEventStore : IEventStore
 
         loadedAttributes = results;
         loadedDefinition = typeAccumulator;
-        return startPoint.Key;
+        return true;
     }
 
     protected ReadOnlySpan<byte> SerializeSnapshot(EntityId id, IDictionary<IAttribute, IAccumulator> attributes)

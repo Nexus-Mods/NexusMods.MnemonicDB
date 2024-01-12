@@ -33,10 +33,12 @@ public abstract class ABenchmark
     {
         var serializer = Services.GetRequiredService<BinaryEventSerializer>();
         IEventStore eventStore;
+
+        var registry = Services.GetRequiredService<ISerializationRegistry>();
+
         if (type == typeof(InMemoryEventStore<BinaryEventSerializer>))
         {
-            eventStore = new InMemoryEventStore<BinaryEventSerializer>(serializer,
-                Services.GetRequiredService<ISerializationRegistry>());
+            eventStore = new InMemoryEventStore<BinaryEventSerializer>(serializer, registry);
         }
         else if (type == typeof(RocksDBEventStore<BinaryEventSerializer>))
         {
@@ -44,7 +46,8 @@ public abstract class ABenchmark
                 new RocksDB.Settings
                 {
                     StorageLocation = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("FasterKV.EventStore" + Guid.NewGuid())
-                });
+                },
+                registry);
         }
         else
         {

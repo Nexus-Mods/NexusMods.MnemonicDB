@@ -79,7 +79,12 @@ where TSerializer : IEventSerializer
 
         var snapshot = (ReadOnlySpan<byte>)startPoint.Value.AsSpanFast();
 
-        return DeserializeSnapshot(out loadedDefinition, out loadedAttributes, snapshot, startPoint);
+        if (DeserializeSnapshot(out loadedDefinition, out loadedAttributes, snapshot))
+            return startPoint.Key;
+
+        loadedAttributes = Array.Empty<(IAttribute, IAccumulator)>();
+        loadedDefinition = default!;
+        return default;
     }
 
     public override void SetSnapshot(TransactionId txId, EntityId id, IDictionary<IAttribute, IAccumulator> attributes)
