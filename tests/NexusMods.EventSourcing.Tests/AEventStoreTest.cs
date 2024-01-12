@@ -58,7 +58,14 @@ public abstract class AEventStoreTest<T> where T : IEventStore
 
         var snapshotId = Store.GetSnapshot(TransactionId.Max, id.Value, out var definition, out var attributes);
 
-        snapshotId.Should().Be(TransactionId.From(1024));
+        snapshotId.Should().Be(TransactionId.From(1025));
+
+        Context.EmptyCaches();
+
+        // Load it again, this time from the cache
+        loadout = Context.Get(id);
+        loadout.Should().NotBeNull();
+        loadout.Name.Should().Be("Test 1023");
 
     }
 

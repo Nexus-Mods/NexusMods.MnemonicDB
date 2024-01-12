@@ -142,7 +142,7 @@ where TSerializer : IEventSerializer
         typeAccumulator.WriteTo(_writer, _serializationRegistry);
 
         var sizeSpan = _writer.GetSpan(sizeof(ushort));
-        BinaryPrimitives.WriteUInt16BigEndian(sizeSpan, (ushort) attributes.Count);
+        BinaryPrimitives.WriteUInt16BigEndian(sizeSpan, (ushort) (attributes.Count - 1));
         _writer.Advance(sizeof(ushort));
 
 
