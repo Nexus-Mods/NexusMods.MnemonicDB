@@ -78,7 +78,10 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore
         BinaryPrimitives.WriteUInt64BigEndian(startKey.SliceFast(16), fromId.Value);
         Span<byte> endKey = stackalloc byte[24];
         entityId.TryWriteBytes(endKey);
-        BinaryPrimitives.WriteUInt64BigEndian(endKey.SliceFast(16), toId.Value + 1);
+        if (toId == TransactionId.Max)
+            BinaryPrimitives.WriteUInt64BigEndian(endKey.SliceFast(16), ulong.MaxValue);
+        else
+            BinaryPrimitives.WriteUInt64BigEndian(endKey.SliceFast(16), toId.Value + 1);
 
         var options = new ReadOptions();
         unsafe
