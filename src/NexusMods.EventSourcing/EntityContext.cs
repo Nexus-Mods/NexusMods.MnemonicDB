@@ -79,7 +79,7 @@ public class EntityContext(IEventStore store) : IEntityContext
             foreach (var (attr, accumulator) in values)
                 snapshot.Add(attr, accumulator);
 
-            store.SetSnapshot(asOf, id, snapshot);
+            store.SetSnapshot(ingester.LastTransactionId, id, snapshot);
         }
 
         return values;

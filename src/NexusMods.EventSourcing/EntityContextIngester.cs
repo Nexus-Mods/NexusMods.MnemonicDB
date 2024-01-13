@@ -7,11 +7,20 @@ namespace NexusMods.EventSourcing;
 
 public class EntityContextIngester(Dictionary<IAttribute, IAccumulator> values, EntityId id) : IEventContext, IEventIngester
 {
+    /// <summary>
+    /// The number of events processed by this ingester.
+    /// </summary>
     public int ProcessedEvents = 0;
 
+    /// <summary>
+    /// The last transaction id processed by this ingester.
+    /// </summary>
+    public TransactionId LastTransactionId = TransactionId.Min;
+
     /// <inheritdoc />
-    public bool Ingest(TransactionId _, IEvent @event)
+    public bool Ingest(TransactionId txId, IEvent @event)
     {
+        LastTransactionId = txId;
         ProcessedEvents++;
         @event.Apply(this);
         return true;

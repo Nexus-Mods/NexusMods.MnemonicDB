@@ -94,9 +94,9 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore
                     iterator.SeekToFirst();
                     while (iterator.Valid())
                     {
-                        var key = iterator.GetKeySpan();
+                        var key = iterator.GetKeySpan().SliceFast(16);
                         var txId = TransactionId.From(key);
-                        var evt = _db.Get(key[16..], _deserializer, _eventsColumn);
+                        var evt = _db.Get(key, _deserializer, _eventsColumn);
                         if (!ingester.Ingest(txId, evt)) break;
                         iterator.Next();
                     }
@@ -113,7 +113,7 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore
         BinaryPrimitives.WriteUInt64BigEndian(startKey.SliceFast(16), 0);
         Span<byte> endKey = stackalloc byte[24];
         entityId.TryWriteBytes(endKey);
-        BinaryPrimitives.WriteUInt64BigEndian(endKey.SliceFast(16), asOf.Value + 1);
+        BinaryPrimitives.WriteUInt64BigEndian(endKey.SliceFast(16), asOf.Value);
 
         var options = new ReadOptions();
         unsafe
@@ -122,25 +122,26 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore
             {
                 fixed (byte* endKeyPtr = endKey)
                 {
-                    options.SetIterateUpperBound(endKeyPtr, 24);
-                    options.SetIterateLowerBound(startKeyPtr, 24);
+                    //options.SetIterateUpperBound(endKeyPtr, 24);
+                    //options.SetIterateLowerBound(startKeyPtr, 24);
                     using var iterator = _db.NewIterator(_snapshotColumn, options);
 
-                    iterator.SeekToLast();
+                    // Iterators are top end exclusive, so we need to seek to the last item before the asOf
+                    iterator.SeekForPrev(endKeyPtr, 24);
                     while (iterator.Valid())
                     {
                         var key = iterator.GetKeySpan();
-                        var txId = TransactionId.From(key);
-                        var evt = _db.Get(key[16..], _eventsColumn);
+                        var txId = TransactionId.From(key.SliceFast(16));
+                        var snapshotData = iterator.GetValueSpan();
 
-                        if (evt == null)
+                        if (snapshotData.Length == 0)
                         {
                             loadedAttributes = Array.Empty<(IAttribute, IAccumulator)>();
                             loadedDefinition = default!;
                             return TransactionId.Min;
                         }
 
-                        if (!DeserializeSnapshot(out var foundDefinition, out var foundAttributes, evt))
+                        if (!DeserializeSnapshot(out var foundDefinition, out var foundAttributes, snapshotData))
                         {
                             loadedAttributes = Array.Empty<(IAttribute, IAccumulator)>();
                             loadedDefinition = default!;
