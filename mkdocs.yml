@@ -1,7 +1,7 @@
-site_name: Nexus Mods App Template
-site_url: https://nexus-mods.github.io/NexusMods.EventSourcing
+site_name: Nexus Event Sourcing Library
+site_url: https://nexus-mods.github.io/NexusMods.EventSourcing/
 
-repo_name: Nexus-Mods/NexusMods.App.EventSourcing
+repo_name: Nexus-Mods/NexusMods.EventSourcing
 repo_url: https://github.com/Nexus-Mods/NexusMods.EventSourcing
 
 extra:
@@ -9,10 +9,13 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/Nexus-Mods
     - icon: fontawesome/brands/twitter
-      link: https://twitter.com/NexusSites
+      link: https://twitter.com/TheSewer56
 
 extra_css:
   - Nexus/Stylesheets/extra.css
+
+plugins:
+  - search
 
 markdown_extensions:
   - admonition
@@ -43,8 +46,6 @@ theme:
   features:
     - navigation.instant
 
-plugins:
-  - search
-
 nav:
   - Home: index.md
+  - Usage: Usage.md
