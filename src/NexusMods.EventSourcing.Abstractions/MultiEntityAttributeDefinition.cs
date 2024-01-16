@@ -30,6 +30,7 @@ public class MultiEntityAttributeDefinition<TOwner, TOther> : IAttribute<MultiEn
     public MultiEntityAttributeDefinition(string name)
     {
         _name = name;
+        EntityStructureRegistry.Register(this);
     }
 
     /// <inheritdoc />

@@ -38,6 +38,7 @@ public class TypeAttributeDefinition : IAttribute<ScalarAccumulator<EntityDefini
     /// <returns></returns>
     public Type Get<TCtx>(TCtx context, EntityId owner) where TCtx : IEntityContext
     {
+        EntityStructureRegistry.Register(this);
         if (context.GetReadOnlyAccumulator<IEntity, TypeAttributeDefinition, ScalarAccumulator<EntityDefinition>>(
                 new EntityId<IEntity>(owner), this, out var accumulator))
             return accumulator.Value.Type;

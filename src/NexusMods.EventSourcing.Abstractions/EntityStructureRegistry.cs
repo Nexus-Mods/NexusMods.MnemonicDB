@@ -11,7 +11,7 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// </summary>
 public static class EntityStructureRegistry
 {
-    private static readonly ConcurrentDictionary<Type, ConcurrentDictionary<string, AttributeDefinition>> _entityStructures = new();
+    private static readonly ConcurrentDictionary<Type, ConcurrentDictionary<string, IAttribute>> _entityStructures = new();
 
 
     private static readonly ConcurrentDictionary<Type, EntityDefinition> _entityDefinitionsByType = new();
@@ -21,7 +21,7 @@ public static class EntityStructureRegistry
     /// Register an attribute in the global registry.
     /// </summary>
     /// <param name="attribute"></param>
-    public static void Register(AttributeDefinition attribute)
+    public static void Register(IAttribute attribute)
     {
         TOP:
         if (_entityStructures.TryGetValue(attribute.Owner, out var found))
@@ -30,7 +30,7 @@ public static class EntityStructureRegistry
             return;
         }
 
-        var dict = new ConcurrentDictionary<string, AttributeDefinition>();
+        var dict = new ConcurrentDictionary<string, IAttribute>();
         dict.TryAdd(attribute.Name, attribute);
         if (!_entityStructures.TryAdd(attribute.Owner, dict))
         {
@@ -55,7 +55,7 @@ public static class EntityStructureRegistry
     /// </summary>
     /// <param name="owner"></param>
     /// <returns></returns>
-    public static bool TryGetAttributes(Type owner, [NotNullWhen(true)] out ConcurrentDictionary<string, AttributeDefinition>? result)
+    public static bool TryGetAttributes(Type owner, [NotNullWhen(true)] out ConcurrentDictionary<string, IAttribute>? result)
     {
         if (_entityStructures.TryGetValue(owner, out var found ))
         {

@@ -59,12 +59,12 @@ public abstract class AEventStore : IEventStore
             if (!attributes.TryGetValue(attributeName, out var attribute))
                 throw new Exception("Entity definition does not match the current structure registry.");
 
-            var accumulator = attribute.Attribute.CreateAccumulator();
+            var accumulator = attribute.CreateAccumulator();
 
             accumulator.ReadFrom(ref snapshot, _serializationRegistry);
             snapshot = snapshot.SliceFast(read);
 
-            results[i] = (attribute.Attribute, accumulator);
+            results[i] = (attribute, accumulator);
         }
 
         loadedAttributes = results;
