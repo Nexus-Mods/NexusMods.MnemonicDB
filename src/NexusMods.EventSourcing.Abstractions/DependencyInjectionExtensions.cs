@@ -1,5 +1,6 @@
 using System;
 using System.Buffers.Binary;
+using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -45,12 +46,31 @@ public static class DependencyInjectionExtensions
     public static IServiceCollection AddEntity<T>(this IServiceCollection collection) where T : class, IEntity
     {
         var type = typeof(T);
-        var attribute = type.GetCustomAttribute<EntityAttribute>();
-        if (attribute is null)
+        var entityAttribute = type.GetCustomAttribute<EntityAttribute>();
+        if (entityAttribute is null)
         {
             throw new ArgumentException($"Entity type {type.Name} does not have an EntityAttribute.");
         }
-        EntityStructureRegistry.Register(new EntityDefinition(type, attribute.UUID, attribute.Revision));
+
+        foreach (var staticAttribute in type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static))
+        {
+            if (staticAttribute.FieldType.IsAssignableTo(typeof(IAttribute)))
+            {
+                var attributeInstance = staticAttribute.GetValue(null) as IAttribute;
+                if (attributeInstance is null)
+                {
+                    throw new InvalidOperationException($"Attribute {staticAttribute.Name} is null.");
+                }
+
+                var indexedAttribute = staticAttribute.GetCustomAttributes<IndexedAttribute>().FirstOrDefault();
+
+
+                var definition = new AttributeDefinition(attributeInstance, type, attributeInstance.Name, indexedAttribute is not null);
+                EntityStructureRegistry.Register(definition);
+            }
+        }
+
+        EntityStructureRegistry.Register(new EntityDefinition(type, entityAttribute.UUID, entityAttribute.Revision));
         return collection;
     }
 

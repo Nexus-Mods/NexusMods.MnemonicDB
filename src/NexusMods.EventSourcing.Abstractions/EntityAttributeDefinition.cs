@@ -32,7 +32,6 @@ public class EntityAttributeDefinition<TOwner, TOther>(string attrName) :
     {
         if (context.GetAccumulator<TOwner, EntityAttributeDefinition<TOwner, TOther>, ScalarAccumulator<EntityId<TOther>>>(owner, this, out var accumulator))
             accumulator.Value = value;
-        EntityStructureRegistry.Register(this);
     }
 
     /// <summary>
