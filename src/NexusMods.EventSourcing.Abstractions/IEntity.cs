@@ -25,6 +25,9 @@ public interface IEntity : INotifyPropertyChanged
     /// </summary>
     public static readonly TypeAttributeDefinition TypeAttribute = new();
 
+
+    public static readonly ScalarAttribute<IEntity, EntityId> EntityIdAttribute = new("Id");
+
     /// <summary>
     /// Called when a property of the entity has changed.
     /// </summary>
