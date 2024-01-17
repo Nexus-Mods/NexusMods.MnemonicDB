@@ -21,14 +21,20 @@ public abstract class AEventStoreTest<T> where T : IEventStore
     public void CanGetAndReturnEvents()
     {
         var enityId = EntityId<Loadout>.NewId();
-        Store.Add(new CreateLoadout(enityId, "Test"));
+        var entityIdAccumulator = IEntity.EntityIdAttribute.CreateAccumulator();
+        entityIdAccumulator.Id = enityId.Value;
+
+        var indexArray = new (IIndexableAttribute, IAccumulator)[] { (IEntity.EntityIdAttribute, entityIdAccumulator) };
+
+        Store.Add(new CreateLoadout(enityId, "Test"), indexArray);
+
         for (var i = 0; i < 10; i++)
         {
-            Store.Add(new RenameLoadout(enityId, $"Test {i}"));
+            Store.Add(new RenameLoadout(enityId, $"Test {i}"), indexArray);
         }
 
-        var accumulator = new EventAccumulator();
-        Store.EventsForEntity(enityId.Value, accumulator);
+        var accumulator = new EventIngester();
+        Store.EventsForIndex(IEntity.EntityIdAttribute, enityId.Value, accumulator);
         accumulator.Events.Count.Should().Be(11);
         accumulator.Events[0].Should().BeEquivalentTo(new CreateLoadout(enityId, "Test"));
         for (var i = 1; i < 11; i++)
@@ -69,7 +75,7 @@ public abstract class AEventStoreTest<T> where T : IEventStore
 
     }
 
-    private class EventAccumulator : IEventIngester
+    private class EventIngester : IEventIngester
     {
         public List<IEvent> Events { get; } = new();
         public bool Ingest(TransactionId _, IEvent @event)

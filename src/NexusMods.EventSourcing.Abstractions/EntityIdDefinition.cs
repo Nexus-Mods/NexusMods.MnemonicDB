@@ -58,7 +58,7 @@ public class EntityIdDefinition : IAttribute<EntityDefinitionAccumulator>, IInde
 
 public class EntityDefinitionAccumulator : IAccumulator
 {
-    internal EntityId Id;
+    public EntityId Id;
 
     public void WriteTo(IBufferWriter<byte> writer, ISerializationRegistry registry)
     {

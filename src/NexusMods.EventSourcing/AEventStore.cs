@@ -102,6 +102,11 @@ public abstract class AEventStore : IEventStore
     public abstract TransactionId Add<T>(T eventEntity) where T : IEvent;
     public abstract void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester, TransactionId fromId, TransactionId toId) where TIngester : IEventIngester;
 
+    public abstract TransactionId Add<T>(T eventEntity, (IIndexableAttribute, IAccumulator)[] indexed) where T : IEvent;
+
+    public abstract void EventsForIndex<TIngester, TVal>(IIndexableAttribute<TVal> attr, TVal value, TIngester ingester, TransactionId fromTx,
+        TransactionId toTx) where TIngester : IEventIngester;
+
     public abstract TransactionId GetSnapshot(TransactionId asOf, EntityId entityId, out IAccumulator loadedDefinition,
         out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes);
 

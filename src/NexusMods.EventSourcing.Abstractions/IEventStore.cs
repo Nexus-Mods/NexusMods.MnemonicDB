@@ -14,30 +14,37 @@ public interface IEventStore
     /// <param name="eventEntity"></param>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
-    public TransactionId Add<T>(T eventEntity) where T : IEvent;
+    public TransactionId Add<T>(T eventEntity, (IIndexableAttribute, IAccumulator)[] indexed) where T : IEvent;
+
 
     /// <summary>
-    /// For each event within the given range (inclusive), for the given entity id, call the ingester.
+    /// Gets all events where the given attribute appears in the index with the given value. Transactions
+    /// will be between fromTx and toTx (inclusive on both ends)
     /// </summary>
-    /// <param name="entityId">The Entity Id to playback events for</param>
-    /// <param name="ingester">The ingester to handle the events</param>
-    /// <param name="reverse">If true, plays the events in reverse</param>
+    /// <param name="attr"></param>
+    /// <param name="value"></param>
+    /// <param name="ingester"></param>
+    /// <param name="fromTx"></param>
+    /// <param name="toTx"></param>
     /// <typeparam name="TIngester"></typeparam>
-    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester, TransactionId fromId, TransactionId toId)
+    /// <typeparam name="TVal"></typeparam>
+    public void EventsForIndex<TIngester, TVal>(IIndexableAttribute<TVal> attr, TVal value, TIngester ingester,
+        TransactionId fromTx, TransactionId toTx)
         where TIngester : IEventIngester;
 
     /// <summary>
     /// For each event for the given entity id, call the ingester.
     /// </summary>
-    /// <param name="entityId">The Entity Id to playback events for</param>
+    /// <param name="value"></param>
     /// <param name="ingester">The ingester to handle the events</param>
-    /// <param name="reverse">If true, plays the events in reverse</param>
+    /// <param name="attr"></param>
     /// <typeparam name="TIngester"></typeparam>
-    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester)
+    /// <typeparam name="TVal"></typeparam>
+    public void EventsForIndex<TIngester, TVal>(IIndexableAttribute<TVal> attr, TVal value, TIngester ingester)
         where TIngester : IEventIngester
 
     {
-        EventsForEntity(entityId, ingester, TransactionId.Min, TransactionId.Max);
+        EventsForIndex(attr, value, ingester, TransactionId.Min, TransactionId.Max);
     }
 
     /// <summary>
@@ -48,7 +55,7 @@ public interface IEventStore
     /// </summary>
     /// <param name="asOf"></param>
     /// <param name="entityId"></param>
-    /// <param name="revision"></param>
+    /// <param name="loadedDefinition"></param>
     /// <param name="loadedAttributes"></param>
     /// <returns></returns>
     public TransactionId GetSnapshot(TransactionId asOf, EntityId entityId,

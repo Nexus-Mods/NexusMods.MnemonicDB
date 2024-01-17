@@ -108,6 +108,7 @@ public class EntityContext(IEventStore store) : IEntityContext
     {
         lock (_lock)
         {
+
             var newId = store.Add(newEvent);
             asOf = newId;
 

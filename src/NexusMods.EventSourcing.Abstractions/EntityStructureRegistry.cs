@@ -39,6 +39,24 @@ public static class EntityStructureRegistry
     }
 
     /// <summary>
+    /// Returns all indexed attributes.
+    /// </summary>
+    /// <returns></returns>
+    public static IEnumerable<IIndexableAttribute> AllIndexableAttributes()
+    {
+        foreach (var (_, attributes) in _entityStructures)
+        {
+            foreach (var (_, attribute) in attributes)
+            {
+                if (attribute is IIndexableAttribute indexableAttribute && indexableAttribute.IndexedAttributeId != UInt128.Zero)
+                {
+                    yield return indexableAttribute;
+                }
+            }
+        }
+    }
+
+    /// <summary>
     /// Registers an entity type in the global registry.
     /// </summary>
     /// <param name="type"></param>
