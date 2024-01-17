@@ -167,7 +167,7 @@ public class BasicFunctionalityTests
 
             var loadoutId = CreateLoadout.Create(tx, "Test");
 
-            var mod1 =AddMod.Create(tx, "First Mod", loadoutId);
+            var mod1 = AddMod.Create(tx, "First Mod", loadoutId);
             var mod2 = AddMod.Create(tx, "Second Mod", loadoutId);
 
             var collection = AddCollection.Create(tx, "First Collection", loadoutId, mod1, mod2);
