@@ -6,7 +6,7 @@ using NexusMods.EventSourcing.Abstractions.Serialization;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
-public class EntityIdDefinition : IAttribute<EntityDefinitionAccumulator>, IIndexableAttribute<EntityId>
+public class EntityIdDefinition : IAttribute<EntityIdDefinitionAccumulator>, IIndexableAttribute<EntityId>
 {
     /// <inheritdoc />
     public Type Owner => typeof(IEntity);
@@ -15,14 +15,14 @@ public class EntityIdDefinition : IAttribute<EntityDefinitionAccumulator>, IInde
     public string Name => "Id";
 
     /// <inheritdoc />
-    public EntityDefinitionAccumulator CreateAccumulator()
+    public EntityIdDefinitionAccumulator CreateAccumulator()
     {
-        return new EntityDefinitionAccumulator();
+        return new EntityIdDefinitionAccumulator();
     }
 
     IAccumulator IAttribute.CreateAccumulator()
     {
-        return new EntityDefinitionAccumulator();
+        return new EntityIdDefinitionAccumulator();
     }
 
     /// <inheritdoc />
@@ -49,14 +49,14 @@ public class EntityIdDefinition : IAttribute<EntityDefinitionAccumulator>, IInde
     /// <inheritdoc />
     public void WriteTo(Span<byte> span, IAccumulator accumulator)
     {
-        if (accumulator is not EntityDefinitionAccumulator entityDefinitionAccumulator)
+        if (accumulator is not EntityIdDefinitionAccumulator entityDefinitionAccumulator)
             throw new InvalidOperationException("Invalid accumulator type.");
 
         BinaryPrimitives.WriteUInt128BigEndian(span, entityDefinitionAccumulator.Id.Value);
     }
 }
 
-public class EntityDefinitionAccumulator : IAccumulator
+public class EntityIdDefinitionAccumulator : IAccumulator
 {
     public EntityId Id;
 

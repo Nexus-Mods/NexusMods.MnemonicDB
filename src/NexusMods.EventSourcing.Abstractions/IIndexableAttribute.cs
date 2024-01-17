@@ -12,7 +12,7 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// length values, hashing them and using the hash as the index is recommended. Once the entity is loaded with the help
 /// of the index, the actual value can be compared to ensure the values are correct.
 /// </summary>
-public interface IIndexableAttribute
+public interface IIndexableAttribute : IAttribute
 {
     /// <summary>
     /// The Id of the attribute definition index.

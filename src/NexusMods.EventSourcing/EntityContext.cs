@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using DynamicData;
 using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing;
@@ -71,7 +72,7 @@ public class EntityContext(IEventStore store) : IEntityContext
         }
 
         var ingester = new EntityContextIngester(values, id);
-        store.EventsForEntity(id, ingester, snapshotTxId, asOf);
+        store.EventsForIndex(IEntity.EntityIdAttribute, id, ingester, snapshotTxId, asOf);
 
         if (ingester.ProcessedEvents > MaxEventsBeforeSnapshotting)
         {
@@ -109,7 +110,26 @@ public class EntityContext(IEventStore store) : IEntityContext
         lock (_lock)
         {
 
-            var newId = store.Add(newEvent);
+            var indexerIngester = new IndexerIngester();
+            indexerIngester.Ingest(TransactionId.Min, newEvent);
+
+            var lst = new List<(IIndexableAttribute, IAccumulator)>();
+
+            foreach (var entityId in indexerIngester.Ids)
+            {
+                lst.Add((IEntity.EntityIdAttribute, new EntityIdDefinitionAccumulator { Id = entityId }));
+            }
+
+            foreach (var (attribute, accumulators) in indexerIngester.IndexedAttributes)
+            {
+                foreach (var accumulator in accumulators)
+                {
+                    lst.Add((attribute, accumulator));
+                }
+            }
+
+
+            var newId = store.Add(newEvent, lst.ToArray());
             asOf = newId;
 
             var updatedAttributes = new HashSet<(EntityId, string)>();
