@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Buffers.Binary;
+using System.Globalization;
 using NexusMods.EventSourcing.Abstractions.Serialization;
 
 namespace NexusMods.EventSourcing.Abstractions;
@@ -12,6 +13,8 @@ public class EntityIdDefinition : IAttribute<EntityDefinitionAccumulator>, IInde
 
     /// <inheritdoc />
     public string Name => "Id";
+
+    /// <inheritdoc />
     public EntityDefinitionAccumulator CreateAccumulator()
     {
         return new EntityDefinitionAccumulator();
@@ -22,13 +25,20 @@ public class EntityIdDefinition : IAttribute<EntityDefinitionAccumulator>, IInde
         return new EntityDefinitionAccumulator();
     }
 
+    /// <inheritdoc />
     public void WriteTo(Span<byte> span, EntityId value)
     {
-        throw new NotImplementedException();
+        BinaryPrimitives.WriteUInt128BigEndian(span, value.Value);
     }
 
+    private static readonly UInt128 IndexAttrId = UInt128.Parse("6a434d5d732e40278d0e43385482368d", NumberStyles.HexNumber);
+
     /// <inheritdoc />
-    public UInt128 IndexedAttributeId { get; set; }
+    public UInt128 IndexedAttributeId
+    {
+        get => IndexAttrId;
+        set => throw new InvalidOperationException("Can't set the indexed attribute id.");
+    }
 
     /// <inheritdoc />
     public int SpanSize()
@@ -39,11 +49,14 @@ public class EntityIdDefinition : IAttribute<EntityDefinitionAccumulator>, IInde
     /// <inheritdoc />
     public void WriteTo(Span<byte> span, IAccumulator accumulator)
     {
+        if (accumulator is not EntityDefinitionAccumulator entityDefinitionAccumulator)
+            throw new InvalidOperationException("Invalid accumulator type.");
 
+        BinaryPrimitives.WriteUInt128BigEndian(span, entityDefinitionAccumulator.Id.Value);
     }
 }
 
-internal class EntityDefinitionAccumulator : IAccumulator
+public class EntityDefinitionAccumulator : IAccumulator
 {
     internal EntityId Id;
 
