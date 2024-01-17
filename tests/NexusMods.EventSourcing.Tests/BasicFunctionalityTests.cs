@@ -31,6 +31,11 @@ public class BasicFunctionalityTests
         var loadout = _ctx.Get(loadoutId);
         loadout.Should().NotBeNull();
         loadout.Name.Should().Be("Test");
+
+        var loadoutRegistry = _ctx.Get<LoadoutRegistry>();
+        loadoutRegistry.Loadouts.Should().NotBeEmpty();
+        loadoutRegistry.Loadouts.First().Name.Should().Be("Test");
+        loadoutRegistry.LoadoutNames["Test"].Should().Be(loadoutId);
     }
 
     [Fact]

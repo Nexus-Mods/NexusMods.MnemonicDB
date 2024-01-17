@@ -18,4 +18,8 @@ public class LoadoutRegistry(IEntityContext context) : AEntity<LoadoutRegistry>(
     public ReadOnlyObservableCollection<Loadout> Loadouts => _loadouts.Get(this);
     internal static readonly MultiEntityAttributeDefinition<LoadoutRegistry, Loadout> _loadouts = new(nameof(Loadouts));
 
+
+    public Dictionary<string, EntityId<Loadout>> LoadoutNames => _loadoutNames.Get(this);
+    internal static readonly IndexedMultiEntityAttributeDefinition<LoadoutRegistry, string, Loadout> _loadoutNames = new(nameof(LoadoutNames));
+
 }
