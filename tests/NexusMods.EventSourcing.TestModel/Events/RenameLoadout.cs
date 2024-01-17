@@ -11,6 +11,7 @@ public partial record RenameLoadout(EntityId<Loadout> Id, string Name) : IEvent
     public void Apply<T>(T context) where T : IEventContext
     {
         Loadout._name.Set(context, Id, Name);
+        LoadoutRegistry._loadoutNames.Add(context, LoadoutRegistry.SingletonId, Name, Id);
     }
 
     public static void Create(ITransaction tx, EntityId<Loadout> id, string name)
