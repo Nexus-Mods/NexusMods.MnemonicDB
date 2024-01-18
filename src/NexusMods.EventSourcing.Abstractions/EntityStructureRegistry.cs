@@ -17,6 +17,7 @@ public static class EntityStructureRegistry
     private static readonly ConcurrentDictionary<Type, EntityDefinition> _entityDefinitionsByType = new();
     private static readonly ConcurrentDictionary<UInt128, EntityDefinition> _entityDefinitionsByUUID = new();
 
+
     /// <summary>
     /// Register an attribute in the global registry.
     /// </summary>

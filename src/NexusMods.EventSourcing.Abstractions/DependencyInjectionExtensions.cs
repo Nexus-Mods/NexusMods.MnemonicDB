@@ -51,6 +51,8 @@ public static class DependencyInjectionExtensions
             throw new ArgumentException($"Entity type {type.Name} does not have an EntityAttribute.");
         }
 
+        EntityStructureRegistry.Register(IEntity.EntityIdAttribute);
+
         foreach (var attributeDefinition in type.GetFields(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static))
         {
             if (attributeDefinition.GetValue(null) is not IAttribute attributeInstance)

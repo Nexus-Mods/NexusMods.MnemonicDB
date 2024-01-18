@@ -1,5 +1,6 @@
 using System.Buffers;
 using System.Buffers.Binary;
+using DynamicData;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.Serialization;
 using NexusMods.Hashing.xxHash64;
@@ -18,6 +19,8 @@ where TSerializer : IEventSerializer
     public InMemoryEventStore(TSerializer serializer, ISerializationRegistry serializationRegistry) : base(serializationRegistry)
     {
         _serializer = serializer;
+        // Make the first item 0 so we don't ever issue a TX Id of 0
+        _events.Add(Array.Empty<byte>());
     }
 
     public override TransactionId Add<T>(T entity, (IIndexableAttribute, IAccumulator)[] indexed)
