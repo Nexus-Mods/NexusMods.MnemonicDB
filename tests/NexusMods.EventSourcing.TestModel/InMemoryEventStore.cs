@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Buffers.Binary;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.Serialization;
+using NexusMods.Hashing.xxHash64;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.TestModel;
@@ -9,8 +10,8 @@ namespace NexusMods.EventSourcing.TestModel;
 public class InMemoryEventStore<TSerializer> : AEventStore
 where TSerializer : IEventSerializer
 {
-    private TransactionId _tx = TransactionId.From(0);
-    private readonly Dictionary<EntityId,IList<(TransactionId TxId, byte[] Data)>> _events = new();
+    private readonly List<byte[]> _events = new();
+    private readonly Dictionary<(IAttribute, Hash), SortedSet<TransactionId>> _indexes = new();
     private readonly Dictionary<EntityId, SortedDictionary<TransactionId, byte[]>> _snapshots = new();
     private TSerializer _serializer;
 
@@ -19,43 +20,61 @@ where TSerializer : IEventSerializer
         _serializer = serializer;
     }
 
-    public override TransactionId Add<T>(T entity)
+    public override TransactionId Add<T>(T entity, (IIndexableAttribute, IAccumulator)[] indexed)
     {
         lock (this)
         {
-            _tx = _tx.Next();
+            // Create the new txId
+            var txId = TransactionId.From((ulong)_events.Count);
+
             var data = _serializer.Serialize(entity);
-            var logger = new ModifiedEntitiesIngester();
-            entity.Apply(logger);
-            foreach (var id in logger.Entities)
+            _events.Add(data.ToArray());
+
+            foreach (var (attr, accumulator) in indexed)
             {
-                if (!_events.TryGetValue(id, out var value))
+                // Hash the accumulator to condense it down into a single ulong
+                var hash = HashAccumulator(attr, accumulator);
+
+                if (_indexes.TryGetValue((attr, hash), out var found))
                 {
-                    value = new List<(TransactionId, byte[])>();
-                    _events.Add(id, value);
+                    found.Add(txId);
                 }
-
-                value.Add((_tx, data.ToArray()));
+                else
+                {
+                    var newSet = new SortedSet<TransactionId> { txId };
+                    _indexes.Add((attr, hash), newSet);
+                }
             }
-
-            return _tx;
+            return txId;
         }
     }
 
-
-    public override void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester, TransactionId fromId, TransactionId toId)
+    private static Hash HashAccumulator(IIndexableAttribute attr, IAccumulator accumulator)
     {
-        if (!_events.TryGetValue(entityId, out var events))
+        Span<byte> span = stackalloc byte[attr.SpanSize()];
+        attr.WriteTo(span, accumulator);
+        var hash = span.XxHash64();
+        return hash;
+    }
+
+    public override void EventsForIndex<TIngester, TVal>(IIndexableAttribute<TVal> attr, TVal value, TIngester ingester, TransactionId fromTx,
+        TransactionId toTx)
+    {
+        Span<byte> valueSpan = stackalloc byte[attr.SpanSize()];
+        attr.WriteTo(valueSpan, value);
+        var hash = valueSpan.XxHash64();
+
+        if (!_indexes.TryGetValue((attr, hash), out var found))
             return;
 
-        foreach (var data in events)
+        foreach (var txId in found)
         {
-            if (data.TxId < fromId) continue;
-            if (data.TxId > toId) break;
+            if (txId > toTx || txId < fromTx) continue;
 
-            var @event = _serializer.Deserialize(data.Data)!;
-            if (!ingester.Ingest(data.TxId, @event)) break;
+            var eventItem = _serializer.Deserialize(_events[(int)txId.Value]);
+            ingester.Ingest(txId, eventItem);
         }
+
     }
 
     public override TransactionId GetSnapshot(TransactionId asOf, EntityId entityId, out IAccumulator loadedDefinition,

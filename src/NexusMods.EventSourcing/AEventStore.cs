@@ -98,10 +98,6 @@ public abstract class AEventStore : IEventStore
         var span = _writer.GetWrittenSpan();
         return span;
     }
-
-    public abstract TransactionId Add<T>(T eventEntity) where T : IEvent;
-    public abstract void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester, TransactionId fromId, TransactionId toId) where TIngester : IEventIngester;
-
     public abstract TransactionId Add<T>(T eventEntity, (IIndexableAttribute, IAccumulator)[] indexed) where T : IEvent;
 
     public abstract void EventsForIndex<TIngester, TVal>(IIndexableAttribute<TVal> attr, TVal value, TIngester ingester, TransactionId fromTx,

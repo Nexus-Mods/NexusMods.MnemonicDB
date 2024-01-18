@@ -13,6 +13,7 @@
 
     <ItemGroup>
       <PackageReference Include="MemoryPack" Version="1.10.0" />
+      <PackageReference Include="NexusMods.Hashing.xxHash64" Version="1.0.1" />
     </ItemGroup>
 
 </Project>

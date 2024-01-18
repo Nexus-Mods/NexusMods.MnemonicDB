@@ -40,72 +40,15 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore
         _deserializer = new SpanDeserializer<TSerializer>(serializer);
     }
 
-
-    public override TransactionId Add<T>(T eventValue)
+    public override TransactionId Add<T>(T eventEntity, (IIndexableAttribute, IAccumulator)[] indexed)
     {
-        lock (this)
-        {
-             _tx = _tx.Next();
-
-             // Write the event itself
-             {
-                 Span<byte> keySpan = stackalloc byte[8];
-                 _tx.WriteTo(keySpan);
-                 var span = _serializer.Serialize(eventValue);
-                 _db.Put(keySpan, span, _eventsColumn);
-             }
-
-             // Update the entity indexes to mark them as having this event
-             {
-                 var ingester = new ModifiedEntitiesIngester();
-                 eventValue.Apply(ingester);
-                 Span<byte> keySpan = stackalloc byte[24];
-                 _tx.WriteTo(keySpan.SliceFast(16..));
-                 foreach (var entityId in ingester.Entities)
-                 {
-                     entityId.TryWriteBytes(keySpan);
-                     _db.Put(keySpan, keySpan, _entityIndexColumn);
-                 }
-             }
-             return _tx;
-        }
+        throw new NotImplementedException();
     }
 
-    public override void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester, TransactionId fromId, TransactionId toId)
+    public override void EventsForIndex<TIngester, TVal>(IIndexableAttribute<TVal> attr, TVal value, TIngester ingester, TransactionId fromTx,
+        TransactionId toTx)
     {
-        Span<byte> startKey = stackalloc byte[24];
-        entityId.TryWriteBytes(startKey);
-        BinaryPrimitives.WriteUInt64BigEndian(startKey.SliceFast(16), fromId.Value);
-        Span<byte> endKey = stackalloc byte[24];
-        entityId.TryWriteBytes(endKey);
-        if (toId == TransactionId.Max)
-            BinaryPrimitives.WriteUInt64BigEndian(endKey.SliceFast(16), ulong.MaxValue);
-        else
-            BinaryPrimitives.WriteUInt64BigEndian(endKey.SliceFast(16), toId.Value + 1);
-
-        var options = new ReadOptions();
-        unsafe
-        {
-            fixed (byte* startKeyPtr = startKey)
-            {
-                fixed (byte* endKeyPtr = endKey)
-                {
-                    options.SetIterateUpperBound(endKeyPtr, 24);
-                    options.SetIterateLowerBound(startKeyPtr, 24);
-                    using var iterator = _db.NewIterator(_entityIndexColumn, options);
-
-                    iterator.SeekToFirst();
-                    while (iterator.Valid())
-                    {
-                        var key = iterator.GetKeySpan().SliceFast(16);
-                        var txId = TransactionId.From(key);
-                        var evt = _db.Get(key, _deserializer, _eventsColumn);
-                        if (!ingester.Ingest(txId, evt)) break;
-                        iterator.Next();
-                    }
-                }
-            }
-        }
+        throw new NotImplementedException();
     }
 
     public override TransactionId GetSnapshot(TransactionId asOf, EntityId entityId, out IAccumulator loadedDefinition,
