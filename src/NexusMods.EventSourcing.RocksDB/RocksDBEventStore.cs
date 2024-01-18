@@ -28,26 +28,61 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore, IDisposable
         _serializer = serializer;
         _families = new ColumnFamilies();
         _families.Add("events", new ColumnFamilyOptions());
-        _families.Add("entityIndex", new ColumnFamilyOptions());
+        _families.Add("snapshots", new ColumnFamilyOptions());
+
+        var indexableAttributes = EntityStructureRegistry.AllIndexableAttributes().Distinct().ToList();
+
+        foreach (var attr in indexableAttributes)
+        {
+            _families.Add("index_" + attr.IndexedAttributeId.ToString("X"), new ColumnFamilyOptions());
+        }
+
+
         var options = new DbOptions();
         options.SetCreateIfMissing();
-        _db = RocksDb.Open(options,
-            settings.StorageLocation.ToString(), new ColumnFamilies());
+        options.SetCreateMissingColumnFamilies();
 
-        var indexableAttributes = EntityStructureRegistry.AllIndexableAttributes();
+        _db = RocksDb.Open(options,
+            settings.StorageLocation.ToString(), _families);
 
         _indexColumns = new Dictionary<IIndexableAttribute, ColumnFamilyHandle>();
         foreach (var attr in indexableAttributes.Distinct())
         {
-            _indexColumns.Add(attr,
-                _db.CreateColumnFamily(new ColumnFamilyOptions(), "index_" + attr.IndexedAttributeId.ToString("X")));
+            _indexColumns.Add(attr, _db.GetColumnFamily("index_" + attr.IndexedAttributeId.ToString("X")));
         }
 
-        _eventsColumn = _db.CreateColumnFamily(new ColumnFamilyOptions(), "events");
-        _snapshotColumn = _db.CreateColumnFamily(new ColumnFamilyOptions(), "snapshots");
-        _tx = TransactionId.From(0);
+        _eventsColumn = _db.GetColumnFamily("events");
+        _snapshotColumn = _db.GetColumnFamily("snapshots");
 
+        _tx = LoadLatestTransactionId();
         _deserializer = new SpanDeserializer<TSerializer>(serializer);
+    }
+
+    /// <summary>
+    /// Gets the most recent TxId from the events column
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    private TransactionId LoadLatestTransactionId()
+    {
+        using var iterator = _db.NewIterator(_eventsColumn);
+
+        Span<byte> topKeySpan = stackalloc byte[8];
+        BinaryPrimitives.WriteUInt64BigEndian(topKeySpan, TransactionId.Max.Value);
+
+        unsafe
+        {
+            fixed (byte* keySpanPtr = topKeySpan)
+            {
+                iterator.SeekForPrev(keySpanPtr, 8);
+
+                if (!iterator.Valid())
+                    return TransactionId.Min;
+
+                var keySpan = iterator.GetKeySpan();
+                return TransactionId.From(BinaryPrimitives.ReadUInt64BigEndian(keySpan));
+            }
+        }
     }
 
     /// <inheritdoc />
@@ -198,6 +233,10 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore, IDisposable
         BinaryPrimitives.WriteUInt64BigEndian(keySpan.SliceFast(16), txId.Value);
         _db.Put(keySpan, span, _snapshotColumn);
     }
+
+
+    /// <inheritdoc />
+    public override TransactionId TxId => _tx;
 
     /// <inheritdoc />
     public void Dispose()

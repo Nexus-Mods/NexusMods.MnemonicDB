@@ -121,4 +121,7 @@ where TSerializer : IEventSerializer
 
         snapshots.Add(txId, span.ToArray());
     }
+
+    /// <inheritdoc/>
+    public override TransactionId TxId { get; }
 }

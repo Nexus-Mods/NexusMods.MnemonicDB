@@ -11,7 +11,7 @@ public class EntityContext(IEventStore store) : IEntityContext
 {
     public const int MaxEventsBeforeSnapshotting = 250;
 
-    private TransactionId asOf = TransactionId.From(0);
+    private TransactionId asOf = store.TxId;
     private object _lock = new();
 
     private IndexerIngester _indexerIngester = new();

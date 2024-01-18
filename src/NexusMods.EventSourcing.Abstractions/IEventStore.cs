@@ -73,4 +73,10 @@ public interface IEventStore
     /// <param name="id"></param>
     /// <param name="attributes"></param>
     public void SetSnapshot(TransactionId txId, EntityId id, IDictionary<IAttribute, IAccumulator> attributes);
+
+
+    /// <summary>
+    /// Gets the current transaction id.
+    /// </summary>
+    public TransactionId TxId { get; }
 }

@@ -112,4 +112,5 @@ public abstract class AEventStore : IEventStore
         out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes);
 
     public abstract void SetSnapshot(TransactionId txId, EntityId id, IDictionary<IAttribute, IAccumulator> attributes);
+    public abstract TransactionId TxId { get; }
 }
