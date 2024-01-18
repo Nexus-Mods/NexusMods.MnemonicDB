@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using DynamicData;
 using Microsoft.Extensions.ObjectPool;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.AttributeDefinitions;
 
 namespace NexusMods.EventSourcing;
 
@@ -218,5 +219,51 @@ public class EntityContext(IEventStore store) : IEntityContext
     {
         _entities.Clear();
         _values.Clear();
+    }
+
+    public IEnumerable<TEntity> EntitiesForIndex<TEntity, TVal>(IIndexableAttribute<TVal> attr, TVal val)
+        where TEntity : IEntity
+    {
+        var foundEntities = new HashSet<EntityId<TEntity>>();
+        store.EventsForIndex(attr, val, new SecondaryIndexIngester<TEntity>(foundEntities), TransactionId.Min, asOf);
+
+        foreach (var entityId in foundEntities)
+        {
+            var entity =  Get(entityId);
+
+            if (!_values.TryGetValue(entityId.Value, out var values)) continue;
+
+            if (!values.TryGetValue(attr, out var accumulator)) continue;
+
+            if (attr.Equal(accumulator, val))
+            {
+                yield return entity;
+            }
+
+        }
+    }
+
+    private struct SecondaryIndexIngester<TType>(HashSet<EntityId<TType>> foundEntities) : IEventIngester,
+        IEventContext where TType : IEntity
+    {
+
+        public bool Ingest(TransactionId id, IEvent @event)
+        {
+            @event.Apply(this);
+            return true;
+        }
+
+        public bool GetAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> entityId, TAttribute attributeDefinition,
+            out TAccumulator accumulator) where TOwner : IEntity where TAttribute : IAttribute<TAccumulator> where TAccumulator : IAccumulator
+        {
+            if (typeof(TOwner) == typeof(TType))
+            {
+                foundEntities.Add(entityId.Cast<TType>());
+            }
+            accumulator = default!;
+            return false;
+        }
+
+
     }
 }

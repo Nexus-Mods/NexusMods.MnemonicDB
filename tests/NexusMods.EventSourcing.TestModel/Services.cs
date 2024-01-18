@@ -20,10 +20,13 @@ public static class Services
             .AddEvent<Events.RenameLoadout>()
             .AddEvent<Events.DeleteMod>()
             .AddEvent<Events.AddCollection>()
+            .AddEvent<Events.AddArchive>()
             .AddEntity<Loadout>()
             .AddEntity<Mod>()
             .AddEntity<Collection>()
-            .AddEntity<LoadoutRegistry>();
+            .AddEntity<LoadoutRegistry>()
+            .AddEntity<ArchiveEntry>()
+            .AddEntity<Archive>();
         return coll;
     }
 

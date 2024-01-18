@@ -47,4 +47,14 @@ public interface IIndexableAttribute<TVal> : IIndexableAttribute
     /// <param name="span"></param>
     /// <param name="value"></param>
     public void WriteTo(Span<byte> span, TVal value);
+
+    /// <summary>
+    /// Returns true if the accumulator value is equal to the given value, used for the final filter
+    /// from secondary indexes.
+    /// </summary>
+    /// <param name="accumulator"></param>
+    /// <param name="val"></param>
+    /// <typeparam name="TVal"></typeparam>
+    /// <returns></returns>
+    bool Equal(IAccumulator accumulator, TVal val);
 }

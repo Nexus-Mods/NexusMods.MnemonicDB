@@ -20,6 +20,7 @@ public static class Services
             .AddSingleton<BinaryEventSerializer>()
             .AddSingleton<ISerializer, UInt8Serializer>()
             .AddSingleton<ISerializer, UInt32Serializer>()
+            .AddSingleton<ISerializer, UInt64Serializer>()
             .AddSingleton<ISerializer, EntityIdSerializer>()
             .AddEvent<TransactionEvent>()
             .AddSingleton<IEntityContext, EntityContext>();

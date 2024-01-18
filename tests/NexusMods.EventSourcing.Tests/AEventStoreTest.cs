@@ -86,4 +86,36 @@ public abstract class AEventStoreTest<T> where T : IEventStore
     }
 
 
+
+    [Fact]
+    public void CanQuerySecondaryIndexes()
+    {
+
+        var ctx = new EntityContext(Store);
+
+        using (var tx = ctx.Begin())
+        {
+            AddArchive.Create(tx, 0xDEADBEEF, 1024, ("/foo/bar", 0x42, 0x43), ("/foo/baz", 0x44, 0x45));
+            tx.Commit();
+        }
+
+        using (var tx = ctx.Begin())
+        {
+            AddArchive.Create(tx, 0xDEAD0000, 1024, ("/foo/buz", 0x42, 0x43));
+            tx.Commit();
+        }
+
+        var entities = ctx.EntitiesForIndex<ArchiveEntry, ulong>(ArchiveEntry._hash, 0x42).ToArray();
+        entities.Length.Should().Be(2);
+        var names = entities.Select(e => e.Path).ToArray();
+        names.Should().Contain("/foo/bar");
+        names.Should().Contain("/foo/buz");
+
+
+
+
+
+    }
+
+
 }

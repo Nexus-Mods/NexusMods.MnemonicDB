@@ -31,6 +31,11 @@ public class EntityIdDefinition : IAttribute<EntityIdDefinitionAccumulator>, IIn
         BinaryPrimitives.WriteUInt128BigEndian(span, value.Value);
     }
 
+    public bool Equal(IAccumulator accumulator, EntityId val)
+    {
+        return ((EntityIdDefinitionAccumulator)accumulator).Id == val;
+    }
+
     private static readonly UInt128 IndexAttrId = UInt128.Parse("6a434d5d732e40278d0e43385482368d", NumberStyles.HexNumber);
 
     /// <inheritdoc />
