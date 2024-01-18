@@ -11,7 +11,7 @@ using RocksDbSharp;
 
 namespace NexusMods.EventSourcing.RocksDB;
 
-public sealed class RocksDBEventStore<TSerializer> : AEventStore
+public sealed class RocksDBEventStore<TSerializer> : AEventStore, IDisposable
     where TSerializer : IEventSerializer
 {
     private readonly ColumnFamilies _families;
@@ -197,5 +197,11 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore
         id.TryWriteBytes(keySpan);
         BinaryPrimitives.WriteUInt64BigEndian(keySpan.SliceFast(16), txId.Value);
         _db.Put(keySpan, span, _snapshotColumn);
+    }
+
+    /// <inheritdoc />
+    public void Dispose()
+    {
+        _db.Dispose();
     }
 }
