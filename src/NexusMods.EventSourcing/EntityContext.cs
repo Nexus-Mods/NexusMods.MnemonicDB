@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using DynamicData;
+using Microsoft.Extensions.ObjectPool;
 using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing;
@@ -13,8 +14,15 @@ public class EntityContext(IEventStore store) : IEntityContext
     private TransactionId asOf = TransactionId.From(0);
     private object _lock = new();
 
+    private IndexerIngester _indexerIngester = new();
+    private List<(IIndexableAttribute, IAccumulator)> _indexUpdaters = new();
+    private HashSet<(EntityId, string)> _updatedAttributes = new();
+
     private ConcurrentDictionary<EntityId, IEntity> _entities = new();
     private ConcurrentDictionary<EntityId, Dictionary<IAttribute, IAccumulator>> _values = new();
+
+    private ObjectPool<EntityIdDefinitionAccumulator> _definitionAccumulatorPool =
+        new DefaultObjectPool<EntityIdDefinitionAccumulator>(new DefaultPooledObjectPolicy<EntityIdDefinitionAccumulator>());
 
     /// <summary>
     /// Gets an entity by its id. The resulting entity type will be the type that was emitted by the event that created
@@ -94,6 +102,7 @@ public class EntityContext(IEventStore store) : IEntityContext
     /// <returns></returns>
     public TEntity Get<TEntity>() where TEntity : ISingletonEntity
     {
+        // Look in the cache first
         var id = TEntity.SingletonId;
         if (_entities.TryGetValue(id, out var entity))
             return (TEntity) entity;
@@ -110,33 +119,53 @@ public class EntityContext(IEventStore store) : IEntityContext
         lock (_lock)
         {
 
-            var indexerIngester = new IndexerIngester();
-            indexerIngester.Ingest(TransactionId.Min, newEvent);
+            // Reset the indexer ingester and ingest the new event
+            _indexerIngester.Reset();
+            _indexerIngester.Ingest(TransactionId.Min, newEvent);
 
-            var lst = new List<(IIndexableAttribute, IAccumulator)>();
+            // Reset the index updaters
+            _indexUpdaters.Clear();
 
-            foreach (var entityId in indexerIngester.Ids)
+            // Add the entity id to the index updaters, use the object pool to reduce allocations
+            foreach (var entityId in _indexerIngester.Ids)
             {
-                lst.Add((IEntity.EntityIdAttribute, new EntityIdDefinitionAccumulator { Id = entityId }));
+                var accumulator = _definitionAccumulatorPool.Get();
+                accumulator.Id = entityId;
+                _indexUpdaters.Add((IEntity.EntityIdAttribute, accumulator));
             }
 
-            foreach (var (attribute, accumulators) in indexerIngester.IndexedAttributes)
+            // These are less common, so we don't optimize them quite so much
+            foreach (var (attribute, accumulators) in _indexerIngester.IndexedAttributes)
             {
                 foreach (var accumulator in accumulators)
                 {
-                    lst.Add((attribute, accumulator));
+                    _indexUpdaters.Add((attribute, accumulator));
                 }
             }
 
+            // Add the event to the store
+            var newId = store.Add(newEvent, _indexUpdaters);
 
-            var newId = store.Add(newEvent, lst.ToArray());
+            // Return the definition accumulators to the pool
+            for (var idx = 0; idx < _indexUpdaters.Count; idx++)
+            {
+                var (_, accumulator) = _indexUpdaters[idx];
+                _definitionAccumulatorPool.Return((EntityIdDefinitionAccumulator)accumulator);
+            }
+
+            // Update the asOf transaction id
             asOf = newId;
 
-            var updatedAttributes = new HashSet<(EntityId, string)>();
-            var ingester = new ForwardEventContext(_values, updatedAttributes);
+            // Clear the updated attributes
+            _updatedAttributes.Clear();
+
+            // Ingest the event again to update the cache and notify any listeners, ForwardEventContext
+            // is a struct so it will be stack allocated
+            var ingester = new ForwardEventContext(_values, _updatedAttributes);
             newEvent.Apply(ingester);
 
-            foreach (var (entityId, attributeName) in updatedAttributes)
+            // Notify any listeners
+            foreach (var (entityId, attributeName) in _updatedAttributes)
             {
                 if (_entities.TryGetValue(entityId, out var entity))
                     entity.OnPropertyChanged(attributeName);

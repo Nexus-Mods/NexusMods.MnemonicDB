@@ -1,6 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using System;
+using System.Diagnostics;
 using BenchmarkDotNet.Running;
 using NexusMods.EventSourcing.Benchmarks;
 using NexusMods.EventSourcing.RocksDB;
@@ -26,14 +27,20 @@ BenchmarkRunner.Run<EntityContextBenchmarks>();
 
 
 #if DEBUG
-var benchmarks = new AccumulatorBenchmarks();
-for (int i = 0; i < 10_000_000; i++)
+var benchmarks = new WriteBenchmarks();
+benchmarks.EventCount = 1000;
+benchmarks.EventStoreType = typeof(RocksDBEventStore<BinaryEventSerializer>);
+benchmarks.Setup();
+
+var sw = Stopwatch.StartNew();
+for (var i = 0; i < 10000; i++)
 {
-    benchmarks.GetMultiAttributeItems();
+    benchmarks.WriteEvents();
 }
+Console.WriteLine("Elapsed: " + sw.Elapsed.TotalSeconds);
 
 #else
-BenchmarkRunner.Run<AccumulatorBenchmarks>();
+BenchmarkRunner.Run<WriteBenchmarks>();
 #endif
 
 /*

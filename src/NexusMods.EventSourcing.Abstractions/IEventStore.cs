@@ -12,9 +12,13 @@ public interface IEventStore
     /// Add an event to the store, returns the transaction id of the insert.
     /// </summary>
     /// <param name="eventEntity"></param>
-    /// <typeparam name="T"></typeparam>
+    /// <param name="indexed"></param>
+    /// <typeparam name="TEntity"></typeparam>
+    /// <typeparam name="TColl"></typeparam>
     /// <returns></returns>
-    public TransactionId Add<T>(T eventEntity, (IIndexableAttribute, IAccumulator)[] indexed) where T : IEvent;
+    public TransactionId Add<TEntity, TColl>(TEntity eventEntity, TColl indexed)
+        where TEntity : IEvent
+        where TColl : IList<(IIndexableAttribute, IAccumulator)>;
 
 
     /// <summary>

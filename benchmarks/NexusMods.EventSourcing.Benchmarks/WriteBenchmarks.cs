@@ -47,7 +47,7 @@ public class WriteBenchmarks : ABenchmark
     }
 
     [Benchmark]
-    public async Task WriteEvents()
+    public void WriteEvents()
     {
         for (var i = 0; i < EventCount; i++)
         {

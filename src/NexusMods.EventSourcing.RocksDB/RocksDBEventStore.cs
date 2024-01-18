@@ -50,7 +50,8 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore
         _deserializer = new SpanDeserializer<TSerializer>(serializer);
     }
 
-    public override TransactionId Add<T>(T eventEntity, (IIndexableAttribute, IAccumulator)[] indexed)
+    /// <inheritdoc />
+    public override TransactionId Add<TEntity, TColl>(TEntity eventEntity, TColl indexed)
     {
         _tx = _tx.Next();
 
@@ -61,8 +62,10 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore
 
         _db.Put(txIdSpan, eventSpan, _eventsColumn);
 
-        foreach (var (attr, accumulator) in indexed)
+        var size = indexed.Count;
+        for (var index = 0; index < size; index++)
         {
+            var (attr, accumulator) = indexed[index];
             PutIndex(attr, accumulator, _tx);
         }
 

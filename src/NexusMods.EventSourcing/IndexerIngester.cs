@@ -44,4 +44,13 @@ public class IndexerIngester : IEventIngester, IEventContext
         accumulator = default!;
         return false;
     }
+
+    /// <summary>
+    /// Clears the indexer ingester's state but keep the collections around for reuse.
+    /// </summary>
+    public void Reset()
+    {
+        IndexedAttributes.Clear();
+        Ids.Clear();
+    }
 }

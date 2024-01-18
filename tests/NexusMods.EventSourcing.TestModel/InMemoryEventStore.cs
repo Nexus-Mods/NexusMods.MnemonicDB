@@ -23,14 +23,14 @@ where TSerializer : IEventSerializer
         _events.Add(Array.Empty<byte>());
     }
 
-    public override TransactionId Add<T>(T entity, (IIndexableAttribute, IAccumulator)[] indexed)
+    public override TransactionId Add<TEntity, TColl>(TEntity eventEntity, TColl indexed)
     {
         lock (this)
         {
             // Create the new txId
             var txId = TransactionId.From((ulong)_events.Count);
 
-            var data = _serializer.Serialize(entity);
+            var data = _serializer.Serialize(eventEntity);
             _events.Add(data.ToArray());
 
             foreach (var (attr, accumulator) in indexed)
