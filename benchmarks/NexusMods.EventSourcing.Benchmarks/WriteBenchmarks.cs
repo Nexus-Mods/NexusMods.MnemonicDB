@@ -22,18 +22,20 @@ public class WriteBenchmarks : ABenchmark
         typeof(RocksDBEventStore<BinaryEventSerializer>))]
     public Type EventStoreType { get; set; } = typeof(InMemoryEventStore<BinaryEventSerializer>);
 
+    private EntityContext _context = null!;
+
     [Params(100, 1000, 10000)]
     public int EventCount { get; set; } = 100;
 
-    public WriteBenchmarks() : base()
+    public WriteBenchmarks()
     {
-
-        _events = new IEvent[]
-        {
+        _events =
+        [
             new CreateLoadout(EntityId<Loadout>.NewId(), "Loadout 1"),
             new SwapModEnabled(EntityId<Mod>.NewId(), true),
             new DeleteMod(EntityId<Mod>.NewId(), EntityId<Loadout>.NewId())
-        };
+        ];
+
 
     }
 
@@ -41,6 +43,7 @@ public class WriteBenchmarks : ABenchmark
     public void Setup()
     {
         MakeStore(EventStoreType);
+        _context = new EntityContext(EventStore);
     }
 
     [Benchmark]
@@ -49,7 +52,7 @@ public class WriteBenchmarks : ABenchmark
         for (var i = 0; i < EventCount; i++)
         {
             var evnt = _events[i % _events.Length];
-            EventStore.Add(evnt);
+            _context.Add(evnt);
         }
     }
 }

@@ -72,4 +72,14 @@ public class EntityIdDefinitionAccumulator : IAccumulator
         Id = EntityId.From(data);
         return 16;
     }
+
+    /// <summary>
+    /// Creates a new accumulator with the Id set
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    public static EntityIdDefinitionAccumulator From(EntityId id)
+    {
+        return new EntityIdDefinitionAccumulator { Id = id };
+    }
 }

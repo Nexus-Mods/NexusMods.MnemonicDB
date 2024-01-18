@@ -13,6 +13,7 @@ namespace NexusMods.EventSourcing.Benchmarks;
 public class ReadBenchmarks : ABenchmark
 {
     private EntityId<Loadout>[] _ids = Array.Empty<EntityId<Loadout>>();
+    private (IIndexableAttribute, IAccumulator)[] _indexUpdaters = null!;
 
     [Params(typeof(InMemoryEventStore<BinaryEventSerializer>),
         //typeof(FasterKVEventStore<BinaryEventSerializer>),
@@ -30,11 +31,20 @@ public class ReadBenchmarks : ABenchmark
     {
         MakeStore(EventStoreType);
 
+        _indexUpdaters =
+        [
+            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Value)),
+            // We'll swap this value out each time we update the entity
+            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Value))
+        ];
+
+
         _ids = new EntityId<Loadout>[EntityCount];
         for (var e = 0; e < EntityCount; e++)
         {
             var evt = new CreateLoadout(EntityId<Loadout>.NewId(), $"Loadout {e}");
-            EventStore.Add(evt);
+            ((EntityIdDefinitionAccumulator)_indexUpdaters[1].Item2).Id = evt.Id.Value;
+            EventStore.Add(evt, _indexUpdaters);
             _ids[e] = evt.Id;
         }
 
@@ -43,7 +53,8 @@ public class ReadBenchmarks : ABenchmark
         {
             for (var e = 0; e < EntityCount; e++)
             {
-                EventStore.Add(new RenameLoadout(_ids[e], $"Loadout {e} {ev}"));
+                _indexUpdaters[1] = (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(_ids[e].Value));
+                EventStore.Add(new RenameLoadout(_ids[e], $"Loadout {e} {ev}"), _indexUpdaters);
             }
         }
     }
@@ -51,9 +62,8 @@ public class ReadBenchmarks : ABenchmark
     [Benchmark]
     public void ReadEvents()
     {
-
         var ingester = new Counter();
-        EventStore.EventsForEntity(_ids[_ids.Length/2].Value, ingester);
+        EventStore.EventsForIndex(IEntity.EntityIdAttribute, _ids[_ids.Length/2].Value, ingester);
     }
 
     private class Counter : IEventIngester
