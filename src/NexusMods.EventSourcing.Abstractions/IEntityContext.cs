@@ -46,7 +46,6 @@ public interface IEntityContext
     /// <param name="attributeDefinition"></param>
     /// <param name="accumulator"></param>
     /// <param name="createIfMissing"></param>
-    /// <typeparam name="TType"></typeparam>
     /// <typeparam name="TOwner"></typeparam>
     /// <typeparam name="TAttribute"></typeparam>
     /// <typeparam name="TAccumulator"></typeparam>

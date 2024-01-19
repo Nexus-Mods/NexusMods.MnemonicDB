@@ -6,43 +6,56 @@ using NexusMods.EventSourcing.Abstractions.Serialization;
 
 namespace NexusMods.EventSourcing.Serialization;
 
+/// <summary>
+/// Serializer for EntityIds.
+/// </summary>
 public class EntityIdSerializer : IFixedSizeSerializer<EntityId>
 {
+    /// <inheritdoc />
     public bool CanSerialize(Type valueType)
     {
         return valueType == typeof(EntityId);
     }
 
+    /// <inheritdoc />
     public bool TryGetFixedSize(Type valueType, out int size)
     {
         size = 16;
         return true;
     }
 
+    /// <inheritdoc />
     public void Serialize(EntityId value, Span<byte> output)
     {
         value.TryWriteBytes(output);
     }
 
+    /// <inheritdoc />
     public EntityId Deserialize(ReadOnlySpan<byte> from)
     {
         return EntityId.From(from);
     }
 }
 
+/// <summary>
+/// Serializer for typed EntityIds.
+/// </summary>
 public class GenericEntityIdSerializer : IGenericSerializer
 {
+    /// <inheritdoc />
     public bool CanSerialize(Type valueType)
     {
         return false;
     }
 
+    /// <inheritdoc />
     public bool TryGetFixedSize(Type valueType, out int size)
     {
         size = 0;
         return false;
     }
 
+    /// <inheritdoc />
     public bool TrySpecialize(Type baseType, Type[] argTypes, Func<Type, ISerializer> serializerFinder, [NotNullWhen(true)] out ISerializer? serializer)
     {
         if (baseType != typeof(EntityId<>) || argTypes.Length != 1)

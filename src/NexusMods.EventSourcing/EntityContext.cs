@@ -8,21 +8,29 @@ using NexusMods.EventSourcing.Abstractions.AttributeDefinitions;
 
 namespace NexusMods.EventSourcing;
 
+/// <summary>
+/// The primary way of interacting with the events. This class is thread safe, and can be used to lookup entities
+/// and insert new events.
+/// </summary>
+/// <param name="store"></param>
 public class EntityContext(IEventStore store) : IEntityContext
 {
-    public const int MaxEventsBeforeSnapshotting = 250;
+    /// <summary>
+    /// The maximum number of events that can be processed before a snapshot is taken.
+    /// </summary>
+    private const int MaxEventsBeforeSnapshotting = 250;
 
-    private TransactionId asOf = store.TxId;
-    private object _lock = new();
+    private TransactionId _asOf = store.TxId;
+    private readonly object _lock = new();
 
-    private IndexerIngester _indexerIngester = new();
-    private List<(IIndexableAttribute, IAccumulator)> _indexUpdaters = new();
-    private HashSet<(EntityId, string)> _updatedAttributes = new();
+    private readonly IndexerIngester _indexerIngester = new();
+    private readonly List<(IIndexableAttribute, IAccumulator)> _indexUpdaters = new();
+    private readonly HashSet<(EntityId, string)> _updatedAttributes = new();
 
-    private ConcurrentDictionary<EntityId, IEntity> _entities = new();
-    private ConcurrentDictionary<EntityId, Dictionary<IAttribute, IAccumulator>> _values = new();
+    private readonly ConcurrentDictionary<EntityId, IEntity> _entities = new();
+    private readonly ConcurrentDictionary<EntityId, Dictionary<IAttribute, IAccumulator>> _values = new();
 
-    private ObjectPool<EntityIdDefinitionAccumulator> _definitionAccumulatorPool =
+    private readonly ObjectPool<EntityIdDefinitionAccumulator> _definitionAccumulatorPool =
         new DefaultObjectPool<EntityIdDefinitionAccumulator>(new DefaultPooledObjectPolicy<EntityIdDefinitionAccumulator>());
 
     /// <summary>
@@ -71,7 +79,7 @@ public class EntityContext(IEventStore store) : IEntityContext
     {
         var values = new Dictionary<IAttribute, IAccumulator>();
 
-        var snapshotTxId = store.GetSnapshot(asOf, id, out var loadedDefinition, out var loadedAttributes);
+        var snapshotTxId = store.GetSnapshot(_asOf, id, out var loadedDefinition, out var loadedAttributes);
 
         if (snapshotTxId != TransactionId.Min)
         {
@@ -81,7 +89,7 @@ public class EntityContext(IEventStore store) : IEntityContext
         }
 
         var ingester = new EntityContextIngester(values, id);
-        store.EventsForIndex(IEntity.EntityIdAttribute, id, ingester, snapshotTxId, asOf);
+        store.EventsForIndex(IEntity.EntityIdAttribute, id, ingester, snapshotTxId, _asOf);
 
         if (ingester.ProcessedEvents > MaxEventsBeforeSnapshotting)
         {
@@ -115,6 +123,13 @@ public class EntityContext(IEventStore store) : IEntityContext
         return (TEntity)_entities[id];
     }
 
+    /// <summary>
+    /// Adds a new event to the store, and updates the cache. This method is thread safe as the system is considered
+    /// single-writer, multiple-reader.
+    /// </summary>
+    /// <param name="newEvent"></param>
+    /// <typeparam name="TEvent"></typeparam>
+    /// <returns></returns>
     public TransactionId Add<TEvent>(TEvent newEvent) where TEvent : IEvent
     {
         lock (_lock)
@@ -155,7 +170,7 @@ public class EntityContext(IEventStore store) : IEntityContext
             }
 
             // Update the asOf transaction id
-            asOf = newId;
+            _asOf = newId;
 
             // Clear the updated attributes
             _updatedAttributes.Clear();
@@ -221,11 +236,19 @@ public class EntityContext(IEventStore store) : IEntityContext
         _values.Clear();
     }
 
+    /// <summary>
+    /// Gets all the entities that have the given attribute set to the given value.
+    /// </summary>
+    /// <param name="attr"></param>
+    /// <param name="val"></param>
+    /// <typeparam name="TEntity"></typeparam>
+    /// <typeparam name="TVal"></typeparam>
+    /// <returns></returns>
     public IEnumerable<TEntity> EntitiesForIndex<TEntity, TVal>(IIndexableAttribute<TVal> attr, TVal val)
         where TEntity : IEntity
     {
         var foundEntities = new HashSet<EntityId<TEntity>>();
-        store.EventsForIndex(attr, val, new SecondaryIndexIngester<TEntity>(foundEntities), TransactionId.Min, asOf);
+        store.EventsForIndex(attr, val, new SecondaryIndexIngester<TEntity>(foundEntities), TransactionId.Min, _asOf);
 
         foreach (var entityId in foundEntities)
         {
@@ -243,7 +266,7 @@ public class EntityContext(IEventStore store) : IEntityContext
         }
     }
 
-    private struct SecondaryIndexIngester<TType>(HashSet<EntityId<TType>> foundEntities) : IEventIngester,
+    private readonly struct SecondaryIndexIngester<TType>(HashSet<EntityId<TType>> foundEntities) : IEventIngester,
         IEventContext where TType : IEntity
     {
 
@@ -263,7 +286,5 @@ public class EntityContext(IEventStore store) : IEntityContext
             accumulator = default!;
             return false;
         }
-
-
     }
 }

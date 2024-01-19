@@ -7,6 +7,9 @@ using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing;
 
+/// <summary>
+/// Abstract event store implementation, provides helpers for serialization and deserialization.
+/// </summary>
 public abstract class AEventStore : IEventStore
 {
     private readonly IVariableSizeSerializer<string> _stringSerializer;
@@ -14,6 +17,10 @@ public abstract class AEventStore : IEventStore
     private readonly ISerializationRegistry _serializationRegistry;
     private readonly PooledMemoryBufferWriter _writer;
 
+    /// <summary>
+    /// Abstract event store implementation, provides helpers for serialization and deserialization.
+    /// </summary>
+    /// <param name="serializationRegistry"></param>
     public AEventStore(ISerializationRegistry serializationRegistry)
     {
         _stringSerializer = (serializationRegistry.GetSerializer(typeof(string)) as IVariableSizeSerializer<string>)!;
@@ -23,6 +30,14 @@ public abstract class AEventStore : IEventStore
 
     }
 
+    /// <summary>
+    /// Deserializes a snapshot into a definition and a list of attributes.
+    /// </summary>
+    /// <param name="loadedDefinition"></param>
+    /// <param name="loadedAttributes"></param>
+    /// <param name="snapshot"></param>
+    /// <returns></returns>
+    /// <exception cref="Exception"></exception>
     protected bool DeserializeSnapshot(out IAccumulator loadedDefinition,
         out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes, ReadOnlySpan<byte> snapshot)
     {
@@ -72,6 +87,12 @@ public abstract class AEventStore : IEventStore
         return true;
     }
 
+    /// <summary>
+    /// Serializes a snapshot into a byte span, the span will be valid until the next call to a serialize method.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="attributes"></param>
+    /// <returns></returns>
     protected ReadOnlySpan<byte> SerializeSnapshot(EntityId id, IDictionary<IAttribute, IAccumulator> attributes)
     {
         _writer.Reset();
@@ -105,12 +126,17 @@ public abstract class AEventStore : IEventStore
         where TEntity : IEvent
         where TColl : IList<(IIndexableAttribute, IAccumulator)>;
 
+    /// <inheritdoc />
     public abstract void EventsForIndex<TIngester, TVal>(IIndexableAttribute<TVal> attr, TVal value, TIngester ingester, TransactionId fromTx,
         TransactionId toTx) where TIngester : IEventIngester;
 
+    /// <inheritdoc />
     public abstract TransactionId GetSnapshot(TransactionId asOf, EntityId entityId, out IAccumulator loadedDefinition,
         out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes);
 
+    /// <inheritdoc />
     public abstract void SetSnapshot(TransactionId txId, EntityId id, IDictionary<IAttribute, IAccumulator> attributes);
+
+    /// <inheritdoc />
     public abstract TransactionId TxId { get; }
 }

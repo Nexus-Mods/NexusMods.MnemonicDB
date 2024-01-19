@@ -25,8 +25,6 @@ public class MultiEntityAttributeDefinition<TOwner, TOther> : IAttribute<MultiEn
     /// database.
     /// </summary>
     /// <param name="name"></param>
-    /// <typeparam name="TOwner"></typeparam>
-    /// <typeparam name="TOther"></typeparam>
     public MultiEntityAttributeDefinition(string name)
     {
         _name = name;
@@ -58,7 +56,7 @@ public class MultiEntityAttributeDefinition<TOwner, TOther> : IAttribute<MultiEn
     /// </summary>
     /// <param name="context"></param>
     /// <param name="owner"></param>
-    /// <param name="value"></param>
+    /// <param name="values"></param>
     /// <typeparam name="TContext"></typeparam>
     public void AddAll<TContext>(TContext context, EntityId<TOwner> owner, EntityId<TOther>[] values)
         where TContext : IEventContext
@@ -129,6 +127,10 @@ public class MultiEntityAccumulator<TType> : IAccumulator
     /// </summary>
     public ReadOnlyObservableCollection<TType>? TransformedReadOnly = null;
 
+    /// <summary>
+    /// Initializes the accumulator
+    /// </summary>
+    /// <param name="context"></param>
     public void Init(IEntityContext context)
     {
         if (Transformed != null)

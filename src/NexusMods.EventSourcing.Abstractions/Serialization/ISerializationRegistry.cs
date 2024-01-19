@@ -36,6 +36,7 @@ public interface ISerializationRegistry
     /// Deserializes the given bytes into the given type, returning the number of bytes read.
     /// </summary>
     /// <param name="bytes"></param>
+    /// <param name="value"></param>
     /// <typeparam name="TVal"></typeparam>
     /// <returns></returns>
     public int Deserialize<TVal>(ReadOnlySpan<byte> bytes, out TVal value);

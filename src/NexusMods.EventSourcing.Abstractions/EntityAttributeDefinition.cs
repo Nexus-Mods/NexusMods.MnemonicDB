@@ -4,7 +4,7 @@ namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// A attribute that contains a lazy reference to another entity. The link can be updated via setting the entity Id, and
-/// retrieved via the <see cref="Get{TContext}"/> method. Think of this attribute like a foreign key in a database.
+/// retrieved via the <see cref="Get"/> method. Think of this attribute like a foreign key in a database.
 /// </summary>
 /// <param name="attrName"></param>
 /// <typeparam name="TOwner"></typeparam>
@@ -51,9 +51,7 @@ public class EntityAttributeDefinition<TOwner, TOther>(string attrName) :
     /// <summary>
     /// Gets the value of the attribute for the given entity.
     /// </summary>
-    /// <param name="context"></param>
     /// <param name="owner"></param>
-    /// <typeparam name="TContext"></typeparam>
     /// <returns></returns>
     public TOther Get(TOwner owner)
     {
@@ -63,7 +61,10 @@ public class EntityAttributeDefinition<TOwner, TOther>(string attrName) :
         throw new InvalidOperationException($"Attribute not found for {Name} on {Owner.Name} with id {owner.Id}");
     }
 
+    /// <inheritdoc />
     public Type Owner => typeof(TOwner);
+
+    /// <inheritdoc />
     public string Name => attrName;
     IAccumulator IAttribute.CreateAccumulator()
     {

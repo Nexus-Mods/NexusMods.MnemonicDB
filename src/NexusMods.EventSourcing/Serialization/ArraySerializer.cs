@@ -7,19 +7,25 @@ using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Serialization;
 
+/// <summary>
+/// A serializer for arrays of any type supported by the registry.
+/// </summary>
 public class GenericArraySerializer : IGenericSerializer
 {
+    /// <inheritdoc />
     public bool CanSerialize(Type valueType)
     {
         return false;
     }
 
+    /// <inheritdoc />
     public bool TryGetFixedSize(Type valueType, out int size)
     {
         size = 0;
         return false;
     }
 
+    /// <inheritdoc />
     public bool TrySpecialize(Type baseType, Type[] argTypes, Func<Type, ISerializer> serializerFinder, [NotNullWhen(true)] out ISerializer? serializer)
     {
         if (!baseType.IsArray)
@@ -40,16 +46,24 @@ public class GenericArraySerializer : IGenericSerializer
         else
         {
             var type = typeof(VariableItemSizeSerializer<,>).MakeGenericType(itemType, itemSerializer.GetType());
-            serializer = (ISerializer) Activator.CreateInstance(type, itemSerializer, itemSize)!;
+            serializer = (ISerializer) Activator.CreateInstance(type, itemSerializer)!;
             return true;
         }
     }
 }
 
 
+/// <summary>
+/// Specialized serializer for arrays of a given type, where the type is of a fixed size.
+/// </summary>
+/// <param name="itemSerializer"></param>
+/// <param name="itemSize"></param>
+/// <typeparam name="TItem"></typeparam>
+/// <typeparam name="TItemSerializer"></typeparam>
 public class FixedItemSizeArraySerializer<TItem, TItemSerializer>(TItemSerializer itemSerializer, int itemSize) : IVariableSizeSerializer<TItem[]>
     where TItemSerializer : IFixedSizeSerializer<TItem>
 {
+    /// <inheritdoc />
     public bool CanSerialize(Type valueType)
     {
         if (!valueType.IsArray)
@@ -60,12 +74,14 @@ public class FixedItemSizeArraySerializer<TItem, TItemSerializer>(TItemSerialize
         return itemSerializer.CanSerialize(valueType.GetElementType()!);
     }
 
+    /// <inheritdoc />
     public bool TryGetFixedSize(Type valueType, out int size)
     {
         size = 0;
         return false;
     }
 
+    /// <inheritdoc />
     public void Serialize<TWriter>(TItem[] value, TWriter output) where TWriter : IBufferWriter<byte>
     {
         var totalSize = sizeof(ushort) + (itemSize * value.Length);
@@ -81,6 +97,7 @@ public class FixedItemSizeArraySerializer<TItem, TItemSerializer>(TItemSerialize
         output.Advance(totalSize);
     }
 
+    /// <inheritdoc />
     public int Deserialize(ReadOnlySpan<byte> from, out TItem[] value)
     {
         var size = BinaryPrimitives.ReadUInt16BigEndian(from);
@@ -97,10 +114,16 @@ public class FixedItemSizeArraySerializer<TItem, TItemSerializer>(TItemSerialize
     }
 }
 
-
-public class VariableItemSizeSerializer<TItem, TItemSerializer>(TItemSerializer itemSerializer, int itemSize) : IVariableSizeSerializer<TItem[]>
+/// <summary>
+/// Specialized serializer for arrays of a given type, where the type is of a variable size.
+/// </summary>
+/// <param name="itemSerializer"></param>
+/// <typeparam name="TItem"></typeparam>
+/// <typeparam name="TItemSerializer"></typeparam>
+public class VariableItemSizeSerializer<TItem, TItemSerializer>(TItemSerializer itemSerializer) : IVariableSizeSerializer<TItem[]>
     where TItemSerializer : IVariableSizeSerializer<TItem>
 {
+    /// <inheritdoc />
     public bool CanSerialize(Type valueType)
     {
         if (!valueType.IsArray)
@@ -111,12 +134,14 @@ public class VariableItemSizeSerializer<TItem, TItemSerializer>(TItemSerializer 
         return itemSerializer.CanSerialize(valueType.GetElementType()!);
     }
 
+    /// <inheritdoc />
     public bool TryGetFixedSize(Type valueType, out int size)
     {
         size = 0;
         return false;
     }
 
+    /// <inheritdoc />
     public void Serialize<TWriter>(TItem[] value, TWriter output) where TWriter : IBufferWriter<byte>
     {
         var span = output.GetSpan(sizeof(ushort));
@@ -129,6 +154,7 @@ public class VariableItemSizeSerializer<TItem, TItemSerializer>(TItemSerializer 
         }
     }
 
+    /// <inheritdoc />
     public int Deserialize(ReadOnlySpan<byte> from, out TItem[] value)
     {
         var size = BinaryPrimitives.ReadUInt16BigEndian(from);

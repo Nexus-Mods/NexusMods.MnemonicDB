@@ -60,9 +60,6 @@ public static class EntityStructureRegistry
     /// <summary>
     /// Registers an entity type in the global registry.
     /// </summary>
-    /// <param name="type"></param>
-    /// <param name="guid"></param>
-    /// <param name="revison"></param>
     public static void Register(EntityDefinition definition)
     {
         _entityDefinitionsByType.TryAdd(definition.Type, definition);
@@ -73,6 +70,7 @@ public static class EntityStructureRegistry
     /// Returns all attributes for the given entity type.
     /// </summary>
     /// <param name="owner"></param>
+    /// <param name="result"></param>
     /// <returns></returns>
     public static bool TryGetAttributes(Type owner, [NotNullWhen(true)] out ConcurrentDictionary<string, IAttribute>? result)
     {

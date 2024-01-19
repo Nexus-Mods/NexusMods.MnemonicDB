@@ -4,19 +4,24 @@ using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing;
 
+/// <summary>
+/// An ingester that indexes all the attributes of all the entities in the transaction.
+/// </summary>
 public class IndexerIngester : IEventIngester, IEventContext
 {
-    public Dictionary<IIndexableAttribute, List<IAccumulator>> IndexedAttributes = new();
+    public readonly Dictionary<IIndexableAttribute, List<IAccumulator>> IndexedAttributes = new();
 
-    public HashSet<EntityId> Ids = new();
+    public readonly HashSet<EntityId> Ids = new();
 
 
+    /// <inheritdoc />
     public bool Ingest(TransactionId id, IEvent @event)
     {
         @event.Apply(this);
         return true;
     }
 
+    /// <inheritdoc />
     public bool GetAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> entityId, TAttribute attributeDefinition,
         out TAccumulator accumulator) where TOwner : IEntity where TAttribute : IAttribute<TAccumulator> where TAccumulator : IAccumulator
     {

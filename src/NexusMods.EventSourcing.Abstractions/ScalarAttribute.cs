@@ -59,9 +59,7 @@ namespace NexusMods.EventSourcing.Abstractions;
      /// <summary>
      /// Gets the value of the attribute for the given entity.
      /// </summary>
-     /// <param name="context"></param>
      /// <param name="owner"></param>
-     /// <typeparam name="TContext"></typeparam>
      /// <returns></returns>
      public TType Get(TOwner owner)
      {

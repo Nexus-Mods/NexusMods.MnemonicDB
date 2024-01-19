@@ -3,6 +3,9 @@ using System.Buffers.Binary;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
+/// <summary>
+/// Marks a class as an entity, and sets the UUID and revision of the entity.
+/// </summary>
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct)]
 public class EntityAttribute : Attribute
 {
@@ -11,13 +14,13 @@ public class EntityAttribute : Attribute
     /// the revision will cause the entity snapshots to be discarded, and regenerated
     /// during the next load.
     /// </summary>
-    /// <param name="uid"></param>
+    /// <param name="guid"></param>
     /// <param name="revision"></param>
     public EntityAttribute(string guid, ushort revision)
     {
         Span<byte> span = stackalloc byte[16];
         Guid.Parse(guid).TryWriteBytes(span);
-        UUID = BinaryPrimitives.ReadUInt128BigEndian(span);
+        Uuid = BinaryPrimitives.ReadUInt128BigEndian(span);
         Revision = revision;
     }
 
@@ -29,5 +32,5 @@ public class EntityAttribute : Attribute
     /// <summary>
     /// The unique identifier of the entity *Type*.
     /// </summary>
-    public UInt128 UUID { get; }
+    public UInt128 Uuid { get; }
 }

@@ -84,7 +84,7 @@ public static class DependencyInjectionExtensions
         }
 
 
-        EntityStructureRegistry.Register(new EntityDefinition(type, entityAttribute.UUID, entityAttribute.Revision));
+        EntityStructureRegistry.Register(new EntityDefinition(type, entityAttribute.Uuid, entityAttribute.Revision));
         return collection;
     }
 

@@ -36,6 +36,6 @@ public interface IAttribute<TAccumulator> : IAttribute where TAccumulator : IAcc
     /// to lazily create accumulators.
     /// </summary>
     /// <returns></returns>
-    public TAccumulator CreateAccumulator();
+    public new TAccumulator CreateAccumulator();
 }
 

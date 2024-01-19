@@ -6,6 +6,9 @@ using NexusMods.EventSourcing.Abstractions.Serialization;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
+/// <summary>
+/// A internal class used for creating secondary indexes on entity Ids,
+/// </summary>
 public class EntityIdDefinition : IAttribute<EntityIdDefinitionAccumulator>, IIndexableAttribute<EntityId>
 {
     /// <inheritdoc />
@@ -31,6 +34,7 @@ public class EntityIdDefinition : IAttribute<EntityIdDefinitionAccumulator>, IIn
         BinaryPrimitives.WriteUInt128BigEndian(span, value.Value);
     }
 
+    /// <inheritdoc />
     public bool Equal(IAccumulator accumulator, EntityId val)
     {
         return ((EntityIdDefinitionAccumulator)accumulator).Id == val;
@@ -61,10 +65,17 @@ public class EntityIdDefinition : IAttribute<EntityIdDefinitionAccumulator>, IIn
     }
 }
 
+/// <summary>
+/// Accumulator for the <see cref="EntityIdDefinition"/> attribute.
+/// </summary>
 public class EntityIdDefinitionAccumulator : IAccumulator
 {
+    /// <summary>
+    /// The Id of the entity.
+    /// </summary>
     public EntityId Id;
 
+    /// <inheritdoc />
     public void WriteTo(IBufferWriter<byte> writer, ISerializationRegistry registry)
     {
         var span = writer.GetSpan(16);
@@ -72,6 +83,7 @@ public class EntityIdDefinitionAccumulator : IAccumulator
         writer.Advance(16);
     }
 
+    /// <inheritdoc />
     public int ReadFrom(ref ReadOnlySpan<byte> data, ISerializationRegistry registry)
     {
         Id = EntityId.From(data);

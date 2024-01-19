@@ -35,7 +35,7 @@ public interface IFixedSizeSerializer<T> : ISerializer
 {
     /// <summary>
     /// Serialize the given value into the given span. The span will be exactly the size of the value returned
-    /// by <see cref="TryGetFixedSize"/>.
+    /// by <see cref="ISerializer.TryGetFixedSize"/>.
     /// </summary>
     /// <param name="value"></param>
     /// <param name="output"></param>

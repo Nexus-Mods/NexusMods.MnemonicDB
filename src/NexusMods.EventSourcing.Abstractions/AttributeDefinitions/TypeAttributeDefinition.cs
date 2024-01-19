@@ -9,7 +9,6 @@ namespace NexusMods.EventSourcing.Abstractions.AttributeDefinitions;
 /// <summary>
 /// An attribute for the type of an entity.
 /// </summary>
-/// <param name="attrName"></param>
 public class TypeAttributeDefinition : IAttribute<ScalarAccumulator<EntityDefinition>>
 {
     /// <inheritdoc />

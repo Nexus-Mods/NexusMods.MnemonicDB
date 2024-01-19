@@ -5,11 +5,23 @@ using TransparentValueObjects;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
+/// <summary>
+/// A unique identifier for an <see cref="IEntity"/>.
+/// </summary>
 [ValueObject<UInt128>]
 public readonly partial struct EntityId
 {
+    /// <summary>
+    /// Casts this <see cref="EntityId"/> to a <see cref="EntityId{T}"/> of the specified type.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
     public EntityId<T> Cast<T>() where T : IEntity => new(this);
 
+    /// <summary>
+    /// Creates a random <see cref="EntityId"/>.
+    /// </summary>
+    /// <returns></returns>
     public static EntityId NewId()
     {
         var guid = Guid.NewGuid();
@@ -19,8 +31,17 @@ public readonly partial struct EntityId
         return From(value);
     }
 
+    /// <summary>
+    /// Reads the <see cref="EntityId"/> from the specified <paramref name="data"/>.
+    /// </summary>
+    /// <param name="data"></param>
+    /// <returns></returns>
     public static EntityId From(ReadOnlySpan<byte> data) => new(BinaryPrimitives.ReadUInt128BigEndian(data));
 
+    /// <summary>
+    /// Writes the <see cref="EntityId"/> to the specified <paramref name="span"/>.
+    /// </summary>
+    /// <param name="span"></param>
     public void TryWriteBytes(Span<byte> span)
     {
         BinaryPrimitives.WriteUInt128BigEndian(span, Value);
@@ -95,7 +116,7 @@ public readonly struct EntityId<T> where T : IEntity
     /// <summary>
     /// Converts the <see cref="EntityId{T}"/> to a <see cref="EntityId{T}"/> of another type.
     /// </summary>
-    /// <typeparam name="T"></typeparam>
+    /// <typeparam name="TTo"></typeparam>
     /// <returns></returns>
-    public EntityId<T> Cast<T>() where T : IEntity => new(Value);
+    public EntityId<TTo> Cast<TTo>() where TTo : IEntity => new(Value);
 }

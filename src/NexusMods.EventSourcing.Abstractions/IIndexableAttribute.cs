@@ -30,6 +30,7 @@ public interface IIndexableAttribute : IAttribute
     /// Writes the accumulator to the given span, which will be the size returned by <see cref="SpanSize"/>.
     /// </summary>
     /// <param name="span"></param>
+    /// <param name="accumulator"></param>
     public void WriteTo(Span<byte> span, IAccumulator accumulator);
 }
 
@@ -42,7 +43,7 @@ public interface IIndexableAttribute : IAttribute
 public interface IIndexableAttribute<TVal> : IIndexableAttribute
 {
     /// <summary>
-    /// Writes the accumulator to the given span, which will be the size returned by <see cref="SpanSize"/>.
+    /// Writes the accumulator to the given span, which will be the size returned by <see cref="IIndexableAttribute.SpanSize"/>.
     /// </summary>
     /// <param name="span"></param>
     /// <param name="value"></param>
@@ -54,7 +55,6 @@ public interface IIndexableAttribute<TVal> : IIndexableAttribute
     /// </summary>
     /// <param name="accumulator"></param>
     /// <param name="val"></param>
-    /// <typeparam name="TVal"></typeparam>
     /// <returns></returns>
     bool Equal(IAccumulator accumulator, TVal val);
 }

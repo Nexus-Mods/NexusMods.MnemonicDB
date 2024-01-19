@@ -33,7 +33,6 @@ public class SerializationRegistry : ISerializationRegistry
     /// Gets a serializer that can serialize the given type.
     /// </summary>
     /// <param name="type"></param>
-    /// <param name="recursiveGetSerializer">Called when the cache needs to recursively create another type serializer</param>
     /// <returns></returns>
     /// <exception cref="Exception"></exception>
     public ISerializer GetSerializer(Type type)

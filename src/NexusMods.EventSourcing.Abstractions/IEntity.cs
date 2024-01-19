@@ -21,7 +21,7 @@ public interface IEntity : INotifyPropertyChanged
 
 
     /// <summary>
-    /// The type descriptor for all entities. Emitted by the <see cref="IEventContext.New{TType}"/> method.
+    /// The type descriptor for all entities. Emitted by .New on the EntityContext
     /// </summary>
     public static readonly TypeAttributeDefinition TypeAttribute = new();
 

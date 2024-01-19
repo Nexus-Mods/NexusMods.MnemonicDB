@@ -13,7 +13,6 @@ public interface IEventContext
     /// Gets the accumulator for the given attribute definition, if the accumulator does not exist it will be created. If
     /// the context is not setup for this entityId then false will be returned and the accumulator should be ignored.
     /// </summary>
-    /// <param name="entity"></param>
     /// <param name="entityId"></param>
     /// <param name="attributeDefinition"></param>
     /// <param name="accumulator"></param>

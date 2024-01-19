@@ -15,6 +15,9 @@ namespace NexusMods.EventSourcing.Serialization;
 
 using MemberDefinition = (ParameterInfo Ref, ParameterInfo Base, ParameterExpression Variable, ISerializer Serializer);
 
+/// <summary>
+/// Serializer for events, this assumes all events inherit from IEvent, and are records. Polymorphism is supported.
+/// </summary>
 public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSerializer<IEvent>
 {
     private readonly PooledMemoryBufferWriter _writer;
@@ -30,6 +33,11 @@ public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSeria
 
     private delegate int EventDeserializerDelegate(ReadOnlySpan<byte> data, out IEvent @event);
 
+    /// <summary>
+    /// DI Constructor.
+    /// </summary>
+    /// <param name="registry"></param>
+    /// <param name="eventDefinitions"></param>
     public BinaryEventSerializer(ISerializationRegistry registry, IEnumerable<EventDefinition> eventDefinitions)
     {
         _serializerRegistry = registry;
@@ -49,6 +57,7 @@ public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSeria
     }
 
 
+    /// <inheritdoc />
     public ReadOnlySpan<byte> Serialize(IEvent @event)
     {
         _writer.Reset();
@@ -56,6 +65,7 @@ public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSeria
         return _writer.GetWrittenSpan();
     }
 
+    /// <inheritdoc />
     public IEvent Deserialize(ReadOnlySpan<byte> data)
     {
         var id = BinaryPrimitives.ReadUInt128BigEndian(data);
@@ -177,8 +187,6 @@ public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSeria
         var outParam = Expression.Parameter(typeof(IEvent).MakeByRefType(), "output");
 
         var spanParam = Expression.Parameter(typeof(ReadOnlySpan<byte>));
-
-        var ctorExpressions = new List<Expression>();
 
         var offsetVariable = Expression.Variable(typeof(int), "offset");
 
@@ -406,22 +414,26 @@ public sealed class BinaryEventSerializer : IEventSerializer, IVariableSizeSeria
     }
 
 
+    /// <inheritdoc />
     public bool CanSerialize(Type valueType)
     {
         return valueType == typeof(IEvent);
     }
 
+    /// <inheritdoc />
     public bool TryGetFixedSize(Type valueType, out int size)
     {
         size = 0;
         return false;
     }
 
+    /// <inheritdoc />
     public void Serialize<TWriter>(IEvent value, TWriter output) where TWriter : IBufferWriter<byte>
     {
         _serializerDelegates[value.GetType()](value);
     }
 
+    /// <inheritdoc />
     public int Deserialize(ReadOnlySpan<byte> from, out IEvent value)
     {
         var used = _deserializerDelegates[BinaryPrimitives.ReadUInt128BigEndian(from)](SliceFastStart(from, 16), out value);

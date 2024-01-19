@@ -5,5 +5,8 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// </summary>
 public interface ISingletonEntity : IEntity
 {
+    /// <summary>
+    /// The singleton id of the entity.
+    /// </summary>
     public static virtual EntityId SingletonId { get; }
 }

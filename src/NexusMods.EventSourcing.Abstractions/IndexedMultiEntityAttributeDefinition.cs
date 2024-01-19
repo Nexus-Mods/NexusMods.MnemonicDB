@@ -20,11 +20,20 @@ public class IndexedMultiEntityAttributeDefinition<TOwner, TKey, TOther>(string 
     /// <inheritdoc />
     public string Name => name;
 
+    /// <inheritdoc />
     public IndexedMultiEntityAccumulator<TKey, TOther> CreateAccumulator()
     {
         return new IndexedMultiEntityAccumulator<TKey, TOther>();
     }
 
+    /// <summary>
+    /// Adds a new entity to the collection.
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="owner"></param>
+    /// <param name="key"></param>
+    /// <param name="value"></param>
+    /// <typeparam name="TContext"></typeparam>
     public void Add<TContext>(TContext context, EntityId<TOwner> owner, TKey key, EntityId<TOther> value)
         where TContext : IEventContext
     {
@@ -61,6 +70,11 @@ public class IndexedMultiEntityAttributeDefinition<TOwner, TKey, TOther>(string 
     }
 }
 
+/// <summary>
+/// Accumulator for the <see cref="IndexedMultiEntityAttributeDefinition{TOwner,TKey,TOther}"/> attribute.
+/// </summary>
+/// <typeparam name="TKey"></typeparam>
+/// <typeparam name="TOther"></typeparam>
 public class IndexedMultiEntityAccumulator<TKey, TOther> : IAccumulator
     where TOther : AEntity<TOther>
     where TKey : notnull
@@ -68,6 +82,7 @@ public class IndexedMultiEntityAccumulator<TKey, TOther> : IAccumulator
     internal Dictionary<TKey, EntityId<TOther>> _values = new();
     internal Dictionary<EntityId<TOther>, TKey> _keys = new();
 
+    /// <inheritdoc />
     public void WriteTo(IBufferWriter<byte> writer, ISerializationRegistry registry)
     {
         var getSpan = writer.GetSpan(2);
@@ -81,6 +96,7 @@ public class IndexedMultiEntityAccumulator<TKey, TOther> : IAccumulator
         }
     }
 
+    /// <inheritdoc />
     public int ReadFrom(ref ReadOnlySpan<byte> input, ISerializationRegistry registry)
     {
         var originalSize = input.Length;

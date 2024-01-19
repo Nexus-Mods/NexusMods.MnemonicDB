@@ -9,7 +9,6 @@ namespace NexusMods.EventSourcing;
 /// An event context that forwards events to a dictionary of accumulators, and is tuned for adding new values to existing
 /// accumulators and entities. In other words is for moving a
 /// </summary>
-/// <param name="trackedValues"></param>
 public readonly struct ForwardEventContext(ConcurrentDictionary<EntityId, Dictionary<IAttribute, IAccumulator>> trackedEntities, HashSet<(EntityId, string)> updatedAttributes) : IEventContext
 {
     /// <inheritdoc />

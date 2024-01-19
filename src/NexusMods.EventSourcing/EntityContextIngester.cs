@@ -5,6 +5,11 @@ using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing;
 
+/// <summary>
+/// An ingester that can be used to ingest events into an entity context.
+/// </summary>
+/// <param name="values"></param>
+/// <param name="id"></param>
 public class EntityContextIngester(Dictionary<IAttribute, IAccumulator> values, EntityId id) : IEventContext, IEventIngester
 {
     /// <summary>
