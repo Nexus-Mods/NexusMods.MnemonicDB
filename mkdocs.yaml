@@ -48,4 +48,6 @@ theme:
 
 nav:
   - Home: index.md
-  - Usage: Usage.md
+  - Adapting to Changes: AdaptingToChanges.md
+  - Secondary Indexes: SecondaryIndexes.md
+
