@@ -148,7 +148,7 @@ public class EntityContext(IEventStore store) : IEntityContext
             var newId = store.Add(newEvent, _indexUpdaters);
 
             // Return the definition accumulators to the pool
-            for (var idx = 0; idx < _indexUpdaters.Count; idx++)
+            for (var idx = 0; idx < _indexerIngester.Ids.Count; idx++)
             {
                 var (_, accumulator) = _indexUpdaters[idx];
                 _definitionAccumulatorPool.Return((EntityIdDefinitionAccumulator)accumulator);
