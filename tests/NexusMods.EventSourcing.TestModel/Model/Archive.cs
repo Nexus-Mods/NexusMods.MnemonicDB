@@ -13,7 +13,7 @@ public class Archive(IEntityContext context, EntityId<Archive> id) : AEntity<Arc
 
     [Indexed("D27156FF-8573-4120-BD53-1BD6D5106BA2")]
     public ulong Hash => _hash.Get(this);
-    internal static readonly ULongAttribute<Archive> _hash = new(nameof(Size));
+    internal static readonly ULongAttribute<Archive> _hash = new(nameof(Hash));
 
     public ReadOnlyObservableCollection<ArchiveEntry> Entries => _entries.Get(this);
     internal static readonly MultiEntityAttributeDefinition<Archive, ArchiveEntry> _entries = new(nameof(Entries));
