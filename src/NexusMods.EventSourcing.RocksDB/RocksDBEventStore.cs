@@ -11,6 +11,10 @@ using RocksDbSharp;
 
 namespace NexusMods.EventSourcing.RocksDB;
 
+/// <summary>
+/// RocksDB event store
+/// </summary>
+/// <typeparam name="TSerializer"></typeparam>
 public sealed class RocksDBEventStore<TSerializer> : AEventStore, IDisposable
     where TSerializer : IEventSerializer
 {
@@ -23,6 +27,12 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore, IDisposable
     private readonly ColumnFamilyHandle _snapshotColumn;
     private readonly Dictionary<IIndexableAttribute,ColumnFamilyHandle> _indexColumns;
 
+    /// <summary>
+    /// DI constructor
+    /// </summary>
+    /// <param name="serializer"></param>
+    /// <param name="settings"></param>
+    /// <param name="serializationRegistry"></param>
     public RocksDBEventStore(TSerializer serializer, Settings settings, ISerializationRegistry serializationRegistry) : base(serializationRegistry)
     {
         _serializer = serializer;
@@ -118,6 +128,7 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore, IDisposable
         _db.Put(keySpan, ReadOnlySpan<byte>.Empty, _indexColumns[attr]);
     }
 
+    /// <inheritdoc />
     public override void EventsForIndex<TIngester, TVal>(IIndexableAttribute<TVal> attr, TVal value, TIngester ingester, TransactionId fromTx,
         TransactionId toTx)
     {
@@ -167,6 +178,7 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore, IDisposable
 
     }
 
+    /// <inheritdoc />
     public override TransactionId GetSnapshot(TransactionId asOf, EntityId entityId, out IAccumulator loadedDefinition,
         out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes)
     {
@@ -224,6 +236,7 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore, IDisposable
         return TransactionId.Min;
     }
 
+    /// <inheritdoc />
     public override void SetSnapshot(TransactionId txId, EntityId id, IDictionary<IAttribute, IAccumulator> attributes)
     {
         var span = SerializeSnapshot(id, attributes);

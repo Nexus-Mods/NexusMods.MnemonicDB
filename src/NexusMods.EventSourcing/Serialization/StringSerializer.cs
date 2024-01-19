@@ -6,19 +6,25 @@ using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Serialization;
 
+/// <summary>
+/// Serializer for writing strings.
+/// </summary>
 public class StringSerializer : IVariableSizeSerializer<string>
 {
+    /// <inheritdoc />
     public bool CanSerialize(Type valueType)
     {
         return valueType == typeof(string);
     }
 
+    /// <inheritdoc />
     public bool TryGetFixedSize(Type valueType, out int size)
     {
         size = 0;
         return false;
     }
 
+    /// <inheritdoc />
     public void Serialize<TWriter>(string value, TWriter output) where TWriter : IBufferWriter<byte>
     {
         var size = System.Text.Encoding.UTF8.GetByteCount(value);
@@ -28,6 +34,7 @@ public class StringSerializer : IVariableSizeSerializer<string>
         output.Advance(size + 2);
     }
 
+    /// <inheritdoc />
     public int Deserialize(ReadOnlySpan<byte> from, out string value)
     {
         var size = BinaryPrimitives.ReadUInt16LittleEndian(from);

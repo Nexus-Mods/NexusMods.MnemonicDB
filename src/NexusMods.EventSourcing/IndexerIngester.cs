@@ -9,8 +9,14 @@ namespace NexusMods.EventSourcing;
 /// </summary>
 public class IndexerIngester : IEventIngester, IEventContext
 {
+    /// <summary>
+    /// The attributes that were indexed.
+    /// </summary>
     public readonly Dictionary<IIndexableAttribute, List<IAccumulator>> IndexedAttributes = new();
 
+    /// <summary>
+    /// The entity ids that were indexed.
+    /// </summary>
     public readonly HashSet<EntityId> Ids = new();
 
 
