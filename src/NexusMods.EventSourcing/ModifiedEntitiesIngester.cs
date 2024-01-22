@@ -20,7 +20,7 @@ public readonly struct ModifiedEntitiesIngester() : IEventContext
         where TAttribute : IAttribute<TAccumulator>
         where TAccumulator : IAccumulator
     {
-        Entities.Add(entityId.Value);
+        Entities.Add(entityId.Id);
         accumulator = default!;
         return false;
     }

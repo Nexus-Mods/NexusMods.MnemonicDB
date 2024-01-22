@@ -6,7 +6,7 @@ namespace NexusMods.EventSourcing.TestModel.Model;
 [Entity("12055587-81CE-44F7-AF2B-6324B0CBB3C4", 0)]
 public class Collection : AEntity
 {
-    public Collection(IEntityContext context, EntityId<Collection> id) : base(context, id) { }
+    public Collection(IEntityContext context, EntityId<Collection> id) : base(context, id.Id) { }
 
     /// <summary>
     /// Name of the collection

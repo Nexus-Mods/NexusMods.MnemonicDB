@@ -43,16 +43,16 @@ public class EntityContext(IEventStore store) : IEntityContext
     /// <returns></returns>
     public TEntity Get<TEntity>(EntityId<TEntity> id) where TEntity : IEntity
     {
-        if (_entities.TryGetValue(id.Value, out var entity))
+        if (_entities.TryGetValue(id.Id, out var entity))
             return (TEntity) entity;
 
-        var type = IEntity.TypeAttribute.Get(this, id.Value);
+        var type = IEntity.TypeAttribute.Get(this, id.Id);
         var newEntity = (TEntity)Activator.CreateInstance(type, this, id)!;
 
-        if (_entities.TryAdd(id.Value, newEntity))
+        if (_entities.TryAdd(id.Id, newEntity))
             return newEntity;
 
-        return (TEntity)_entities[id.Value];
+        return (TEntity)_entities[id.Id];
     }
 
     /// <summary>
@@ -192,13 +192,13 @@ public class EntityContext(IEventStore store) : IEntityContext
     }
 
     /// <inheritdoc />
-    public bool GetReadOnlyAccumulator<TOwner, TAttribute, TAccumulator>(TOwner ownerId, TAttribute attributeDefinition,
+    public bool GetReadOnlyAccumulator<TOwner, TAttribute, TAccumulator>(EntityId ownerId, TAttribute attributeDefinition,
         out TAccumulator accumulator, bool createIfMissing = false)
         where TOwner : IEntity
         where TAttribute : IAttribute<TAccumulator>
         where TAccumulator : IAccumulator
     {
-        var values = GetAccumulators(ownerId.Id);
+        var values = GetAccumulators(ownerId);
         if (values.TryGetValue(attributeDefinition, out var value))
         {
             accumulator = (TAccumulator) value;
@@ -254,7 +254,7 @@ public class EntityContext(IEventStore store) : IEntityContext
         {
             var entity =  Get(entityId);
 
-            if (!_values.TryGetValue(entityId.Value, out var values)) continue;
+            if (!_values.TryGetValue(entityId.Id, out var values)) continue;
 
             if (!values.TryGetValue(attr, out var accumulator)) continue;
 

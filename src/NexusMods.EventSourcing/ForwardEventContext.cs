@@ -18,9 +18,9 @@ public readonly struct ForwardEventContext(ConcurrentDictionary<EntityId, Dictio
         where TAccumulator : IAccumulator
 
     {
-        updatedAttributes.Add((entityId.Value, attributeDefinition.Name));
+        updatedAttributes.Add((entityId.Id, attributeDefinition.Name));
 
-        if (!trackedEntities.TryGetValue(entityId.Value, out var values))
+        if (!trackedEntities.TryGetValue(entityId.Id, out var values))
         {
             accumulator = default!;
             return false;

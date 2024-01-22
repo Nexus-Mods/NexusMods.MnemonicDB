@@ -3,7 +3,7 @@
 namespace NexusMods.EventSourcing.TestModel.Model;
 
 [Entity("0FFCC422-7281-44C4-A4E6-32ACE31C00AF", 0)]
-public class ArchiveEntry(IEntityContext context, EntityId<ArchiveEntry> id) : AEntity(context, id)
+public class ArchiveEntry(IEntityContext context, EntityId<ArchiveEntry> id) : AEntity(context, id.Id)
 {
     public string Path => _path.Get(this);
     internal static readonly ScalarAttribute<ArchiveEntry, string> _path = new(nameof(Path));

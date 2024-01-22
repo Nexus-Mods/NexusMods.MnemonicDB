@@ -89,7 +89,7 @@ public class MultiEntityAttributeDefinition<TOwner, TOther> : IAttribute<MultiEn
     {
         if (!entity.Context
                 .GetReadOnlyAccumulator<TOwner, MultiEntityAttributeDefinition<TOwner, TOther>,
-                    MultiEntityAccumulator<TOther>>(entity, this, out var accumulator, true))
+                    MultiEntityAccumulator<TOther>>(entity.Id, this, out var accumulator, true))
             throw new InvalidOperationException("No accumulator found for entity");
 
         accumulator.Init(entity.Context);

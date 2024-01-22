@@ -64,7 +64,7 @@ public class IndexedMultiEntityAttributeDefinition<TOwner, TKey, TOther>(string 
     {
         if (!entity.Context
                 .GetReadOnlyAccumulator<TOwner, IndexedMultiEntityAttributeDefinition<TOwner, TKey, TOther>,
-                    IndexedMultiEntityAccumulator<TKey, TOther>>(entity, this, out var accumulator, true))
+                    IndexedMultiEntityAccumulator<TKey, TOther>>(entity.Id, this, out var accumulator, true))
             throw new InvalidOperationException("No accumulator found for entity");
         return accumulator._values;
     }

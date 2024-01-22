@@ -31,7 +31,7 @@ public class IndexerIngester : IEventIngester, IEventContext
     public bool GetAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> entityId, TAttribute attributeDefinition,
         out TAccumulator accumulator) where TOwner : IEntity where TAttribute : IAttribute<TAccumulator> where TAccumulator : IAccumulator
     {
-        Ids.Add(entityId.Value);
+        Ids.Add(entityId.Id);
 
         if (attributeDefinition is IIndexableAttribute indexableAttribute)
         {

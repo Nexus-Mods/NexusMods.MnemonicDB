@@ -27,7 +27,7 @@ public class EntityIdSerializer : IFixedSizeSerializer<EntityId>
     /// <inheritdoc />
     public void Serialize(EntityId value, Span<byte> output)
     {
-        value.TryWriteBytes(output);
+        value.WriteTo(output);
     }
 
     /// <inheritdoc />
@@ -85,7 +85,7 @@ internal class EntityIdSerializer<T> : IFixedSizeSerializer<EntityId<T>> where T
 
     public void Serialize(EntityId<T> value, Span<byte> output)
     {
-        value.Value.TryWriteBytes(output);
+        value.Id.WriteTo(output);
     }
 
     public EntityId<T> Deserialize(ReadOnlySpan<byte> from)

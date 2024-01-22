@@ -5,7 +5,7 @@ using NexusMods.EventSourcing.Abstractions;
 namespace NexusMods.EventSourcing.TestModel.Model;
 
 [Entity("49C0A910-A022-4AB5-9CF8-3F2730A4BA15", 0)]
-public class Loadout(IEntityContext context, EntityId<Loadout> id) : AEntity(context, id)
+public class Loadout(IEntityContext context, EntityId<Loadout> id) : AEntity(context, id.Id)
 {
     /// <summary>
     /// The human readable name of the loadout.

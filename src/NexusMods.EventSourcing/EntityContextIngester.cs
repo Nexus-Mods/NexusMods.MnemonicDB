@@ -39,7 +39,7 @@ public class EntityContextIngester(Dictionary<IAttribute, IAccumulator> values, 
         where TAccumulator : IAccumulator
 
     {
-        if (!entityId.Value.Equals(id))
+        if (!entityId.Id.Equals(id))
         {
             accumulator = default!;
             return false;

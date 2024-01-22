@@ -63,7 +63,7 @@ namespace NexusMods.EventSourcing.Abstractions;
      /// <returns></returns>
      public TType Get(TOwner owner)
      {
-         if (owner.Context.GetReadOnlyAccumulator<TOwner, ScalarAttribute<TOwner, TType>, ScalarAccumulator<TType>>(owner, this, out var accumulator))
+         if (owner.Context.GetReadOnlyAccumulator<TOwner, ScalarAttribute<TOwner, TType>, ScalarAccumulator<TType>>(owner.Id, this, out var accumulator))
              return accumulator.Value;
          // TODO, make this a custom exception and extract it to another method
          throw new InvalidOperationException($"Attribute not found for {Name} on {Owner.Name} with id {owner.Id}");

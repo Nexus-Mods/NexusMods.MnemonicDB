@@ -5,7 +5,7 @@ using NexusMods.EventSourcing.TestModel.Model.FileTypes;
 namespace NexusMods.EventSourcing.TestModel.Model;
 
 [Entity("ACB7AF43-4FB2-4E1A-8C32-7CF7D912A911", 0)]
-public class Mod(IEntityContext context, EntityId<Mod> id) : AEntity(context, id)
+public class Mod(IEntityContext context, EntityId<Mod> id) : AEntity(context, id.Id)
 {
     public Loadout Loadout => _loadout.Get(this);
     internal static readonly EntityAttributeDefinition<Mod, Loadout> _loadout = new(nameof(Loadout));

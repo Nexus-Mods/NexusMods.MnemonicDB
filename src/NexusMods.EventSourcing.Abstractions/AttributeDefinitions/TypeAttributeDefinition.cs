@@ -38,8 +38,7 @@ public class TypeAttributeDefinition : IAttribute<ScalarAccumulator<EntityDefini
     public Type Get<TCtx>(TCtx context, EntityId owner) where TCtx : IEntityContext
     {
         EntityStructureRegistry.Register(this);
-        if (context.GetReadOnlyAccumulator<IEntity, TypeAttributeDefinition, ScalarAccumulator<EntityDefinition>>(
-                new EntityId<IEntity>(owner), this, out var accumulator))
+        if (context.GetReadOnlyAccumulator<IEntity, TypeAttributeDefinition, ScalarAccumulator<EntityDefinition>>(owner, this, out var accumulator))
             return accumulator.Value.Type;
         // TODO, make this a custom exception and extract it to another method
         throw new InvalidOperationException("No type attribute found for entity");
@@ -58,7 +57,7 @@ public class TypeAttributeDefinition : IAttribute<ScalarAccumulator<EntityDefini
         where TType : IEntity
     {
         var definition = EntityStructureRegistry.GetDefinition<TType>();
-        if (context.GetAccumulator<IEntity, TypeAttributeDefinition, ScalarAccumulator<EntityDefinition>>(EntityId<IEntity>.From(id.Value.Value), IEntity.TypeAttribute, out var accumulator))
+        if (context.GetAccumulator<IEntity, TypeAttributeDefinition, ScalarAccumulator<EntityDefinition>>(EntityId<IEntity>.From(id.Id), IEntity.TypeAttribute, out var accumulator))
             accumulator.Value = definition;
     }
 }

@@ -183,10 +183,10 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore, IDisposable
         out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes)
     {
         Span<byte> startKey = stackalloc byte[24];
-        entityId.TryWriteBytes(startKey);
+        entityId.WriteTo(startKey);
         BinaryPrimitives.WriteUInt64BigEndian(startKey.SliceFast(16), 0);
         Span<byte> endKey = stackalloc byte[24];
-        entityId.TryWriteBytes(endKey);
+        entityId.WriteTo(endKey);
         BinaryPrimitives.WriteUInt64BigEndian(endKey.SliceFast(16), asOf.Value);
 
         var options = new ReadOptions();
@@ -242,7 +242,7 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore, IDisposable
         var span = SerializeSnapshot(id, attributes);
 
         Span<byte> keySpan = stackalloc byte[24];
-        id.TryWriteBytes(keySpan);
+        id.WriteTo(keySpan);
         BinaryPrimitives.WriteUInt64BigEndian(keySpan.SliceFast(16), txId.Value);
         _db.Put(keySpan, span, _snapshotColumn);
     }
