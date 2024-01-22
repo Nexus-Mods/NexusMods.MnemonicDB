@@ -1,4 +1,6 @@
+using System.Collections.ObjectModel;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.TestModel.Model.FileTypes;
 
 namespace NexusMods.EventSourcing.TestModel.Model;
 
@@ -25,5 +27,11 @@ public class Mod(IEntityContext context, EntityId<Mod> id) : AEntity(context, id
     /// </summary>
     public Collection Collection => _collection.Get(this);
     internal static readonly EntityAttributeDefinition<Mod, Collection> _collection = new(nameof(Collection));
+
+    /// <summary>
+    /// Files that belong to the mod.
+    /// </summary>
+    public ReadOnlyObservableCollection<AFile> Files => _files.Get(this);
+    internal static readonly MultiEntityAttributeDefinition<Mod, AFile> _files = new(nameof(Files));
 
 }

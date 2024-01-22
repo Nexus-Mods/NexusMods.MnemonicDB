@@ -53,7 +53,7 @@ public readonly partial struct EntityId
 /// A strongly typed <see cref="EntityId"/> for a specific <see cref="IEntity"/>.
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public readonly struct EntityId<T> where T : IEntity
+public readonly struct EntityId<in T> where T : IEntity
 {
     /// <summary>
     /// Creates a new instance of <see cref="EntityId{T}"/>.
