@@ -120,19 +120,10 @@ public readonly struct EntityId : IEquatable<EntityId>, IComparable<EntityId>
 }
 
 /// <summary>
-/// Interface for a strongly typed <see cref="EntityId"/>.
-/// </summary>
-/// <typeparam name="T"></typeparam>
-public interface IEntityId<out T> where T : IEntity
-{
-
-}
-
-/// <summary>
 /// A typed <see cref="EntityId"/> for a specific <see cref="IEntity"/>.
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public readonly struct EntityId<T> : IEntityId<T> where T : IEntity
+public readonly struct EntityId<T> : IEquatable<EntityId<T>>, IComparable<EntityId<T>> where T : IEntity
 {
     /// <summary>
     /// Creates a new instance of <see cref="EntityId{T}"/>.
@@ -198,69 +189,50 @@ public readonly struct EntityId<T> : IEntityId<T> where T : IEntity
         }
         return From(UInt128.Parse(id, NumberStyles.HexNumber));
     }
-}
-
-
-/*
-
-/// <summary>
-/// A strongly typed <see cref="EntityId"/> for a specific <see cref="IEntity"/>.
-/// </summary>
-/// <typeparam name="T"></typeparam>
-public readonly struct EntityId<in T> where T : IEntity
-{
-    /// <summary>
-    /// Creates a new instance of <see cref="EntityId{T}"/>.
-    /// </summary>
-    /// <returns></returns>
-    public static EntityId<T> NewId() => new(EntityId.NewId());
-
-
-    /// <summary>
-    /// Gets the <see cref="EntityId{T}"/> from the specified <paramref name="id"/>.
-    /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
-    public static EntityId<T> From(UInt128 id) => new(EntityId.From(id));
-
-    /// <summary>
-    /// Reads the <see cref="EntityId{T}"/> from the specified <paramref name="data"/>.
-    /// </summary>
-    /// <param name="data"></param>
-    /// <returns></returns>
-    public static EntityId<T> From(ReadOnlySpan<byte> data) => new(EntityId.From(data));
-
-
-    /// <summary>
-    /// Converts the <see cref="EntityId{T}"/> to a <see cref="EntityId"/>.
-    /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
-    public static implicit operator EntityId(EntityId<T> id) => id.Value;
-
-
-
-
-
-    /// <summary>
-    /// Creates a new instance of <see cref="EntityId{T}"/>.
-    /// </summary>
-    /// <param name="id"></param>
-    public EntityId(EntityId id) => Value = id;
-
-    /// <summary>
-    /// The underlying value.
-    /// </summary>
-    public readonly EntityId Value;
 
     /// <inheritdoc />
-    public override string ToString()
+    public bool Equals(EntityId<T> other)
     {
-        return typeof(T).Name + "<" + Value.Value.ToString("X") + ">";
+        return Id.Equals(other.Id);
     }
 
+    /// <inheritdoc />
+    public int CompareTo(EntityId<T> other)
+    {
+        return Id.CompareTo(other.Id);
+    }
 
+    /// <inheritdoc />
+    public override bool Equals(object? obj)
+    {
+        return obj is EntityId<T> other && Equals(other);
+    }
 
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        return Id.GetHashCode();
+    }
+
+    /// <summary>
+    /// Compares two <see cref="EntityId{T}"/>s for equality.
+    /// </summary>
+    /// <param name="left"></param>
+    /// <param name="right"></param>
+    /// <returns></returns>
+    public static bool operator ==(EntityId<T> left, EntityId<T> right)
+    {
+        return left.Equals(right);
+    }
+
+    /// <summary>
+    /// Compares two <see cref="EntityId{T}"/>s for inequality.
+    /// </summary>
+    /// <param name="left"></param>
+    /// <param name="right"></param>
+    /// <returns></returns>
+    public static bool operator !=(EntityId<T> left, EntityId<T> right)
+    {
+        return !(left == right);
+    }
 }
-
-*/
