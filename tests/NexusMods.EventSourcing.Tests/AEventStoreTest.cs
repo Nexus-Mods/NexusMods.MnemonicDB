@@ -22,7 +22,7 @@ public abstract class AEventStoreTest<T> where T : IEventStore
     {
         var enityId = EntityId<Loadout>.NewId();
         var entityIdAccumulator = IEntity.EntityIdAttribute.CreateAccumulator();
-        entityIdAccumulator.Id = enityId.Value;
+        entityIdAccumulator.Id = enityId.Id;
 
         var indexArray = new (IIndexableAttribute, IAccumulator)[] { (IEntity.EntityIdAttribute, entityIdAccumulator) };
 
@@ -34,7 +34,7 @@ public abstract class AEventStoreTest<T> where T : IEventStore
         }
 
         var accumulator = new EventIngester();
-        Store.EventsForIndex(IEntity.EntityIdAttribute, enityId.Value, accumulator);
+        Store.EventsForIndex(IEntity.EntityIdAttribute, enityId.Id, accumulator);
         accumulator.Events.Count.Should().Be(11);
         accumulator.Events[0].Should().BeEquivalentTo(new CreateLoadout(enityId, "Test"));
         for (var i = 1; i < 11; i++)
@@ -62,7 +62,7 @@ public abstract class AEventStoreTest<T> where T : IEventStore
         loadout.Name.Should().Be("Test 1023");
 
 
-        var snapshotId = Store.GetSnapshot(TransactionId.Max, id.Value, out var definition, out var attributes);
+        var snapshotId = Store.GetSnapshot(TransactionId.Max, id.Id, out var definition, out var attributes);
 
         snapshotId.Should().Be(TransactionId.From(1025));
 

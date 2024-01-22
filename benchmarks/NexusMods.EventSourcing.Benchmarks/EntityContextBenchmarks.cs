@@ -38,15 +38,15 @@ public class EntityContextBenchmarks : ABenchmark
         // Pre-create a list of index updaters, then reuse them for each event.
         var indexUpdaters = new (IIndexableAttribute, IAccumulator)[]
         {
-            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Value)),
+            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Id)),
             // We'll swap this value out each time we update the entity
-            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Value)),
+            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Id)),
         };
 
         for (var e = 0; e < EntityCount; e++)
         {
             var evt = new CreateLoadout(EntityId<Loadout>.NewId(), $"Loadout {e}");
-            ((EntityIdDefinitionAccumulator)indexUpdaters[1].Item2).Id = evt.Id.Value;
+            ((EntityIdDefinitionAccumulator)indexUpdaters[1].Item2).Id = evt.Id.Id;
             EventStore.Add(evt, indexUpdaters);
             _ids[e] = evt.Id;
         }
@@ -56,7 +56,7 @@ public class EntityContextBenchmarks : ABenchmark
         {
             for (var e = 0; e < EntityCount; e++)
             {
-                ((EntityIdDefinitionAccumulator)indexUpdaters[1].Item2).Id = _ids[e].Value;
+                ((EntityIdDefinitionAccumulator)indexUpdaters[1].Item2).Id = _ids[e].Id;
                 EventStore.Add(new RenameLoadout(_ids[e], $"Loadout {e} {ev}"), indexUpdaters);
             }
         }

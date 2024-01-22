@@ -123,8 +123,9 @@ public readonly struct EntityId : IEquatable<EntityId>, IComparable<EntityId>
 /// Interface for a strongly typed <see cref="EntityId"/>.
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public interface IEntityId<in T> where T : IEntity
+public interface IEntityId<out T> where T : IEntity
 {
+
 }
 
 /// <summary>

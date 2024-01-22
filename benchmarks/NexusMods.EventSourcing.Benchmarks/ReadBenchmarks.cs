@@ -33,9 +33,9 @@ public class ReadBenchmarks : ABenchmark
 
         _indexUpdaters =
         [
-            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Value)),
+            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Id)),
             // We'll swap this value out each time we update the entity
-            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Value))
+            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Id))
         ];
 
 
@@ -43,7 +43,7 @@ public class ReadBenchmarks : ABenchmark
         for (var e = 0; e < EntityCount; e++)
         {
             var evt = new CreateLoadout(EntityId<Loadout>.NewId(), $"Loadout {e}");
-            ((EntityIdDefinitionAccumulator)_indexUpdaters[1].Item2).Id = evt.Id.Value;
+            ((EntityIdDefinitionAccumulator)_indexUpdaters[1].Item2).Id = evt.Id.Id;
             EventStore.Add(evt, _indexUpdaters);
             _ids[e] = evt.Id;
         }
@@ -53,7 +53,7 @@ public class ReadBenchmarks : ABenchmark
         {
             for (var e = 0; e < EntityCount; e++)
             {
-                _indexUpdaters[1] = (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(_ids[e].Value));
+                _indexUpdaters[1] = (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(_ids[e].Id));
                 EventStore.Add(new RenameLoadout(_ids[e], $"Loadout {e} {ev}"), _indexUpdaters);
             }
         }
@@ -63,7 +63,7 @@ public class ReadBenchmarks : ABenchmark
     public void ReadEvents()
     {
         var ingester = new Counter();
-        EventStore.EventsForIndex(IEntity.EntityIdAttribute, _ids[_ids.Length/2].Value, ingester);
+        EventStore.EventsForIndex(IEntity.EntityIdAttribute, _ids[_ids.Length/2].Id, ingester);
     }
 
     private class Counter : IEventIngester

@@ -31,9 +31,9 @@ public class EventStoreBenchmarks : ABenchmark
         // Pre-create a list of index updaters, then reuse them for each event.
         _indexUpdaters =
         [
-            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Value)),
+            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Id)),
             // We'll swap this value out each time we update the entity
-            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Value))
+            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Id))
         ];
 
     }
@@ -51,7 +51,7 @@ public class EventStoreBenchmarks : ABenchmark
 
         foreach (var evEvent in _events)
         {
-            ((EntityIdDefinitionAccumulator)_indexUpdaters[1].Item2).Id = evEvent.Id.Value;
+            ((EntityIdDefinitionAccumulator)_indexUpdaters[1].Item2).Id = evEvent.Id.Id;
             EventStore.Add(evEvent, _indexUpdaters);
         }
     }
@@ -60,7 +60,7 @@ public class EventStoreBenchmarks : ABenchmark
     public void AddEvent()
     {
         var rndEvent = _events[Random.Shared.Next(0, _events.Length)];
-        _indexUpdaters[1].Item2 = EntityIdDefinitionAccumulator.From(rndEvent.Id.Value);
+        _indexUpdaters[1].Item2 = EntityIdDefinitionAccumulator.From(rndEvent.Id.Id);
         EventStore.Add(rndEvent, _indexUpdaters);
     }
 
@@ -70,7 +70,7 @@ public class EventStoreBenchmarks : ABenchmark
     {
         var ingester = new EventCounter();
         var idx = Random.Shared.Next(0, _ids.Length);
-        EventStore.EventsForIndex(IEntity.EntityIdAttribute, _ids[idx].Value, ingester);
+        EventStore.EventsForIndex(IEntity.EntityIdAttribute, _ids[idx].Id, ingester);
     }
 
     private struct EventCounter : IEventIngester

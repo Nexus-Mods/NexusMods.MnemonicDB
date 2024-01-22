@@ -10,8 +10,8 @@ public sealed record AddStaticFile(EntityId<Mod> ModId, EntityId<StaticFile> Fil
     public void Apply<T>(T context) where T : IEventContext
     {
         IEntity.TypeAttribute.New(context, FileId);
-        Mod._files.Add(context, ModId, FileId);
-        AFile._path.Set(context, FileId, Path);
+        Mod._files.Add(context, ModId, FileId.Cast<AFile>());
+        AFile._path.Set(context, FileId.Cast<AFile>(), Path);
         StaticFile._hash.Set(context, FileId, Hash);
         StaticFile._size.Set(context, FileId, Size);
     }
