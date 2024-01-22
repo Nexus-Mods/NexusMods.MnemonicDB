@@ -9,6 +9,9 @@ The IEventStore is the primary interface for interacting with loading and saving
 in a particular sort order, so storage systems that support bi-directional iteration of prefixed keys are prefered. For the initial
 implementation the storage system will use RocksDB, but the interface is designed to be easily swapped out for other storage systems.
 
+!!!warning
+    All data is stored in big endian format, this is to ensure that it is sorted properly by RocksDB. Data in RocksDB is sorted in binary form, so the order of the bytes in the keys must align with the expected record ordering
+
 ### Event Log
 The event log, is a sorted Key Value store of every event in the system. The key in this store is a `ulong` of the monotonic increasing
 transaction id. The value is the serialized event data.
