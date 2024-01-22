@@ -11,7 +11,7 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// <typeparam name="TOther"></typeparam>
 public class EntityAttributeDefinition<TOwner, TOther>(string attrName) :
     IAttribute<ScalarAccumulator<EntityId<TOther>>>
-    where TOwner : AEntity<TOwner>
+    where TOwner : AEntity
     where TOther : IEntity
 {
     /// <inheritdoc />
@@ -55,7 +55,7 @@ public class EntityAttributeDefinition<TOwner, TOther>(string attrName) :
     /// <returns></returns>
     public TOther Get(TOwner owner)
     {
-        if (owner.Context.GetReadOnlyAccumulator<TOwner, EntityAttributeDefinition<TOwner, TOther>, ScalarAccumulator<EntityId<TOther>>>(owner.Id, this, out var accumulator))
+        if (owner.Context.GetReadOnlyAccumulator<TOwner, EntityAttributeDefinition<TOwner, TOther>, ScalarAccumulator<EntityId<TOther>>>(owner, this, out var accumulator))
             return owner.Context.Get(accumulator.Value);
         // TODO, make this a custom exception and extract it to another method
         throw new InvalidOperationException($"Attribute not found for {Name} on {Owner.Name} with id {owner.Id}");

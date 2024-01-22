@@ -6,7 +6,7 @@ namespace NexusMods.EventSourcing.TestModel;
 public class ULongAttribute<TOwner>(string attrName) :
     ScalarAttribute<TOwner, ulong>(attrName),
     IIndexableAttribute<ulong>
-    where TOwner : AEntity<TOwner>
+    where TOwner : AEntity
 {
     public void WriteTo(Span<byte> span, ulong value)
     {

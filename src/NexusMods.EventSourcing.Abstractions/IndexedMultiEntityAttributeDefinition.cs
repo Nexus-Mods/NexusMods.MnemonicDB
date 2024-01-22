@@ -10,8 +10,8 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// Like <see cref="MultiEntityAttributeDefinition{TOwner,TOther}"/>, but with the data stored in a dictionary
 /// </summary>
 public class IndexedMultiEntityAttributeDefinition<TOwner, TKey, TOther>(string name) : IAttribute<IndexedMultiEntityAccumulator<TKey, TOther>>
-    where TOwner : AEntity<TOwner>, IEntity
-    where TOther : AEntity<TOther>
+    where TOwner : AEntity, IEntity
+    where TOther : AEntity
     where TKey : notnull
 {
     /// <inheritdoc />
@@ -64,7 +64,7 @@ public class IndexedMultiEntityAttributeDefinition<TOwner, TKey, TOther>(string 
     {
         if (!entity.Context
                 .GetReadOnlyAccumulator<TOwner, IndexedMultiEntityAttributeDefinition<TOwner, TKey, TOther>,
-                    IndexedMultiEntityAccumulator<TKey, TOther>>(entity.Id, this, out var accumulator, true))
+                    IndexedMultiEntityAccumulator<TKey, TOther>>(entity, this, out var accumulator, true))
             throw new InvalidOperationException("No accumulator found for entity");
         return accumulator._values;
     }
@@ -76,7 +76,7 @@ public class IndexedMultiEntityAttributeDefinition<TOwner, TKey, TOther>(string 
 /// <typeparam name="TKey"></typeparam>
 /// <typeparam name="TOther"></typeparam>
 public class IndexedMultiEntityAccumulator<TKey, TOther> : IAccumulator
-    where TOther : AEntity<TOther>
+    where TOther : AEntity
     where TKey : notnull
 {
     internal Dictionary<TKey, EntityId<TOther>> _values = new();

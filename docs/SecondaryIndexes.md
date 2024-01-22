@@ -36,37 +36,7 @@ for all the events that contain a given attribute and value combination to be re
 replayed to find entities with a matching entity type, those entities can then be loaded, and the attribute can be checked to see if
 it is infact the correct value.
 
-!!! info : "Performance will degrade if an indexed attribute's value changes often. So try to keep indexes on attributes that are unlikely to change. Index a file's hash for example, but not the mod count in a loadout."
+!!!info : "Performance will degrade if an indexed attribute's value changes often. So try to keep indexes on attributes that are unlikely to change. Index a file's hash for example, but not the mod count in a loadout."
 
-!!! warning : "Indexed attributes are not versioned, cannot be recreated. If the datamodel radically changes, the index will have to be deleted and *all* events in the store replayed to recreate it."
+!!!warning : "Indexed attributes are not versioned, cannot be recreated. If the datamodel radically changes, the index will have to be deleted and *all* events in the store replayed to recreate it."
 
-```mermaid
-classDiagram
-    class EventLog {
-        TX: 1 = Create Loadout(id 1) "A"
-        TX: 2 = Create Loadout(id 2) "B"
-        TX: 3 = Add Mod(id 3) `SKSE` to Loadout(id 2)
-        TX: 4 = Rename Mod(id 3) to `Script Extender`
-        TX: 5 = Add Mod (id 4) `SMIM` to Loadout(id 2)
-    }
-
-    class EntityIndex {
-        id1  | TX 1
-        id2  | TX 2
-        id2  | TX 3
-        id2  | TX 5
-        id3  | TX 3
-        id3  | TX 4
-        id4  | TX 5
-    }
-
-    class ModNameIndex {
-        SKSE | TX3
-        Script Extender | TX4
-        SMIM | TX5
-    }
-
-    EventLog <|-- EntityIndex
-    EventLog <|-- ModNameIndex
-
-```

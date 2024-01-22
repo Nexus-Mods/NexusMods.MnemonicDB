@@ -41,3 +41,4 @@ cause all snapshots to be invalidated and the new events will be replayed during
 You have an entity named `File`, but need to now call it `ArchiveFile`. All entities have a `Entity` attribute that provides
 a unique identifier for the entity. So all you need to do is modify the C# name of the entity, and nothing else needs to change. This
 also applies for moving an entity to a different namespace.
+

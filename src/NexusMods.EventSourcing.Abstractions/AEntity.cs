@@ -7,23 +7,19 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// <summary>
 /// The base class for all entities.
 /// </summary>
-public abstract class AEntity<TEntity> : IEntity
-    where TEntity : IEntity
+public abstract class AEntity : IEntity
 {
+    public EntityId Id { get; }
+
     /// <summary>
     /// The context this entity belongs to.
     /// </summary>
     public readonly IEntityContext Context;
 
     /// <summary>
-    /// The typed entity id.
-    /// </summary>
-    public readonly EntityId<TEntity> Id;
-
-    /// <summary>
     /// The base class for all entities.
     /// </summary>
-    protected AEntity(IEntityContext context, EntityId<TEntity> id)
+    protected AEntity(IEntityContext context, EntityId id)
     {
         Context = context;
         Id = id;
@@ -40,7 +36,6 @@ public abstract class AEntity<TEntity> : IEntity
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
-    EntityId IEntity.Id => Id.Value;
 
     /// <inheritdoc />
     public event PropertyChangedEventHandler? PropertyChanged;

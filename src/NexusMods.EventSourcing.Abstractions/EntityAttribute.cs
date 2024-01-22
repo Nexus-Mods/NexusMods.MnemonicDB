@@ -16,7 +16,7 @@ public class EntityAttribute : Attribute
     /// </summary>
     /// <param name="guid"></param>
     /// <param name="revision"></param>
-    public EntityAttribute(string guid, ushort revision)
+    public EntityAttribute(string guid, ushort revision = 0)
     {
         Span<byte> span = stackalloc byte[16];
         Guid.Parse(guid).TryWriteBytes(span);

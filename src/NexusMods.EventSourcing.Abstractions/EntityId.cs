@@ -77,6 +77,13 @@ public readonly struct EntityId<T> where T : IEntity
     public static EntityId<T> From(ReadOnlySpan<byte> data) => new(EntityId.From(data));
 
 
+    /// <summary>
+    /// Converts the <see cref="EntityId{T}"/> to a <see cref="EntityId"/>.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    public static implicit operator EntityId(EntityId<T> id) => id.Value;
+
 
     /// <summary>
     /// Gets the <see cref="EntityId{T}"/> from the specified <paramref name="id"/>.

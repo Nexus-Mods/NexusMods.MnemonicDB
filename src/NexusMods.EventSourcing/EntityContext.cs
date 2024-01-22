@@ -192,13 +192,13 @@ public class EntityContext(IEventStore store) : IEntityContext
     }
 
     /// <inheritdoc />
-    public bool GetReadOnlyAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> ownerId, TAttribute attributeDefinition,
+    public bool GetReadOnlyAccumulator<TOwner, TAttribute, TAccumulator>(TOwner ownerId, TAttribute attributeDefinition,
         out TAccumulator accumulator, bool createIfMissing = false)
         where TOwner : IEntity
         where TAttribute : IAttribute<TAccumulator>
         where TAccumulator : IAccumulator
     {
-        var values = GetAccumulators(ownerId.Value);
+        var values = GetAccumulators(ownerId.Id);
         if (values.TryGetValue(attributeDefinition, out var value))
         {
             accumulator = (TAccumulator) value;

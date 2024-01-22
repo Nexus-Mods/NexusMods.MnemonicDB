@@ -15,8 +15,8 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// <typeparam name="TOwner"></typeparam>
 /// <typeparam name="TOther"></typeparam>
 public class MultiEntityAttributeDefinition<TOwner, TOther> : IAttribute<MultiEntityAccumulator<TOther>>
-    where TOwner : AEntity<TOwner>, IEntity
-    where TOther : AEntity<TOther>
+    where TOwner : AEntity, IEntity
+    where TOther : AEntity
 {
     private readonly string _name;
 
@@ -89,7 +89,7 @@ public class MultiEntityAttributeDefinition<TOwner, TOther> : IAttribute<MultiEn
     {
         if (!entity.Context
                 .GetReadOnlyAccumulator<TOwner, MultiEntityAttributeDefinition<TOwner, TOther>,
-                    MultiEntityAccumulator<TOther>>(entity.Id, this, out var accumulator, true))
+                    MultiEntityAccumulator<TOther>>(entity, this, out var accumulator, true))
             throw new InvalidOperationException("No accumulator found for entity");
 
         accumulator.Init(entity.Context);
@@ -110,7 +110,7 @@ public class MultiEntityAttributeDefinition<TOwner, TOther> : IAttribute<MultiEn
 
 /// <inheritdoc />
 public class MultiEntityAccumulator<TType> : IAccumulator
-    where TType : AEntity<TType>
+    where TType : AEntity
 {
     /// <summary>
     /// The input ids
