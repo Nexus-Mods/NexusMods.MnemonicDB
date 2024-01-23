@@ -37,7 +37,6 @@ public class TypeAttributeDefinition : IAttribute<ScalarAccumulator<EntityDefini
     /// <returns></returns>
     public Type Get<TCtx>(TCtx context, EntityId owner) where TCtx : IEntityContext
     {
-        EntityStructureRegistry.Register(this);
         if (context.GetReadOnlyAccumulator<IEntity, TypeAttributeDefinition, ScalarAccumulator<EntityDefinition>>(owner, this, out var accumulator))
             return accumulator.Value.Type;
         // TODO, make this a custom exception and extract it to another method

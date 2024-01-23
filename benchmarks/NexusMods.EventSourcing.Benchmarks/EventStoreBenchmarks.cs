@@ -31,9 +31,9 @@ public class EventStoreBenchmarks : ABenchmark
         // Pre-create a list of index updaters, then reuse them for each event.
         _indexUpdaters =
         [
-            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Id)),
+            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId)),
             // We'll swap this value out each time we update the entity
-            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Id))
+            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId))
         ];
 
     }

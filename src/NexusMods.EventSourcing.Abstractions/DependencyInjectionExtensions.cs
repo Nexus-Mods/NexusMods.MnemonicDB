@@ -83,8 +83,25 @@ public static class DependencyInjectionExtensions
             EntityStructureRegistry.Register(attributeInstance);
         }
 
+        EntityId? singletonId = null;
+        if (typeof(ISingletonEntity).IsAssignableFrom(type))
+        {
+            var singletonIdAttribute = type.GetProperty(nameof(ISingletonEntity.SingletonId), BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+            if (singletonIdAttribute is null)
+            {
+                throw new Exception($"Singleton entity {type.Name} does not have a SingletonId property");
+            }
 
-        EntityStructureRegistry.Register(new EntityDefinition(type, entityAttribute.Uuid, entityAttribute.Revision));
+            if (singletonIdAttribute.GetValue(null) is not EntityId singletonIdValue)
+            {
+                throw new Exception($"Singleton entity {type.Name} does not have a valid SingletonId property");
+            }
+
+            singletonId = singletonIdValue;
+        }
+
+
+        EntityStructureRegistry.Register(new EntityDefinition(type, entityAttribute.Uuid, entityAttribute.Revision, singletonId));
         return collection;
     }
 

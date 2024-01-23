@@ -8,5 +8,5 @@ public interface ISingletonEntity : IEntity
     /// <summary>
     /// The singleton id of the entity.
     /// </summary>
-    public static virtual EntityId SingletonId { get; }
+    public static abstract EntityId SingletonId { get; }
 }

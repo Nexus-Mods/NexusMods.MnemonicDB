@@ -135,7 +135,7 @@ public class MultiEntityAccumulator<TType> : IAccumulator
     {
         if (Transformed != null)
             return;
-        Transformed = new TransformingObservableCollection<EntityId<TType>, TType>(context.Get, Ids);
+        Transformed = new TransformingObservableCollection<EntityId<TType>, TType>(context.Get<TType>, Ids);
         TransformedReadOnly = new ReadOnlyObservableCollection<TType>(Transformed);
     }
 

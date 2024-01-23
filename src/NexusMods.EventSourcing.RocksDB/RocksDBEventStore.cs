@@ -206,6 +206,9 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore, IDisposable
                     while (iterator.Valid())
                     {
                         var key = iterator.GetKeySpan();
+                        var entityIdFromKey = EntityId.From(key.SliceFast(0, 16));
+                        if (entityIdFromKey != entityId)
+                            break;
                         var txId = TransactionId.From(key.SliceFast(16));
                         var snapshotData = iterator.GetValueSpan();
 

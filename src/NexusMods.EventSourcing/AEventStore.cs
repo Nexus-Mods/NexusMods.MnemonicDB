@@ -76,8 +76,8 @@ public abstract class AEventStore : IEventStore
 
             var accumulator = attribute.CreateAccumulator();
 
-            accumulator.ReadFrom(ref snapshot, _serializationRegistry);
-            snapshot = snapshot.SliceFast(read);
+            var valueRead = accumulator.ReadFrom(ref snapshot, _serializationRegistry);
+            snapshot = snapshot.SliceFast(valueRead);
 
             results[i] = (attribute, accumulator);
         }

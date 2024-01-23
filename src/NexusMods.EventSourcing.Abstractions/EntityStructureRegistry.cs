@@ -16,6 +16,7 @@ public static class EntityStructureRegistry
 
     private static readonly ConcurrentDictionary<Type, EntityDefinition> _entityDefinitionsByType = new();
     private static readonly ConcurrentDictionary<UInt128, EntityDefinition> _entityDefinitionsByUUID = new();
+    private static readonly ConcurrentDictionary<EntityId, EntityDefinition> _singletons = new();
 
 
     /// <summary>
@@ -64,6 +65,22 @@ public static class EntityStructureRegistry
     {
         _entityDefinitionsByType.TryAdd(definition.Type, definition);
         _entityDefinitionsByUUID.TryAdd(definition.UUID, definition);
+
+        if (definition.SingletonId.HasValue)
+        {
+            _singletons.TryAdd(definition.SingletonId!.Value, definition);
+        }
+    }
+
+    /// <summary>
+    /// If the given entity type is a singleton, returns the entity definition.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="result"></param>
+    /// <returns></returns>
+    public static bool TryGetSingleton(EntityId id, [NotNullWhen(true)] out EntityDefinition? result)
+    {
+        return _singletons.TryGetValue(id, out result);
     }
 
     /// <summary>

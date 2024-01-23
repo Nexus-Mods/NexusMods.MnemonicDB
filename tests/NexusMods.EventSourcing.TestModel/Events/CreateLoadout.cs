@@ -13,8 +13,8 @@ public partial record CreateLoadout(EntityId<Loadout> Id, string Name) : IEvent
     {
         IEntity.TypeAttribute.New(context, Id);
         Loadout._name.Set(context, Id, Name);
-        LoadoutRegistry._loadouts.Add(context, LoadoutRegistry.SingletonId, Id);
-        LoadoutRegistry._loadoutNames.Add(context, LoadoutRegistry.SingletonId, Name, Id);
+        LoadoutRegistry._loadouts.Add(context, LoadoutRegistry.TypedSingletonId, Id);
+        LoadoutRegistry._loadoutNames.Add(context, LoadoutRegistry.TypedSingletonId, Name, Id);
     }
     public static EntityId<Loadout> Create(ITransaction tx, string name)
     {

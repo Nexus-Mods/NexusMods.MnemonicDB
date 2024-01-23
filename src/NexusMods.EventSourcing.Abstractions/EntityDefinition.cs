@@ -8,4 +8,4 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// <param name="Type"></param>
 /// <param name="UUID"></param>
 /// <param name="Revision"></param>
-public record EntityDefinition(Type Type, UInt128 UUID, ushort Revision);
+public record EntityDefinition(Type Type, UInt128 UUID, ushort Revision, EntityId? SingletonId);

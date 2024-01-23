@@ -5,12 +5,17 @@ using NexusMods.EventSourcing.Abstractions;
 namespace NexusMods.EventSourcing.TestModel.Model;
 
 [Entity("4FE4CDC6-7A14-4FBC-BCF4-8B39D93F8EE4", 0)]
-public class LoadoutRegistry(IEntityContext context) : AEntity(context, SingletonId.Id), ISingletonEntity
+public class LoadoutRegistry(IEntityContext context) : AEntity(context, SingletonId), ISingletonEntity
 {
     /// <summary>
     /// A singleton id for the loadout registry
     /// </summary>
-    public static EntityId<LoadoutRegistry> SingletonId => EntityId<LoadoutRegistry>.From("10BAE6BA-D5F9-40F4-AF7F-CCA1417C3BB0");
+    public static EntityId SingletonId { get; } = EntityId<LoadoutRegistry>.From("10BAE6BA-D5F9-40F4-AF7F-CCA1417C3BB0").Id;
+
+    /// <summary>
+    /// Typed singleton id for the loadout registry
+    /// </summary>
+    public static EntityId<LoadoutRegistry> TypedSingletonId { get; } = EntityId<LoadoutRegistry>.From(SingletonId);
 
     /// <summary>
     /// The loadouts in the registry.

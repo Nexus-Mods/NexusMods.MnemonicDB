@@ -20,7 +20,7 @@ public class ReadBenchmarks : ABenchmark
         typeof(RocksDBEventStore<BinaryEventSerializer>))]
     public Type EventStoreType { get; set; } = typeof(InMemoryEventStore<BinaryEventSerializer>);
 
-    [Params(100, 1000)]
+    [Params(100, 1000, 10000)]
     public int EventCount { get; set; }
 
     [Params(100, 1000)]
@@ -33,9 +33,9 @@ public class ReadBenchmarks : ABenchmark
 
         _indexUpdaters =
         [
-            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Id)),
+            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId)),
             // We'll swap this value out each time we update the entity
-            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Id))
+            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId))
         ];
 
 

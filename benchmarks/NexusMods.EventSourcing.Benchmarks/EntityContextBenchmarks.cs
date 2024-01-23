@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BenchmarkDotNet.Attributes;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.RocksDB;
@@ -16,7 +17,7 @@ public class EntityContextBenchmarks : ABenchmark
     private EntityId<Loadout>[] _ids = Array.Empty<EntityId<Loadout>>();
     private EntityContext _context = null!;
 
-    [Params(typeof(InMemoryEventStore<BinaryEventSerializer>),
+    [Params(//typeof(InMemoryEventStore<BinaryEventSerializer>),
         //typeof(FasterKVEventStore<BinaryEventSerializer>),
         typeof(RocksDBEventStore<BinaryEventSerializer>))]
     public Type EventStoreType { get; set; } = typeof(InMemoryEventStore<BinaryEventSerializer>);
@@ -35,20 +36,13 @@ public class EntityContextBenchmarks : ABenchmark
 
         _ids = new EntityId<Loadout>[EntityCount];
 
-        // Pre-create a list of index updaters, then reuse them for each event.
-        var indexUpdaters = new (IIndexableAttribute, IAccumulator)[]
-        {
-            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Id)),
-            // We'll swap this value out each time we update the entity
-            (IEntity.EntityIdAttribute, EntityIdDefinitionAccumulator.From(LoadoutRegistry.SingletonId.Id)),
-        };
+        var lsts = new List<EntityId<Loadout>>();
 
         for (var e = 0; e < EntityCount; e++)
         {
-            var evt = new CreateLoadout(EntityId<Loadout>.NewId(), $"Loadout {e}");
-            ((EntityIdDefinitionAccumulator)indexUpdaters[1].Item2).Id = evt.Id.Id;
-            EventStore.Add(evt, indexUpdaters);
-            _ids[e] = evt.Id;
+            using var tx = _context.Begin();
+            var loadout = CreateLoadout.Create(tx, $"Loadout {e}");
+            tx.Commit();
         }
 
 
@@ -56,21 +50,17 @@ public class EntityContextBenchmarks : ABenchmark
         {
             for (var e = 0; e < EntityCount; e++)
             {
-                ((EntityIdDefinitionAccumulator)indexUpdaters[1].Item2).Id = _ids[e].Id;
-                EventStore.Add(new RenameLoadout(_ids[e], $"Loadout {e} {ev}"), indexUpdaters);
+                using var tx = _context.Begin();
+                RenameLoadout.Create(tx, _ids[e], $"Loadout {e} {ev}");
+                tx.Commit();
             }
         }
-    }
-
-    [IterationSetup]
-    public void Cleanup()
-    {
-        _context.EmptyCaches();
     }
 
     [Benchmark]
     public void LoadAllEntities()
     {
+        _context.EmptyCaches();
         var total = 0;
         var registry = _context.Get<LoadoutRegistry>();
         foreach (var loadout in registry.Loadouts)

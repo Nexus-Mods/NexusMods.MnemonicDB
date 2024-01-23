@@ -123,5 +123,5 @@ where TSerializer : IEventSerializer
     }
 
     /// <inheritdoc/>
-    public override TransactionId TxId { get; }
+    public override TransactionId TxId => TransactionId.From((ulong)_events.Count);
 }

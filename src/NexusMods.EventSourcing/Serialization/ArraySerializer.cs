@@ -60,7 +60,7 @@ public class GenericArraySerializer : IGenericSerializer
 /// <param name="itemSize"></param>
 /// <typeparam name="TItem"></typeparam>
 /// <typeparam name="TItemSerializer"></typeparam>
-public class FixedItemSizeArraySerializer<TItem, TItemSerializer>(TItemSerializer itemSerializer, int itemSize) : IVariableSizeSerializer<TItem[]>
+public class FixedItemSizeArraySerializer<TItem, TItemSerializer>(TItemSerializer itemSerializer, int itemSize) : AVariableSizeSerializer<TItem[]>
     where TItemSerializer : IFixedSizeSerializer<TItem>
 {
     /// <inheritdoc />
@@ -75,20 +75,13 @@ public class FixedItemSizeArraySerializer<TItem, TItemSerializer>(TItemSerialize
     }
 
     /// <inheritdoc />
-    public bool TryGetFixedSize(Type valueType, out int size)
+    public override void Serialize<TWriter>(TItem[] value, TWriter output)
     {
-        size = 0;
-        return false;
-    }
-
-    /// <inheritdoc />
-    public void Serialize<TWriter>(TItem[] value, TWriter output) where TWriter : IBufferWriter<byte>
-    {
-        var totalSize = sizeof(ushort) + (itemSize * value.Length);
+        WriteLength(output, value.Length);
+        var totalSize = itemSize * value.Length;
         var span = output.GetSpan(totalSize);
-        BinaryPrimitives.WriteUInt16BigEndian(span, (ushort)value.Length);
 
-        var offset = sizeof(ushort);
+        var offset = 0;
         foreach (var item in value)
         {
             itemSerializer.Serialize(item, span.SliceFast(offset, itemSize));
@@ -98,19 +91,19 @@ public class FixedItemSizeArraySerializer<TItem, TItemSerializer>(TItemSerialize
     }
 
     /// <inheritdoc />
-    public int Deserialize(ReadOnlySpan<byte> from, out TItem[] value)
+    public override int Deserialize(ReadOnlySpan<byte> from, out TItem[] value)
     {
-        var size = BinaryPrimitives.ReadUInt16BigEndian(from);
-        var array = GC.AllocateUninitializedArray<TItem>(size);
+        var lengthSize = ReadLength(from, out var length);
+        var array = GC.AllocateUninitializedArray<TItem>(length);
 
-        from = from.SliceFast(sizeof(ushort));
-        for (var i = 0; i < size; i++)
+        from = from.SliceFast(lengthSize);
+        for (var i = 0; i < length; i++)
         {
             array[i] = itemSerializer.Deserialize(from.SliceFast(i * itemSize, itemSize));
         }
 
         value = array;
-        return sizeof(ushort) + (itemSize * size);
+        return lengthSize + itemSize * length;
     }
 }
 

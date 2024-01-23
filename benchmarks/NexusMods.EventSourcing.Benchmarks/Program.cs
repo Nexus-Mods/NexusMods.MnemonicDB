@@ -27,15 +27,16 @@ BenchmarkRunner.Run<EntityContextBenchmarks>();
 
 
 #if DEBUG
-var benchmarks = new WriteBenchmarks();
-benchmarks.EventCount = 1000;
+var benchmarks = new EntityContextBenchmarks();
+benchmarks.EventCount = 10000;
+benchmarks.EntityCount = 10;
 benchmarks.EventStoreType = typeof(RocksDBEventStore<BinaryEventSerializer>);
 benchmarks.Setup();
 
 var sw = Stopwatch.StartNew();
-for (var i = 0; i < 10000; i++)
+for (var i = 0; i < 100000; i++)
 {
-    benchmarks.WriteEvents();
+    benchmarks.LoadAllEntities();
 }
 Console.WriteLine("Elapsed: " + sw.Elapsed.TotalSeconds);
 

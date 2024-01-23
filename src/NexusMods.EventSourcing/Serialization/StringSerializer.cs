@@ -9,36 +9,23 @@ namespace NexusMods.EventSourcing.Serialization;
 /// <summary>
 /// Serializer for writing strings.
 /// </summary>
-public class StringSerializer : IVariableSizeSerializer<string>
+public sealed class StringSerializer : AVariableSizeSerializer<string>
 {
     /// <inheritdoc />
-    public bool CanSerialize(Type valueType)
-    {
-        return valueType == typeof(string);
-    }
-
-    /// <inheritdoc />
-    public bool TryGetFixedSize(Type valueType, out int size)
-    {
-        size = 0;
-        return false;
-    }
-
-    /// <inheritdoc />
-    public void Serialize<TWriter>(string value, TWriter output) where TWriter : IBufferWriter<byte>
+    public override void Serialize<TWriter>(string value, TWriter output)
     {
         var size = System.Text.Encoding.UTF8.GetByteCount(value);
-        var span = output.GetSpan(size + 2);
-        BinaryPrimitives.WriteUInt16LittleEndian(span, (ushort)size);
-        System.Text.Encoding.UTF8.GetBytes(value, span.SliceFast(2));
-        output.Advance(size + 2);
+        WriteLength(output, size);
+        var span = output.GetSpan(size);
+        System.Text.Encoding.UTF8.GetBytes(value, span);
+        output.Advance(size);
     }
 
     /// <inheritdoc />
-    public int Deserialize(ReadOnlySpan<byte> from, out string value)
+    public override int Deserialize(ReadOnlySpan<byte> from, out string value)
     {
-        var size = BinaryPrimitives.ReadUInt16LittleEndian(from);
-        value = System.Text.Encoding.UTF8.GetString(from.SliceFast(2, size));
-        return size + 2;
+        var read = ReadLength(from, out var size);
+        value = System.Text.Encoding.UTF8.GetString(from.SliceFast(read, size));
+        return size + read;
     }
 }

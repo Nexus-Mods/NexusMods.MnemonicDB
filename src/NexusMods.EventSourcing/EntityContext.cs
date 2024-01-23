@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using DynamicData;
 using Microsoft.Extensions.ObjectPool;
 using NexusMods.EventSourcing.Abstractions;
@@ -12,15 +13,14 @@ namespace NexusMods.EventSourcing;
 /// The primary way of interacting with the events. This class is thread safe, and can be used to lookup entities
 /// and insert new events.
 /// </summary>
-/// <param name="store"></param>
-public class EntityContext(IEventStore store) : IEntityContext
+public class EntityContext : IEntityContext
 {
     /// <summary>
     /// The maximum number of events that can be processed before a snapshot is taken.
     /// </summary>
     private const int MaxEventsBeforeSnapshotting = 250;
 
-    private TransactionId _asOf = store.TxId;
+    private TransactionId _asOf;
     private readonly object _lock = new();
 
     private readonly IndexerIngester _indexerIngester = new();
@@ -32,6 +32,19 @@ public class EntityContext(IEventStore store) : IEntityContext
 
     private readonly ObjectPool<EntityIdDefinitionAccumulator> _definitionAccumulatorPool =
         new DefaultObjectPool<EntityIdDefinitionAccumulator>(new DefaultPooledObjectPolicy<EntityIdDefinitionAccumulator>());
+
+    private readonly IEventStore _store;
+
+    /// <summary>
+    /// The primary way of interacting with the events. This class is thread safe, and can be used to lookup entities
+    /// and insert new events.
+    /// </summary>
+    /// <param name="store"></param>
+    public EntityContext(IEventStore store)
+    {
+        _store = store;
+        _asOf = store.TxId;
+    }
 
     /// <summary>
     /// Gets an entity by its id. The resulting entity type will be the type that was emitted by the event that created
@@ -47,7 +60,21 @@ public class EntityContext(IEventStore store) : IEntityContext
             return (TEntity) entity;
 
         var type = IEntity.TypeAttribute.Get(this, id.Id);
-        var newEntity = (TEntity)Activator.CreateInstance(type, this, id)!;
+
+        Debug.Assert(type.IsAssignableTo(typeof(TEntity)), $"type.IsSubclassOf(typeof(TEntity)) for {type} and {typeof(TEntity)}");
+
+        TEntity newEntity;
+        if (EntityStructureRegistry.TryGetSingleton(id.Id, out var definition))
+        {
+            if (definition.Type != type)
+                throw new InvalidOperationException("Singleton Entity type mismatch");
+
+            newEntity = (TEntity)Activator.CreateInstance(type, this)!;
+        }
+        else
+        {
+            newEntity = (TEntity)Activator.CreateInstance(type, this, id)!;
+        }
 
         if (_entities.TryAdd(id.Id, newEntity))
             return newEntity;
@@ -79,7 +106,7 @@ public class EntityContext(IEventStore store) : IEntityContext
     {
         var values = new Dictionary<IAttribute, IAccumulator>();
 
-        var snapshotTxId = store.GetSnapshot(_asOf, id, out var loadedDefinition, out var loadedAttributes);
+        var snapshotTxId = _store.GetSnapshot(_asOf, id, out var loadedDefinition, out var loadedAttributes);
 
         if (snapshotTxId != TransactionId.Min)
         {
@@ -89,15 +116,23 @@ public class EntityContext(IEventStore store) : IEntityContext
         }
 
         var ingester = new EntityContextIngester(values, id);
-        store.EventsForIndex(IEntity.EntityIdAttribute, id, ingester, snapshotTxId, _asOf);
+        _store.EventsForIndex(IEntity.EntityIdAttribute, id, ingester, snapshotTxId, _asOf);
 
         if (ingester.ProcessedEvents > MaxEventsBeforeSnapshotting)
         {
             var snapshot = new Dictionary<IAttribute, IAccumulator>();
+
+            if (EntityStructureRegistry.TryGetSingleton(id, out var definition))
+            {
+                var accumulator = IEntity.TypeAttribute.CreateAccumulator();
+                accumulator.Value = definition;
+                snapshot.Add(IEntity.TypeAttribute, accumulator);
+            }
+
             foreach (var (attr, accumulator) in values)
                 snapshot.Add(attr, accumulator);
 
-            store.SetSnapshot(ingester.LastTransactionId, id, snapshot);
+            _store.SetSnapshot(ingester.LastTransactionId, id, snapshot);
         }
 
         return values;
@@ -117,6 +152,9 @@ public class EntityContext(IEventStore store) : IEntityContext
             return (TEntity) entity;
 
         var newEntity = (TEntity)Activator.CreateInstance(typeof(TEntity), this)!;
+
+        Debug.Assert(id != default, nameof(id) + " != default");
+
         if (_entities.TryAdd(id, newEntity))
             return newEntity;
 
@@ -160,7 +198,7 @@ public class EntityContext(IEventStore store) : IEntityContext
             }
 
             // Add the event to the store
-            var newId = store.Add(newEvent, _indexUpdaters);
+            var newId = _store.Add(newEvent, _indexUpdaters);
 
             // Return the definition accumulators to the pool
             for (var idx = 0; idx < _indexerIngester.Ids.Count; idx++)
@@ -234,6 +272,7 @@ public class EntityContext(IEventStore store) : IEntityContext
     {
         _entities.Clear();
         _values.Clear();
+        _asOf = _store.TxId;
     }
 
     /// <summary>
@@ -248,7 +287,7 @@ public class EntityContext(IEventStore store) : IEntityContext
         where TEntity : IEntity
     {
         var foundEntities = new HashSet<EntityId<TEntity>>();
-        store.EventsForIndex(attr, val, new SecondaryIndexIngester<TEntity>(foundEntities), TransactionId.Min, _asOf);
+        _store.EventsForIndex(attr, val, new SecondaryIndexIngester<TEntity>(foundEntities), TransactionId.Min, _asOf);
 
         foreach (var entityId in foundEntities)
         {

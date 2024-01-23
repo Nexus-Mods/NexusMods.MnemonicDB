@@ -40,7 +40,7 @@ public sealed class EntityDefinitionSerializer : IFixedSizeSerializer<EntityDefi
         var existing = EntityStructureRegistry.GetDefinitionByUUID(uuid);
 
         if (existing.Revision != revision)
-            return new EntityDefinition(existing.Type, uuid, revision);
+            return existing with { Revision = revision };
 
         return existing;
     }
