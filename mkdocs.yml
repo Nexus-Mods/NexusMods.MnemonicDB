@@ -49,5 +49,7 @@ theme:
 nav:
   - Home: index.md
   - Adapting to Changes: AdaptingToChanges.md
+  - Serialization: Serialization.md
   - Secondary Indexes: SecondaryIndexes.md
+  - Storage Model: StorageModel.md
 

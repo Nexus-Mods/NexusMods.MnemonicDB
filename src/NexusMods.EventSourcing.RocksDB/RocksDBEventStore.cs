@@ -51,6 +51,7 @@ public sealed class RocksDBEventStore<TSerializer> : AEventStore, IDisposable
         var options = new DbOptions();
         options.SetCreateIfMissing();
         options.SetCreateMissingColumnFamilies();
+        options.SetCompression(Compression.Zstd);
 
         _db = RocksDb.Open(options,
             settings.StorageLocation.ToString(), _families);
