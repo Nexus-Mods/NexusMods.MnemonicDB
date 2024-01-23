@@ -6,29 +6,16 @@ namespace NexusMods.EventSourcing.Serialization;
 /// <summary>
 /// Serializer for Guids.
 /// </summary>
-public sealed class GuidSerializer : IFixedSizeSerializer<Guid>
+internal sealed class GuidSerializer() : AFixedSizeSerializer<Guid>(16)
 {
     /// <inheritdoc />
-    public bool CanSerialize(Type valueType)
-    {
-        return valueType == typeof(Guid);
-    }
-
-    /// <inheritdoc />
-    public bool TryGetFixedSize(Type valueType, out int size)
-    {
-        size = 16;
-        return true;
-    }
-
-    /// <inheritdoc />
-    public void Serialize(Guid value, Span<byte> output)
+    public override void Serialize(Guid value, Span<byte> output)
     {
         value.TryWriteBytes(output);
     }
 
     /// <inheritdoc />
-    public Guid Deserialize(ReadOnlySpan<byte> from)
+    public override Guid Deserialize(ReadOnlySpan<byte> from)
     {
         return new(from);
     }
