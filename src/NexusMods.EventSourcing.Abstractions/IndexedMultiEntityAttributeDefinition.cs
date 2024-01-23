@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Linq;
 using NexusMods.EventSourcing.Abstractions.Serialization;
 
 namespace NexusMods.EventSourcing.Abstractions;
@@ -85,36 +86,24 @@ public class IndexedMultiEntityAccumulator<TKey, TOther> : IAccumulator
     /// <inheritdoc />
     public void WriteTo(IBufferWriter<byte> writer, ISerializationRegistry registry)
     {
-        var getSpan = writer.GetSpan(2);
-        BinaryPrimitives.WriteUInt16BigEndian(getSpan, (ushort) _values.Count);
-        writer.Advance(2);
-
-        foreach (var (key, value) in _values)
-        {
-            registry.Serialize(writer, key);
-            registry.Serialize(writer, value);
-        }
+        registry.Serialize(writer, _keys.Keys.ToArray());
+        registry.Serialize(writer, _keys.Values.ToArray());
     }
 
     /// <inheritdoc />
     public int ReadFrom(ref ReadOnlySpan<byte> input, ISerializationRegistry registry)
     {
-        var originalSize = input.Length;
-        var data = input;
+        var keySize = registry.Deserialize<EntityId<TOther>[]>(input, out var keys);
+        input = input.Slice(keySize);
+        var valueSize = registry.Deserialize<TKey[]>(input, out var values);
 
-        var count = BinaryPrimitives.ReadUInt16BigEndian(data);
-        data = data.Slice(sizeof(ushort));
-
-        for (var idx = 0; idx < count; idx++)
+        for (var i = 0; i < keys.Length; i++)
         {
-            var amountRead = registry.Deserialize(data, out TKey key);
-            data = data.Slice(amountRead);
-            amountRead = registry.Deserialize(data, out EntityId<TOther> value);
-            data = data.Slice(amountRead);
-            _values.Add(key, value);
-            _keys.Add(value, key);
+            _keys.Add(keys[i], values[i]);
+            _values.Add(values[i], keys[i]);
         }
 
-        return originalSize - data.Length;
+
+        return keySize + valueSize;
     }
 }

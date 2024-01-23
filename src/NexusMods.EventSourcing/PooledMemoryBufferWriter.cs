@@ -43,14 +43,15 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>
     /// <returns></returns>
     public ReadOnlySpan<byte> GetWrittenSpan() => _data.Span.SliceFast(0, _idx);
 
-    private void Expand()
+    private void Expand(int atLeast)
     {
-        var newSize = _data.Length * 2;
-        var newData = MemoryPool<byte>.Shared.Rent(newSize);
-        _data.CopyTo(newData.Memory);
-        _owner.Dispose();
-        _owner = newData;
-        _data = newData.Memory;
+        var newSize = _size;
+        while (newSize < atLeast)
+            newSize *= 2;
+
+        var newData = new Memory<byte>(new byte[newSize]);
+        _data.CopyTo(newData);
+        _data = newData;
         _size = newSize;
     }
 
@@ -59,8 +60,9 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Advance(int count)
     {
-        if (_idx + count > _size)
-            Expand();
+        if (_idx + count >= _size)
+            Expand(_idx + count);
+        Debug.Assert(_idx + count <= _size);
         _idx += count;
     }
 
@@ -68,7 +70,9 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>
     public Memory<byte> GetMemory(int sizeHint = 0)
     {
         if (_idx + sizeHint > _size)
-            Expand();
+            Expand(_idx + sizeHint);
+
+        Debug.Assert(_idx + sizeHint <= _size);
         return _data[_idx..];
     }
 
@@ -76,8 +80,10 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Span<byte> GetSpan(int sizeHint = 0)
     {
-        if (_idx + sizeHint > _size)
-            Expand();
-        return _data.Span.SliceFast(_idx);
+        if (_idx + sizeHint >= _size)
+            Expand(_idx + sizeHint);
+
+        Debug.Assert(_idx + sizeHint <= _size);
+        return _data.Span.SliceFast(_idx, sizeHint);
     }
 }
