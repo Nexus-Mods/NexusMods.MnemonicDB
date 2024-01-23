@@ -99,11 +99,12 @@ public class FixedItemSizeArraySerializer<TItem, TItemSerializer>(TItemSerialize
         from = from.SliceFast(lengthSize);
         for (var i = 0; i < length; i++)
         {
-            array[i] = itemSerializer.Deserialize(from.SliceFast(i * itemSize, itemSize));
+            array[i] = itemSerializer.Deserialize(from.SliceFast(0, itemSize));
+            from = from.SliceFast(itemSize);
         }
 
         value = array;
-        return lengthSize + itemSize * length;
+        return lengthSize + (itemSize * length);
     }
 }
 
@@ -113,7 +114,7 @@ public class FixedItemSizeArraySerializer<TItem, TItemSerializer>(TItemSerialize
 /// <param name="itemSerializer"></param>
 /// <typeparam name="TItem"></typeparam>
 /// <typeparam name="TItemSerializer"></typeparam>
-public class VariableItemSizeSerializer<TItem, TItemSerializer>(TItemSerializer itemSerializer) : IVariableSizeSerializer<TItem[]>
+public class VariableItemSizeSerializer<TItem, TItemSerializer>(TItemSerializer itemSerializer) : AVariableSizeSerializer<TItem[]>
     where TItemSerializer : IVariableSizeSerializer<TItem>
 {
     /// <inheritdoc />
@@ -135,11 +136,9 @@ public class VariableItemSizeSerializer<TItem, TItemSerializer>(TItemSerializer 
     }
 
     /// <inheritdoc />
-    public void Serialize<TWriter>(TItem[] value, TWriter output) where TWriter : IBufferWriter<byte>
+    public override void Serialize<TWriter>(TItem[] value, TWriter output)
     {
-        var span = output.GetSpan(sizeof(ushort));
-        BinaryPrimitives.WriteUInt16BigEndian(span, (ushort)value.Length);
-        output.Advance(sizeof(ushort));
+        WriteLength(output, value.Length);
 
         foreach (var item in value)
         {
@@ -148,12 +147,12 @@ public class VariableItemSizeSerializer<TItem, TItemSerializer>(TItemSerializer 
     }
 
     /// <inheritdoc />
-    public int Deserialize(ReadOnlySpan<byte> from, out TItem[] value)
+    public override int Deserialize(ReadOnlySpan<byte> from, out TItem[] value)
     {
-        var size = BinaryPrimitives.ReadUInt16BigEndian(from);
+        var lengthSize = ReadLength(from, out var size);
         var array = GC.AllocateUninitializedArray<TItem>(size);
 
-        var offset = sizeof(ushort);
+        var offset = lengthSize;
         for (var i = 0; i < size; i++)
         {
             offset += itemSerializer.Deserialize(from.SliceFast(offset), out var item);

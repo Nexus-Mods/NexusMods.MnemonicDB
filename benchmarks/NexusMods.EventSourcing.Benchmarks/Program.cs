@@ -28,8 +28,8 @@ BenchmarkRunner.Run<EntityContextBenchmarks>();
 
 #if DEBUG
 var benchmarks = new EntityContextBenchmarks();
-benchmarks.EventCount = 10000;
-benchmarks.EntityCount = 10;
+benchmarks.EventCount = 100;
+benchmarks.EntityCount = 1000;
 benchmarks.EventStoreType = typeof(RocksDBEventStore<BinaryEventSerializer>);
 benchmarks.Setup();
 

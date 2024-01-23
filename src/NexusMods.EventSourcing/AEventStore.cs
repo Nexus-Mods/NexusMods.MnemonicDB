@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.Serialization;
+using NexusMods.EventSourcing.Serialization;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing;
@@ -12,7 +13,7 @@ namespace NexusMods.EventSourcing;
 /// </summary>
 public abstract class AEventStore : IEventStore
 {
-    private readonly IVariableSizeSerializer<string> _stringSerializer;
+    private readonly StringSerializer _stringSerializer;
     private readonly IFixedSizeSerializer<EntityDefinition> _entityDefinitionSerializer;
     private readonly ISerializationRegistry _serializationRegistry;
     private readonly PooledMemoryBufferWriter _writer;
@@ -23,7 +24,7 @@ public abstract class AEventStore : IEventStore
     /// <param name="serializationRegistry"></param>
     public AEventStore(ISerializationRegistry serializationRegistry)
     {
-        _stringSerializer = (serializationRegistry.GetSerializer(typeof(string)) as IVariableSizeSerializer<string>)!;
+        _stringSerializer = (StringSerializer)(serializationRegistry.GetSerializer(typeof(string)) as IVariableSizeSerializer<string>)!;
         _entityDefinitionSerializer = (serializationRegistry.GetSerializer(typeof(EntityDefinition)) as IFixedSizeSerializer<EntityDefinition>)!;
         _serializationRegistry = serializationRegistry;
         _writer = new PooledMemoryBufferWriter();
@@ -41,6 +42,9 @@ public abstract class AEventStore : IEventStore
     protected bool DeserializeSnapshot(out IAccumulator loadedDefinition,
         out (IAttribute Attribute, IAccumulator Accumulator)[] loadedAttributes, ReadOnlySpan<byte> snapshot)
     {
+
+        var snapshotOld = snapshot;
+
         var entityDefinition = _entityDefinitionSerializer.Deserialize(snapshot.SliceFast(0, 18));
 
         var typeAccumulator = IEntity.TypeAttribute.CreateAccumulator();
@@ -72,7 +76,7 @@ public abstract class AEventStore : IEventStore
             snapshot = snapshot.SliceFast(read);
 
             if (!attributes.TryGetValue(attributeName, out var attribute))
-                throw new Exception("Entity definition does not match the current structure registry.");
+                throw new Exception($"Entity definition does not match the current structure registry. No definition for {attributeName} found, valid options are {string.Join(",", attributes.Keys)}");
 
             var accumulator = attribute.CreateAccumulator();
 

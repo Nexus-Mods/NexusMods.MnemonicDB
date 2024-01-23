@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Reloaded.Memory.Extensions;
 
@@ -14,6 +15,7 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>
     private Memory<byte> _data;
     private int _idx;
     private int _size;
+    private readonly bool _isActive;
 
     /// <summary>
     /// Constructs a new pooled memory buffer writer, with the given initial capacity.

@@ -107,10 +107,10 @@ public class IndexedMultiEntityAccumulator<TKey, TOther> : IAccumulator
 
         for (var idx = 0; idx < count; idx++)
         {
-            var written = registry.Deserialize(data, out TKey key);
-            data = data.Slice(written);
-            written = registry.Deserialize(data, out EntityId<TOther> value);
-            data = data.Slice(written);
+            var amountRead = registry.Deserialize(data, out TKey key);
+            data = data.Slice(amountRead);
+            amountRead = registry.Deserialize(data, out EntityId<TOther> value);
+            data = data.Slice(amountRead);
             _values.Add(key, value);
             _keys.Add(value, key);
         }
