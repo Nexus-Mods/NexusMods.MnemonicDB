@@ -22,10 +22,10 @@ public class EntityContextBenchmarks : ABenchmark
         typeof(RocksDBEventStore<BinaryEventSerializer>))]
     public Type EventStoreType { get; set; } = typeof(InMemoryEventStore<BinaryEventSerializer>);
 
-    [Params(100, 1000)]
+    [Params(100, 1000, 10000)]
     public int EventCount { get; set; }
 
-    [Params(100, 1000)]
+    [Params(100, 1000, 5000)]
     public int EntityCount { get; set; }
 
     [GlobalSetup]

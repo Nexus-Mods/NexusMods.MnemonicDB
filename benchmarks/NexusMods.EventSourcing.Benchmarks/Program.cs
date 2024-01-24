@@ -34,14 +34,14 @@ benchmarks.EventStoreType = typeof(RocksDBEventStore<BinaryEventSerializer>);
 benchmarks.Setup();
 
 var sw = Stopwatch.StartNew();
-for (var i = 0; i < 100; i++)
+for (var i = 0; i < 10000; i++)
 {
     benchmarks.LoadAllEntities();
 }
 Console.WriteLine("Elapsed: " + sw.Elapsed.TotalSeconds);
 
 #else
-BenchmarkRunner.Run<WriteBenchmarks>();
+BenchmarkRunner.Run<EntityContextBenchmarks>();
 #endif
 
 /*
