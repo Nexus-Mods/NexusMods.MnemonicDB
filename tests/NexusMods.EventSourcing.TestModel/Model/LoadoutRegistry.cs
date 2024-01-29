@@ -4,7 +4,7 @@ using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.TestModel.Model;
 
-[Entity("4FE4CDC6-7A14-4FBC-BCF4-8B39D93F8EE4", 0)]
+[Entity("4FE4CDC6-7A14-4FBC-BCF4-8B39D93F8EE4")]
 public class LoadoutRegistry(IEntityContext context) : AEntity(context, SingletonId), ISingletonEntity
 {
     /// <summary>

@@ -5,6 +5,7 @@ using NexusMods.EventSourcing.Serialization;
 using NexusMods.EventSourcing.TestModel;
 using NexusMods.EventSourcing.TestModel.Events;
 using NexusMods.EventSourcing.TestModel.Model;
+using NexusMods.EventSourcing.TestModel.Model.FileTypes;
 
 namespace NexusMods.EventSourcing.Tests;
 
@@ -184,5 +185,31 @@ public class BasicFunctionalityTests
         loadout.Mods.First().Name.Should().Be("First Mod");
         loadout.Mods.Last().Name.Should().Be("Second Mod");
         loadout.Mods.First().Collection.Name.Should().Be("First Collection");
+    }
+
+    [Fact]
+    public void PolymorphicEntitiesAreSupported()
+    {
+
+        EntityId<Mod> modId;
+
+        using (var tx = _ctx.Begin())
+        {
+            var loadoutId = CreateLoadout.Create(tx, "Test");
+            modId = AddMod.Create(tx, "First Mod", loadoutId);
+            var staticFileId = AddStaticFile.Create(tx, modId, "Test.txt", 1234, 424242);
+            var pluginFileId = AddPluginFile.Create(tx, modId, ["TestPlugin", "TestPlugin2"]);
+
+            tx.Commit();
+        }
+
+        var mod = _ctx.Get(modId);
+
+        mod.Files.Count.Should().Be(2);
+        mod.Files.OfType<StaticFile>().First().Path.Should().Be("Test.txt");
+        mod.Files.OfType<StaticFile>().First().Hash.Should().Be(1234);
+        mod.Files.OfType<StaticFile>().First().Size.Should().Be(424242);
+
+        mod.Files.OfType<PluginFile>().First().Plugins.Should().BeEquivalentTo("TestPlugin", "TestPlugin2");
     }
 }

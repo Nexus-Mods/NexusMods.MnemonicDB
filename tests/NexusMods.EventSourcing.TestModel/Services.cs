@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Events;
 using NexusMods.EventSourcing.TestModel.Model;
+using NexusMods.EventSourcing.TestModel.Model.FileTypes;
 
 namespace NexusMods.EventSourcing.TestModel;
 
@@ -21,12 +22,16 @@ public static class Services
             .AddEvent<Events.DeleteMod>()
             .AddEvent<Events.AddCollection>()
             .AddEvent<Events.AddArchive>()
+            .AddEvent<Events.AddPluginFile>()
+            .AddEvent<Events.AddStaticFile>()
             .AddEntity<Loadout>()
             .AddEntity<Mod>()
             .AddEntity<Collection>()
             .AddEntity<LoadoutRegistry>()
             .AddEntity<ArchiveEntry>()
-            .AddEntity<Archive>();
+            .AddEntity<Archive>()
+            .AddEntity<StaticFile>()
+            .AddEntity<PluginFile>();
         return coll;
     }
 

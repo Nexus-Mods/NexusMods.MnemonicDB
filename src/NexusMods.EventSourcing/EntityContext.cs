@@ -2,6 +2,8 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 using DynamicData;
 using Microsoft.Extensions.ObjectPool;
 using NexusMods.EventSourcing.Abstractions;
@@ -32,6 +34,8 @@ public class EntityContext : IEntityContext
 
     private readonly ObjectPool<EntityIdDefinitionAccumulator> _definitionAccumulatorPool =
         new DefaultObjectPool<EntityIdDefinitionAccumulator>(new DefaultPooledObjectPolicy<EntityIdDefinitionAccumulator>());
+
+    private static readonly MethodInfo ConstructMethod = typeof(EntityContext).GetMethod(nameof(Construct), BindingFlags.Instance | BindingFlags.NonPublic)!;
 
     private readonly IEventStore _store;
 
@@ -73,13 +77,22 @@ public class EntityContext : IEntityContext
         }
         else
         {
-            newEntity = (TEntity)Activator.CreateInstance(type, this, id)!;
+            Debug.Assert(type.IsAssignableTo(typeof(TEntity)), $"type.IsSubclassOf(typeof(TEntity)) for {type} and {typeof(TEntity)}");
+            // TODO: Cache this and/or use linq expression
+            newEntity = (TEntity)ConstructMethod.MakeGenericMethod(typeof(TEntity), type).Invoke(this, [id.Id])!;
         }
 
         if (_entities.TryAdd(id.Id, newEntity))
             return newEntity;
 
         return (TEntity)_entities[id.Id];
+    }
+
+    private TAbstract Construct<TAbstract, TConcrete>(EntityId id) where TConcrete : TAbstract, IEntity
+    {
+        var casted = EntityId<TConcrete>.From(id);
+        var newEntity = (TAbstract)Activator.CreateInstance(typeof(TConcrete), this, casted)!;
+        return newEntity;
     }
 
     /// <summary>

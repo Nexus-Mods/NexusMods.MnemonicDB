@@ -235,4 +235,11 @@ public readonly struct EntityId<T> : IEquatable<EntityId<T>>, IComparable<Entity
     {
         return !(left == right);
     }
+
+    /// <summary>
+    /// Implicitly converts the <see cref="EntityId{T}"/> to a <see cref="EntityId"/>.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    public static implicit operator EntityId(EntityId<T> id) => id.Id;
 }
