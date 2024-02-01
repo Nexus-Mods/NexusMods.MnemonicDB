@@ -8,6 +8,10 @@ public class ArchiveEntry(IEntityContext context, EntityId<ArchiveEntry> id) : A
     public string Path => _path.Get(this);
     internal static readonly ScalarAttribute<ArchiveEntry, string> _path = new(nameof(Path));
 
+    public string Foo => _foo.Get(this);
+    internal static readonly ScalarAttribute<ArchiveEntry, string> _foo = new(nameof(Foo));
+
+
     [Indexed("495CA9CB-F803-4577-853E-AA9AC196D3EA")]
     public ulong Size => _size.Get(this);
     internal static readonly ULongAttribute<ArchiveEntry> _size = new(nameof(Size));
@@ -15,7 +19,6 @@ public class ArchiveEntry(IEntityContext context, EntityId<ArchiveEntry> id) : A
 
     [Indexed("9FD7C60A-B71E-4B3B-BB68-965312553D69")]
     public ulong Hash => _hash.Get(this);
-
     public static readonly ULongAttribute<ArchiveEntry> _hash = new(nameof(Hash));
 
     public Archive Archive => _archive.Get(this);

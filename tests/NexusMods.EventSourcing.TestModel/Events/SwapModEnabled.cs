@@ -9,6 +9,5 @@ public record SwapModEnabled(EntityId<Mod> ModId, bool Enabled) : IEvent
 {
     public void Apply<T>(T context) where T : IEventContext
     {
-        Mod._enabled.Set(context, ModId, Enabled);
     }
 }

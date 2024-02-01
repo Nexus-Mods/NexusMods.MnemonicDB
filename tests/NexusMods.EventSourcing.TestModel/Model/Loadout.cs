@@ -24,4 +24,10 @@ public class Loadout(IEntityContext context, EntityId<Loadout> id) : AEntity(con
     /// </summary>
     public ReadOnlyObservableCollection<Collection> Collections => _collections.Get(this);
     internal static readonly MultiEntityAttributeDefinition<Loadout, Collection> _collections = new(nameof(Collections));
+
+
+    // :mod/name -> single, int, (unique)
+
+    // [id, :mod/name, 42]
+
 }

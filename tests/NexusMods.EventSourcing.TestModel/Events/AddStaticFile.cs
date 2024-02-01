@@ -1,4 +1,5 @@
-﻿using NexusMods.EventSourcing.Abstractions;
+﻿using System.Linq.Expressions;
+using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.TestModel.Model;
 using NexusMods.EventSourcing.TestModel.Model.FileTypes;
 
@@ -9,11 +10,22 @@ public sealed record AddStaticFile(EntityId<Mod> ModId, EntityId<StaticFile> Fil
 {
     public void Apply<T>(T context) where T : IEventContext
     {
-        IEntity.TypeAttribute.New(context, FileId);
         Mod._files.Add(context, ModId, FileId.Cast<AFile>());
+
+
+        IEntity.TypeAttribute.New(context, FileId);
         AFile._path.Set(context, FileId.Cast<AFile>(), Path);
         StaticFile._hash.Set(context, FileId, Hash);
         StaticFile._size.Set(context, FileId, Size);
+
+        ModId.Emit(m => m.Name, "Foo");
+
+        Emit(ModId, m => m.Name, "Foo");
+    }
+
+    private static void Emit<T>(EntityId<Mod> modId, Expression<Func<Mod, T>> selector, T value)
+    {
+        // ...
     }
 
     public static EntityId<StaticFile> Create(ITransaction tx, EntityId<Mod> modId, string path, ulong hash, ulong size)

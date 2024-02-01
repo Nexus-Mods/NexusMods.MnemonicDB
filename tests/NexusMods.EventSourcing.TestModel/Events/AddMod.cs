@@ -13,7 +13,7 @@ public partial record AddMod(string Name, bool Enabled, EntityId<Mod> ModId, Ent
     {
         IEntity.TypeAttribute.New(context, ModId);
         Mod._name.Set(context, ModId, Name);
-        Mod._enabled.Set(context, ModId, Enabled);
+        Mod._enabled.Set(context, ModId, Enabled ? 1 : 0);
         Mod._loadout.Link(context, ModId, LoadoutId);
         Loadout._mods.Add(context, LoadoutId, ModId);
     }
@@ -32,3 +32,8 @@ public partial record AddMod(string Name, bool Enabled, EntityId<Mod> ModId, Ent
         return id;
     }
 }
+
+
+
+
+
