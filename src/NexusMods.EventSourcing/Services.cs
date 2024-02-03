@@ -1,4 +1,6 @@
+using DuckDB.NET;
 using Microsoft.Extensions.DependencyInjection;
+using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing;
 
@@ -14,6 +16,7 @@ public static class Services
     /// <returns></returns>
     public static IServiceCollection AddEventSourcing(this IServiceCollection services)
     {
+        services.AddSingleton<IDatomStore, DuckDBDatomStore>();
         return services;
     }
 

@@ -1,11 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <RootNamespace>NexusMods.EventSourcing</RootNamespace>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
     <ItemGroup>
+      <PackageReference Include="DuckDB.NET.Bindings.Full" Version="0.9.2" />
       <PackageReference Include="DynamicData" Version="8.3.27" />
       <PackageReference Include="MemoryPack" Version="1.10.0" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
       <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.1" />
+      <PackageReference Include="NexusMods.Paths" Version="0.4.0" />
       <PackageReference Include="Reloaded.Memory" Version="9.3.2" />
       <PackageReference Include="System.Reactive" Version="6.0.0" />
       <PackageReference Include="TransparentValueObjects" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
