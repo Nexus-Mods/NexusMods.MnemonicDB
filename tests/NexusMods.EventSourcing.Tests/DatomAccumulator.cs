@@ -2,41 +2,20 @@
 
 namespace NexusMods.EventSourcing.Tests;
 
-public class DatomAccumulator : IDatomSinkWithTx
+public struct DatomAccumulator : IResultSetSink
 {
-    public readonly List<(ulong e, ulong a, object v, ulong tx)> Datoms = new();
-    public void Datom(ulong e, ulong a, ulong v, ulong tx)
+    public readonly List<(ulong e, ulong a, object v, ulong tx)> Datoms;
+
+    public DatomAccumulator()
     {
-        Datoms.Add((e, a, v, tx));
+        Datoms = new List<(ulong e, ulong a, object v, ulong tx)>();
     }
 
-    public void Datom(ulong e, ulong a, long v, ulong tx)
+    public void Process<T>(ref T resultSet) where T : IResultSet
     {
-        Datoms.Add((e, a, v, tx));
-    }
-
-    public void Datom(ulong e, ulong a, string v, ulong tx)
-    {
-        Datoms.Add((e, a, v, tx));
-    }
-
-    public void Datom(ulong e, ulong a, bool v, ulong tx)
-    {
-        Datoms.Add((e, a, v, tx));
-    }
-
-    public void Datom(ulong e, ulong a, double v, ulong tx)
-    {
-        Datoms.Add((e, a, v, tx));
-    }
-
-    public void Datom(ulong e, ulong a, float v, ulong tx)
-    {
-        Datoms.Add((e, a, v, tx));
-    }
-
-    public void Datom(ulong e, ulong a, ReadOnlySpan<byte> v, ulong tx)
-    {
-        Datoms.Add((e, a, v.ToArray(), tx));
+        do
+        {
+            Datoms.Add((resultSet.EntityId, resultSet.Attribute, resultSet.Value, resultSet.Tx));
+        } while (resultSet.Next());
     }
 }

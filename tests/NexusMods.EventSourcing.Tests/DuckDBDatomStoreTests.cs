@@ -1,13 +1,17 @@
-﻿using NexusMods.EventSourcing.Abstractions;
+﻿using System.Diagnostics;
+using Microsoft.Extensions.Logging;
+using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Tests;
 
 public class DuckDBDatomStoreTests
 {
     private readonly DuckDBDatomStore _db;
+    private readonly ILogger<DuckDBDatomStoreTests> _logger;
 
-    public DuckDBDatomStoreTests(IEnumerable<IDatomStore> stores)
+    public DuckDBDatomStoreTests(ILogger<DuckDBDatomStoreTests> logger, IEnumerable<IDatomStore> stores)
     {
+        _logger = logger;
         _db = stores.OfType<DuckDBDatomStore>().First();
     }
 
@@ -27,7 +31,7 @@ public class DuckDBDatomStoreTests
             (0x0042, 0x013, 0.4f, 0x1));
 
         var accumulator = new DatomAccumulator();
-        _db.AllDatomsWithTx(accumulator);
+        _db.AllDatomsWithTx(in accumulator);
         var datoms = accumulator.Datoms;
         datoms.Should().HaveCount(3);
         datoms.Should().Contain((0x0042, 0x011, 3L, 0x1));
@@ -39,7 +43,7 @@ public class DuckDBDatomStoreTests
     public void CanInsertALotOfDatoms()
     {
         var datoms = new List<(ulong e, ulong a, object v, ulong tx)>();
-        for (var i = 0; i < 10000; i++)
+        for (var i = 0; i < 1024 * 3; i++)
         {
             var e = (ulong)i + 10000;
             datoms.Add((e, 0x01, i, e));
@@ -52,8 +56,14 @@ public class DuckDBDatomStoreTests
             datoms.Add((e, 0x07, arr, e));
         }
 
+        var sw = Stopwatch.StartNew();
         _db.Transact(datoms.ToArray());
+        _logger.LogInformation("Inserted {Total} datoms in {Elapsed}", datoms.Count, sw.Elapsed);
 
+        var accumulator = new DatomAccumulator();
+        sw.Restart();
+        _db.AllDatomsWithTx(in accumulator);
+        _logger.LogInformation("Read {Total} datoms in {Elapsed}", accumulator.Datoms.Count, sw.Elapsed);
 
     }
 }

@@ -178,129 +178,20 @@ public class DuckDBDatomStore : IDatomStore
         }
     }
 
-    public void AllDatomsWithTx<TSink>(TSink sink) where TSink : IDatomSinkWithTx
+    public void AllDatomsWithTx<TSink>(in TSink sink) where TSink : IResultSetSink
     {
-        DuckDBResult result;
-        if (DuckDBQuery(_connection, "SELECT E, A, V, T FROM Datoms", out result) != DuckDBState.Success)
+        var result = new DuckDBResultSet();
+        if (DuckDBQuery(_connection, "SELECT E, A, V, T FROM Datoms", out result.Result) != DuckDBState.Success)
         {
-            _logger.LogError("Failed to query Datoms: {Error}", Marshal.PtrToStringAnsi(DuckDBResultError(ref result)));
-            throw new InvalidOperationException("Failed to query Datoms: " + Marshal.PtrToStringAnsi(DuckDBResultError(ref result)));
+            _logger.LogError("Failed to query Datoms: {Error}", Marshal.PtrToStringAnsi(DuckDBResultError(ref result.Result)));
+            throw new InvalidOperationException("Failed to query Datoms: " + Marshal.PtrToStringAnsi(DuckDBResultError(ref result.Result)));
         }
+        result.Init();
+        sink.Process(ref result);
 
-        var count = DuckDBRowCount(ref result);
-
-
-        unsafe
-        {
-            Span<IntPtr> children = stackalloc IntPtr[NumUnionElements];
-            Span<IntPtr> data = stackalloc IntPtr[NumUnionElements];
-            Span<IntPtr> validity = stackalloc IntPtr[NumUnionElements];
-
-            var chunkCount = DuckDBResultChunkCount(result);
-            for (var idx = 0; idx < chunkCount; idx++)
-            {
-                var chunk = DuckDBResultGetChunk(result, idx);
-                var chunkSize = DuckDBDataChunkGetSize(chunk);
-
-
-                var eDataVector = DuckDBDataChunkGetVector(chunk, 0);
-                var eData = (ulong*)DuckDBVectorGetData(eDataVector);
-
-                var aDataVector = DuckDBDataChunkGetVector(chunk, 1);
-                var aData = (ulong*)DuckDBVectorGetData(aDataVector);
-
-                var vData = DuckDBDataChunkGetVector(chunk, 2);
-                var vType = DuckDBVectorGetColumnType(vData);
-
-                var logicalTypeCount = DuckDBStructTypeChildCount(vType);
-
-
-                var txDataVector = DuckDBDataChunkGetVector(chunk, 3);
-                var txData = (ulong*)DuckDBVectorGetData(txDataVector);
-
-                for (var childId = 1; childId < NumUnionElements; childId++)
-                {
-                    children[childId] = DuckDBStructVectorGetChild(vData, childId);
-                    data[childId] = (IntPtr)DuckDBVectorGetData(children[childId]);
-                    validity[childId] = (IntPtr)DuckDBVectorGetValidity(children[childId]);
-                }
-
-                for (var row = 0; row < chunkSize; row++)
-                {
-
-                    var e = eData[row];
-                    var a = aData[row];
-
-                    var validChild = ValidChild(validity, row);
-                    var tx = txData[row];
-
-                    switch (validChild)
-                    {
-                        case 1:
-                            sink.Datom(e, a, ((long*)data[1])[row], tx);
-                            break;
-                        case 2:
-                            sink.Datom(e, a, ((ulong*)data[2])[row], tx);
-                            break;
-                        case 3:
-                            sink.Datom(e, a, ReadString((void*)data[3], row), tx);
-                            break;
-                        case 4:
-                            throw new NotImplementedException();
-                        case 5:
-                            sink.Datom(e, a, ((double*)data[5])[row], tx);
-                            break;
-                        case 6:
-                            sink.Datom(e, a, ((float*)data[6])[row], tx);
-                            break;
-                        case 7:
-                            throw new NotImplementedException();
-                    }
-                }
-            }
-        }
-
-        DuckDBDestroyResult(ref result);
+        DuckDBDestroyResult(ref result.Result);
 
     }
-
-    private unsafe int ValidChild(Span<IntPtr> validity, int row)
-    {
-        var idx = row >> 16;
-        var vector = Vector128.Create(0,
-            ((ushort*)validity[1])[idx],
-            ((ushort*)validity[2])[idx],
-            ((ushort*)validity[3])[idx],
-            ((ushort*)validity[4])[idx],
-            ((ushort*)validity[5])[idx],
-            ((ushort*)validity[6])[idx],
-            0);
-
-        var shifted = Sse2.ShiftRightLogical(vector, (byte)(row % 16));
-        shifted &= Vector128<ushort>.One;
-
-        var mask = Sse2.CompareEqual(shifted, Vector128<ushort>.One).AsByte();
-        var maskInt = Sse2.MoveMask(mask);
-
-        int index = BitOperations.TrailingZeroCount(maskInt) >> 1;
-
-        return index;
-    }
-
-    private unsafe string ReadString(void* ptr, int row)
-    {
-        var data = (DuckDBString2*)ptr + row;
-
-        return new string(data->Data, 0, data->Length, Encoding.UTF8);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public unsafe bool IsRowValid(ulong* validity, int row)
-    {
-        var mask = 1UL << (row & 63);
-        return (validity[row >> 6] & mask) != 0;
-    }
-
 }
 
 public partial struct DuckDBString2
@@ -354,4 +245,12 @@ public partial struct DuckDBString2
             public fixed sbyte inlined[12];
         }
     }
+}
+
+public unsafe partial struct DuckDBBlob
+{
+    public void* _data;
+    public ulong _length;
+
+    public ReadOnlySpan<byte> AsSpan() => new(_data, (int)_length);
 }
