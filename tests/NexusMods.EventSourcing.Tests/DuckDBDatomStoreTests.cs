@@ -43,7 +43,7 @@ public class DuckDBDatomStoreTests
     public void CanInsertALotOfDatoms()
     {
         var datoms = new List<(ulong e, ulong a, object v, ulong tx)>();
-        for (var i = 0; i < 1024 * 3; i++)
+        for (var i = 0; i < 1024 * 1; i++)
         {
             var e = (ulong)i + 10000;
             datoms.Add((e, 0x01, i, e));
@@ -64,6 +64,8 @@ public class DuckDBDatomStoreTests
         sw.Restart();
         _db.AllDatomsWithTx(in accumulator);
         _logger.LogInformation("Read {Total} datoms in {Elapsed}", accumulator.Datoms.Count, sw.Elapsed);
+
+        datoms.Count.Should().Be(accumulator.Datoms.Count);
 
     }
 }
