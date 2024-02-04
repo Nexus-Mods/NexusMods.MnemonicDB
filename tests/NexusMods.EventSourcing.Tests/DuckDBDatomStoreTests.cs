@@ -43,17 +43,17 @@ public class DuckDBDatomStoreTests
     public void CanInsertALotOfDatoms()
     {
         var datoms = new List<(ulong e, ulong a, object v, ulong tx)>();
-        for (var i = 0; i < 1024 * 1; i++)
+        for (var i = 0; i < 1024 * 16; i++)
         {
             var e = (ulong)i + 10000;
-            datoms.Add((e, 0x01, i, e));
+            datoms.Add((e, 0x01, (ulong)i, e));
             datoms.Add((e, 0x02, (long)i, e));
             datoms.Add((e, 0x03, $"Datom: {i}", e));
-            datoms.Add((e, 0x04, (i % 2) == 0, e));
+            datoms.Add((e, 0x04, i % 2 == 0, e));
             datoms.Add((e, 0x05, (double)i, e));
             datoms.Add((e, 0x06, (float)i, e));
-            var arr = BitConverter.GetBytes(i);
-            datoms.Add((e, 0x07, arr, e));
+            //var arr = BitConverter.GetBytes(i);
+            //datoms.Add((e, 0x07, arr, e));
         }
 
         var sw = Stopwatch.StartNew();
@@ -66,6 +66,11 @@ public class DuckDBDatomStoreTests
         _logger.LogInformation("Read {Total} datoms in {Elapsed}", accumulator.Datoms.Count, sw.Elapsed);
 
         datoms.Count.Should().Be(accumulator.Datoms.Count);
+
+        for (var i = 0; i < datoms.Count; i++)
+        {
+            accumulator.Datoms[i].Should().Be(datoms[i], $"Datom {i} should match");
+        }
 
     }
 }

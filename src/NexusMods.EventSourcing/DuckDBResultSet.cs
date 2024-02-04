@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
@@ -73,6 +75,11 @@ unsafe struct DuckDBResultSet : IResultSet
         // Value Struct Reading
 
         var vData = DuckDBDataChunkGetVector(_currentChunk, 2);
+        #if DEBUG
+        var vType = DuckDBVectorGetColumnType(vData);
+        Debug.Assert(NativeMethods.LogicalType.DuckDBStructTypeChildCount(vType) == (int)Enum.GetValues<ValueTypes>().Max() + 1);
+        #endif
+
         for (var childId = 1; childId < NumChildren; childId++)
         {
             var child = DuckDBStructVectorGetChild(vData, childId);
@@ -109,28 +116,28 @@ unsafe struct DuckDBResultSet : IResultSet
     public ulong Attribute => _aData[_chunkRow];
     public ulong Tx => _txData[_chunkRow];
 
-    public IResultSet.ValueTypes ValueType => (IResultSet.ValueTypes)ValidChild();
+    public ValueTypes ValueType => (ValueTypes)ValidChild();
 
-    public long ValueInt64 => ((long*)_childData[1])[_chunkRow];
-    public ulong ValueUInt64 => ((ulong*)_childData[2])[_chunkRow];
+    public long ValueInt64 => ((long*)_childData[(int)ValueTypes.Int64])[_chunkRow];
+    public ulong ValueUInt64 => ((ulong*)_childData[(int)ValueTypes.UInt64])[_chunkRow];
     public string ValueString
     {
         get
         {
-            var ptr = (void*)_childData[3];
+            var ptr = (void*)_childData[(int)ValueTypes.String];
             var data = (DuckDBString2*)ptr + _chunkRow;
             return new string(data->Data, 0, data->Length, Encoding.UTF8);
         }
     }
-    public bool ValueBoolean => ((byte*)_childData[4])[_chunkRow] != 0;
-    public double ValueDouble => ((double*)_childData[5])[_chunkRow];
-    public float ValueFloat => ((float*)_childData[6])[_chunkRow];
+    public bool ValueBoolean => ((byte*)_childData[(int)ValueTypes.Boolean])[_chunkRow] != 0;
+    public double ValueDouble => ((double*)_childData[(int)ValueTypes.Double])[_chunkRow];
+    public float ValueFloat => ((float*)_childData[(int)ValueTypes.Float])[_chunkRow];
 
     public ReadOnlySpan<byte> ValueBlob
     {
         get
         {
-            var ptr = (void*)_childData[7];
+            var ptr = (void*)_childData[(int)ValueTypes.Bytes];
             var data = (DuckDBBlob*)ptr + _chunkRow;
             return data->AsSpan();
         }
@@ -143,22 +150,39 @@ unsafe struct DuckDBResultSet : IResultSet
     public object Value =>
         ValueType switch
         {
-            IResultSet.ValueTypes.Int64 => ValueInt64,
-            IResultSet.ValueTypes.UInt64 => ValueUInt64,
-            IResultSet.ValueTypes.String => ValueString,
-            IResultSet.ValueTypes.Boolean => ValueBoolean,
-            IResultSet.ValueTypes.Double => ValueDouble,
-            IResultSet.ValueTypes.Float => ValueFloat,
-            IResultSet.ValueTypes.Bytes => ValueBlob.ToArray(),
+            ValueTypes.Int64 => ValueInt64,
+            ValueTypes.UInt64 => ValueUInt64,
+            ValueTypes.String => ValueString,
+            ValueTypes.Boolean => ValueBoolean,
+            ValueTypes.Double => ValueDouble,
+            ValueTypes.Float => ValueFloat,
+            ValueTypes.Bytes => ValueBlob.ToArray(),
             _ => throw new InvalidDataException($"Unknown value type ({ValueType}) in result set.")
         };
+
+
+    /// <summary>
+    /// Gets the index of the child struct member that is valid for the current row.
+    /// </summary>
+    /// <returns></returns>
+    private int ValidChild()
+    {
+        for (var i = 1; i < NumChildren; i++)
+        {
+            var entryIdx = _chunkRow / 64;
+            var idxInEntry = _chunkRow % 64;
+            var isValid = (((ulong*)_childValidity[i])[entryIdx] & (1UL << idxInEntry)) != 0;
+            if (isValid) return i;
+        }
+        throw new InvalidOperationException("No valid child found");
+    }
 
 
     /// <summary>
     /// Returns the index of the child struct member that is valid for the current row.
     /// </summary>
     /// <returns></returns>
-    private unsafe int ValidChild()
+    private unsafe int ValidChildSSE()
     {
         // TODO: This loading of the vector need not happen every row, only when we run out of space
         // in the vector. Further optimization could be done by using a larger vector of 8 elements.
@@ -181,6 +205,8 @@ unsafe struct DuckDBResultSet : IResultSet
         var maskInt = Sse2.MoveMask(mask);
 
         var index = BitOperations.TrailingZeroCount(maskInt) >> 1;
+
+        Debug.Assert(index is > 0 and < 8, "Invalid type index");
 
         return index;
     }
