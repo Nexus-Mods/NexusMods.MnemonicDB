@@ -1,37 +1,17 @@
-using System.Collections.ObjectModel;
-using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.TestModel.Model.FileTypes;
+﻿using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.TestModel.Model;
 
-[Entity("ACB7AF43-4FB2-4E1A-8C32-7CF7D912A911", 2)]
-public class Mod(IEntityContext context, EntityId<Mod> id) : AEntity(context, id)
+[Entity("05E5482D-CB2F-48AE-BE66-902B4B807A44")]
+public class Mod
 {
-    public Loadout Loadout => _loadout.Get(this);
-    internal static readonly EntityAttributeDefinition<Mod, Loadout> _loadout = new(nameof(Loadout));
+    /// <summary>
+    /// The name of the mod
+    /// </summary>
+    public required string Name { get; init; }
 
     /// <summary>
-    /// The human readable name of the mod.
+    /// The description of the mod
     /// </summary>
-    public string Name => context.Get(this);
-    internal static readonly ScalarAttribute<Mod, string> _name = new(nameof(Name));
-
-    /// <summary>
-    /// The enabled state of the mod.
-    /// </summary>
-    public int Enabled => _enabled.Get(this);
-    internal static readonly ScalarAttribute<Mod, int> _enabled = new(nameof(Enabled));
-
-    /// <summary>
-    /// The Collection the mod is in, if any
-    /// </summary>
-    public Collection Collection => _collection.Get(this);
-    internal static readonly EntityAttributeDefinition<Mod, Collection> _collection = new(nameof(Collection));
-
-    /// <summary>
-    /// Files that belong to the mod.
-    /// </summary>
-    public ReadOnlyObservableCollection<AFile> Files => _files.Get(this);
-    internal static readonly MultiEntityAttributeDefinition<Mod, AFile> _files = new(nameof(Files));
-
+    public required string Description { get; init; }
 }

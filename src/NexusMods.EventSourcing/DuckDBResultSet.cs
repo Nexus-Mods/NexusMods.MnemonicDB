@@ -50,7 +50,7 @@ unsafe struct DuckDBResultSet : IResultSet
     /// <summary>
     /// Initializes the result set after Result has been set externally.
     /// </summary>
-    public void Init()
+    internal void Init()
     {
         _chunkCount = DuckDBResultChunkCount(Result);
 
@@ -88,7 +88,10 @@ unsafe struct DuckDBResultSet : IResultSet
         }
     }
 
-    // Ratchets to the next row in the result set. Returns false if there are no more rows.
+    /// <summary>
+    /// Ratchets to the next row in the result set. Returns false if there are no more rows.
+    /// </summary>
+    /// <returns></returns>
     public bool Next()
     {
         if (_chunkRow < _chunkSize - 1)
@@ -111,40 +114,80 @@ unsafe struct DuckDBResultSet : IResultSet
         }
     }
 
-
+    /// <summary>
+    /// Returns the entity id of the current row.
+    /// </summary>
     public ulong EntityId => _eData[_chunkRow];
+
+    /// <summary>
+    /// Returns the attribute of the current row.
+    /// </summary>
     public ulong Attribute => _aData[_chunkRow];
+
+    /// <summary>
+    /// Returns the transaction id of the current row.
+    /// </summary>
     public ulong Tx => _txData[_chunkRow];
 
+    /// <summary>
+    /// Returns the value type of the current row.
+    /// </summary>
     public ValueTypes ValueType => (ValueTypes)ValidChild();
 
+    /// <summary>
+    /// Returns the value of the current row as an int64, behavior is undefined if the value is not an int64.
+    /// </summary>
     public long ValueInt64 => ((long*)_childData[(int)ValueTypes.Int64])[_chunkRow];
+
+    /// <summary>
+    /// Returns the value of the current row as an uint64, behavior is undefined if the value is not an uint64.
+    /// </summary>
     public ulong ValueUInt64 => ((ulong*)_childData[(int)ValueTypes.UInt64])[_chunkRow];
+
+    /// <summary>
+    /// Returns the value of the current row as a string, behavior is undefined if the value is not a string.
+    /// </summary>
     public string ValueString
     {
         get
         {
             var ptr = (void*)_childData[(int)ValueTypes.String];
-            var data = (DuckDBString2*)ptr + _chunkRow;
+            var data = (DuckDBBlob*)ptr + _chunkRow;
             return new string(data->Data, 0, data->Length, Encoding.UTF8);
         }
     }
+
+    /// <summary>
+    /// Returns the value of the current row as a boolean, behavior is undefined if the value is not a boolean.
+    /// </summary>
     public bool ValueBoolean => ((byte*)_childData[(int)ValueTypes.Boolean])[_chunkRow] != 0;
+
+    /// <summary>
+    /// Returns the value of the current row as a double, behavior is undefined if the value is not a double.
+    /// </summary>
     public double ValueDouble => ((double*)_childData[(int)ValueTypes.Double])[_chunkRow];
+
+    /// <summary>
+    /// Returns the value of the current row as a float, behavior is undefined if the value is not a float.
+    /// </summary>
     public float ValueFloat => ((float*)_childData[(int)ValueTypes.Float])[_chunkRow];
 
+    /// <summary>
+    /// Returns the value of the current row as a ReadOnlySpan, behavior is undefined if the value is not a byte blob.
+    /// The span is only valid for the duration of the current row, calling Next may invalidate the span.
+    /// </summary>
     public ReadOnlySpan<byte> ValueBlob
     {
         get
         {
             var ptr = (void*)_childData[(int)ValueTypes.Bytes];
             var data = (DuckDBBlob*)ptr + _chunkRow;
-            return data->AsSpan();
+            return new ReadOnlySpan<byte>(data->Data, data->Length);
         }
     }
 
     /// <summary>
-    /// Returns the value of the current row and boxes it into an object.
+    /// Returns the value of the current row and boxes it into an object. This should only be used for testing
     /// </summary>
     /// <exception cref="InvalidDataException"></exception>
     public object Value =>
@@ -188,7 +231,7 @@ unsafe struct DuckDBResultSet : IResultSet
         // in the vector. Further optimization could be done by using a larger vector of 8 elements.
         // With SSE we only need to load it once every 16 rows
 
-        var idx = _chunkRow >> 16;
+        var idx = _chunkRow >> 6;
         var vector = Vector128.Create(0,
             ((ushort*)_childValidity[1])[idx],
             ((ushort*)_childValidity[2])[idx],
@@ -198,7 +241,7 @@ unsafe struct DuckDBResultSet : IResultSet
             ((ushort*)_childValidity[6])[idx],
             ((ushort*)_childValidity[7])[idx]);
 
-        var shifted = Sse2.ShiftRightLogical(vector, (byte)(_chunkRow % 16));
+        var shifted = Sse2.ShiftRightLogical(vector, (byte)(_chunkRow % 6));
         shifted &= Vector128<ushort>.One;
 
         var mask = Sse2.CompareEqual(shifted, Vector128<ushort>.One).AsByte();
@@ -210,6 +253,4 @@ unsafe struct DuckDBResultSet : IResultSet
 
         return index;
     }
-
-
 }

@@ -52,8 +52,8 @@ public class DuckDBDatomStoreTests
             datoms.Add((e, 0x04, i % 2 == 0, e));
             datoms.Add((e, 0x05, (double)i, e));
             datoms.Add((e, 0x06, (float)i, e));
-            //var arr = BitConverter.GetBytes(i);
-            //datoms.Add((e, 0x07, arr, e));
+            var arr = BitConverter.GetBytes(i);
+            datoms.Add((e, 0x07, arr, e));
         }
 
         var sw = Stopwatch.StartNew();
@@ -69,7 +69,7 @@ public class DuckDBDatomStoreTests
 
         for (var i = 0; i < datoms.Count; i++)
         {
-            accumulator.Datoms[i].Should().Be(datoms[i], $"Datom {i} should match");
+            accumulator.Datoms[i].Should().BeEquivalentTo(datoms[i], $"Datom {i} should match");
         }
 
     }

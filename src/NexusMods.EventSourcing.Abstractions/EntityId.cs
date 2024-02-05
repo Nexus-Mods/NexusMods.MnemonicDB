@@ -10,3 +10,9 @@ public readonly partial struct EntityId
 {
 
 }
+
+
+public readonly struct EntityId<T> where T : AEntity
+{
+
+}
