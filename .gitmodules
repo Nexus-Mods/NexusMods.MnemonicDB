@@ -1,6 +1,6 @@
 [submodule "extern/meta"]
 	path = extern/meta
-	url = git@github.com:Nexus-Mods/NexusMods.App.Meta.git
+	url = https://github.com/Nexus-Mods/NexusMods.App.Meta.git
 [submodule "docs/Nexus"]
 	path = docs/Nexus
-	url = git@github.com:Nexus-Mods/NexusMods.MkDocsMaterial.Themes.Next.git
+	url = https://github.com/Nexus-Mods/NexusMods.MkDocsMaterial.Themes.Next.git
