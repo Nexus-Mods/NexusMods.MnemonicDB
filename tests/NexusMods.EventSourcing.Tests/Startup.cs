@@ -8,6 +8,7 @@ public class Startup
 {
     public void ConfigureServices(IServiceCollection container)
     {
+
         container
             .AddEventSourcing()
             .AddTestModel()

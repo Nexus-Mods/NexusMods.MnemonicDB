@@ -24,7 +24,7 @@ public enum ValueTypes : int
     /// <summary>
     /// Boolean value
     /// </summary>
-    Boolean = 4,
+    UHugeInt = 4,
     /// <summary>
     /// Double value
     /// </summary>

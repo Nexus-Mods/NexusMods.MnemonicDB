@@ -1,78 +1,54 @@
 ﻿namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
+/// Entity Ids are 64 bit unsigned integers. The high byte is used to store the type of id, and the rest of the bytes are used to store the id.
+/// all data is stored in the same format, but we use the high byte to partition the space so we can have several sets of monotonic ids.
+/// </summary>
+public enum IdSpace : byte
+{
+    /// <summary>
+    /// Stores attribute definitions
+    /// </summary>
+    Attr,
+    /// <summary>
+    /// Temporary space used in transaction processing
+    /// </summary>
+    Temp,
+    /// <summary>
+    /// Transaction metadata
+    /// </summary>
+    Tx,
+    /// <summary>
+    /// The user space for entity ids
+    /// </summary>
+    Entity,
+}
+
+/// <summary>
 /// Constants for where IDs start in a packed ulong. In various places we refer to EntityIs, TempIds and TransactionIds
 /// all with a ulong. We partition the space so that we can tell them apart, and do simple comparisons.
 /// </summary>
 public static class Ids
 {
     /// <summary>
-    /// The start of the transaction id space.
+    /// Returns true if the id is in the space
     /// </summary>
-    public const ulong TxStart = 0;
-
-    /// <summary>
-    /// The start of the temporary id space.
-    /// </summary>
-    public const ulong TempIdStart = 0x0100_0000_0000_0000;
-
-    /// <summary>
-    /// The start of the entity id space.
-    /// </summary>
-    public const ulong EntityIdStart = 0x0200_0000_0000_0000;
-
-
-    /// <summary>
-    /// Is the given id a temporary entity id?
-    /// </summary>
+    /// <param name="space"></param>
     /// <param name="id"></param>
     /// <returns></returns>
-    public static bool IsTempId(ulong id) => id >= TempIdStart && id < EntityIdStart;
+    public static bool IsIdOfSpace(ulong id, IdSpace space) => (id >> 56) == (byte)space;
 
     /// <summary>
-    /// Is the given id a entity id?
+    /// The maximum id for the space
     /// </summary>
-    /// <param name="id"></param>
+    /// <param name="space"></param>
     /// <returns></returns>
-    public static bool IsEntityId(ulong id) => id >= EntityIdStart;
+    public static ulong MaxId(IdSpace space) => (ulong)space << 56 | 0xFFFFFFFFFFFFFF;
 
     /// <summary>
-    /// Is the given id a transaction id?
+    /// The minimum id for the space
     /// </summary>
-    /// <param name="id"></param>
+    /// <param name="space"></param>
     /// <returns></returns>
-    public static bool IsTxId(ulong id) => id < TempIdStart;
-
-    /// <summary>
-    /// A enum to represent the type of id.
-    /// </summary>
-    public enum IdType
-    {
-        /// <summary>
-        /// A temporary entity id, used during transaction processing.
-        /// </summary>
-        TempId,
-
-        /// <summary>
-        /// A entity id, used to represent a real entity.
-        /// </summary>
-        EntityId,
-
-        /// <summary>
-        /// A transaction id, used to represent a transaction.
-        /// </summary>
-        TxId
-    }
-
-    /// <summary>
-    /// Get the type of the given id.
-    /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
-    public static IdType GetIdType(ulong id) => id switch
-    {
-        < TempIdStart => IdType.TxId,
-        < EntityIdStart => IdType.TempId,
-        _ => IdType.EntityId
-    };
+    public static ulong MinId(IdSpace space) => (ulong)space << 56;
 }

@@ -22,6 +22,14 @@ public interface IAttributeType
     /// Gets the domain type this attribute type maps to
     /// </summary>
     public Type DomainType { get; }
+
+    /// <summary>
+    /// Constructs a new attribute definition using this type as the backing type definition
+    /// </summary>
+    /// <param name="entityTypeId"></param>
+    /// <param name="name"></param>
+    /// <returns></returns>
+    public AttributeDefinition Construct(UInt128 entityTypeId, string name);
 }
 
 
@@ -29,7 +37,7 @@ public interface IAttributeType
 /// A typed attribute type.
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public interface IAttributeType<out T>
+public interface IAttributeType<T> : IAttributeType
 {
     /// <summary>
     /// Gets the value of the attribute from the current row of the result set
@@ -38,4 +46,16 @@ public interface IAttributeType<out T>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
     public T GetValue(IResultSet resultSet);
+
+    /// <summary>
+    /// Write the given value to the sink with the given event, attribute, and time
+    /// </summary>
+    /// <param name="e"></param>
+    /// <param name="a"></param>
+    /// <param name="val"></param>
+    /// <param name="t"></param>
+    /// <param name="sink"></param>
+    /// <typeparam name="TSink"></typeparam>
+    /// <returns></returns>
+    public void Emit<TSink>(ulong e, ulong a, T val, ulong t, IDatomSink sink) where TSink : IDatomSink;
 }

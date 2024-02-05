@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
-static class InternalExtensions
+public static class InternalExtensions
 {
     /// <summary>
     /// Converts a string representation of a GUID to a UInt128
@@ -17,6 +17,18 @@ static class InternalExtensions
         guidValue.TryWriteBytes(bytes);
         var id = BinaryPrimitives.ReadUInt64BigEndian(bytes);
         return id;
+    }
+
+    /// <summary>
+    /// Converts a UInt128 to a byte array
+    /// </summary>
+    /// <param name="value"></param>
+    /// <returns></returns>
+    public static byte[] ToByteArray(this UInt128 value)
+    {
+        var bytes = new byte[16];
+        BinaryPrimitives.WriteUInt128BigEndian(bytes, value);
+        return bytes;
     }
 
 }

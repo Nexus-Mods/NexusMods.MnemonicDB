@@ -8,6 +8,7 @@ public interface IDatomStore
     /// <summary>
     /// Adds new datoms to the store
     /// </summary>
-    /// <param name="source"></param>
-    public void Transact(params (ulong E, ulong A, object V, ulong Tx)[] source);
+    /// <param name="socket"></param>
+    /// <typeparam name="TSocket"></typeparam>
+    public void Transact<TSocket>(ref TSocket socket) where TSocket : IDatomSinkSocket;
 }

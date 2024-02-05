@@ -10,6 +10,8 @@ using System.Text;
 using DuckDB.NET;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.BuiltinEntities;
+using NexusMods.EventSourcing.Sinks;
 using NexusMods.Paths;
 using static DuckDB.NET.NativeMethods.Appender;
 using static DuckDB.NET.NativeMethods.DataChunks;
@@ -30,6 +32,8 @@ public class DuckDBDatomStore : IDatomStore
         DuckDBConnect(_db, out _connection);
 
         SetupDatabase();
+        var socket = new ArrayDatomSinkSocket(StaticData.InitialState());
+        Transact(ref socket);
     }
 
     private void SetupDatabase()
@@ -56,7 +60,7 @@ public class DuckDBDatomStore : IDatomStore
             I BIGINT,
             U UBIGINT,
             S VARCHAR,
-            B BOOLEAN,
+            H HUGEINT,
             D DOUBLE,
             F FLOAT,
             Z BLOB
@@ -76,106 +80,119 @@ public class DuckDBDatomStore : IDatomStore
     private readonly DuckDBDatabase _db;
     private readonly DuckDBNativeConnection _connection;
     private readonly ILogger<DuckDBDatabase> _logger;
-    public void Transact(params (ulong E, ulong A, object V, ulong Tx)[] source)
+
+
+    private class DatomSink(DuckDBAppender appender) : IDatomSink
     {
-        var appender = new DuckDBAppender();
+        public void Emit(ulong e, ulong a, ulong v, ulong t)
+        {
+            DuckDBAppendUInt64(appender, e);
+            DuckDBAppendUInt64(appender, a);
+            DuckDBAppendUInt64(appender, v);
+            DuckDBAppendUInt64(appender, t);
+            DuckDBAppenderEndRow(appender);
+        }
+
+        public void Emit(ulong e, ulong a, long v, ulong t)
+        {
+            DuckDBAppendUInt64(appender, e);
+            DuckDBAppendUInt64(appender, a);
+            DuckDBAppendInt64(appender, v);
+            DuckDBAppendUInt64(appender, t);
+            DuckDBAppenderEndRow(appender);
+        }
+
+        public void Emit(ulong e, ulong a, double v, ulong t)
+        {
+            DuckDBAppendUInt64(appender, e);
+            DuckDBAppendUInt64(appender, a);
+            DuckDBAppendDouble(appender, v);
+            DuckDBAppendUInt64(appender, t);
+            DuckDBAppenderEndRow(appender);
+        }
+
+        public void Emit(ulong e, ulong a, float v, ulong t)
+        {
+            DuckDBAppendUInt64(appender, e);
+            DuckDBAppendUInt64(appender, a);
+            DuckDBAppendFloat(appender, v);
+            DuckDBAppendUInt64(appender, t);
+            DuckDBAppenderEndRow(appender);
+        }
+
+        public void Emit(ulong e, ulong a, string v, ulong t)
+        {
+            DuckDBAppendUInt64(appender, e);
+            DuckDBAppendUInt64(appender, a);
+            var bytes = Encoding.UTF8.GetBytes(v);
+            var ptr = Marshal.AllocHGlobal(bytes.Length + 1);
+            Marshal.Copy(bytes, 0, ptr, bytes.Length);
+            Marshal.WriteByte(ptr, bytes.Length, 0);
+            using var handle = new SafeUnmanagedMemoryHandle(ptr, true);
+            DuckDBAppendVarchar(appender, handle);
+            DuckDBAppendUInt64(appender, t);
+            DuckDBAppenderEndRow(appender);
+        }
+
+        public void Emit(ulong e, ulong a, UInt128 v, ulong t)
+        {
+            DuckDBAppendUInt64(appender, e);
+            DuckDBAppendUInt64(appender, a);
+            var ddb = Unsafe.As<UInt128, DuckDBUHugeInt>(ref v);
+            ExtraNativeMethods.DuckDBAppendUHugeInt(appender, ddb);
+            DuckDBAppendUInt64(appender, t);
+            DuckDBAppenderEndRow(appender);
+        }
+
+        public void Emit(ulong e, ulong a, ReadOnlySpan<byte> v, ulong t)
+        {
+            DuckDBAppendUInt64(appender, e);
+            DuckDBAppendUInt64(appender, a);
+            unsafe
+            {
+                fixed (void* ptr = v)
+                {
+                    ExtraNativeMethods.DuckDBAppendBlob(appender, ptr, v.Length);
+                }
+            }
+            DuckDBAppendUInt64(appender, t);
+            DuckDBAppenderEndRow(appender);
+        }
+    }
+
+    public void Transact<TSocket>(ref TSocket socket) where TSocket : IDatomSinkSocket
+    {
+        DuckDBAppender appender;
         if (DuckDBAppenderCreate(_connection, null, "Datoms", out appender) != DuckDBState.Success)
         {
             _logger.LogError("Failed to create Appender");
             throw new InvalidOperationException("Failed to create Appender");
         }
 
-        for (var idx = 0; idx < source.Length; idx++)
-        {
-            var (e, a, v, tx) = source[idx];
-            if (DuckDBAppendUInt64(appender, e) != DuckDBState.Success)
-            {
-                _logger.LogError("Failed to append E");
-                throw new InvalidOperationException("Failed to append E");
-            }
-            if (DuckDBAppendUInt64(appender, a) != DuckDBState.Success)
-            {
-                _logger.LogError("Failed to append A");
-                throw new InvalidOperationException("Failed to append A");
-            }
-
-            AppendValue(appender, v);
-
-            if (DuckDBAppendUInt64(appender, tx) != DuckDBState.Success)
-            {
-                _logger.LogError("Failed to append Tx");
-                throw new InvalidOperationException("Failed to append Tx");
-            }
-
-            if (DuckDBAppenderEndRow(appender) != DuckDBState.Success)
-            {
-                _logger.LogError("Failed to end row");
-                throw new InvalidOperationException("Failed to end row");
-            }
-        }
+        var sink = new DatomSink(appender);
+        socket.Process(ref sink);
 
         if (DuckDBAppenderClose(appender) != DuckDBState.Success)
         {
             _logger.LogError("Failed to close appender");
             throw new InvalidOperationException("Failed to close appender");
         }
-
-        _logger.LogDebug("Appended {Count} datoms", source.Length);
-
     }
 
-    private void AppendValue(DuckDBAppender appender, object o)
+    public List<DbRegisteredAttribute> GetDbAttributes()
     {
-        DuckDBState state;
-        switch (o)
-        {
-            case int i:
-                state = DuckDBAppendInt32(appender, i);
-                break;
-            case float f:
-                state = DuckDBAppendFloat(appender, f);
-                break;
-            case string s:
-            {
-                // TODO: Optimize this
-                var bytes = Encoding.UTF8.GetBytes(s);
-                var ptr = Marshal.AllocHGlobal(bytes.Length + 1);
-                Marshal.Copy(bytes, 0, ptr, bytes.Length);
-                Marshal.WriteByte(ptr, bytes.Length, 0);
-                using var handle = new SafeUnmanagedMemoryHandle(ptr, true);
-                state = DuckDBAppendVarchar(appender, handle);
-            }
-                break;
-            case bool b:
-                state = DuckDBAppendBool(appender, b);
-                break;
-            case long l:
-                state = DuckDBAppendInt64(appender, l);
-                break;
-            case ulong u:
-                state = DuckDBAppendUInt64(appender, u);
-                break;
-            case double d:
-                state = DuckDBAppendDouble(appender, d);
-                break;
-            case byte[] b:
-                unsafe
-                {
-                    fixed (void* ptr = b)
-                    {
-                        state = ExtraNativeMethods.DuckDBAppendBlob(appender, ptr, b.Length);
-                        break;
-                    }
-                }
-            default:
-                throw new Exception("Unsupported type: " + o.GetType());
-        }
-        if (state != DuckDBState.Success)
-        {
-            var error = Marshal.PtrToStringAnsi(DuckDBAppenderError(appender));
-            _logger.LogError("Failed to append value: {Message}", error);
-            throw new InvalidOperationException("Failed to append value" + error);
-        }
+        var stmt = new DuckDBPreparedStatement<ulong>(_connection,
+            """
+            SELECT E, A, arg_max(V, T) V, arg_max(T, T) T
+            FROM Datoms
+            WHERE E <= ?
+            GROUP BY E, A
+            ORDER BY E, A
+            """);
+        var attrLoader = new AttributeLoader();
+        stmt.BindAndExectute(Ids.MaxId(IdSpace.Attr), ref attrLoader);
+
+        return attrLoader.Attributes;
     }
 
     public void AllDatomsWithTx<TSink>(in TSink sink) where TSink : IResultSetSink

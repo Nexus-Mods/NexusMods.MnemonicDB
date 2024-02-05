@@ -160,7 +160,7 @@ unsafe struct DuckDBResultSet : IResultSet
     /// <summary>
     /// Returns the value of the current row as a boolean, behavior is undefined if the value is not a boolean.
     /// </summary>
-    public bool ValueBoolean => ((byte*)_childData[(int)ValueTypes.Boolean])[_chunkRow] != 0;
+    public UInt128 ValueUInt128 => ((UInt128*)_childData[(int)ValueTypes.UHugeInt])[_chunkRow];
 
     /// <summary>
     /// Returns the value of the current row as a double, behavior is undefined if the value is not a double.
@@ -196,7 +196,7 @@ unsafe struct DuckDBResultSet : IResultSet
             ValueTypes.Int64 => ValueInt64,
             ValueTypes.UInt64 => ValueUInt64,
             ValueTypes.String => ValueString,
-            ValueTypes.Boolean => ValueBoolean,
+            ValueTypes.UHugeInt => ValueUInt128,
             ValueTypes.Double => ValueDouble,
             ValueTypes.Float => ValueFloat,
             ValueTypes.Bytes => ValueBlob.ToArray(),

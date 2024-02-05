@@ -17,6 +17,12 @@ public static class Services
     public static IServiceCollection AddEventSourcing(this IServiceCollection services)
     {
         services.AddSingleton<IDatomStore, DuckDBDatomStore>();
+        services.AddSingleton<IConnection, Connection>();
+        return services;
+    }
+
+    private static IServiceCollection AddDefaultAttributes(this IServiceCollection services)
+    {
         return services;
     }
 

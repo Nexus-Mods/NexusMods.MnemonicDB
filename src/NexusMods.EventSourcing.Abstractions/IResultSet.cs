@@ -1,4 +1,6 @@
-﻿namespace NexusMods.EventSourcing.Abstractions;
+﻿using System;
+
+namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// Defines a result set from a query
@@ -47,9 +49,9 @@ public interface IResultSet
     public string ValueString { get; }
 
     /// <summary>
-    /// Gets the value of the current row as a boolean
+    /// Gets the value of the current row as a UInt128
     /// </summary>
-    public bool ValueBoolean { get; }
+    public UInt128 ValueUInt128 { get; }
 
     /// <summary>
     /// Gets the value of the current row as a double
