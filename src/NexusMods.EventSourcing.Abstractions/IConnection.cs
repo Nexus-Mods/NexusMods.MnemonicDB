@@ -1,4 +1,7 @@
-﻿namespace NexusMods.EventSourcing.Abstractions;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
+
+namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// A mutable connection to a data source
@@ -19,5 +22,5 @@ public interface IConnection
     /// </summary>
     /// <param name="transaction"></param>
     /// <returns></returns>
-    public TransactionId Commit(Transaction transaction);
+    TransactionId Commit(IDictionary<EntityId, AEntity> attachedEntities, IReadOnlyCollection<(ulong E, ulong A, object v)> changes);
 }

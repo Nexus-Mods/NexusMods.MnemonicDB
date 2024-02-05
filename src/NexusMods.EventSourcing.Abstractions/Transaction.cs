@@ -44,7 +44,7 @@ public class Transaction : IDisposable
     /// </summary>
     public TransactionId Commit()
     {
-        return _connection.Commit(this);
+        return _connection.Commit(_attachedEntities, _changes);
     }
 
     public void Dispose()

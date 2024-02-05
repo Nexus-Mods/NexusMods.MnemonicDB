@@ -24,7 +24,7 @@ namespace NexusMods.EventSourcing;
 
 public class DuckDBDatomStore : IDatomStore
 {
-    public DuckDBDatomStore(ILogger<DuckDBDatabase> logger)
+    public DuckDBDatomStore(ILogger<DuckDBDatomStore> logger)
     {
         _logger = logger;
         _logger.LogInformation("Creating DuckDBDatomStore with in-memory database");
@@ -79,7 +79,7 @@ public class DuckDBDatomStore : IDatomStore
     private readonly AbsolutePath _path;
     private readonly DuckDBDatabase _db;
     private readonly DuckDBNativeConnection _connection;
-    private readonly ILogger<DuckDBDatabase> _logger;
+    private readonly ILogger<DuckDBDatomStore> _logger;
 
 
     private class DatomSink(DuckDBAppender appender) : IDatomSink

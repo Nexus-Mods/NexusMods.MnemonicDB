@@ -32,15 +32,4 @@ public class StringAttributeType : IAttributeType<string>
 
     /// <inheritdoc />
     public Type DomainType => typeof(string);
-
-    /// <inheritdoc />
-    public AttributeDefinition Construct(UInt128 entityTypeId, string name)
-    {
-        return new AttributeDefinition
-        {
-            AttributeType = this,
-            EntityTypeId = entityTypeId,
-            Name = name
-        };
-    }
 }

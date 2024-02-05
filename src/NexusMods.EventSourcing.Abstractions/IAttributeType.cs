@@ -22,14 +22,6 @@ public interface IAttributeType
     /// Gets the domain type this attribute type maps to
     /// </summary>
     public Type DomainType { get; }
-
-    /// <summary>
-    /// Constructs a new attribute definition using this type as the backing type definition
-    /// </summary>
-    /// <param name="entityTypeId"></param>
-    /// <param name="name"></param>
-    /// <returns></returns>
-    public AttributeDefinition Construct(UInt128 entityTypeId, string name);
 }
 
 

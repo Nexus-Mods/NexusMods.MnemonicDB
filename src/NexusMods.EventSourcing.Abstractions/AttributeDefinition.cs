@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -27,4 +28,9 @@ public record AttributeDefinition
     /// The attribute type information
     /// </summary>
     public required IAttributeType AttributeType { get; init; }
+
+    /// <summary>
+    /// The property info of the attribute
+    /// </summary>
+    public required PropertyInfo PropertyInfo { get; init; }
 }

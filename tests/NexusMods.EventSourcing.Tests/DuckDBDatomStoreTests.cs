@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 
@@ -9,10 +10,10 @@ public class DuckDBDatomStoreTests
     private readonly DuckDBDatomStore _db;
     private readonly ILogger<DuckDBDatomStoreTests> _logger;
 
-    public DuckDBDatomStoreTests(ILogger<DuckDBDatomStoreTests> logger, IEnumerable<IDatomStore> stores)
+    public DuckDBDatomStoreTests(ILogger<DuckDBDatomStoreTests> logger, IServiceProvider serviceProvider)
     {
         _logger = logger;
-        _db = stores.OfType<DuckDBDatomStore>().First();
+        _db = new DuckDBDatomStore(serviceProvider.GetRequiredService<ILogger<DuckDBDatomStore>>());
     }
 
     [Fact]

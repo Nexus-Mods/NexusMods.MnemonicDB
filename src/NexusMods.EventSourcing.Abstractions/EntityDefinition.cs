@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -15,4 +16,4 @@ public record EntityDefinition(UInt128 Id, Type EntityType, EntityAttributeDefin
 /// </summary>
 /// <param name="Name"></param>
 /// <param name="NativeType"></param>
-public record EntityAttributeDefinition(string Name, Type NativeType);
+public record EntityAttributeDefinition(string Name, Type NativeType, PropertyInfo PropertyInfo);

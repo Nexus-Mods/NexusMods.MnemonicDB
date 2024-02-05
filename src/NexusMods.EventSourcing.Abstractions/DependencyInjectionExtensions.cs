@@ -41,10 +41,17 @@ public static class DependencyInjectionExtensions
         var attributeDefinitions = new List<EntityAttributeDefinition>();
         foreach (var attribute in attributes)
         {
+            switch (attribute.Name)
+            {
+                case "Id":
+                case "Context":
+                    continue;
+            }
+
             var attributeType = attribute.PropertyType;
             if (!attribute.CanRead)
                 continue;
-            attributeDefinitions.Add(new EntityAttributeDefinition(attribute.Name, attributeType));
+            attributeDefinitions.Add(new EntityAttributeDefinition(attribute.Name, attributeType, attribute));
         }
 
         services.AddSingleton(new EntityDefinition(entityTypeId, entityType, attributeDefinitions.ToArray()));

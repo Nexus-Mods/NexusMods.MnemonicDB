@@ -1,6 +1,7 @@
 using DuckDB.NET;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.AttributeTypes;
 
 namespace NexusMods.EventSourcing;
 
@@ -14,12 +15,12 @@ public static class Services
     /// </summary>
     /// <param name="services"></param>
     /// <returns></returns>
-    public static IServiceCollection AddEventSourcing(this IServiceCollection services)
-    {
-        services.AddSingleton<IDatomStore, DuckDBDatomStore>();
-        services.AddSingleton<IConnection, Connection>();
-        return services;
-    }
+    public static IServiceCollection AddEventSourcing(this IServiceCollection services) =>
+        services.AddSingleton<IDatomStore, DuckDBDatomStore>()
+            .AddSingleton<IConnection, Connection>()
+            .AddSingleton<IEntityRegistry, EntityRegistry>()
+            .AddSingleton<IAttributeType, StringAttributeType>()
+            .AddSingleton<IAttributeType, UInt128AttributeType>();
 
     private static IServiceCollection AddDefaultAttributes(this IServiceCollection services)
     {

@@ -38,6 +38,7 @@ public struct AttributeLoader : IResultSetSink
                     Name = _currentName,
                     ValueType = _currentValueType,
                     EntityTypeId = _currentTypeId,
+                    Id = currentAttrId
                 });
                 currentAttrId = resultSet.EntityId;
             }

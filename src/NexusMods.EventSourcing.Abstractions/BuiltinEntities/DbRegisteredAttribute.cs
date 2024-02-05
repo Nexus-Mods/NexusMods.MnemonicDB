@@ -13,4 +13,6 @@ public class DbRegisteredAttribute
     public required string Name { get; init; }
     public required UInt128 EntityTypeId { get; init; }
     public required ValueTypes ValueType { get; init; }
+
+    public required ulong Id { get; init; }
 }
