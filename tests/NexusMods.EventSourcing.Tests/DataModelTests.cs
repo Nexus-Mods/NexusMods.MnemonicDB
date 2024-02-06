@@ -22,15 +22,24 @@ public class DataModelTests
     [Fact]
     public void CanInsertMods()
     {
+        using var tx = _connection.BeginTransaction();
+        var mod = new Mod(tx)
         {
-            using var tx = _connection.BeginTransaction();
-            var mod = new Mod(tx)
-            {
-                Name = "Test Mod",
-                Description = "This is a test mod",
-            };
+            Name = "Test Mod",
+            Description = "This is a test mod",
+        };
 
-            tx.Commit();
-        }
+        var result = tx.Commit();
+
+        var refreshedMod = result.Refresh(mod);
+
+        refreshedMod.Id.Should().NotBe(mod.Id);
+        refreshedMod.Name.Should().Be(mod.Name);
+        refreshedMod.Description.Should().Be(mod.Description);
+
+
+
+
+
     }
 }

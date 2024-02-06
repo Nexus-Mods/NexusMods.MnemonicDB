@@ -22,5 +22,12 @@ public interface IConnection
     /// </summary>
     /// <param name="transaction"></param>
     /// <returns></returns>
-    TransactionId Commit(IDictionary<EntityId, AEntity> attachedEntities, IReadOnlyCollection<(ulong E, ulong A, object v)> changes);
+    TransactionResult Commit(IDictionary<EntityId, AEntity> attachedEntities, IReadOnlyCollection<(ulong E, ulong A, object v)> changes);
+
+
+    /// <summary>
+    /// Gets a database as of a given time
+    /// </summary>
+    /// <returns></returns>
+    public IDb Dref();
 }

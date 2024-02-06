@@ -7,30 +7,36 @@ namespace NexusMods.EventSourcing;
 
 public class Connection : IConnection
 {
-    private readonly DuckDBDatomStore _store;
+    internal readonly DuckDBDatomStore Store;
     private ulong _nextTx;
-    private readonly IEntityRegistry _registry;
+    internal readonly IEntityRegistry Registry;
     private ulong _nextEntity;
 
     public Connection(DuckDBDatomStore store, IEntityRegistry registry)
     {
-        _registry = registry;
-        _store = store;
+        Registry = registry;
+        Store = store;
         _nextTx = Ids.MinId(IdSpace.Tx) + 10;
         _nextEntity = Ids.MinId(IdSpace.Entity);
-        _registry.PopulateAttributeIds(_store.GetDbAttributes());
-        _nextTx = _registry.TransactAttributeChanges(_store, _nextTx);
+        Registry.PopulateAttributeIds(Store.GetDbAttributes());
+        _nextTx = Registry.TransactAttributeChanges(Store, _nextTx);
     }
 
-    public TransactionId Commit(IDictionary<EntityId, AEntity> attachedEntities, IReadOnlyCollection<(ulong E, ulong A, object v)> changes)
+    public TransactionResult Commit(IDictionary<EntityId, AEntity> attachedEntities, IReadOnlyCollection<(ulong E, ulong A, object v)> changes)
     {
-        var socket = new TransactionSinkSocket(_nextEntity, _nextTx, _registry, attachedEntities, changes);
-        _store.Transact(ref socket);
+        var thisTx = _nextTx;
+        var socket = new TransactionSinkSocket(_nextEntity, _nextTx, Registry, attachedEntities, changes);
+        Store.Transact(ref socket);
         _nextTx++;
         _nextEntity = socket.EntityStart;
-        return TransactionId.From(_nextTx);
+
+        return new TransactionResult(new Db(this, TransactionId.From(thisTx)), socket.EntityRemaps);
     }
 
+    public IDb Dref()
+    {
+        return new Db(this, TransactionId.From(_nextTx));
+    }
 
     private class TransactionSinkSocket(ulong entityStart, ulong tx, IEntityRegistry registry, IDictionary<EntityId, AEntity> attachedEntities, IReadOnlyCollection<(ulong E, ulong A, object v)> changes) : IDatomSinkSocket
     {
@@ -48,17 +54,15 @@ public class Connection : IConnection
                     {
                         newId = ++entityStart;
                         EntityRemaps.Add(entity.Id.Value, newId);
+                        entityId = newId;
                     }
                     else
                     {
                         entityId = newId;
                     }
-                    writer(entity, entityId, tx, ref sink);
                 }
-                else
-                {
-                    writer(entity, entity.Id.Value, tx, ref sink);
-                }
+
+                registry.EmitOne(sink, entityId, entity, tx);
             }
         }
     }

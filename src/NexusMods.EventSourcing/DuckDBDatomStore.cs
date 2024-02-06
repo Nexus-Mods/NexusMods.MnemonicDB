@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
-using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 using System.Text;
 using DuckDB.NET;
 using Microsoft.Extensions.Logging;
@@ -14,11 +10,8 @@ using NexusMods.EventSourcing.Abstractions.BuiltinEntities;
 using NexusMods.EventSourcing.Sinks;
 using NexusMods.Paths;
 using static DuckDB.NET.NativeMethods.Appender;
-using static DuckDB.NET.NativeMethods.DataChunks;
-using static DuckDB.NET.NativeMethods.LogicalType;
 using static DuckDB.NET.NativeMethods.Query;
 using static DuckDB.NET.NativeMethods.Startup;
-using static DuckDB.NET.NativeMethods.Types;
 
 namespace NexusMods.EventSourcing;
 
@@ -179,6 +172,19 @@ public class DuckDBDatomStore : IDatomStore
         }
     }
 
+    public void QueryByE<TSink>(ulong e, ref TSink sink, ulong t) where TSink : IResultSetSink
+    {
+        var stmt = new DuckDBPreparedStatement<ulong>(_connection,
+            """
+            SELECT E, A, arg_max(V, T) V, arg_max(T, T) T
+            FROM Datoms
+            WHERE E = ?
+            GROUP BY E, A
+            ORDER BY E, A
+            """);
+        stmt.BindAndExectute(e, ref sink);
+    }
+
     public List<DbRegisteredAttribute> GetDbAttributes()
     {
         var stmt = new DuckDBPreparedStatement<ulong>(_connection,
@@ -203,10 +209,14 @@ public class DuckDBDatomStore : IDatomStore
             _logger.LogError("Failed to query Datoms: {Error}", Marshal.PtrToStringAnsi(DuckDBResultError(ref result.Result)));
             throw new InvalidOperationException("Failed to query Datoms: " + Marshal.PtrToStringAnsi(DuckDBResultError(ref result.Result)));
         }
-        result.Init();
-        sink.Process(ref result);
-
-        DuckDBDestroyResult(ref result.Result);
-
+        try
+        {
+            if (result.Init())
+                sink.Process(ref result);
+        }
+        finally
+        {
+            DuckDBDestroyResult(ref result.Result);
+        }
     }
 }

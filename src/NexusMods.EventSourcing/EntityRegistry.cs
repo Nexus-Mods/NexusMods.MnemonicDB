@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.BuiltinEntities;
 using NexusMods.EventSourcing.Socket;
@@ -21,6 +23,10 @@ public class EntityRegistry : IEntityRegistry
     private readonly Dictionary<Type,IAttributeType> _byType;
     private readonly Dictionary<Type,EntityDefinition> _entityDefinitionsByType;
     private readonly Dictionary<(UInt128, string), DbRegisteredAttribute> _attributeIds = new();
+    private readonly Dictionary<UInt128,EntityDefinition> _entityDefinitionsById;
+
+    private readonly ConcurrentDictionary<(Type, Type), object> _emitters = new();
+    private readonly ConcurrentDictionary<(Type, Type), object> _readers = new();
 
     /// <summary>
     /// DI constructor
@@ -32,6 +38,7 @@ public class EntityRegistry : IEntityRegistry
         _attributeTypes = attributeTypes.ToArray();
         _entityDefinitions = entityDefinitions.ToArray();
         _entityDefinitionsByType = _entityDefinitions.ToDictionary(e => e.EntityType);
+        _entityDefinitionsById = _entityDefinitions.ToDictionary(e => e.Id);
 
         _byType = _attributeTypes.ToDictionary(a => a.DomainType);
 
@@ -55,6 +62,39 @@ public class EntityRegistry : IEntityRegistry
         }
 
         _attributes = attributes.ToArray();
+    }
+
+
+    public AEntity ReadOne<TResultSet>(ref TResultSet resultSet, IDb parentContext) where TResultSet : IResultSet
+    {
+        if (resultSet.Attribute != (ulong)AttributeIds.EntityTypeId)
+            throw new InvalidOperationException("Expected EntityTypeId attribute to be first, got " + resultSet.Attribute);
+
+        if (!_entityDefinitionsById.TryGetValue(resultSet.ValueUInt128, out var entityDefinition))
+            throw new InvalidOperationException("Unknown entity type");
+
+        if (!_readers.TryGetValue((entityDefinition.EntityType, typeof(TResultSet)), out var reader))
+        {
+            reader = MakeReader<TResultSet>(entityDefinition.EntityType);
+            _readers.TryAdd((entityDefinition.EntityType, typeof(TResultSet)), reader);
+        }
+        return ((IEntityRegistry.EntityReader<TResultSet>)reader)(resultSet, parentContext);
+    }
+
+
+    public void EmitOne<TSink>(TSink sink, ulong entityId, AEntity entity, ulong tx) where TSink : IDatomSink
+    {
+        var typeId = _entityDefinitionsByType[entity.GetType()].Id;
+        sink.Emit(entityId, (ulong)AttributeIds.EntityTypeId, typeId, tx);
+
+
+        if (!_emitters.TryGetValue((entity.GetType(), typeof(TSink)), out var emitter))
+        {
+            emitter = MakeEmitter<TSink>(entity.GetType());
+            _emitters.TryAdd((entity.GetType(), typeof(TSink)), emitter);
+        }
+
+        ((IEntityRegistry.EmitEntity<TSink>)emitter)(entity, entityId, tx, ref sink);
     }
 
     public void PopulateAttributeIds(IEnumerable<DbRegisteredAttribute> attributes)
@@ -128,5 +168,79 @@ public class EntityRegistry : IEntityRegistry
 
         return lambda.Compile();
     }
+
+
+    public IEntityRegistry.EntityReader<TResultSet> MakeReader<TResultSet>(Type entityType) where TResultSet : IResultSet
+    {
+        var entityId = _entityDefinitionsByType[entityType];
+        var attributes = _entityDefinitionsByType[entityType]
+            .Attributes
+            .Select(a => new
+            {
+                DBAttribute = _attributeIds[(entityId.Id, a.Name)],
+                Definition = a
+            })
+            .OrderBy(a => a.DBAttribute.Id);
+
+        var resultSetParam = Expression.Parameter(typeof(TResultSet), "resultSet");
+        var dbParam = Expression.Parameter(typeof(IDb), "db");
+
+        var exprs = new List<Expression>();
+        var startingId = Expression.Parameter(typeof(UInt64), "startingId");
+        exprs.Add(Expression.Assign(startingId, Expression.Property(resultSetParam, "EntityId")));
+
+        var newParam = Expression.Parameter(entityType, "newEntity");
+        var ctor = entityType
+            .GetConstructors()
+            .First(c => c.GetParameters().Length == 2);
+
+        var entityIdExpr = Expression.Call(typeof(EntityId), "From", null, startingId);
+
+        exprs.Add(Expression.Assign(newParam, Expression.New(ctor, dbParam, entityIdExpr)));
+
+        var topLabel = Expression.Label("Top");
+        exprs.Add(Expression.Label(topLabel));
+
+        var switchCases = new List<SwitchCase>();
+
+        var endLabel = Expression.Label("SwitchEnd");
+        var returnLabel = Expression.Label("ReturnLabel");
+
+        foreach (var entry in attributes)
+        {
+            var bodyBlock = new List<Expression>();
+
+            var attributeType = _byType[entry.Definition.NativeType];
+            var readMethod = attributeType.GetType().GetMethod("GetValue", BindingFlags.Public | BindingFlags.Instance)!.MakeGenericMethod(typeof(TResultSet));
+            var readCall = Expression.Call(Expression.Constant(attributeType), readMethod, resultSetParam);
+            bodyBlock.Add(Expression.Assign(Expression.Property(newParam, entry.Definition.PropertyInfo), readCall));
+            bodyBlock.Add(Expression.Break(endLabel));
+
+            switchCases.Add(Expression.SwitchCase(Expression.Block(bodyBlock), Expression.Constant(entry.DBAttribute.Id)));
+        }
+
+
+        var switchExpr = Expression.Switch(Expression.Property(resultSetParam, "Attribute"),
+            Expression.Block(Expression.Break(endLabel)), switchCases.ToArray());
+
+        exprs.Add(switchExpr);
+
+        exprs.Add(Expression.Label(endLabel));
+
+        exprs.Add(Expression.IfThen(Expression.Not(Expression.Call(resultSetParam, "Next", null)),
+            Expression.Return(returnLabel)));
+
+        exprs.Add(Expression.IfThen(Expression.Equal(startingId, Expression.Property(resultSetParam, "EntityId")),
+            Expression.Goto(topLabel)));
+
+        exprs.Add(Expression.Label(returnLabel));
+        exprs.Add(newParam);
+        var body = Expression.Block([startingId, newParam], exprs);
+
+        var lambda = Expression.Lambda<IEntityRegistry.EntityReader<TResultSet>>(body, resultSetParam, dbParam).Compile();
+
+        return lambda;
+    }
+
 
 }

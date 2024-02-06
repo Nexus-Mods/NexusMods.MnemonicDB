@@ -50,7 +50,7 @@ unsafe struct DuckDBResultSet : IResultSet
     /// <summary>
     /// Initializes the result set after Result has been set externally.
     /// </summary>
-    internal void Init()
+    internal bool Init()
     {
         _chunkCount = DuckDBResultChunkCount(Result);
 
@@ -58,11 +58,16 @@ unsafe struct DuckDBResultSet : IResultSet
         _chunkSize = DuckDBDataChunkGetSize(_currentChunk);
         _chunkIndex = 0;
         _chunkRow = 0;
-        InitChunk();
+        if (_chunkCount > 0)
+            InitChunk();
+
+        return _chunkCount > 0;
     }
 
     private void InitChunk()
     {
+        Debug.Assert(DuckDBDataChunkGetColumnCount(_currentChunk) == 4);
+
         _eDataVector = DuckDBDataChunkGetVector(_currentChunk, 0);
         _eData = (ulong*)DuckDBVectorGetData(_eDataVector);
 

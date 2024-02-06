@@ -8,7 +8,7 @@ namespace NexusMods.EventSourcing.Abstractions.AttributeTypes;
 public class UInt128AttributeType : IAttributeType<UInt128>
 {
     /// <inheritdoc />
-    public UInt128 GetValue(IResultSet resultSet)
+    public UInt128 GetValue<TResultSet>(TResultSet resultSet) where TResultSet : IResultSet
     {
         return resultSet.ValueUInt128;
     }

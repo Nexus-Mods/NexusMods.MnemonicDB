@@ -36,8 +36,9 @@ public interface IAttributeType<T> : IAttributeType
     /// </summary>
     /// <param name="resultSet"></param>
     /// <typeparam name="T"></typeparam>
+    /// <typeparam name="TResultSet"></typeparam>
     /// <returns></returns>
-    public T GetValue(IResultSet resultSet);
+    public T GetValue<TResultSet>(TResultSet resultSet) where TResultSet : IResultSet;
 
     /// <summary>
     /// Write the given value to the sink with the given event, attribute, and time

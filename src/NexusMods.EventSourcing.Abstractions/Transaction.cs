@@ -42,7 +42,7 @@ public class Transaction : IDisposable
     /// <summary>
     /// Commits the changes to the data source, returns the transaction id
     /// </summary>
-    public TransactionId Commit()
+    public TransactionResult Commit()
     {
         return _connection.Commit(_attachedEntities, _changes);
     }

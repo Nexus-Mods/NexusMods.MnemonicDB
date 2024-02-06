@@ -43,10 +43,16 @@ public class DuckDBPreparedStatement<T1> : IDisposable
             var msg = Marshal.PtrToStringAnsi(error);
             throw new Exception("Failed to execute prepared statement: "+ msg);
         }
-        resultSet.Init();
 
-        sink.Process(ref resultSet);
-        DuckDBDestroyResult(ref resultSet.Result);
+        try
+        {
+            if (resultSet.Init())
+                sink.Process(ref resultSet);
+        }
+        finally
+        {
+            DuckDBDestroyResult(ref resultSet.Result);
+        }
     }
 
     public void Dispose()
