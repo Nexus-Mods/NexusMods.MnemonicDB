@@ -23,10 +23,17 @@ public class DataModelTests
     public void CanInsertMods()
     {
         using var tx = _connection.BeginTransaction();
+
+        var loadout = new Loadout(tx)
+        {
+            Name = "Test Loadout"
+        };
+
         var mod = new Mod(tx)
         {
             Name = "Test Mod",
             Description = "This is a test mod",
+            Loadout = loadout,
         };
 
         var result = tx.Commit();
@@ -37,6 +44,7 @@ public class DataModelTests
         refreshedMod.Name.Should().Be(mod.Name);
         refreshedMod.Description.Should().Be(mod.Description);
 
+        refreshedMod.Loadout.Value.Name.Should().Be(loadout.Name);
 
 
 

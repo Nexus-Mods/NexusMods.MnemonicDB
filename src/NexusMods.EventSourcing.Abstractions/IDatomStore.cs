@@ -1,4 +1,6 @@
-﻿namespace NexusMods.EventSourcing.Abstractions;
+﻿using System.Collections.Generic;
+
+namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// The backing data store for adding and querying datoms
@@ -10,7 +12,9 @@ public interface IDatomStore
     /// </summary>
     /// <param name="socket"></param>
     /// <typeparam name="TSocket"></typeparam>
-    public void Transact<TSocket>(ref TSocket socket) where TSocket : IDatomSinkSocket;
+    public void Transact<TSocket, TDict>(ref TSocket socket, ref ulong nextT, TDict remaps)
+        where TSocket : IDatomSinkSocket
+        where TDict : IDictionary<ulong, ulong>;
 
     /// <summary>
     /// Gets all datoms for a given entity as of a given time

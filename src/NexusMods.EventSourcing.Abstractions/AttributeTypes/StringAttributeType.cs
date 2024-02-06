@@ -13,7 +13,7 @@ public class StringAttributeType : IAttributeType<string>
     public static readonly UInt128 StaticUniqueId = "36DFF860-22BC-4C01-B962-1CF8EF576E90".GuidStringToUInt128();
 
     /// <inheritdoc />
-    public string GetValue<TResultSet>(TResultSet resultSet) where TResultSet : IResultSet
+    public string GetValue<TResultSet>(TResultSet resultSet, IDb db) where TResultSet : IResultSet
     {
         return resultSet.ValueString;
     }

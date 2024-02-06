@@ -48,7 +48,8 @@ public class EntityRegistry : IEntityRegistry
         {
             foreach (var attribute in entityDefinition.Attributes)
             {
-                var attributeType = _byType[attribute.NativeType];
+                if (!_byType.TryGetValue(attribute.NativeType, out var attributeType))
+                    throw new InvalidOperationException("Unknown attribute type: " + attributeType + " for attribute " + attribute.Name + " on entity " + entityDefinition.EntityType);
                 var definition = new AttributeDefinition()
                 {
                     AttributeType = attributeType,
@@ -133,7 +134,8 @@ public class EntityRegistry : IEntityRegistry
             return nextTx;
 
         var socket = new NewAttributeSinkSocket(missingAttributes, nextTx);
-        store.Transact(ref socket);
+        ulong nextId = 0;
+        store.Transact(ref socket, ref nextId, new Dictionary<ulong, ulong>());
         PopulateAttributeIds(missingAttributes);
         return nextTx + 1;
     }
@@ -212,7 +214,7 @@ public class EntityRegistry : IEntityRegistry
 
             var attributeType = _byType[entry.Definition.NativeType];
             var readMethod = attributeType.GetType().GetMethod("GetValue", BindingFlags.Public | BindingFlags.Instance)!.MakeGenericMethod(typeof(TResultSet));
-            var readCall = Expression.Call(Expression.Constant(attributeType), readMethod, resultSetParam);
+            var readCall = Expression.Call(Expression.Constant(attributeType), readMethod, resultSetParam, dbParam);
             bodyBlock.Add(Expression.Assign(Expression.Property(newParam, entry.Definition.PropertyInfo), readCall));
             bodyBlock.Add(Expression.Break(endLabel));
 

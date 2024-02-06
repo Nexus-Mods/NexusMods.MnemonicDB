@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using NexusMods.EventSourcing.Abstractions;
@@ -11,6 +12,7 @@ public class Connection : IConnection
     private ulong _nextTx;
     internal readonly IEntityRegistry Registry;
     private ulong _nextEntity;
+    private readonly IDictionary<ulong, ulong> _entityRemaps = new Dictionary<ulong, ulong>();
 
     public Connection(DuckDBDatomStore store, IEntityRegistry registry)
     {
@@ -26,11 +28,18 @@ public class Connection : IConnection
     {
         var thisTx = _nextTx;
         var socket = new TransactionSinkSocket(_nextEntity, _nextTx, Registry, attachedEntities, changes);
-        Store.Transact(ref socket);
+        _entityRemaps.Clear();
+        Store.Transact(ref socket, ref _nextTx, _entityRemaps);
         _nextTx++;
         _nextEntity = socket.EntityStart;
 
-        return new TransactionResult(new Db(this, TransactionId.From(thisTx)), socket.EntityRemaps);
+        var remapped = new Dictionary<ulong, ulong>();
+        foreach (var (key, value) in _entityRemaps)
+        {
+            remapped.Add(key, value);
+        }
+
+        return new TransactionResult(new Db(this, TransactionId.From(thisTx)), remapped);
     }
 
     public IDb Dref()
@@ -41,27 +50,11 @@ public class Connection : IConnection
     private class TransactionSinkSocket(ulong entityStart, ulong tx, IEntityRegistry registry, IDictionary<EntityId, AEntity> attachedEntities, IReadOnlyCollection<(ulong E, ulong A, object v)> changes) : IDatomSinkSocket
     {
         public ulong EntityStart => entityStart;
-        public Dictionary<ulong, ulong> EntityRemaps = new();
         public void Process<TSink>(ref TSink sink) where TSink : IDatomSink
         {
             foreach (var entity in attachedEntities.Values)
             {
                 var entityId = entity.Id.Value;
-                var writer = registry.MakeEmitter<TSink>(entity.GetType());
-                if (Ids.IsIdOfSpace(entityId, IdSpace.Temp))
-                {
-                    if (!EntityRemaps.TryGetValue(entity.Id.Value, out var newId))
-                    {
-                        newId = ++entityStart;
-                        EntityRemaps.Add(entity.Id.Value, newId);
-                        entityId = newId;
-                    }
-                    else
-                    {
-                        entityId = newId;
-                    }
-                }
-
                 registry.EmitOne(sink, entityId, entity, tx);
             }
         }

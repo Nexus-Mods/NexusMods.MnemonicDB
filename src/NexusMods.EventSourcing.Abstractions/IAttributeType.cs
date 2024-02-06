@@ -24,7 +24,6 @@ public interface IAttributeType
     public Type DomainType { get; }
 }
 
-
 /// <summary>
 /// A typed attribute type.
 /// </summary>
@@ -34,11 +33,12 @@ public interface IAttributeType<T> : IAttributeType
     /// <summary>
     /// Gets the value of the attribute from the current row of the result set
     /// </summary>
+    /// <param name="db"></param>
     /// <param name="resultSet"></param>
     /// <typeparam name="T"></typeparam>
     /// <typeparam name="TResultSet"></typeparam>
     /// <returns></returns>
-    public T GetValue<TResultSet>(TResultSet resultSet) where TResultSet : IResultSet;
+    public T GetValue<TResultSet>(TResultSet resultSet, IDb db) where TResultSet : IResultSet;
 
     /// <summary>
     /// Write the given value to the sink with the given event, attribute, and time

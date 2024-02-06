@@ -26,7 +26,8 @@ public class DuckDBDatomStore : IDatomStore
 
         SetupDatabase();
         var socket = new ArrayDatomSinkSocket(StaticData.InitialState());
-        Transact(ref socket);
+        var nextid = 0UL;
+        Transact(ref socket, ref nextid, new Dictionary<ulong, ulong>());
     }
 
     private void SetupDatabase()
@@ -75,11 +76,12 @@ public class DuckDBDatomStore : IDatomStore
     private readonly ILogger<DuckDBDatomStore> _logger;
 
 
-    private class DatomSink(DuckDBAppender appender) : IDatomSink
+    private struct DatomSink(DuckDBAppender appender, ulong nextId, IDictionary<ulong, ulong> remaps) : IDatomSink
     {
+        public ulong NextId => nextId;
         public void Emit(ulong e, ulong a, ulong v, ulong t)
         {
-            DuckDBAppendUInt64(appender, e);
+            DuckDBAppendUInt64(appender, MaybeRemap(e));
             DuckDBAppendUInt64(appender, a);
             DuckDBAppendUInt64(appender, v);
             DuckDBAppendUInt64(appender, t);
@@ -88,7 +90,7 @@ public class DuckDBDatomStore : IDatomStore
 
         public void Emit(ulong e, ulong a, long v, ulong t)
         {
-            DuckDBAppendUInt64(appender, e);
+            DuckDBAppendUInt64(appender, MaybeRemap(e));
             DuckDBAppendUInt64(appender, a);
             DuckDBAppendInt64(appender, v);
             DuckDBAppendUInt64(appender, t);
@@ -97,7 +99,7 @@ public class DuckDBDatomStore : IDatomStore
 
         public void Emit(ulong e, ulong a, double v, ulong t)
         {
-            DuckDBAppendUInt64(appender, e);
+            DuckDBAppendUInt64(appender, MaybeRemap(e));
             DuckDBAppendUInt64(appender, a);
             DuckDBAppendDouble(appender, v);
             DuckDBAppendUInt64(appender, t);
@@ -106,7 +108,7 @@ public class DuckDBDatomStore : IDatomStore
 
         public void Emit(ulong e, ulong a, float v, ulong t)
         {
-            DuckDBAppendUInt64(appender, e);
+            DuckDBAppendUInt64(appender, MaybeRemap(e));
             DuckDBAppendUInt64(appender, a);
             DuckDBAppendFloat(appender, v);
             DuckDBAppendUInt64(appender, t);
@@ -115,7 +117,7 @@ public class DuckDBDatomStore : IDatomStore
 
         public void Emit(ulong e, ulong a, string v, ulong t)
         {
-            DuckDBAppendUInt64(appender, e);
+            DuckDBAppendUInt64(appender, MaybeRemap(e));
             DuckDBAppendUInt64(appender, a);
             var bytes = Encoding.UTF8.GetBytes(v);
             var ptr = Marshal.AllocHGlobal(bytes.Length + 1);
@@ -129,7 +131,7 @@ public class DuckDBDatomStore : IDatomStore
 
         public void Emit(ulong e, ulong a, UInt128 v, ulong t)
         {
-            DuckDBAppendUInt64(appender, e);
+            DuckDBAppendUInt64(appender, MaybeRemap(e));
             DuckDBAppendUInt64(appender, a);
             var ddb = Unsafe.As<UInt128, DuckDBUHugeInt>(ref v);
             ExtraNativeMethods.DuckDBAppendUHugeInt(appender, ddb);
@@ -139,7 +141,7 @@ public class DuckDBDatomStore : IDatomStore
 
         public void Emit(ulong e, ulong a, ReadOnlySpan<byte> v, ulong t)
         {
-            DuckDBAppendUInt64(appender, e);
+            DuckDBAppendUInt64(appender, MaybeRemap(e));
             DuckDBAppendUInt64(appender, a);
             unsafe
             {
@@ -151,9 +153,31 @@ public class DuckDBDatomStore : IDatomStore
             DuckDBAppendUInt64(appender, t);
             DuckDBAppenderEndRow(appender);
         }
+
+        public void Emit(ulong e, ulong a, EntityId v, ulong t)
+        {
+            DuckDBAppendUInt64(appender, MaybeRemap(e));
+            DuckDBAppendUInt64(appender, a);
+            DuckDBAppendUInt64(appender, MaybeRemap(v.Value));
+            DuckDBAppendUInt64(appender, t);
+            DuckDBAppenderEndRow(appender);
+        }
+
+        private ulong MaybeRemap(ulong val)
+        {
+            if (!Ids.IsIdOfSpace(val, IdSpace.Temp)) return val;
+
+            if (remaps.TryGetValue(val, out var remapped))
+                return remapped;
+            remapped = ++nextId;
+            remaps.Add(val, remapped);
+            return remapped;
+        }
     }
 
-    public void Transact<TSocket>(ref TSocket socket) where TSocket : IDatomSinkSocket
+    public void Transact<TSocket, TDict>(ref TSocket socket, ref ulong nextId, TDict remappedIds)
+        where TSocket : IDatomSinkSocket
+        where TDict : IDictionary<ulong, ulong>
     {
         DuckDBAppender appender;
         if (DuckDBAppenderCreate(_connection, null, "Datoms", out appender) != DuckDBState.Success)
@@ -162,8 +186,10 @@ public class DuckDBDatomStore : IDatomStore
             throw new InvalidOperationException("Failed to create Appender");
         }
 
-        var sink = new DatomSink(appender);
+        var sink = new DatomSink(appender, nextId, remappedIds);
         socket.Process(ref sink);
+        nextId = sink.NextId;
+
 
         if (DuckDBAppenderClose(appender) != DuckDBState.Success)
         {

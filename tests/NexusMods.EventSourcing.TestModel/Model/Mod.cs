@@ -23,4 +23,9 @@ public class Mod : AEntity
     /// </summary>
     public required string Description { get; init; }
 
+    /// <summary>
+    /// The loadout the mod is part of
+    /// </summary>
+    public required EntityLink<Loadout> Loadout { get; init; }
+
 }
