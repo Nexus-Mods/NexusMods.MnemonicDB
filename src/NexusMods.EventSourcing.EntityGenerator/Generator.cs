@@ -40,15 +40,7 @@ public class Generator : IIncrementalGenerator
 
 
         var theCode = """
-                      namespace ClassListGenerator;
-                      public static class ClassNames
-                      {
-                      a;kljd'a;sljkdf'ls
-                          public static List<string> ClassList =
-                      """
-                      + nameList +
-                      @""";
-                      }
+                      adsljf;lk
                       """;
         context.AddSource("Hrmmmmm.g.cs", theCode);
     }
