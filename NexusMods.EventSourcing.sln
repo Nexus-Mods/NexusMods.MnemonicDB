@@ -37,6 +37,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.EventSourcing.Ben
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.EventSourcing.RocksDB", "src\NexusMods.EventSourcing.RocksDB\NexusMods.EventSourcing.RocksDB.csproj", "{B8D0772A-FAD1-49AD-A85B-B2B6C5B14420}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.DatomStore", "src\NexusMods.DatomStore\NexusMods.DatomStore.csproj", "{2709AB9B-DA11-46AC-889C-D417EC6C3D1D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.DatomStore.Tests", "tests\NexusMods.DatomStore.Tests\NexusMods.DatomStore.Tests.csproj", "{C7BDF2D2-2BFD-440C-A2BB-80476145CCC6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -49,6 +53,8 @@ Global
 		{66DCB10E-1D80-4A83-8380-B2E08BEEE7AE} = {6ED01F9D-5E12-4EB2-9601-64A2ADC719DE}
 		{96977D99-BF4B-4952-B594-6E44CCD826B9} = {72AFE85F-8C12-436A-894E-638ED2C92A76}
 		{B8D0772A-FAD1-49AD-A85B-B2B6C5B14420} = {0377EBE6-F147-4233-86AD-32C821B9567E}
+		{2709AB9B-DA11-46AC-889C-D417EC6C3D1D} = {0377EBE6-F147-4233-86AD-32C821B9567E}
+		{C7BDF2D2-2BFD-440C-A2BB-80476145CCC6} = {6ED01F9D-5E12-4EB2-9601-64A2ADC719DE}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{A92DED3D-BC67-4E04-9A06-9A1B302B3070}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -75,5 +81,13 @@ Global
 		{B8D0772A-FAD1-49AD-A85B-B2B6C5B14420}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B8D0772A-FAD1-49AD-A85B-B2B6C5B14420}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B8D0772A-FAD1-49AD-A85B-B2B6C5B14420}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2709AB9B-DA11-46AC-889C-D417EC6C3D1D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2709AB9B-DA11-46AC-889C-D417EC6C3D1D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2709AB9B-DA11-46AC-889C-D417EC6C3D1D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2709AB9B-DA11-46AC-889C-D417EC6C3D1D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7BDF2D2-2BFD-440C-A2BB-80476145CCC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7BDF2D2-2BFD-440C-A2BB-80476145CCC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7BDF2D2-2BFD-440C-A2BB-80476145CCC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7BDF2D2-2BFD-440C-A2BB-80476145CCC6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
