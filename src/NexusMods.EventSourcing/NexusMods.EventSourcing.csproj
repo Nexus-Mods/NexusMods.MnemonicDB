@@ -5,6 +5,7 @@
     <ItemGroup>
       <PackageReference Include="DynamicData" Version="8.3.27" />
       <PackageReference Include="MemoryPack" Version="1.10.0" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
       <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.1" />
       <PackageReference Include="Reloaded.Memory" Version="9.3.2" />
       <PackageReference Include="System.Reactive" Version="6.0.0" />
@@ -12,11 +13,6 @@
     </ItemGroup>
     <ItemGroup>
       <ProjectReference Include="..\NexusMods.EventSourcing.Abstractions\NexusMods.EventSourcing.Abstractions.csproj" />
-    </ItemGroup>
-    <ItemGroup>
-      <None Update="xunit.runner.json">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      </None>
     </ItemGroup>
     <ItemGroup>
       <Compile Remove="SourceGenerationContext.cs" />

@@ -6,7 +6,6 @@ using BenchmarkDotNet.Running;
 using NexusMods.EventSourcing.Benchmarks;
 using NexusMods.EventSourcing.RocksDB;
 using NexusMods.EventSourcing.Serialization;
-using NexusMods.EventSourcing.TestModel;
 
 
 /*

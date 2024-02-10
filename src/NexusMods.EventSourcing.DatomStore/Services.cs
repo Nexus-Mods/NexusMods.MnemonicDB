@@ -1,8 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.BuiltInSerializers;
 
-namespace NexusMods.EventSourcing;
+namespace NexusMods.EventSourcing.DatomStore;
 
 /// <summary>
 /// Extension methods for adding attributes and other types to the service collection.
@@ -18,8 +17,7 @@ public static class Services
     public static IServiceCollection AddEventSourcing<TAttribute>(this IServiceCollection services)
         where TAttribute : class, IAttribute
     {
-        services.AddValueSerializer<BoolSerializer>();
-        services.AddValueSerializer<UInt128Serializer>();
+        services.AddSingleton<AttributeRegistry>();
         return services;
     }
 

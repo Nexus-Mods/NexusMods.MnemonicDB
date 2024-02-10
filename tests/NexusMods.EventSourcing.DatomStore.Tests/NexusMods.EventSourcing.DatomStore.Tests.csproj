@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <!-- https://github.com/pengweiqhca/Xunit.DependencyInjection#how-to-disable-xunitdependencyinjection -->
+        <EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>true</EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>
+        <RootNamespace>NexusMods.EventSourcing.DatomStore.Tests</RootNamespace>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <PackageReference Update="FluentAssertions" Version="6.12.0" />
+        <PackageReference Update="FluentAssertions.Analyzers" Version="0.26.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Update="xunit" Version="2.6.2" />
+        <PackageReference Update="xunit.runner.visualstudio" Version="2.5.4">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\NexusMods.EventSourcing.TestModel\NexusMods.EventSourcing.TestModel.csproj" />
+    </ItemGroup>
+
+</Project>

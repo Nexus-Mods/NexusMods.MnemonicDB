@@ -8,13 +8,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\NexusMods.EventSourcing.Abstractions\NexusMods.EventSourcing.Abstractions.csproj" />
-      <ProjectReference Include="..\..\src\NexusMods.EventSourcing\NexusMods.EventSourcing.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="MemoryPack" Version="1.10.0" />
-      <PackageReference Include="NexusMods.Hashing.xxHash64" Version="1.0.1" />
-      <PackageReference Include="NexusMods.Paths" Version="0.4.0" />
     </ItemGroup>
 
 </Project>

@@ -1,41 +1,52 @@
-using System;
+﻿using System;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
-/// Marker interface for attributes that can be exposed on an entity.
+/// Interface for a specific attribute
 /// </summary>
 public interface IAttribute
 {
     /// <summary>
-    /// The data type of the entity that owns the attribute.
+    /// The native C# type of the value, must have a matching IValueSerializer registered in the DI container.
     /// </summary>
-    public Type Owner { get; }
+    public Type ValueType { get; }
 
     /// <summary>
-    /// The name of the attribute, needs to be unique in a given entity but not unique across entities.
+    /// True if the attribute can have multiple values, false if it can only have a single value.
+    /// </summary>
+    public bool IsMultiCardinality { get; }
+
+    /// <summary>
+    /// True if the attribute's value is a reference to another entity, false if it is a value type.
+    /// </summary>
+    public bool IsReference { get; }
+
+    /// <summary>
+    /// The Unique identifier of the attribute, this is used to match the attribute to a matching attribute
+    /// in the datastore
+    /// </summary>
+    public UInt128 Id { get; }
+
+    /// <summary>
+    /// A Human readable name for the attribute, this can be redefined at any time and it has
+    /// no impact on the data stored in the datastore
     /// </summary>
     public string Name { get; }
 
     /// <summary>
-    /// Create an abstract accumulator for the attribute
+    /// A human readable group for the attribute, this can be redefined at any time and it has
+    /// no impact on the data stored in the datastore
     /// </summary>
-    /// <returns></returns>
-    public IAccumulator CreateAccumulator();
+    public string Namespace { get; }
 }
+
 
 /// <summary>
-/// Marker interface for attributes that expose an accumulator, (which is all of them), but this removes
-/// some of the
+/// Typed variant of IAttribute
 /// </summary>
-/// <typeparam name="TAccumulator"></typeparam>
-public interface IAttribute<TAccumulator> : IAttribute where TAccumulator : IAccumulator
+/// <typeparam name="TVal"></typeparam>
+public interface IAttribute<TVal> : IAttribute
 {
-    /// <summary>
-    /// Creates a new empty accumulator for the attribute, this is a factory method to allow the entity context
-    /// to lazily create accumulators.
-    /// </summary>
-    /// <returns></returns>
-    public new TAccumulator CreateAccumulator();
-}
 
+}
