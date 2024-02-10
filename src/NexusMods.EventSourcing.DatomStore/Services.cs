@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.DatomStore.BuiltInSerializers;
 
 namespace NexusMods.EventSourcing.DatomStore;
 
@@ -14,10 +15,13 @@ public static class Services
     /// <param name="services"></param>
     /// <typeparam name="TAttribute"></typeparam>
     /// <returns></returns>
-    public static IServiceCollection AddEventSourcing<TAttribute>(this IServiceCollection services)
-        where TAttribute : class, IAttribute
+    public static IServiceCollection AddDatomStore(this IServiceCollection services)
     {
-        services.AddSingleton<AttributeRegistry>();
+        services.AddSingleton<AttributeRegistry>()
+            .AddAttribute<BuiltInAttributes.UniqueId>()
+            .AddAttribute<BuiltInAttributes.ValueSerializerId>()
+            .AddValueSerializer<UInt128Serializer>()
+            .AddValueSerializer<BoolSerializer>();
         return services;
     }
 

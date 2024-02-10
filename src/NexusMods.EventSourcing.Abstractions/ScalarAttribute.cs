@@ -7,7 +7,8 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// Interface for a specific attribute
 /// </summary>
 /// <typeparam name="TValueType"></typeparam>
-public class ScalarAttribute<TValueType> : IAttribute
+public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
+where TAttribute : IAttribute<TValueType>
 {
     /// <summary>
     /// Create a new attribute
@@ -52,4 +53,10 @@ public class ScalarAttribute<TValueType> : IAttribute
 
     /// <inheritdoc />
     public string Namespace { get; }
+
+    public static IDatom Assert(ulong e, TValueType v)
+    {
+        return new AssertDatom<TAttribute, TValueType>(e, v);
+    }
+
 }

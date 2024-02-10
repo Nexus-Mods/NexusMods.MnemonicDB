@@ -1,6 +1,7 @@
 ﻿namespace NexusMods.EventSourcing.Abstractions;
 
-public interface IDatomSink<TValueType> where TValueType : notnull
+public interface IDatomSink
 {
-    public void Datom(ulong e, ulong a, TValueType v, ulong tx, bool isAssert);
+    public void Datom<TAttr, TVal>(ulong e, TVal v, bool isAssert)
+    where TAttr : IAttribute<TVal>;
 }

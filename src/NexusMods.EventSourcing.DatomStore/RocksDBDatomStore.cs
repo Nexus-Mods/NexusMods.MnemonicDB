@@ -17,6 +17,7 @@ public class RocksDBDatomStore
     private readonly PooledMemoryBufferWriter _pooledWriter;
     private readonly AttributeRegistry _registry;
     private readonly AIndexDefinition[] _indexes;
+    private ulong _tx;
 
     public RocksDBDatomStore(ILogger<RocksDBDatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings)
     {
@@ -44,10 +45,14 @@ public class RocksDBDatomStore
         }
 
         _pooledWriter = new PooledMemoryBufferWriter(128);
+
+        _tx = 0;
+
+        Transact(BuiltInAttributes.InitialDatoms);
     }
 
 
-    private void Serialize<TVal, TAttr>(WriteBatch batch, ulong e, TVal val, ulong tx, bool isAssert = true)
+    private void Serialize<TAttr, TVal>(WriteBatch batch, ulong e, TVal val, ulong tx, bool isAssert = true)
         where TAttr : IAttribute<TVal>
 
     {
@@ -66,5 +71,25 @@ public class RocksDBDatomStore
         {
             index.Put(batch, span);
         }
+    }
+
+    private struct TransactSink(RocksDBDatomStore store, WriteBatch batch, ulong tx) : IDatomSink
+    {
+        public void Datom<TAttr, TVal>(ulong e, TVal v, bool isAssert) where TAttr : IAttribute<TVal>
+        {
+            store.Serialize<TAttr, TVal>(batch, e, v,tx, isAssert);
+        }
+    }
+    public void Transact(IEnumerable<IDatom> datoms)
+    {
+        var tx = ++_tx;
+        var batch = new WriteBatch();
+        var sink = new TransactSink(this, batch, tx);
+
+        foreach (var datom in datoms)
+        {
+            datom.Emit(ref sink);
+        }
+        _db.Write(batch);
     }
 }

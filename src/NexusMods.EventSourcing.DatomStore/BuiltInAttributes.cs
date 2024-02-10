@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.DatomStore.BuiltInSerializers;
 
 namespace NexusMods.EventSourcing.DatomStore;
 
@@ -13,7 +14,7 @@ public static class BuiltInAttributes
     /// <summary>
     /// The unique identifier of the entity, used to link attributes across application restarts and model changes.
     /// </summary>
-    public class UniqueId() : ScalarAttribute<UInt128>(UniqueIdStaticId);
+    public class UniqueId() : ScalarAttribute<UniqueId, UInt128>(UniqueIdStaticId);
 
     /// <summary>
     /// Static unique id of the UniqueId attribute
@@ -28,7 +29,7 @@ public static class BuiltInAttributes
     /// <summary>
     /// The unique id if the IValueSerializer used to serialize the value of the attribute.
     /// </summary>
-    public class ValueSerializerId() : ScalarAttribute<UInt128>(ValueSerializerIdStaticId);
+    public class ValueSerializerId() : ScalarAttribute<ValueSerializerId, UInt128>(ValueSerializerIdStaticId);
 
     /// <summary>
     /// Static unique id of the UniqueId attribute
@@ -47,6 +48,14 @@ public static class BuiltInAttributes
     public static DbAttribute[] Initial = [
         new DbAttribute(UniqueIdStaticId, UniqueIdEntityId, ValueSerializerIdStaticId),
         new DbAttribute(ValueSerializerIdStaticId, ValueSerializerIdEntityId, ValueSerializerIdStaticId),
+    ];
+
+    public static IDatom[] InitialDatoms = [
+        UniqueId.Assert(UniqueIdEntityId, UniqueIdStaticId),
+        ValueSerializerId.Assert(UniqueIdEntityId, UInt128Serializer.Id),
+
+        UniqueId.Assert(ValueSerializerIdEntityId, ValueSerializerIdStaticId),
+        ValueSerializerId.Assert(ValueSerializerIdEntityId, UInt128Serializer.Id),
     ];
 
 }

@@ -56,7 +56,10 @@ public class AttributeRegistry
         if (!_attributesByType.TryGetValue(typeof(TAttr), out var attribute))
             throw new InvalidOperationException($"No attribute found for type {typeof(TAttr)}");
 
-        return 0;
+        if (!_dbAttributesByUniqueId.TryGetValue(attribute.Id, out var dbAttribute))
+            throw new InvalidOperationException($"No DB attribute found for attribute {attribute.Id}");
+
+        return dbAttribute.AttrEntityId;
     }
 
     public unsafe int CompareValues(ulong attrId, void* aVal, uint aLength, void* bVal, uint bLength)

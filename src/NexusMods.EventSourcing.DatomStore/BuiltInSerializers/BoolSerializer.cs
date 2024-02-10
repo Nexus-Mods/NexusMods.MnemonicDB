@@ -2,7 +2,7 @@
 using System.Buffers;
 using NexusMods.EventSourcing.Abstractions;
 
-namespace NexusMods.EventSourcing.BuiltInSerializers;
+namespace NexusMods.EventSourcing.DatomStore.BuiltInSerializers;
 
 /// <inheritdoc />
 public class BoolSerializer : IValueSerializer<byte>

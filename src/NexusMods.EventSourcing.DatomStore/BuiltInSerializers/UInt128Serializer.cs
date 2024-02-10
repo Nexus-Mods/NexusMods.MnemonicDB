@@ -3,7 +3,7 @@ using System.Buffers;
 using System.Buffers.Binary;
 using NexusMods.EventSourcing.Abstractions;
 
-namespace NexusMods.EventSourcing.BuiltInSerializers;
+namespace NexusMods.EventSourcing.DatomStore.BuiltInSerializers;
 
 /// <summary>
 /// A <see cref="UInt128"/> serializer
