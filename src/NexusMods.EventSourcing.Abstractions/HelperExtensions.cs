@@ -14,13 +14,13 @@ public static class HelperExtensions
     /// <param name="guid"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    public static UInt128 ToUInt128Guild(this string guid)
+    public static UInt128 ToUInt128Guid(this string guid)
     {
         Span<byte> bytes = stackalloc byte[16];
         if (!Guid.TryParse(guid, out var parsedGuid))
             throw new ArgumentException("Invalid GUID", nameof(guid));
         parsedGuid.TryWriteBytes(bytes);
-        return BinaryPrimitives.ReadUInt128BigEndian(bytes);
+        return BinaryPrimitives.ReadUInt128LittleEndian(bytes);
     }
 
 }

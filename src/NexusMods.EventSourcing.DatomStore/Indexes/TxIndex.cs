@@ -1,4 +1,4 @@
-﻿namespace NexusMods.EventSourcing.DatomStore;
+﻿namespace NexusMods.EventSourcing.DatomStore.Indexes;
 
 public class TxIndex(AttributeRegistry registry) : AIndexDefinition(registry, "txLog")
 {

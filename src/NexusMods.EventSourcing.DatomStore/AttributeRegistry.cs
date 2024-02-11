@@ -17,6 +17,7 @@ public class AttributeRegistry
     private readonly Dictionary<Type,IAttribute> _attributesByType;
     private readonly Dictionary<ulong,DbAttribute> _dbAttributesByEntityId;
     private readonly Dictionary<UInt128,DbAttribute> _dbAttributesByUniqueId;
+    private readonly Dictionary<UInt128,IValueSerializer> _valueSerializersByUniqueId;
 
     /// <summary>
     /// Tracks all attributes and their respective serializers as well as the DB entity IDs for each
@@ -25,8 +26,14 @@ public class AttributeRegistry
     public AttributeRegistry(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
     {
         _valueSerializersByNativeType = valueSerializers.ToDictionary(x => x.NativeType);
+        _valueSerializersByUniqueId = valueSerializers.ToDictionary(x => x.UniqueId);
         _attributesById = attributes.ToDictionary(x => x.Id);
         _attributesByType = attributes.ToDictionary(x => x.GetType());
+
+        foreach (var attr in attributes)
+        {
+            attr.SetSerializer(_valueSerializersByNativeType[attr.ValueType]);
+        }
 
         _dbAttributesByEntityId = new Dictionary<ulong, DbAttribute>();
         _dbAttributesByUniqueId = new Dictionary<UInt128, DbAttribute>();
@@ -64,8 +71,16 @@ public class AttributeRegistry
 
     public unsafe int CompareValues(ulong attrId, void* aVal, uint aLength, void* bVal, uint bLength)
     {
-        var attr = _attributesById[attrId];
-        var type = _valueSerializersByNativeType[attr.ValueType];
+        var attr = _dbAttributesByEntityId[attrId];
+        var type = _valueSerializersByUniqueId[attr.ValueTypeId];
         return type.Compare(new ReadOnlySpan<byte>(aVal, (int) aLength), new ReadOnlySpan<byte>(bVal, (int) bLength));
+    }
+
+    public IDatom ReadDatom(ref KeyHeader header, ReadOnlySpan<byte> valueSpan)
+    {
+        var attrId = header.AttributeId;
+        var dbAttribute = _dbAttributesByEntityId[attrId];
+        var attribute = _attributesById[dbAttribute.UniqueId];
+        return attribute.Read(header.Entity, header.Tx, header.IsAssert, valueSpan);
     }
 }

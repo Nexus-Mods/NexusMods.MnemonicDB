@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.DatomStore.Indexes;
 using Reloaded.Memory.Extensions;
 using RocksDbSharp;
 
 namespace NexusMods.EventSourcing.DatomStore;
 
-public class RocksDBDatomStore
+public class RocksDBDatomStore : IDatomStore
 {
+    private object _lock = new();
     private readonly ILogger<RocksDBDatomStore> _logger;
     private readonly DatomStoreSettings _settings;
     private readonly DbOptions _options;
@@ -18,6 +20,8 @@ public class RocksDBDatomStore
     private readonly AttributeRegistry _registry;
     private readonly AIndexDefinition[] _indexes;
     private ulong _tx;
+    private readonly AETVIndex _avetIndex;
+    private readonly EATVIndex _eatvIndex;
 
     public RocksDBDatomStore(ILogger<RocksDBDatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings)
     {
@@ -33,10 +37,13 @@ public class RocksDBDatomStore
 
         _db = RocksDb.Open(_options, _settings.Path.ToString(), new ColumnFamilies());
 
+        _eatvIndex = new EATVIndex(_registry);
+        _avetIndex = new AETVIndex(_registry);
         _indexes =
         [
             new TxIndex(_registry),
-            new EATVIndex(_registry),
+            _eatvIndex,
+            _avetIndex,
         ];
 
         foreach (var index in _indexes)
@@ -80,16 +87,32 @@ public class RocksDBDatomStore
             store.Serialize<TAttr, TVal>(batch, e, v,tx, isAssert);
         }
     }
-    public void Transact(IEnumerable<IDatom> datoms)
-    {
-        var tx = ++_tx;
-        var batch = new WriteBatch();
-        var sink = new TransactSink(this, batch, tx);
 
-        foreach (var datom in datoms)
+    public TxId Transact(IEnumerable<IDatom> datoms)
+    {
+        lock (_lock)
         {
-            datom.Emit(ref sink);
+            var tx = ++_tx;
+            var batch = new WriteBatch();
+            var sink = new TransactSink(this, batch, tx);
+
+            foreach (var datom in datoms)
+            {
+                datom.Emit(ref sink);
+            }
+
+            _db.Write(batch);
+            return TxId.From(tx);
         }
-        _db.Write(batch);
+    }
+
+    public IIterator Where<TAttr>(TxId txId) where TAttr : IAttribute
+    {
+        return new AETVIndex.AEVTByAIterator<TAttr>(txId.Value, _registry, _avetIndex);
+    }
+
+    public IEntityIterator EntityIterator(TxId txId)
+    {
+        return new EATVIndex.EATVIterator(txId.Value, _registry, _eatvIndex);
     }
 }

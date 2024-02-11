@@ -20,6 +20,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\NexusMods.EventSourcing.DatomStore\NexusMods.EventSourcing.DatomStore.csproj" />
+      <ProjectReference Include="..\..\src\NexusMods.EventSourcing\NexusMods.EventSourcing.csproj" />
       <ProjectReference Include="..\NexusMods.EventSourcing.TestModel\NexusMods.EventSourcing.TestModel.csproj" />
     </ItemGroup>
 

@@ -19,7 +19,7 @@ public static class BuiltInAttributes
     /// <summary>
     /// Static unique id of the UniqueId attribute
     /// </summary>
-    public static UInt128 UniqueIdStaticId = "083F3E32-C1CE-4231-BDE4-FAD045D8126C".ToUInt128Guild();
+    public static UInt128 UniqueIdStaticId = "083F3E32-C1CE-4231-BDE4-FAD045D8126C".ToUInt128Guid();
 
     /// <summary>
     /// The database entity id of the UniqueId attribute
@@ -34,7 +34,7 @@ public static class BuiltInAttributes
     /// <summary>
     /// Static unique id of the UniqueId attribute
     /// </summary>
-    public static UInt128 ValueSerializerIdStaticId = "602279C9-B37B-4487-B36B-99DCA4A2475A".ToUInt128Guild();
+    public static UInt128 ValueSerializerIdStaticId = "602279C9-B37B-4487-B36B-99DCA4A2475A".ToUInt128Guid();
 
     /// <summary>
     /// The database entity id of the UniqueId attribute
@@ -46,8 +46,8 @@ public static class BuiltInAttributes
     /// The initial set of built-in attributes that always exist in the database.
     /// </summary>
     public static DbAttribute[] Initial = [
-        new DbAttribute(UniqueIdStaticId, UniqueIdEntityId, ValueSerializerIdStaticId),
-        new DbAttribute(ValueSerializerIdStaticId, ValueSerializerIdEntityId, ValueSerializerIdStaticId),
+        new DbAttribute(UniqueIdStaticId, UniqueIdEntityId, UInt128Serializer.Id),
+        new DbAttribute(ValueSerializerIdStaticId, ValueSerializerIdEntityId, UInt128Serializer.Id),
     ];
 
     public static IDatom[] InitialDatoms = [

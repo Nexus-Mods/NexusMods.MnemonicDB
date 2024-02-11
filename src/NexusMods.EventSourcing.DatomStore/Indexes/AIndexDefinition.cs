@@ -2,22 +2,24 @@
 using System.Runtime.InteropServices;
 using RocksDbSharp;
 
-namespace NexusMods.EventSourcing.DatomStore;
+namespace NexusMods.EventSourcing.DatomStore.Indexes;
 
 public abstract class AIndexDefinition(AttributeRegistry registry, string columnFamilyName) : IDisposable
 {
     protected readonly AttributeRegistry Registry = registry;
     private ColumnFamilyOptions? _options;
-    private ColumnFamilyHandle? _columnFamilyHandle;
+    protected ColumnFamilyHandle? ColumnFamilyHandle;
 
     private DestructorDelegate? _destructorDelegate;
     private CompareDelegate? _comparatorDelegate;
     private NameDelegate? _nameDelegate;
     private IntPtr _namePtr;
     private IntPtr _comparator;
+    protected RocksDb Db = null!;
 
     public void Init(RocksDb db)
     {
+        Db = db;
         _options = new ColumnFamilyOptions();
         _namePtr = Marshal.StringToHGlobalAnsi(ColumnFamilyName);
 
@@ -32,7 +34,7 @@ public abstract class AIndexDefinition(AttributeRegistry registry, string column
         };
         _comparator = Native.Instance.rocksdb_comparator_create(IntPtr.Zero, _destructorDelegate, _comparatorDelegate, _nameDelegate);
         _options.SetComparator(_comparator);
-        _columnFamilyHandle = db.CreateColumnFamily(_options, ColumnFamilyName);
+        ColumnFamilyHandle = db.CreateColumnFamily(_options, ColumnFamilyName);
     }
 
     public string ColumnFamilyName { get; } = columnFamilyName;
@@ -55,6 +57,13 @@ public abstract class AIndexDefinition(AttributeRegistry registry, string column
     }
     public void Put(WriteBatch batch, ReadOnlySpan<byte> span)
     {
-        batch.Put(span, ReadOnlySpan<byte>.Empty, _columnFamilyHandle);
+        batch.Put(span, ReadOnlySpan<byte>.Empty, ColumnFamilyHandle);
+    }
+
+    public Iterator NewIterator()
+    {
+        var options = new ReadOptions();
+        options.SetTotalOrderSeek(true);
+        return Db.NewIterator(ColumnFamilyHandle, options);
     }
 }

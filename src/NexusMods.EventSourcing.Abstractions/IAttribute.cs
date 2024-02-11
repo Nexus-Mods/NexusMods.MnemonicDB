@@ -8,6 +8,12 @@ namespace NexusMods.EventSourcing.Abstractions;
 public interface IAttribute
 {
     /// <summary>
+    /// Sets the serializer for the attribute, this is used to read and write the value from the buffer
+    /// </summary>
+    /// <param name="serializer"></param>
+    public void SetSerializer(IValueSerializer serializer);
+
+    /// <summary>
     /// The native C# type of the value, must have a matching IValueSerializer registered in the DI container.
     /// </summary>
     public Type ValueType { get; }
@@ -39,6 +45,16 @@ public interface IAttribute
     /// no impact on the data stored in the datastore
     /// </summary>
     public string Namespace { get; }
+
+    /// <summary>
+    /// Reads the value from the buffer and returns all the data as a Datom
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <param name="tx"></param>
+    /// <param name="isAssert"></param>
+    /// <param name="buffer"></param>
+    /// <returns></returns>
+    public IDatom Read(ulong entity, ulong tx, bool isAssert, ReadOnlySpan<byte> buffer);
 }
 
 

@@ -17,6 +17,7 @@ public static class Services
     public static IServiceCollection AddEventSourcing<TAttribute>(this IServiceCollection services)
         where TAttribute : class, IAttribute
     {
+        services.AddSingleton<IConnection, Connection>();
         return services;
     }
 

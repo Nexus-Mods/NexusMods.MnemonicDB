@@ -13,7 +13,7 @@ public class UInt128Serializer : IValueSerializer<UInt128>
     /// <inheritdoc />
     public Type NativeType => typeof(UInt128);
 
-    public static readonly UInt128 Id = "50BECA70-43D9-497D-B47C-8AD8B85B7803".ToUInt128Guild();
+    public static readonly UInt128 Id = "50BECA70-43D9-497D-B47C-8AD8B85B7803".ToUInt128Guid();
 
     /// <inheritdoc />
     public UInt128 UniqueId => Id;

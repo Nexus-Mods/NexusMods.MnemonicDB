@@ -10,7 +10,7 @@ public class BoolSerializer : IValueSerializer<byte>
     /// <inheritdoc />
     public Type NativeType => typeof(byte);
 
-    public static readonly UInt128 Id = "50BECA70-43D9-497D-B47C-8AD8B85B7801".ToUInt128Guild();
+    public static readonly UInt128 Id = "50BECA70-43D9-497D-B47C-8AD8B85B7801".ToUInt128Guid();
 
     /// <inheritdoc />
     public UInt128 UniqueId => Id;

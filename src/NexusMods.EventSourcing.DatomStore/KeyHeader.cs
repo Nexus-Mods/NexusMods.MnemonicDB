@@ -40,6 +40,12 @@ public unsafe struct KeyHeader
         set => _attrAndExtra = (ushort)((value ? 0x8000 : 0) | (_attrAndExtra & 0x7FFF));
     }
 
+    public bool IsRetraction
+    {
+        get => !IsAssert;
+        set => IsAssert = !value;
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int CompareEntity(KeyHeader* a, KeyHeader* b)
     {
