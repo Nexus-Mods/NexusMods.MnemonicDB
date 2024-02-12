@@ -189,4 +189,126 @@ var db = resultSet.NewDb; // Could also call conn.Current
 db[resultSet[mod.Id]].Name; // "My Mod", as resultSet has resolved the tempid to a real id assigned during the commit
 ```
 
+## Entity Models
+There are several types of models in this framework to handle the 3 main uses of grouping attributes into entities:
+
+* Read Model - A collection attributes into a readonly object. For example, a `Mod` entity might have a `Name` and `Enabled` attribute, and so we'd need a `Mod` entity would be a read model.
+* Write Model - A init-only collection of attributes into a writeable object. This is used to create new entities, and is used in the `ITransaction` interface.
+* Active Read Model - A collection of attributes into a readonly object, but one that retains a reference to the connection that created it, as new data is written to the database, the active read model filters
+this data and emits `INotifyPropertyChanged` events to any listeners. This is used to create a live view of the database
+
 ## Defining Code Models
+
+The code model system in this framework uses code generation to create the attributes and read models
+
+### Attributes
+Attributes are defined by creating a static class and giving it a name that helps define the namespace for the attributes:
+
+```csharp
+namespace NexusMods.Model;
+
+public partial static class Mod
+{
+    public static readonly AttributeDefinitions AttributeDefinitions =
+        new AttributeDefinitionsBuilder()
+            .Define("Name", NativeType.String, "A name for the mod")
+            .Define("Enabled", NativeType.Bool, "True if the mod is enabled")
+            .Build();
+}
+```
+
+The code generator will find this class, and generate attributes classes for the specified definitions. These will be generated as `NexusMods.Model.Mod/Name` and `NexusMods.Model.Mod/Enabled`. For
+the name and namespaces respectively.
+
+!!!info
+    The code generator will create a matching static DI method called `AddMod` that will add DI entries for the attribute definitions and the attribute classes.
+
+
+### Read Models
+Read models are defined much in the same way as attributes, as a collection of attributes:
+
+```csharp
+namespace NexusMods.Model;
+
+public partial static class Mod
+{
+    public static readonly AttributeDefinitions AttributeDefinitions =
+        new AttributeDefinitionsBuilder()
+            .Define<string>("Name", "A name for the mod")
+            .Define<bool>("Enabled", "True if the mod is enabled")
+            .Build();
+
+    public static readonly ModelDefinition ModelDefinition =
+        new ModelDefinitionBuilder()
+            .Include<Enabled, Name>()
+            .Build();
+}
+```
+
+Internally this will generate 3 classes, for the `ReadModel`, `WriteModel`, and `ActiveReadModel` respectively. It will also generate several static extension methods for the `IDb` and `ITransaction` interfaces to make it easier to work with these models.
+The write model method isn't a class, but a method that takes a `ITransaction` and returns a `ReadModel` interface.
+
+```csharp
+
+using var tx = conn.BeginTransaction();
+var mod = tx.NewMod(
+    Name = "My Mod",
+    Enabled = true
+);
+
+var file = tx.NewModFile(
+    Path = "C:\\",
+    Mod = mod.Id,
+);
+```
+
+For querying, several extension methods are generated for the `IDb` and `IConnection` interfaces:
+
+```csharp
+
+var results = db.GetMod(id);
+var activeResults = conn.GetActiveMod(id);
+
+var mods = from mod in db.GetMods()
+           where mod.Enabled
+           select mod;
+
+foreach (var mod in mods)
+{
+    Console.WriteLine(mod.Name);
+}
+```
+
+Read models can also include other read models:
+
+```csharp
+
+namespace NexusMods.Model;
+
+public partial static class NexusMod
+{
+    public static readonly AttributeDefinitions AttributeDefinitions =
+        new AttributeDefinitionsBuilder()
+            .Define<ulong>("FileId", "Nexus File Id")
+            .Define<ulong>("ModId", "The name of the mod")
+            .Build();
+
+    public static readonly ModelDefinition ModelDefinition =
+        new ModelDefinitionBuilder()
+            .Inherits<Mod>()
+            .Include<FileId, ModId>()
+            .Build();
+}
+```
+
+### Updating
+For a single update to a specific attribute on an entity, the `ITransaction` interface has an emit method to update a specific datom:
+
+```csharp
+
+var someMod = db.GetMod(id);
+
+using var tx = conn.BeginTransaction();
+// this seems too verbose, we'll think about this one
+Mod.Enabled.Emit(tx, someMod.Id, false);
+```
