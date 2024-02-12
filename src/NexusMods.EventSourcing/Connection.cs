@@ -13,22 +13,39 @@ namespace NexusMods.EventSourcing;
 public class Connection : IConnection
 {
     private readonly IDatomStore _store;
+    private readonly IAttribute[] _declaredAttributes;
 
     /// <summary>
     /// Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    public Connection(IDatomStore store)
+    public Connection(IDatomStore store, IEnumerable<IAttribute> declaredAttributes, IEnumerable<IValueSerializer> serializers)
     {
         _store = store;
+        _declaredAttributes = declaredAttributes.ToArray();
 
-        AddMissingAttributes();
+        AddMissingAttributes(serializers);
     }
 
-    private void AddMissingAttributes()
+    private void AddMissingAttributes(IEnumerable<IValueSerializer> valueSerializers)
     {
-        var existing = ExistingAttributes().ToArray();
+        var serializerByType = valueSerializers.ToDictionary(s => s.NativeType);
 
-        Debug.Print(existing.Length.ToString());
+        var existing = ExistingAttributes().ToDictionary(a => a.UniqueId);
+
+        var missing = _declaredAttributes.Where(a => !existing.ContainsKey(a.Id)).ToArray();
+        if (missing.Length == 0)
+            return;
+
+        var datoms = new List<IDatom>();
+
+        foreach (var (attr, id) in missing.Select((attribute, i) => (attribute, Ids.MakeId(Ids.Partition.Tmp, (ulong)i))))
+        {
+            var serializer = serializerByType[attr.ValueType];
+            var uniqueId = attr.Id;
+            datoms.Add(new AssertDatom<BuiltInAttributes.UniqueId, UInt128>(id, uniqueId));
+            datoms.Add(new AssertDatom<BuiltInAttributes.ValueSerializerId, UInt128>(id, serializer.UniqueId));
+        }
+        _store.Transact(datoms);
 
     }
 
