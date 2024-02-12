@@ -21,7 +21,9 @@ public static class Services
             .AddAttribute<BuiltInAttributes.UniqueId>()
             .AddAttribute<BuiltInAttributes.ValueSerializerId>()
             .AddValueSerializer<UInt128Serializer>()
-            .AddValueSerializer<BoolSerializer>();
+            .AddValueSerializer<BoolSerializer>()
+            .AddValueSerializer<SymbolSerializer>()
+            .AddValueSerializer<StringSerializer>();
         return services;
     }
 

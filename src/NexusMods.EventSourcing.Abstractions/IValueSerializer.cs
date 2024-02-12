@@ -20,14 +20,6 @@ public interface IValueSerializer
     public UInt128 UniqueId { get; }
 
     /// <summary>
-    /// If this is a fixed size serializer, return true and the size of fixed buffer
-    /// </summary>
-    /// <param name="size"></param>
-    /// <returns></returns>
-    public bool TryGetFixedSize(out int size);
-
-
-    /// <summary>
     /// Compare two spans of bytes that contain the serialized value
     /// </summary>
     /// <param name="a"></param>

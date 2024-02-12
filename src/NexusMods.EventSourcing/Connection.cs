@@ -42,7 +42,7 @@ public class Connection : IConnection
         {
             var serializer = serializerByType[attr.ValueType];
             var uniqueId = attr.Id;
-            datoms.Add(new AssertDatom<BuiltInAttributes.UniqueId, UInt128>(id, uniqueId));
+            datoms.Add(new AssertDatom<BuiltInAttributes.UniqueId, Symbol>(id, uniqueId));
             datoms.Add(new AssertDatom<BuiltInAttributes.ValueSerializerId, UInt128>(id, serializer.UniqueId));
         }
         _store.Transact(datoms);
@@ -66,7 +66,7 @@ public class Connection : IConnection
             entIterator.SetEntityId(attrIterator.EntityId);
 
             var serializerId = UInt128.Zero;
-            var uniqueId = UInt128.Zero;
+            Symbol uniqueId = null!;
 
             while (entIterator.Next())
             {
@@ -76,7 +76,7 @@ public class Connection : IConnection
                     case AssertDatom<BuiltInAttributes.ValueSerializerId, UInt128> serializerIdDatom:
                         serializerId = serializerIdDatom.V;
                         break;
-                    case AssertDatom<BuiltInAttributes.UniqueId, UInt128> uniqueIdDatom:
+                    case AssertDatom<BuiltInAttributes.UniqueId, Symbol> uniqueIdDatom:
                         uniqueId = uniqueIdDatom.V;
                         break;
                 }

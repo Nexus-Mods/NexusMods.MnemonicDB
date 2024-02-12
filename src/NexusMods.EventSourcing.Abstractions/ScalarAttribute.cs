@@ -17,26 +17,18 @@ where TAttribute : IAttribute<TValueType>
     /// Create a new attribute
     /// </summary>
     /// <param name="guid"></param>
-    protected ScalarAttribute(string guid)
+    protected ScalarAttribute(string uniqueName)
     {
-        Id = guid.ToUInt128Guid();
-        var fullName = GetType().FullName;
-        var splitOn = fullName!.LastIndexOf('.');
-        Name = fullName[(splitOn + 1)..];
-        Namespace = fullName[..splitOn];
+        Id = Symbol.Intern(uniqueName);
     }
 
     /// <summary>
     /// Create a new attribute from an already parsed guid
     /// </summary>
     /// <param name="guid"></param>
-    protected ScalarAttribute(UInt128 guid)
+    protected ScalarAttribute(Symbol symbol)
     {
-        Id = guid;
-        var fullName = GetType().FullName;
-        var splitOn = fullName!.LastIndexOf('.');
-        Name = fullName[(splitOn + 1)..];
-        Namespace = fullName[..splitOn];
+        Id = symbol;
     }
 
     public void SetSerializer(IValueSerializer serializer)
@@ -57,13 +49,7 @@ where TAttribute : IAttribute<TValueType>
     public bool IsReference => false;
 
     /// <inheritdoc />
-    public UInt128 Id { get; }
-
-    /// <inheritdoc />
-    public string Name { get; }
-
-    /// <inheritdoc />
-    public string Namespace { get; }
+    public Symbol Id { get; }
 
     public IDatom Read(ulong entity, ulong tx, bool isAssert, ReadOnlySpan<byte> buffer)
     {

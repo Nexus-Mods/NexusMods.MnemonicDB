@@ -13,10 +13,10 @@ namespace NexusMods.EventSourcing.DatomStore;
 public class AttributeRegistry
 {
     private readonly Dictionary<Type,IValueSerializer> _valueSerializersByNativeType;
-    private readonly Dictionary<UInt128,IAttribute> _attributesById;
+    private readonly Dictionary<Symbol,IAttribute> _attributesById;
     private readonly Dictionary<Type,IAttribute> _attributesByType;
     private readonly Dictionary<ulong,DbAttribute> _dbAttributesByEntityId;
-    private readonly Dictionary<UInt128,DbAttribute> _dbAttributesByUniqueId;
+    private readonly Dictionary<Symbol,DbAttribute> _dbAttributesByUniqueId;
     private readonly Dictionary<UInt128,IValueSerializer> _valueSerializersByUniqueId;
 
     /// <summary>
@@ -36,7 +36,7 @@ public class AttributeRegistry
         }
 
         _dbAttributesByEntityId = new Dictionary<ulong, DbAttribute>();
-        _dbAttributesByUniqueId = new Dictionary<UInt128, DbAttribute>();
+        _dbAttributesByUniqueId = new Dictionary<Symbol, DbAttribute>();
     }
 
     public void Populate(DbAttribute[] attributes)

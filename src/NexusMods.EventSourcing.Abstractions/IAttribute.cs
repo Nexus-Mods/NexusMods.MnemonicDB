@@ -32,19 +32,7 @@ public interface IAttribute
     /// The Unique identifier of the attribute, this is used to match the attribute to a matching attribute
     /// in the datastore
     /// </summary>
-    public UInt128 Id { get; }
-
-    /// <summary>
-    /// A Human readable name for the attribute, this can be redefined at any time and it has
-    /// no impact on the data stored in the datastore
-    /// </summary>
-    public string Name { get; }
-
-    /// <summary>
-    /// A human readable group for the attribute, this can be redefined at any time and it has
-    /// no impact on the data stored in the datastore
-    /// </summary>
-    public string Namespace { get; }
+    public Symbol Id { get; }
 
     /// <summary>
     /// Reads the value from the buffer and returns all the data as a Datom
