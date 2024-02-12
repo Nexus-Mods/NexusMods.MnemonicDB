@@ -19,7 +19,7 @@ public class TransactionLogTest
             Path = FileSystem.Shared.GetKnownPath(KnownPath.TempDirectory).Combine("TransactionLogTest" + Guid.NewGuid())
         };
         _db = new RocksDBDatomStore(s.GetRequiredService<ILogger<RocksDBDatomStore>>(), s.GetRequiredService<AttributeRegistry>(), _options);
-        _connection = new Connection(_db);
+        _connection = null!;
     }
 
     [Fact]
