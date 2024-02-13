@@ -31,6 +31,12 @@ where TAttribute : IAttribute<TValueType>
         Id = symbol;
     }
 
+    public TValueType Read(ReadOnlySpan<byte> buffer)
+    {
+        _serializer.Read(buffer, out var val);
+        return val;
+    }
+
     public void SetSerializer(IValueSerializer serializer)
     {
         if (serializer is not IValueSerializer<TValueType> valueSerializer)

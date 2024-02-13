@@ -50,7 +50,14 @@ public interface IAttribute
 /// Typed variant of IAttribute
 /// </summary>
 /// <typeparam name="TVal"></typeparam>
-public interface IAttribute<TVal> : IAttribute
+public interface IAttribute<out TVal> : IAttribute
 {
+
+    /// <summary>
+    /// Reads the value from the buffer and returns the value
+    /// </summary>
+    /// <param name="buffer"></param>
+    /// <returns></returns>
+    public TVal Read(ReadOnlySpan<byte> buffer);
 
 }

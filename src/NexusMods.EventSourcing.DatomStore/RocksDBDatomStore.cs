@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
@@ -41,7 +42,7 @@ public class RocksDBDatomStore : IDatomStore
         _avetIndex = new AETVIndex(_registry);
         _indexes =
         [
-            new TxIndex(_registry),
+            //new TxIndex(_registry),
             _eatvIndex,
             _avetIndex,
         ];
@@ -88,6 +89,20 @@ public class RocksDBDatomStore : IDatomStore
         }
     }
 
+    /// <summary>
+    /// Returns the highest entity id in the given partition.
+    /// </summary>
+    /// <param name="partition"></param>
+    /// <returns></returns>
+    public ulong MaxId(Ids.Partition partition)
+    {
+        if (_eatvIndex.MaxId(partition, out var maxId))
+        {
+            return maxId;
+        }
+        return Ids.MaxId(partition);
+    }
+
     public TxId Transact(IEnumerable<IDatom> datoms)
     {
         lock (_lock)
@@ -114,5 +129,17 @@ public class RocksDBDatomStore : IDatomStore
     public IEntityIterator EntityIterator(TxId txId)
     {
         return new EATVIndex.EATVIterator(txId.Value, _registry, _eatvIndex);
+    }
+
+    public void RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
+    {
+        _registry.Populate(newAttrs.ToArray());
+    }
+
+    public void Dispose()
+    {
+        _db.Dispose();
+        _avetIndex.Dispose();
+        _eatvIndex.Dispose();
     }
 }

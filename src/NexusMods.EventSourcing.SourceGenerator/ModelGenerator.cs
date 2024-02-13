@@ -86,7 +86,13 @@ public class ModelGenerator : IIncrementalGenerator
                 sb.ClassComment(attribute.Description);
                 var withoutQuotes = attribute.Name.Replace("\"", "");
                 var uniqueName = $"{attribute.Namespace}.{attribute.Entity}/{withoutQuotes}";
-                sb.Line($"public class {withoutQuotes}() : ScalarAttribute<{withoutQuotes}, {attribute.AttributeType}>(\"{uniqueName}\");");
+                sb.Line($"public class {withoutQuotes}() : ScalarAttribute<{withoutQuotes}, {attribute.AttributeType}>(\"{uniqueName}\")");
+                sb.Line("{");
+                sb.Line("public static void Assert(EntityId entityId, " + attribute.AttributeType + " value, ITransaction tx)");
+                sb.Line("{");
+                sb.Line("tx.Add(new AssertDatom<" + withoutQuotes + ", " + attribute.AttributeType + ">(entityId.Value, value));");
+                sb.Line("}");
+                sb.Line("}");
                 sb.BlankLine();
             }
 

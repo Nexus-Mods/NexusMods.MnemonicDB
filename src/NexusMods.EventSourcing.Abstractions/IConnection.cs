@@ -1,4 +1,6 @@
-﻿namespace NexusMods.EventSourcing.Abstractions;
+﻿using System.Collections.Generic;
+
+namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// Represents a connection to a database.
@@ -14,4 +16,11 @@ public interface IConnection
     /// Gets the most recent transaction id.
     /// </summary>
     public TxId TxId { get; }
+
+    /// <summary>
+    /// Commits a transaction to the database, and returns the result.
+    /// </summary>
+    /// <param name="datoms"></param>
+    /// <returns></returns>
+    public ICommitResult Transact(IEnumerable<IDatom> datoms);
 }

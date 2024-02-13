@@ -2,8 +2,10 @@
     <PropertyGroup>
         <!-- https://github.com/pengweiqhca/Xunit.DependencyInjection#how-to-disable-xunitdependencyinjection -->
         <EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>true</EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>
-        <RootNamespace>NexusMods.EventSourcing.DatomStore.Tests</RootNamespace>
+        <RootNamespace>NexusMods.EventSourcing.Tests</RootNamespace>
     </PropertyGroup>
+
+
 
     <ItemGroup>
         <PackageReference Update="FluentAssertions" Version="6.12.0" />

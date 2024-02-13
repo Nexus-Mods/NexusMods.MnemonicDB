@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System;
+using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.DatomStore.BuiltInSerializers;
 
@@ -23,7 +24,8 @@ public static class Services
             .AddValueSerializer<UInt128Serializer>()
             .AddValueSerializer<BoolSerializer>()
             .AddValueSerializer<SymbolSerializer>()
-            .AddValueSerializer<StringSerializer>();
+            .AddValueSerializer<StringSerializer>()
+            .AddValueSerializer<UInt64Serializer>();
         return services;
     }
 

@@ -64,7 +64,7 @@ public class AttributeRegistry
             throw new InvalidOperationException($"No attribute found for type {typeof(TAttr)}");
 
         if (!_dbAttributesByUniqueId.TryGetValue(attribute.Id, out var dbAttribute))
-            throw new InvalidOperationException($"No DB attribute found for attribute {attribute.Id}");
+            throw new InvalidOperationException($"No DB attribute found for attribute {attribute}");
 
         return dbAttribute.AttrEntityId;
     }

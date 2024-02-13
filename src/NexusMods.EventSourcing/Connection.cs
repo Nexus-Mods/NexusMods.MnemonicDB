@@ -12,6 +12,8 @@ namespace NexusMods.EventSourcing;
 /// </summary>
 public class Connection : IConnection
 {
+    private readonly object _lock = new();
+    private ulong _nextEntityId = Ids.MinId(Ids.Partition.Entity);
     private readonly IDatomStore _store;
     private readonly IAttribute[] _declaredAttributes;
 
@@ -38,26 +40,27 @@ public class Connection : IConnection
 
         var datoms = new List<IDatom>();
 
-        foreach (var (attr, id) in missing.Select((attribute, i) => (attribute, Ids.MakeId(Ids.Partition.Tmp, (ulong)i))))
+        var newAttrs = new List<DbAttribute>();
+
+        var attrId = existing.Values.Max(a => a.AttrEntityId);
+        foreach (var attr in missing)
         {
+            var id = ++attrId;
+
             var serializer = serializerByType[attr.ValueType];
             var uniqueId = attr.Id;
             datoms.Add(new AssertDatom<BuiltInAttributes.UniqueId, Symbol>(id, uniqueId));
             datoms.Add(new AssertDatom<BuiltInAttributes.ValueSerializerId, UInt128>(id, serializer.UniqueId));
+            newAttrs.Add(new DbAttribute(uniqueId, id, serializer.UniqueId));
         }
-        _store.Transact(datoms);
+        TxId = _store.Transact(datoms);
+
+        _store.RegisterAttributes(newAttrs);
 
     }
 
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
-
-        /*
-         *  var attrs = from attrEnt in _db.EntsForAttr<BuiltInAttributes.UniqueId>()
-         *              select _db.Pull<UniqueId, ValueSerializerId>(attrEnt);
-         */
-
-
         var tx = TxId.MaxValue;
         var attrIterator = _store.Where<BuiltInAttributes.UniqueId>(tx);
         var entIterator = _store.EntityIterator(tx);
@@ -83,9 +86,54 @@ public class Connection : IConnection
             }
             yield return new DbAttribute(uniqueId, attrIterator.EntityId.Value, serializerId);
         }
-
     }
 
+
+    /// <inheritdoc />
     public IDb Db => new Db(_store, this, TxId);
-    public TxId TxId { get; }
+
+
+    /// <inheritdoc />
+    public TxId TxId { get; private set; }
+
+
+    /// <inheritdoc />
+    public ICommitResult Transact(IEnumerable<IDatom> datoms)
+    {
+        var remaps = new Dictionary<ulong, ulong>();
+
+        lock (_lock)
+        {
+            var newDatoms = new List<IDatom>();
+            foreach (var datom in datoms)
+            {
+                var eid = datom.E;
+                if (Ids.GetPartition(eid) == Ids.Partition.Tmp)
+                {
+                    if (!remaps.TryGetValue(eid, out var id))
+                    {
+                        var newId = _nextEntityId++;
+                        remaps[eid] = newId;
+                        newDatoms.Add(datom.RemapEntityId(newId));
+                    }
+                    else
+                    {
+                        newDatoms.Add(datom.RemapEntityId(id));
+                    }
+                }
+                else
+                {
+                    newDatoms.Add(datom);
+                }
+            }
+            var newTx = _store.Transact(newDatoms);
+            return new CommitResult(newTx, remaps);
+        }
+    }
+
+    /// <inheritdoc />
+    public ITransaction BeginTransaction()
+    {
+        return new Transaction(this);
+    }
 }

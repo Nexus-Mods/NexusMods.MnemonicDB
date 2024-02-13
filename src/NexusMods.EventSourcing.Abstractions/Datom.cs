@@ -8,6 +8,13 @@ public interface IDatom
     Type Attribute { get; }
     Type ValueType { get; }
     void Emit<TSink>(ref TSink sink) where TSink : IDatomSink;
+
+    /// <summary>
+    /// Duplicates the datom with a new entity id
+    /// </summary>
+    /// <param name="newId"></param>
+    /// <returns></returns>
+    IDatom RemapEntityId(ulong newId);
 }
 
 public interface IDatomWithTx : IDatom
@@ -26,6 +33,12 @@ public class AssertDatom<TAttr, TVal>(ulong e, TVal v) : IDatom
     public void Emit<TSink>(ref TSink sink) where TSink : IDatomSink
     {
         sink.Datom<TAttr, TVal>(e, v, true);
+    }
+
+    /// <inheritdoc />
+    public IDatom RemapEntityId(ulong newId)
+    {
+        return new AssertDatom<TAttr, TVal>(newId, v);
     }
 }
 

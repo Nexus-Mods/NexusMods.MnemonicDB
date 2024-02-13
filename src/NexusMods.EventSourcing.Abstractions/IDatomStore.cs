@@ -1,11 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// Represents the low-level storage for datoms.
 /// </summary>
-public interface IDatomStore
+public interface IDatomStore : IDisposable
 {
 
     public TxId Transact(IEnumerable<IDatom> datoms);
@@ -25,4 +26,9 @@ public interface IDatomStore
     /// <returns></returns>
     IEntityIterator EntityIterator(TxId txId);
 
+    /// <summary>
+    /// Registers new attributes with the store. These should already have been transacted into the store.
+    /// </summary>
+    /// <param name="newAttrs"></param>
+    void RegisterAttributes(IEnumerable<DbAttribute> newAttrs);
 }

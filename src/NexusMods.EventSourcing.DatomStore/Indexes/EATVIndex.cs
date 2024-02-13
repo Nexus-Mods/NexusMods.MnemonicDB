@@ -22,6 +22,36 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition(registry, 
         return KeyHeader.CompareValues(Registry, a, aLength, b, bLength);
     }
 
+
+    public bool MaxId(Ids.Partition partition, out ulong o)
+    {
+        var key = new KeyHeader
+        {
+            Entity = Ids.MaxId(partition),
+            AttributeId = ulong.MaxValue,
+            Tx = ulong.MaxValue,
+            IsAssert = true,
+        };
+        var span = MemoryMarshal.CreateSpan(ref key, KeyHeader.Size);
+        using var it = Db.NewIterator(ColumnFamilyHandle);
+        it.SeekForPrev(span.CastFast<KeyHeader, byte>());
+        if (!it.Valid())
+        {
+            o = 0;
+            return false;
+        }
+        var current = it.GetKeySpan();
+        var currentHeader = MemoryMarshal.AsRef<KeyHeader>(current);
+        var eVal = currentHeader.Entity;
+        if (Ids.IsPartition(eVal, partition))
+        {
+            o = eVal;
+            return true;
+        }
+        o = 0;
+        return false;
+    }
+
     public struct EATVIterator : IEntityIterator, IDisposable
     {
         private readonly EATVIndex _idx;
@@ -98,4 +128,5 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition(registry, 
             _iterator.Dispose();
         }
     }
+
 }
