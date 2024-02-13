@@ -8,17 +8,18 @@ using NexusMods.EventSourcing.Benchmarks.Benchmarks;
 
 #if DEBUG
 
-var benchmark = new WriteTests();
-benchmark.Count = 1000;
+var benchmark = new ReadTests();
+benchmark.Count = 1;
 
 var sw = Stopwatch.StartNew();
+benchmark.Setup();
 for (var i = 0; i < 1000; i++)
 {
-    benchmark.AddFiles();
+    benchmark.ReadFiles();
 }
 Console.WriteLine("Elapsed: " + sw.Elapsed);
 #else
 
-BenchmarkRunner.Run<WriteTests>();
+BenchmarkRunner.Run<ReadTests>();
 
 #endif

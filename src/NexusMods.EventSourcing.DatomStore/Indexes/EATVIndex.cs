@@ -52,10 +52,10 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition(registry, 
         return false;
     }
 
-    public struct EATVIterator : IEntityIterator, IDisposable
+    public unsafe struct EATVIterator : IEntityIterator, IDisposable
     {
         private readonly EATVIndex _idx;
-        private KeyHeader _key;
+        private KeyHeader* _key;
         private readonly Iterator _iterator;
         private readonly ulong _attrId;
         private readonly AttributeRegistry _registry;
@@ -66,23 +66,21 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition(registry, 
             _idx = idx;
             _registry = registry;
             _iterator = idx.Db.NewIterator(idx.ColumnFamilyHandle);
-            _key = new KeyHeader
-            {
-                Entity = ulong.MaxValue,
-                AttributeId = ulong.MaxValue,
-                Tx = txId,
-                IsAssert = true,
-            };
-            _iterator.SeekForPrev(MemoryMarshal.CreateSpan(ref _key, KeyHeader.Size).CastFast<KeyHeader, byte>());
+            _key = (KeyHeader*)Marshal.AllocHGlobal(KeyHeader.Size);
+            _key->Entity = ulong.MaxValue;
+            _key->AttributeId = ulong.MaxValue;
+            _key->Tx = txId;
+            _key->IsAssert = true;
+            _iterator.SeekForPrev((byte*)_key, KeyHeader.Size);
             _justSet = true;
         }
 
 
         public void SetEntityId(EntityId entityId)
         {
-            _key.Entity = entityId.Value;
-            _key.AttributeId = ulong.MaxValue;
-            _iterator.SeekForPrev(MemoryMarshal.CreateSpan(ref _key, KeyHeader.Size).CastFast<KeyHeader, byte>());
+            _key->Entity = entityId.Value;
+            _key->AttributeId = ulong.MaxValue;
+            _iterator.SeekForPrev((byte*)_key, KeyHeader.Size);
             _justSet = true;
         }
 
@@ -122,11 +120,11 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition(registry, 
             var current = _iterator.GetKeySpan();
             var currentHeader = MemoryMarshal.AsRef<KeyHeader>(current);
 
-            if (currentHeader.Entity != _key.Entity) return false;
+            if (currentHeader.Entity != _key->Entity) return false;
 
             if (currentHeader.IsRetraction)
             {
-                _key.AttributeId = currentHeader.AttributeId - 1;
+                _key->AttributeId = currentHeader.AttributeId - 1;
                 goto TOP;
             }
             return true;
@@ -134,6 +132,7 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition(registry, 
         public void Dispose()
         {
             _iterator.Dispose();
+            Marshal.FreeHGlobal((IntPtr)_key);
         }
     }
 
