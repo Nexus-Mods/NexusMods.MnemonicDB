@@ -106,10 +106,14 @@ public class ModelGenerator : IIncrementalGenerator
                 var withoutQuotes = attribute.Name.Replace("\"", "");
                 sb.Line($"services.AddAttribute<{withoutQuotes}>();");
             }
+            sb.Line("services.AddReadModelFactory<" + group.Entity + "ReadModelFactory>();");
             sb.Line("return services;");
             sb.Line("}");
 
             sb.Line("}");
+
+            EmitReadModel(group, sb);
+
             sb.Line("}");
 
         }
@@ -117,6 +121,75 @@ public class ModelGenerator : IIncrementalGenerator
         var source = sb.ToString();
 
         return source;
+    }
+
+    private void EmitReadModel(AttributeGroup group, CodeWriter sb)
+    {
+        sb.BlankLine();
+        sb.ClassComment("Read model for " + group.Entity);
+        sb.Line("public class " + group.Entity + "ReadModel(EntityId id) : IReadModel");
+        sb.Line("{");
+        sb.BlankLine();
+
+        sb.ClassComment("The entity id of the read model");
+        sb.Line("public EntityId Id => id;");
+        sb.BlankLine();
+
+        foreach (var attribute in group.Attributes)
+        {
+            var withoutQuotes = attribute.Name.Replace("\"", "");
+            sb.ClassComment(attribute.Description);
+            sb.Line($"public {attribute.AttributeType} {withoutQuotes} {{get; private set; }} = default!;");
+            sb.BlankLine();
+        }
+
+        sb.ClassComment("Read a datom into the read model");
+        sb.Line("public void Set(IAttribute attribute, ReadOnlySpan<byte> value)");
+        sb.Line("{");
+
+        sb.Line("switch (attribute)");
+        sb.Line("{");
+        foreach (var attribute in group.Attributes)
+        {
+            var withoutQuotes = attribute.Name.Replace("\"", "");
+            sb.Line($"case {group.Namespace}.{group.Entity}.{withoutQuotes} a:");
+            sb.Line("{");
+            sb.Line($"{withoutQuotes} = a.Read(value);");
+            sb.Line("break;");
+            sb.Line("}");
+        }
+        sb.Line("}");
+        sb.Line("}");
+
+        sb.Line("}");
+
+        sb.BlankLine();
+
+        sb.ClassComment("Read model factory " + group.Entity);
+        sb.Line("public class " + group.Entity + "ReadModelFactory : IReadModelFactory");
+        sb.Line("{");
+
+        sb.ClassComment("The type of read model this factory creates");
+        sb.Line("public Type ModelType => typeof(" + group.Entity + "ReadModel);");
+
+        sb.ClassComment("Create a new read model instance for " + group.Entity);
+        sb.Line("public IReadModel Create(EntityId id)");
+        sb.Line("{");
+        sb.Line("return new " + group.Entity + "ReadModel(id);");
+        sb.Line("}");
+        sb.BlankLine();
+
+        sb.ClassComment("The attributes that are required for reading " + group.Entity);
+        sb.Line("public Type[] Attributes => new Type[] {");
+        foreach (var attribute in group.Attributes)
+        {
+            var withoutQuotes = attribute.Name.Replace("\"", "");
+            sb.Line($"typeof({group.Namespace}.{group.Entity}.{withoutQuotes}),");
+        }
+        sb.Line("};");
+        sb.BlankLine();
+
+        sb.Line("}");
     }
 
     private static IEnumerable<AttributeData> FindAttributes(Compilation compilation,

@@ -78,6 +78,16 @@ public static class Ids
     }
 
     /// <summary>
+    /// Gets the partition of the id
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    public static Partition GetPartition(EntityId id)
+    {
+        return GetPartition(id.Value);
+    }
+
+    /// <summary>
     /// True if the id is in the given partition
     /// </summary>
     /// <param name="id"></param>

@@ -12,7 +12,8 @@ public class AEventSourcingTest : IDisposable
     protected readonly RocksDBDatomStore Store;
     protected readonly Connection Connection;
 
-    protected AEventSourcingTest(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
+    protected AEventSourcingTest(IEnumerable<IValueSerializer> valueSerializers,
+        IEnumerable<IAttribute> attributes, IEnumerable<IReadModelFactory> factories)
     {
         _tmpPath = FileSystem.Shared.GetKnownPath(KnownPath.TempDirectory).Combine(Guid.NewGuid() + ".rocksdb");
         var dbSettings = new DatomStoreSettings()
@@ -21,7 +22,7 @@ public class AEventSourcingTest : IDisposable
         };
         _registry = new AttributeRegistry(valueSerializers, attributes);
         Store = new RocksDBDatomStore(new NullLogger<RocksDBDatomStore>(), _registry, dbSettings);
-        Connection = new Connection(Store, attributes, valueSerializers);
+        Connection = new Connection(Store, attributes, valueSerializers, factories);
     }
 
     public void Dispose()

@@ -83,4 +83,12 @@ public class AttributeRegistry
         var attribute = _attributesById[dbAttribute.UniqueId];
         return attribute.Read(header.Entity, header.Tx, header.IsAssert, valueSpan);
     }
+
+    public void SetOn<TModel>(TModel model, ref KeyHeader key, ReadOnlySpan<byte> sliceFast) where TModel : IReadModel
+    {
+        var attrId = key.AttributeId;
+        var dbAttribute = _dbAttributesByEntityId[attrId];
+        var attribute = _attributesById[dbAttribute.UniqueId];
+        model.Set(attribute, sliceFast);
+    }
 }

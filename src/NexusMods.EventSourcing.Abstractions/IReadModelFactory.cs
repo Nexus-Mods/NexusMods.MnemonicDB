@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -9,19 +8,16 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// </summary>
 public interface IReadModelFactory
 {
+    public Type ModelType { get; }
+
     /// <summary>
     /// A collection of all the attributes in the model.
     /// </summary>
-    public Type[] ReferencedAttributes { get; }
+    public Type[] Attributes { get; }
 
     /// <summary>
-    /// the model type this factory is for
-    /// </summary>
-    public Type ForType { get; }
-
-    /// <summary>
-    /// Creates a builder for the given read model
+    /// Creates a new instance of the read model
     /// </summary>
     /// <returns></returns>
-    public IReadModelBuilder CreateBuilder();
+    public IReadModel Create(EntityId id);
 }

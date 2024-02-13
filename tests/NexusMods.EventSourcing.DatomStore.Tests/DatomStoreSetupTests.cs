@@ -4,7 +4,9 @@ namespace NexusMods.EventSourcing.DatomStore.Tests;
 
 public class DatomStoreSetupTests : ADatomStoreTest
 {
-    public DatomStoreSetupTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes) : base(valueSerializers, attributes)
+    public DatomStoreSetupTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes,
+        IEnumerable<IReadModelFactory> factories)
+        : base(valueSerializers, attributes, factories)
     {
     }
 

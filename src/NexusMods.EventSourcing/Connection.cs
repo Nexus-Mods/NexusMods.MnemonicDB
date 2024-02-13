@@ -16,14 +16,16 @@ public class Connection : IConnection
     private ulong _nextEntityId = Ids.MinId(Ids.Partition.Entity);
     private readonly IDatomStore _store;
     private readonly IAttribute[] _declaredAttributes;
+    private readonly Dictionary<Type, IReadModelFactory> _factories;
 
     /// <summary>
     /// Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    public Connection(IDatomStore store, IEnumerable<IAttribute> declaredAttributes, IEnumerable<IValueSerializer> serializers)
+    public Connection(IDatomStore store, IEnumerable<IAttribute> declaredAttributes, IEnumerable<IValueSerializer> serializers, IEnumerable<IReadModelFactory> factories)
     {
         _store = store;
         _declaredAttributes = declaredAttributes.ToArray();
+        _factories = factories.ToDictionary(f => f.ModelType);
 
         AddMissingAttributes(serializers);
     }
@@ -90,7 +92,7 @@ public class Connection : IConnection
 
 
     /// <inheritdoc />
-    public IDb Db => new Db(_store, this, TxId);
+    public IDb Db => new Db(_store, this, TxId, _factories);
 
 
     /// <inheritdoc />

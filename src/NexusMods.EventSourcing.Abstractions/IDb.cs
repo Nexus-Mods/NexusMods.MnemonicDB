@@ -16,4 +16,13 @@ public interface IDb
     where TAttr : IAttribute;
 
     public IIterator Where(EntityId id);
+
+    /// <summary>
+    /// Returns a read model for each of the given entity ids.
+    /// </summary>
+    /// <param name="ids"></param>
+    /// <typeparam name="TModel"></typeparam>
+    /// <returns></returns>
+    public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids)
+        where TModel : IReadModel;
 }

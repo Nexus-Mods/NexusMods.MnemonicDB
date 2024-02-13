@@ -97,6 +97,14 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition(registry, 
             }
         }
 
+        public void SetOn<TModel>(TModel model) where TModel : IReadModel
+        {
+            var span = _iterator.GetKeySpan();
+            var currentHeader = MemoryMarshal.AsRef<KeyHeader>(span);
+            var currentValue = span.SliceFast(KeyHeader.Size);
+            _registry.SetOn(model, ref currentHeader, currentValue);
+        }
+
         public bool Next()
         {
         TOP:

@@ -21,4 +21,11 @@ public interface IEntityIterator
     /// Gets the current datom as a distinct value.
     /// </summary>
     public IDatom Current { get; }
+
+    /// <summary>
+    /// Sends the current datom to the read model.
+    /// </summary>
+    /// <param name="model"></param>
+    /// <typeparam name="TModel"></typeparam>
+    public void SetOn<TModel>(TModel model) where TModel : IReadModel;
 }
