@@ -5,9 +5,7 @@ namespace NexusMods.EventSourcing.TestModel;
 
 public static class Services
 {
-    public static IServiceCollection AddTestModel(this IServiceCollection services)
-    {
-        services.AddModModel();
-        return services;
-    }
+    public static IServiceCollection AddTestModel(this IServiceCollection services) =>
+        services.AddModModel()
+                .AddLoadoutModel();
 }

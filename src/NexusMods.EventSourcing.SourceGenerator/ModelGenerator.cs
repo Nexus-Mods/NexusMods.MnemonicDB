@@ -104,10 +104,9 @@ public class ModelGenerator : IIncrementalGenerator
             sb.Line("}");
 
             sb.Line("}");
+            sb.Line("}");
+
         }
-
-        sb.Line("}");
-
 
         var source = sb.ToString();
 

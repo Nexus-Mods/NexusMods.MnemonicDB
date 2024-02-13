@@ -17,7 +17,7 @@ public class CodeWriter
 
     }
 
-    public string ToString() => _builder.ToString();
+    public override string ToString() => _builder.ToString();
 
     public void ClassComment(string comment)
     {
