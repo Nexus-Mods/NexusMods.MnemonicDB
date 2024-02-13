@@ -23,4 +23,10 @@ public interface IConnection
     /// <param name="datoms"></param>
     /// <returns></returns>
     public ICommitResult Transact(IEnumerable<IDatom> datoms);
+
+    /// <summary>
+    /// Starts a new transaction.
+    /// </summary>
+    /// <returns></returns>
+    public ITransaction BeginTransaction();
 }

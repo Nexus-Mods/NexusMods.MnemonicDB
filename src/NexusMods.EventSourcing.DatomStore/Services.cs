@@ -18,7 +18,9 @@ public static class Services
     /// <returns></returns>
     public static IServiceCollection AddDatomStore(this IServiceCollection services)
     {
-        services.AddSingleton<AttributeRegistry>()
+        services
+            .AddSingleton<IDatomStore, RocksDBDatomStore>()
+            .AddSingleton<AttributeRegistry>()
             .AddAttribute<BuiltInAttributes.UniqueId>()
             .AddAttribute<BuiltInAttributes.ValueSerializerId>()
             .AddValueSerializer<UInt128Serializer>()

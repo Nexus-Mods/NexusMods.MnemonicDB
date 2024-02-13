@@ -14,8 +14,7 @@ public static class Services
     /// <param name="services"></param>
     /// <typeparam name="TAttribute"></typeparam>
     /// <returns></returns>
-    public static IServiceCollection AddEventSourcing<TAttribute>(this IServiceCollection services)
-        where TAttribute : class, IAttribute
+    public static IServiceCollection AddEventSourcing(this IServiceCollection services)
     {
         services.AddSingleton<IConnection, Connection>();
         return services;
