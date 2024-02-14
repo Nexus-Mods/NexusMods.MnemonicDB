@@ -90,4 +90,32 @@ public class DbTests : AEventSourcingTest
         }
     }
 
+    [Fact]
+    public void ReadModelsCanHaveExtraAttributes()
+    {
+        var tx = Connection.BeginTransaction();
+        var fileId = tx.TempId();
+        File.Path.Assert(fileId, "C:\\test.txt", tx);
+        File.Hash.Assert(fileId, 0xDEADBEEF, tx);
+        File.Index.Assert(fileId, 77, tx);
+        ArchiveFile.Index.Assert(fileId, 42, tx);
+        ArchiveFile.ArchivePath.Assert(fileId, "C:\\archive.zip", tx);
+        var result = tx.Commit();
+
+        var realId = result[fileId];
+        var db = Connection.Db;
+        var readModel = db.Get<FileReadModel>([realId]).First();
+        readModel.Path.Should().Be("C:\\test.txt");
+        readModel.Hash.Should().Be(0xDEADBEEF);
+        readModel.Index.Should().Be(77);
+
+        var archiveReadModel = db.Get<ArchiveFileReadModel>([realId]).First();
+        archiveReadModel.Path.Should().Be("C:\\test.txt");
+        archiveReadModel.Hash.Should().Be(0xDEADBEEF);
+        archiveReadModel.Index.Should().Be(42);
+        archiveReadModel.ArchivePath.Should().Be("C:\\archive.zip");
+
+
+    }
+
 }

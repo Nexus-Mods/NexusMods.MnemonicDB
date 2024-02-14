@@ -18,9 +18,22 @@ public class AttributeDefinitionsBuilder
     /// </summary>
     /// <param name="name"></param>
     /// <param name="description"></param>
+    /// <typeparam name="TValueType"></typeparam>
+    /// <returns></returns>
+    public AttributeDefinitionsBuilder Define<TValueType>(string name, string description)
+    {
+        return this;
+    }
+
+    /// <summary>
+    /// Defines a new attribute with the given name and description
+    /// </summary>
+    /// <param name="name"></param>
+    /// <param name="description"></param>
     /// <typeparam name="ValueType"></typeparam>
     /// <returns></returns>
-    public AttributeDefinitionsBuilder Define<ValueType>(string name, string description)
+    public AttributeDefinitionsBuilder Include<TAttr>()
+    where TAttr : IAttribute
     {
         return this;
     }

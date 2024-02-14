@@ -9,6 +9,8 @@ public class AttributeData
     public string Description { get; set; } = "";
     public string Namespace { get; set; } = "";
     public string Entity { get; set; } = "";
+
+    public bool IsInclude { get; set; } = false;
 }
 
 public class AttributeGroup

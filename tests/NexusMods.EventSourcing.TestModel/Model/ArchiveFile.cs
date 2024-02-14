@@ -3,11 +3,13 @@
 namespace NexusMods.EventSourcing.TestModel.Model;
 
 [ModelDefinition]
-public static partial class File
+public static partial class ArchiveFile
 {
     public static AttributeDefinitions Attributes = new AttributeDefinitionsBuilder()
-        .Define<string>("Path", "The path of the file")
-        .Define<ulong>("Hash", "The hash of the file")
+        .Include<File.Hash>()
+        .Include<File.Path>()
         .Define<ulong>("Index", "A index value for testing purposes")
+        .Define<string>("ArchivePath", "The path of the archive file")
         .Build();
+
 }
