@@ -45,7 +45,49 @@ public class DbTests : AEventSourcingTest
             readModel.Hash.Should().Be(idx + 0xDEADBEEF);
             readModel.Path.Should().Be($"C:\\test_{idx}.txt");
         }
+    }
 
+    [Fact]
+    public void DbIsImmutable()
+    {
+        const int TIMES = 10;
+
+        // Insert some data
+        var tx = Connection.BeginTransaction();
+        var fileId = tx.TempId();
+        File.Path.Assert(fileId, "C:\\test.txt_mutate", tx);
+        File.Hash.Assert(fileId, 0xDEADBEEF, tx);
+        File.Index.Assert(fileId, 0, tx);
+
+        var result = tx.Commit();
+
+        var realId = result[fileId];
+        var originalDb = Connection.Db;
+
+        // Validate the data
+        var found = originalDb.Get<FileReadModel>([realId]).First();
+        found.Path.Should().Be("C:\\test.txt_mutate");
+        found.Hash.Should().Be(0xDEADBEEF);
+        found.Index.Should().Be(0);
+
+        // Mutate the data
+        for (var i = 0; i < TIMES; i++)
+        {
+            var newTx = Connection.BeginTransaction();
+            File.Path.Assert(fileId, $"C:\\test_{i}.txt_mutate", newTx);
+
+            var newResult = newTx.Commit();
+
+            // Validate the data
+            var newDb = Connection.Db;
+            var newId = newResult[fileId];
+            var newFound = newDb.Get<FileReadModel>([newId]).First();
+            newFound.Path.Should().Be($"C:\\test_{i}.txt_mutate");
+
+            // Validate the original data
+            var orignalFound = originalDb.Get<FileReadModel>([realId]).First();
+            orignalFound.Path.Should().Be("C:\\test.txt_mutate");
+        }
     }
 
 }
