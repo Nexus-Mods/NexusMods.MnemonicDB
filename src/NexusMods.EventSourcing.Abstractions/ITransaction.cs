@@ -1,20 +1,22 @@
-using System;
+﻿using System;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
-/// <summary>
-/// A context for adding events to an aggregate event that will apply the events together.
-/// </summary>
-public interface ITransaction : IDisposable
+public interface ITransaction
 {
     /// <summary>
-    /// Adds the event to the transaction, but does not apply it.
+    /// Gets a temporary id for a new entity
     /// </summary>
-    /// <param name="event"></param>
-    public void Add(IEvent @event);
+    /// <returns></returns>
+    EntityId TempId();
 
     /// <summary>
-    /// Commits the transaction, applying all events
+    /// Adds a new datom to the transaction
     /// </summary>
-    public TransactionId Commit();
+    void Add(IDatom datom);
+
+    /// <summary>
+    /// Commits the transaction
+    /// </summary>
+    ICommitResult Commit();
 }

@@ -1,95 +1,73 @@
-using System;
-using System.Buffers;
-using NexusMods.EventSourcing.Abstractions.Serialization;
+﻿using System;
+using System.Runtime.CompilerServices;
+using System.Transactions;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
- /// A scalar attribute that can be exposed on an entity.
- /// </summary>
- public class ScalarAttribute<TOwner, TType>(string attrName) :
-    IAttribute<ScalarAccumulator<TType>>
- where TOwner : AEntity
- {
-     /// <inheritdoc />
-     public Type Owner => typeof(TOwner);
+/// Interface for a specific attribute
+/// </summary>
+/// <typeparam name="TValueType"></typeparam>
+public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
+where TAttribute : IAttribute<TValueType>
+{
+    private IValueSerializer<TValueType> _serializer = null!;
 
-     /// <inheritdoc />
-     public string Name => attrName;
+    /// <summary>
+    /// Create a new attribute
+    /// </summary>
+    /// <param name="guid"></param>
+    protected ScalarAttribute(string uniqueName)
+    {
+        Id = Symbol.Intern(uniqueName);
+    }
 
-     IAccumulator IAttribute.CreateAccumulator()
-     {
-         return CreateAccumulator();
-     }
+    /// <summary>
+    /// Create a new attribute from an already parsed guid
+    /// </summary>
+    /// <param name="guid"></param>
+    protected ScalarAttribute(Symbol symbol)
+    {
+        Id = symbol;
+    }
 
-     /// <inheritdoc />
-     public ScalarAccumulator<TType> CreateAccumulator()
-     {
-         return new ScalarAccumulator<TType>();
-     }
+    public TValueType Read(ReadOnlySpan<byte> buffer)
+    {
+        _serializer.Read(buffer, out var val);
+        return val;
+    }
 
-     /// <summary>
-     /// Sets the value of the attribute for the given entity.
-     /// </summary>
-     /// <param name="context"></param>
-     /// <param name="owner"></param>
-     /// <param name="value"></param>
-     /// <typeparam name="TContext"></typeparam>
-     public void Set<TContext>(TContext context, EntityId<TOwner> owner, TType value)
-         where TContext : IEventContext
-     {
-         if (context.GetAccumulator<TOwner, ScalarAttribute<TOwner, TType>, ScalarAccumulator<TType>>(owner, this, out var accumulator))
-             accumulator.Value = value;
-         EntityStructureRegistry.Register(this);
-     }
+    public void SetSerializer(IValueSerializer serializer)
+    {
+        if (serializer is not IValueSerializer<TValueType> valueSerializer)
+            throw new InvalidOperationException($"Serializer {serializer.GetType()} is not compatible with {typeof(TValueType)}");
+        _serializer = valueSerializer;
+    }
 
-     /// <summary>
-     /// Resets the value of the attribute for the given entity to the default value.
-     /// </summary>
-     /// <param name="context"></param>
-     /// <param name="owner"></param>
-     /// <typeparam name="TContext"></typeparam>
-     public void Unset<TContext>(TContext context, EntityId<TOwner> owner)
-         where TContext : IEventContext
-     {
-         if (context.GetAccumulator<TOwner, ScalarAttribute<TOwner, TType>, ScalarAccumulator<TType>>(owner, this, out var accumulator))
-             accumulator.Value = default!;
-     }
 
-     /// <summary>
-     /// Gets the value of the attribute for the given entity.
-     /// </summary>
-     /// <param name="owner"></param>
-     /// <returns></returns>
-     public TType Get(TOwner owner)
-     {
-         if (owner.Context.GetReadOnlyAccumulator<TOwner, ScalarAttribute<TOwner, TType>, ScalarAccumulator<TType>>(owner.Id, this, out var accumulator))
-             return accumulator.Value;
-         // TODO, make this a custom exception and extract it to another method
-         throw new InvalidOperationException($"Attribute not found for {Name} on {Owner.Name} with id {owner.Id}");
-     }
- }
+    /// <inheritdoc />
+    public Type ValueType => typeof(TValueType);
 
- /// <summary>
- /// A scalar attribute accumulator, used to store a single value
- /// </summary>
- /// <typeparam name="TVal"></typeparam>
- public class ScalarAccumulator<TVal> : IAccumulator
- {
-     /// <summary>
-     /// The value of the accumulator
-     /// </summary>
-     public TVal Value = default! ;
+    /// <inheritdoc />
+    public bool IsMultiCardinality => false;
 
-     /// <inheritdoc />
-     public void WriteTo(IBufferWriter<byte> writer, ISerializationRegistry registry)
-     {
-         registry.Serialize(writer, Value);
-     }
+    /// <inheritdoc />
+    public bool IsReference => false;
 
-     /// <inheritdoc />
-     public int ReadFrom(ref ReadOnlySpan<byte> span, ISerializationRegistry registry)
-     {
-         return registry.Deserialize(span, out Value);
-     }
- }
+    /// <inheritdoc />
+    public Symbol Id { get; }
+
+    public IDatom Read(ulong entity, ulong tx, bool isAssert, ReadOnlySpan<byte> buffer)
+    {
+        _serializer.Read(buffer, out var val);
+        return isAssert
+            ? new AssertDatomWithTx<TAttribute, TValueType>(entity, val, TxId.From(tx))
+            : throw new NotImplementedException();
+    }
+
+    public static IDatom Assert(ulong e, TValueType v)
+    {
+        return new AssertDatom<TAttribute, TValueType>(e, v);
+    }
+
+}

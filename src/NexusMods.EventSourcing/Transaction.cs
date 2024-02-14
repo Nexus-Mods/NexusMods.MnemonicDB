@@ -1,29 +1,28 @@
-using System.Collections.Generic;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Threading;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Events;
 
 namespace NexusMods.EventSourcing;
 
-internal class Transaction(IEntityContext context, List<IEvent> events) : ITransaction
+public class Transaction(Connection connection) : ITransaction
 {
-    /// <inheritdoc />
-    public void Add(IEvent @event)
+    private ulong _tempId = Ids.MinId(Ids.Partition.Tmp);
+    private ConcurrentBag<IDatom> _datoms = new();
+
+    /// <inhertdoc />
+    public EntityId TempId()
     {
-        events.Add(@event);
+        return EntityId.From(Interlocked.Increment(ref _tempId));
     }
 
-    /// <inheritdoc />
-    public TransactionId Commit()
+    public void Add(IDatom datom)
     {
-        if (events.Count == 1)
-            return context.Add(events[0]);
-        var id = context.Add(new TransactionEvent(events.ToArray()));
-        events.Clear();
-        return id;
+        _datoms.Add(datom);
     }
 
-    public void Dispose()
+    public ICommitResult Commit()
     {
-        events.Clear();
+        return connection.Transact(_datoms);
     }
 }

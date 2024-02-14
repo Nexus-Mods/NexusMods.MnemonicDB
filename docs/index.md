@@ -58,548 +58,257 @@ flowchart TD
 
 ## Nexus Event Sourcing Framework
 
-This framework is a simplified and highly optimized version of the CQRS pattern. It is designed to be used in single process desktop
-application and as such does not have to deal with the complexities of distributed systems, such as eventual consistency, or
-distributed transactions. It also very opinionated about the shape of the read model, and the shape of events, this results in an extremely
-high performance framework, but at the cost of some flexibility. Thankfully most of this complexity is hidden from users
-and the application developer, and this process does *not* require any source generators or compile time code generation.
+This framework takes heavy inspiration from [Datomic](https://docs.datomic.com/pro/index.html), an immutable, tuple oriented, single writer, parallel reader database system. Unfortunately,
+Datomic is not open source, is written in Java, and not designed for a single process desktop application. However the information available about
+the database is very insightful and we are leveraging many aspects of its design in our framework.
 
-The first departure from more standard forms of CQRS is how the read model is structured. During development of this framework several
-patterns were attempted and all but one resulted in extreme complexity, or performance issues. The final design retains a lot
-of power of the CQRS pattern but adopts some concepts from immutable databases like Datomic and other `[entity, attribute, value]` systems.
-First of all, a short overview of other patterns that were attempted.
+!!!info
+    While the Nexus Event Sourcing framework takes inspiration from Datomic, and although one of the authors (halgari) used to work for Cognitect (the company behind Datomic at the time),
+this project is a 100% clean room implementation and does not contain any code from Datomic, nor have any of its authors ever seen the source code of Datomic. The main distinctions between
+the two is that Datomic is primarilly focused on a distributed system, and the Nexus Event Sourcing framework is only designed for a single process application.
 
-!!! info "These patterns will be using an example datamodel, that is close to the one found in the nexus mods app. Loadouts are stored in a LoadoutRegistry, each loadout can have one or more mods, and loadouts may have collections that also contain links to mods in the loadout. So the model is a cyclic directed graph."
+### Data format
+Data is stored as a series of tuples, in the format of `[entity, attribute, value, transaction, op]` where each of these has a specific meaning:
 
-```mermaid
-flowchart TD
-    LoadoutRegistry --> | Loadouts | Loadout
-    Loadout --> | Mods | Mod
-    Mod --> | Loadout | Loadout
-    Mod --> | Collection | Collection
-    Loadout --> | Collections | Collection
-    Collection --> | Mods | Mod
-    Collection --> | Loadout | Loadout
-```
+* `entity` - 64bit long - The entity id the tuple is associated with
+* `attribute` - 64bit long - The attribute id the tuple is associated with
+* `value` - The value of the tuple, a binary blob who's format is defined by the attribute's `NativeType` in the schema
+* `transaction` - 64bit long - The transaction id the tuple is associated with
+* `op` - 1bit flag - The operation that was performed on the tuple, either `Assert` or `Retract`
 
-### The "objects are smart" pattern
-This pattern matches some of the business model frameworks in C# like Entity Framework or CSLA.NET. In this pattern developers
-create extremely rich domain objects that contain all the business logic and data for the application. The framework would then
-track changes to this model and generate events that could be replayed.
+It is interesting to note that the `transaction` id is a 64bit long, and is used to order the tuples in the event log, transactions are monotonic and always increasing.
+This is a key feature of the system, as it allows us to order the events in the event log, and also allows us to replay the events in the event log in order to rebuild the read data model.
 
-In this pattern one would expect something like this (in pseudo code):
+Attributes and transactions are also entities, and are put into a separate `partition` via a prefix on their ids. The top byte of an ID is the partition, and by default the following partitions are defined:
 
-```python
-class LoadoutRegistry(Entity):
-  loadouts = {}
+* `0x00` - The attribute partition
+* `0x01` - The transaction partition
+* `0x03` - The tempid partition (used for assigning temporary ids to entities that will be resolved to actual IDs when a transaction is committed)
+* `0x04` - The entity partition
+* `0x05`+ - Unused, could be used for user defined partitions
 
-  @event
-  def add_loadout(self, name, id):
-    self.loadouts[id] = Loadout(name, id)
-    return id
+Data is stored in RocksDB, with the value of each entry being mostly unused. Instead the same key is interested into several column families, each with a separate comparator. This same comparator
+is used during query to perform a binary searh to a specific value. From that point the iterator can be used to move forwards and backwards in the column family to find the specific tuples.
 
-class Loadout(Entity):
-  def __init__(self, id, name):
-    self.id = id
-    self.name = name
-    self.mods = []
-    self.collections = []
+### Key format
+Keys in rocksdb are slightly bitpacked to save space. More advanced packing is possible, but the more packing tha that is performed, the more complex the comparison code becomes,
+so it's a tradeoff between space and speed. The format of the key is as follows:
 
-  @event
-  def rename(self, name):
-    self.name = name
+`[Entity(ulong),Transaction(ulong), Op + Attribute(ushort)]`
+
+The top bit of the `ushort` value is the op (1 = Assert, 0 = Retract), and the remaining 15 bits can be cast to a ulong to get the Attribute entity ID. This means that Entity and transaction space are limited to 2^58,
+and the attribute space is limited to 2^15. It is assumed that 32K distinct attributes is enough for anyone.
+
+!!!info
+    A prototype was done where the entity and transaction values were 34bit unsigned integers, the attribute was 11bits, with a 1 bit op. This resulted in 2^11 distinct attributes, and a 10byte key, instead of an 18byte key in the final design.
+However, looking at the generated machine code, it was clear that the key comparison code involved a lot more bit shifting and unaligned memory acces, and so the complexity was considered not worth the 8 byte saving.
+
+### Indexes
+There are several indexes that are required for the system to function properly:
+
+But first let's define some common abbreviations:
+
+* `E` - Entity id
+* `A` - Attribute id
+* `V` - Value blob
+* `T` - Transaction id
+* `O` - Operation flag
+
+* TxLog - this is simply all the datoms in the system, ordered by transaction id, this can be used to ask questions like "What was inserted in the last transaction"
+* EATOV - this is the primary index, and is used to find all the tuples associated with a specific entity, this can be used to ask questions like "Find all the attributes set on this mod"
+* AVTEO - this is a reverse index, and is used to find all the entities that have a given value for a given attribute, this can be used to ask questions like "Find all mods that are enabled"
+* VAETO - this is a reverse index, and is used to find all the entities that have a specific value. Normally this is only used on attributes who's value is of type `entity reference`. This can be used to ask questions like "Find all mods that point to this loadout"
+
+### Sorting
+Since all the sorting is performed by C# code injected into RocksDB via the `Comparator` interface, (via native function calling), the sorting follows C#'s rules for sorting. This means
+we can use C#'s `IComparable` interfaces and define per-value-type sorting rules. This is useful for things like string and filepath sorting. The stored in each key in RocksDB is the same across all column families,
+it's only the comparator that changes which results in a different sorting order.
+
+### Querying
+Internally, RocksDB offers a "SeekPrev" operator which says: "Find the first key that is less than or equal to this key". This allows us to construct a tuple with each value set to either a minimum or max value, and then use the SeekPrev to find the
+next matching tuple.
+
+For example, if we want to load all the attributes for Entity Id 42 as of transaction 100, we can construct a tuple with the following values:
+
+`[42, ulong.MaxValue, null, 100, 1]`
+
+Then we would `SeekPrev` to find the first matching tuple, and return it. Then we would take the attribute Id from that tuple, and update the tuple's attribute to the attribute id we just got, minus 1, and then `SeekPrev` again.
+We continue this process until we find a tuple that doesn't match the entity id, or we run out of tuples.
+
+Since 'Retract' has a flag of 0, and we don't allow a assert and retract in the same transaction, we will always get the correct value for the attribute at the given transaction. Also since the transaction id is monotonic, we can stop the search when we find the first transaction id
+that is less than the transaction id we are looking for.
+
+!!!info
+     Observant readers will realize this means that value trashing (values that change a lot) will result in lots of seeks for a single entity. If this becomes a performance problem we can borrow a concept from Datomic and have a `Current` index
+which is a separate index that only contains the most recent assertions for each entity, this can then be filtered by Tx first, and any tuples that are more recent than the Tx we are looking for can be looked up in the `History` index. This would result
+in a single seek for eacn entity, and then a linear scan of the attributes for that entity, with the fallback to the `History` index if the `Current` index doesn't contain the value we are looking for.
+
+### Schema
+As mentioned attributes and transactions are entities. This means we can add additional data to these entities, such as `TransactionTime` to a transaction, or `NativeType` to attributes. Not much more to say about this feature here, except that the schema
+from the C# code is injected into the database itself so that we can re-query it on application startup to validate that code changes are compatible with the database schema.
 
 
-with ctx.transaction as tx:
-  registry = tx.get(LoadoutRegistry)
-  id = registry.add_loadout("My Loadout", 1)
-  tx.get(id).rename("My New Loadout")
-```
+## Core Interfaces
 
-This pattern has several drawbacks, firstly, capturing calls to methods is difficult especially in C#. We could define
-these objects in some sort of DSL and have the methods generated and/or intercepted but that became more complex the more
-the approach was investigated. Secondly, it's not clear from the code what parts of the code are part of the read model, and
-what are parts of events. The original idea here would be to mark methods with `@event` and then have the framework generate
-events for those methods, but that quickly makes the code unclear what parts of the class would need to be serialized (the method arguments)
-and what will be generated.
+### IDatomStore
+This interface isn't often encountered by users, but it's the core interface for inserting and reading datoms. It calls RocksDB and ensures that the data is properly indexed. It also offers basic iterators for reading each index. If we ever implement
+a `Current` index, it will be implemented here.
 
-### The "events are objects too" pattern
+### IConnection
+Represents a writable connection to a database. This is named `Connection` mostly because that's what Datomic calls it, and it's the closest thing to a database connection in the system. This is all in-process so there's no network involved.
+This class can create transactions, and dereference to a database. It has a `IDb Current {get;}` property that returns the most recent copy of the database, which is really just an `IDb` with the `Tx` value set to the most recent transaction id.
 
-The next model prototyped is one in which events and business objects (the read model) are both objects, and events simply become
-a way to manipulate the read model. Here the events are explicit as are their dependencies.
+### IDb
+An immutable database. This is the main interface for querying data from the database, queries from this interface will always return the same data. If more recent data is required, a new `IDb` must be created from a `IConnection` with a new transaction id.
 
-```python
+## ITransaction
+Created when a user calls `IConnection.BeginTransaction()`. This is a mutable object that can be used to insert datoms. When the transaction is commited, it will return a new `IDb` with the new transaction id, and a resolution function for resolving tempids to real ids.
 
-class LoadoutRegistry(Entity)
-  loadouts = {}
+Example:
 
-class Loadout(Entity):
-  name = ""
-  mods = []
-  collections = []
-
-class Mod(Entity):
-  name = ""
-  loadout = None
-  collection = None
-
-class AddLoadout(Event):
-  registry = None # injected somehow into the event class
-  name = ""
-  id = 0
-
-  def apply(self):
-    registry.loadouts[self.id] = Loadout(self.id, self.name)
-
-  def dependencies(self):
-    return [self.registry, self.id]
-
-class RenameLoadout(Event):
-  loadout = None # injected somehow into the event class
-  name = ""
-
-  def apply(self):
-    loadout.name = self.name
-
-  def dependencies(self):
-    return [self.id]
-
-ctx.Add(AddLoadout, name="My Loadout", id=1)
-ctx.Add(RenameLoadout, name="My New Loadout", id=1)
-
-```
-
-Here the model is a bit simpler, each event is an object that has a `apply` method that is called when the event is applied,
-it is somehow the job of the framework to look up the dependencies of the event and inject them into the event. For scalar values
-these will be deserialized from the event, for entities these will be looked up from the event store by replaying the events.
-
-This pattern has several drawbacks, firstly, it is not clear how to handle cyclic dependencies. In the example above, the `AddLoadout`
-event depends on the `LoadoutRegistry` entity, but the `LoadoutRegistry` entity depends on the collections of `Loadout` entities.
-
-A simpler model would be to keep all these entity links as some sort of Id, but then the event would have to resolve these events
-when it wants to modify them.
-
-We also have a fair amount of opaque code here, the framework has no way to know what a given event will do when called, while this model
-could work, it has a lot of "known unknowns" that would have to be solved.
-
-### The "Datomic" pattern
-
-[Datomic](https://docs.datomic.com/pro/index.html) is an immutable database that fits quite well with the event sourcing pattern. It's a database with a simple conceptional model,
-but with a rather complex internal implementation. Unfortunately it's also written in Java so using it in a single process C# app is not possible,
-but we can take some inspiration from it.
-
-In Datomic, the database is a set of facts, each fact is a tuple of `[entity, attribute, value, transaction]`. The database is then a set of these
-facts index in various ways. These indexes are simply a ordered set of facts, and via a prefix lookup and iteration we can easily find any information
-we are looking for. In Datomic parlance these facts are called "datoms", and the members of the datoms are often abreviated
-as `eavt` (entity, attribute, value, transaction).
-
-The [common indexes](https://docs.datomic.com/pro/query/indexes.html) are:
-
-* `eavt` - The default index, this is a sorted set of all the facts in the database
-  * This allows us to find all the facts for a given entity
-* `aevt` - An index of all the facts sorted by attribute
-  * This allows us to find all the facts for a given attribute
-* `avet` - An index of all the facts sorted by attribute and value
-  * If a attribute is unique or the `:db.value/index` is set to true this index will be created
-  * This allows us to find all the facts for a given attribute and value
-* `vaet` - An index of all the facts sorted by value and attribute
-  * This allows us to find all the facts for a given value and attribute and is only created if the `:db.type/ref`
-  * It's an efficient way to ask "what entities have a foreign key to this entity, and through what attribute?"
-
-In this model, we can see that the database is simply a set of facts, and since the transaction value of `Transaction` is a monotonically
-increasing integer, we can simply iterate over the facts in order to find the current state of the database. Granted this iteration is very
-rarely done, as the data is indexed in various ways, but it is possible.
-
-While this method is very efficient, it does have some drawbacks. Firstly, the data is too low level for our specific use case. For example,
-creating a mod may look like this:
-
-```python
-
-db.transact(
-  [id, "name", "My Mod"],
-  [id, "version", "1.0.0"],
-  [id, "loadout", loadout_id],
-  [id, "collection", collection_id],
-  [loadout_id, "mods", id]);
-```
-
-While this approach is fairly clean, what if someday we want to change the data type of "version" from a string to a number? We would have to make
-a new attribute, and then migrate all the data from the old attribute to the new attribute, or update our queries to check both attributes. We could also
-use what is called "decanting" in Datomic, where we would write a problem that would "pour" all the data from one database into another, converting
-the attributes during the transfer process. This is very complex and error prone even in large scale Datomic systems, it would likely be a nightmare
-for small end user applications.
-
-Another observation is that the data is very low level, we have to know the attribute names (and give them unique ids), and the datoms are indexed in several
-different ways. The attributes cannot be renamed because they are in several indexes, and in the case of an attribute rename the entire index would have to be rebuilt. But
-most of these indexes are useless for our use case, we only ever need to know the state of an entity at a given time. The only index we ever need is
-`eavt` and we don't need anything but `et` on the datom.
-
-Let's condense all we've learned into a new model.
-
-### The "Nexus" pattern
-The pattern used by this library takes *heavy* inspiration from Datomic, but is much more opinionated about the shape of the data. Instead
-of storing datoms we store events. Events are C# objects with a single `Apply` method. The read model for the framework is a
-collection of `IEntity` objects. These objects define static attributes which are C# instances of `IAttribute`. These entity objects
-then get their property methods by calling `IAttribute.Get` with the entity instance. This allows the framework to define how
-attributes are stored, and how they are retrieved.
-
-What is serialized to disk is the state of the events, not the attributes, or the entities. This means that if we change the shape
-of an event at any time, and the change will retroactively be applied to all events. Each event may store one or more entity IDs.
-This is the primary issue with this model, it is not possible to have an event add entity IDs from its list of dependencies. If a need
-for this arises the entire store would have to reindex the events. But to start with, let's take a look at some example code.
+Let's say we have an Entity structure named `Mod` and we're creating a new mod, we would construct this entity, passing in the transaction. Internally the entity would be assigned a tempid,
+and that value will be returned by the `Insert` method. When the transaction is committed, that tempId can be resolved to a real id:
 
 ```csharp
-public class LoadoutRegistry(IEntityContext context) : AEntity<LoadoutRegistry>(context, SingletonId), ISingletonEntity
+
+using var tx = conn.BeginTransaction();
+var mod = new Mod(tx)
 {
-    /// <summary>
-    /// A singleton id for the loadout registry
-    /// </summary>
-    public static EntityId<LoadoutRegistry> SingletonId => EntityId<LoadoutRegistry>.From("10BAE6BA-D5F9-40F4-AF7F-CCA1417C3BB0");
+    Name = "My Mod",
+    Enabled = true
+};
 
-    /// <summary>
-    /// The loadouts in the registry.
-    /// </summary>
-    public ReadOnlyObservableCollection<Loadout> Loadouts => _loadouts.Get(this);
-    internal static readonly MultiEntityAttributeDefinition<LoadoutRegistry, Loadout> _loadouts = new(nameof(Loadouts));
-
-}
-
-public class Loadout(IEntityContext context, EntityId<Loadout> id) : AEntity<Loadout>(context, id)
+var file = new ModFile(tx)
 {
-    /// <summary>
-    /// The human readable name of the loadout.
-    /// </summary>
-    public string Name => _name.Get(this);
-    internal static readonly ScalarAttribute<Loadout, string> _name = new(nameof(Name));
+    Path = "C:\\",
+    Mod = mod.Id,
+};
+var resultSet = tx.Commit();
 
-    /// <summary>
-    /// The mods in the loadout.
-    /// </summary>
-    public ReadOnlyObservableCollection<Mod> Mods => _mods.Get(this);
-    internal static readonly MultiEntityAttributeDefinition<Loadout, Mod> _mods = new(nameof(Mods));
-
-}
-
-[EventId("63A4CB90-27E2-468A-BE94-CB01A38D8C09")]
-[MemoryPackable]
-public partial record CreateLoadout(EntityId<Loadout> Id, string Name) : IEvent
-{
-    public void Apply<T>(T context) where T : IEventContext
-    {
-        IEntity.TypeAttribute.New(context, Id);
-        Loadout._name.Set(context, Id, Name);
-        LoadoutRegistry._loadouts.Add(context, LoadoutRegistry.SingletonId, Id);
-    }
-    // Helper method to create the event with a new id
-    public static CreateLoadout Create(string name) => new(EntityId<Loadout>.NewId(), name);
-}
-
-
-var ctx = <get context from somewhere>;
-var registry = ctx.Get<LoadoutRegistry>(); // No ID needed, it's a singleton
-ctx.Add(CreateLoadout.Create("My Loadout"));
-
-Debug.Assert(registry.Loadouts.First().Name == "My Loadout");
+var db = resultSet.NewDb; // Could also call conn.Current
+db[resultSet[mod.Id]].Name; // "My Mod", as resultSet has resolved the tempid to a real id assigned during the commit
 ```
 
-There's a lot here, so let's start with the Entities. Entities are mostly wrappers over the context. We start by inheriting from `AEntity<T>`
-where `T` is the type of the entity. This is a helper class that provides some common functionality.
-And we must also pass in the context and the id (if it's not a singleton, singletons have their id as a static member).
+## Entity Models
+There are several types of models in this framework to handle the 3 main uses of grouping attributes into entities:
 
-Next we define the attributes of the entity. These are static members of the entity class, and are instances of `IAttribute`. For simple scalar
-values we can use `ScalarAttribute<T, V>` where `T` is the type of the entity, and `V` is the type of the value. For collections of entities there are other attribute types.
+* Read Model - A collection attributes into a readonly object. For example, a `Mod` entity might have a `Name` and `Enabled` attribute, and so we'd need a `Mod` entity would be a read model.
+* Write Model - A init-only collection of attributes into a writeable object. This is used to create new entities, and is used in the `ITransaction` interface.
+* Active Read Model - A collection of attributes into a readonly object, but one that retains a reference to the connection that created it, as new data is written to the database, the active read model filters
+this data and emits `INotifyPropertyChanged` events to any listeners. This is used to create a live view of the database
 
-Finally we have to provide a getter for the attribute. This is done by calling `IAttribute.Get` with the entity instance. Since we are passing control
-to the attribute, the attribute itself has a lot of control over how the value is stored, and processed.
+## Defining Code Models
 
-!!!tip "Note that the only thing in this example that is written to the database is the event, attribute data, and entity data is *not* written to the datastore, this means we can redefine the rest of this logic on a whim, as long as the rest of the code compiles, the data should adapt to the new changes, more on this later"
+The code model system in this framework uses code generation to create the attributes and read models
 
-The next class we have is an event, this is a simple record type that implements `IEvent`. The event has a single `Apply` method that takes
-a Event Context. The apply method is generic so that we can reduce the amount of virtual calls performed in this method.
-Next we simply call methods on the attributes to "emit" changes to the model. Each attribute is free to define its own language for manipulation:
-the type attribute wants `.New` to be called to set the concrete type of the entity (yes polymorphic entities are supported). Scalar values simply have
-a `.Set` method that takes the entity id and the value. Multi entity attributes have a `.Add` method that takes the entity id and the value to add.
-
-Internally these attributes implement what is called an "accumulator", this can be considered an attribute specific "box" of data. How that box is manipulated is up
-to the attribute. When the getters on the attribute ask for a value, the attribute askes the entity context for the accumulator, and then return the value from that
-accumulator.
-
-!!! tip "The accumulator is a mutable object, but it is only mutated by the attribute itself, and the only time the attribute can be asked to modify the value is during the ingestion of events either from the datastore or from new events being inserted into the store".
-
-Each event must define a unique ID, this is used to identify the event in the datastore. If in the future the event needs to be renames, the old guid can be kept to make the
-code backwards compatible. The event also has a `[MemoryPackable]` attribute, this is used to tell the framework that this event can be serialized to memory.
-
-!!! tip "In Rider, if you need a new guid, you can create an empty string `""` then inside the string type `nguid` and press Enter, the IDE will auto-generate a new guid for you and insert it into the string"
-
-The `ctx.Add()` method is used to add a new event to the datastore, and "ratchet" the state of the system forward. In some cases
-events my define a static `Create` method that processes data and creates a new event. This is useful for creating events that need a
-certain amount of preprocessing or data massaging logic.
-
-
-## The parts of the system
-
-!!!info "This system makes heavy use of generics to remove virtual calls and improve performance. This does make the code a bit more verbose in some locations, but the inner parts of this framework are designed to reply thousands of events in a few milliseconds, where every last bit of performance is important"
-
-### The Event Store (IEventStore)
-The Event store interface is quite simple, it has a way to insert new events, and a way to get all events by entityID. Note that
-this interface does not return an `IEnumerable` and since it takes an generic ingester, the ingester can be (and often is) a struct
-wrapper around some sort of data structure.
+### Attributes
+Attributes are defined by creating a static class and giving it a name that helps define the namespace for the attributes:
 
 ```csharp
-/// <summary>
-/// An event store is responsible for storing events and retrieving them (by entity id) for replay.
-/// </summary>
-public interface IEventStore
-{
-    /// <summary>
-    /// Add an event to the store, returns the transaction id of the insert.
-    /// </summary>
-    /// <param name="eventEntity"></param>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public TransactionId Add<T>(T eventEntity) where T : IEvent;
+namespace NexusMods.Model;
 
-    /// <summary>
-    /// For each event for the given entity id, call the ingester.
-    /// </summary>
-    /// <param name="entityId"></param>
-    /// <param name="ingester"></param>
-    /// <typeparam name="TIngester"></typeparam>
-    public void EventsForEntity<TIngester>(EntityId entityId, TIngester ingester)
-        where TIngester : IEventIngester;
-}
-
-/// <summary>
-/// A mostly internal interface that is used to ingest events from the event store.
-/// </summary>
-public interface IEventIngester
+public partial static class Mod
 {
-    /// <summary>
-    /// Ingests the given event into the context.
-    /// </summary>
-    /// <param name="event"></param>
-    /// <returns></returns>
-    public void Ingest(IEvent @event);
+    public static readonly AttributeDefinitions AttributeDefinitions =
+        new AttributeDefinitionsBuilder()
+            .Define("Name", NativeType.String, "A name for the mod")
+            .Define("Enabled", NativeType.Bool, "True if the mod is enabled")
+            .Build();
 }
 ```
 
-This interface is pretty simple, and is the only interface to KV stores like RocksDB, FasterKV, etc. Infact most backends like RocksDB can be implemented in an hour of work, and be fully compliant with the interface.
-In the future this interface may be updated to replay events in reverse, as some features like "Undo" may be much more efficient if events are read in reverse.
+The code generator will find this class, and generate attributes classes for the specified definitions. These will be generated as `NexusMods.Model.Mod/Name` and `NexusMods.Model.Mod/Enabled`. For
+the name and namespaces respectively.
+
+!!!info
+    The code generator will create a matching static DI method called `AddMod` that will add DI entries for the attribute definitions and the attribute classes.
 
 
-## The IEvent Interface
-The `IEvent` interface is the core of the system, it defines a single `Apply` method that takes a IEventContext.
+### Read Models
+Read models are defined much in the same way as attributes, as a collection of attributes:
 
-!!!tip "Do not confuse the `IEventContext` with the similarly named `IEntityContext` the former defines the data that a `IEvent` needs to perform it write operations, while the latter defines the read-only side of the system."
+```csharp
+namespace NexusMods.Model;
+
+public partial static class Mod
+{
+    public static readonly AttributeDefinitions AttributeDefinitions =
+        new AttributeDefinitionsBuilder()
+            .Define<string>("Name", "A name for the mod")
+            .Define<bool>("Enabled", "True if the mod is enabled")
+            .Build();
+
+    public static readonly ModelDefinition ModelDefinition =
+        new ModelDefinitionBuilder()
+            .Include<Enabled, Name>()
+            .Build();
+}
+```
+
+Internally this will generate 3 classes, for the `ReadModel`, `WriteModel`, and `ActiveReadModel` respectively. It will also generate several static extension methods for the `IDb` and `ITransaction` interfaces to make it easier to work with these models.
+The write model method isn't a class, but a method that takes a `ITransaction` and returns a `ReadModel` interface.
 
 ```csharp
 
-/// <summary>
-/// A single event that can be applied to an entity.
-/// </summary>
-[MemoryPackable(GenerateType.NoGenerate)]
-public interface IEvent
-{
-    /// <summary>
-    /// Applies the event to the entities attached to the event.
-    /// </summary>
-    void Apply<T>(T context) where T : IEventContext;
-}
+using var tx = conn.BeginTransaction();
+var mod = tx.NewMod(
+    Name = "My Mod",
+    Enabled = true
+);
 
-/// <summary>
-/// This is the context interface passed to event handlers, it allows the handler to attach new entities to the context
-/// </summary>
-public interface IEventContext
-{
-    /// <summary>
-    /// Gets the accumulator for the given attribute definition, if the accumulator does not exist it will be created. If
-    /// the context is not setup for this entityId then false will be returned and the accumulator should be ignored.
-    /// </summary>
-    /// <param name="entity"></param>
-    /// <param name="entityId"></param>
-    /// <param name="attributeDefinition"></param>
-    /// <param name="accumulator"></param>
-    /// <typeparam name="TOwner"></typeparam>
-    /// <typeparam name="TAttribute"></typeparam>
-    /// <typeparam name="TAccumulator"></typeparam>
-    /// <returns></returns>
-    public bool GetAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> entityId,
-        TAttribute attributeDefinition,
-        [NotNullWhen(true)] out TAccumulator accumulator)
-        where TAttribute : IAttribute<TAccumulator>
-        where TAccumulator : IAccumulator
-        where TOwner : IEntity;
-}
+var file = tx.NewModFile(
+    Path = "C:\\",
+    Mod = mod.Id,
+);
 ```
 
-Granted this code looks a bit like word salad, but thankfully the `IEventContext` is never used directly by event implementations, it is passed on to the attributes which are rarely implemented
-by end-user developers. The key thing to see here is that the `IEventContext` is responsible for creating and retrieving accumulators. The perhaps strange thing about this
-method is that it returns `bool` and the accumulator is an `out` parameter. This is because the context is free to ignore the accumulator request if the given context does not wish to process
-the accumulator change. Thus internally each attribute will check this value and short circuit if the accumulator is not needed. This pattern allows the framework to interrogate the event
-and gather information about it simply by calling `Apply` on the event, without having to actually apply the event to the read model.
-
-The most common form of interrogation is to log the `EntityId`s that are passed to the `GetAccumulator` method. Using this information the framework
-can quickly determine what entities are affected by the event, and thus how to index the event in the datastore.
-
-Armed with this knowledge, let's take a look at a simple attribute implementation, starting first with the `IAttribute` interface
-
-### IAttribute
+For querying, several extension methods are generated for the `IDb` and `IConnection` interfaces:
 
 ```csharp
 
-public interface IAttribute
-{
-    public Type Owner { get; }
+var results = db.GetMod(id);
+var activeResults = conn.GetActiveMod(id);
 
-    public string Name { get; }
-}
+var mods = from mod in db.GetMods()
+           where mod.Enabled
+           select mod;
 
-public interface IAttribute<TAccumulator> : IAttribute where TAccumulator : IAccumulator
+foreach (var mod in mods)
 {
-    public TAccumulator CreateAccumulator();
-}
-
-public interface IAccumulator
-{
+    Console.WriteLine(mod.Name);
 }
 ```
 
-Since most of the logic for attributes is contained in the attributes themselves, the interfaces here are quite simple and opaque.
-An attribute has a name and a type, and the typed version returns a new accumulator. The accumulator has no public methods as its implementation
-is hidden to the the attribute itself. The accumulator is simply a mutable object that is used to store mutable the data for the attribute for a given entity.
-
-Let's look an actual implementation:
+Read models can also include other read models:
 
 ```csharp
-public class ScalarAttribute<TOwner, TType>(string attrName) : IAttribute<ScalarAccumulator<TType>>
-where TOwner : AEntity<TOwner>
+
+namespace NexusMods.Model;
+
+public partial static class NexusMod
 {
-    #region Framework API
-    public Type Owner => typeof(TOwner);
-    public string Name => attrName;
+    public static readonly AttributeDefinitions AttributeDefinitions =
+        new AttributeDefinitionsBuilder()
+            .Define<ulong>("FileId", "Nexus File Id")
+            .Define<ulong>("ModId", "The name of the mod")
+            .Build();
 
-    public ScalarAccumulator<TType> CreateAccumulator()
-    {
-        return new ScalarAccumulator<TType>();
-    }
-    #endregion
-
-    #region Attribute DSL
-    public void Set<TContext>(TContext context, EntityId<TOwner> owner, TType value)
-        where TContext : IEventContext
-    {
-        if (context.GetAccumulator<TOwner, ScalarAttribute<TOwner, TType>, ScalarAccumulator<TType>>(owner, this, out var accumulator))
-            accumulator.Value = value;
-    }
-
-    public void Unset<TContext>(TContext context, EntityId<TOwner> owner)
-        where TContext : IEventContext
-    {
-        if (context.GetAccumulator<TOwner, ScalarAttribute<TOwner, TType>, ScalarAccumulator<TType>>(owner, this, out var accumulator))
-            accumulator.Value = default!;
-    }
-
-    public TType Get(TOwner owner)
-    {
-        if (owner.Context.GetReadOnlyAccumulator<TOwner, ScalarAttribute<TOwner, TType>, ScalarAccumulator<TType>>(owner.Id, this, out var accumulator))
-            return accumulator.Value;
-        throw new InvalidOperationException($"Attribute not found for {Name} on {Owner.Name} with id {owner.Id}");
-    }
-    #endregion
+    public static readonly ModelDefinition ModelDefinition =
+        new ModelDefinitionBuilder()
+            .Inherits<Mod>()
+            .Include<FileId, ModId>()
+            .Build();
 }
-
-public class ScalarAccumulator<TVal> : IAccumulator
-{
-    public TVal Value = default! ;
-}
-
 ```
 
-The attribute is divided into two logical parts: the framework specific methods, and the attribute DSL. Each attribute is free
-to define its own DSL and is encouraged to make it as easy to use as possible. Note the `if` in every write method that short-circuts
-the work if the accumulator is not found. Also note the general DSL pattern: get an accumulator from the context, manipulate the context.
-
-!!!tip "The event ingestion for a given entity are always single threaded, thus it is not required to make accumulators explicitly thread-safe. It is assumed that they will only ever be modified by one thread at a time"
-
-### IEntityContext
-The final piece in this puzzle is the `IEntityContext` interface. This interface is responsible for creating and retrieving entities, as well
-as replaying events, and accepting new events from the application. This interface is the primary abstraction applications will use to interact
-with the framework.
+### Updating
+For a single update to a specific attribute on an entity, the `ITransaction` interface has an emit method to update a specific datom:
 
 ```csharp
-/// <summary>
-/// A context for working with entities and events. Multiple contexts can be used to work with different sets of entities
-/// as of different transaction ids.
-/// </summary>
-public interface IEntityContext
-{
-    public TEntity Get<TEntity>(EntityId<TEntity> id) where TEntity : IEntity;
-    public TEntity Get<TEntity>() where TEntity : ISingletonEntity;
 
+var someMod = db.GetMod(id);
 
-    public TransactionId Add<TEvent>(TEvent entity) where TEvent : IEvent;
-
-    // Used by attributes, not used directly by application developers
-    bool GetReadOnlyAccumulator<TOwner, TAttribute, TAccumulator>(EntityId<TOwner> ownerId, TAttribute attributeDefinition, out TAccumulator accumulator)
-        where TOwner : IEntity
-        where TAttribute : IAttribute<TAccumulator>
-        where TAccumulator : IAccumulator;
-}
+using var tx = conn.BeginTransaction();
+// this seems too verbose, we'll think about this one
+Mod.Enabled.Emit(tx, someMod.Id, false);
 ```
-
-To start with there are two gettters, one for singleton entities, and for non-singleton entities. These methods are often used
-for getting entities when the id of the entity is already known. Attributes may also use these methods to resolve entities and provide them
-to the application.
-
-The `Add` method is used to add new events to the datastore, and ratchet the state of the system forward.
-
-!!!info "It is assumed that the EntityContext will maintain a cache of the entities and accumulators in use by the system. Thus it is not required to cache these entities or restrict the amount of calls made to .Get()"
-
-The `GetReadOnlyAccumulator` method is used by attributes to get accumulators for entities. This method is not used directly by application developers.
-
-
-# Smaller features of the Framework
-
-## Reactive UI integration
-
-All entities support `INotifyPropertyChanged`, when the state of an entity changes via the ingestion of a new event, the entity will raise the `PropertyChanged` event for the modified attributes.
-This is the primary reason why all Attributes contain a `Name` field, as this field will be used to raise the `PropertyChanged` event.
-
-In addition, the multi-valued collection attributes implement `INotifyCollectionChanged` and will raise the `CollectionChanged` event when the collection is modified. The combination
-of these two interfaces means that the entities can be used directly with WPF, Avalonia, and other UI frameworks that support these interfaces.
-
-
-## Future areas for optimization
-
-### Dynamic lookup
-Currently calling a `Attribute.Get` method requires call to `IEntityContext.GetReadOnlyAccumulator`. In the current implementation of `EntityContext` this is a double dictionary lookup.
-The first lookup resolves the entity down to a collection of accumulators the second gets the accumulator for the given attribute. This fairly fast today, roughly 12ns per call, but it could likely be made
-faster via using the DLR to cache a revision of the entity state. In otherwords, setup a guard such as `if the entity cache is still valid, return this constant accumulator`. This would effectively make
-a call to `Attribute.Get` as performant as checking a field on the context and then a field lookup on an accumulator.
-
-### Weak Entities
-Currently once entities are loaded into a context they live forever. This is not a problem for initial testing, but the EntityContext should probably store these entities
-in a dictionary with weak references to the entities so they can be garbage collected if they are no longer in use.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
