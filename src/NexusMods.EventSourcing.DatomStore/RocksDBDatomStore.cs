@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
@@ -134,6 +135,11 @@ public class RocksDBDatomStore : IDatomStore
     public void RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
     {
         _registry.Populate(newAttrs.ToArray());
+    }
+
+    public Expression GetValueReadExpression(Type attribute, Expression valueSpan, out ulong attributeId)
+    {
+        return _registry.GetReadExpression(attribute, valueSpan, out attributeId);
     }
 
     public void Dispose()

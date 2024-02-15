@@ -16,16 +16,16 @@ public class Connection : IConnection
     private ulong _nextEntityId = Ids.MinId(Ids.Partition.Entity);
     private readonly IDatomStore _store;
     private readonly IAttribute[] _declaredAttributes;
-    private readonly Dictionary<Type, IReadModelFactory> _factories;
+    internal readonly ModelReflector<Transaction> ModelReflector;
 
     /// <summary>
     /// Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    public Connection(IDatomStore store, IEnumerable<IAttribute> declaredAttributes, IEnumerable<IValueSerializer> serializers, IEnumerable<IReadModelFactory> factories)
+    public Connection(IDatomStore store, IEnumerable<IAttribute> declaredAttributes, IEnumerable<IValueSerializer> serializers)
     {
         _store = store;
         _declaredAttributes = declaredAttributes.ToArray();
-        _factories = factories.ToDictionary(f => f.ModelType);
+        ModelReflector = new ModelReflector<Transaction>(store);
 
         AddMissingAttributes(serializers);
     }
@@ -68,7 +68,7 @@ public class Connection : IConnection
         var entIterator = _store.EntityIterator(tx);
         while (attrIterator.Next())
         {
-            entIterator.SetEntityId(attrIterator.EntityId);
+            entIterator.SeekTo(attrIterator.EntityId);
 
             var serializerId = UInt128.Zero;
             Symbol uniqueId = null!;
@@ -92,7 +92,7 @@ public class Connection : IConnection
 
 
     /// <inheritdoc />
-    public IDb Db => new Db(_store, this, TxId, _factories);
+    public IDb Db => new Db(_store, this, TxId);
 
 
     /// <inheritdoc />

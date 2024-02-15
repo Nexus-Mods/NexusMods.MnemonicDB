@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using NexusMods.EventSourcing.Abstractions.Models;
 
 namespace NexusMods.EventSourcing.Abstractions;
 

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using System.Transactions;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -8,6 +7,7 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// Interface for a specific attribute
 /// </summary>
 /// <typeparam name="TValueType"></typeparam>
+/// <typeparam name="TAttribute"></typeparam>
 public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
 where TAttribute : IAttribute<TValueType>
 {
@@ -17,8 +17,10 @@ where TAttribute : IAttribute<TValueType>
     /// Create a new attribute
     /// </summary>
     /// <param name="guid"></param>
-    protected ScalarAttribute(string uniqueName)
+    protected ScalarAttribute(string uniqueName = "")
     {
+        if (uniqueName == "")
+            uniqueName = typeof(TAttribute).FullName!;
         Id = Symbol.Intern(uniqueName);
     }
 
@@ -35,6 +37,13 @@ where TAttribute : IAttribute<TValueType>
     {
         _serializer.Read(buffer, out var val);
         return val;
+    }
+
+
+    /// <inheritdoc />
+    public static void Add(ITransaction tx, EntityId entity, TValueType value)
+    {
+        tx.Add<TAttribute, TValueType>(entity, value);
     }
 
     public void SetSerializer(IValueSerializer serializer)

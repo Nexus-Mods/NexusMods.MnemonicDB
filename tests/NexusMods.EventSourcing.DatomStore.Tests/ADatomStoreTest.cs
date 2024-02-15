@@ -12,7 +12,7 @@ public abstract class ADatomStoreTest : IDisposable
     protected readonly RocksDBDatomStore Store;
     protected readonly Connection Connection;
 
-    protected ADatomStoreTest(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes, IEnumerable<IReadModelFactory> factories)
+    protected ADatomStoreTest(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
     {
         _tmpPath = FileSystem.Shared.GetKnownPath(KnownPath.TempDirectory).Combine(Guid.NewGuid() + ".rocksdb");
         var dbSettings = new DatomStoreSettings()
@@ -21,7 +21,7 @@ public abstract class ADatomStoreTest : IDisposable
         };
         _registry = new AttributeRegistry(valueSerializers, attributes);
         Store = new RocksDBDatomStore(new NullLogger<RocksDBDatomStore>(), _registry, dbSettings);
-        Connection = new Connection(Store, attributes, valueSerializers, factories);
+        Connection = new Connection(Store, attributes, valueSerializers);
     }
 
     public void Dispose()

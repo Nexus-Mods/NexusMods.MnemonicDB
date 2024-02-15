@@ -50,7 +50,7 @@ public interface IAttribute
 /// Typed variant of IAttribute
 /// </summary>
 /// <typeparam name="TVal"></typeparam>
-public interface IAttribute<out TVal> : IAttribute
+public interface IAttribute<TVal> : IAttribute
 {
 
     /// <summary>
@@ -59,5 +59,14 @@ public interface IAttribute<out TVal> : IAttribute
     /// <param name="buffer"></param>
     /// <returns></returns>
     public TVal Read(ReadOnlySpan<byte> buffer);
+
+
+    /// <summary>
+    /// Creates a new assertion datom for the given entity and value
+    /// </summary>
+    /// <param name="tx"></param>
+    /// <param name="entity"></param>
+    /// <param name="value"></param>
+    public static abstract void Add(ITransaction tx, EntityId entity, TVal value);
 
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -31,4 +32,14 @@ public interface IDatomStore : IDisposable
     /// </summary>
     /// <param name="newAttrs"></param>
     void RegisterAttributes(IEnumerable<DbAttribute> newAttrs);
+
+    /// <summary>
+    /// Gets the attributeId for the given attribute. And returns an expression that reads the attribute
+    /// value from the expression valueSpan.
+    /// </summary>
+    /// <param name="valueSpan"></param>
+    /// <param name="attributeId"></param>
+    /// <typeparam name="TAttribute"></typeparam>
+    /// <returns></returns>
+    Expression GetValueReadExpression(Type attribute, Expression valueSpan, out ulong attributeId);
 }

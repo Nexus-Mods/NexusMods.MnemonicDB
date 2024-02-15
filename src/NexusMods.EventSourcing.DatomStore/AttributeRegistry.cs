@@ -2,7 +2,9 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Models;
 
 namespace NexusMods.EventSourcing.DatomStore;
 
@@ -84,11 +86,23 @@ public class AttributeRegistry
         return attribute.Read(header.Entity, header.Tx, header.IsAssert, valueSpan);
     }
 
-    public void SetOn<TModel>(TModel model, ref KeyHeader key, ReadOnlySpan<byte> sliceFast) where TModel : IReadModel
+    public TValue ReadValue<TAttribute, TValue>(ref KeyHeader currentHeader, ReadOnlySpan<byte> currentValue)
+        where TAttribute : IAttribute<TValue>
     {
-        var attrId = key.AttributeId;
+        var attrId = currentHeader.AttributeId;
         var dbAttribute = _dbAttributesByEntityId[attrId];
-        var attribute = _attributesById[dbAttribute.UniqueId];
-        model.Set(attribute, sliceFast);
+        var attribute = (TAttribute)_attributesById[dbAttribute.UniqueId];
+        return attribute.Read(currentValue);
+    }
+
+    public Expression GetReadExpression(Type attributeType, Expression valueSpan, out ulong attributeId)
+    {
+        var attr = _attributesByType[attributeType];
+        attributeId = _dbAttributesByUniqueId[attr.Id].AttrEntityId;
+        var serializer = _valueSerializersByNativeType[attr.ValueType];
+        var readMethod = serializer.GetType().GetMethod("Read")!;
+        var valueExpr = Expression.Parameter(attr.ValueType, "retVal");
+        var readExpression = Expression.Call(Expression.Constant(serializer), readMethod, valueSpan, valueExpr);
+        return Expression.Block([valueExpr], readExpression, valueExpr);
     }
 }

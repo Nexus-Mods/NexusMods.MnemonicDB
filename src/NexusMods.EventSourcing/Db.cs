@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Models;
 
 namespace NexusMods.EventSourcing;
 
-public class Db(IDatomStore store, IConnection connection, TxId txId, IDictionary<Type, IReadModelFactory> factories) : IDb
+public class Db(IDatomStore store, Connection connection, TxId txId) : IDb
 {
     public TxId BasisTxId => txId;
 
@@ -22,20 +23,13 @@ public class Db(IDatomStore store, IConnection connection, TxId txId, IDictionar
 
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids) where TModel : IReadModel
     {
-        var factory = factories[typeof(TModel)];
-
-        var iterator = store.EntityIterator(txId);
-
+        using var iterator = store.EntityIterator(txId);
+        var reader = connection.ModelReflector.GetReader<TModel>();
         foreach (var id in ids)
         {
-            var readModel = (TModel)factory.Create(id);
-            iterator.SetEntityId(id);
-            while (iterator.Next())
-            {
-                iterator.SetOn(readModel);
-            }
-
-            yield return readModel;
+            iterator.SeekTo(id);
+            var model = reader(id, iterator);
+            yield return model;
         }
     }
 }

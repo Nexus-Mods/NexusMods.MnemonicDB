@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Models;
 using Reloaded.Memory.Extensions;
 using RocksDbSharp;
 
@@ -76,7 +77,7 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition(registry, 
         }
 
 
-        public void SetEntityId(EntityId entityId)
+        public void SeekTo(EntityId entityId)
         {
             _key->Entity = entityId.Value;
             _key->AttributeId = ulong.MaxValue;
@@ -95,13 +96,27 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition(registry, 
             }
         }
 
-        public void SetOn<TModel>(TModel model) where TModel : IReadModel
+        public TValue GetValue<TAttribute, TValue>()
+            where TAttribute : IAttribute<TValue>
         {
             var span = _iterator.GetKeySpan();
             var currentHeader = MemoryMarshal.AsRef<KeyHeader>(span);
             var currentValue = span.SliceFast(KeyHeader.Size);
-            _registry.SetOn(model, ref currentHeader, currentValue);
+            return _registry.ReadValue<TAttribute, TValue>(ref currentHeader, currentValue);
+
         }
+
+        public ulong AttributeId
+        {
+            get
+            {
+                var span = _iterator.GetKeySpan();
+                var currentHeader = MemoryMarshal.AsRef<KeyHeader>(span);
+                return currentHeader.AttributeId;
+            }
+        }
+
+        public ReadOnlySpan<byte> ValueSpan => _iterator.GetKeySpan().SliceFast(KeyHeader.Size);
 
         public bool Next()
         {

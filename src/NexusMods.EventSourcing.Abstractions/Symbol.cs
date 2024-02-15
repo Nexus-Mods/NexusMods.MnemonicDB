@@ -14,8 +14,9 @@ public class Symbol
     /// <param name="nsAndName"></param>
     private Symbol(string nsAndName)
     {
+        nsAndName = nsAndName.Replace("+", ".");
         Id = nsAndName;
-        var splitOn = nsAndName.LastIndexOf('/');
+        var splitOn = nsAndName.LastIndexOf('.');
         Name = nsAndName[(splitOn + 1)..];
         Namespace = nsAndName[..splitOn];
     }
