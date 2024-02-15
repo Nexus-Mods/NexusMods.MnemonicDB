@@ -1,15 +1,16 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Abstractions.Models;
 using Reloaded.Memory.Extensions;
 using RocksDbSharp;
 
 namespace NexusMods.EventSourcing.DatomStore.Indexes;
 
-public class EATVIndex(AttributeRegistry registry) : AIndexDefinition(registry, "eatv")
+public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>(registry, "eatv"), IComparatorIndex<EATVIndex>
 {
-    public override unsafe int Compare(KeyHeader* a, uint aLength, KeyHeader* b, uint bLength)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe int Compare(AIndexDefinition<EATVIndex> idx, KeyHeader* a, uint aLength, KeyHeader* b, uint bLength)
     {
         // TX, Entity, Attribute, IsAssert, Value
         var cmp = KeyHeader.CompareEntity(a, b);
@@ -20,7 +21,7 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition(registry, 
         if (cmp != 0) return cmp;
         cmp = KeyHeader.CompareIsAssert(a, b);
         if (cmp != 0) return cmp;
-        return KeyHeader.CompareValues(Registry, a, aLength, b, bLength);
+        return KeyHeader.CompareValues(idx.Registry, a, aLength, b, bLength);
     }
 
 

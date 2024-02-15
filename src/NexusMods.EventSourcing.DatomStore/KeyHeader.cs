@@ -49,22 +49,24 @@ public unsafe struct KeyHeader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int CompareEntity(KeyHeader* a, KeyHeader* b)
     {
-        if (a->Entity < b->Entity) return -1;
-        return a->Entity > b->Entity ? 1 : 0;
+        if (a->_entity < b->_entity) return -1;
+        return a->_entity > b->_entity ? 1 : 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int CompareAttribute(KeyHeader* a, KeyHeader* b)
     {
-        if (a->AttributeId < b->AttributeId) return -1;
-        return a->AttributeId > b->AttributeId ? 1 : 0;
+        var aAttrId = a->_attrAndExtra & 0x7FFF;
+        var bAttrId = b->_attrAndExtra & 0x7FFF;
+        if (aAttrId < bAttrId) return -1;
+        return aAttrId > bAttrId ? 1 : 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int CompareTx(KeyHeader* a, KeyHeader* b)
     {
-        if (a->Tx < b->Tx) return -1;
-        return a->Tx > b->Tx ? 1 : 0;
+        if (a->_tx < b->_tx) return -1;
+        return a->_tx > b->_tx ? 1 : 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -79,8 +81,11 @@ public unsafe struct KeyHeader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int CompareValues(AttributeRegistry registry, KeyHeader* a, uint aLength, KeyHeader* b, uint bLength)
     {
-        if (a->AttributeId < b->AttributeId) return 1;
-        if (a->AttributeId > b->AttributeId) return -1;
+        var aAttrId = a->_attrAndExtra & 0x7FFF;
+        var bAttrId = b->_attrAndExtra & 0x7FFF;
+        if (aAttrId < bAttrId) return -1;
+        if (aAttrId > bAttrId)
+            return 1;
 
         var aVal = (byte*) a + Size;
         var bVal = (byte*) b + Size;

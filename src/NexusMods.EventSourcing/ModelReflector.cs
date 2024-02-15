@@ -12,18 +12,11 @@ namespace NexusMods.EventSourcing;
 /// <summary>
 /// Reflects over models and creates reader/writer functions for them.
 /// </summary>
-internal class ModelReflector<TTransaction>
-where TTransaction : ITransaction
+internal class ModelReflector<TTransaction>(IDatomStore store)
+    where TTransaction : ITransaction
 {
-    private readonly ConcurrentDictionary<Type,object> _emitters;
-    private readonly IDatomStore _store;
-
-    public ModelReflector(IDatomStore store)
-    {
-        _emitters = new ConcurrentDictionary<Type, object>();
-        _store = store;
-
-    }
+    private readonly ConcurrentDictionary<Type,object> _emitters = new();
+    private readonly ConcurrentDictionary<Type, object> _readers = new();
 
     private delegate void EmitterFn<in TReadModel>(TTransaction tx, TReadModel model)
         where TReadModel : IReadModel;
@@ -91,6 +84,17 @@ where TTransaction : ITransaction
 
     public ReaderFn<TModel> GetReader<TModel>() where TModel : IReadModel
     {
+        var modelType = typeof(TModel);
+        if (_readers.TryGetValue(modelType, out var found))
+            return (ReaderFn<TModel>)found;
+
+        var readerFn = MakeReader<TModel>();
+        _readers.TryAdd(modelType, readerFn);
+        return readerFn;
+    }
+
+    public ReaderFn<TModel> MakeReader<TModel>() where TModel : IReadModel
+    {
         var properties = GetModelProperties(typeof(TModel));
 
         var exprs = new List<Expression>();
@@ -121,7 +125,7 @@ where TTransaction : ITransaction
 
         foreach (var (attribute, property) in properties)
         {
-            var readSpanExpr = _store.GetValueReadExpression(attribute, spanExpr, out var attributeId);
+            var readSpanExpr = store.GetValueReadExpression(attribute, spanExpr, out var attributeId);
 
             var assigned = Expression.Assign(Expression.Property(newModelExpr, property), readSpanExpr);
 

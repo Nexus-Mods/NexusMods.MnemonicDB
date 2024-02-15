@@ -1,7 +1,6 @@
 ﻿using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using NexusMods.EventSourcing.Benchmarks.Model;
 using NexusMods.EventSourcing.DatomStore;
 using NexusMods.Paths;
 
@@ -16,7 +15,7 @@ public static class AppHost
             {
                 services.AddDatomStore()
                     .AddEventSourcing()
-                    .AddFileModel()
+                    .AddTestModel()
                     .AddSingleton(new DatomStoreSettings()
                     {
                         Path = FileSystem.Shared.GetKnownPath(KnownPath.TempDirectory).Combine(Guid.NewGuid() + ".rocksdb")

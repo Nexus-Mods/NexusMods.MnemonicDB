@@ -46,6 +46,7 @@ public class DbTests : AEventSourcingTest
             var idx = readModel.Index;
             readModel.Hash.Should().Be(idx + 0xDEADBEEF);
             readModel.Path.Should().Be($"C:\\test_{idx}.txt");
+            readModel.Index.Should().Be(idx);
         }
     }
 

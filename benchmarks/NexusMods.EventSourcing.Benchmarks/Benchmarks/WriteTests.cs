@@ -1,7 +1,6 @@
 ﻿using BenchmarkDotNet.Attributes;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Benchmarks.Model;
 
 namespace NexusMods.EventSourcing.Benchmarks.Benchmarks;
 
@@ -23,6 +22,7 @@ public class WriteTests
     [Benchmark]
     public void AddFiles()
     {
+        /*
         var tx = _connection.BeginTransaction();
         for (var i = 0; i < Count; i++)
         {
@@ -32,6 +32,7 @@ public class WriteTests
             File.Index.Assert(tx.TempId(), (ulong)i, tx);
         }
         tx.Commit();
+        */
     }
 
 }
