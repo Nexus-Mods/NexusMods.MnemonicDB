@@ -68,7 +68,7 @@ public class Connection : IConnection
         var entIterator = _store.EntityIterator(tx);
         while (attrIterator.Next())
         {
-            entIterator.SeekTo(attrIterator.EntityId);
+            entIterator.Set(attrIterator.EntityId);
 
             var serializerId = UInt128.Zero;
             Symbol uniqueId = null!;
@@ -129,6 +129,7 @@ public class Connection : IConnection
                 }
             }
             var newTx = _store.Transact(newDatoms);
+            TxId = newTx;
             return new CommitResult(newTx, remaps);
         }
     }

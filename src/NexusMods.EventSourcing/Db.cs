@@ -27,7 +27,7 @@ public class Db(IDatomStore store, Connection connection, TxId txId) : IDb
         var reader = connection.ModelReflector.GetReader<TModel>();
         foreach (var id in ids)
         {
-            iterator.SeekTo(id);
+            iterator.Set(id);
             var model = reader(id, iterator);
             yield return model;
         }

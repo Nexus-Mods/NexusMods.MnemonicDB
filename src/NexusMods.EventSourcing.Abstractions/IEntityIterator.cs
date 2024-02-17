@@ -15,10 +15,11 @@ public interface IEntityIterator : IDisposable
     public bool Next();
 
     /// <summary>
-    /// Seeks to the data for the given Entity Id, this implicitly resets the iterator.
+    /// Sets the EntityId for the iterator, the next call to Next() will return the first datom for the given entity
+    /// that is less than or equal to the txId given to the iterator at creation.
     /// </summary>
     /// <param name="entityId"></param>
-    public void SeekTo(EntityId entityId);
+    public void Set(EntityId entityId);
 
     /// <summary>
     /// Gets the current datom as a distinct value.

@@ -1,5 +1,6 @@
 ﻿using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.TestModel.Model;
+using NexusMods.EventSourcing.TestModel.Model.Attributes;
 using File = NexusMods.EventSourcing.TestModel.Model.File;
 
 namespace NexusMods.EventSourcing.Tests;
@@ -50,7 +51,6 @@ public class DbTests : AEventSourcingTest
         }
     }
 
-    /*
 
     [Fact]
     public void DbIsImmutable()
@@ -59,18 +59,20 @@ public class DbTests : AEventSourcingTest
 
         // Insert some data
         var tx = Connection.BeginTransaction();
-        var fileId = tx.TempId();
-        File.Path.Assert(fileId, "C:\\test.txt_mutate", tx);
-        File.Hash.Assert(fileId, 0xDEADBEEF, tx);
-        File.Index.Assert(fileId, 0, tx);
+        var file = new File(tx)
+        {
+            Path = "C:\\test.txt_mutate",
+            Hash = 0xDEADBEEF,
+            Index = 0
+        };
 
         var result = tx.Commit();
 
-        var realId = result[fileId];
+        var realId = result[file.Id];
         var originalDb = Connection.Db;
 
         // Validate the data
-        var found = originalDb.Get<FileReadModel>([realId]).First();
+        var found = originalDb.Get<File>([realId]).First();
         found.Path.Should().Be("C:\\test.txt_mutate");
         found.Hash.Should().Be(0xDEADBEEF);
         found.Index.Should().Be(0);
@@ -79,22 +81,24 @@ public class DbTests : AEventSourcingTest
         for (var i = 0; i < TIMES; i++)
         {
             var newTx = Connection.BeginTransaction();
-            File.Path.Assert(fileId, $"C:\\test_{i}.txt_mutate", newTx);
+            ModFileAttributes.Path.Add(newTx, realId, $"C:\\test_{i}.txt_mutate");
 
             var newResult = newTx.Commit();
 
             // Validate the data
             var newDb = Connection.Db;
-            var newId = newResult[fileId];
-            var newFound = newDb.Get<FileReadModel>([newId]).First();
+            newDb.BasisTxId.Value.Should().Be(originalDb.BasisTxId.Value + 1UL + (ulong)i, "transaction id should be incremented by 1 for each mutation");
+
+            var newFound = newDb.Get<File>([realId]).First();
             newFound.Path.Should().Be($"C:\\test_{i}.txt_mutate");
 
             // Validate the original data
-            var orignalFound = originalDb.Get<FileReadModel>([realId]).First();
+            var orignalFound = originalDb.Get<File>([realId]).First();
             orignalFound.Path.Should().Be("C:\\test.txt_mutate");
         }
     }
 
+    /*
     [Fact]
     public void ReadModelsCanHaveExtraAttributes()
     {

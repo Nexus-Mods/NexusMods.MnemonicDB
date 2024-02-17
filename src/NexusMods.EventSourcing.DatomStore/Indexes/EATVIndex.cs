@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
@@ -56,16 +57,15 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>
 
     public unsafe struct EATVIterator : IEntityIterator, IDisposable
     {
-        private readonly EATVIndex _idx;
-        private KeyHeader* _key;
+        private readonly KeyHeader* _key;
+        private KeyHeader* _current;
+        private UIntPtr _currentLength;
         private readonly Iterator _iterator;
-        private readonly ulong _attrId;
         private readonly AttributeRegistry _registry;
-        private bool _justSet;
+        private bool _needsSeek;
 
         public EATVIterator(ulong txId, AttributeRegistry registry, EATVIndex idx)
         {
-            _idx = idx;
             _registry = registry;
             _iterator = idx.Db.NewIterator(idx.ColumnFamilyHandle);
             _key = (KeyHeader*)Marshal.AllocHGlobal(KeyHeader.Size);
@@ -73,37 +73,33 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>
             _key->AttributeId = ulong.MaxValue;
             _key->Tx = txId;
             _key->IsAssert = true;
-            _iterator.SeekForPrev((byte*)_key, KeyHeader.Size);
-            _justSet = true;
+            _needsSeek = true;
         }
 
 
-        public void SeekTo(EntityId entityId)
+        public void Set(EntityId entityId)
         {
             _key->Entity = entityId.Value;
             _key->AttributeId = ulong.MaxValue;
-            _iterator.SeekForPrev((byte*)_key, KeyHeader.Size);
-            _justSet = true;
+            _needsSeek = true;
         }
 
         public IDatom Current
         {
             get
             {
-                var span = _iterator.GetKeySpan();
-                var valueSpan = span.SliceFast(KeyHeader.Size);
-                var header = MemoryMarshal.AsRef<KeyHeader>(span);
-                return _registry.ReadDatom(ref header, valueSpan);
+                Debug.Assert(!_needsSeek, "Must call Next() before accessing Current");
+                var currentValue = new ReadOnlySpan<byte>((byte*)_current + KeyHeader.Size, (int)_currentLength - KeyHeader.Size);
+                return _registry.ReadDatom(ref *_current, currentValue);
             }
         }
 
         public TValue GetValue<TAttribute, TValue>()
             where TAttribute : IAttribute<TValue>
         {
-            var span = _iterator.GetKeySpan();
-            var currentHeader = MemoryMarshal.AsRef<KeyHeader>(span);
-            var currentValue = span.SliceFast(KeyHeader.Size);
-            return _registry.ReadValue<TAttribute, TValue>(ref currentHeader, currentValue);
+            Debug.Assert(!_needsSeek, "Must call Next() before accessing GetValue");
+            var currentValue = new ReadOnlySpan<byte>((byte*)_current + KeyHeader.Size, (int)_currentLength - KeyHeader.Size);
+            return _registry.ReadValue<TAttribute, TValue>(ref *_current, currentValue);
 
         }
 
@@ -111,9 +107,8 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>
         {
             get
             {
-                var span = _iterator.GetKeySpan();
-                var currentHeader = MemoryMarshal.AsRef<KeyHeader>(span);
-                return currentHeader.AttributeId;
+                Debug.Assert(!_needsSeek, "Must call Next() before accessing AttributeId");
+                return _current->AttributeId;
             }
         }
 
@@ -121,28 +116,29 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>
 
         public bool Next()
         {
-        TOP:
-            if (!_justSet)
+            if (_needsSeek)
             {
-                _iterator.Prev();
+                _iterator.SeekForPrev((byte*)_key, KeyHeader.Size);
+                _needsSeek = false;
             }
             else
             {
-                _justSet = false;
+                if (_current->AttributeId == 0)
+                    return false;
+
+                _key->AttributeId = _current->AttributeId - 1;
+                _iterator.SeekForPrev((byte*)_key, KeyHeader.Size);
             }
 
             if (!_iterator.Valid()) return false;
 
-            var current = _iterator.GetKeySpan();
-            var currentHeader = MemoryMarshal.AsRef<KeyHeader>(current);
+            _current = (KeyHeader*)Native.Instance.rocksdb_iter_key(_iterator.Handle, out _currentLength);
 
-            if (currentHeader.Entity != _key->Entity) return false;
+            Debug.Assert(_currentLength >= KeyHeader.Size, "Key length is less than KeyHeader.Size");
 
-            if (currentHeader.IsRetraction)
-            {
-                _key->AttributeId = currentHeader.AttributeId - 1;
-                goto TOP;
-            }
+            if (_current->Entity != _key->Entity)
+                return false;
+
             return true;
         }
         public void Dispose()

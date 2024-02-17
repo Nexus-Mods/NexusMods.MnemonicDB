@@ -87,6 +87,11 @@ public unsafe struct KeyHeader
         if (aAttrId > bAttrId)
             return 1;
 
+        // Iterators will pass a value length of 0, and in that case we want to have the valueless key be the "largest"
+        // so the iterator will seek to the the entry with the value
+        if (aLength == Size || bLength == Size)
+            return aLength == bLength ? 0 : aLength == Size ? 1 : -1;
+
         var aVal = (byte*) a + Size;
         var bVal = (byte*) b + Size;
 
