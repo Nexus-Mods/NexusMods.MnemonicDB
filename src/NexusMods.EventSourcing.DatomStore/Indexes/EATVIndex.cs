@@ -123,23 +123,36 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>
             }
             else
             {
-                if (_current->AttributeId == 0)
-                    return false;
-
                 _key->AttributeId = _current->AttributeId - 1;
-                _iterator.SeekForPrev((byte*)_key, KeyHeader.Size);
+                _iterator.Prev();
             }
 
-            if (!_iterator.Valid()) return false;
+            while (true)
+            {
 
-            _current = (KeyHeader*)Native.Instance.rocksdb_iter_key(_iterator.Handle, out _currentLength);
+                if (!_iterator.Valid()) return false;
 
-            Debug.Assert(_currentLength >= KeyHeader.Size, "Key length is less than KeyHeader.Size");
+                _current = (KeyHeader*)Native.Instance.rocksdb_iter_key(_iterator.Handle, out _currentLength);
 
-            if (_current->Entity != _key->Entity)
-                return false;
+                Debug.Assert(_currentLength < KeyHeader.Size, "Key length is less than KeyHeader.Size");
 
-            return true;
+                if (_current->Entity != _key->Entity)
+                    return false;
+
+                if (_current->Tx > _key->Tx)
+                {
+                    _iterator.Prev();
+                    continue;
+                }
+
+                if (_current->AttributeId > _key->AttributeId)
+                {
+                    _iterator.Prev();
+                    continue;
+                }
+
+                return true;
+            }
         }
         public void Dispose()
         {

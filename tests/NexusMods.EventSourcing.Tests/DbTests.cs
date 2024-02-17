@@ -98,35 +98,40 @@ public class DbTests : AEventSourcingTest
         }
     }
 
-    /*
+
     [Fact]
     public void ReadModelsCanHaveExtraAttributes()
     {
+        // Insert some data
         var tx = Connection.BeginTransaction();
-        var fileId = tx.TempId();
-        File.Path.Assert(fileId, "C:\\test.txt", tx);
-        File.Hash.Assert(fileId, 0xDEADBEEF, tx);
-        File.Index.Assert(fileId, 77, tx);
-        ArchiveFile.Index.Assert(fileId, 42, tx);
-        ArchiveFile.ArchivePath.Assert(fileId, "C:\\archive.zip", tx);
+        var file = new File(tx)
+        {
+            Path = "C:\\test.txt",
+            Hash = 0xDEADBEEF,
+            Index = 77
+        };
+        // Attach extra attributes to the entity
+        ArchiveFileAttributes.Path.Add(tx, file.Id, "C:\\test.zip");
+        ArchiveFileAttributes.ArchiveHash.Add(tx, file.Id, 0xFEEDBEEF);
         var result = tx.Commit();
 
-        var realId = result[fileId];
+
+        var realId = result[file.Id];
         var db = Connection.Db;
-        var readModel = db.Get<FileReadModel>([realId]).First();
+        // Original data exists
+        var readModel = db.Get<File>([realId]).First();
         readModel.Path.Should().Be("C:\\test.txt");
         readModel.Hash.Should().Be(0xDEADBEEF);
         readModel.Index.Should().Be(77);
 
-        var archiveReadModel = db.Get<ArchiveFileReadModel>([realId]).First();
-        archiveReadModel.Path.Should().Be("C:\\test.txt");
-        archiveReadModel.Hash.Should().Be(0xDEADBEEF);
-        archiveReadModel.Index.Should().Be(42);
-        archiveReadModel.ArchivePath.Should().Be("C:\\archive.zip");
-
+        // Extra data exists and can be read with a different read model
+        var archiveReadModel = db.Get<ArchiveFile>([realId]).First();
+        archiveReadModel.ModPath.Should().Be("C:\\test.txt");
+        archiveReadModel.Path.Should().Be("C:\\test.zip");
+        archiveReadModel.Hash.Should().Be(0xFEEDBEEF);
+        archiveReadModel.Index.Should().Be(77);
 
     }
 
-    */
 
 }
