@@ -1,4 +1,6 @@
-﻿namespace NexusMods.EventSourcing.Abstractions;
+﻿using System.Collections.Generic;
+
+namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// The result of a transaction commit, contains metadata useful for looking up the results of the transaction
@@ -16,4 +18,9 @@ public interface ICommitResult
     /// Gets the new TxId after the commit
     /// </summary>
     public TxId NewTx { get; }
+
+    /// <summary>
+    /// The datoms that were added to the store as a result of the transaction
+    /// </summary>
+    public IEnumerable<IDatom> Datoms { get; }
 }

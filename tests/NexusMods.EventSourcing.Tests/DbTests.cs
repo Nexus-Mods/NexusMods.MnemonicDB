@@ -130,6 +130,44 @@ public class DbTests : AEventSourcingTest
         archiveReadModel.Path.Should().Be("C:\\test.zip");
         archiveReadModel.Hash.Should().Be(0xFEEDBEEF);
         archiveReadModel.Index.Should().Be(77);
+    }
+
+    [Fact]
+    public void CanGetCommitUpdates()
+    {
+        List<IDatom[]> updates = new();
+
+        Connection.Commits.Subscribe(update =>
+        {
+            updates.Add(update.Datoms.ToArray());
+        });
+
+        var tx = Connection.BeginTransaction();
+        var file = new File(tx)
+        {
+            Path = "C:\\test.txt",
+            Hash = 0xDEADBEEF,
+            Index = 77
+        };
+        var result = tx.Commit();
+
+        var realId = result[file.Id];
+
+        updates.Should().HaveCount(1);
+
+        for (var idx = 0; idx < 10; idx++)
+        {
+            tx = Connection.BeginTransaction();
+            ModFileAttributes.Index.Add(tx, realId, (ulong)idx);
+            result = tx.Commit();
+
+            result.Datoms.Should().BeEquivalentTo(updates[idx + 1]);
+
+            updates.Should().HaveCount(idx + 2);
+            var updateDatom = updates[idx + 1].OfType<AssertDatom<ModFileAttributes.Index, ulong>>()
+                .First();
+            updateDatom.V.Should().Be((ulong)idx);
+        }
 
     }
 

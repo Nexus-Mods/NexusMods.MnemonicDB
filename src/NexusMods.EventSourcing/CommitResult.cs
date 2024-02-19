@@ -4,7 +4,7 @@ using NexusMods.EventSourcing.Abstractions;
 namespace NexusMods.EventSourcing;
 
 /// <inheritdoc />
-public class CommitResult(TxId newTxId, IDictionary<ulong, ulong> remaps) : ICommitResult
+public class CommitResult(TxId newTxId, IDictionary<ulong, ulong> remaps, Connection connection, IDatom[] datoms) : ICommitResult
 {
     /// <inheritdoc />
     public EntityId this[EntityId id] =>
@@ -12,4 +12,7 @@ public class CommitResult(TxId newTxId, IDictionary<ulong, ulong> remaps) : ICom
 
     /// <inheritdoc />
     public TxId NewTx => newTxId;
+
+    /// <inheritdoc />
+    public IEnumerable<IDatom> Datoms => datoms;
 }
