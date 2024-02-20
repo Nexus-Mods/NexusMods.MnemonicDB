@@ -46,7 +46,7 @@ where TOuter : IComparatorIndex<TOuter>
         ColumnFamilyHandle = db.CreateColumnFamily(_options, ColumnFamilyName);
     }
 
-    public string ColumnFamilyName { get; } = columnFamilyName;
+    private string ColumnFamilyName { get; } = columnFamilyName;
 
     public void Dispose()
     {
@@ -63,20 +63,8 @@ where TOuter : IComparatorIndex<TOuter>
         }
     }
 
-    public static unsafe int Compare(TOuter outer, KeyHeader* a, uint aLength, KeyHeader* b, uint bLength)
-    {
-        throw new NotImplementedException();
-    }
-
     public void Put(WriteBatch batch, ReadOnlySpan<byte> span)
     {
         batch.Put(span, ReadOnlySpan<byte>.Empty, ColumnFamilyHandle);
-    }
-
-    public Iterator NewIterator()
-    {
-        var options = new ReadOptions();
-        options.SetTotalOrderSeek(true);
-        return Db.NewIterator(ColumnFamilyHandle, options);
     }
 }

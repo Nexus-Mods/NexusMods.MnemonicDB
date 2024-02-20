@@ -7,10 +7,6 @@ namespace NexusMods.EventSourcing.DatomStore;
 
 public static class BuiltInAttributes
 {
-    public static void AddBuiltInAttributes(this IServiceCollection services) =>
-        services.AddAttribute<UniqueId>()
-            .AddAttribute<ValueSerializerId>();
-
     /// <summary>
     /// The unique identifier of the entity, used to link attributes across application restarts and model changes.
     /// </summary>

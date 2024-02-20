@@ -7,5 +7,13 @@
 /// </summary>
 public interface IReadModel
 {
+    /// <summary>
+    /// The entity id of the read model.
+    /// </summary>
     public EntityId Id { get; }
+
+    /// <summary>
+    /// The attached db instance of the read model.
+    /// </summary>
+    public IDb Db { get; }
 }

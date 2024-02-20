@@ -16,13 +16,6 @@ public class BoolSerializer : IValueSerializer<bool>
     public UInt128 UniqueId => Id;
 
     /// <inheritdoc />
-    public bool TryGetFixedSize(out int size)
-    {
-        size = 1;
-        return true;
-    }
-
-    /// <inheritdoc />
     public int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         return a[0].CompareTo(b[0]);

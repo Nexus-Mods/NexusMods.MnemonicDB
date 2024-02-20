@@ -13,11 +13,6 @@ public interface IDb
     /// </summary>
     TxId BasisTxId { get; }
 
-    public IIterator Where<TAttr>()
-    where TAttr : IAttribute;
-
-    public IIterator Where(EntityId id);
-
     /// <summary>
     /// Returns a read model for each of the given entity ids.
     /// </summary>

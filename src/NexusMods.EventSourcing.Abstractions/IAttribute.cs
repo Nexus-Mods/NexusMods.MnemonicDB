@@ -37,11 +37,6 @@ public interface IAttribute
     /// <summary>
     /// Reads the value from the buffer and returns all the data as a Datom
     /// </summary>
-    /// <param name="entity"></param>
-    /// <param name="tx"></param>
-    /// <param name="isAssert"></param>
-    /// <param name="buffer"></param>
-    /// <returns></returns>
     public IDatom Read(ulong entity, ulong tx, bool isAssert, ReadOnlySpan<byte> buffer);
 }
 
@@ -56,17 +51,11 @@ public interface IAttribute<TVal> : IAttribute
     /// <summary>
     /// Reads the value from the buffer and returns the value
     /// </summary>
-    /// <param name="buffer"></param>
-    /// <returns></returns>
     public TVal Read(ReadOnlySpan<byte> buffer);
 
 
     /// <summary>
     /// Creates a new assertion datom for the given entity and value
     /// </summary>
-    /// <param name="tx"></param>
-    /// <param name="entity"></param>
-    /// <param name="value"></param>
     public static abstract void Add(ITransaction tx, EntityId entity, TVal value);
-
 }

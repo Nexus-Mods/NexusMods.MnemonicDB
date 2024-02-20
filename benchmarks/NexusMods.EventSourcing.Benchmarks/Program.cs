@@ -2,14 +2,15 @@
 
 using System;
 using System.Diagnostics;
-using BenchmarkDotNet.Running;
 using NexusMods.EventSourcing.Benchmarks.Benchmarks;
 
 
 #if DEBUG
 
-var benchmark = new ReadTests();
-benchmark.Count = 1000;
+var benchmark = new ReadTests
+{
+    Count = 1000
+};
 
 var sw = Stopwatch.StartNew();
 benchmark.Setup();

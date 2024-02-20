@@ -19,13 +19,6 @@ public class UInt128Serializer : IValueSerializer<UInt128>
     public UInt128 UniqueId => Id;
 
     /// <inheritdoc />
-    public bool TryGetFixedSize(out int size)
-    {
-        size = 16;
-        return true;
-    }
-
-    /// <inheritdoc />
     public int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         var aVal = BinaryPrimitives.ReadUInt128LittleEndian(a);

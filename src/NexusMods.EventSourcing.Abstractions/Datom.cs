@@ -4,9 +4,26 @@ namespace NexusMods.EventSourcing.Abstractions;
 
 public interface IDatom
 {
-    ulong E { get; }
+    /// <summary>
+    /// The entity id of the datom
+    /// </summary>
+    ulong Entity { get; }
+
+    /// <summary>
+    /// The attribute of the datom
+    /// </summary>
     Type Attribute { get; }
+
+    /// <summary>
+    /// The value of the datom
+    /// </summary>
     Type ValueType { get; }
+
+    /// <summary>
+    /// Sends the datom to the sink
+    /// </summary>
+    /// <param name="sink"></param>
+    /// <typeparam name="TSink"></typeparam>
     void Emit<TSink>(ref TSink sink) where TSink : IDatomSink;
 
     /// <summary>
@@ -25,7 +42,7 @@ public interface IDatomWithTx : IDatom
 public class AssertDatom<TAttr, TVal>(ulong e, TVal v) : IDatom
     where TAttr : IAttribute<TVal>
 {
-    public ulong E => e;
+    public ulong Entity => e;
 
     public TVal V => v;
     public Type Attribute => typeof(TAttr);
@@ -70,14 +87,6 @@ public class AssertDatomWithTx<TAttr, TVal> : AssertDatom<TAttr, TVal>, IDatomWi
 
     public override string ToString()
     {
-        return $"(assert! {E}, {Attribute.Namespace}/{Attribute.Name}, {V}, {Tx})";
-    }
-}
-
-
-public static class Datom {
-    public static IDatom Assert<TAttr, TVal>(ulong e, TVal v) where TAttr : IAttribute<TVal>
-    {
-        return new AssertDatom<TAttr, TVal>(e, v);
+        return $"(assert! {Entity}, {Attribute.Namespace}/{Attribute.Name}, {V}, {Tx})";
     }
 }

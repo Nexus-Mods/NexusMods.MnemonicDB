@@ -134,7 +134,7 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>
 
                 _current = (KeyHeader*)Native.Instance.rocksdb_iter_key(_iterator.Handle, out _currentLength);
 
-                Debug.Assert(_currentLength < KeyHeader.Size, "Key length is less than KeyHeader.Size");
+                Debug.Assert(_currentLength >= KeyHeader.Size, "Key length is less than KeyHeader.Size");
 
                 if (_current->Entity != _key->Entity)
                     return false;
