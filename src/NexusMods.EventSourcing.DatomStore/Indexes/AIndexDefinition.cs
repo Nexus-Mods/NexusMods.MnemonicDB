@@ -1,12 +1,22 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using NexusMods.EventSourcing.Abstractions;
 using RocksDbSharp;
 
 namespace NexusMods.EventSourcing.DatomStore.Indexes;
 
-public abstract class AIndexDefinition(AttributeRegistry registry, string columnFamilyName) : IDisposable
+public interface IComparatorIndex<TOuter> where TOuter : IComparatorIndex<TOuter>
 {
-    protected readonly AttributeRegistry Registry = registry;
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static abstract unsafe int Compare(AIndexDefinition<TOuter> instance, KeyHeader* a, uint aLength,
+        KeyHeader* b, uint bLength);
+}
+
+public abstract class AIndexDefinition<TOuter>(AttributeRegistry registry, string columnFamilyName)
+where TOuter : IComparatorIndex<TOuter>
+{
+    protected internal readonly AttributeRegistry Registry = registry;
     private ColumnFamilyOptions? _options;
     protected ColumnFamilyHandle? ColumnFamilyHandle;
 
@@ -29,7 +39,7 @@ public abstract class AIndexDefinition(AttributeRegistry registry, string column
         {
             unsafe
             {
-                return Compare((KeyHeader*)a, (uint)alen, (KeyHeader*)b, (uint)blen);
+                return TOuter.Compare(this, (KeyHeader*)a, (uint)alen, (KeyHeader*)b, (uint)blen);
             }
         };
         _comparator = Native.Instance.rocksdb_comparator_create(IntPtr.Zero, _destructorDelegate, _comparatorDelegate, _nameDelegate);
@@ -38,8 +48,6 @@ public abstract class AIndexDefinition(AttributeRegistry registry, string column
     }
 
     public string ColumnFamilyName { get; } = columnFamilyName;
-
-    public abstract unsafe int Compare(KeyHeader *a, uint aLength, KeyHeader *b, uint bLength);
 
     public void Dispose()
     {
@@ -55,6 +63,12 @@ public abstract class AIndexDefinition(AttributeRegistry registry, string column
             _namePtr = IntPtr.Zero;
         }
     }
+
+    public static unsafe int Compare(TOuter outer, KeyHeader* a, uint aLength, KeyHeader* b, uint bLength)
+    {
+        throw new NotImplementedException();
+    }
+
     public void Put(WriteBatch batch, ReadOnlySpan<byte> span)
     {
         batch.Put(span, ReadOnlySpan<byte>.Empty, ColumnFamilyHandle);

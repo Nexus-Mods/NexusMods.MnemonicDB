@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
@@ -19,10 +20,10 @@ public class RocksDBDatomStore : IDatomStore
     private readonly RocksDb _db;
     private readonly PooledMemoryBufferWriter _pooledWriter;
     private readonly AttributeRegistry _registry;
-    private readonly AIndexDefinition[] _indexes;
     private ulong _tx;
     private readonly AETVIndex _avetIndex;
     private readonly EATVIndex _eatvIndex;
+    private readonly AVTEIndex _avteIndex;
 
     public RocksDBDatomStore(ILogger<RocksDBDatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings)
     {
@@ -39,18 +40,11 @@ public class RocksDBDatomStore : IDatomStore
         _db = RocksDb.Open(_options, _settings.Path.ToString(), new ColumnFamilies());
 
         _eatvIndex = new EATVIndex(_registry);
+        _eatvIndex.Init(_db);
         _avetIndex = new AETVIndex(_registry);
-        _indexes =
-        [
-            //new TxIndex(_registry),
-            _eatvIndex,
-            _avetIndex,
-        ];
-
-        foreach (var index in _indexes)
-        {
-            index.Init(_db);
-        }
+        _avetIndex.Init(_db);
+        _avteIndex = new AVTEIndex(_registry);
+        _avteIndex.Init(_db);
 
         _pooledWriter = new PooledMemoryBufferWriter(128);
 
@@ -75,10 +69,9 @@ public class RocksDBDatomStore : IDatomStore
         _registry.WriteValue(val, in _pooledWriter);
 
         var span = _pooledWriter.GetWrittenSpan();
-        foreach (var index in _indexes)
-        {
-            index.Put(batch, span);
-        }
+        _eatvIndex.Put(batch, span);
+        _avetIndex.Put(batch, span);
+        _avteIndex.Put(batch, span);
     }
 
     private struct TransactSink(RocksDBDatomStore store, WriteBatch batch, ulong tx) : IDatomSink
@@ -134,6 +127,21 @@ public class RocksDBDatomStore : IDatomStore
     public void RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
     {
         _registry.Populate(newAttrs.ToArray());
+    }
+
+    public Expression GetValueReadExpression(Type attribute, Expression valueSpan, out ulong attributeId)
+    {
+        return _registry.GetReadExpression(attribute, valueSpan, out attributeId);
+    }
+
+    public IEnumerable<EntityId> ReverseLookup<TAttribute>(TxId txId) where TAttribute : IAttribute<EntityId>
+    {
+        using var iterator = new AVTEIndex.AVTEIterator(txId.Value, _registry, _avteIndex);
+        iterator.Set<TAttribute>();
+        while (iterator.Next())
+        {
+            yield return iterator.EntityId;
+        }
     }
 
     public void Dispose()

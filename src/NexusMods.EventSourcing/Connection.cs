@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reactive.Subjects;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.DatomStore;
 
@@ -16,16 +17,19 @@ public class Connection : IConnection
     private ulong _nextEntityId = Ids.MinId(Ids.Partition.Entity);
     private readonly IDatomStore _store;
     private readonly IAttribute[] _declaredAttributes;
-    private readonly Dictionary<Type, IReadModelFactory> _factories;
+    internal readonly ModelReflector<Transaction> ModelReflector;
+    private readonly Subject<ICommitResult> _updates;
 
     /// <summary>
     /// Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    public Connection(IDatomStore store, IEnumerable<IAttribute> declaredAttributes, IEnumerable<IValueSerializer> serializers, IEnumerable<IReadModelFactory> factories)
+    public Connection(IDatomStore store, IEnumerable<IAttribute> declaredAttributes, IEnumerable<IValueSerializer> serializers)
     {
         _store = store;
         _declaredAttributes = declaredAttributes.ToArray();
-        _factories = factories.ToDictionary(f => f.ModelType);
+        ModelReflector = new ModelReflector<Transaction>(store);
+
+        _updates = new Subject<ICommitResult>();
 
         AddMissingAttributes(serializers);
     }
@@ -68,7 +72,7 @@ public class Connection : IConnection
         var entIterator = _store.EntityIterator(tx);
         while (attrIterator.Next())
         {
-            entIterator.SetEntityId(attrIterator.EntityId);
+            entIterator.Set(attrIterator.EntityId);
 
             var serializerId = UInt128.Zero;
             Symbol uniqueId = null!;
@@ -92,7 +96,7 @@ public class Connection : IConnection
 
 
     /// <inheritdoc />
-    public IDb Db => new Db(_store, this, TxId, _factories);
+    public IDb Db => new Db(_store, this, TxId);
 
 
     /// <inheritdoc />
@@ -103,33 +107,36 @@ public class Connection : IConnection
     public ICommitResult Transact(IEnumerable<IDatom> datoms)
     {
         var remaps = new Dictionary<ulong, ulong>();
+        var datomsArray = datoms.ToArray();
+
+        EntityId RemapFn(EntityId input)
+        {
+            if (Ids.GetPartition(input) == Ids.Partition.Tmp)
+            {
+                if (!remaps.TryGetValue(input.Value, out var id))
+                {
+                    var newId = _nextEntityId++;
+                    remaps[input.Value] = newId;
+                    return EntityId.From(newId);
+                }
+                return EntityId.From(id);
+            }
+            return input;
+        }
 
         lock (_lock)
         {
             var newDatoms = new List<IDatom>();
-            foreach (var datom in datoms)
+            foreach (var datom in datomsArray)
             {
-                var eid = datom.E;
-                if (Ids.GetPartition(eid) == Ids.Partition.Tmp)
-                {
-                    if (!remaps.TryGetValue(eid, out var id))
-                    {
-                        var newId = _nextEntityId++;
-                        remaps[eid] = newId;
-                        newDatoms.Add(datom.RemapEntityId(newId));
-                    }
-                    else
-                    {
-                        newDatoms.Add(datom.RemapEntityId(id));
-                    }
-                }
-                else
-                {
-                    newDatoms.Add(datom);
-                }
+                datom.Remap(RemapFn);
+                newDatoms.Add(datom);
             }
             var newTx = _store.Transact(newDatoms);
-            return new CommitResult(newTx, remaps);
+            TxId = newTx;
+            var result = new CommitResult(newTx, remaps, this, datomsArray);
+            _updates.OnNext(result);
+            return result;
         }
     }
 
@@ -138,4 +145,7 @@ public class Connection : IConnection
     {
         return new Transaction(this);
     }
+
+    /// <inheritdoc />
+    public IObservable<ICommitResult> Commits => _updates;
 }

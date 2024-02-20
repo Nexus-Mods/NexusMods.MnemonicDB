@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
 using Reloaded.Memory.Extensions;
@@ -8,54 +8,24 @@ using RocksDbSharp;
 
 namespace NexusMods.EventSourcing.DatomStore.Indexes;
 
-public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>(registry, "eatv"), IComparatorIndex<EATVIndex>
+public class AVTEIndex(AttributeRegistry registry) :
+    AIndexDefinition<AVTEIndex>(registry, "avte"), IComparatorIndex<AVTEIndex>
 {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static unsafe int Compare(AIndexDefinition<EATVIndex> idx, KeyHeader* a, uint aLength, KeyHeader* b, uint bLength)
+    public static unsafe int Compare(AIndexDefinition<AVTEIndex> idx, KeyHeader* a, uint aLength, KeyHeader* b, uint bLength)
     {
-        // TX, Entity, Attribute, IsAssert, Value
-        var cmp = KeyHeader.CompareEntity(a, b);
+        // Attribute, Value, TX, Entity
+        var cmp = KeyHeader.CompareAttribute(a, b);
         if (cmp != 0) return cmp;
-        cmp = KeyHeader.CompareAttribute(a, b);
+        cmp = KeyHeader.CompareValues(idx.Registry, a, aLength, b, bLength);
         if (cmp != 0) return cmp;
         cmp = KeyHeader.CompareTx(a, b);
         if (cmp != 0) return cmp;
-        cmp = KeyHeader.CompareIsAssert(a, b);
+        cmp = KeyHeader.CompareEntity(a, b);
         if (cmp != 0) return cmp;
-        return KeyHeader.CompareValues(idx.Registry, a, aLength, b, bLength);
+        return KeyHeader.CompareIsAssert(a, b);
     }
 
-
-    public bool MaxId(Ids.Partition partition, out ulong o)
-    {
-        var key = new KeyHeader
-        {
-            Entity = Ids.MaxId(partition),
-            AttributeId = ulong.MaxValue,
-            Tx = ulong.MaxValue,
-            IsAssert = true,
-        };
-        var span = MemoryMarshal.CreateSpan(ref key, KeyHeader.Size);
-        using var it = Db.NewIterator(ColumnFamilyHandle);
-        it.SeekForPrev(span.CastFast<KeyHeader, byte>());
-        if (!it.Valid())
-        {
-            o = 0;
-            return false;
-        }
-        var current = it.GetKeySpan();
-        var currentHeader = MemoryMarshal.AsRef<KeyHeader>(current);
-        var eVal = currentHeader.Entity;
-        if (Ids.IsPartition(eVal, partition))
-        {
-            o = eVal;
-            return true;
-        }
-        o = 0;
-        return false;
-    }
-
-    public unsafe struct EATVIterator : IEntityIterator, IDisposable
+    public unsafe struct AVTEIterator : IDisposable
     {
         private readonly KeyHeader* _key;
         private KeyHeader* _current;
@@ -64,7 +34,7 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>
         private readonly AttributeRegistry _registry;
         private bool _needsSeek;
 
-        public EATVIterator(ulong txId, AttributeRegistry registry, EATVIndex idx)
+        public AVTEIterator(ulong txId, AttributeRegistry registry, AVTEIndex idx)
         {
             _registry = registry;
             _iterator = idx.Db.NewIterator(idx.ColumnFamilyHandle);
@@ -77,10 +47,10 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>
         }
 
 
-        public void Set(EntityId entityId)
+        public void Set<TAttribute>() where TAttribute : IAttribute
         {
-            _key->Entity = entityId.Value;
-            _key->AttributeId = ulong.MaxValue;
+            _key->Entity = ulong.MaxValue;
+            _key->AttributeId = _registry.GetAttributeId<TAttribute>();
             _needsSeek = true;
         }
 
@@ -93,6 +63,8 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>
                 return _registry.ReadDatom(ref *_current, currentValue);
             }
         }
+
+        public EntityId EntityId => EntityId.From(_current->Entity);
 
         public TValue GetValue<TAttribute, TValue>()
             where TAttribute : IAttribute<TValue>
@@ -123,7 +95,7 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>
             }
             else
             {
-                _key->AttributeId = _current->AttributeId - 1;
+                _key->Entity = _current->Entity - 1;
                 _iterator.Prev();
             }
 
@@ -136,7 +108,7 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>
 
                 Debug.Assert(_currentLength < KeyHeader.Size, "Key length is less than KeyHeader.Size");
 
-                if (_current->Entity != _key->Entity)
+                if (_current->AttributeId != _key->AttributeId)
                     return false;
 
                 if (_current->Tx > _key->Tx)
@@ -145,7 +117,7 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>
                     continue;
                 }
 
-                if (_current->AttributeId > _key->AttributeId)
+                if (_current->Entity > _key->Entity)
                 {
                     _iterator.Prev();
                     continue;
@@ -160,5 +132,4 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>
             Marshal.FreeHGlobal((IntPtr)_key);
         }
     }
-
 }

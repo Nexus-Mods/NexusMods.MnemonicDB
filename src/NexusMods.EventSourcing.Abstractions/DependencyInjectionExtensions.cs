@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using NexusMods.EventSourcing.Abstractions.Models;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -31,19 +32,6 @@ public static class DependencyInjectionExtensions
         where TValueSerializer : class, IValueSerializer
     {
         services.AddSingleton<IValueSerializer, TValueSerializer>();
-        return services;
-    }
-
-    /// <summary>
-    /// Registers the specified read model factory type with the service collection.
-    /// </summary>
-    /// <param name="services"></param>
-    /// <typeparam name="TReadModelFactory"></typeparam>
-    /// <returns></returns>
-    public static IServiceCollection AddReadModelFactory<TReadModelFactory>(this IServiceCollection services)
-        where TReadModelFactory : class, IReadModelFactory
-    {
-        services.AddSingleton<IReadModelFactory, TReadModelFactory>();
         return services;
     }
 }

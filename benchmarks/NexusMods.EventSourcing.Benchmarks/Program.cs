@@ -9,7 +9,7 @@ using NexusMods.EventSourcing.Benchmarks.Benchmarks;
 #if DEBUG
 
 var benchmark = new ReadTests();
-benchmark.Count = 1;
+benchmark.Count = 1000;
 
 var sw = Stopwatch.StartNew();
 benchmark.Setup();

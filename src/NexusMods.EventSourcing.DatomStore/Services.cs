@@ -27,7 +27,9 @@ public static class Services
             .AddValueSerializer<BoolSerializer>()
             .AddValueSerializer<SymbolSerializer>()
             .AddValueSerializer<StringSerializer>()
-            .AddValueSerializer<UInt64Serializer>();
+            .AddValueSerializer<UInt64Serializer>()
+            .AddValueSerializer<EntityIdSerialzer>()
+            .AddValueSerializer<TxIdSerializer>();
         return services;
     }
 

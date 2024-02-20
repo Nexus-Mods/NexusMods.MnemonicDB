@@ -83,6 +83,7 @@ public class ModelGenerator : IIncrementalGenerator
 
             foreach (var attribute in group.Attributes)
             {
+                if (attribute.IsInclude) continue;
                 sb.ClassComment(attribute.Description);
                 var withoutQuotes = attribute.Name.Replace("\"", "");
                 var uniqueName = $"{attribute.Namespace}.{attribute.Entity}/{withoutQuotes}";
@@ -103,6 +104,7 @@ public class ModelGenerator : IIncrementalGenerator
 
             foreach (var attribute in group.Attributes)
             {
+                if (attribute.IsInclude) continue;
                 var withoutQuotes = attribute.Name.Replace("\"", "");
                 sb.Line($"services.AddAttribute<{withoutQuotes}>();");
             }
@@ -137,6 +139,7 @@ public class ModelGenerator : IIncrementalGenerator
 
         foreach (var attribute in group.Attributes)
         {
+            if (attribute.IsInclude) continue;
             var withoutQuotes = attribute.Name.Replace("\"", "");
             sb.ClassComment(attribute.Description);
             sb.Line($"public {attribute.AttributeType} {withoutQuotes} {{get; private set; }} = default!;");
@@ -151,6 +154,7 @@ public class ModelGenerator : IIncrementalGenerator
         sb.Line("{");
         foreach (var attribute in group.Attributes)
         {
+            if (attribute.IsInclude) continue;
             var withoutQuotes = attribute.Name.Replace("\"", "");
             sb.Line($"case {group.Namespace}.{group.Entity}.{withoutQuotes} a:");
             sb.Line("{");
@@ -183,6 +187,7 @@ public class ModelGenerator : IIncrementalGenerator
         sb.Line("public Type[] Attributes => new Type[] {");
         foreach (var attribute in group.Attributes)
         {
+            if (attribute.IsInclude) continue;
             var withoutQuotes = attribute.Name.Replace("\"", "");
             sb.Line($"typeof({group.Namespace}.{group.Entity}.{withoutQuotes}),");
         }
@@ -217,43 +222,8 @@ public class ModelGenerator : IIncrementalGenerator
                             var builderExpression = initializer.Value as InvocationExpressionSyntax;
                             if (builderExpression != null)
                             {
-                                var defineCalls = builderExpression.DescendantNodesAndSelf()
-                                    .OfType<InvocationExpressionSyntax>()
-                                    .Where(invocation => invocation.Expression is MemberAccessExpressionSyntax
-                                    {
-                                        Name.Identifier.Text: "Define"
-                                    });
-
-                                foreach (var defineCall in defineCalls)
-                                {
-                                    var genericDefineCall =
-                                        ((MemberAccessExpressionSyntax)defineCall.Expression).Name as GenericNameSyntax;
-                                    if (genericDefineCall == null)
-                                    {
-                                        continue;
-                                    }
-
-                                    var typeArgument = genericDefineCall.TypeArgumentList.Arguments.First();
-                                    var typeSymbol = semanticModel.GetSymbolInfo(typeArgument).Symbol;
-                                    Console.WriteLine($"Type: {typeSymbol}");
-
-
-                                    var args = defineCall.ArgumentList.Arguments.Select(argument =>
-                                    {
-                                        var name = argument.Expression as LiteralExpressionSyntax;
-
-                                        return name;
-                                    }).ToArray();
-
-                                    foundAttributes.Add(new AttributeData
-                                    {
-                                        Name = args[0]!.Token.ValueText,
-                                        Entity = declaredSymbol!.Name,
-                                        AttributeType = typeSymbol?.ToString() ?? "",
-                                        Description = args[1]!.Token.ValueText,
-                                        Namespace = declaredSymbol?.ContainingNamespace.ToString() ?? ""
-                                    });
-                                }
+                                ExtractDefines(builderExpression, semanticModel, foundAttributes, declaredSymbol);
+                                ExtractIncludes(builderExpression, semanticModel, foundAttributes, declaredSymbol);
                             }
                         }
                     }
@@ -262,5 +232,81 @@ public class ModelGenerator : IIncrementalGenerator
         }
 
         return foundAttributes;
+    }
+
+    private static void ExtractDefines(InvocationExpressionSyntax builderExpression, SemanticModel semanticModel,
+        List<AttributeData> foundAttributes, ISymbol? declaredSymbol)
+    {
+        var defineCalls = builderExpression.DescendantNodesAndSelf()
+            .OfType<InvocationExpressionSyntax>()
+            .Where(invocation => invocation.Expression is MemberAccessExpressionSyntax
+            {
+                Name.Identifier.Text: "Define"
+            });
+
+        foreach (var defineCall in defineCalls)
+        {
+            var genericDefineCall =
+                ((MemberAccessExpressionSyntax)defineCall.Expression).Name as GenericNameSyntax;
+            if (genericDefineCall == null)
+            {
+                continue;
+            }
+
+            var typeArgument = genericDefineCall.TypeArgumentList.Arguments.First();
+            var typeSymbol = semanticModel.GetSymbolInfo(typeArgument).Symbol;
+
+            var args = defineCall.ArgumentList.Arguments.Select(argument =>
+            {
+                var name = argument.Expression as LiteralExpressionSyntax;
+
+                return name;
+            }).ToArray();
+
+            foundAttributes.Add(new AttributeData
+            {
+                Name = args[0]!.Token.ValueText,
+                Entity = declaredSymbol!.Name,
+                AttributeType = typeSymbol?.ToString() ?? "",
+                Description = args[1]!.Token.ValueText,
+                Namespace = declaredSymbol?.ContainingNamespace.ToString() ?? ""
+            });
+        }
+    }
+
+    private static void ExtractIncludes(InvocationExpressionSyntax builderExpression, SemanticModel semanticModel,
+        List<AttributeData> foundAttributes, ISymbol? declaredSymbol)
+    {
+        var defineCalls = builderExpression.DescendantNodesAndSelf()
+            .OfType<InvocationExpressionSyntax>()
+            .Where(invocation => invocation.Expression is MemberAccessExpressionSyntax
+            {
+                Name.Identifier.Text: "Include"
+            });
+
+        foreach (var defineCall in defineCalls)
+        {
+            var genericDefineCall =
+                ((MemberAccessExpressionSyntax)defineCall.Expression).Name as GenericNameSyntax;
+            if (genericDefineCall == null)
+            {
+                continue;
+            }
+
+            var typeArgument = genericDefineCall.TypeArgumentList.Arguments.First();
+            var typeSymbol = semanticModel.GetSymbolInfo(typeArgument).Symbol;
+
+
+            foundAttributes.Add(new AttributeData
+            {
+                Name = typeArgument.ToString(),
+                AttributeType = typeSymbol?.ToString() ?? "",
+                IsInclude = true,
+                Namespace = declaredSymbol?.ContainingNamespace.ToString() ?? "",
+                Entity = declaredSymbol!.Name,
+                Description = ""
+            });
+
+        }
     }
 }

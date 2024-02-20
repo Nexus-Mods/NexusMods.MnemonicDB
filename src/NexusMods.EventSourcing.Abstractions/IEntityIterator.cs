@@ -1,9 +1,12 @@
-﻿namespace NexusMods.EventSourcing.Abstractions;
+﻿using System;
+using NexusMods.EventSourcing.Abstractions.Models;
+
+namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// Represents an iterator over a set of datoms.
 /// </summary>
-public interface IEntityIterator
+public interface IEntityIterator : IDisposable
 {
     /// <summary>
     /// Move to the next datom for the current entity
@@ -12,10 +15,11 @@ public interface IEntityIterator
     public bool Next();
 
     /// <summary>
-    /// Sets the current entity id, this implicitly resets the iterator.
+    /// Sets the EntityId for the iterator, the next call to Next() will return the first datom for the given entity
+    /// that is less than or equal to the txId given to the iterator at creation.
     /// </summary>
     /// <param name="entityId"></param>
-    public void SetEntityId(EntityId entityId);
+    public void Set(EntityId entityId);
 
     /// <summary>
     /// Gets the current datom as a distinct value.
@@ -23,9 +27,22 @@ public interface IEntityIterator
     public IDatom Current { get; }
 
     /// <summary>
-    /// Sends the current datom to the read model.
+    /// Gets the current datom's value
     /// </summary>
-    /// <param name="model"></param>
-    /// <typeparam name="TModel"></typeparam>
-    public void SetOn<TModel>(TModel model) where TModel : IReadModel;
+    /// <typeparam name="TAttribute"></typeparam>
+    /// <typeparam name="TValue"></typeparam>
+    /// <returns></returns>
+    public TValue GetValue<TAttribute, TValue>()
+        where TAttribute : IAttribute<TValue>;
+
+    /// <summary>
+    /// Gets the current datom's attribute id
+    /// </summary>
+    public ulong AttributeId { get; }
+
+    /// <summary>
+    /// Gets the current datom's value as a span, valid until the next call to Next()
+    /// or SetEntityId()
+    /// </summary>
+    public ReadOnlySpan<byte> ValueSpan { get; }
 }

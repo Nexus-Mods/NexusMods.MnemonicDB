@@ -1,51 +1,89 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using BenchmarkDotNet.Attributes;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Benchmarks.Model;
+using NexusMods.EventSourcing.TestModel.Model;
 
 namespace NexusMods.EventSourcing.Benchmarks.Benchmarks;
 
+[MemoryDiagnoser]
 public class ReadTests
 {
     private readonly IConnection _connection;
-    private readonly List<EntityId> _entityIds;
+    private List<EntityId> _entityIdsAscending = null!;
+    private List<EntityId> _entityIdsDescending = null!;
+    private List<EntityId> _entityIdsRandom = null!;
 
     public ReadTests()
     {
         var services = AppHost.Create();
 
         _connection = services.GetRequiredService<IConnection>();
-        _entityIds = new List<EntityId>();
     }
+
+    public const int MaxCount = 10000;
 
     [GlobalSetup]
     public void Setup()
     {
         var tx = _connection.BeginTransaction();
-        _entityIds.Clear();
-        for (var i = 0; i < Count; i++)
+        var entityIds = new List<EntityId>();
+        for (var i = 0; i < MaxCount; i++)
         {
-            var id = Ids.MakeId(Ids.Partition.Entity, (ulong)i);
-            File.Hash.Assert(tx.TempId(), (ulong)i, tx);
-            File.Path.Assert(tx.TempId(), $"C:\\test_{i}.txt", tx);
-            File.Index.Assert(tx.TempId(), (ulong)i, tx);
-            _entityIds.Add(EntityId.From(id));
+            var file = new File(tx)
+            {
+                Hash = (ulong)i,
+                Path = $"C:\\test_{i}.txt",
+                Index = (ulong)i
+            };
+            entityIds.Add(file.Id);
         }
-        tx.Commit();
+        var result = tx.Commit();
+
+        entityIds = entityIds.Select(e => result[e]).ToList();
+        _entityIdsAscending = entityIds.OrderBy(id => id.Value).ToList();
+        _entityIdsDescending = entityIds.OrderByDescending(id => id.Value).ToList();
+
+        var idArray = entityIds.ToArray();
+        Random.Shared.Shuffle(idArray);
+        _entityIdsRandom = idArray.ToList();
     }
 
 
-    [Params(1, 10, 100, 1000)]
-    public int Count { get; set; } = 1000;
+    [Params(1, 1000, MaxCount)]
+    public int Count { get; set; } = MaxCount;
+
+    public enum SortOrder
+    {
+        Ascending,
+        Descending,
+        Random
+    }
+
+
+    //[Params(SortOrder.Ascending, SortOrder.Descending, SortOrder.Random)]
+    public SortOrder Order { get; set; } = SortOrder.Descending;
+
+    public List<EntityId> Ids => Order switch
+    {
+        SortOrder.Ascending => _entityIdsAscending,
+        SortOrder.Descending => _entityIdsDescending,
+        SortOrder.Random => _entityIdsRandom,
+        _ => throw new ArgumentOutOfRangeException()
+    };
 
     [Benchmark]
-    public int ReadFiles()
+    public ulong ReadFiles()
     {
         var db = _connection.Db;
-        var read = db.Get<Model.FileReadModel>(_entityIds).ToList();
-        return read.Count;
+        ulong sum = 0;
+        foreach (var itm in db.Get<File>(Ids.Take(Count)))
+        {
+            sum += itm.Index;
+        }
+        return (ulong)sum;
     }
 
 }

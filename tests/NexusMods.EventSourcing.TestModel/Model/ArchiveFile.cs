@@ -4,19 +4,24 @@ using NexusMods.EventSourcing.TestModel.Model.Attributes;
 
 namespace NexusMods.EventSourcing.TestModel.Model;
 
-
-public class File(ITransaction? tx) : AReadModel<File>(tx)
+public class ArchiveFile(ITransaction? tx) : AReadModel<ArchiveFile>(tx)
 {
     /// <summary>
     /// Base attribute
     /// </summary>
     [From<ModFileAttributes.Path>]
+    public required string ModPath { get; init; }
+
+    /// <summary>
+    /// Base attribute
+    /// </summary>
+    [From<ArchiveFileAttributes.Path>]
     public required string Path { get; init; }
 
     /// <summary>
     /// Example of "inheritance" of attributes from other namespaces
     /// </summary>
-    [From<ModFileAttributes.Hash>]
+    [From<ArchiveFileAttributes.ArchiveHash>]
     public required ulong Hash { get; init; }
 
     /// <summary>

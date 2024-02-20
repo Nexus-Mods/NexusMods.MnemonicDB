@@ -8,7 +8,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\NexusMods.EventSourcing.Abstractions\NexusMods.EventSourcing.Abstractions.csproj" />
-        <ProjectReference Include="..\..\src\NexusMods.EventSourcing.SourceGenerator\NexusMods.EventSourcing.SourceGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
     </ItemGroup>
 
 </Project>

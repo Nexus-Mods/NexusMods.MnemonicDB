@@ -1,13 +1,37 @@
-﻿using NexusMods.EventSourcing.Abstractions.ModelGeneration;
+﻿using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Models;
+using NexusMods.EventSourcing.TestModel.Model.Attributes;
 
 namespace NexusMods.EventSourcing.TestModel.Model;
 
-[ModelDefinition]
-public static partial class Mod
+public class Mod(ITransaction? tx) : AReadModel<Mod>(tx)
 {
-    public static AttributeDefinitions AttributeDefinitions = new AttributeDefinitionsBuilder()
-        .Define<string>("Name", "The name of the mod")
-        .Define<bool>("Enabled", "Whether the mod is enabled")
-        .Build();
 
+    [From<ModAttributes.Name>]
+    public required string Name { get; init; }
+
+
+    [From<ModAttributes.LoadoutId>]
+    public required EntityId LoadoutId { get; init; }
+
+    /// <summary>
+    /// The loadout for this mod.
+    /// </summary>
+    public Loadout Loadout => Get<Loadout>(LoadoutId);
+
+
+    public static Mod Create(ITransaction tx, string name, EntityId loadoutId)
+    {
+        var mod = new Mod(tx)
+        {
+            Name = name,
+            LoadoutId = loadoutId
+        };
+        return mod;
+    }
+
+    public void Touch(ITransaction tx)
+    {
+        Loadout.Touch(tx);
+    }
 }

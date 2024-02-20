@@ -1,5 +1,6 @@
 ﻿using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.TestModel.Model;
+using NexusMods.EventSourcing.TestModel.Model.Attributes;
 using File = NexusMods.EventSourcing.TestModel.Model.File;
 
 namespace NexusMods.EventSourcing.Tests;
@@ -7,8 +8,8 @@ namespace NexusMods.EventSourcing.Tests;
 public class DbTests : AEventSourcingTest
 {
 
-    public DbTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes, IEnumerable<IReadModelFactory> factories)
-        : base(valueSerializers, attributes, factories)
+    public DbTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
+        : base(valueSerializers, attributes)
     {
 
     }
@@ -21,13 +22,15 @@ public class DbTests : AEventSourcingTest
 
 
         var ids = new List<EntityId>();
-        for (ulong i = 0; i < TOTAL_COUNT; i++)
+        for (ulong idx = 0; idx < TOTAL_COUNT; idx++)
         {
-            var fileId = tx.TempId();
-            ids.Add(fileId);
-            File.Path.Assert(fileId, $"C:\\test_{i}.txt", tx);
-            File.Hash.Assert(fileId, i + 0xDEADBEEF, tx);
-            File.Index.Assert(fileId, i, tx);
+            var file = new File(tx)
+            {
+                Path = $"C:\\test_{idx}.txt",
+                Hash = idx + 0xDEADBEEF,
+                Index = idx
+            };
+            ids.Add(file.Id);
         }
 
         var oldTx = Connection.TxId;
@@ -36,7 +39,7 @@ public class DbTests : AEventSourcingTest
         result.NewTx.Value.Should().Be(oldTx.Value + 1, "transaction id should be incremented by 1");
 
         var db = Connection.Db;
-        var resolved = db.Get<FileReadModel>(ids.Select(id => result[id])).ToArray();
+        var resolved = db.Get<File>(ids.Select(id => result[id])).ToArray();
 
         resolved.Should().HaveCount(TOTAL_COUNT);
         foreach (var readModel in resolved)
@@ -44,8 +47,10 @@ public class DbTests : AEventSourcingTest
             var idx = readModel.Index;
             readModel.Hash.Should().Be(idx + 0xDEADBEEF);
             readModel.Path.Should().Be($"C:\\test_{idx}.txt");
+            readModel.Index.Should().Be(idx);
         }
     }
+
 
     [Fact]
     public void DbIsImmutable()
@@ -54,18 +59,20 @@ public class DbTests : AEventSourcingTest
 
         // Insert some data
         var tx = Connection.BeginTransaction();
-        var fileId = tx.TempId();
-        File.Path.Assert(fileId, "C:\\test.txt_mutate", tx);
-        File.Hash.Assert(fileId, 0xDEADBEEF, tx);
-        File.Index.Assert(fileId, 0, tx);
+        var file = new File(tx)
+        {
+            Path = "C:\\test.txt_mutate",
+            Hash = 0xDEADBEEF,
+            Index = 0
+        };
 
         var result = tx.Commit();
 
-        var realId = result[fileId];
+        var realId = result[file.Id];
         var originalDb = Connection.Db;
 
         // Validate the data
-        var found = originalDb.Get<FileReadModel>([realId]).First();
+        var found = originalDb.Get<File>([realId]).First();
         found.Path.Should().Be("C:\\test.txt_mutate");
         found.Hash.Should().Be(0xDEADBEEF);
         found.Index.Should().Be(0);
@@ -74,20 +81,121 @@ public class DbTests : AEventSourcingTest
         for (var i = 0; i < TIMES; i++)
         {
             var newTx = Connection.BeginTransaction();
-            File.Path.Assert(fileId, $"C:\\test_{i}.txt_mutate", newTx);
+            ModFileAttributes.Path.Add(newTx, realId, $"C:\\test_{i}.txt_mutate");
 
             var newResult = newTx.Commit();
 
             // Validate the data
             var newDb = Connection.Db;
-            var newId = newResult[fileId];
-            var newFound = newDb.Get<FileReadModel>([newId]).First();
+            newDb.BasisTxId.Value.Should().Be(originalDb.BasisTxId.Value + 1UL + (ulong)i, "transaction id should be incremented by 1 for each mutation");
+
+            var newFound = newDb.Get<File>([realId]).First();
             newFound.Path.Should().Be($"C:\\test_{i}.txt_mutate");
 
             // Validate the original data
-            var orignalFound = originalDb.Get<FileReadModel>([realId]).First();
+            var orignalFound = originalDb.Get<File>([realId]).First();
             orignalFound.Path.Should().Be("C:\\test.txt_mutate");
         }
     }
+
+
+    [Fact]
+    public void ReadModelsCanHaveExtraAttributes()
+    {
+        // Insert some data
+        var tx = Connection.BeginTransaction();
+        var file = new File(tx)
+        {
+            Path = "C:\\test.txt",
+            Hash = 0xDEADBEEF,
+            Index = 77
+        };
+        // Attach extra attributes to the entity
+        ArchiveFileAttributes.Path.Add(tx, file.Id, "C:\\test.zip");
+        ArchiveFileAttributes.ArchiveHash.Add(tx, file.Id, 0xFEEDBEEF);
+        var result = tx.Commit();
+
+
+        var realId = result[file.Id];
+        var db = Connection.Db;
+        // Original data exists
+        var readModel = db.Get<File>([realId]).First();
+        readModel.Path.Should().Be("C:\\test.txt");
+        readModel.Hash.Should().Be(0xDEADBEEF);
+        readModel.Index.Should().Be(77);
+
+        // Extra data exists and can be read with a different read model
+        var archiveReadModel = db.Get<ArchiveFile>([realId]).First();
+        archiveReadModel.ModPath.Should().Be("C:\\test.txt");
+        archiveReadModel.Path.Should().Be("C:\\test.zip");
+        archiveReadModel.Hash.Should().Be(0xFEEDBEEF);
+        archiveReadModel.Index.Should().Be(77);
+    }
+
+    [Fact]
+    public void CanGetCommitUpdates()
+    {
+        List<IDatom[]> updates = new();
+
+        Connection.Commits.Subscribe(update =>
+        {
+            updates.Add(update.Datoms.ToArray());
+        });
+
+        var tx = Connection.BeginTransaction();
+        var file = new File(tx)
+        {
+            Path = "C:\\test.txt",
+            Hash = 0xDEADBEEF,
+            Index = 77
+        };
+        var result = tx.Commit();
+
+        var realId = result[file.Id];
+
+        updates.Should().HaveCount(1);
+
+        for (var idx = 0; idx < 10; idx++)
+        {
+            tx = Connection.BeginTransaction();
+            ModFileAttributes.Index.Add(tx, realId, (ulong)idx);
+            result = tx.Commit();
+
+            result.Datoms.Should().BeEquivalentTo(updates[idx + 1]);
+
+            updates.Should().HaveCount(idx + 2);
+            var updateDatom = updates[idx + 1].OfType<AssertDatom<ModFileAttributes.Index, ulong>>()
+                .First();
+            updateDatom.V.Should().Be((ulong)idx);
+        }
+
+    }
+
+    [Fact]
+    public void CanGetChildEntities()
+    {
+        var tx = Connection.BeginTransaction();
+        var loadout = Loadout.Create(tx, "Test Loadout");
+        var mod1 = Mod.Create(tx, "Test Mod 1", loadout.Id);
+        var mod2 = Mod.Create(tx, "Test Mod 2", loadout.Id);
+        var result = tx.Commit();
+
+        var newDb = Connection.Db;
+
+        loadout = newDb.Get<Loadout>([result[loadout.Id]]).First();
+
+        loadout.Mods.Count().Should().Be(2);
+        loadout.Mods.Select(m => m.Name).Should().BeEquivalentTo(["Test Mod 1", "Test Mod 2"]);
+
+        var firstMod = loadout.Mods.First();
+        Ids.IsPartition(firstMod.Loadout.Id.Value, Ids.Partition.Entity)
+            .Should()
+            .Be(true, "the temp id should be replaced with a real id");
+        firstMod.Loadout.Id.Should().Be(loadout.Id);
+        firstMod.Db.Should().Be(newDb);
+        loadout.Name.Should().Be("Test Loadout");
+        firstMod.Loadout.Name.Should().Be("Test Loadout");
+    }
+
 
 }

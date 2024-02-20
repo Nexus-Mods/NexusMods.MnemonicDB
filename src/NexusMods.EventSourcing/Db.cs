@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Models;
 
 namespace NexusMods.EventSourcing;
 
-public class Db(IDatomStore store, IConnection connection, TxId txId, IDictionary<Type, IReadModelFactory> factories) : IDb
+public class Db(IDatomStore store, Connection connection, TxId txId) : IDb
 {
     public TxId BasisTxId => txId;
 
@@ -22,20 +23,35 @@ public class Db(IDatomStore store, IConnection connection, TxId txId, IDictionar
 
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids) where TModel : IReadModel
     {
-        var factory = factories[typeof(TModel)];
-
-        var iterator = store.EntityIterator(txId);
-
+        using var iterator = store.EntityIterator(txId);
+        var reader = connection.ModelReflector.GetReader<TModel>();
         foreach (var id in ids)
         {
-            var readModel = (TModel)factory.Create(id);
-            iterator.SetEntityId(id);
-            while (iterator.Next())
-            {
-                iterator.SetOn(readModel);
-            }
+            iterator.Set(id);
+            var model = reader(id, iterator, this);
+            yield return model;
+        }
+    }
 
-            yield return readModel;
+    public TModel Get<TModel>(EntityId id) where TModel : IReadModel
+    {
+        using var iterator = store.EntityIterator(txId);
+        iterator.Set(id);
+        var reader = connection.ModelReflector.GetReader<TModel>();
+        return reader(id, iterator, this);
+    }
+
+    /// <inheritdoc />
+    public IEnumerable<TModel> GetReverse<TAttribute, TModel>(EntityId id) where TAttribute : IAttribute<EntityId> where TModel : IReadModel
+    {
+        var iterator = store.ReverseLookup<TAttribute>(txId);
+        using var entityIterator = store.EntityIterator(txId);
+        var reader = connection.ModelReflector.GetReader<TModel>();
+        foreach (var entityId in iterator)
+        {
+            entityIterator.Set(entityId);
+            var model = reader(entityId, entityIterator, this);
+            yield return model;
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -29,4 +30,9 @@ public interface IConnection
     /// </summary>
     /// <returns></returns>
     public ITransaction BeginTransaction();
+
+    /// <summary>
+    /// A sequential stream of commits to the database.
+    /// </summary>
+    public IObservable<ICommitResult> Commits { get; }
 }

@@ -6,8 +6,9 @@ using RocksDbSharp;
 
 namespace NexusMods.EventSourcing.DatomStore.Indexes;
 
-public class AETVIndex(AttributeRegistry registry) : AIndexDefinition(registry, "aetv") {
-    public override unsafe int Compare(KeyHeader* a, uint aLength, KeyHeader* b, uint bLength)
+public class AETVIndex(AttributeRegistry registry) : AIndexDefinition<AETVIndex>(registry, "aetv"), IComparatorIndex<AETVIndex>
+{
+    public static unsafe int Compare(AIndexDefinition<AETVIndex> idx, KeyHeader* a, uint aLength, KeyHeader* b, uint bLength)
     {
         // TX, Entity, Attribute, IsAssert, Value
         var cmp = KeyHeader.CompareAttribute(a, b);
@@ -18,7 +19,7 @@ public class AETVIndex(AttributeRegistry registry) : AIndexDefinition(registry, 
         if (cmp != 0) return cmp;
         cmp = KeyHeader.CompareIsAssert(a, b);
         if (cmp != 0) return cmp;
-        return KeyHeader.CompareValues(Registry, a, aLength, b, bLength);
+        return KeyHeader.CompareValues(idx.Registry, a, aLength, b, bLength);
     }
 
 
