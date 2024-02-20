@@ -1,5 +1,4 @@
-﻿using System;
-using NexusMods.EventSourcing.Abstractions.Models;
+﻿using NexusMods.EventSourcing.Abstractions.Models;
 
 namespace NexusMods.EventSourcing.Abstractions;
 

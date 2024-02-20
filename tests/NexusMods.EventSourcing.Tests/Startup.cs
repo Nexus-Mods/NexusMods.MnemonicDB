@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.DatomStore;
-using NexusMods.EventSourcing.TestModel;
 
 namespace NexusMods.EventSourcing.Tests;
 

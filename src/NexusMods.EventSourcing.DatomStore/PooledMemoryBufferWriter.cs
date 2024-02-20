@@ -9,13 +9,12 @@ namespace NexusMods.EventSourcing;
 /// <summary>
 /// A IBufferWriter that uses pooled memory to reduce allocations.
 /// </summary>
-public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>
+public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
 {
-    private IMemoryOwner<byte> _owner;
+    private readonly IMemoryOwner<byte> _owner;
     private Memory<byte> _data;
     private int _idx;
     private int _size;
-    private readonly bool _isActive;
 
     /// <summary>
     /// Constructs a new pooled memory buffer writer, with the given initial capacity.
@@ -85,5 +84,10 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>
 
         Debug.Assert(_idx + sizeHint <= _size);
         return _data.Span.SliceFast(_idx, sizeHint);
+    }
+
+    public void Dispose()
+    {
+        _owner.Dispose();
     }
 }

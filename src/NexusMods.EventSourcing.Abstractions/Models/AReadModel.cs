@@ -18,12 +18,7 @@ where TOuter : AReadModel<TOuter>, IReadModel
     {
         if (tx is null) return;
         Id = tx.TempId();
-        tx.Add<TOuter>((TOuter)this);
-    }
-
-    internal AReadModel(EntityId id)
-    {
-        Id = id;
+        tx.Add((TOuter)this);
     }
 
     /// <summary>

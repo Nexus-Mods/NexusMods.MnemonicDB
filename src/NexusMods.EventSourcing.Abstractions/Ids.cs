@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace NexusMods.EventSourcing.Abstractions;
+﻿namespace NexusMods.EventSourcing.Abstractions;
 
 public static class Ids
 {

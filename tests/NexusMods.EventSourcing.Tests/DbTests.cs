@@ -83,7 +83,7 @@ public class DbTests : AEventSourcingTest
             var newTx = Connection.BeginTransaction();
             ModFileAttributes.Path.Add(newTx, realId, $"C:\\test_{i}.txt_mutate");
 
-            var newResult = newTx.Commit();
+            newTx.Commit();
 
             // Validate the data
             var newDb = Connection.Db;
@@ -176,8 +176,8 @@ public class DbTests : AEventSourcingTest
     {
         var tx = Connection.BeginTransaction();
         var loadout = Loadout.Create(tx, "Test Loadout");
-        var mod1 = Mod.Create(tx, "Test Mod 1", loadout.Id);
-        var mod2 = Mod.Create(tx, "Test Mod 2", loadout.Id);
+        Mod.Create(tx, "Test Mod 1", loadout.Id);
+        Mod.Create(tx, "Test Mod 2", loadout.Id);
         var result = tx.Commit();
 
         var newDb = Connection.Db;

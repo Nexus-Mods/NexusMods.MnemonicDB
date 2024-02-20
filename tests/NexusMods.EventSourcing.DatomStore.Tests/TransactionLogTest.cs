@@ -29,9 +29,4 @@ public class TransactionLogTest
 
     }
 
-    private static IDatom[] TestDatoms = [
-
-
-    ];
-
 }

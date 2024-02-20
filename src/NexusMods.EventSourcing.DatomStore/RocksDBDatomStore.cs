@@ -6,7 +6,6 @@ using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.DatomStore.Indexes;
-using Reloaded.Memory.Extensions;
 using RocksDbSharp;
 
 namespace NexusMods.EventSourcing.DatomStore;

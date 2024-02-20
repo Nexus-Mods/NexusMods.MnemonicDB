@@ -6,7 +6,4 @@ namespace NexusMods.EventSourcing.Abstractions.Models;
 /// Defines a backwards lookup attribute
 /// </summary>
 public class ReverseLookupAttribute<TAttribute> : Attribute
-where TAttribute : ScalarAttribute<TAttribute, EntityId>
-{
-
-}
+where TAttribute : ScalarAttribute<TAttribute, EntityId>;

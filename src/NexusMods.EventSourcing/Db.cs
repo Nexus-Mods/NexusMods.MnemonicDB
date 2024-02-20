@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.Models;
 
 namespace NexusMods.EventSourcing;
 
-public class Db(IDatomStore store, Connection connection, TxId txId) : IDb
+internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
 {
     public TxId BasisTxId => txId;
 
@@ -18,7 +17,7 @@ public class Db(IDatomStore store, Connection connection, TxId txId) : IDb
 
     public IIterator Where(EntityId id)
     {
-        throw new System.NotImplementedException();
+        throw new NotImplementedException();
     }
 
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids) where TModel : IReadModel

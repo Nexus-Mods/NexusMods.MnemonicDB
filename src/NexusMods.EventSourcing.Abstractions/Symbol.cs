@@ -37,9 +37,18 @@ public class Symbol
         return !_internedSymbols.TryAdd(nsAndName, symbol) ? _internedSymbols[nsAndName] : symbol;
     }
 
+    /// <summary>
+    /// The namespace of the symbol, the part before the name
+    /// </summary>
     public string Namespace { get; }
 
+    /// <summary>
+    /// The name of the symbol
+    /// </summary>
     public string Name { get; }
 
+    /// <summary>
+    /// The full string name of the symbol, in the format of "Namespace/Name"
+    /// </summary>
     public string Id { get; }
 }
