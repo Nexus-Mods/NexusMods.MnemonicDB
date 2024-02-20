@@ -10,11 +10,11 @@ public interface IDatom
     void Emit<TSink>(ref TSink sink) where TSink : IDatomSink;
 
     /// <summary>
-    /// Duplicates the datom with a new entity id
+    /// The datom should call the remap function on each entity id it contains
+    /// to remap the entity ids to actual ids
     /// </summary>
-    /// <param name="newId"></param>
-    /// <returns></returns>
-    IDatom RemapEntityId(ulong newId);
+    /// <param name="remapFn"></param>
+    void Remap(Func<EntityId, EntityId> remapFn);
 }
 
 public interface IDatomWithTx : IDatom
@@ -36,9 +36,13 @@ public class AssertDatom<TAttr, TVal>(ulong e, TVal v) : IDatom
     }
 
     /// <inheritdoc />
-    public IDatom RemapEntityId(ulong newId)
+    public void Remap(Func<EntityId, EntityId> remapFn)
     {
-        return new AssertDatom<TAttr, TVal>(newId, v);
+        e = remapFn(EntityId.From(e)).Value;
+        if (v is EntityId entityId)
+        {
+            v = (TVal) (object) EntityId.From(remapFn(entityId).Value);
+        }
     }
 }
 

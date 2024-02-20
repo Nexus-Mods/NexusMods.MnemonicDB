@@ -10,5 +10,10 @@ public static class Services
             .AddAttribute<ModFileAttributes.Hash>()
             .AddAttribute<ModFileAttributes.Index>()
             .AddAttribute<ArchiveFileAttributes.Path>()
-            .AddAttribute<ArchiveFileAttributes.ArchiveHash>();
+            .AddAttribute<ArchiveFileAttributes.ArchiveHash>()
+            .AddAttribute<LoadoutAttributes.Name>()
+            .AddAttribute<LoadoutAttributes.UpdatedTx>()
+            .AddAttribute<ModAttributes.Name>()
+            .AddAttribute<ModAttributes.UpdatedTx>()
+            .AddAttribute<ModAttributes.LoadoutId>();
 }

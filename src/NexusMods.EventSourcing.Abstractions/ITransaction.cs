@@ -40,4 +40,9 @@ public interface ITransaction
     /// Commits the transaction
     /// </summary>
     ICommitResult Commit();
+
+    /// <summary>
+    /// Gets the temporary id for the transaction
+    /// </summary>
+    public TxId ThisTxId { get; }
 }

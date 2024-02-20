@@ -1,4 +1,7 @@
-﻿namespace NexusMods.EventSourcing.Abstractions.Models;
+﻿using System;
+using System.Collections.Generic;
+
+namespace NexusMods.EventSourcing.Abstractions.Models;
 
 /// <summary>
 /// Base class for all read models.
@@ -24,7 +27,39 @@ where TOuter : AReadModel<TOuter>, IReadModel
     }
 
     /// <summary>
+    /// Retrieves the read model from the database
+    /// </summary>
+    /// <param name="tx"></param>
+    /// <typeparam name="TReadModel"></typeparam>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    protected TReadModel Get<TReadModel>(EntityId entityId)
+        where TReadModel : AReadModel<TReadModel>, IReadModel
+    {
+        return Db.Get<TReadModel>(entityId);
+    }
+
+    /// <summary>
+    /// Retrieves the matching read models from the database via the specified reverse lookup attribute
+    /// </summary>
+    /// <typeparam name="TAttribute"></typeparam>
+    /// <typeparam name="TReadModel"></typeparam>
+    /// <returns></returns>
+    /// <exception cref="NotImplementedException"></exception>
+    protected IEnumerable<TReadModel> GetReverse<TAttribute, TReadModel>()
+        where TReadModel : AReadModel<TReadModel>, IReadModel
+        where TAttribute : ScalarAttribute<TAttribute, EntityId>
+    {
+        return Db.GetReverse<TAttribute, TReadModel>(Id);
+    }
+
+    /// <summary>
     /// The base identifier for the entity.
     /// </summary>
     public EntityId Id { get; internal set; }
+
+    /// <summary>
+    /// The database this read model is associated with.
+    /// </summary>
+    public IDb Db { get; internal set; } = null!;
 }

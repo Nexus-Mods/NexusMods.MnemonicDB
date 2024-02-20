@@ -109,29 +109,28 @@ public class Connection : IConnection
         var remaps = new Dictionary<ulong, ulong>();
         var datomsArray = datoms.ToArray();
 
+        EntityId RemapFn(EntityId input)
+        {
+            if (Ids.GetPartition(input) == Ids.Partition.Tmp)
+            {
+                if (!remaps.TryGetValue(input.Value, out var id))
+                {
+                    var newId = _nextEntityId++;
+                    remaps[input.Value] = newId;
+                    return EntityId.From(newId);
+                }
+                return EntityId.From(id);
+            }
+            return input;
+        }
+
         lock (_lock)
         {
             var newDatoms = new List<IDatom>();
             foreach (var datom in datomsArray)
             {
-                var eid = datom.E;
-                if (Ids.GetPartition(eid) == Ids.Partition.Tmp)
-                {
-                    if (!remaps.TryGetValue(eid, out var id))
-                    {
-                        var newId = _nextEntityId++;
-                        remaps[eid] = newId;
-                        newDatoms.Add(datom.RemapEntityId(newId));
-                    }
-                    else
-                    {
-                        newDatoms.Add(datom.RemapEntityId(id));
-                    }
-                }
-                else
-                {
-                    newDatoms.Add(datom);
-                }
+                datom.Remap(RemapFn);
+                newDatoms.Add(datom);
             }
             var newTx = _store.Transact(newDatoms);
             TxId = newTx;

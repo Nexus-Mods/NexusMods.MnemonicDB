@@ -21,7 +21,7 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
     private delegate void EmitterFn<in TReadModel>(TTransaction tx, TReadModel model)
         where TReadModel : IReadModel;
 
-    internal delegate TReadModel ReaderFn<out TReadModel>(EntityId id, IEntityIterator iterator)
+    internal delegate TReadModel ReaderFn<out TReadModel>(EntityId id, IEntityIterator iterator, IDb db)
         where TReadModel : IReadModel;
 
     public void Add(TTransaction tx, IReadModel model)
@@ -107,6 +107,8 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
 
         var entityIdParameter = Expression.Parameter(typeof(EntityId), "entityId");
         var iteratorParameter = Expression.Parameter(typeof(IEntityIterator), "iterator");
+        var dbParameter = Expression.Parameter(typeof(IDb), "db");
+
         var newModelExpr = Expression.Variable(typeof(TModel), "newModel");
 
         var spanExpr = Expression.Property(iteratorParameter, "ValueSpan");
@@ -115,6 +117,7 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
 
         exprs.Add(Expression.Assign(newModelExpr, Expression.New(ctor, Expression.Constant(null, typeof(ITransaction)))));
         exprs.Add(Expression.Assign(Expression.Property(newModelExpr, "Id"), entityIdParameter));
+        exprs.Add(Expression.Assign(Expression.Property(newModelExpr, "Db"), dbParameter));
 
         exprs.Add(Expression.Label(whileTopLabel));
         exprs.Add(Expression.IfThen(
@@ -141,7 +144,7 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
 
         var block = Expression.Block(new[] {newModelExpr}, exprs);
 
-        var lambda = Expression.Lambda<ReaderFn<TModel>>(block, entityIdParameter, iteratorParameter);
+        var lambda = Expression.Lambda<ReaderFn<TModel>>(block, entityIdParameter, iteratorParameter, dbParameter);
         return lambda.Compile();
     }
 }

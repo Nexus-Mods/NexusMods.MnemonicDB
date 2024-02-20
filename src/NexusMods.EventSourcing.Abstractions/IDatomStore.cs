@@ -42,4 +42,9 @@ public interface IDatomStore : IDisposable
     /// <typeparam name="TAttribute"></typeparam>
     /// <returns></returns>
     Expression GetValueReadExpression(Type attribute, Expression valueSpan, out ulong attributeId);
+
+    /// <summary>
+    /// Gets all the entities that reference the given entity id with the given attribute.
+    /// </summary>
+    IEnumerable<EntityId> ReverseLookup<TAttribute>(TxId txId) where TAttribute : IAttribute<EntityId>;
 }

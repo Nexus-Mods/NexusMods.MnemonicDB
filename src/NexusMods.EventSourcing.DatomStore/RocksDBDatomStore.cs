@@ -23,6 +23,7 @@ public class RocksDBDatomStore : IDatomStore
     private ulong _tx;
     private readonly AETVIndex _avetIndex;
     private readonly EATVIndex _eatvIndex;
+    private readonly AVTEIndex _avteIndex;
 
     public RocksDBDatomStore(ILogger<RocksDBDatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings)
     {
@@ -42,6 +43,8 @@ public class RocksDBDatomStore : IDatomStore
         _eatvIndex.Init(_db);
         _avetIndex = new AETVIndex(_registry);
         _avetIndex.Init(_db);
+        _avteIndex = new AVTEIndex(_registry);
+        _avteIndex.Init(_db);
 
         _pooledWriter = new PooledMemoryBufferWriter(128);
 
@@ -68,6 +71,7 @@ public class RocksDBDatomStore : IDatomStore
         var span = _pooledWriter.GetWrittenSpan();
         _eatvIndex.Put(batch, span);
         _avetIndex.Put(batch, span);
+        _avteIndex.Put(batch, span);
     }
 
     private struct TransactSink(RocksDBDatomStore store, WriteBatch batch, ulong tx) : IDatomSink
@@ -128,6 +132,16 @@ public class RocksDBDatomStore : IDatomStore
     public Expression GetValueReadExpression(Type attribute, Expression valueSpan, out ulong attributeId)
     {
         return _registry.GetReadExpression(attribute, valueSpan, out attributeId);
+    }
+
+    public IEnumerable<EntityId> ReverseLookup<TAttribute>(TxId txId) where TAttribute : IAttribute<EntityId>
+    {
+        using var iterator = new AVTEIndex.AVTEIterator(txId.Value, _registry, _avteIndex);
+        iterator.Set<TAttribute>();
+        while (iterator.Next())
+        {
+            yield return iterator.EntityId;
+        }
     }
 
     public void Dispose()

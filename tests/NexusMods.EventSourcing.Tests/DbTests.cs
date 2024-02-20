@@ -171,5 +171,31 @@ public class DbTests : AEventSourcingTest
 
     }
 
+    [Fact]
+    public void CanGetChildEntities()
+    {
+        var tx = Connection.BeginTransaction();
+        var loadout = Loadout.Create(tx, "Test Loadout");
+        var mod1 = Mod.Create(tx, "Test Mod 1", loadout.Id);
+        var mod2 = Mod.Create(tx, "Test Mod 2", loadout.Id);
+        var result = tx.Commit();
+
+        var newDb = Connection.Db;
+
+        loadout = newDb.Get<Loadout>([result[loadout.Id]]).First();
+
+        loadout.Mods.Count().Should().Be(2);
+        loadout.Mods.Select(m => m.Name).Should().BeEquivalentTo(["Test Mod 1", "Test Mod 2"]);
+
+        var firstMod = loadout.Mods.First();
+        Ids.IsPartition(firstMod.Loadout.Id.Value, Ids.Partition.Entity)
+            .Should()
+            .Be(true, "the temp id should be replaced with a real id");
+        firstMod.Loadout.Id.Should().Be(loadout.Id);
+        firstMod.Db.Should().Be(newDb);
+        loadout.Name.Should().Be("Test Loadout");
+        firstMod.Loadout.Name.Should().Be("Test Loadout");
+    }
+
 
 }

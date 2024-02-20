@@ -8,7 +8,7 @@ namespace NexusMods.EventSourcing;
 
 public class Transaction(Connection connection) : ITransaction
 {
-    private ulong _tempId = Ids.MinId(Ids.Partition.Tmp);
+    private ulong _tempId = Ids.MinId(Ids.Partition.Tmp) + 1;
     private ConcurrentBag<IDatom> _datoms = new();
     private ConcurrentBag<IReadModel> _models = new();
 
@@ -44,4 +44,7 @@ public class Transaction(Connection connection) : ITransaction
         }
         return connection.Transact(_datoms);
     }
+
+    /// <inheritdoc />
+    public TxId ThisTxId => TxId.From(Ids.MinId(Ids.Partition.Tmp));
 }
