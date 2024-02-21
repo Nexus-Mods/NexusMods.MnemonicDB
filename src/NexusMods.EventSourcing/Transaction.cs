@@ -18,11 +18,6 @@ internal class Transaction(Connection connection) : ITransaction
         return EntityId.From(Interlocked.Increment(ref _tempId));
     }
 
-    public void Add(IDatom datom)
-    {
-        _datoms.Add(datom);
-    }
-
     /// <inheritdoc />
     public void Add<TReadModel>(TReadModel model)
     where TReadModel : IReadModel

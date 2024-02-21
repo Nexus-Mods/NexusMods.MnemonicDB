@@ -6,12 +6,9 @@ dotnet:
 profile:
   name: qodana.recommended
 exclude:
-  - name: ClassNeverInstantiated.Global
-  - name: UnusedAutoPropertyAccessor.Global
   - name: InconsistentNaming
     paths:
       - src\NexusMods.EventSourcing.DatomStore\Indexes
-  - name: UnusedMemberInSuper.Global
   - name: UnusedMethodReturnValue.Global
     paths:
       - src\NexusMods.EventSourcing.Abstractions
@@ -23,3 +20,16 @@ exclude:
   - name: NotAccessedField.Global
     paths:
       - tests\NexusMods.EventSourcing.DatomStore.Tests\ADatomStoreTest.cs
+  - name: UnusedAutoPropertyAccessor.Global
+    paths:
+      - src\NexusMods.EventSourcing.Abstractions
+      - tests\NexusMods.EventSourcing.TestModel\Model
+  - name: UnusedParameter.Global
+    paths:
+      - src\NexusMods.EventSourcing.Abstractions
+  - name: UnusedMemberInSuper.Global
+    paths:
+      - src\NexusMods.EventSourcing.Abstractions
+  - name: UnusedMember.Global
+    paths:
+      - src\NexusMods.EventSourcing.Abstractions
