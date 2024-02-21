@@ -2,6 +2,9 @@
 
 namespace NexusMods.EventSourcing.Abstractions;
 
+/// <summary>
+/// A typed identifier for a transaction id, internally this is a ulong.
+/// </summary>
 [ValueObject<ulong>]
 public readonly partial struct TxId
 {

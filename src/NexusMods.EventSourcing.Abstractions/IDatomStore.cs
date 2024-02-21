@@ -10,6 +10,9 @@ namespace NexusMods.EventSourcing.Abstractions;
 public interface IDatomStore : IDisposable
 {
 
+    /// <summary>
+    /// Transacts (adds) the given datoms into the store.
+    /// </summary>
     public TxId Transact(IEnumerable<IDatom> datoms);
 
     /// <summary>

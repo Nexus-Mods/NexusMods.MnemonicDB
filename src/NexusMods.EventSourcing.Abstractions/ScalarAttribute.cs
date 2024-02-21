@@ -30,6 +30,7 @@ where TAttribute : IAttribute<TValueType>
         Id = symbol;
     }
 
+    /// <inheritdoc />
     public TValueType Read(ReadOnlySpan<byte> buffer)
     {
         _serializer.Read(buffer, out var val);
@@ -43,6 +44,7 @@ where TAttribute : IAttribute<TValueType>
         tx.Add<TAttribute, TValueType>(entity, value);
     }
 
+    /// <inheritdoc />
     public void SetSerializer(IValueSerializer serializer)
     {
         if (serializer is not IValueSerializer<TValueType> valueSerializer)
@@ -63,6 +65,9 @@ where TAttribute : IAttribute<TValueType>
     /// <inheritdoc />
     public Symbol Id { get; }
 
+    /// <summary>
+    /// Read a datom from a buffer
+    /// </summary>
     public IDatom Read(ulong entity, ulong tx, bool isAssert, ReadOnlySpan<byte> buffer)
     {
         _serializer.Read(buffer, out var val);
@@ -71,6 +76,12 @@ where TAttribute : IAttribute<TValueType>
             : throw new NotImplementedException();
     }
 
+    /// <summary>
+    /// Create a new datom for an assert on this attribute, and return it
+    /// </summary>
+    /// <param name="e"></param>
+    /// <param name="v"></param>
+    /// <returns></returns>
     public static IDatom Assert(ulong e, TValueType v)
     {
         return new AssertDatom<TAttribute, TValueType>(e, v);

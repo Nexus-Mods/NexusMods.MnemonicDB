@@ -2,6 +2,9 @@
 
 namespace NexusMods.EventSourcing.Abstractions;
 
+/// <summary>
+/// Represents a transaction, which is a set of proposed changes to the datom store
+/// </summary>
 public interface ITransaction
 {
     /// <summary>
@@ -9,12 +12,6 @@ public interface ITransaction
     /// </summary>
     /// <returns></returns>
     EntityId TempId();
-
-    /// <summary>
-    /// Adds a new datom to the transaction
-    /// </summary>
-    void Add(IDatom datom);
-
 
     /// <summary>
     /// Adds a new read model to the transaction, the datoms are extracted from the read model
@@ -29,10 +26,9 @@ public interface ITransaction
     /// </summary>
     /// <param name="entityId"></param>
     /// <param name="val"></param>
-    /// <param name="isAssert"></param>
     /// <typeparam name="TAttribute"></typeparam>
     /// <typeparam name="TVal"></typeparam>
-    void Add<TAttribute, TVal>(EntityId entityId, TVal val, bool isAssert = true)
+    void Add<TAttribute, TVal>(EntityId entityId, TVal val)
         where TAttribute : IAttribute<TVal>;
 
     /// <summary>
