@@ -9,17 +9,6 @@ internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
 {
     public TxId BasisTxId => txId;
 
-
-    public IIterator Where<TAttr>() where TAttr : IAttribute
-    {
-        return store.Where<TAttr>(txId);
-    }
-
-    public IIterator Where(EntityId id)
-    {
-        throw new NotImplementedException();
-    }
-
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids) where TModel : IReadModel
     {
         using var iterator = store.EntityIterator(txId);

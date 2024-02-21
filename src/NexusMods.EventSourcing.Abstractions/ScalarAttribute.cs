@@ -15,7 +15,6 @@ where TAttribute : IAttribute<TValueType>
     /// <summary>
     /// Create a new attribute
     /// </summary>
-    /// <param name="guid"></param>
     protected ScalarAttribute(string uniqueName = "")
     {
         if (uniqueName == "")
@@ -26,7 +25,6 @@ where TAttribute : IAttribute<TValueType>
     /// <summary>
     /// Create a new attribute from an already parsed guid
     /// </summary>
-    /// <param name="guid"></param>
     protected ScalarAttribute(Symbol symbol)
     {
         Id = symbol;

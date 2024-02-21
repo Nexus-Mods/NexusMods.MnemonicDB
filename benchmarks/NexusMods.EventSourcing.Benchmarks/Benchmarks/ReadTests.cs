@@ -5,6 +5,7 @@ using BenchmarkDotNet.Attributes;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.TestModel.Model;
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace NexusMods.EventSourcing.Benchmarks.Benchmarks;
 
@@ -23,7 +24,7 @@ public class ReadTests
         _connection = services.GetRequiredService<IConnection>();
     }
 
-    public const int MaxCount = 10000;
+    private const int MaxCount = 10000;
 
     [GlobalSetup]
     public void Setup()
@@ -53,7 +54,7 @@ public class ReadTests
 
 
     [Params(1, 1000, MaxCount)]
-    public int Count { get; set; } = MaxCount;
+    public int Count { get; init; } = MaxCount;
 
     public enum SortOrder
     {

@@ -9,7 +9,7 @@ public class SymbolSerializer : IValueSerializer<Symbol>
 {
     public Type NativeType => typeof(Symbol);
 
-    public static readonly UInt128 Id = "1BAE8D48-8775-4642-AEA9-9C925B30D4B2".ToUInt128Guid();
+    private static readonly UInt128 Id = "1BAE8D48-8775-4642-AEA9-9C925B30D4B2".ToUInt128Guid();
     public UInt128 UniqueId => Id;
     public int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {

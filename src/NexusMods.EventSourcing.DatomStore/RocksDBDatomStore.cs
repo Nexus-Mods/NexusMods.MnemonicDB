@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices;
-using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.DatomStore.Indexes;
 using RocksDbSharp;
@@ -22,7 +21,7 @@ public class RocksDBDatomStore : IDatomStore
     private readonly EATVIndex _eatvIndex;
     private readonly AVTEIndex _avteIndex;
 
-    public RocksDBDatomStore(ILogger<RocksDBDatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings)
+    public RocksDBDatomStore(AttributeRegistry registry, DatomStoreSettings settings)
     {
         _registry = registry;
         _registry.Populate(BuiltInAttributes.Initial);
@@ -68,7 +67,7 @@ public class RocksDBDatomStore : IDatomStore
         _avteIndex.Put(batch, span);
     }
 
-    private struct TransactSink(RocksDBDatomStore store, WriteBatch batch, ulong tx) : IDatomSink
+    private readonly struct TransactSink(RocksDBDatomStore store, WriteBatch batch, ulong tx) : IDatomSink
     {
         public void Datom<TAttr, TVal>(ulong e, TVal v, bool isAssert) where TAttr : IAttribute<TVal>
         {

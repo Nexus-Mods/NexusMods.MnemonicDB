@@ -21,7 +21,7 @@ public interface ITransaction
     /// as asserts for each property with the FromAttribute
     /// </summary>
     /// <param name="model"></param>
-    TReadModel Add<TReadModel>(TReadModel model)
+    void Add<TReadModel>(TReadModel model)
         where TReadModel : IReadModel;
 
     /// <summary>

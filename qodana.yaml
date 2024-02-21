@@ -8,3 +8,7 @@ profile:
 exclude:
   - name: ClassNeverInstantiated.Global
   - name: UnusedAutoPropertyAccessor.Global
+  - name: InconsistentNaming
+    paths:
+      - src\NexusMods.EventSourcing.DatomStore\Indexes
+  - name: UnusedMemberInSuper.Global

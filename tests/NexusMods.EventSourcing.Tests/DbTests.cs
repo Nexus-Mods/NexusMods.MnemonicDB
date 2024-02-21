@@ -49,7 +49,7 @@ public class DbTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable
     [Fact]
     public void DbIsImmutable()
     {
-        const int TIMES = 10;
+        const int times = 10;
 
         // Insert some data
         var tx = Connection.BeginTransaction();
@@ -72,7 +72,7 @@ public class DbTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable
         found.Index.Should().Be(0);
 
         // Mutate the data
-        for (var i = 0; i < TIMES; i++)
+        for (var i = 0; i < times; i++)
         {
             var newTx = Connection.BeginTransaction();
             ModFileAttributes.Path.Add(newTx, realId, $"C:\\test_{i}.txt_mutate");

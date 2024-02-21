@@ -14,12 +14,12 @@ public static class BuiltInAttributes
     /// <summary>
     /// Static unique id of the UniqueId attribute
     /// </summary>
-    public static readonly Symbol UniqueIdStaticId = Symbol.Intern("NexusMods.EventSourcing.DatomStore/UniqueId");
+    private static readonly Symbol UniqueIdStaticId = Symbol.Intern("NexusMods.EventSourcing.DatomStore/UniqueId");
 
     /// <summary>
     /// The database entity id of the UniqueId attribute
     /// </summary>
-    public static readonly ulong UniqueIdEntityId = 1;
+    private static readonly ulong UniqueIdEntityId = 1;
 
     /// <summary>
     /// The unique id if the IValueSerializer used to serialize the value of the attribute.
@@ -29,12 +29,12 @@ public static class BuiltInAttributes
     /// <summary>
     /// Static unique id of the UniqueId attribute
     /// </summary>
-    public static readonly Symbol ValueSerializerIdStaticId = Symbol.Intern("NexusMods.EventSourcing.DatomStore/ValueSerializerId");
+    private static readonly Symbol ValueSerializerIdStaticId = Symbol.Intern("NexusMods.EventSourcing.DatomStore/ValueSerializerId");
 
     /// <summary>
     /// The database entity id of the UniqueId attribute
     /// </summary>
-    public static readonly ulong ValueSerializerIdEntityId = 2;
+    private static readonly ulong ValueSerializerIdEntityId = 2;
 
 
     /// <summary>

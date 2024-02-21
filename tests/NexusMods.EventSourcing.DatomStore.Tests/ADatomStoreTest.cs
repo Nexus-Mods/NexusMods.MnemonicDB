@@ -1,7 +1,7 @@
-﻿using Microsoft.Extensions.Logging.Abstractions;
-using NexusMods.EventSourcing.Abstractions;
+﻿using NexusMods.EventSourcing.Abstractions;
 using NexusMods.Paths;
 // ReSharper disable PossibleMultipleEnumeration
+// ReSharper disable MemberCanBePrivate.Global
 
 namespace NexusMods.EventSourcing.DatomStore.Tests;
 
@@ -19,7 +19,7 @@ public abstract class ADatomStoreTest : IDisposable
             Path = _tmpPath,
         };
         var registry = new AttributeRegistry(valueSerializers, attributes);
-        Store = new RocksDBDatomStore(new NullLogger<RocksDBDatomStore>(), registry, dbSettings);
+        Store = new RocksDBDatomStore(registry, dbSettings);
         Connection = new Connection(Store, attributes, valueSerializers);
     }
 

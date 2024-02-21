@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging.Abstractions;
-using NexusMods.EventSourcing.Abstractions;
+﻿using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.DatomStore;
 using NexusMods.Paths;
 
@@ -23,7 +22,7 @@ public class AEventSourcingTest : IDisposable
 
         var attributeArray = attributes.ToArray();
         var registry = new AttributeRegistry(valueSerializerArray, attributeArray);
-        Store = new RocksDBDatomStore(new NullLogger<RocksDBDatomStore>(), registry, dbSettings);
+        Store = new RocksDBDatomStore(registry, dbSettings);
         Connection = new Connection(Store, attributeArray, valueSerializerArray);
     }
 

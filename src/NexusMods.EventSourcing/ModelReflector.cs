@@ -91,7 +91,7 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
         return readerFn;
     }
 
-    public ReaderFn<TModel> MakeReader<TModel>() where TModel : IReadModel
+    private ReaderFn<TModel> MakeReader<TModel>() where TModel : IReadModel
     {
         var properties = GetModelProperties(typeof(TModel));
 

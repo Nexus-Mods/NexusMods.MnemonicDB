@@ -6,7 +6,6 @@ namespace NexusMods.EventSourcing.Abstractions.Models;
 /// <summary>
 /// Base class for all read models.
 /// </summary>
-/// <param name="id"></param>
 public abstract class AReadModel<TOuter> : IReadModel
 where TOuter : AReadModel<TOuter>, IReadModel
 {
@@ -24,10 +23,6 @@ where TOuter : AReadModel<TOuter>, IReadModel
     /// <summary>
     /// Retrieves the read model from the database
     /// </summary>
-    /// <param name="tx"></param>
-    /// <typeparam name="TReadModel"></typeparam>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
     protected TReadModel Get<TReadModel>(EntityId entityId)
         where TReadModel : AReadModel<TReadModel>, IReadModel
     {

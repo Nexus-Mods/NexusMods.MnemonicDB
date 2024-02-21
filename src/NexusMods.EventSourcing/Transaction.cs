@@ -24,7 +24,7 @@ internal class Transaction(Connection connection) : ITransaction
     }
 
     /// <inheritdoc />
-    public TReadModel Add<TReadModel>(TReadModel model)
+    public void Add<TReadModel>(TReadModel model)
     where TReadModel : IReadModel
     {
         _models.Add(model);

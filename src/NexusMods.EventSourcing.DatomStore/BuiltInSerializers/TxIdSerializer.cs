@@ -8,7 +8,7 @@ public class TxIdSerializer : IValueSerializer<TxId>
 {
     public Type NativeType => typeof(TxId);
 
-    public static readonly UInt128 Id = "BB2B2BAF-9AA8-4DB0-8BFC-A0A853ED9BA0".ToUInt128Guid();
+    private static readonly UInt128 Id = "BB2B2BAF-9AA8-4DB0-8BFC-A0A853ED9BA0".ToUInt128Guid();
     public UInt128 UniqueId => Id;
     public int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {

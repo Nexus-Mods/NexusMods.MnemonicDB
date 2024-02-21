@@ -33,7 +33,7 @@ public static class Ids
     /// <param name="partition"></param>
     /// <param name="id"></param>
     /// <returns></returns>
-    public static ulong MakeId(Partition partition, ulong id)
+    private static ulong MakeId(Partition partition, ulong id)
     {
         return ((ulong)partition << 56) | (id & 0x00FFFFFFFFFFFFFF);
     }
@@ -63,7 +63,7 @@ public static class Ids
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
-    public static Partition GetPartition(ulong id)
+    private static Partition GetPartition(ulong id)
     {
         return (id >> 56) switch
         {

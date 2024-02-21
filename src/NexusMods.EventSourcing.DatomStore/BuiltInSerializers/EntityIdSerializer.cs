@@ -9,7 +9,7 @@ public class EntityIdSerialzer : IValueSerializer<EntityId>
 {
     public Type NativeType => typeof(EntityId);
 
-    public static readonly UInt128 Id = "E2C3185E-C082-4641-B25E-7CEC803A2F48".ToUInt128Guid();
+    private static readonly UInt128 Id = "E2C3185E-C082-4641-B25E-7CEC803A2F48".ToUInt128Guid();
     public UInt128 UniqueId => Id;
     public int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
