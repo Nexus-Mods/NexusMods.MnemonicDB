@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Subjects;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Models;
 using NexusMods.EventSourcing.DatomStore;
 
 namespace NexusMods.EventSourcing;
@@ -19,6 +21,9 @@ public class Connection : IConnection
     internal readonly ModelReflector<Transaction> ModelReflector;
     private readonly Subject<ICommitResult> _updates;
 
+
+    private readonly ConcurrentDictionary<EntityId,WeakReference> _activeModels;
+
     /// <summary>
     /// Main connection class, co-ordinates writes and immutable reads
     /// </summary>
@@ -29,6 +34,7 @@ public class Connection : IConnection
         ModelReflector = new ModelReflector<Transaction>(store);
 
         _updates = new Subject<ICommitResult>();
+        _activeModels = new ConcurrentDictionary<(EntityId, Type), WeakReference>();
 
         AddMissingAttributes(serializers);
     }
@@ -147,4 +153,35 @@ public class Connection : IConnection
 
     /// <inheritdoc />
     public IObservable<ICommitResult> Commits => _updates;
+
+    public IReadModel GetActive<T>(EntityId id) where T : class, IReadModel
+    {
+        var basisDb = Db;
+        var active = basisDb.Get<T>(id);
+
+        if (_activeModels.TryGetValue((id, typeof(T)), out var weakRef))
+        {
+            if (weakRef.Target is T target)
+                return target;
+
+            _activeModels.TryAdd((id, typeof(T)), new WeakReference(active));
+        }
+
+        AdvanceActiveModel(active);
+
+        return active;
+
+    }
+
+    /// <summary>
+    /// Marks the active model as ready to be advanced. The advancer will then
+    /// pick this up and push recent updates to the model.
+    /// </summary>
+    /// <param name="active"></param>
+    /// <typeparam name="T"></typeparam>
+    /// <exception cref="NotImplementedException"></exception>
+    private void AdvanceActiveModel<T>(T active) where T : class, IReadModel
+    {
+
+    }
 }

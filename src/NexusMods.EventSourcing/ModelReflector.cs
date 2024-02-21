@@ -24,6 +24,9 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
     internal delegate TReadModel ReaderFn<out TReadModel>(EntityId id, IEntityIterator iterator, IDb db)
         where TReadModel : IReadModel;
 
+    internal delegate void ActiveReaderFn<in TReadModel>(TReadModel model, IEntityIterator iterator, IDb db)
+        where TReadModel : IReadModel;
+
     public void Add(TTransaction tx, IReadModel model)
     {
         EmitterFn<IReadModel> emitterFn;
@@ -144,5 +147,10 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
 
         var lambda = Expression.Lambda<ReaderFn<TModel>>(block, entityIdParameter, iteratorParameter, dbParameter);
         return lambda.Compile();
+    }
+
+    public ActiveReaderFn<T> GetActiveAdapter<T>() where T : IReadModel
+    {
+        throw new NotImplementedException();
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using NexusMods.EventSourcing.Abstractions.Models;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -35,4 +36,12 @@ public interface IConnection
     /// A sequential stream of commits to the database.
     /// </summary>
     public IObservable<ICommitResult> Commits { get; }
+
+    /// <summary>
+    /// Gets a active read model for the given entity id. Once the entity is read,
+    /// future updates to the connection will update the these read models, and fire off
+    /// the correct INotifyPropertyChanged events.
+    /// </summary>
+    public IReadModel GetActive<T>(EntityId result)
+    where T : class, IReadModel;
 }
