@@ -5,7 +5,8 @@ using NexusMods.EventSourcing.Abstractions.Models;
 
 namespace NexusMods.EventSourcing;
 
-public class Transaction(Connection connection) : ITransaction
+/// <inheritdoc />
+internal class Transaction(Connection connection) : ITransaction
 {
     private ulong _tempId = Ids.MinId(Ids.Partition.Tmp) + 1;
     private readonly ConcurrentBag<IDatom> _datoms = new();

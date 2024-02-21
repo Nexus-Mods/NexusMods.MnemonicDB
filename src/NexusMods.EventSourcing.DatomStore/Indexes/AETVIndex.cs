@@ -26,7 +26,6 @@ public class AETVIndex(AttributeRegistry registry) : AIndexDefinition<AETVIndex>
     public struct AEVTByAIterator<TAttr> : IIterator
         where TAttr : IAttribute
     {
-        private readonly AETVIndex _idx;
         private KeyHeader _key;
         private readonly Iterator _iterator;
         private readonly ulong _attrId;
@@ -34,7 +33,6 @@ public class AETVIndex(AttributeRegistry registry) : AIndexDefinition<AETVIndex>
 
         public AEVTByAIterator(ulong txId, AttributeRegistry registry, AETVIndex idx)
         {
-            _idx = idx;
             _registry = registry;
             _iterator = idx.Db.NewIterator(idx.ColumnFamilyHandle);
             _attrId = registry.GetAttributeId<TAttr>();

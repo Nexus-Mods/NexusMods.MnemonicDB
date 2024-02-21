@@ -21,7 +21,7 @@ public class Symbol
         Namespace = nsAndName[..splitOn];
     }
 
-    private static readonly ConcurrentDictionary<string, Symbol> _internedSymbols = new();
+    private static readonly ConcurrentDictionary<string, Symbol> InternedSymbols = new();
 
     /// <summary>
     /// Construct a new symbol, or return an existing one that matches the given name
@@ -30,11 +30,11 @@ public class Symbol
     /// <returns></returns>
     public static Symbol Intern(string nsAndName)
     {
-        if (_internedSymbols.TryGetValue(nsAndName, out var symbol))
+        if (InternedSymbols.TryGetValue(nsAndName, out var symbol))
             return symbol;
 
         symbol = new Symbol(nsAndName);
-        return !_internedSymbols.TryAdd(nsAndName, symbol) ? _internedSymbols[nsAndName] : symbol;
+        return !InternedSymbols.TryAdd(nsAndName, symbol) ? InternedSymbols[nsAndName] : symbol;
     }
 
     /// <summary>

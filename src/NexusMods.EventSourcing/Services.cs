@@ -11,9 +11,6 @@ public static class Services
     /// <summary>
     /// Registers the event sourcing services with the service collection.
     /// </summary>
-    /// <param name="services"></param>
-    /// <typeparam name="TAttribute"></typeparam>
-    /// <returns></returns>
     public static IServiceCollection AddEventSourcing(this IServiceCollection services)
     {
         services.AddSingleton<IConnection, Connection>();

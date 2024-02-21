@@ -71,7 +71,7 @@ public static class Ids
             1 => Partition.Tx,
             2 => Partition.Entity,
             3 => Partition.Tmp,
-            > 3 => Partition.Unknown,
+            _ => Partition.Unknown,
         };
     }
 

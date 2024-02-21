@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.TestModel.Model.Attributes;
-
+namespace NexusMods.EventSourcing.TestModel;
 
 public static class Services
 {

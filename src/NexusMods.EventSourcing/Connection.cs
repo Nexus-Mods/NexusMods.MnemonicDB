@@ -133,7 +133,7 @@ public class Connection : IConnection
             }
             var newTx = _store.Transact(newDatoms);
             TxId = newTx;
-            var result = new CommitResult(newTx, remaps, this, datomsArray);
+            var result = new CommitResult(newTx, remaps, datomsArray);
             _updates.OnNext(result);
             return result;
         }

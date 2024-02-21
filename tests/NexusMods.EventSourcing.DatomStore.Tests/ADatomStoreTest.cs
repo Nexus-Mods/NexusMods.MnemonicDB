@@ -8,7 +8,6 @@ namespace NexusMods.EventSourcing.DatomStore.Tests;
 public abstract class ADatomStoreTest : IDisposable
 {
     private readonly AbsolutePath _tmpPath;
-    private readonly AttributeRegistry _registry;
     protected readonly RocksDBDatomStore Store;
     protected readonly Connection Connection;
 
@@ -19,8 +18,8 @@ public abstract class ADatomStoreTest : IDisposable
         {
             Path = _tmpPath,
         };
-        _registry = new AttributeRegistry(valueSerializers, attributes);
-        Store = new RocksDBDatomStore(new NullLogger<RocksDBDatomStore>(), _registry, dbSettings);
+        var registry = new AttributeRegistry(valueSerializers, attributes);
+        Store = new RocksDBDatomStore(new NullLogger<RocksDBDatomStore>(), registry, dbSettings);
         Connection = new Connection(Store, attributes, valueSerializers);
     }
 

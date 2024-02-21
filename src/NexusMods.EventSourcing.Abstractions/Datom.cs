@@ -2,6 +2,9 @@
 
 namespace NexusMods.EventSourcing.Abstractions;
 
+/// <summary>
+/// Represents a single fact in the database. Consists of an entity, attribute, value, and transaction id.
+/// </summary>
 public interface IDatom
 {
     /// <summary>
@@ -34,19 +37,44 @@ public interface IDatom
     void Remap(Func<EntityId, EntityId> remapFn);
 }
 
+/// <summary>
+/// A datom that includes a transaction id
+/// </summary>
 public interface IDatomWithTx : IDatom
 {
+    /// <summary>
+    /// The transaction id of the datom
+    /// </summary>
     TxId Tx { get; }
 }
 
+
+/// <summary>
+/// An assertion datom, most datoms are assertions, so these are called out in a specific class
+/// here to save memory
+/// </summary>
+/// <param name="e"></param>
+/// <param name="v"></param>
+/// <typeparam name="TAttr"></typeparam>
+/// <typeparam name="TVal"></typeparam>
 public class AssertDatom<TAttr, TVal>(ulong e, TVal v) : IDatom
     where TAttr : IAttribute<TVal>
 {
+    /// <inheritdoc />
     public ulong Entity => e;
 
+    /// <summary>
+    /// The value of the datom
+    /// </summary>
     public TVal V => v;
+
+    /// <inheritdoc />
     public Type Attribute => typeof(TAttr);
+
+    /// <inheritdoc />
     public Type ValueType => typeof(TVal);
+
+    /// <inheritdoc />
     public void Emit<TSink>(ref TSink sink) where TSink : IDatomSink
     {
         sink.Datom<TAttr, TVal>(e, v, true);
@@ -77,14 +105,12 @@ public class AssertDatomWithTx<TAttr, TVal> : AssertDatom<TAttr, TVal>, IDatomWi
     /// <summary>
     /// Default Constructor
     /// </summary>
-    /// <param name="e"></param>
-    /// <param name="v"></param>
-    /// <param name="tx"></param>
     public AssertDatomWithTx(ulong e, TVal v, TxId tx) : base(e, v)
     {
         Tx = tx;
     }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         return $"(assert! {Entity}, {Attribute.Namespace}/{Attribute.Name}, {V}, {Tx})";

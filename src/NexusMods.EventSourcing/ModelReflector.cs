@@ -43,8 +43,6 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
     /// <summary>
     /// Reflects over
     /// </summary>
-    /// <typeparam name="TReadModel"></typeparam>
-    /// <returns></returns>
     private EmitterFn<IReadModel> CreateEmitter(Type readModel)
     {
         var properties = GetModelProperties(readModel);

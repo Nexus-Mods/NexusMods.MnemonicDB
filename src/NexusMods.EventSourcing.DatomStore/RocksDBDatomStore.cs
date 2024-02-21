@@ -7,15 +7,13 @@ using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.DatomStore.Indexes;
 using RocksDbSharp;
+// ReSharper disable InconsistentNaming
 
 namespace NexusMods.EventSourcing.DatomStore;
 
 public class RocksDBDatomStore : IDatomStore
 {
     private readonly object _lock = new();
-    private readonly ILogger<RocksDBDatomStore> _logger;
-    private readonly DatomStoreSettings _settings;
-    private readonly DbOptions _options;
     private readonly RocksDb _db;
     private readonly PooledMemoryBufferWriter _pooledWriter;
     private readonly AttributeRegistry _registry;
@@ -26,17 +24,14 @@ public class RocksDBDatomStore : IDatomStore
 
     public RocksDBDatomStore(ILogger<RocksDBDatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings)
     {
-        _settings = settings;
-        _logger = logger;
-
         _registry = registry;
         _registry.Populate(BuiltInAttributes.Initial);
 
-        _options = new DbOptions()
+        var options = new DbOptions()
             .SetCreateIfMissing()
             .SetCompression(Compression.Zstd);
 
-        _db = RocksDb.Open(_options, _settings.Path.ToString(), new ColumnFamilies());
+        _db = RocksDb.Open(options, settings.Path.ToString(), new ColumnFamilies());
 
         _eatvIndex = new EATVIndex(_registry);
         _eatvIndex.Init(_db);

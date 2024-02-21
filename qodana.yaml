@@ -7,3 +7,4 @@ profile:
   name: qodana.recommended
 exclude:
   - name: ClassNeverInstantiated.Global
+  - name: UnusedAutoPropertyAccessor.Global

@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Reloaded.Memory.Extensions;
 
-namespace NexusMods.EventSourcing;
+namespace NexusMods.EventSourcing.DatomStore;
 
 /// <summary>
 /// A IBufferWriter that uses pooled memory to reduce allocations.

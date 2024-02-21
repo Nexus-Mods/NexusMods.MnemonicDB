@@ -55,7 +55,7 @@ public class EATVIndex(AttributeRegistry registry) : AIndexDefinition<EATVIndex>
         return false;
     }
 
-    public unsafe struct EATVIterator : IEntityIterator, IDisposable
+    public unsafe struct EATVIterator : IEntityIterator
     {
         private readonly KeyHeader* _key;
         private KeyHeader* _current;

@@ -11,12 +11,12 @@ public class DbTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable
     [Fact]
     public void ReadDatomsForEntity()
     {
-        const int TOTAL_COUNT = 10;
+        const int totalCount = 10;
         var tx = Connection.BeginTransaction();
 
 
         var ids = new List<EntityId>();
-        for (ulong idx = 0; idx < TOTAL_COUNT; idx++)
+        for (ulong idx = 0; idx < totalCount; idx++)
         {
             var file = new File(tx)
             {
@@ -35,7 +35,7 @@ public class DbTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable
         var db = Connection.Db;
         var resolved = db.Get<File>(ids.Select(id => result[id])).ToArray();
 
-        resolved.Should().HaveCount(TOTAL_COUNT);
+        resolved.Should().HaveCount(totalCount);
         foreach (var readModel in resolved)
         {
             var idx = readModel.Index;

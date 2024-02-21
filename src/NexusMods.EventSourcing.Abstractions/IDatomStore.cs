@@ -37,10 +37,6 @@ public interface IDatomStore : IDisposable
     /// Gets the attributeId for the given attribute. And returns an expression that reads the attribute
     /// value from the expression valueSpan.
     /// </summary>
-    /// <param name="valueSpan"></param>
-    /// <param name="attributeId"></param>
-    /// <typeparam name="TAttribute"></typeparam>
-    /// <returns></returns>
     Expression GetValueReadExpression(Type attribute, Expression valueSpan, out ulong attributeId);
 
     /// <summary>

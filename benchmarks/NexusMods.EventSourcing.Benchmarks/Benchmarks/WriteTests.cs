@@ -1,6 +1,10 @@
-﻿using BenchmarkDotNet.Attributes;
+﻿using System.Collections.Generic;
+using System.Linq;
+using BenchmarkDotNet.Attributes;
+using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.TestModel.Model;
 
 namespace NexusMods.EventSourcing.Benchmarks.Benchmarks;
 
@@ -22,17 +26,29 @@ public class WriteTests
     [Benchmark]
     public void AddFiles()
     {
-        /*
         var tx = _connection.BeginTransaction();
+        var ids = new List<EntityId>();
         for (var i = 0; i < Count; i++)
         {
-            var id = Ids.MakeId(Ids.Partition.Entity, (ulong)i);
-            File.Hash.Assert(tx.TempId(), (ulong)i, tx);
-            File.Path.Assert(tx.TempId(), $"C:\\test_{i}.txt", tx);
-            File.Index.Assert(tx.TempId(), (ulong)i, tx);
+            var file = new File(tx)
+            {
+                Hash = (ulong)i,
+                Path = $"C:\\test_{i}.txt",
+                Index = (ulong)i
+            };
+            ids.Add(file.Id);
         }
-        tx.Commit();
-        */
+        var result = tx.Commit();
+
+        ids = ids.Select(id => result[id]).ToList();
+
+        var db = _connection.Db;
+        foreach (var id in ids)
+        {
+            var loaded = db.Get<File>(id);
+
+            loaded.Should().NotBeNull("the entity should be in the database");
+        }
     }
 
 }

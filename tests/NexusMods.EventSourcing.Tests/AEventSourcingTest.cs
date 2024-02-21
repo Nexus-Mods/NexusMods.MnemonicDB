@@ -8,7 +8,6 @@ namespace NexusMods.EventSourcing.Tests;
 public class AEventSourcingTest : IDisposable
 {
     private readonly AbsolutePath _tmpPath;
-    private readonly AttributeRegistry _registry;
     protected readonly RocksDBDatomStore Store;
     protected readonly Connection Connection;
 
@@ -20,9 +19,12 @@ public class AEventSourcingTest : IDisposable
         {
             Path = _tmpPath,
         };
-        _registry = new AttributeRegistry(valueSerializers, attributes);
-        Store = new RocksDBDatomStore(new NullLogger<RocksDBDatomStore>(), _registry, dbSettings);
-        Connection = new Connection(Store, attributes, valueSerializers);
+        var valueSerializerArray = valueSerializers.ToArray();
+
+        var attributeArray = attributes.ToArray();
+        var registry = new AttributeRegistry(valueSerializerArray, attributeArray);
+        Store = new RocksDBDatomStore(new NullLogger<RocksDBDatomStore>(), registry, dbSettings);
+        Connection = new Connection(Store, attributeArray, valueSerializerArray);
     }
 
     public void Dispose()

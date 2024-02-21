@@ -26,12 +26,15 @@ public class AttributeRegistry
     /// </summary>
     public AttributeRegistry(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
     {
-        _valueSerializersByNativeType = valueSerializers.ToDictionary(x => x.NativeType);
-        _valueSerializersByUniqueId = valueSerializers.ToDictionary(x => x.UniqueId);
-        _attributesById = attributes.ToDictionary(x => x.Id);
-        _attributesByType = attributes.ToDictionary(x => x.GetType());
+        var serializers = valueSerializers.ToArray();
+        _valueSerializersByNativeType = serializers.ToDictionary(x => x.NativeType);
+        _valueSerializersByUniqueId = serializers.ToDictionary(x => x.UniqueId);
 
-        foreach (var attr in attributes)
+        var attributeArray = attributes.ToArray();
+        _attributesById = attributeArray.ToDictionary(x => x.Id);
+        _attributesByType = attributeArray.ToDictionary(x => x.GetType());
+
+        foreach (var attr in attributeArray)
         {
             attr.SetSerializer(_valueSerializersByNativeType[attr.ValueType]);
         }

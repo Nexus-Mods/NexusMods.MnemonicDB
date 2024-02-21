@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NexusMods.EventSourcing.DatomStore;
+using NexusMods.EventSourcing.TestModel;
 using NexusMods.Paths;
 
 namespace NexusMods.EventSourcing.Benchmarks;

@@ -83,7 +83,7 @@ public class ReadTests
         {
             sum += itm.Index;
         }
-        return (ulong)sum;
+        return sum;
     }
 
 }
