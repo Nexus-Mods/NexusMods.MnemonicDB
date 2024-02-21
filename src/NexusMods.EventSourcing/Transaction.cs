@@ -28,10 +28,9 @@ internal class Transaction(Connection connection) : ITransaction
     where TReadModel : IReadModel
     {
         _models.Add(model);
-        return model;
     }
 
-    public void Add<TAttribute, TVal>(EntityId entityId, TVal val, bool isAssert = true) where TAttribute : IAttribute<TVal>
+    public void Add<TAttribute, TVal>(EntityId entityId, TVal val) where TAttribute : IAttribute<TVal>
     {
         _datoms.Add(new AssertDatom<TAttribute, TVal>(entityId.Value, val));
     }
