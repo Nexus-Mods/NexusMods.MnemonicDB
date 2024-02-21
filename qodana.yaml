@@ -12,3 +12,14 @@ exclude:
     paths:
       - src\NexusMods.EventSourcing.DatomStore\Indexes
   - name: UnusedMemberInSuper.Global
+  - name: UnusedMethodReturnValue.Global
+    paths:
+      - src\NexusMods.EventSourcing.Abstractions
+      - tests\NexusMods.EventSourcing.TestModel\Model
+  - name: AutoPropertyCanBeMadeGetOnly.Global
+    paths:
+      - src\NexusMods.EventSourcing.Abstractions\Models
+      - benchmarks\NexusMods.EventSourcing.Benchmarks\Benchmarks
+  - name: NotAccessedField.Global
+    paths:
+      - tests\NexusMods.EventSourcing.DatomStore.Tests\ADatomStoreTest.cs
