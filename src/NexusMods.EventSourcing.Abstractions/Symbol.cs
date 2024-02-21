@@ -21,7 +21,7 @@ public class Symbol
         Namespace = nsAndName[..splitOn];
     }
 
-    private static ConcurrentDictionary<string, Symbol> _internedSymbols = new();
+    private static readonly ConcurrentDictionary<string, Symbol> _internedSymbols = new();
 
     /// <summary>
     /// Construct a new symbol, or return an existing one that matches the given name

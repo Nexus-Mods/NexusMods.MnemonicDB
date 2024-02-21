@@ -12,7 +12,7 @@ namespace NexusMods.EventSourcing.DatomStore;
 
 public class RocksDBDatomStore : IDatomStore
 {
-    private object _lock = new();
+    private readonly object _lock = new();
     private readonly ILogger<RocksDBDatomStore> _logger;
     private readonly DatomStoreSettings _settings;
     private readonly DbOptions _options;

@@ -5,3 +5,5 @@ dotnet:
   solution: NexusMods.EventSourcing.sln
 profile:
   name: qodana.recommended
+exclude:
+  - name: ClassNeverInstantiated.Global

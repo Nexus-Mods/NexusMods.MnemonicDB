@@ -15,12 +15,12 @@ public static class BuiltInAttributes
     /// <summary>
     /// Static unique id of the UniqueId attribute
     /// </summary>
-    public static Symbol UniqueIdStaticId = Symbol.Intern("NexusMods.EventSourcing.DatomStore/UniqueId");
+    public static readonly Symbol UniqueIdStaticId = Symbol.Intern("NexusMods.EventSourcing.DatomStore/UniqueId");
 
     /// <summary>
     /// The database entity id of the UniqueId attribute
     /// </summary>
-    public static ulong UniqueIdEntityId = 1;
+    public static readonly ulong UniqueIdEntityId = 1;
 
     /// <summary>
     /// The unique id if the IValueSerializer used to serialize the value of the attribute.
@@ -30,23 +30,23 @@ public static class BuiltInAttributes
     /// <summary>
     /// Static unique id of the UniqueId attribute
     /// </summary>
-    public static Symbol ValueSerializerIdStaticId = Symbol.Intern("NexusMods.EventSourcing.DatomStore/ValueSerializerId");
+    public static readonly Symbol ValueSerializerIdStaticId = Symbol.Intern("NexusMods.EventSourcing.DatomStore/ValueSerializerId");
 
     /// <summary>
     /// The database entity id of the UniqueId attribute
     /// </summary>
-    public static ulong ValueSerializerIdEntityId = 2;
+    public static readonly ulong ValueSerializerIdEntityId = 2;
 
 
     /// <summary>
     /// The initial set of built-in attributes that always exist in the database.
     /// </summary>
-    public static DbAttribute[] Initial = [
+    public static readonly DbAttribute[] Initial = [
         new DbAttribute(UniqueIdStaticId, UniqueIdEntityId, UInt128Serializer.Id),
         new DbAttribute(ValueSerializerIdStaticId, ValueSerializerIdEntityId, UInt128Serializer.Id),
     ];
 
-    public static IDatom[] InitialDatoms = [
+    public static readonly IDatom[] InitialDatoms = [
         UniqueId.Assert(UniqueIdEntityId, UniqueIdStaticId),
         ValueSerializerId.Assert(UniqueIdEntityId, UInt128Serializer.Id),
 

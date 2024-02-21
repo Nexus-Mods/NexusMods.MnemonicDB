@@ -5,15 +5,9 @@ using File = NexusMods.EventSourcing.TestModel.Model.File;
 
 namespace NexusMods.EventSourcing.Tests;
 
-public class DbTests : AEventSourcingTest
+public class DbTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
+    : AEventSourcingTest(valueSerializers, attributes)
 {
-
-    public DbTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
-        : base(valueSerializers, attributes)
-    {
-
-    }
-
     [Fact]
     public void ReadDatomsForEntity()
     {
