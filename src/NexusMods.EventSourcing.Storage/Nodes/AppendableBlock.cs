@@ -260,7 +260,7 @@ public class AppendableBlock :
 
     public INode Remove<TInput>(TInput inputDatom)
     {
-        throw new NotImplementedException();
+       var index = BinarySearch(ref inputDatom, new DatomComparator());
     }
 
     public INode Merge(INode other)
