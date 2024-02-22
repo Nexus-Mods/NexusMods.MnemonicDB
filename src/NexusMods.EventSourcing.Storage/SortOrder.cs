@@ -1,6 +1,6 @@
 ﻿namespace NexusMods.EventSourcing.Storage;
 
-public enum SortOrder
+public class SortOrder
 {
-    EATV, // Entity, Attribute, Tx, Op, Value
+    public class EATV() : SortOrder() { };
 }

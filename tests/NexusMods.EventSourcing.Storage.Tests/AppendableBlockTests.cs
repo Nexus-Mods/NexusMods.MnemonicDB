@@ -1,11 +1,13 @@
-﻿using NexusMods.EventSourcing.Storage.Nodes;
+﻿using System.Collections;
+using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Nodes;
 using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage.Tests;
 
-public class AppendableBlockTests
+public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
+    : AStorageTest(valueSerializers, attributes)
 {
-
     [Fact]
     public void CanAppendDataToBlock()
     {
@@ -39,7 +41,7 @@ public class AppendableBlockTests
             block.Append(in datom);
         }
 
-        block.Sort(new Eatv<AppendableBlock.FlyweightDatom, AppendableBlock.FlyweightDatom>());
+        block.Sort(new Eatv(_registry));
 
         var sorted = allDatoms.OrderBy(d => d.EntityId)
             .ThenBy(d => d.AttributeId)
@@ -52,6 +54,36 @@ public class AppendableBlockTests
         for (var i = 0; i < allDatoms.Length; i++)
         {
             var datomA = block[i];
+            var datomB = sorted[i];
+
+            AssertEqual(datomA, datomB, i);
+        }
+    }
+
+    [Fact]
+    public void InsertingMaintainsOrder()
+    {
+        var datoms = TestData(10).ToArray();
+
+        var insertBlock = new AppendableBlock();
+        var compare = new Eatv(_registry);
+
+        for (var i = 0; i < datoms.Length; i++)
+        {
+            insertBlock.Insert(in datoms[i], compare);
+        }
+
+        var sorted = datoms.OrderBy(d => d.EntityId)
+            .ThenBy(d => d.AttributeId)
+            .ThenBy(d => d.TxId)
+            .ThenBy(d => d.ValueLiteral)
+            .ToArray();
+
+        insertBlock.Count.Should().Be(datoms.Length);
+
+        for (var i = 0; i < datoms.Length; i++)
+        {
+            var datomA = insertBlock[i];
             var datomB = sorted[i];
 
             AssertEqual(datomA, datomB, i);
@@ -100,14 +132,11 @@ public class AppendableBlockTests
     {
         for (ulong eid = 0; eid < max; eid += 1)
         {
-            for (ushort aid = 0; aid < 10; aid += 1)
+            for (ulong tx = 0; tx < 10; tx += 1)
             {
-                for (ulong tx = 0; tx < 10; tx += 1)
+                for (ulong val = 0; val < 10; val += 1)
                 {
-                    for (ulong val = 0; val < 10; val += 1)
-                    {
-                        yield return TestHelpers.Assert(eid, aid, tx, val);
-                    }
+                    yield return Assert<TestAttributes.FileHash>(eid, val, tx);
                 }
             }
         }

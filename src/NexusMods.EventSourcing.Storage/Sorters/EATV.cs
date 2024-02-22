@@ -1,10 +1,12 @@
-﻿namespace NexusMods.EventSourcing.Storage.Sorters;
+﻿using NexusMods.EventSourcing.Abstractions;
 
-public class Eatv<TDatomA, TDatomB> : IDatomComparator<TDatomA, TDatomB>
-    where TDatomA : IRawDatom
-    where TDatomB : IRawDatom
+namespace NexusMods.EventSourcing.Storage.Sorters;
+
+public class Eatv(AttributeRegistry registry) : IDatomComparator
 {
-    public int Compare(in TDatomA x, in TDatomB y)
+    public int Compare<TDatomA, TDatomB>(in TDatomA x, in TDatomB y)
+        where TDatomA : IRawDatom
+        where TDatomB : IRawDatom
     {
         var cmp = x.EntityId.CompareTo(y.EntityId);
         if (cmp != 0) return cmp;
@@ -15,6 +17,6 @@ public class Eatv<TDatomA, TDatomB> : IDatomComparator<TDatomA, TDatomB>
         cmp = x.TxId.CompareTo(y.TxId);
         if (cmp != 0) return cmp;
 
-        return x.ValueLiteral.CompareTo(y.ValueLiteral);
+        return registry.CompareValues(x, y);
     }
 }

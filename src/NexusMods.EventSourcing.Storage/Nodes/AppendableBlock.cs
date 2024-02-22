@@ -4,19 +4,23 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Cathei.LinqGen;
+using NexusMods.EventSourcing.Abstractions;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
-public class AppendableBlock :
-    INode,
+/// <summary>
+/// An editable block of datoms that can be sorted and written to a buffer.
+/// </summary>
+public class AppendableBlock : INode,
     IStructEnumerable<AppendableBlock.FlyweightDatom, AppendableBlock.FlyweightDatomEnumerator>
+
 {
     private readonly PooledMemoryBufferWriter _pooledMemoryBufferWriter = new();
     private readonly List<ulong> _entityIds = new();
     private readonly List<ushort> _attributeIds = new();
     private readonly List<ulong> _txIds = new();
-    private readonly List<byte> _flags = new();
+    private readonly List<DatomFlags> _flags = new();
     private readonly List<ulong> _values = new();
     public int Count => _entityIds.Count;
 
@@ -28,7 +32,7 @@ public class AppendableBlock :
         _txIds.Add(datom.TxId);
         _flags.Add(datom.Flags);
         _values.Add(datom.ValueLiteral);
-        if (((DatomFlags)datom.Flags).HasFlag(DatomFlags.InlinedData))
+        if (datom.Flags.HasFlag(DatomFlags.InlinedData))
             return;
 
         var span = datom.ValueSpan;
@@ -38,7 +42,7 @@ public class AppendableBlock :
     }
 
     public void Sort<TComparer>(TComparer comparer)
-        where TComparer : IDatomComparator<FlyweightDatom, FlyweightDatom>
+        where TComparer : IDatomComparator
     {
         var indexes = GC.AllocateUninitializedArray<int>(_entityIds.Count);
         for (var i = 0; i < indexes.Length; i++)
@@ -86,7 +90,7 @@ public class AppendableBlock :
             writer.Advance(_txIds.Count * sizeof(ulong));
 
             span = writer.GetSpan(_flags.Count * sizeof(byte));
-            CollectionsMarshal.AsSpan(_flags).SliceFast(0, count).CopyTo(span);
+            MemoryMarshal.Cast<DatomFlags, byte>(CollectionsMarshal.AsSpan(_flags)).SliceFast(0, count).CopyTo(span);
             writer.Advance(_flags.Count * sizeof(byte));
 
             span = writer.GetSpan(_values.Count * sizeof(ulong));
@@ -139,23 +143,25 @@ public class AppendableBlock :
         }
     }
 
-    public int BinarySearch<TDatomIn>(ref TDatomIn datom, IDatomComparator<TDatomIn, FlyweightDatom> comparator)
+    public (int, bool) BinarySearch<TDatomIn, TDatomComparator>(scoped in TDatomIn datom, scoped in TDatomComparator comparator)
         where TDatomIn : IRawDatom
+        where TDatomComparator : IDatomComparator
     {
-        int lower = 0;
-        int upper = Count - 1;
+        var lower = 0;
+        var upper = Count - 1;
 
         while (lower <= upper)
         {
-            int middle = lower + ((upper - lower) / 2);
+            var middle = lower + ((upper - lower) / 2);
             var middleDatom = new FlyweightDatom(this, (uint)middle);
 
-            int comparison = comparator.Compare(datom, middleDatom);
+            var comparison = comparator.Compare(datom, middleDatom);
             if (comparison == 0)
             {
-                return middle;
+                return (middle, true); // datom found
             }
-            else if (comparison < 0)
+
+            if (comparison < 0)
             {
                 upper = middle - 1;
             }
@@ -165,18 +171,19 @@ public class AppendableBlock :
             }
         }
 
-        return -1; // datom not found
+        return (lower, false); // datom not found, return the index where it would be inserted
     }
 
-    public FlyweightDatomEnumerator Seek<TDatomIn>(TDatomIn datom, IDatomComparator<TDatomIn, FlyweightDatom> comparator)
+    public FlyweightDatomEnumerator Seek<TDatomIn, TDatomComparator>(TDatomIn datom, TDatomComparator comparator)
         where TDatomIn : IRawDatom
+        where TDatomComparator : IDatomComparator
     {
-        var index = BinarySearch(ref datom, comparator);
+        var (index, _) = BinarySearch(ref datom, comparator);
         return new FlyweightDatomEnumerator(this, index);
     }
 
     private class OuterComparator<TComparer>(AppendableBlock block, TComparer comparer) : IComparer<int>
-        where TComparer : IDatomComparator<FlyweightDatom, FlyweightDatom>
+        where TComparer : IDatomComparator
     {
         public int Compare(int x, int y)
         {
@@ -196,7 +203,7 @@ public class AppendableBlock :
         public ulong EntityId => block._entityIds[(int)index];
         public ushort AttributeId => block._attributeIds[(int)index];
         public ulong TxId => block._txIds[(int)index];
-        public byte Flags => block._flags[(int)index];
+        public DatomFlags Flags => block._flags[(int)index];
         public ReadOnlySpan<byte> ValueSpan
         {
             get
@@ -244,6 +251,14 @@ public class AppendableBlock :
         object IEnumerator.Current => Current;
     }
 
+    IEnumerator<IRawDatom> IEnumerable<IRawDatom>.GetEnumerator()
+    {
+        for (var i = 0; i < Count; i++)
+        {
+            yield return new FlyweightDatom(this, (uint)i);
+        }
+    }
+
     public FlyweightDatomEnumerator GetEnumerator()
     {
         return new(this, -1);
@@ -253,14 +268,35 @@ public class AppendableBlock :
 
 
 
-    public INode Insert<TInput>(TInput inputDatom)
+    public INode Insert<TInput, TDatomComparator>(in TInput inputDatom, in TDatomComparator comparator)
+    where TInput : IRawDatom
+    where TDatomComparator : IDatomComparator
     {
-        throw new NotImplementedException();
+        var (location, match) = BinarySearch(inputDatom, comparator);
+        if (match)
+        {
+            return this;
+        }
+
+        _entityIds.Insert(location, inputDatom.EntityId);
+        _attributeIds.Insert(location, inputDatom.AttributeId);
+        _txIds.Insert(location, inputDatom.TxId);
+        _flags.Insert(location, inputDatom.Flags);
+        _values.Insert(location, inputDatom.ValueLiteral);
+        if (((DatomFlags)inputDatom.Flags).HasFlag(DatomFlags.InlinedData))
+            return this;
+
+        var span = inputDatom.ValueSpan;
+        var offset = _pooledMemoryBufferWriter.GetWrittenSpan().Length;
+        _values.Insert(location, (ulong)((offset << 4) | span.Length));
+        _pooledMemoryBufferWriter.Write(span);
+        return this;
     }
 
     public INode Remove<TInput>(TInput inputDatom)
     {
-       var index = BinarySearch(ref inputDatom, new DatomComparator());
+        throw new NotImplementedException();
+
     }
 
     public INode Merge(INode other)
@@ -301,4 +337,8 @@ public class AppendableBlock :
     #endregion
 
 
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
 }

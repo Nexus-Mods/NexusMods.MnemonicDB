@@ -1,15 +1,17 @@
 ﻿using System;
-using System.Buffers;
-using NexusMods.EventSourcing.Storage.Interfaces;
+using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Datoms;
 
-public record OnHeapDatom() : IRawDatom
+/// <summary>
+/// A datom that is stored as a class, and exists on the heap.
+/// </summary>
+public class OnHeapDatom : IRawDatom
 {
     public required ulong EntityId { get; init; }
     public required ushort AttributeId { get; init; }
     public required ulong TxId { get; init; }
-    public required byte Flags { get; init; }
+    public required DatomFlags Flags { get; init; }
     public required ulong ValueLiteral { get; init; }
     public required byte[] ValueData { get; init; }
 

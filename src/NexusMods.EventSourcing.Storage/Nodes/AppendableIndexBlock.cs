@@ -11,5 +11,4 @@ public class AppendableIndexBlock : AppendableBlock
 
     }
 
-    public void AddBlock(
 }

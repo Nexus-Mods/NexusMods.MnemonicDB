@@ -1,8 +1,10 @@
-﻿namespace NexusMods.EventSourcing.Storage;
+﻿using NexusMods.EventSourcing.Abstractions;
 
-public interface IDatomComparator<TDatomA, TDatomB>
-    where TDatomA : IRawDatom
-    where TDatomB : IRawDatom
+namespace NexusMods.EventSourcing.Storage;
+
+public interface IDatomComparator
 {
-    public int Compare(in TDatomA x, in TDatomB y);
+    public int Compare<TDatomA, TDatomB>(in TDatomA x, in TDatomB y)
+    where TDatomA : IRawDatom
+    where TDatomB : IRawDatom;
 }

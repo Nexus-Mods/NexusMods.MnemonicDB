@@ -17,7 +17,7 @@ public interface IValueSerializer
     /// <summary>
     /// The Unique Id for this type
     /// </summary>
-    public UInt128 UniqueId { get; }
+    public Symbol UniqueId { get; }
 
     /// <summary>
     /// Compare two spans of bytes that contain the serialized value
@@ -25,7 +25,9 @@ public interface IValueSerializer
     /// <param name="a"></param>
     /// <param name="b"></param>
     /// <returns></returns>
-    public int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
+    public int Compare<TDatomA, TDatomB>(in TDatomA a, in TDatomB b)
+    where TDatomA : IRawDatom
+    where TDatomB : IRawDatom;
 }
 
 /// <summary>
@@ -50,4 +52,16 @@ public interface IValueSerializer<T> : IValueSerializer
     /// <param name="val"></param>
     /// <returns></returns>
     public int Read(ReadOnlySpan<byte> buffer, out T val);
+
+    /// <summary>
+    /// Returns true if the value is inlined, otherwise false and the inlined
+    /// value contains the length of the blob written to the buffer
+    /// </summary>
+    /// <param name="value"></param>
+    /// <param name="buffer"></param>
+    /// <param name="valueLiteral"></param>
+    /// <typeparam name="TWriter"></typeparam>
+    /// <returns></returns>
+    public bool Serialize<TWriter>(T value, TWriter buffer, out ulong valueLiteral)
+        where TWriter : IBufferWriter<byte>;
 }

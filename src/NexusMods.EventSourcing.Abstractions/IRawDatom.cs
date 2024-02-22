@@ -1,25 +1,48 @@
 ﻿using System;
-using System.Buffers;
-using NexusMods.EventSourcing.Storage.Nodes;
 
-namespace NexusMods.EventSourcing.Storage;
+namespace NexusMods.EventSourcing.Abstractions;
 
+/// <summary>
+/// Represents a datom with no interpretation of the values. Used to inject
+/// structs into various functions to allow for comparison and serialization.
+/// </summary>
 public interface IRawDatom
 {
+    /// <summary>
+    /// Entity id of the datom.
+    /// </summary>
     public ulong EntityId{ get; }
 
+    /// <summary>
+    /// Attribute id of the datom.
+    /// </summary>
     public ushort AttributeId { get; }
 
+    /// <summary>
+    /// Transaction id of the datom.
+    /// </summary>
     public ulong TxId { get; }
 
-    public byte Flags { get; }
+    /// <summary>
+    /// Flags of the datom.
+    /// </summary>
+    public DatomFlags Flags { get; }
 
+    /// <summary>
+    /// Valuespan of the datom, may be empty
+    /// </summary>
     public ReadOnlySpan<byte> ValueSpan { get; }
 
+    /// <summary>
+    /// Value of the datom, if it is inlined, otherwise it's 32 bits for both the offset and the length.
+    /// </summary>
     public ulong ValueLiteral { get; }
 
 }
 
+/// <summary>
+/// Extension methods for <see cref="IRawDatom"/>.
+/// </summary>
 public static class RawDatomExtensions
 {
     public static bool EquivelentTo<TDatomA, TDatomB>(this TDatomA a, in TDatomB b)

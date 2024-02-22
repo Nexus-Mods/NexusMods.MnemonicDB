@@ -38,6 +38,16 @@ public class Symbol
     }
 
     /// <summary>
+    /// Construct a new symbol, based on the name of the given type
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public static Symbol Intern<T>()
+    {
+        return Intern(typeof(T).FullName!);
+    }
+
+    /// <summary>
     /// The namespace of the symbol, the part before the name
     /// </summary>
     public string Namespace { get; }

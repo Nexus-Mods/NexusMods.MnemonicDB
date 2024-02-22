@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
@@ -20,7 +21,7 @@ public unsafe struct FlyweightRawDatom : IRawDatom
     public ulong EntityId => *(ulong*) (Data + _idx * sizeof(ulong));
     public ushort AttributeId => *(ushort*) (Data + _idx * sizeof(ulong) + sizeof(ulong));
     public ulong TxId => *(ulong*) (Data + _idx * sizeof(ulong) + sizeof(ulong) + sizeof(ushort));
-    public byte Flags => *(Data + _idx * sizeof(ulong) + sizeof(ulong) + sizeof(ulong) + sizeof(ushort));
+    public DatomFlags Flags => (DatomFlags)(*(Data + _idx * sizeof(ulong) + sizeof(ulong) + sizeof(ulong) + sizeof(ushort)));
 
     public ReadOnlySpan<byte> ValueSpan
     {
