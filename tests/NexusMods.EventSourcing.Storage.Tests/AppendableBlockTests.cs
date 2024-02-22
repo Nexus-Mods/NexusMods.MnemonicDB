@@ -1,4 +1,5 @@
 ﻿using NexusMods.EventSourcing.Storage.Nodes;
+using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage.Tests;
 
@@ -29,8 +30,42 @@ public class AppendableBlockTests
             datomA.ValueLiteral.Should().Be(datomB.ValueLiteral, "at index " + i);
             datomA.ValueSpan.SequenceEqual(datomB.ValueSpan).Should().BeTrue("at index " + i);
         }
+    }
 
+    [Fact]
+    public void CanSortBlock()
+    {
+        var block = new AppendableBlock();
+        var allDatoms = TestData(10).ToArray();
+        Random.Shared.Shuffle(allDatoms);
 
+        foreach (var datom in TestData(10))
+        {
+            block.Append(in datom);
+        }
+
+        block.Sort(new Eatv<AppendableBlock.FlyweightDatom, AppendableBlock.FlyweightDatom>());
+
+        var sorted = allDatoms.OrderBy(d => d.EntityId)
+            .ThenBy(d => d.AttributeId)
+            .ThenBy(d => d.TxId)
+            .ThenBy(d => d.ValueLiteral)
+            .ToArray();
+
+        block.Count.Should().Be(allDatoms.Length);
+
+        for (var i = 0; i < allDatoms.Length; i++)
+        {
+            var datomA = block[i];
+            var datomB = sorted[i];
+
+            datomA.EntityId.Should().Be(datomB.EntityId, "at index " + i);
+            datomA.AttributeId.Should().Be(datomB.AttributeId, "at index " + i);
+            datomA.TxId.Should().Be(datomB.TxId, "at index " + i);
+            datomA.Flags.Should().Be(datomB.Flags, "at index " + i);
+            datomA.ValueLiteral.Should().Be(datomB.ValueLiteral, "at index " + i);
+            datomA.ValueSpan.SequenceEqual(datomB.ValueSpan).Should().BeTrue("at index " + i);
+        }
     }
 
 

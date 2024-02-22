@@ -2,7 +2,9 @@
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using Cathei.LinqGen;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
@@ -31,6 +33,118 @@ public class AppendableBlock : IStructEnumerable<AppendableBlock.FlyweightDatom,
         var offset = _pooledMemoryBufferWriter.GetWrittenSpan().Length;
         _values.Add((ulong)((offset << 4) | span.Length));
         _pooledMemoryBufferWriter.Write(span);
+    }
+
+    public void Sort<TComparer>(TComparer comparer)
+        where TComparer : IDatomComparator<FlyweightDatom, FlyweightDatom>
+    {
+        var indexes = GC.AllocateUninitializedArray<int>(_entityIds.Count);
+        for (var i = 0; i < indexes.Length; i++)
+        {
+            indexes[i] = i;
+        }
+
+        Array.Sort(indexes, new OuterComparator<TComparer>(this, comparer));
+
+        for (var i = 0; i < indexes.Length; i++)
+        {
+            var j = indexes[i];
+            (_entityIds[i], _entityIds[j]) = (_entityIds[j], _entityIds[i]);
+            (_attributeIds[i], _attributeIds[j]) = (_attributeIds[j], _attributeIds[i]);
+            (_txIds[i], _txIds[j]) = (_txIds[j], _txIds[i]);
+            (_flags[i], _flags[j]) = (_flags[j], _flags[i]);
+            (_values[i], _values[j]) = (_values[j], _values[i]);
+        }
+    }
+
+    public void WriteTo<TBufferWriter>(TBufferWriter writer)
+        where TBufferWriter : IBufferWriter<byte>
+    {
+        unsafe
+        {
+            var headerSpan = writer.GetSpan(sizeof(BlockHeader));
+            ref var header = ref MemoryMarshal.AsRef<BlockHeader>(headerSpan);
+            header._datomCount = (uint)_entityIds.Count;
+            header._blobSize = (uint)_pooledMemoryBufferWriter.GetWrittenSpan().Length;
+            header._version = 0x01;
+            header._flags = 0x00;
+            writer.Advance(sizeof(BlockHeader));
+
+            var span = writer.GetSpan(_entityIds.Count * sizeof(ulong));
+            MemoryMarshal.Cast<ulong, byte>(CollectionsMarshal.AsSpan(_entityIds)).CopyTo(span);
+            writer.Advance(_entityIds.Count * sizeof(ulong));
+
+            span = writer.GetSpan(_attributeIds.Count * sizeof(ushort));
+            MemoryMarshal.Cast<ushort, byte>(CollectionsMarshal.AsSpan(_attributeIds)).CopyTo(span);
+            writer.Advance(_attributeIds.Count * sizeof(ushort));
+
+            span = writer.GetSpan(_txIds.Count * sizeof(ulong));
+            MemoryMarshal.Cast<ulong, byte>(CollectionsMarshal.AsSpan(_txIds)).CopyTo(span);
+            writer.Advance(_txIds.Count * sizeof(ulong));
+
+            span = writer.GetSpan(_flags.Count * sizeof(byte));
+            CollectionsMarshal.AsSpan(_flags).CopyTo(span);
+            writer.Advance(_flags.Count * sizeof(byte));
+
+            span = writer.GetSpan(_values.Count * sizeof(ulong));
+            MemoryMarshal.Cast<ulong, byte>(CollectionsMarshal.AsSpan(_values)).CopyTo(span);
+            writer.Advance(_values.Count * sizeof(ulong));
+
+            var pooledWrittenSpan = _pooledMemoryBufferWriter.GetWrittenSpan();
+            span = writer.GetSpan(pooledWrittenSpan.Length);
+            pooledWrittenSpan.CopyTo(span);
+            writer.Advance(pooledWrittenSpan.Length);
+        }
+    }
+
+    /// <summary>
+    /// Initializes the block from a span of bytes, the bytes can be written by the WriteTo method.
+    /// </summary>
+    /// <param name="span"></param>
+    public void InitializeFrom(ReadOnlySpan<byte> span)
+    {
+        // Casts and copies the data from the span into the list
+        void CopyToList<TValue>(List<TValue> list, ReadOnlySpan<byte> fromSpan, int count)
+            where TValue : struct
+        {
+            var listSpan = MemoryMarshal.Cast<byte, TValue>(fromSpan).SliceFast(count);
+            list.Clear();
+            list.AddRange(listSpan);
+        }
+
+        unsafe
+        {
+            var header = MemoryMarshal.Read<BlockHeader>(span);
+            var dataSection = span.SliceFast(sizeof(BlockHeader));
+
+            CopyToList(_entityIds, dataSection, (int)header._datomCount);
+            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(ulong));
+
+            CopyToList(_attributeIds, dataSection, (int)header._datomCount);
+            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(ushort));
+
+            CopyToList(_txIds, dataSection, (int)header._datomCount);
+            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(ulong));
+
+            CopyToList(_flags, dataSection, (int)header._datomCount);
+            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(byte));
+
+            CopyToList(_values, dataSection, (int)header._datomCount);
+            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(ulong));
+
+            _pooledMemoryBufferWriter.Write(dataSection);
+        }
+    }
+
+    private class OuterComparator<TComparer>(AppendableBlock block, TComparer comparer) : IComparer<int>
+        where TComparer : IDatomComparator<FlyweightDatom, FlyweightDatom>
+    {
+        public int Compare(int x, int y)
+        {
+            var a = new FlyweightDatom(block, (uint)x);
+            var b = new FlyweightDatom(block, (uint)y);
+            return comparer.Compare(a, b);
+        }
     }
 
 
