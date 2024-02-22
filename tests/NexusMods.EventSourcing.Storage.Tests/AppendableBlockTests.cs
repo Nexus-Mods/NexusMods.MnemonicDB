@@ -55,7 +55,6 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
         {
             var datomA = block[i];
             var datomB = sorted[i];
-
             AssertEqual(datomA, datomB, i);
         }
     }
@@ -136,7 +135,8 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
             {
                 for (ulong val = 0; val < 10; val += 1)
                 {
-                    yield return Assert<TestAttributes.FileHash>(eid, val, tx);
+                    yield return Assert<TestAttributes.FileHash>(eid, tx, val);
+                    yield return Assert<TestAttributes.FileName>(eid, tx, " file " + val);
                 }
             }
         }

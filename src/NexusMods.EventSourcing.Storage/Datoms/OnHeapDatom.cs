@@ -17,4 +17,8 @@ public class OnHeapDatom : IRawDatom
 
     public ReadOnlySpan<byte> ValueSpan => ValueData;
 
+    public override string ToString()
+    {
+        return this.CommonToString();
+    }
 }

@@ -11,6 +11,7 @@ public class Startup
     {
         services.AddEventSourcingStorage()
             .AddSingleton<IKvStore, InMemoryKvStore>()
-            .AddAttribute<TestAttributes.FileHash>();
+            .AddAttribute<TestAttributes.FileHash>()
+            .AddAttribute<TestAttributes.FileName>();
     }
 }

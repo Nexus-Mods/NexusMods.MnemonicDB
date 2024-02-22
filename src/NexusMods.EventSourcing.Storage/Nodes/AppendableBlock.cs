@@ -52,6 +52,9 @@ public class AppendableBlock : INode,
 
         Array.Sort(indexes, new OuterComparator<TComparer>(this, comparer));
 
+
+        var list = new List<ulong>(_entityIds);
+        list.Sort();
         for (var i = 0; i < indexes.Length; i++)
         {
             var j = indexes[i];
@@ -61,6 +64,15 @@ public class AppendableBlock : INode,
             (_flags[i], _flags[j]) = (_flags[j], _flags[i]);
             (_values[i], _values[j]) = (_values[j], _values[i]);
         }
+    }
+
+    private void Swap(int i, int j)
+    {
+        (_entityIds[i], _entityIds[j]) = (_entityIds[j], _entityIds[i]);
+        (_attributeIds[i], _attributeIds[j]) = (_attributeIds[j], _attributeIds[i]);
+        (_txIds[i], _txIds[j]) = (_txIds[j], _txIds[i]);
+        (_flags[i], _flags[j]) = (_flags[j], _flags[i]);
+        (_values[i], _values[j]) = (_values[j], _values[i]);
     }
 
     public void WriteTo<TBufferWriter>(TBufferWriter writer)
@@ -224,6 +236,11 @@ public class AppendableBlock : INode,
             out ulong valueLiteral) where TWriter : IBufferWriter<byte>
         {
             throw new NotImplementedException();
+        }
+
+        public override string ToString()
+        {
+            return this.CommonToString();
         }
     }
 

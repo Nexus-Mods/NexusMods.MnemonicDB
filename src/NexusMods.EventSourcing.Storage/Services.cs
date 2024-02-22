@@ -9,6 +9,7 @@ public static class Services
     public static IServiceCollection AddEventSourcingStorage(this IServiceCollection services)
     {
         services.AddValueSerializer<UInt64Serializer>();
+        services.AddValueSerializer<StringSerializer>();
         return services;
     }
 }

@@ -103,7 +103,7 @@ public class AttributeRegistry
         return Expression.Block([valueExpr], readExpression, valueExpr);
     }
 
-    public OnHeapDatom Datom<TAttribute, TValue>(ulong entity, ulong value, ulong tx, bool isAssert = true)
+    public OnHeapDatom Datom<TAttribute, TValue>(ulong entity, ulong tx, TValue value, bool isAssert = true)
         where TAttribute : IAttribute<TValue>
     {
         var writer = new ArrayBufferWriter<byte>(1);

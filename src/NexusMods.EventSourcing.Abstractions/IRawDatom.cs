@@ -68,4 +68,18 @@ public static class RawDatomExtensions
 
         return true;
     }
+
+    /// <summary>
+    /// Common toString method for IRawDatom
+    /// </summary>
+    /// <param name="d"></param>
+    /// <returns></returns>
+    public static string CommonToString<TDatom>(this TDatom d)
+    where TDatom : IRawDatom
+    {
+        if (d.Flags.HasFlag(DatomFlags.InlinedData))
+            return $"({d.EntityId}, {d.AttributeId}, {d.TxId}, {(byte)d.Flags} {d.ValueLiteral})";
+        var hex = Convert.ToHexString(d.ValueSpan);
+        return $"({d.EntityId}, {d.AttributeId}, {d.TxId}, {(byte)d.Flags}, [{hex}])";
+    }
 }
