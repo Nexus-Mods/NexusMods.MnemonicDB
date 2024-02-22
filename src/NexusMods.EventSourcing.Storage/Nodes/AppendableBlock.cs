@@ -8,7 +8,9 @@ using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
-public class AppendableBlock : IStructEnumerable<AppendableBlock.FlyweightDatom, AppendableBlock.FlyweightDatomEnumerator>
+public class AppendableBlock :
+    INode,
+    IStructEnumerable<AppendableBlock.FlyweightDatom, AppendableBlock.FlyweightDatomEnumerator>
 {
     private readonly PooledMemoryBufferWriter _pooledMemoryBufferWriter = new();
     private readonly List<ulong> _entityIds = new();
@@ -70,29 +72,30 @@ public class AppendableBlock : IStructEnumerable<AppendableBlock.FlyweightDatom,
             header._flags = 0x00;
             writer.Advance(sizeof(BlockHeader));
 
+            var count = (int)header._datomCount;
             var span = writer.GetSpan(_entityIds.Count * sizeof(ulong));
-            MemoryMarshal.Cast<ulong, byte>(CollectionsMarshal.AsSpan(_entityIds)).CopyTo(span);
+            MemoryMarshal.Cast<ulong, byte>(CollectionsMarshal.AsSpan(_entityIds)).SliceFast(0, count).CopyTo(span);
             writer.Advance(_entityIds.Count * sizeof(ulong));
 
             span = writer.GetSpan(_attributeIds.Count * sizeof(ushort));
-            MemoryMarshal.Cast<ushort, byte>(CollectionsMarshal.AsSpan(_attributeIds)).CopyTo(span);
+            MemoryMarshal.Cast<ushort, byte>(CollectionsMarshal.AsSpan(_attributeIds)).SliceFast(0, count).CopyTo(span);
             writer.Advance(_attributeIds.Count * sizeof(ushort));
 
             span = writer.GetSpan(_txIds.Count * sizeof(ulong));
-            MemoryMarshal.Cast<ulong, byte>(CollectionsMarshal.AsSpan(_txIds)).CopyTo(span);
+            MemoryMarshal.Cast<ulong, byte>(CollectionsMarshal.AsSpan(_txIds)).SliceFast(0, count).CopyTo(span);
             writer.Advance(_txIds.Count * sizeof(ulong));
 
             span = writer.GetSpan(_flags.Count * sizeof(byte));
-            CollectionsMarshal.AsSpan(_flags).CopyTo(span);
+            CollectionsMarshal.AsSpan(_flags).SliceFast(0, count).CopyTo(span);
             writer.Advance(_flags.Count * sizeof(byte));
 
             span = writer.GetSpan(_values.Count * sizeof(ulong));
-            MemoryMarshal.Cast<ulong, byte>(CollectionsMarshal.AsSpan(_values)).CopyTo(span);
+            MemoryMarshal.Cast<ulong, byte>(CollectionsMarshal.AsSpan(_values)).SliceFast(0, count).CopyTo(span);
             writer.Advance(_values.Count * sizeof(ulong));
 
             var pooledWrittenSpan = _pooledMemoryBufferWriter.GetWrittenSpan();
             span = writer.GetSpan(pooledWrittenSpan.Length);
-            pooledWrittenSpan.CopyTo(span);
+            pooledWrittenSpan.SliceFast(0, pooledWrittenSpan.Length).CopyTo(span);
             writer.Advance(pooledWrittenSpan.Length);
         }
     }
@@ -107,7 +110,7 @@ public class AppendableBlock : IStructEnumerable<AppendableBlock.FlyweightDatom,
         void CopyToList<TValue>(List<TValue> list, ReadOnlySpan<byte> fromSpan, int count)
             where TValue : struct
         {
-            var listSpan = MemoryMarshal.Cast<byte, TValue>(fromSpan).SliceFast(count);
+            var listSpan = MemoryMarshal.Cast<byte, TValue>(fromSpan).SliceFast(0, count);
             list.Clear();
             list.AddRange(listSpan);
         }
@@ -134,6 +137,42 @@ public class AppendableBlock : IStructEnumerable<AppendableBlock.FlyweightDatom,
 
             _pooledMemoryBufferWriter.Write(dataSection);
         }
+    }
+
+    public int BinarySearch<TDatomIn>(ref TDatomIn datom, IDatomComparator<TDatomIn, FlyweightDatom> comparator)
+        where TDatomIn : IRawDatom
+    {
+        int lower = 0;
+        int upper = Count - 1;
+
+        while (lower <= upper)
+        {
+            int middle = lower + ((upper - lower) / 2);
+            var middleDatom = new FlyweightDatom(this, (uint)middle);
+
+            int comparison = comparator.Compare(datom, middleDatom);
+            if (comparison == 0)
+            {
+                return middle;
+            }
+            else if (comparison < 0)
+            {
+                upper = middle - 1;
+            }
+            else
+            {
+                lower = middle + 1;
+            }
+        }
+
+        return -1; // datom not found
+    }
+
+    public FlyweightDatomEnumerator Seek<TDatomIn>(TDatomIn datom, IDatomComparator<TDatomIn, FlyweightDatom> comparator)
+        where TDatomIn : IRawDatom
+    {
+        var index = BinarySearch(ref datom, comparator);
+        return new FlyweightDatomEnumerator(this, index);
     }
 
     private class OuterComparator<TComparer>(AppendableBlock block, TComparer comparer) : IComparer<int>
@@ -209,4 +248,57 @@ public class AppendableBlock : IStructEnumerable<AppendableBlock.FlyweightDatom,
     {
         return new(this, -1);
     }
+
+    #region INode
+
+
+
+    public INode Insert<TInput>(TInput inputDatom)
+    {
+        throw new NotImplementedException();
+    }
+
+    public INode Remove<TInput>(TInput inputDatom)
+    {
+        throw new NotImplementedException();
+    }
+
+    public INode Merge(INode other)
+    {
+        var newNode = new AppendableBlock();
+        foreach (var datom in this)
+        {
+            newNode.Append(datom);
+        }
+
+        foreach (var datom in other)
+        {
+            newNode.Append(datom);
+        }
+
+        return newNode;
+
+    }
+
+    public (INode, INode) Split()
+    {
+        var splitPoint = Count / 2;
+        var left = new AppendableBlock();
+        var right = new AppendableBlock();
+
+        for (var i = 0; i < splitPoint; i++)
+        {
+            left.Append(this[i]);
+        }
+
+        for (var i = splitPoint; i < Count; i++)
+        {
+            right.Append(this[i]);
+        }
+
+        return (left, right);
+    }
+    #endregion
+
+
 }
