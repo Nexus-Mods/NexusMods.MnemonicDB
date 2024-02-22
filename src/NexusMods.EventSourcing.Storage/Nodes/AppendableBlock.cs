@@ -44,28 +44,38 @@ public class AppendableBlock : INode,
     public void Sort<TComparer>(TComparer comparer)
         where TComparer : IDatomComparator
     {
-        var indexes = GC.AllocateUninitializedArray<int>(_entityIds.Count);
-        for (var i = 0; i < indexes.Length; i++)
+        Sort(comparer, 0, Count - 1);
+    }
+
+    private void Sort<TComparer>(TComparer comparer, int left, int right)
+    where TComparer : IDatomComparator
+    {
+        if (left < right)
         {
-            indexes[i] = i;
-        }
-
-        Array.Sort(indexes, new OuterComparator<TComparer>(this, comparer));
-
-
-        var list = new List<ulong>(_entityIds);
-        list.Sort();
-        for (var i = 0; i < indexes.Length; i++)
-        {
-            var j = indexes[i];
-            (_entityIds[i], _entityIds[j]) = (_entityIds[j], _entityIds[i]);
-            (_attributeIds[i], _attributeIds[j]) = (_attributeIds[j], _attributeIds[i]);
-            (_txIds[i], _txIds[j]) = (_txIds[j], _txIds[i]);
-            (_flags[i], _flags[j]) = (_flags[j], _flags[i]);
-            (_values[i], _values[j]) = (_values[j], _values[i]);
+            int pivotIndex = Partition(comparer, left, right);
+            Sort(comparer, left, pivotIndex - 1);
+            Sort(comparer, pivotIndex + 1, right);
         }
     }
 
+    private int Partition<TComparer>(TComparer comparer, int left, int right)
+    where TComparer : IDatomComparator
+    {
+        var pivot = this[right];
+        int i = left - 1;
+
+        for (int j = left; j < right; j++)
+        {
+            if (comparer.Compare(this[j], pivot) <= 0)
+            {
+                i++;
+                Swap(i, j);
+            }
+        }
+
+        Swap( i + 1, right);
+        return i + 1;
+    }
     private void Swap(int i, int j)
     {
         (_entityIds[i], _entityIds[j]) = (_entityIds[j], _entityIds[i]);
