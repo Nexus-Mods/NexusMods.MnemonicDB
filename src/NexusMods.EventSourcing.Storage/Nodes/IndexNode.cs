@@ -7,7 +7,7 @@ namespace NexusMods.EventSourcing.Storage.Nodes;
 
 public class IndexNode : INode
 {
-    private readonly List<Child> _children;
+    private readonly List<INode> _children;
     private readonly Configuration _configuration;
 
     struct Child
@@ -19,23 +19,22 @@ public class IndexNode : INode
     public IndexNode()
     {
         _configuration = Configuration.Default;
-        _children = new List<Child>();
+        _children = new List<INode>();
     }
 
     public IndexNode(INode toSplit, Configuration configuration)
     {
         _configuration = configuration;
         var (a, b) = toSplit.Split();
-        _children = new List<Child>
+        _children = new List<INode>
         {
-            new() { Node = a, LastDatom = OnHeapDatom.Create(a.LastDatom) },
-            new() { Node = b, LastDatom = OnHeapDatom.Create(b.LastDatom) }
+            a, b
         };
     }
 
     private void InsertNode(INode node, int index)
     {
-        _children.Insert(index, new Child { Node = node, LastDatom = OnHeapDatom.Create(node.LastDatom) });
+        _children.Insert(index, node);
     }
 
     public INode Insert<TInput, TDatomComparator>(in TInput inputDatom, in TDatomComparator comparator) where TInput : IRawDatom where TDatomComparator : IDatomComparator
@@ -62,12 +61,12 @@ public class IndexNode : INode
             var childIndex = newNode.FindIndex(comparator, datom);
             if (childIndex != newNode._children.Count - 1)
             {
-                var newChild = newNode._children[childIndex].Node.Ingest<TIterator, TDatom, OnHeapDatom, TComparator>(other, newNode._children[childIndex].LastDatom, comparator);
+                var newChild = newNode._children[childIndex].Ingest<TIterator, TDatom, IRawDatom, TComparator>(other, newNode._children[childIndex].LastDatom, comparator);
                 newNode.ReplaceNode(newChild, childIndex);
             }
             else
             {
-                var newChild = newNode._children[^1].Node.Ingest<TIterator, TDatom, OnHeapDatom, TComparator>(other, OnHeapDatom.Max, comparator);
+                var newChild = newNode._children[^1].Ingest<TIterator, TDatom, IRawDatom, TComparator>(other, OnHeapDatom.Max, comparator);
                 newNode.ReplaceNode(newChild, childIndex);
             }
 
@@ -85,13 +84,13 @@ public class IndexNode : INode
 
     private void ReplaceNode(INode node, int index)
     {
-        _children[index] = new Child { Node = node, LastDatom = OnHeapDatom.Create(node.LastDatom) };
+        _children[index] = node;
         MaybeSplit(index);
     }
 
     private void MaybeSplit(int index)
     {
-        var node = _children[index].Node;
+        var node = _children[index];
 
         IEnumerable<INode> InnerSplit(INode node)
         {
@@ -113,7 +112,7 @@ public class IndexNode : INode
         if (node.SizeState == SizeStates.OverSized)
         {
             _children.RemoveAt(index);
-            _children.InsertRange(index, InnerSplit(node).Select(n => new Child { Node = n, LastDatom = OnHeapDatom.Create(n.LastDatom) }));
+            _children.InsertRange(index, InnerSplit(node));
         }
     }
 
@@ -138,7 +137,7 @@ public class IndexNode : INode
 
         return start;
     }
-    public int Count => _children.Sum(c => c.Node.Count);
+    public int Count => _children.Sum(c => c.Count);
     public int ChildCount => _children.Count;
 
     public IRawDatom LastDatom => throw new System.NotImplementedException();
@@ -170,13 +169,23 @@ public class IndexNode : INode
             var current = 0;
             foreach (var child in _children)
             {
-                if (current + child.Node.Count > idx)
+                if (current + child.Count > idx)
                 {
-                    return child.Node[idx - current];
+                    return child[idx - current];
                 }
-                current += child.Node.Count;
+                current += child.Count;
             }
             throw new System.IndexOutOfRangeException();
         }
+    }
+
+    public INode Flush(NodeStore store)
+    {
+        for(var idx = 0; idx < _children.Count; idx++)
+        {
+            _children[idx] = _children[idx].Flush(store);
+        }
+
+        return this;
     }
 }

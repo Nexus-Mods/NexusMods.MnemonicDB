@@ -26,7 +26,7 @@ public class AppendableBlock(Configuration config) : INode,
     public int Count => _entityIds.Count;
     public int ChildCount => _entityIds.Count;
 
-    public IRawDatom LastDatom => this[Count - 1];
+    public IRawDatom LastDatom => new FlyweightRawDatom(this, (uint)Count - 1);
 
     public (INode, INode) Split()
     {
@@ -270,6 +270,10 @@ public class AppendableBlock(Configuration config) : INode,
 
 
     public FlyweightRawDatom this[int index] => new(this, (uint)index);
+    public INode Flush(NodeStore store)
+    {
+        return store.Flush(this);
+    }
 
     IRawDatom INode.this[int index] => new FlyweightRawDatom(this, (uint)index);
 

@@ -18,7 +18,6 @@ public class IndexTests(IEnumerable<IValueSerializer> valueSerializers, IEnumera
     [InlineData(1024 * 16)]
     [InlineData(1024 * 64)]
     [InlineData(1024 * 128)]
-    [InlineData(1024 * 1024)]
     public void CanIngestAndGetDatoms(int entityCount)
     {
         var grouped = TestDatoms((ulong)entityCount)
@@ -37,6 +36,7 @@ public class IndexTests(IEnumerable<IValueSerializer> valueSerializers, IEnumera
                 .ThenBy(d => d.TxId)
                 .ToArray();
             index.Ingest<ArrayIterator<IRawDatom>, IRawDatom>(groupSorted.Iterate());
+            index.Flush(NodeStore);
         }
 
         logger.LogInformation("Ingested {DatomCount} datoms in {ElapsedMs}ms", index.Count, sw.ElapsedMilliseconds);

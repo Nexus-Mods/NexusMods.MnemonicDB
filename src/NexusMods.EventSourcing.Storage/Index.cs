@@ -49,4 +49,9 @@ public class Index<TComparator> where TComparator : IDatomComparator
     /// </summary>
     /// <param name="idx"></param>
     public IRawDatom this[int idx] => _topBlock[idx];
+
+    public void Flush(NodeStore nodeStore)
+    {
+        _topBlock = _topBlock.Flush(nodeStore);
+    }
 }

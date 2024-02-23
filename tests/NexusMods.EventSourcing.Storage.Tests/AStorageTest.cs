@@ -7,6 +7,8 @@ namespace NexusMods.EventSourcing.Storage.Tests;
 public class AStorageTest
 {
     protected readonly AttributeRegistry _registry;
+    protected readonly NodeStore NodeStore;
+    private readonly InMemoryKvStore _kvStore;
 
     public AStorageTest(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
     {
@@ -15,6 +17,8 @@ public class AStorageTest
             new DbAttribute(Symbol.Intern<TestAttributes.FileHash>(), 10, Symbol.Intern<UInt64Serializer>()),
             new DbAttribute(Symbol.Intern<TestAttributes.FileName>(), 11, Symbol.Intern<StringSerializer>())
         ]);
+        _kvStore = new InMemoryKvStore();
+        NodeStore = new NodeStore(_kvStore, Configuration.Default);
     }
 
 

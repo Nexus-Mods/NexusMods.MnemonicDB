@@ -45,4 +45,6 @@ public interface INode
     public SizeStates SizeState { get; }
 
     public IRawDatom this[int idx] { get; }
+
+    public INode Flush(NodeStore store);
 }

@@ -23,4 +23,14 @@ public static class HelperExtensions
         return BinaryPrimitives.ReadUInt128LittleEndian(bytes);
     }
 
+    /// <summary>
+    /// Converts a GUID to a UInt128
+    /// </summary>
+    public static UInt128 ToUInt128Guid(this Guid guid)
+    {
+        Span<byte> bytes = stackalloc byte[16];
+        guid.TryWriteBytes(bytes);
+        return BinaryPrimitives.ReadUInt128LittleEndian(bytes);
+    }
+
 }
