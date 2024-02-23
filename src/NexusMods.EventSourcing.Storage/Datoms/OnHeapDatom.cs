@@ -21,4 +21,31 @@ public class OnHeapDatom : IRawDatom
     {
         return this.CommonToString();
     }
+
+    /// <summary>
+    /// All the values of the datom set to their maximum value.
+    /// </summary>
+    public static readonly OnHeapDatom Max = new()
+    {
+        EntityId = ulong.MaxValue,
+        AttributeId = ushort.MaxValue,
+        ValueLiteral = ulong.MaxValue,
+        ValueData = [],
+        TxId = ulong.MaxValue,
+        Flags = DatomFlags.Added | DatomFlags.InlinedData
+    };
+
+    public static OnHeapDatom Create<TDatom>(in TDatom a)
+    where TDatom : IRawDatom
+    {
+        return new OnHeapDatom
+        {
+            EntityId = a.EntityId,
+            AttributeId = a.AttributeId,
+            ValueLiteral = a.ValueLiteral,
+            ValueData = a.Flags.HasFlag(DatomFlags.InlinedData) ? [] : a.ValueSpan.ToArray(),
+            TxId = a.TxId,
+            Flags = a.Flags
+        };
+    }
 }

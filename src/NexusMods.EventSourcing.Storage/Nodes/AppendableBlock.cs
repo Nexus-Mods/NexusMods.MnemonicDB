@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Cathei.LinqGen;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Iterators;
+using NexusMods.EventSourcing.Storage.Datoms;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
@@ -12,9 +14,8 @@ namespace NexusMods.EventSourcing.Storage.Nodes;
 /// <summary>
 /// An editable block of datoms that can be sorted and written to a buffer.
 /// </summary>
-public class AppendableBlock : INode,
-    IStructEnumerable<AppendableBlock.FlyweightDatom, AppendableBlock.FlyweightDatomEnumerator>
-
+public class AppendableBlock(Configuration config) : INode,
+    IIterable<AppendableBlock.FlyweightIterator, AppendableBlock.FlyweightRawDatom>
 {
     private readonly PooledMemoryBufferWriter _pooledMemoryBufferWriter = new();
     private readonly List<ulong> _entityIds = new();
@@ -23,6 +24,48 @@ public class AppendableBlock : INode,
     private readonly List<DatomFlags> _flags = new();
     private readonly List<ulong> _values = new();
     public int Count => _entityIds.Count;
+    public int ChildCount => _entityIds.Count;
+
+    public IRawDatom LastDatom => this[Count - 1];
+
+    public (INode, INode) Split()
+    {
+        var a = new AppendableBlock(config);
+        var b = new AppendableBlock(config);
+        var half = Count / 2;
+
+        var baseIterator = Iterate();
+
+
+        for (var i = 0; i < half; i++)
+        {
+            baseIterator.Value(out var datom);
+            a.Append(datom);
+            baseIterator.Next();
+        }
+
+        for (var i = half; i < Count; i++)
+        {
+            baseIterator.Value(out var datom);
+            b.Append(datom);
+            baseIterator.Next();
+        }
+
+
+        return (a, b);
+    }
+
+    public SizeStates SizeState
+    {
+        get
+        {
+            if (Count < config.DataBlockSize / 2)
+                return SizeStates.UnderSized;
+            if (Count > config.DataBlockSize * 2)
+                return SizeStates.OverSized;
+            return SizeStates.Ok;
+        }
+    }
 
     public void Append<TRawDatom>(in TRawDatom datom)
     where TRawDatom : IRawDatom
@@ -44,6 +87,9 @@ public class AppendableBlock : INode,
     public void Sort<TComparer>(TComparer comparer)
         where TComparer : IDatomComparator
     {
+        // Simple Quicksort implementation, this could be replaced with something better
+        // but we don't sort often, and we need to be able to swap out all the values associated
+        // with a datom, so we can't use a simple array of structs.
         Sort(comparer, 0, Count - 1);
     }
 
@@ -76,6 +122,12 @@ public class AppendableBlock : INode,
         Swap( i + 1, right);
         return i + 1;
     }
+
+    /// <summary>
+    /// Swaps the datoms at the given indices.
+    /// </summary>
+    /// <param name="i"></param>
+    /// <param name="j"></param>
     private void Swap(int i, int j)
     {
         (_entityIds[i], _entityIds[j]) = (_entityIds[j], _entityIds[i]);
@@ -175,7 +227,7 @@ public class AppendableBlock : INode,
         while (lower <= upper)
         {
             var middle = lower + ((upper - lower) / 2);
-            var middleDatom = new FlyweightDatom(this, (uint)middle);
+            var middleDatom = new FlyweightRawDatom(this, (uint)middle);
 
             var comparison = comparator.Compare(datom, middleDatom);
             if (comparison == 0)
@@ -196,12 +248,12 @@ public class AppendableBlock : INode,
         return (lower, false); // datom not found, return the index where it would be inserted
     }
 
-    public FlyweightDatomEnumerator Seek<TDatomIn, TDatomComparator>(TDatomIn datom, TDatomComparator comparator)
+    public FlyweightIterator Seek<TDatomIn, TDatomComparator>(in TDatomIn datom, TDatomComparator comparator)
         where TDatomIn : IRawDatom
         where TDatomComparator : IDatomComparator
     {
-        var (index, _) = BinarySearch(ref datom, comparator);
-        return new FlyweightDatomEnumerator(this, index);
+        var (index, _) = BinarySearch(in datom, comparator);
+        return new FlyweightIterator(this, index);
     }
 
     private class OuterComparator<TComparer>(AppendableBlock block, TComparer comparer) : IComparer<int>
@@ -209,18 +261,20 @@ public class AppendableBlock : INode,
     {
         public int Compare(int x, int y)
         {
-            var a = new FlyweightDatom(block, (uint)x);
-            var b = new FlyweightDatom(block, (uint)y);
+            var a = new FlyweightRawDatom(block, (uint)x);
+            var b = new FlyweightRawDatom(block, (uint)y);
             return comparer.Compare(a, b);
         }
     }
 
 
 
-    public FlyweightDatom this[int index] => new(this, (uint)index);
+    public FlyweightRawDatom this[int index] => new(this, (uint)index);
+
+    IRawDatom INode.this[int index] => new FlyweightRawDatom(this, (uint)index);
 
 
-    public struct FlyweightDatom(AppendableBlock block, uint index) : IRawDatom
+    public struct FlyweightRawDatom(AppendableBlock block, uint index) : IRawDatom
     {
         public ulong EntityId => block._entityIds[(int)index];
         public ushort AttributeId => block._attributeIds[(int)index];
@@ -254,41 +308,33 @@ public class AppendableBlock : INode,
         }
     }
 
-    public struct FlyweightDatomEnumerator(AppendableBlock block, int idx)
-        : IEnumerator<FlyweightDatom>
+    public struct FlyweightIterator(AppendableBlock block, int idx)
+        : IIterator<FlyweightRawDatom>
     {
-        public void Dispose()
+        public bool Next()
         {
-        }
-
-        public bool MoveNext()
-        {
-            if (idx >= block._entityIds.Count) return false;
+            if (idx >= block.Count - 1) return false;
             idx++;
             return true;
         }
 
-        public void Reset()
+        public bool AtEnd => idx >= block.Count;
+        public bool Value(out FlyweightRawDatom value)
         {
-            idx = -1;
+            if (idx >= block.Count)
+            {
+                value = default;
+                return false;
+            }
+
+            value = new FlyweightRawDatom(block, (uint)idx);
+            return true;
         }
 
-        public FlyweightDatom Current => new(block, (uint)idx);
-
-        object IEnumerator.Current => Current;
-    }
-
-    IEnumerator<IRawDatom> IEnumerable<IRawDatom>.GetEnumerator()
-    {
-        for (var i = 0; i < Count; i++)
-        {
-            yield return new FlyweightDatom(this, (uint)i);
-        }
-    }
-
-    public FlyweightDatomEnumerator GetEnumerator()
-    {
-        return new(this, -1);
+        /// <summary>
+        /// The current index of the iterator, used for testing.
+        /// </summary>
+        public int Index => idx;
     }
 
     #region INode
@@ -320,52 +366,70 @@ public class AppendableBlock : INode,
         return this;
     }
 
-    public INode Remove<TInput>(TInput inputDatom)
-    {
-        throw new NotImplementedException();
 
+    public INode Ingest<TIterator, TDatom, TDatomStop, TComparator>(in TIterator newData, in TDatomStop stopDatom, TComparator comparator)
+        where TIterator : IIterator<TDatom>
+        where TDatom : IRawDatom
+        where TDatomStop : IRawDatom
+        where TComparator : IDatomComparator
+    {
+        var newBlock = new AppendableBlock(config);
+        var current = Iterate();
+
+        TDatom newDataVal;
+        FlyweightRawDatom currentVal;
+
+        var currentValid = current.Value(out currentVal);
+        var newDataValid = newData.Value(out newDataVal);
+
+        while (currentValid && newDataValid)
+        {
+            if (comparator.Compare(newDataVal, stopDatom) > 0)
+            {
+                break;
+            }
+
+            if (comparator.Compare(currentVal, newDataVal) == 0)
+            {
+                newBlock.Append(currentVal);
+                currentValid = current.Next() && current.Value(out currentVal);
+                newDataValid = newData.Next() && newData.Value(out newDataVal);
+            }
+            else if (comparator.Compare(currentVal, newDataVal) < 0)
+            {
+                newBlock.Append(currentVal);
+                currentValid = current.Next() && current.Value(out currentVal);
+            }
+            else
+            {
+                newBlock.Append(newDataVal);
+                newDataValid = newData.Next() && newData.Value(out newDataVal);
+            }
+        }
+
+        while (currentValid)
+        {
+            newBlock.Append(currentVal);
+            currentValid = current.Next() && current.Value(out currentVal);
+        }
+
+        while (newDataValid)
+        {
+            newBlock.Append(newDataVal);
+            newDataValid = newData.Next() && newData.Value(out newDataVal);
+            if (comparator.Compare(newDataVal, stopDatom) > 0)
+            {
+                break;
+            }
+        }
+
+        return newBlock;
     }
 
-    public INode Merge(INode other)
-    {
-        var newNode = new AppendableBlock();
-        foreach (var datom in this)
-        {
-            newNode.Append(datom);
-        }
-
-        foreach (var datom in other)
-        {
-            newNode.Append(datom);
-        }
-
-        return newNode;
-
-    }
-
-    public (INode, INode) Split()
-    {
-        var splitPoint = Count / 2;
-        var left = new AppendableBlock();
-        var right = new AppendableBlock();
-
-        for (var i = 0; i < splitPoint; i++)
-        {
-            left.Append(this[i]);
-        }
-
-        for (var i = splitPoint; i < Count; i++)
-        {
-            right.Append(this[i]);
-        }
-
-        return (left, right);
-    }
     #endregion
 
-
-    IEnumerator IEnumerable.GetEnumerator()
+    public FlyweightIterator Iterate()
     {
-        return GetEnumerator();
+        return new FlyweightIterator(this, 0);
     }
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Subjects;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.DatomStore;
+using NexusMods.EventSourcing.Storage;
 
 namespace NexusMods.EventSourcing;
 
@@ -55,7 +55,7 @@ public class Connection : IConnection
             var serializer = serializerByType[attr.ValueType];
             var uniqueId = attr.Id;
             datoms.Add(new AssertDatom<BuiltInAttributes.UniqueId, Symbol>(id, uniqueId));
-            datoms.Add(new AssertDatom<BuiltInAttributes.ValueSerializerId, UInt128>(id, serializer.UniqueId));
+            datoms.Add(new AssertDatom<BuiltInAttributes.ValueSerializerId, Symbol>(id, serializer.UniqueId));
             newAttrs.Add(new DbAttribute(uniqueId, id, serializer.UniqueId));
         }
         TxId = _store.Transact(datoms);
@@ -66,6 +66,8 @@ public class Connection : IConnection
 
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
+        throw new NotImplementedException();
+        /*
         var tx = TxId.MaxValue;
         var attrIterator = _store.Where<BuiltInAttributes.UniqueId>(tx);
         var entIterator = _store.EntityIterator(tx);
@@ -73,7 +75,7 @@ public class Connection : IConnection
         {
             entIterator.Set(attrIterator.EntityId);
 
-            var serializerId = UInt128.Zero;
+            var serializerId = Symbol.Unknown;
             Symbol uniqueId = null!;
 
             while (entIterator.Next())
@@ -81,7 +83,7 @@ public class Connection : IConnection
                 var current = entIterator.Current;
                 switch (current)
                 {
-                    case AssertDatom<BuiltInAttributes.ValueSerializerId, UInt128> serializerIdDatom:
+                    case AssertDatom<BuiltInAttributes.ValueSerializerId, Symbol> serializerIdDatom:
                         serializerId = serializerIdDatom.V;
                         break;
                     case AssertDatom<BuiltInAttributes.UniqueId, Symbol> uniqueIdDatom:
@@ -91,6 +93,7 @@ public class Connection : IConnection
             }
             yield return new DbAttribute(uniqueId, attrIterator.EntityId.Value, serializerId);
         }
+        */
     }
 
 

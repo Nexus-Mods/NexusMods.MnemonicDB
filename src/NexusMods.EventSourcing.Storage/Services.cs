@@ -10,6 +10,10 @@ public static class Services
     {
         services.AddValueSerializer<UInt64Serializer>();
         services.AddValueSerializer<StringSerializer>();
+        services.AddValueSerializer<SymbolSerializer>();
+        services.AddValueSerializer<TxIdSerializer>();
+        services.AddValueSerializer<EntityIdSerializer>();
+        services.AddSingleton<IDatomStore, DatomStore>();
         return services;
     }
 }

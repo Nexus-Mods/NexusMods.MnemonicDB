@@ -21,7 +21,7 @@ public interface IDatomStore : IDisposable
     /// <param name="txId"></param>
     /// <typeparam name="TAttr"></typeparam>
     /// <returns></returns>
-    IIterator Where<TAttr>(TxId txId) where TAttr : IAttribute;
+    //IIterator Where<TAttr>(TxId txId) where TAttr : IAttribute;
 
     /// <summary>
     /// Creates an iterator over all entities.

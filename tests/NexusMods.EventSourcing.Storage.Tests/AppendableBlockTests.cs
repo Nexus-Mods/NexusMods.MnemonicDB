@@ -11,7 +11,7 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
     [Fact]
     public void CanAppendDataToBlock()
     {
-        var block = new AppendableBlock();
+        var block = new AppendableBlock(Configuration.Default);
         var allDatoms = TestData(10).ToArray();
         foreach (var datom in TestData(10))
         {
@@ -32,7 +32,7 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
     [Fact]
     public void CanSortBlock()
     {
-        var block = new AppendableBlock();
+        var block = new AppendableBlock(Configuration.Default);
         var allDatoms = TestData(10).ToArray();
         Random.Shared.Shuffle(allDatoms);
 
@@ -64,7 +64,7 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
     {
         var datoms = TestData(10).ToArray();
 
-        var insertBlock = new AppendableBlock();
+        var insertBlock = new AppendableBlock(Configuration.Default);
         var compare = new Eatv(_registry);
 
         for (var i = 0; i < datoms.Length; i++)
@@ -72,10 +72,7 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
             insertBlock.Insert(in datoms[i], compare);
         }
 
-        var sorted = datoms.OrderBy(d => d.EntityId)
-            .ThenBy(d => d.AttributeId)
-            .ThenBy(d => d.TxId)
-            .ThenBy(d => d.ValueLiteral)
+        var sorted = datoms.Order(CreateComparer(compare))
             .ToArray();
 
         insertBlock.Count.Should().Be(datoms.Length);
@@ -93,7 +90,7 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
     public void CanReadAndWriteBlocks()
     {
         var allDatoms = TestData(10).ToArray();
-        var block = new AppendableBlock();
+        var block = new AppendableBlock(Configuration.Default);
         foreach (var datom in TestData(10))
         {
             block.Append(in datom);
@@ -102,7 +99,7 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
         var writer = new PooledMemoryBufferWriter();
         block.WriteTo(writer);
 
-        var block2 = new AppendableBlock();
+        var block2 = new AppendableBlock(Configuration.Default);
         block2.InitializeFrom(writer.GetWrittenSpan());
 
         block2.Count.Should().Be(allDatoms.Length);
@@ -116,16 +113,36 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
         }
     }
 
-    private static void AssertEqual(in AppendableBlock.FlyweightDatom datomA, IRawDatom datomB, int i)
+    [Fact]
+    public void CanSeekToDatom()
     {
-        datomA.EntityId.Should().Be(datomB.EntityId, "at index " + i);
-        datomA.AttributeId.Should().Be(datomB.AttributeId, "at index " + i);
-        datomA.TxId.Should().Be(datomB.TxId, "at index " + i);
-        datomA.Flags.Should().Be(datomB.Flags, "at index " + i);
-        datomA.ValueLiteral.Should().Be(datomB.ValueLiteral, "at index " + i);
-        datomA.ValueSpan.SequenceEqual(datomB.ValueSpan).Should().BeTrue("at index " + i);
+        var compare = new Eatv(_registry);
+        var block = new AppendableBlock(Configuration.Default);
+        var allDatoms = TestData(10).ToArray();
+        foreach (var datom in allDatoms)
+        {
+            block.Append(in datom);
+        }
+
+        var sorted = allDatoms.Order(CreateComparer(compare)).ToArray();
+        block.Sort(compare);
+
+        for (var i = 0; i < sorted.Length; i++)
+        {
+            var datom = sorted[i];
+            var iter = block.Seek(datom, compare);
+
+            iter.Index.Should().Be(i, "for index " + i);
+
+            iter.Value(out var current);
+            AssertEqual(current, datom, i);
+        }
     }
 
+    public IComparer<IRawDatom> CreateComparer(IDatomComparator datomComparator)
+    {
+        return Comparer<IRawDatom>.Create((a, b) => datomComparator.Compare(in a, in b));
+    }
 
     public IEnumerable<IRawDatom> TestData(uint max)
     {

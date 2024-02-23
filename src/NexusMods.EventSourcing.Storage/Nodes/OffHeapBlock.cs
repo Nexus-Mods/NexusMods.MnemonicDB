@@ -2,6 +2,7 @@
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
+/*
 public unsafe struct OffHeapBlock
 {
     private readonly void* _data;
@@ -46,3 +47,4 @@ public unsafe struct OffHeapBlock
 
 
 }
+*/

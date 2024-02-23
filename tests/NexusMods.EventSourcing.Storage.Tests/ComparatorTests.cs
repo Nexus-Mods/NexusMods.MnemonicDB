@@ -12,7 +12,7 @@ public class ComparatorTests(IEnumerable<IValueSerializer> valueSerializers, IEn
 {
 
     [Theory]
-    [MethodData(nameof(TestData))]
+    [MethodData(nameof(ComparisonTestData))]
     public void EATVTests(IRawDatom a, IRawDatom b, int result)
     {
         var compare = new Eatv(_registry);
@@ -20,7 +20,8 @@ public class ComparatorTests(IEnumerable<IValueSerializer> valueSerializers, IEn
         compare.Compare(in b, in a).Should().Be(-result, "comparison should be symmetric");
     }
 
-    public IEnumerable<object[]> TestData()
+
+    public IEnumerable<object[]> ComparisonTestData()
     {
         IRawDatom? prev = null;
 
@@ -49,8 +50,6 @@ public class ComparatorTests(IEnumerable<IValueSerializer> valueSerializers, IEn
 
                 }
             }
-
         }
-
     }
 }

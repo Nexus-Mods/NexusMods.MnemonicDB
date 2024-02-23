@@ -1,8 +1,7 @@
-﻿using System;
-using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.DatomStore.BuiltInSerializers;
+﻿using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Serializers;
 
-namespace NexusMods.EventSourcing.DatomStore;
+namespace NexusMods.EventSourcing.Storage;
 
 public static class BuiltInAttributes
 {
@@ -24,7 +23,7 @@ public static class BuiltInAttributes
     /// <summary>
     /// The unique id if the IValueSerializer used to serialize the value of the attribute.
     /// </summary>
-    public class ValueSerializerId() : ScalarAttribute<ValueSerializerId, UInt128>("NexusMods.EventSourcing.DatomStore/ValueSerializerId");
+    public class ValueSerializerId() : ScalarAttribute<ValueSerializerId, Symbol>("NexusMods.EventSourcing.DatomStore/ValueSerializerId");
 
     /// <summary>
     /// Static unique id of the UniqueId attribute
@@ -41,16 +40,16 @@ public static class BuiltInAttributes
     /// The initial set of built-in attributes that always exist in the database.
     /// </summary>
     public static readonly DbAttribute[] Initial = [
-        new DbAttribute(UniqueIdStaticId, UniqueIdEntityId, UInt128Serializer.Id),
-        new DbAttribute(ValueSerializerIdStaticId, ValueSerializerIdEntityId, UInt128Serializer.Id),
+        new DbAttribute(UniqueIdStaticId, UniqueIdEntityId, SymbolSerializer.Id),
+        new DbAttribute(ValueSerializerIdStaticId, ValueSerializerIdEntityId, SymbolSerializer.Id),
     ];
 
     public static readonly IDatom[] InitialDatoms = [
         UniqueId.Assert(UniqueIdEntityId, UniqueIdStaticId),
-        ValueSerializerId.Assert(UniqueIdEntityId, UInt128Serializer.Id),
+        ValueSerializerId.Assert(UniqueIdEntityId, SymbolSerializer.Id),
 
         UniqueId.Assert(ValueSerializerIdEntityId, ValueSerializerIdStaticId),
-        ValueSerializerId.Assert(ValueSerializerIdEntityId, UInt128Serializer.Id),
+        ValueSerializerId.Assert(ValueSerializerIdEntityId, SymbolSerializer.Id),
     ];
 
 }

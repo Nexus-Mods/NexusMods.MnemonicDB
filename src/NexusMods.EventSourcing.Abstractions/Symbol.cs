@@ -21,6 +21,8 @@ public class Symbol
         Namespace = nsAndName[..splitOn];
     }
 
+    public static Symbol Unknown => Intern("<unknown>");
+
     private static readonly ConcurrentDictionary<string, Symbol> InternedSymbols = new();
 
     /// <summary>

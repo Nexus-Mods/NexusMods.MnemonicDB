@@ -1,41 +1,34 @@
-﻿using System;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
-/// A seekable iterator over a collection of datoms.
+/// A composable, strictly typed, iterator with support for filtering
+/// and stack based iteration.
 /// </summary>
-public interface IIterator : IDisposable
+public interface IIterator<T>
 {
     /// <summary>
-    /// Gets the current entity id.
+    /// Moves to the next item in the iterator, returns false if the
+    /// iterator is at the end of the sequence. The return value will
+    /// always be the same as the AtEnd property at the end of the call,
+    /// but it's returned here reduce the number of calls in the common
+    /// use case.
     /// </summary>
-    public EntityId EntityId { get; }
-
-    /// <summary>
-    /// True if the current datom matches the given attribute.
-    /// </summary>
-    /// <typeparam name="TAttribute"></typeparam>
     /// <returns></returns>
-    public bool IsAttribute<TAttribute>() where TAttribute : IAttribute;
-
-    /// <summary>
-    /// Gets the current tx id.
-    /// </summary>
-    public TxId TxId { get; }
-
-    /// <summary>
-    /// Get the current datom as a distinct value.
-    /// </summary>
-    public IDatom Current { get; }
-
-    /// <summary>
-    /// Move to the next datom, returns false if there are no more datoms.
-    /// </summary>
     public bool Next();
 
     /// <summary>
-    /// Reset the iterator to the beginning.
+    /// Returns true if the iterator is at the end of the sequence.
     /// </summary>
-    public void Reset();
+    public bool AtEnd { get; }
+
+    /// <summary>
+    /// Gets the current item in the iterator, if the current value
+    /// is not valid, the out value will be set to the default value
+    /// and the method will return false.
+    /// </summary>
+    /// <param name="value"></param>
+    public bool Value(out T value);
+
 }

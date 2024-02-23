@@ -18,6 +18,37 @@ public class AStorageTest
     }
 
 
+    public IEnumerable<IRawDatom> TestDatoms(ulong entityCount = 100)
+    {
+        var emitters = new Func<ulong, ulong, ulong, IRawDatom>[]
+        {
+            (e, tx, v) => Assert<TestAttributes.FileHash>(e, tx, v),
+            (e, tx, v) => Assert<TestAttributes.FileName>(e, tx, "file " + v),
+        };
+
+        for (ulong e = 0; e < entityCount; e++)
+        {
+            for (var a = 0; a < 2; a ++)
+            {
+                for (ulong v = 0; v < 3; v++)
+                {
+                    yield return emitters[a](e, v, v);
+                }
+            }
+        }
+    }
+
+    protected static void AssertEqual(in IRawDatom rawDatomA, IRawDatom datomB, int i)
+    {
+        rawDatomA.EntityId.Should().Be(datomB.EntityId, "at index " + i);
+        rawDatomA.AttributeId.Should().Be(datomB.AttributeId, "at index " + i);
+        rawDatomA.TxId.Should().Be(datomB.TxId, "at index " + i);
+        rawDatomA.Flags.Should().Be(datomB.Flags, "at index " + i);
+        rawDatomA.ValueLiteral.Should().Be(datomB.ValueLiteral, "at index " + i);
+        rawDatomA.ValueSpan.SequenceEqual(datomB.ValueSpan).Should().BeTrue("at index " + i);
+    }
+
+
     protected OnHeapDatom Assert<TAttribute>(ulong e, ulong tx, ulong value)
         where TAttribute : IAttribute<ulong>
     {
