@@ -86,12 +86,17 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
         }
     }
 
-    [Fact]
-    public void CanReadAndWriteBlocks()
+    [Theory]
+    [InlineData(4)]
+    [InlineData(16)]
+    [InlineData(128)]
+    [InlineData(1024)]
+    [InlineData(1024 * 8)]
+    public void CanReadAndWriteBlocks(uint count)
     {
-        var allDatoms = TestData(10).ToArray();
+        var allDatoms = TestData(count).ToArray();
         var block = new AppendableBlock(Configuration.Default);
-        foreach (var datom in TestData(10))
+        foreach (var datom in allDatoms)
         {
             block.Append(in datom);
         }
@@ -106,7 +111,7 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
 
         for (var i = 0; i < allDatoms.Length; i++)
         {
-            var datomA = block[i];
+            var datomA = block2[i];
             var datomB = allDatoms[i];
 
             AssertEqual(datomA, datomB, i);

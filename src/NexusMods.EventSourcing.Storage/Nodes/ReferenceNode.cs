@@ -11,7 +11,7 @@ namespace NexusMods.EventSourcing.Storage.Nodes;
 public class ReferenceNode(NodeStore store) : INode
 {
     public required UInt128 Id { get; init; }
-    private INode _node = null!;
+    private INode? _node;
 
     private INode Deref()
     {

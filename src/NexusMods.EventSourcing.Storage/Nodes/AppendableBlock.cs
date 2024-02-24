@@ -152,23 +152,23 @@ public class AppendableBlock(Configuration config) : INode,
 
             var count = (int)header._datomCount;
             var span = writer.GetSpan(_entityIds.Count * sizeof(ulong));
-            MemoryMarshal.Cast<ulong, byte>(CollectionsMarshal.AsSpan(_entityIds)).SliceFast(0, count).CopyTo(span);
+            MemoryMarshal.Cast<ulong, byte>(CollectionsMarshal.AsSpan(_entityIds).SliceFast(0, count)).CopyTo(span);
             writer.Advance(_entityIds.Count * sizeof(ulong));
 
             span = writer.GetSpan(_attributeIds.Count * sizeof(ushort));
-            MemoryMarshal.Cast<ushort, byte>(CollectionsMarshal.AsSpan(_attributeIds)).SliceFast(0, count).CopyTo(span);
+            MemoryMarshal.Cast<ushort, byte>(CollectionsMarshal.AsSpan(_attributeIds).SliceFast(0, count)).CopyTo(span);
             writer.Advance(_attributeIds.Count * sizeof(ushort));
 
             span = writer.GetSpan(_txIds.Count * sizeof(ulong));
-            MemoryMarshal.Cast<ulong, byte>(CollectionsMarshal.AsSpan(_txIds)).SliceFast(0, count).CopyTo(span);
+            MemoryMarshal.Cast<ulong, byte>(CollectionsMarshal.AsSpan(_txIds).SliceFast(0, count)).CopyTo(span);
             writer.Advance(_txIds.Count * sizeof(ulong));
 
             span = writer.GetSpan(_flags.Count * sizeof(byte));
-            MemoryMarshal.Cast<DatomFlags, byte>(CollectionsMarshal.AsSpan(_flags)).SliceFast(0, count).CopyTo(span);
+            MemoryMarshal.Cast<DatomFlags, byte>(CollectionsMarshal.AsSpan(_flags).SliceFast(0, count)).CopyTo(span);
             writer.Advance(_flags.Count * sizeof(byte));
 
             span = writer.GetSpan(_values.Count * sizeof(ulong));
-            MemoryMarshal.Cast<ulong, byte>(CollectionsMarshal.AsSpan(_values)).SliceFast(0, count).CopyTo(span);
+            MemoryMarshal.Cast<ulong, byte>(CollectionsMarshal.AsSpan(_values).SliceFast(0, count)).CopyTo(span);
             writer.Advance(_values.Count * sizeof(ulong));
 
             var pooledWrittenSpan = _pooledMemoryBufferWriter.GetWrittenSpan();
@@ -199,20 +199,20 @@ public class AppendableBlock(Configuration config) : INode,
             var dataSection = span.SliceFast(sizeof(BlockHeader));
 
             CopyToList(_entityIds, dataSection, (int)header._datomCount);
-            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(ulong));
 
+            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(ulong));
             CopyToList(_attributeIds, dataSection, (int)header._datomCount);
+
             dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(ushort));
-
             CopyToList(_txIds, dataSection, (int)header._datomCount);
-            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(ulong));
 
+            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(ulong));
             CopyToList(_flags, dataSection, (int)header._datomCount);
+
             dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(byte));
-
             CopyToList(_values, dataSection, (int)header._datomCount);
-            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(ulong));
 
+            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(ulong), (int)header._blobSize);
             _pooledMemoryBufferWriter.Write(dataSection);
         }
     }

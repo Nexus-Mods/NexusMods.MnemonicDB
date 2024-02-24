@@ -1,6 +1,5 @@
 ﻿using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage;
-using NexusMods.Paths;
 
 namespace NexusMods.EventSourcing.Tests;
 
