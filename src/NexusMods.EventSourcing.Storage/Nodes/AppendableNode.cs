@@ -14,8 +14,8 @@ namespace NexusMods.EventSourcing.Storage.Nodes;
 /// <summary>
 /// An editable block of datoms that can be sorted and written to a buffer.
 /// </summary>
-public class AppendableBlock(Configuration config) : INode,
-    IIterable<AppendableBlock.FlyweightIterator, AppendableBlock.FlyweightRawDatom>
+public class AppendableNode(Configuration config) : INode,
+    IIterable<AppendableNode.FlyweightIterator, AppendableNode.FlyweightRawDatom>
 {
     private readonly PooledMemoryBufferWriter _pooledMemoryBufferWriter = new();
     private readonly List<ulong> _entityIds = new();
@@ -30,8 +30,8 @@ public class AppendableBlock(Configuration config) : INode,
 
     public (INode, INode) Split()
     {
-        var a = new AppendableBlock(config);
-        var b = new AppendableBlock(config);
+        var a = new AppendableNode(config);
+        var b = new AppendableNode(config);
         var half = Count / 2;
 
         var baseIterator = Iterate();
@@ -142,13 +142,13 @@ public class AppendableBlock(Configuration config) : INode,
     {
         unsafe
         {
-            var headerSpan = writer.GetSpan(sizeof(BlockHeader));
-            ref var header = ref MemoryMarshal.AsRef<BlockHeader>(headerSpan);
+            var headerSpan = writer.GetSpan(sizeof(DataNodeHeader));
+            ref var header = ref MemoryMarshal.AsRef<DataNodeHeader>(headerSpan);
             header._datomCount = (uint)_entityIds.Count;
             header._blobSize = (uint)_pooledMemoryBufferWriter.GetWrittenSpan().Length;
             header._version = 0x01;
             header._flags = 0x00;
-            writer.Advance(sizeof(BlockHeader));
+            writer.Advance(sizeof(DataNodeHeader));
 
             var count = (int)header._datomCount;
             var span = writer.GetSpan(_entityIds.Count * sizeof(ulong));
@@ -195,8 +195,8 @@ public class AppendableBlock(Configuration config) : INode,
 
         unsafe
         {
-            var header = MemoryMarshal.Read<BlockHeader>(span);
-            var dataSection = span.SliceFast(sizeof(BlockHeader));
+            var header = MemoryMarshal.Read<DataNodeHeader>(span);
+            var dataSection = span.SliceFast(sizeof(DataNodeHeader));
 
             CopyToList(_entityIds, dataSection, (int)header._datomCount);
 
@@ -256,13 +256,13 @@ public class AppendableBlock(Configuration config) : INode,
         return new FlyweightIterator(this, index);
     }
 
-    private class OuterComparator<TComparer>(AppendableBlock block, TComparer comparer) : IComparer<int>
+    private class OuterComparator<TComparer>(AppendableNode node, TComparer comparer) : IComparer<int>
         where TComparer : IDatomComparator
     {
         public int Compare(int x, int y)
         {
-            var a = new FlyweightRawDatom(block, (uint)x);
-            var b = new FlyweightRawDatom(block, (uint)y);
+            var a = new FlyweightRawDatom(node, (uint)x);
+            var b = new FlyweightRawDatom(node, (uint)y);
             return comparer.Compare(a, b);
         }
     }
@@ -278,12 +278,12 @@ public class AppendableBlock(Configuration config) : INode,
     IRawDatom INode.this[int index] => new FlyweightRawDatom(this, (uint)index);
 
 
-    public struct FlyweightRawDatom(AppendableBlock block, uint index) : IRawDatom
+    public struct FlyweightRawDatom(AppendableNode node, uint index) : IRawDatom
     {
-        public ulong EntityId => block._entityIds[(int)index];
-        public ushort AttributeId => block._attributeIds[(int)index];
-        public ulong TxId => block._txIds[(int)index];
-        public DatomFlags Flags => block._flags[(int)index];
+        public ulong EntityId => node._entityIds[(int)index];
+        public ushort AttributeId => node._attributeIds[(int)index];
+        public ulong TxId => node._txIds[(int)index];
+        public DatomFlags Flags => node._flags[(int)index];
         public ReadOnlySpan<byte> ValueSpan
         {
             get
@@ -292,13 +292,13 @@ public class AppendableBlock(Configuration config) : INode,
                 {
                     return ReadOnlySpan<byte>.Empty;
                 }
-                var combined = block._values[(int)index];
+                var combined = node._values[(int)index];
                 var offset = (uint)(combined >> 4);
                 var length = (uint)(combined & 0xF);
-                return block._pooledMemoryBufferWriter.GetWrittenSpan().Slice((int)offset, (int)length);
+                return node._pooledMemoryBufferWriter.GetWrittenSpan().Slice((int)offset, (int)length);
             }
         }
-        public ulong ValueLiteral => block._values[(int)index];
+        public ulong ValueLiteral => node._values[(int)index];
 
         public void Expand<TWriter>(out ulong entityId, out ushort attributeId, out ulong txId, out byte flags, in TWriter writer,
             out ulong valueLiteral) where TWriter : IBufferWriter<byte>
@@ -312,26 +312,26 @@ public class AppendableBlock(Configuration config) : INode,
         }
     }
 
-    public struct FlyweightIterator(AppendableBlock block, int idx)
+    public struct FlyweightIterator(AppendableNode node, int idx)
         : IIterator<FlyweightRawDatom>
     {
         public bool Next()
         {
-            if (idx >= block.Count - 1) return false;
+            if (idx >= node.Count - 1) return false;
             idx++;
             return true;
         }
 
-        public bool AtEnd => idx >= block.Count;
+        public bool AtEnd => idx >= node.Count;
         public bool Value(out FlyweightRawDatom value)
         {
-            if (idx >= block.Count)
+            if (idx >= node.Count)
             {
                 value = default;
                 return false;
             }
 
-            value = new FlyweightRawDatom(block, (uint)idx);
+            value = new FlyweightRawDatom(node, (uint)idx);
             return true;
         }
 
@@ -377,7 +377,7 @@ public class AppendableBlock(Configuration config) : INode,
         where TDatomStop : IRawDatom
         where TComparator : IDatomComparator
     {
-        var newBlock = new AppendableBlock(config);
+        var newBlock = new AppendableNode(config);
         var current = Iterate();
 
         TDatom newDataVal;

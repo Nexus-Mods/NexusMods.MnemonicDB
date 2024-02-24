@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Buffers;
+using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Datoms;
 

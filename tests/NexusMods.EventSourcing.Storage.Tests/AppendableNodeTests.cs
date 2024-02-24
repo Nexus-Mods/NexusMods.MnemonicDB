@@ -5,13 +5,13 @@ using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage.Tests;
 
-public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
+public class AppendableNodeTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
     : AStorageTest(valueSerializers, attributes)
 {
     [Fact]
     public void CanAppendDataToBlock()
     {
-        var block = new AppendableBlock(Configuration.Default);
+        var block = new AppendableNode(Configuration.Default);
         var allDatoms = TestData(10).ToArray();
         foreach (var datom in TestData(10))
         {
@@ -32,7 +32,7 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
     [Fact]
     public void CanSortBlock()
     {
-        var block = new AppendableBlock(Configuration.Default);
+        var block = new AppendableNode(Configuration.Default);
         var allDatoms = TestData(10).ToArray();
         Random.Shared.Shuffle(allDatoms);
 
@@ -64,7 +64,7 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
     {
         var datoms = TestData(10).ToArray();
 
-        var insertBlock = new AppendableBlock(Configuration.Default);
+        var insertBlock = new AppendableNode(Configuration.Default);
         var compare = new Eatv(_registry);
 
         for (var i = 0; i < datoms.Length; i++)
@@ -95,7 +95,7 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
     public void CanReadAndWriteBlocks(uint count)
     {
         var allDatoms = TestData(count).ToArray();
-        var block = new AppendableBlock(Configuration.Default);
+        var block = new AppendableNode(Configuration.Default);
         foreach (var datom in allDatoms)
         {
             block.Append(in datom);
@@ -104,7 +104,7 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
         var writer = new PooledMemoryBufferWriter();
         block.WriteTo(writer);
 
-        var block2 = new AppendableBlock(Configuration.Default);
+        var block2 = new AppendableNode(Configuration.Default);
         block2.InitializeFrom(writer.GetWrittenSpan());
 
         block2.Count.Should().Be(allDatoms.Length);
@@ -122,7 +122,7 @@ public class AppendableBlockTests(IEnumerable<IValueSerializer> valueSerializers
     public void CanSeekToDatom()
     {
         var compare = new Eatv(_registry);
-        var block = new AppendableBlock(Configuration.Default);
+        var block = new AppendableNode(Configuration.Default);
         var allDatoms = TestData(10).ToArray();
         foreach (var datom in allDatoms)
         {

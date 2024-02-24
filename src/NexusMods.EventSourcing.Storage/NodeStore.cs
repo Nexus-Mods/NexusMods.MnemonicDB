@@ -13,23 +13,23 @@ public class NodeStore(IKvStore kvStore, Configuration configuration)
         return node switch
         {
             ReferenceNode referenceNode => referenceNode,
-            AppendableBlock appendableBlock => Flush(appendableBlock),
+            AppendableNode appendableBlock => Flush(appendableBlock),
             _ => throw new NotImplementedException("Unknown node type. " + node.GetType().Name)
         };
     }
 
-    private ReferenceNode Flush(AppendableBlock appendableBlock)
+    private ReferenceNode Flush(AppendableNode appendableNode)
     {
         var writer = new PooledMemoryBufferWriter();
-        appendableBlock.WriteTo(writer);
+        appendableNode.WriteTo(writer);
         var key = Guid.NewGuid().ToUInt128Guid();
         kvStore.Put(key, writer.GetWrittenSpan());
         return new ReferenceNode(this)
         {
             Id = key,
-            Count = appendableBlock.Count,
-            ChildCount = appendableBlock.Count,
-            LastDatom = OnHeapDatom.Create(appendableBlock.LastDatom)
+            Count = appendableNode.Count,
+            ChildCount = appendableNode.Count,
+            LastDatom = OnHeapDatom.Create(appendableNode.LastDatom)
         };
     }
 
@@ -40,7 +40,7 @@ public class NodeStore(IKvStore kvStore, Configuration configuration)
             throw new InvalidOperationException("Node not found");
         }
 
-        var loaded = new AppendableBlock(configuration);
+        var loaded = new AppendableNode(configuration);
         loaded.InitializeFrom(value);
         return loaded;
     }

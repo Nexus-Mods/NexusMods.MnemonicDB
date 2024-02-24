@@ -3,7 +3,7 @@
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
 [StructLayout(LayoutKind.Explicit)]
-public unsafe struct BlockHeader
+public unsafe struct DataNodeHeader
 {
     /// <summary>
     /// The version of the block.

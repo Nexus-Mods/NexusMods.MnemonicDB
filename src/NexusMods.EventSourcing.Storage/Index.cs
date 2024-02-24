@@ -17,7 +17,7 @@ public class Index<TComparator> where TComparator : IDatomComparator
     {
         _configuration = configuration;
         _comparator = comparator;
-        _topBlock = new AppendableBlock(configuration);
+        _topBlock = new AppendableNode(configuration);
     }
 
     public void Ingest<TIterator, TDatom>(in TIterator other)

@@ -1,7 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Buffers;
+using System.Buffers.Binary;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Datoms;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
@@ -30,6 +35,43 @@ public class IndexNode : INode
         {
             a, b
         };
+    }
+
+    public void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
+    {
+        var span = writer.GetSpan(4);
+        BinaryPrimitives.WriteUInt16BigEndian(span, (ushort)NodeVersions.IndexNode);
+        BinaryPrimitives.WriteUInt16BigEndian(span.SliceFast(2), (ushort)_children.Count);
+        writer.Advance(4);
+
+        var entityIds = new List<ulong>();
+        var attributeIds = new List<ushort>();
+        var txIds = new List<ulong>();
+        var flags = new List<DatomFlags>();
+        var valueLiterals = new List<ulong>();
+        var refIds = new List<UInt128>();
+        var counts = new List<int>();
+        var childCounts = new List<int>();
+
+        var valueBlob = new PooledMemoryBufferWriter(8);
+
+        foreach (var child in _children)
+        {
+            var reference = child as ReferenceNode;
+            Debug.Assert(reference != null, "All children of an index node should be reference nodes before writing to disk.");
+
+            entityIds.Add(reference.LastDatom.EntityId);
+            attributeIds.Add(reference.LastDatom.AttributeId);
+            txIds.Add(reference.LastDatom.TxId);
+            flags.Add(reference.LastDatom.Flags);
+            valueLiterals.Add(reference.LastDatom.ValueLiteral);
+            refIds.Add(reference.Id);
+            counts.Add(reference.Count);
+            childCounts.Add(reference.ChildCount);
+
+
+        }
+
     }
 
     private void InsertNode(INode node, int index)
