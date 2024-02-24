@@ -185,12 +185,17 @@ public class AppendableNode(Configuration config) : INode,
     public void InitializeFrom(ReadOnlySpan<byte> span)
     {
         // Casts and copies the data from the span into the list
-        void CopyToList<TValue>(List<TValue> list, ReadOnlySpan<byte> fromSpan, int count)
+        ReadOnlySpan<byte> CopyToList<TValue>(List<TValue> list, ReadOnlySpan<byte> fromSpan, uint count)
             where TValue : struct
         {
-            var listSpan = MemoryMarshal.Cast<byte, TValue>(fromSpan).SliceFast(0, count);
-            list.Clear();
-            list.AddRange(listSpan);
+            unsafe
+            {
+                var readSize = sizeof(TValue) * count;
+                var listSpan = MemoryMarshal.Cast<byte, TValue>(fromSpan).SliceFast(0, (int)count);
+                list.Clear();
+                list.AddRange(listSpan);
+                return fromSpan.SliceFast((int)readSize);
+            }
         }
 
         unsafe
@@ -198,22 +203,13 @@ public class AppendableNode(Configuration config) : INode,
             var header = MemoryMarshal.Read<DataNodeHeader>(span);
             var dataSection = span.SliceFast(sizeof(DataNodeHeader));
 
-            CopyToList(_entityIds, dataSection, (int)header._datomCount);
+            dataSection =
+                dataSection.CopyToLists(_entityIds, _attributeIds, _txIds,
+                    _flags, _values, header._datomCount);
 
-            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(ulong));
-            CopyToList(_attributeIds, dataSection, (int)header._datomCount);
-
-            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(ushort));
-            CopyToList(_txIds, dataSection, (int)header._datomCount);
-
-            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(ulong));
-            CopyToList(_flags, dataSection, (int)header._datomCount);
-
-            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(byte));
-            CopyToList(_values, dataSection, (int)header._datomCount);
-
-            dataSection = dataSection.SliceFast((int)header._datomCount * sizeof(ulong), (int)header._blobSize);
-            _pooledMemoryBufferWriter.Write(dataSection);
+            var blobSpan = _pooledMemoryBufferWriter.GetSpan((int)header._blobSize);
+            dataSection.SliceFast(0, (int)header._blobSize).CopyTo(blobSpan);
+            _pooledMemoryBufferWriter.Advance((int)header._blobSize);
         }
     }
 

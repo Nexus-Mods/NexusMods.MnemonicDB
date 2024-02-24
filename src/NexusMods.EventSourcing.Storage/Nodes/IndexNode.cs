@@ -59,19 +59,40 @@ public class IndexNode : INode
         {
             var reference = child as ReferenceNode;
             Debug.Assert(reference != null, "All children of an index node should be reference nodes before writing to disk.");
-
             entityIds.Add(reference.LastDatom.EntityId);
             attributeIds.Add(reference.LastDatom.AttributeId);
             txIds.Add(reference.LastDatom.TxId);
             flags.Add(reference.LastDatom.Flags);
-            valueLiterals.Add(reference.LastDatom.ValueLiteral);
+
+            var flag = reference.LastDatom.Flags;
+            if (flag.HasFlag(DatomFlags.InlinedData))
+            {
+                valueLiterals.Add(reference.LastDatom.ValueLiteral);
+            }
+            else
+            {
+                var offset = valueBlob.GetWrittenSpan().Length;
+                var valueSpan = valueBlob.GetSpan(reference.LastDatom.ValueSpan.Length);
+                reference.LastDatom.ValueSpan.CopyTo(valueSpan);
+                valueBlob.Advance(reference.LastDatom.ValueSpan.Length);
+                valueLiterals.Add((ulong)offset << 32 | (uint)reference.LastDatom.ValueSpan.Length);
+            }
+
             refIds.Add(reference.Id);
             counts.Add(reference.Count);
             childCounts.Add(reference.ChildCount);
-
-
         }
 
+        writer.WriteList(entityIds);
+        writer.WriteList(attributeIds);
+        writer.WriteList(txIds);
+        writer.WriteList(flags);
+        writer.WriteList(valueLiterals);
+        writer.WriteList(refIds);
+        writer.WriteList(counts);
+        writer.WriteList(childCounts);
+
+        writer.Write(valueBlob.GetWrittenSpan());
     }
 
     private void InsertNode(INode node, int index)
@@ -182,7 +203,7 @@ public class IndexNode : INode
     public int Count => _children.Sum(c => c.Count);
     public int ChildCount => _children.Count;
 
-    public IRawDatom LastDatom => throw new System.NotImplementedException();
+    public IRawDatom LastDatom => _children[^1].LastDatom;
 
     public (INode, INode) Split()
     {
@@ -229,5 +250,6 @@ public class IndexNode : INode
         }
 
         return this;
+        return store.Flush(this);
     }
 }

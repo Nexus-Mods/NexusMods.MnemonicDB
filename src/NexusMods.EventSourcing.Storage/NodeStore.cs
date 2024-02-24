@@ -14,6 +14,7 @@ public class NodeStore(IKvStore kvStore, Configuration configuration)
         {
             ReferenceNode referenceNode => referenceNode,
             AppendableNode appendableBlock => Flush(appendableBlock),
+            IndexNode indexNode => Flush(indexNode),
             _ => throw new NotImplementedException("Unknown node type. " + node.GetType().Name)
         };
     }
@@ -30,6 +31,21 @@ public class NodeStore(IKvStore kvStore, Configuration configuration)
             Count = appendableNode.Count,
             ChildCount = appendableNode.Count,
             LastDatom = OnHeapDatom.Create(appendableNode.LastDatom)
+        };
+    }
+
+    private ReferenceNode Flush(IndexNode indexNode)
+    {
+        var writer = new PooledMemoryBufferWriter();
+        indexNode.WriteTo(writer);
+        var key = Guid.NewGuid().ToUInt128Guid();
+        kvStore.Put(key, writer.GetWrittenSpan());
+        return new ReferenceNode(this)
+        {
+            Id = key,
+            Count = indexNode.Count,
+            ChildCount = indexNode.ChildCount,
+            LastDatom = OnHeapDatom.Create(indexNode.LastDatom)
         };
     }
 
