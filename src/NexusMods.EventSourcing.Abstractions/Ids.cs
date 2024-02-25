@@ -1,4 +1,6 @@
-﻿namespace NexusMods.EventSourcing.Abstractions;
+﻿using System;
+
+namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// A lot of ids in this system are 64 bit unsigned integers. This class provides a way to partition those ids
@@ -30,10 +32,14 @@ public static class Ids
         /// </summary>
         Tmp = 3,
         /// <summary>
-        /// Not used yet
+        /// Blocks of transactions are stored in the TX log prefixed with this partition,
+        /// the rest of the int matches the transaction id
         /// </summary>
-        Unknown = 4
-
+        TxLog = 4,
+        /// <summary>
+        /// Blocks of data written to disk for the current index use this partition
+        /// </summary>
+        Index = 5,
     }
 
     /// <summary>
@@ -42,7 +48,7 @@ public static class Ids
     /// <param name="partition"></param>
     /// <param name="id"></param>
     /// <returns></returns>
-    private static ulong MakeId(Partition partition, ulong id)
+    public static ulong MakeId(Partition partition, ulong id)
     {
         return ((ulong)partition << 56) | (id & 0x00FFFFFFFFFFFFFF);
     }
@@ -80,7 +86,9 @@ public static class Ids
             1 => Partition.Tx,
             2 => Partition.Entity,
             3 => Partition.Tmp,
-            _ => Partition.Unknown,
+            4 => Partition.TxLog,
+            5 => Partition.Index,
+            _ => throw new ArgumentOutOfRangeException(nameof(id), "Unknown partition")
         };
     }
 

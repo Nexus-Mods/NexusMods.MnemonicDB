@@ -1,12 +1,13 @@
 ﻿using System.Collections;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Datoms;
 using NexusMods.EventSourcing.Storage.Nodes;
 using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage.Tests;
 
-public class AppendableNodeTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
-    : AStorageTest(valueSerializers, attributes)
+public class AppendableNodeTests(IServiceProvider provider, IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
+    : AStorageTest(provider, valueSerializers, attributes)
 {
     [Fact]
     public void CanAppendDataToBlock()
@@ -29,8 +30,52 @@ public class AppendableNodeTests(IEnumerable<IValueSerializer> valueSerializers,
         }
     }
 
-    [Fact]
-    public void CanSortBlock()
+    [Theory]
+    [InlineData(SortOrders.EATV)]
+    [InlineData(SortOrders.AETV)]
+    public void CanMergeBlock(SortOrders orders)
+    {
+        var block = new AppendableNode(Configuration.Default);
+        var allDatoms = TestData(10).ToArray();
+
+        Random.Shared.Shuffle(allDatoms);
+
+        var block2 = new AppendableNode(Configuration.Default);
+
+        var half = allDatoms.Length / 2;
+        for (var i = 0; i < half; i++)
+        {
+            block.Append(in allDatoms[i]);
+        }
+
+        for (var i = half; i < allDatoms.Length; i++)
+        {
+            block2.Append(in allDatoms[i]);
+        }
+
+        var compare = IDatomComparator.Create(orders, _registry);
+        block.Sort(compare);
+        block2.Sort(compare);
+
+        block.Ingest<AppendableNode.FlyweightIterator, AppendableNode.FlyweightRawDatom, OnHeapDatom, IDatomComparator>(block2.Iterate(), OnHeapDatom.Max, compare);
+
+        block.Count.Should().Be(allDatoms.Length);
+
+        var sorted = allDatoms.Order(CreateComparer(compare))
+            .ToArray();
+
+        for (var i = 0; i < allDatoms.Length; i++)
+        {
+            var datomA = block[i];
+            var datomB = sorted[i];
+            AssertEqual(datomA, datomB, i);
+        }
+    }
+
+    [Theory]
+    [InlineData(SortOrders.EATV)]
+    [InlineData(SortOrders.AETV)]
+    public void CanSortBlock(SortOrders order)
     {
         var block = new AppendableNode(Configuration.Default);
         var allDatoms = TestData(10).ToArray();
@@ -41,12 +86,10 @@ public class AppendableNodeTests(IEnumerable<IValueSerializer> valueSerializers,
             block.Append(in datom);
         }
 
-        block.Sort(new Eatv(_registry));
+        var compare = IDatomComparator.Create(order, _registry);
+        block.Sort(compare);
 
-        var sorted = allDatoms.OrderBy(d => d.EntityId)
-            .ThenBy(d => d.AttributeId)
-            .ThenBy(d => d.TxId)
-            .ThenBy(d => d.ValueLiteral)
+        var sorted = allDatoms.Order(CreateComparer(compare))
             .ToArray();
 
         block.Count.Should().Be(allDatoms.Length);
@@ -59,13 +102,16 @@ public class AppendableNodeTests(IEnumerable<IValueSerializer> valueSerializers,
         }
     }
 
-    [Fact]
-    public void InsertingMaintainsOrder()
+    [Theory]
+    [InlineData(SortOrders.EATV)]
+    [InlineData(SortOrders.AETV)]
+    public void InsertingMaintainsOrder(SortOrders order)
     {
-        var datoms = TestData(10).ToArray();
+        var compare = IDatomComparator.Create(order, _registry);
+        var datoms = TestData(10)
+            .ToArray();
 
         var insertBlock = new AppendableNode(Configuration.Default);
-        var compare = new Eatv(_registry);
 
         for (var i = 0; i < datoms.Length; i++)
         {
@@ -121,7 +167,7 @@ public class AppendableNodeTests(IEnumerable<IValueSerializer> valueSerializers,
     [Fact]
     public void CanSeekToDatom()
     {
-        var compare = new Eatv(_registry);
+        var compare = new EATV(_registry);
         var block = new AppendableNode(Configuration.Default);
         var allDatoms = TestData(10).ToArray();
         foreach (var datom in allDatoms)

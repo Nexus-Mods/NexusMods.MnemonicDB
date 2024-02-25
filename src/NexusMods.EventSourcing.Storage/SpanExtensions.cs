@@ -99,8 +99,18 @@ public static class SpanExtensions
             MemoryMarshal.Cast<TItem, byte>(CollectionsMarshal.AsSpan(lst).SliceFast(0, lst.Count))
                 .CopyTo(span);
             writer.Advance(size);
-
         }
+    }
 
+    public static ReadOnlySpan<byte> ReadNewList<T>(this ReadOnlySpan<byte> src, out List<T> list, uint count)
+        where T : struct
+    {
+        unsafe
+        {
+            list = new List<T>();
+            var span = src.SliceFast(0, (int)count * sizeof(T));
+            list.AddRange(MemoryMarshal.Cast<byte, T>(span));
+            return src.SliceFast((int)count * sizeof(T));
+        }
     }
 }

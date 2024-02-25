@@ -7,15 +7,15 @@ namespace NexusMods.EventSourcing.Storage.Tests;
 
 using DatomLiteral = Tuple<ulong, ushort, ulong, ulong>;
 
-public class ComparatorTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
-    : AStorageTest(valueSerializers, attributes)
+public class ComparatorTests(IServiceProvider provider, IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
+    : AStorageTest(provider, valueSerializers, attributes)
 {
 
     [Theory]
     [MethodData(nameof(ComparisonTestData))]
     public void EATVTests(IRawDatom a, IRawDatom b, int result)
     {
-        var compare = new Eatv(_registry);
+        var compare = new EATV(_registry);
         compare.Compare(in a, in b).Should().Be(result, "comparison should match expected result");
         compare.Compare(in b, in a).Should().Be(-result, "comparison should be symmetric");
     }

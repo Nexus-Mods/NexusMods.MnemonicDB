@@ -1,8 +1,7 @@
 ﻿namespace NexusMods.EventSourcing.Storage;
 
-public enum SortType
+public enum SortOrders
 {
     EATV,
-    AVTE,
-    TxLog,
+    AETV,
 }

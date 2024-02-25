@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using K4os.Compression.LZ4;
 using K4os.Compression.LZ4.Encoders;
+using NexusMods.EventSourcing.Storage.ValueTypes;
 
 namespace NexusMods.EventSourcing.Storage;
 
@@ -11,16 +12,16 @@ namespace NexusMods.EventSourcing.Storage;
 /// </summary>
 public class InMemoryKvStore : IKvStore
 {
-    private readonly ConcurrentDictionary<UInt128, (int, Memory<byte>)> _store = new();
+    private readonly ConcurrentDictionary<StoreKey, (int, Memory<byte>)> _store = new();
 
     public int Size => _store.Values.Sum(v => v.Item2.Length);
 
-    public void Put(UInt128 key, ReadOnlySpan<byte> value)
+    public void Put(StoreKey key, ReadOnlySpan<byte> value)
     {
         _store[key] = (value.Length, value.ToArray());
     }
 
-    public bool TryGet(UInt128 key, out ReadOnlySpan<byte> value)
+    public bool TryGet(StoreKey key, out ReadOnlySpan<byte> value)
     {
         if (_store.TryGetValue(key, out var memory))
         {
@@ -32,7 +33,7 @@ public class InMemoryKvStore : IKvStore
         return false;
     }
 
-    public void Delete(UInt128 key)
+    public void Delete(StoreKey key)
     {
         _store.TryRemove(key, out _);
     }

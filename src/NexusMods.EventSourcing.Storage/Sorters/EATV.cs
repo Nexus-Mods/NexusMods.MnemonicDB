@@ -2,7 +2,7 @@
 
 namespace NexusMods.EventSourcing.Storage.Sorters;
 
-public class Eatv(AttributeRegistry registry) : IDatomComparator
+public class EATV(AttributeRegistry registry) : IDatomComparator
 {
     public int Compare<TDatomA, TDatomB>(in TDatomA x, in TDatomB y)
         where TDatomA : IRawDatom

@@ -1,4 +1,6 @@
-﻿using NexusMods.EventSourcing.Abstractions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Datoms;
 using NexusMods.EventSourcing.Storage.Serializers;
 
@@ -10,7 +12,7 @@ public class AStorageTest
     protected readonly NodeStore NodeStore;
     private readonly InMemoryKvStore _kvStore;
 
-    public AStorageTest(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
+    public AStorageTest(IServiceProvider provider, IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
     {
         _registry = new AttributeRegistry(valueSerializers, attributes);
         _registry.Populate([
@@ -18,7 +20,7 @@ public class AStorageTest
             new DbAttribute(Symbol.Intern<TestAttributes.FileName>(), 11, Symbol.Intern<StringSerializer>())
         ]);
         _kvStore = new InMemoryKvStore();
-        NodeStore = new NodeStore(_kvStore, Configuration.Default);
+        NodeStore = new NodeStore(provider.GetRequiredService<ILogger<NodeStore>>(), _kvStore, Configuration.Default);
     }
 
 

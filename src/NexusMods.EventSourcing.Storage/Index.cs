@@ -13,7 +13,7 @@ public class Index<TComparator> where TComparator : IDatomComparator
     private readonly TComparator _comparator;
     private readonly Configuration _configuration;
 
-    public Index(TComparator comparator, AttributeRegistry registry, IndexType indexType, Configuration configuration)
+    public Index(TComparator comparator, AttributeRegistry registry, SortType indexType, Configuration configuration)
     {
         _configuration = configuration;
         _comparator = comparator;

@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Datoms;
+using NexusMods.EventSourcing.Storage.ValueTypes;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
@@ -12,7 +13,7 @@ namespace NexusMods.EventSourcing.Storage.Nodes;
 /// </summary>
 public class ReferenceNode(NodeStore store) : INode
 {
-    public required UInt128 Id { get; init; }
+    public required StoreKey Id { get; init; }
     private INode? _node;
 
     private INode Deref()

@@ -1,12 +1,38 @@
 ﻿using System;
+using System.Runtime.InteropServices;
+using System.Threading;
+using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Datoms;
 using NexusMods.EventSourcing.Storage.Nodes;
+using NexusMods.EventSourcing.Storage.ValueTypes;
 
 namespace NexusMods.EventSourcing.Storage;
 
-public class NodeStore(IKvStore kvStore, Configuration configuration)
+public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, Configuration configuration)
 {
+    private ulong _txLogId = Ids.MinId(Ids.Partition.TxLog);
+    private ulong _nextBlockId = Ids.MinId(Ids.Partition.Index);
+
+    /// <summary>
+    /// Writes the node to the store as the txLog block, returns the next txId
+    /// </summary>
+    /// <param name="node"></param>
+    /// <returns></returns>
+    public TxId LogTx(AppendableNode node)
+    {
+        var thisTx = ++_txLogId;
+        Interlocked.Exchange(ref _nextBlockId, Ids.MakeId(Ids.Partition.Index, thisTx << 16));
+        _nextBlockId = Ids.MakeId(Ids.Partition.Index, thisTx << 16);
+        var logId = Ids.MakeId(Ids.Partition.TxLog, thisTx);
+        Flush(StoreKey.From(logId), node);
+        return TxId.From(logId);
+    }
+
+    private StoreKey NextBlockId()
+    {
+        return StoreKey.From(Interlocked.Increment(ref _nextBlockId));
+    }
 
     public ReferenceNode Flush(INode node)
     {
@@ -21,13 +47,22 @@ public class NodeStore(IKvStore kvStore, Configuration configuration)
 
     private ReferenceNode Flush(AppendableNode appendableNode)
     {
+        return Flush(NextBlockId(), appendableNode);
+    }
+
+    private ReferenceNode Flush(StoreKey id, AppendableNode appendableNode)
+    {
         var writer = new PooledMemoryBufferWriter();
         appendableNode.WriteTo(writer);
-        var key = Guid.NewGuid().ToUInt128Guid();
-        kvStore.Put(key, writer.GetWrittenSpan());
+        var writtenSpan = writer.GetWrittenSpan();
+
+
+        logger.LogDebug("Flushing index node {Key} with {Count} children of size {Size}", id, appendableNode.ChildCount, writtenSpan.Length);
+
+        kvStore.Put(id, writtenSpan);
         return new ReferenceNode(this)
         {
-            Id = key,
+            Id = id,
             Count = appendableNode.Count,
             ChildCount = appendableNode.Count,
             LastDatom = OnHeapDatom.Create(appendableNode.LastDatom)
@@ -39,25 +74,50 @@ public class NodeStore(IKvStore kvStore, Configuration configuration)
         var writer = new PooledMemoryBufferWriter();
         indexNode.WriteTo(writer);
         var key = Guid.NewGuid().ToUInt128Guid();
-        kvStore.Put(key, writer.GetWrittenSpan());
+
+        var writtenSpan = writer.GetWrittenSpan();
+
+        logger.LogDebug("Flushing index node {Key} with {Count} children of size {Size}", key, indexNode.ChildCount, writtenSpan.Length);
+
+
+        var id = NextBlockId();
+        kvStore.Put(id, writtenSpan);
         return new ReferenceNode(this)
         {
-            Id = key,
+            Id = id,
             Count = indexNode.Count,
             ChildCount = indexNode.ChildCount,
             LastDatom = OnHeapDatom.Create(indexNode.LastDatom)
         };
     }
 
-    public INode Load(UInt128 id)
+    public INode Load(StoreKey id)
     {
         if (!kvStore.TryGet(id, out var value))
         {
             throw new InvalidOperationException("Node not found");
         }
 
-        var loaded = new AppendableNode(configuration);
-        loaded.InitializeFrom(value);
-        return loaded;
+        var valueVersion = MemoryMarshal.Read<NodeVersions>(value);
+        switch (valueVersion)
+        {
+            case NodeVersions.DataNode:
+            {
+                var loaded = new AppendableNode(configuration);
+                loaded.InitializeFrom(value);
+                logger.LogDebug("Loaded data node {Key} with {Count} children of size {Size}", id, loaded.ChildCount, value.Length);
+                return loaded;
+            }
+            case NodeVersions.IndexNode:
+            {
+                var loaded = new IndexNode(configuration);
+                loaded.InitializeFrom(this, value);
+                logger.LogDebug("Loaded index node {Key} with {Count} children of size {Size}", id, loaded.ChildCount, value.Length);
+                return loaded;
+            }
+            default:
+                throw new InvalidOperationException("Unknown node version " + valueVersion);
+        }
+
     }
 }

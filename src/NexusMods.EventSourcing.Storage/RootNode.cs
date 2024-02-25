@@ -8,8 +8,7 @@ namespace NexusMods.EventSourcing.Storage;
 
 public class RootNode(AttributeRegistry registry, Configuration configuration)
 {
-    public Index<Eatv> EatvIndex = null!;
-    public Index<Avte> AvteIndex = null!;
+    public Index<EATV> EatvIndex = null!;
     public Index<TxLog> TxLog = null!;
 
 

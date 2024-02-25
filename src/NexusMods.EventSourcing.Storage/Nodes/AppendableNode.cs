@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using Cathei.LinqGen;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Abstractions.Iterators;
-using NexusMods.EventSourcing.Storage.Datoms;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
@@ -146,7 +142,7 @@ public class AppendableNode(Configuration config) : INode,
             ref var header = ref MemoryMarshal.AsRef<DataNodeHeader>(headerSpan);
             header._datomCount = (uint)_entityIds.Count;
             header._blobSize = (uint)_pooledMemoryBufferWriter.GetWrittenSpan().Length;
-            header._version = 0x01;
+            header._version = (ushort)NodeVersions.DataNode;
             header._flags = 0x00;
             writer.Advance(sizeof(DataNodeHeader));
 

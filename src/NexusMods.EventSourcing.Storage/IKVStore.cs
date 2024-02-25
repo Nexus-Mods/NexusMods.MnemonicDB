@@ -1,4 +1,5 @@
 ﻿using System;
+using NexusMods.EventSourcing.Storage.ValueTypes;
 
 namespace NexusMods.EventSourcing.Storage;
 
@@ -7,9 +8,9 @@ namespace NexusMods.EventSourcing.Storage;
 /// </summary>
 public interface IKvStore
 {
-    public void Put(UInt128 key, ReadOnlySpan<byte> value);
+    public void Put(StoreKey key, ReadOnlySpan<byte> value);
 
-    public bool TryGet(UInt128 key, out ReadOnlySpan<byte> value);
+    public bool TryGet(StoreKey key, out ReadOnlySpan<byte> value);
 
-    public void Delete(UInt128 key);
+    public void Delete(StoreKey key);
 }

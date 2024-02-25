@@ -11,7 +11,7 @@ public unsafe struct DataNodeHeader
     [FieldOffset(0)] public ushort _version;
 
 
-    [FieldOffset(0)] public ushort _flags;
+    [FieldOffset(2)] public ushort _flags;
 
     /// <summary>
     /// The size of the block, in datoms

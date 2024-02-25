@@ -10,7 +10,7 @@ public class Startup
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddEventSourcingStorage()
-            .AddLogging(builder => builder.AddXunitOutput())
+            .AddLogging(builder => builder.AddXunitOutput().SetMinimumLevel(LogLevel.Debug))
             .AddSingleton<IKvStore, InMemoryKvStore>()
             .AddAttribute<TestAttributes.FileHash>()
             .AddAttribute<TestAttributes.FileName>();
