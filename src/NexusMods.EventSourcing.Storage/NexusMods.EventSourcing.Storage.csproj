@@ -18,6 +18,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\NexusMods.EventSourcing.Abstractions\NexusMods.EventSourcing.Abstractions.csproj" />
+      <ProjectReference Include="..\NexusMods.EventSourcing.Storage.Abstractions\NexusMods.EventSourcing.Storage.Abstractions.csproj" />
     </ItemGroup>
 
 </Project>

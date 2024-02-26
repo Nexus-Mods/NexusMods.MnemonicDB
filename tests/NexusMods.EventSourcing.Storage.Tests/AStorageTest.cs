@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Datoms;
 using NexusMods.EventSourcing.Storage.Serializers;
 
@@ -52,6 +53,15 @@ public class AStorageTest
         rawDatomA.Flags.Should().Be(datomB.Flags, "at index " + i);
         rawDatomA.ValueLiteral.Should().Be(datomB.ValueLiteral, "at index " + i);
         rawDatomA.ValueSpan.SequenceEqual(datomB.ValueSpan).Should().BeTrue("at index " + i);
+    }
+
+    protected static void AssertEqual(in Datom rawDatomA, Datom datomB, int i)
+    {
+        rawDatomA.E.Should().Be(datomB.E, "at index " + i);
+        rawDatomA.A.Should().Be(datomB.A, "at index " + i);
+        rawDatomA.T.Should().Be(datomB.T, "at index " + i);
+        rawDatomA.F.Should().Be(datomB.F, "at index " + i);
+        rawDatomA.V.Span.SequenceEqual(datomB.V.Span).Should().BeTrue("at index " + i);
     }
 
 

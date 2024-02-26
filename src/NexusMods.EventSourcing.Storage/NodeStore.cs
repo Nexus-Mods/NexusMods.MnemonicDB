@@ -19,7 +19,7 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, Configuratio
     /// </summary>
     /// <param name="node"></param>
     /// <returns></returns>
-    public TxId LogTx(AppendableNode node)
+    public TxId LogTx(OldAppendableNode node)
     {
         var thisTx = ++_txLogId;
         Interlocked.Exchange(ref _nextBlockId, Ids.MakeId(Ids.Partition.Index, thisTx << 16));
@@ -39,33 +39,33 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, Configuratio
         return node switch
         {
             ReferenceNode referenceNode => referenceNode,
-            AppendableNode appendableBlock => Flush(appendableBlock),
+            OldAppendableNode appendableBlock => Flush(appendableBlock),
             IndexNode indexNode => Flush(indexNode),
             _ => throw new NotImplementedException("Unknown node type. " + node.GetType().Name)
         };
     }
 
-    private ReferenceNode Flush(AppendableNode appendableNode)
+    private ReferenceNode Flush(OldAppendableNode oldAppendableNode)
     {
-        return Flush(NextBlockId(), appendableNode);
+        return Flush(NextBlockId(), oldAppendableNode);
     }
 
-    private ReferenceNode Flush(StoreKey id, AppendableNode appendableNode)
+    private ReferenceNode Flush(StoreKey id, OldAppendableNode oldAppendableNode)
     {
         var writer = new PooledMemoryBufferWriter();
-        appendableNode.WriteTo(writer);
+        oldAppendableNode.WriteTo(writer);
         var writtenSpan = writer.GetWrittenSpan();
 
 
-        logger.LogDebug("Flushing index node {Key} with {Count} children of size {Size}", id, appendableNode.ChildCount, writtenSpan.Length);
+        logger.LogDebug("Flushing index node {Key} with {Count} children of size {Size}", id, oldAppendableNode.ChildCount, writtenSpan.Length);
 
         kvStore.Put(id, writtenSpan);
         return new ReferenceNode(this)
         {
             Id = id,
-            Count = appendableNode.Count,
-            ChildCount = appendableNode.Count,
-            LastDatom = OnHeapDatom.Create(appendableNode.LastDatom)
+            Count = oldAppendableNode.Count,
+            ChildCount = oldAppendableNode.Count,
+            LastDatom = OnHeapDatom.Create(oldAppendableNode.LastDatom)
         };
     }
 
@@ -103,7 +103,7 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, Configuratio
         {
             case NodeVersions.DataNode:
             {
-                var loaded = new AppendableNode(configuration);
+                var loaded = new OldAppendableNode(configuration);
                 loaded.InitializeFrom(value);
                 logger.LogDebug("Loaded data node {Key} with {Count} children of size {Size}", id, loaded.ChildCount, value.Length);
                 return loaded;

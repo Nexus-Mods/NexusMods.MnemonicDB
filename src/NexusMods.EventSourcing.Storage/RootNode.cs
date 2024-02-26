@@ -16,7 +16,7 @@ public class RootNode(AttributeRegistry registry, Configuration configuration)
     public void Ingest<TRawDatom>(RootNode prev, IEnumerator<TRawDatom> datoms)
     where TRawDatom : IRawDatom
     {
-        var tmpTable = new AppendableNode(configuration);
+        var tmpTable = new OldAppendableNode(configuration);
         while(datoms.MoveNext())
         {
             tmpTable.Insert(datoms.Current, new TxLog(registry));
