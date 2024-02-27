@@ -1,4 +1,5 @@
 ﻿using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Nodes;
 
 namespace NexusMods.EventSourcing.Storage.Sorters;
 
@@ -16,5 +17,10 @@ public class AETV(AttributeRegistry registry) : IDatomComparator
         if (cmp != 0) return cmp;
 
         return registry.CompareValues(x, y);
+    }
+
+    public int Compare(in AppendableChunk chunk, int a, int b)
+    {
+        throw new System.NotImplementedException();
     }
 }

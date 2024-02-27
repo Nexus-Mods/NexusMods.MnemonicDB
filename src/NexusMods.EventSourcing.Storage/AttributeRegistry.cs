@@ -81,6 +81,7 @@ public class AttributeRegistry
         return type.Compare(a, b);
     }
 
+
     public Expression GetReadExpression(Type attributeType, Expression valueSpan, out AttributeId attributeId)
     {
         var attr = _attributesByType[attributeType];

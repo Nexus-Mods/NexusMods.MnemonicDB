@@ -114,12 +114,12 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
     private int Partition<TComparer>(TComparer comparer, int left, int right)
         where TComparer : IDatomComparator
     {
-        var pivot = this[right];
+        var pivot = right;
         var i = left - 1;
 
         for (var j = left; j < right; j++)
         {
-            if (comparer.Compare(this[j], pivot) <= 0)
+            if (comparer.Compare(this, j, pivot) <= 0)
             {
                 i++;
                 Swap(i, j);
