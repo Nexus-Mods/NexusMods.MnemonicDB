@@ -5,6 +5,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Datoms;
+using NexusMods.EventSourcing.Storage.Nodes;
 
 namespace NexusMods.EventSourcing.Storage;
 
@@ -131,5 +132,14 @@ public class AttributeRegistry
             F = typedDatom.Flags,
             V = writer.WrittenMemory
         };
+    }
+
+    public void Append<TAttribute, TValue>(AppendableChunk chunk, EntityId entityId, TxId tx, DatomFlags flags, TValue value)
+    where TAttribute : IAttribute<TValue>
+    {
+        var serializer = (IValueSerializer<TValue>)_valueSerializersByNativeType[typeof(TValue)];
+        var attr = _attributesByType[typeof(TAttribute)];
+        var dbAttr = _dbAttributesByUniqueId[attr.Id];
+        chunk.Append(entityId, dbAttr.AttrEntityId, tx, flags, serializer, value);
     }
 }

@@ -1,11 +1,9 @@
 ﻿using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Abstractions.Models;
 using NexusMods.EventSourcing.Storage.Sorters;
 using Xunit.DependencyInjection;
 
 namespace NexusMods.EventSourcing.Storage.Tests;
 
-using DatomLiteral = Tuple<ulong, ushort, ulong, ulong>;
 
 public class ComparatorTests(IServiceProvider provider, IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
     : AStorageTest(provider, valueSerializers, attributes)
@@ -40,7 +38,6 @@ public class ComparatorTests(IServiceProvider provider, IEnumerable<IValueSerial
                 {
                     for (ulong v = 0; v < 3; v++)
                     {
-
 
                         var b = emitters[a](EntityId.From(e), TxId.From(tx), v);
 

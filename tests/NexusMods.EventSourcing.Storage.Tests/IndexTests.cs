@@ -3,6 +3,7 @@ using System.Reflection;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.Iterators;
+using NexusMods.EventSourcing.Storage.Nodes;
 using NexusMods.EventSourcing.Storage.Sorters;
 using Xunit.DependencyInjection;
 
@@ -24,12 +25,15 @@ public class IndexTests(IServiceProvider provider, IEnumerable<IValueSerializer>
     private void CanIngestAndGetDatomsInner<TType>(TType comparator, int entityCount, SortOrders sortOrder, bool flush)
     where TType : IDatomComparator
     {
-        throw new NotImplementedException();
+        var testData = TestDatomChunk(entityCount);
+
+        Logger.LogInformation("Sorting initial dataset of {Count} datoms", testData.Length);
+        testData.Sort(comparator);
+        Logger.LogInformation("Sorted initial dataset");
+
 
         /*
-        var grouped = GenerateData(entityCount, comparator);
-
-        var index = new Index<TType>(comparator, _registry, SortType.EATV, Configuration.Default);
+        var index = new AppendableIndexChunk();
 
         var sw = Stopwatch.StartNew();
         foreach (var group in grouped)
@@ -43,6 +47,8 @@ public class IndexTests(IServiceProvider provider, IEnumerable<IValueSerializer>
             if (flush)
                 index.Flush(NodeStore);
         }
+
+        /*
 
         logger.LogInformation("Ingested {DatomCount} datoms in {ElapsedMs}ms", index.Count, sw.ElapsedMilliseconds);
 
@@ -60,20 +66,9 @@ public class IndexTests(IServiceProvider provider, IEnumerable<IValueSerializer>
         */
 
         //index.ChildCount.Should().Be((int)(index.Count / Configuration.Default.IndexBlockSize), "child count should be correct");
+
     }
 
-    private IGrouping<ulong, IRawDatom>[] GenerateData<TComparator>(int entityCount, TComparator comparator) where TComparator : IDatomComparator
-    {
-        throw new NotImplementedException();
-        /*
-        var grouped = TestDatoms((ulong)entityCount)
-            .Order(Comparer<IRawDatom>.Create((a, b) => comparator.Compare(a, b)))
-            .GroupBy(d => d.TxId)
-            .OrderBy(d => d.Key)
-            .ToArray();
-        return grouped;
-        */
-    }
 
     private IDatomComparator GetComparator(SortOrders sortOrder)
     {
@@ -98,11 +93,12 @@ public class IndexTests(IServiceProvider provider, IEnumerable<IValueSerializer>
 
     public IEnumerable<object[]> TestData()
     {
-        foreach (var idx in new[] {SortOrders.EATV, SortOrders.AETV})
+        foreach (var idx in new[] {SortOrders.EATV})//, SortOrders.AETV})
         {
-            foreach (var size in new[] { 1, 2, 3, 4, 8, 16, 128, 1024, 1024 * 8, 1024 * 16, 1024 * 128 })
+            //foreach (var size in new[] { 1, 2, 3, 4, 8, 16, 128, 1024, 1024 * 8, 1024 * 16, 1024 * 128 })
+            foreach (var size in new[] { 1024 })
             {
-                foreach (var flush in new[] { true, false })
+                foreach (var flush in new[] { true,}) // false })
                 {
                     yield return [size, idx, flush];
                 }

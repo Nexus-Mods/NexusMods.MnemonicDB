@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Datoms;
+using NexusMods.EventSourcing.Storage.Nodes;
 using NexusMods.EventSourcing.Storage.Serializers;
 
 namespace NexusMods.EventSourcing.Storage.Tests;
@@ -46,6 +47,29 @@ public class AStorageTest
                 }
             }
         }
+    }
+
+    public AppendableChunk TestDatomChunk(int entityCount = 100)
+    {
+        var chunk = new AppendableChunk();
+
+        var emitters = new Action<EntityId, TxId, ulong>[]
+        {
+            (e, tx, v) => _registry.Append<TestAttributes.FileHash, ulong>(chunk, e, tx, DatomFlags.Added, v),
+            (e, tx, v) => _registry.Append<TestAttributes.FileName, string>(chunk, e, tx, DatomFlags.Added, "file " + v),
+        };
+
+        for (ulong e = 0; e < (ulong)entityCount; e++)
+        {
+            for (var a = 0; a < 2; a ++)
+            {
+                for (ulong v = 0; v < 3; v++)
+                {
+                    emitters[a](EntityId.From(e), TxId.From(v), v);
+                }
+            }
+        }
+        return chunk;
     }
 
     protected static void AssertEqual(in Datom a, Datom b, int i)

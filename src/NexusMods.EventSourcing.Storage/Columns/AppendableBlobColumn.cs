@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions.Columns;
 using NexusMods.EventSourcing.Storage.Columns.PackedColumns;
@@ -38,6 +39,22 @@ public class AppendableBlobColumn : IAppendableBlobColumn
         _writer.Advance(value.Length);
         _offsets.Append((uint)offset);
         _sizes.Append((uint)value.Length);
+    }
+
+    /// <summary>
+    /// Append a value to the column, after feeding it through the given serializer
+    /// </summary>
+    /// <param name="serializer"></param>
+    /// <param name="value"></param>
+    /// <typeparam name="TValue"></typeparam>
+    public void Append<TValue>(IValueSerializer<TValue> serializer, TValue value)
+    {
+        var offset = _writer.Length;
+        serializer.Serialize(value, _writer);
+        var size = _writer.Length - offset;
+
+        _offsets.Append((uint)offset);
+        _sizes.Append((uint)size);
     }
 
     public void Swap(int idx1, int idx2)

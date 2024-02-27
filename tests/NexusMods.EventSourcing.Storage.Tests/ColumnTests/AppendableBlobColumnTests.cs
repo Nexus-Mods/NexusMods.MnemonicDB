@@ -15,7 +15,6 @@ public class AppendableBlobColumnTests
 
         for (ulong i = 0; i < 100; i++)
         {
-            var bytes = BitConverter.GetBytes(i);
             BitConverter.ToUInt64(column[(int)i].Span).Should().Be(i);
         }
     }
