@@ -17,7 +17,7 @@ public class AttributeRegistry
     private readonly Dictionary<Type,IValueSerializer> _valueSerializersByNativeType;
     private readonly Dictionary<Symbol,IAttribute> _attributesById;
     private readonly Dictionary<Type,IAttribute> _attributesByType;
-    private readonly Dictionary<ulong,DbAttribute> _dbAttributesByEntityId;
+    private readonly Dictionary<AttributeId,DbAttribute> _dbAttributesByEntityId;
     private readonly Dictionary<Symbol,DbAttribute> _dbAttributesByUniqueId;
     private readonly Dictionary<Symbol,IValueSerializer> _valueSerializersByUniqueId;
 
@@ -40,7 +40,7 @@ public class AttributeRegistry
             attr.SetSerializer(_valueSerializersByNativeType[attr.ValueType]);
         }
 
-        _dbAttributesByEntityId = new Dictionary<ulong, DbAttribute>();
+        _dbAttributesByEntityId = new Dictionary<AttributeId, DbAttribute>();
         _dbAttributesByUniqueId = new Dictionary<Symbol, DbAttribute>();
     }
 
@@ -52,26 +52,16 @@ public class AttributeRegistry
             _dbAttributesByUniqueId[attr.UniqueId] = attr;
         }
     }
-
     public void WriteValue<TWriter, TVal>(TVal val, in TWriter writer)
         where TWriter : IBufferWriter<byte>
     {
         if (!_valueSerializersByNativeType.TryGetValue(typeof(TVal), out var serializer))
             throw new InvalidOperationException($"No serializer found for type {typeof(TVal)}");
 
-        ((IValueSerializer<TVal>) serializer).Write(val, writer);
+        ((IValueSerializer<TVal>)serializer).Serialize(val, writer);
     }
 
-    public bool WriteValue<TWriter, TVal>(TVal val, in TWriter writer, out ulong inlinedValue)
-        where TWriter : IBufferWriter<byte>
-    {
-        if (!_valueSerializersByNativeType.TryGetValue(typeof(TVal), out var serializer))
-            throw new InvalidOperationException($"No serializer found for type {typeof(TVal)}");
-
-        return ((IValueSerializer<TVal>)serializer).Serialize(val, writer, out inlinedValue);
-    }
-
-    public ulong GetAttributeId<TAttr>()
+    public AttributeId GetAttributeId<TAttr>()
     where TAttr : IAttribute
     {
         if (!_attributesByType.TryGetValue(typeof(TAttr), out var attribute))
@@ -83,16 +73,14 @@ public class AttributeRegistry
         return dbAttribute.AttrEntityId;
     }
 
-    public int CompareValues<TDatomA, TDatomB>(in TDatomA a, in TDatomB b)
-    where TDatomA : IRawDatom
-    where TDatomB : IRawDatom
+    public int CompareValues(in Datom a, in Datom b)
     {
-        var attr = _dbAttributesByEntityId[a.AttributeId];
+        var attr = _dbAttributesByEntityId[a.A];
         var type = _valueSerializersByUniqueId[attr.ValueTypeId];
         return type.Compare(a, b);
     }
 
-    public Expression GetReadExpression(Type attributeType, Expression valueSpan, out ulong attributeId)
+    public Expression GetReadExpression(Type attributeType, Expression valueSpan, out AttributeId attributeId)
     {
         var attr = _attributesByType[attributeType];
         attributeId = _dbAttributesByUniqueId[attr.Id].AttrEntityId;
@@ -103,30 +91,15 @@ public class AttributeRegistry
         return Expression.Block([valueExpr], readExpression, valueExpr);
     }
 
-    public OnHeapDatom Datom<TAttribute, TValue>(ulong entity, ulong tx, TValue value, bool isAssert = true)
+    public ITypedDatom Datom<TAttribute, TValue>(EntityId entity, TxId tx, TValue value)
         where TAttribute : IAttribute<TValue>
     {
-        var writer = new ArrayBufferWriter<byte>(1);
-        DatomFlags flags = default;
-
-        if (isAssert)
-            flags |= DatomFlags.Added;
-
-        var isInlined = WriteValue(value, writer, out var inlineValue);
-
-        if (isInlined)
+        return new TypedDatom<TAttribute, TValue>
         {
-            flags |= DatomFlags.InlinedData;
-        }
-
-        return new OnHeapDatom
-        {
-            EntityId = entity,
-            AttributeId = (ushort)GetAttributeId<TAttribute>(),
-            TxId = tx,
-            Flags = flags,
-            ValueLiteral = inlineValue,
-            ValueData = isInlined ? [] : writer.WrittenSpan.ToArray()
+            E = entity,
+            V = value,
+            T = tx,
+            Flags = DatomFlags.Added
         };
     }
 }

@@ -13,7 +13,7 @@ public class ComparatorTests(IServiceProvider provider, IEnumerable<IValueSerial
 
     [Theory]
     [MethodData(nameof(ComparisonTestData))]
-    public void EATVTests(IRawDatom a, IRawDatom b, int result)
+    public void EATVTests(Datom a, Datom b, int result)
     {
         var compare = new EATV(_registry);
         compare.Compare(in a, in b).Should().Be(result, "comparison should match expected result");
@@ -23,9 +23,9 @@ public class ComparatorTests(IServiceProvider provider, IEnumerable<IValueSerial
 
     public IEnumerable<object[]> ComparisonTestData()
     {
-        IRawDatom? prev = null;
+        ITypedDatom? prev = null;
 
-        var emitters = new Func<ulong, ulong, ulong, IRawDatom>[]
+        var emitters = new Func<EntityId, TxId, ulong, ITypedDatom>[]
         {
             (e, tx, v) => Assert<TestAttributes.FileHash>(e, tx, v),
             (e, tx, v) => Assert<TestAttributes.FileName>(e, tx, "file " + v),
@@ -41,7 +41,7 @@ public class ComparatorTests(IServiceProvider provider, IEnumerable<IValueSerial
                     {
 
 
-                        var b = emitters[a](e, tx, v);
+                        var b = emitters[a](EntityId.From(e), TxId.From(tx), v);
 
                         if (prev != null)
                             yield return [prev, b, -1];

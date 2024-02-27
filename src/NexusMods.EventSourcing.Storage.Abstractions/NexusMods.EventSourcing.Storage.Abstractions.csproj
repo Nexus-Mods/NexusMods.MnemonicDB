@@ -11,4 +11,8 @@
       <ProjectReference Include="..\NexusMods.EventSourcing.Abstractions\NexusMods.EventSourcing.Abstractions.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Chunks\" />
+    </ItemGroup>
+
 </Project>

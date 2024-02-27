@@ -1,8 +1,8 @@
-﻿using System;
-using NexusMods.EventSourcing.Abstractions;
+﻿using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions.Columns;
 
-namespace NexusMods.EventSourcing.Storage.Abstractions.Chunks;
+namespace NexusMods.EventSourcing.Storage.Nodes;
 
 /// <summary>
 /// A chunk that is appendable and not yet frozen. Can be sorted
@@ -41,7 +41,7 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
         _values.Append(datom.V.Span);
     }
 
-    
+
     public int Length => _entityIds.Length;
 
     /// <summary>

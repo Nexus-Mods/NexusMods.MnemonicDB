@@ -1,7 +1,6 @@
 ﻿using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Storage.Abstractions;
-using NexusMods.EventSourcing.Storage.Abstractions.Chunks;
-using NexusMods.EventSourcing.Storage.Abstractions.Comparators;
+using NexusMods.EventSourcing.Storage.Nodes;
+using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage.Tests;
 
@@ -34,7 +33,7 @@ public class OldAppendableNodeTests(IServiceProvider provider, IEnumerable<IValu
 
     [Theory]
     [InlineData(SortOrders.EATV)]
-    //[InlineData(SortOrders.AETV)]
+    [InlineData(SortOrders.AETV)]
     public void CanSortBlock(SortOrders order)
     {
         var block = new AppendableChunk();
@@ -46,7 +45,7 @@ public class OldAppendableNodeTests(IServiceProvider provider, IEnumerable<IValu
             block.Append(in datom);
         }
 
-        var compare = new EATV();
+        var compare = new EATV(_registry);
         block.Sort(compare);
 
         var sorted = allDatoms.Order(CreateComparer(compare))
@@ -194,7 +193,7 @@ public void CanSeekToDatom()
 }
 */
 
-    public IComparer<Datom> CreateComparer(Abstractions.IDatomComparator datomComparator)
+    public IComparer<Datom> CreateComparer(IDatomComparator datomComparator)
     {
         return Comparer<Datom>.Create((a, b) => datomComparator.Compare(in a, in b));
     }
@@ -213,7 +212,7 @@ public void CanSeekToDatom()
                         A = AttributeId.From(10),
                         T = TxId.From(tx),
                         F = DatomFlags.Added,
-                        V = new[] { (byte)val }
+                        V = BitConverter.GetBytes(val)
                     };
                     //yield return Assert<TestAttributes.FileHash>(eid, tx, val);
                     //yield return Assert<TestAttributes.FileName>(eid, tx, " file " + val);

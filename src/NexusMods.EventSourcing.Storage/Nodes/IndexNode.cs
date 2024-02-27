@@ -128,6 +128,8 @@ public class IndexNode : INode
     private int FindIndex<TDatomComparator>(in TDatomComparator comparator, in IRawDatom datom)
         where TDatomComparator : IDatomComparator
     {
+        throw new NotImplementedException();
+        /*
         var start = 0;
         var end = _children.Count - 1;
 
@@ -145,6 +147,7 @@ public class IndexNode : INode
         }
 
         return start;
+        */
     }
     public int Count => _children.Sum(c => c.Count);
     public int ChildCount => _children.Count;

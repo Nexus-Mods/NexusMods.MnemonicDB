@@ -1,6 +1,7 @@
 ﻿
 using System;
 using System.Buffers;
+using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Serializers;
@@ -16,9 +17,9 @@ public class UInt64Serializer : IValueSerializer<ulong>
     public Type NativeType => typeof(ulong);
     public Symbol UniqueId { get; } = Symbol.Intern<UInt64Serializer>();
 
-    public int Compare<TDatomA, TDatomB>(in TDatomA a, in TDatomB b) where TDatomA : IRawDatom where TDatomB : IRawDatom
+    public int Compare(in Datom a, in Datom b)
     {
-        return a.ValueLiteral.CompareTo(b.ValueLiteral);
+        return a.Unmarshal<ulong>().CompareTo(b.Unmarshal<ulong>());
     }
 
     public void Write<TWriter>(ulong value, TWriter buffer) where TWriter : IBufferWriter<byte>
@@ -31,9 +32,10 @@ public class UInt64Serializer : IValueSerializer<ulong>
         throw new NotImplementedException();
     }
 
-    public bool Serialize<TWriter>(ulong value, TWriter buffer, out ulong valueLiteral) where TWriter : IBufferWriter<byte>
+    public void Serialize<TWriter>(ulong value, TWriter buffer) where TWriter : IBufferWriter<byte>
     {
-        valueLiteral = value;
-        return true;
+        var span = buffer.GetSpan(sizeof(ulong));
+        MemoryMarshal.Write(span, value);
+        buffer.Advance(sizeof(ulong));
     }
 }

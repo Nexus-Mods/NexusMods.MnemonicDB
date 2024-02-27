@@ -25,9 +25,7 @@ public interface IValueSerializer
     /// <param name="a"></param>
     /// <param name="b"></param>
     /// <returns></returns>
-    public int Compare<TDatomA, TDatomB>(in TDatomA a, in TDatomB b)
-    where TDatomA : IRawDatom
-    where TDatomB : IRawDatom;
+    public int Compare(in Datom a, in Datom b);
 }
 
 /// <summary>
@@ -57,11 +55,5 @@ public interface IValueSerializer<T> : IValueSerializer
     /// Returns true if the value is inlined, otherwise false and the inlined
     /// value contains the length of the blob written to the buffer
     /// </summary>
-    /// <param name="value"></param>
-    /// <param name="buffer"></param>
-    /// <param name="valueLiteral"></param>
-    /// <typeparam name="TWriter"></typeparam>
-    /// <returns></returns>
-    public bool Serialize<TWriter>(T value, TWriter buffer, out ulong valueLiteral)
-        where TWriter : IBufferWriter<byte>;
+    public void Serialize<TWriter>(T value, TWriter buffer) where TWriter : IBufferWriter<byte>;
 }

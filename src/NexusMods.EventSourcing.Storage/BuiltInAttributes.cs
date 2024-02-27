@@ -18,7 +18,7 @@ public static class BuiltInAttributes
     /// <summary>
     /// The database entity id of the UniqueId attribute
     /// </summary>
-    private static readonly ulong UniqueIdEntityId = 1;
+    private static readonly AttributeId UniqueIdEntityId = AttributeId.From(1);
 
     /// <summary>
     /// The unique id if the IValueSerializer used to serialize the value of the attribute.
@@ -33,7 +33,7 @@ public static class BuiltInAttributes
     /// <summary>
     /// The database entity id of the UniqueId attribute
     /// </summary>
-    private static readonly ulong ValueSerializerIdEntityId = 2;
+    private static readonly AttributeId ValueSerializerIdEntityId = AttributeId.From(2);
 
 
     /// <summary>
@@ -44,12 +44,12 @@ public static class BuiltInAttributes
         new DbAttribute(ValueSerializerIdStaticId, ValueSerializerIdEntityId, SymbolSerializer.Id),
     ];
 
-    public static readonly IDatom[] InitialDatoms = [
-        UniqueId.Assert(UniqueIdEntityId, UniqueIdStaticId),
-        ValueSerializerId.Assert(UniqueIdEntityId, SymbolSerializer.Id),
+    public static readonly ITypedDatom[] InitialDatoms = [
+        UniqueId.Assert(UniqueIdEntityId.ToEntityId(), UniqueIdStaticId),
+        ValueSerializerId.Assert(UniqueIdEntityId.ToEntityId(), SymbolSerializer.Id),
 
-        UniqueId.Assert(ValueSerializerIdEntityId, ValueSerializerIdStaticId),
-        ValueSerializerId.Assert(ValueSerializerIdEntityId, SymbolSerializer.Id),
+        UniqueId.Assert(ValueSerializerIdEntityId.ToEntityId(), ValueSerializerIdStaticId),
+        ValueSerializerId.Assert(ValueSerializerIdEntityId.ToEntityId(), SymbolSerializer.Id),
     ];
 
 }

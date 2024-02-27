@@ -22,5 +22,5 @@ public interface ICommitResult
     /// <summary>
     /// The datoms that were added to the store as a result of the transaction
     /// </summary>
-    public IEnumerable<IDatom> Datoms { get; }
+    public IEnumerable<Datom> Datoms { get; }
 }

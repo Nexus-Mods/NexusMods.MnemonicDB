@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Serializers;
@@ -8,9 +9,9 @@ public class TxIdSerializer : IValueSerializer<TxId>
 {
     public Type NativeType => typeof(TxId);
     public Symbol UniqueId { get; } = Symbol.Intern<TxIdSerializer>();
-    public int Compare<TDatomA, TDatomB>(in TDatomA a, in TDatomB b) where TDatomA : IRawDatom where TDatomB : IRawDatom
+    public int Compare(in Datom a, in Datom b)
     {
-        return a.ValueLiteral.CompareTo(b.ValueLiteral);
+        return a.Unmarshal<TxId>().CompareTo(b.Unmarshal<TxId>());
     }
 
     public void Write<TWriter>(TxId value, TWriter buffer) where TWriter : IBufferWriter<byte>
@@ -23,9 +24,10 @@ public class TxIdSerializer : IValueSerializer<TxId>
         throw new NotImplementedException();
     }
 
-    public bool Serialize<TWriter>(TxId value, TWriter buffer, out ulong valueLiteral) where TWriter : IBufferWriter<byte>
+    public void Serialize<TWriter>(TxId value, TWriter buffer) where TWriter : IBufferWriter<byte>
     {
-        valueLiteral = value.Value;
-        return true;
+        var span = buffer.GetSpan(sizeof(ulong));
+        MemoryMarshal.Write(span, value.Value);
+        buffer.Advance(sizeof(ulong));
     }
 }

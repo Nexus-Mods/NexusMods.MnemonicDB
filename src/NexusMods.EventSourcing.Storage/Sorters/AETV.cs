@@ -4,17 +4,15 @@ namespace NexusMods.EventSourcing.Storage.Sorters;
 
 public class AETV(AttributeRegistry registry) : IDatomComparator
 {
-    public int Compare<TDatomA, TDatomB>(in TDatomA x, in TDatomB y)
-        where TDatomA : IRawDatom
-        where TDatomB : IRawDatom
+    public int Compare(in Datom x, in Datom y)
     {
-        var cmp = x.AttributeId.CompareTo(y.AttributeId);
+        var cmp = x.A.CompareTo(y.A);
         if (cmp != 0) return cmp;
 
-        cmp = x.EntityId.CompareTo(y.EntityId);
+        cmp = x.E.CompareTo(y.E);
         if (cmp != 0) return cmp;
 
-        cmp = x.TxId.CompareTo(y.TxId);
+        cmp = x.T.CompareTo(y.T);
         if (cmp != 0) return cmp;
 
         return registry.CompareValues(x, y);

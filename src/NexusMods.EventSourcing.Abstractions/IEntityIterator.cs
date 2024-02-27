@@ -23,7 +23,7 @@ public interface IEntityIterator : IDisposable
     /// <summary>
     /// Gets the current datom as a distinct value.
     /// </summary>
-    public IDatom Current { get; }
+    public Datom Current { get; }
 
     /// <summary>
     /// Gets the current datom's value

@@ -13,7 +13,7 @@ public interface IDatomStore : IDisposable
     /// <summary>
     /// Transacts (adds) the given datoms into the store.
     /// </summary>
-    public TxId Transact(IEnumerable<IDatom> datoms);
+    public TxId Transact(IEnumerable<ITypedDatom> datoms);
 
     /// <summary>
     /// Returns all the most recent datoms (less than or equal to txId) with the given attribute.

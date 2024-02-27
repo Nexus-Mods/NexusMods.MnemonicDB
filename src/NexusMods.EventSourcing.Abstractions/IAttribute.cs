@@ -35,9 +35,9 @@ public interface IAttribute
     public Symbol Id { get; }
 
     /// <summary>
-    /// Reads the value from the buffer and returns all the data as a Datom
+    /// Reads typed datom from the datom
     /// </summary>
-    public IDatom Read(ulong entity, ulong tx, bool isAssert, ReadOnlySpan<byte> buffer);
+    public ITypedDatom Read(in Datom datom);
 }
 
 

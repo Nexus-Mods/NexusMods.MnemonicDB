@@ -41,65 +41,9 @@ public class DatomStore : IDatomStore
     {
         // TODO release managed resources here
     }
-
-    private struct IngestSink(PooledMemoryBufferWriter writer, AttributeRegistry registry, IEnumerator<IDatom> src, ulong txId) : IEnumerator<IngestSink>, IDatomSink, IRawDatom
+    public TxId Transact(IEnumerable<ITypedDatom> datoms)
     {
-        public void Datom<TAttr, TVal>(ulong e, TVal v, bool isAssert) where TAttr : IAttribute<TVal>
-        {
-            EntityId = e;
-            AttributeId = (ushort)registry.GetAttributeId<TAttr>();
-
-            var usesLiteral = registry.WriteValue(v, writer, out var literal);
-
-            ValueLiteral = usesLiteral ? literal : 0;
-
-            Flags = 0;
-            if (isAssert) Flags |= DatomFlags.Added;
-            if (usesLiteral) Flags |= DatomFlags.InlinedData;
-        }
-
-        public void Dispose()
-        {
-            writer.Reset();
-        }
-
-        public bool MoveNext()
-        {
-            writer.Reset();
-
-            if (!src.MoveNext())
-                return false;
-
-            src.Current.Emit(ref this);
-            return true;
-        }
-
-        public void Reset()
-        {
-            throw new NotImplementedException();
-        }
-
-        public IngestSink Current => this;
-
-        object IEnumerator.Current => Current;
-
-        public ulong EntityId { get; set; }
-        public ushort AttributeId { get; set; }
-        public ulong TxId => txId;
-        public DatomFlags Flags { get; set; }
-        public ReadOnlySpan<byte> ValueSpan => writer.GetWrittenSpan();
-        public ulong ValueLiteral { get; set; }
-    }
-
-    public TxId Transact(IEnumerable<IDatom> datoms)
-    {
-        lock(this)
-        {
-            _txId += 1;
-            var sink = new IngestSink(_pooledWriter, _registry, datoms.GetEnumerator(), _txId);
-            _rootNode.Ingest(_rootNode, sink);
-            return TxId.From(_txId);
-        }
+        throw new NotImplementedException();
     }
 
     public IIterator<IRawDatom> Where<TAttr>(TxId txId) where TAttr : IAttribute

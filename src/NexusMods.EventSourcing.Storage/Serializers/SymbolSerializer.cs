@@ -8,37 +8,16 @@ namespace NexusMods.EventSourcing.Storage.Serializers;
 
 public class SymbolSerializer : IValueSerializer<Symbol>
 {
+    private static readonly Encoding _encoding = Encoding.UTF8;
     public Type NativeType => typeof(Symbol);
     public Symbol UniqueId => Id;
 
     public static Symbol Id { get; } = Symbol.Intern<SymbolSerializer>();
 
-    public int Compare<TDatomA, TDatomB>(in TDatomA a, in TDatomB b)
-        where TDatomA : IRawDatom where TDatomB : IRawDatom
+    public int Compare(in Datom a, in Datom b)
     {
-        Span<byte> tmp = stackalloc byte[8];
-        string aStr, bStr;
-        if (a.Flags.HasFlag(DatomFlags.InlinedData))
-        {
-            BinaryPrimitives.WriteUInt64BigEndian(tmp, a.ValueLiteral);
-            aStr = Encoding.UTF8.GetString(tmp);
-        }
-        else
-        {
-            aStr = Encoding.UTF8.GetString(a.ValueSpan);
-        }
-
-        if (b.Flags.HasFlag(DatomFlags.InlinedData))
-        {
-            BinaryPrimitives.WriteUInt64BigEndian(tmp, b.ValueLiteral);
-            bStr = Encoding.UTF8.GetString(tmp);
-        }
-        else
-        {
-            bStr = Encoding.UTF8.GetString(b.ValueSpan);
-        }
-
-        return string.Compare(aStr, bStr, StringComparison.Ordinal);
+        // TODO: This can likely be vectorized so it keeps the strings in their original locations
+        return string.Compare(_encoding.GetString(a.V.Span), _encoding.GetString(b.V.Span), StringComparison.Ordinal);
     }
 
     public void Write<TWriter>(Symbol value, TWriter buffer) where TWriter : IBufferWriter<byte>
@@ -51,22 +30,12 @@ public class SymbolSerializer : IValueSerializer<Symbol>
         throw new NotImplementedException();
     }
 
-    public bool Serialize<TWriter>(Symbol value, TWriter buffer, out ulong valueLiteral) where TWriter : IBufferWriter<byte>
+    public void Serialize<TWriter>(Symbol value, TWriter buffer) where TWriter : IBufferWriter<byte>
     {
-        var count = Encoding.UTF8.GetByteCount(value.Id);
-        // Strings of 8 bytes or less can be inlined
-        if (count <= 8)
-        {
-            Span<byte> stackSpan = stackalloc byte[8];
-            Encoding.UTF8.GetBytes(value.Id, stackSpan);
-            valueLiteral = BitConverter.ToUInt64(stackSpan);
-            return true;
-        }
-
-        var span = buffer.GetSpan(count);
-        var bytesWritten = Encoding.UTF8.GetBytes(value.Id, span);
-        buffer.Advance(bytesWritten);
-        valueLiteral = (ulong)bytesWritten;
-        return false;
+        // TODO: No reason to walk the string twice, we should do this in one pass
+        var bytes = _encoding.GetByteCount(value.Id);
+        var span = buffer.GetSpan(bytes);
+        _encoding.GetBytes(value.Id, span);
+        buffer.Advance(bytes);
     }
 }

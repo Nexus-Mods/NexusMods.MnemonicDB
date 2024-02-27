@@ -24,7 +24,9 @@ public class IndexTests(IServiceProvider provider, IEnumerable<IValueSerializer>
     private void CanIngestAndGetDatomsInner<TType>(TType comparator, int entityCount, SortOrders sortOrder, bool flush)
     where TType : IDatomComparator
     {
+        throw new NotImplementedException();
 
+        /*
         var grouped = GenerateData(entityCount, comparator);
 
         var index = new Index<TType>(comparator, _registry, SortType.EATV, Configuration.Default);
@@ -55,18 +57,22 @@ public class IndexTests(IServiceProvider provider, IEnumerable<IValueSerializer>
         }
 
         index.Count.Should().Be(grouped.Sum(g => g.Count()), "all datoms should be ingested");
+        */
 
         //index.ChildCount.Should().Be((int)(index.Count / Configuration.Default.IndexBlockSize), "child count should be correct");
     }
 
     private IGrouping<ulong, IRawDatom>[] GenerateData<TComparator>(int entityCount, TComparator comparator) where TComparator : IDatomComparator
     {
+        throw new NotImplementedException();
+        /*
         var grouped = TestDatoms((ulong)entityCount)
             .Order(Comparer<IRawDatom>.Create((a, b) => comparator.Compare(a, b)))
             .GroupBy(d => d.TxId)
             .OrderBy(d => d.Key)
             .ToArray();
         return grouped;
+        */
     }
 
     private IDatomComparator GetComparator(SortOrders sortOrder)
@@ -78,13 +84,16 @@ public class IndexTests(IServiceProvider provider, IEnumerable<IValueSerializer>
             _ => throw new ArgumentOutOfRangeException(nameof(sortOrder), sortOrder, null)
         };
     }
-    private IRawDatom[] SortTestData(SortOrders sortOrder, IGrouping<ulong, IRawDatom>[] grouped)
+    private IRawDatom[] SortTestData(SortOrders sortOrder, IGrouping<ulong, ITypedDatom>[] grouped)
     {
+        throw new NotImplementedException();
+        /*
         var comparator = GetComparator(sortOrder);
         var allSorted = grouped.SelectMany(g => g)
-            .Order(Comparer<IRawDatom>.Create((a, b) => comparator.Compare(a, b)))
+            .Order(Comparer<ITypedDatom>.Create((a, b) => comparator.Compare(a, b)))
             .ToArray();
         return allSorted;
+        */
     }
 
     public IEnumerable<object[]> TestData()

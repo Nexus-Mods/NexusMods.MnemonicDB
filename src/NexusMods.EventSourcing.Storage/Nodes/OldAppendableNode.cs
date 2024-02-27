@@ -10,6 +10,7 @@ namespace NexusMods.EventSourcing.Storage.Nodes;
 /// <summary>
 /// An editable block of datoms that can be sorted and written to a buffer.
 /// </summary>
+/*
 public class OldAppendableNode(Configuration config) : INode,
     IIterable<OldAppendableNode.FlyweightIterator, OldAppendableNode.FlyweightRawDatom>
 {
@@ -429,3 +430,4 @@ public class OldAppendableNode(Configuration config) : INode,
         return new FlyweightIterator(this, 0);
     }
 }
+*/

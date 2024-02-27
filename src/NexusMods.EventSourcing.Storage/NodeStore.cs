@@ -19,6 +19,7 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, Configuratio
     /// </summary>
     /// <param name="node"></param>
     /// <returns></returns>
+    /*
     public TxId LogTx(OldAppendableNode node)
     {
         var thisTx = ++_txLogId;
@@ -27,7 +28,7 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, Configuratio
         var logId = Ids.MakeId(Ids.Partition.TxLog, thisTx);
         Flush(StoreKey.From(logId), node);
         return TxId.From(logId);
-    }
+    }*/
 
     private StoreKey NextBlockId()
     {
@@ -39,12 +40,13 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, Configuratio
         return node switch
         {
             ReferenceNode referenceNode => referenceNode,
-            OldAppendableNode appendableBlock => Flush(appendableBlock),
+            //OldAppendableNode appendableBlock => Flush(appendableBlock),
             IndexNode indexNode => Flush(indexNode),
             _ => throw new NotImplementedException("Unknown node type. " + node.GetType().Name)
         };
     }
 
+    /*
     private ReferenceNode Flush(OldAppendableNode oldAppendableNode)
     {
         return Flush(NextBlockId(), oldAppendableNode);
@@ -68,6 +70,7 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, Configuratio
             LastDatom = OnHeapDatom.Create(oldAppendableNode.LastDatom)
         };
     }
+    */
 
     private ReferenceNode Flush(IndexNode indexNode)
     {
@@ -101,13 +104,14 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, Configuratio
         var valueVersion = MemoryMarshal.Read<NodeVersions>(value);
         switch (valueVersion)
         {
+            /*
             case NodeVersions.DataNode:
             {
                 var loaded = new OldAppendableNode(configuration);
                 loaded.InitializeFrom(value);
                 logger.LogDebug("Loaded data node {Key} with {Count} children of size {Size}", id, loaded.ChildCount, value.Length);
                 return loaded;
-            }
+            } */
             case NodeVersions.IndexNode:
             {
                 var loaded = new IndexNode(configuration);

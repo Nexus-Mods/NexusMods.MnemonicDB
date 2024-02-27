@@ -65,16 +65,11 @@ where TAttribute : IAttribute<TValueType>
     /// <inheritdoc />
     public Symbol Id { get; }
 
-    /// <summary>
-    /// Read a datom from a buffer
-    /// </summary>
-    public IDatom Read(ulong entity, ulong tx, bool isAssert, ReadOnlySpan<byte> buffer)
+    public ITypedDatom Read(in Datom datom)
     {
-        _serializer.Read(buffer, out var val);
-        return isAssert
-            ? new AssertDatomWithTx<TAttribute, TValueType>(entity, val, TxId.From(tx))
-            : throw new NotImplementedException();
+        throw new NotImplementedException();
     }
+
 
     /// <summary>
     /// Create a new datom for an assert on this attribute, and return it
@@ -82,9 +77,15 @@ where TAttribute : IAttribute<TValueType>
     /// <param name="e"></param>
     /// <param name="v"></param>
     /// <returns></returns>
-    public static IDatom Assert(ulong e, TValueType v)
+    public static TypedDatom<TAttribute, TValueType> Assert(EntityId e, TValueType v)
     {
-        return new AssertDatom<TAttribute, TValueType>(e, v);
+        return new TypedDatom<TAttribute, TValueType>
+        {
+            E = e,
+            T = TxId.From(0),
+            V = v,
+            Flags = DatomFlags.Added,
+        };
     }
 
 }

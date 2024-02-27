@@ -17,17 +17,17 @@ public class AStorageTest
     {
         _registry = new AttributeRegistry(valueSerializers, attributes);
         _registry.Populate([
-            new DbAttribute(Symbol.Intern<TestAttributes.FileHash>(), 10, Symbol.Intern<UInt64Serializer>()),
-            new DbAttribute(Symbol.Intern<TestAttributes.FileName>(), 11, Symbol.Intern<StringSerializer>())
+            new DbAttribute(Symbol.Intern<TestAttributes.FileHash>(), AttributeId.From(10), Symbol.Intern<UInt64Serializer>()),
+            new DbAttribute(Symbol.Intern<TestAttributes.FileName>(), AttributeId.From(11), Symbol.Intern<StringSerializer>())
         ]);
         _kvStore = new InMemoryKvStore();
         NodeStore = new NodeStore(provider.GetRequiredService<ILogger<NodeStore>>(), _kvStore, Configuration.Default);
     }
 
 
-    public IEnumerable<IRawDatom> TestDatoms(ulong entityCount = 100)
+    public IEnumerable<ITypedDatom> TestDatoms(ulong entityCount = 100)
     {
-        var emitters = new Func<ulong, ulong, ulong, IRawDatom>[]
+        var emitters = new Func<EntityId, TxId, ulong, ITypedDatom>[]
         {
             (e, tx, v) => Assert<TestAttributes.FileHash>(e, tx, v),
             (e, tx, v) => Assert<TestAttributes.FileName>(e, tx, "file " + v),
@@ -39,7 +39,7 @@ public class AStorageTest
             {
                 for (ulong v = 0; v < 3; v++)
                 {
-                    yield return emitters[a](e, v, v);
+                    yield return emitters[a](EntityId.From(e), TxId.From(v), v);
                 }
             }
         }
@@ -65,13 +65,13 @@ public class AStorageTest
     }
 
 
-    protected OnHeapDatom Assert<TAttribute>(ulong e, ulong tx, ulong value)
+    protected ITypedDatom Assert<TAttribute>(EntityId e, TxId tx, ulong value)
         where TAttribute : IAttribute<ulong>
     {
         return _registry.Datom<TAttribute, ulong>(e, tx, value);
     }
 
-    protected OnHeapDatom Assert<TAttribute>(ulong e, ulong tx, string value)
+    protected ITypedDatom Assert<TAttribute>(EntityId e, TxId tx, string value)
         where TAttribute : IAttribute<string>
     {
         return _registry.Datom<TAttribute, string>(e, tx, value);
