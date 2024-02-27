@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Buffers;
+using System.Numerics;
+using NexusMods.EventSourcing.Storage.Abstractions.PackingStrategies;
 
 namespace NexusMods.EventSourcing.Storage.Abstractions.Columns;
 
 public class UnsignedIntegerColumn<T> : IAppendableColumn<T>, IUnpackedColumn<T>
+where T : unmanaged
 {
     private uint _length;
     private T[] _data;
@@ -48,9 +52,14 @@ public class UnsignedIntegerColumn<T> : IAppendableColumn<T>, IUnpackedColumn<T>
         _length = (uint)value.Length;
     }
 
-    public IPackedColumn<T> Pack()
+    public IColumn<T> Pack()
     {
-        throw new NotImplementedException();
+        return UnsignedInteger.Pack(this);
+    }
+
+    public void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
+    {
+        throw new NotSupportedException("Columns must be packed before writing to a buffer.");
     }
 
     public void Swap(int idx1, int idx2)

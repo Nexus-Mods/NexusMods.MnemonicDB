@@ -9,7 +9,7 @@ using NexusMods.EventSourcing.Storage.ValueTypes;
 
 namespace NexusMods.EventSourcing.Storage;
 
-public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, Configuration configuration)
+public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore)
 {
     private ulong _txLogId = Ids.MinId(Ids.Partition.TxLog);
     private ulong _nextBlockId = Ids.MinId(Ids.Partition.Index);
@@ -114,7 +114,7 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, Configuratio
             } */
             case NodeVersions.IndexNode:
             {
-                var loaded = new IndexNode(configuration);
+                var loaded = new IndexNode();
                 loaded.InitializeFrom(this, value);
                 logger.LogDebug("Loaded index node {Key} with {Count} children of size {Size}", id, loaded.ChildCount, value.Length);
                 return loaded;

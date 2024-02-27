@@ -1,4 +1,5 @@
-﻿using TransparentValueObjects;
+﻿using System.Numerics;
+using TransparentValueObjects;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -7,3 +8,4 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// </summary>
 [ValueObject<ulong>]
 public readonly partial struct EntityId;
+

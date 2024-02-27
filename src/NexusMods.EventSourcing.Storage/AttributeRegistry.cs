@@ -102,4 +102,34 @@ public class AttributeRegistry
             Flags = DatomFlags.Added
         };
     }
+
+    /// <summary>
+    /// Converts a typed datom to a datom, this is rather slow and should be used sparingly mostly for testing
+    /// </summary>
+    /// <param name="datom"></param>
+    /// <typeparam name="TAttribute"></typeparam>
+    /// <typeparam name="TValue"></typeparam>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
+    public Datom Datom<TAttribute, TValue>(ITypedDatom datom)
+    where TAttribute : IAttribute<TValue>
+    {
+        if (datom is not TypedDatom<TAttribute, TValue> typedDatom)
+            throw new InvalidOperationException($"Invalid datom type {datom.GetType()}");
+
+        var attrInstance = _attributesByType[typeof(TAttribute)];
+        var dbAttr = _dbAttributesByUniqueId[attrInstance.Id];
+        var serializer = (IValueSerializer<TValue>)_valueSerializersByUniqueId[dbAttr.ValueTypeId];
+        var writer = new PooledMemoryBufferWriter();
+        serializer.Serialize(typedDatom.V, writer);
+
+        return new Datom
+        {
+            E = typedDatom.E,
+            A = GetAttributeId<TAttribute>(),
+            T = typedDatom.T,
+            F = typedDatom.Flags,
+            V = writer.WrittenMemory
+        };
+    }
 }

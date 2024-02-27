@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 
 namespace NexusMods.EventSourcing.Storage.Abstractions;
 
@@ -15,4 +16,17 @@ public interface IColumn<out T>
     /// Gets the length of the column in rows.
     /// </summary>
     public int Length { get; }
+
+    /// <summary>
+    /// Packs the column into a more efficient representation.
+    /// </summary>
+    /// <returns></returns>
+    public IColumn<T> Pack();
+
+    /// <summary>
+    /// Writes the column to the specified writer.
+    /// </summary>
+    /// <param name="writer"></param>
+    /// <typeparam name="TWriter"></typeparam>
+    void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>;
 }

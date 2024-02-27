@@ -1,4 +1,5 @@
-﻿using NexusMods.EventSourcing.Abstractions;
+﻿using System.Buffers;
+using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Abstractions;
 
@@ -12,4 +13,7 @@ public interface IDataChunk
     public IBlobColumn Values { get; }
 
     public Datom this[int idx] { get; }
+
+    void WriteTo<TWriter>(TWriter writer)
+        where TWriter : IBufferWriter<byte>;
 }

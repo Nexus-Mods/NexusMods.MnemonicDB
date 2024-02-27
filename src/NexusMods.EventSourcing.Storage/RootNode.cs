@@ -6,7 +6,7 @@ using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage;
 
-public class RootNode(AttributeRegistry registry, Configuration configuration)
+public class RootNode(AttributeRegistry registry)
 {
     public Index<EATV> EatvIndex = null!;
     public Index<TxLog> TxLog = null!;

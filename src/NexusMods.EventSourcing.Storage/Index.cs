@@ -11,11 +11,9 @@ public class Index<TComparator> where TComparator : IDatomComparator
 {
     private INode _topBlock;
     private readonly TComparator _comparator;
-    private readonly Configuration _configuration;
 
-    public Index(TComparator comparator, AttributeRegistry registry, SortType indexType, Configuration configuration)
+    public Index(TComparator comparator, AttributeRegistry registry, SortType indexType)
     {
-        _configuration = configuration;
         _comparator = comparator;
         throw new NotImplementedException();
         //_topBlock = new OldAppendableNode(configuration);
@@ -26,9 +24,9 @@ public class Index<TComparator> where TComparator : IDatomComparator
         where TDatom : IRawDatom
     {
         _topBlock = _topBlock.Ingest<TIterator, TDatom, OnHeapDatom, TComparator>(in other, OnHeapDatom.Max, _comparator);
-        if (_topBlock.ChildCount > _configuration.IndexBlockSize * 2)
+        if (_topBlock.ChildCount > Configuration.IndexBlockSize * 2)
         {
-            _topBlock = new IndexNode(_topBlock, Configuration.Default);
+            _topBlock = new IndexNode(_topBlock);
         }
     }
 

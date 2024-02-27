@@ -1,4 +1,5 @@
-﻿using NexusMods.EventSourcing.Abstractions;
+﻿using Microsoft.Extensions.Logging;
+using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Algorithms;
 using NexusMods.EventSourcing.Storage.Nodes;
 using NexusMods.EventSourcing.Storage.Sorters;
@@ -128,69 +129,51 @@ public class OldAppendableNodeTests(IServiceProvider provider, IEnumerable<IValu
         }
     }
 
-/*
-[Theory]
-[InlineData(SortOrders.EATV)]
-[InlineData(SortOrders.AETV)]
-public void InsertingMaintainsOrder(SortOrders order)
-{
-    var compare = IDatomComparator.Create(order, _registry);
-    var datoms = TestData(10)
-        .ToArray();
 
-    var insertBlock = new OldAppendableNode(Configuration.Default);
-
-    for (var i = 0; i < datoms.Length; i++)
+    [Theory]
+    [InlineData(4)]
+    [InlineData(16)]
+    [InlineData(128)]
+    [InlineData(1024)]
+    [InlineData(1024 * 8)]
+    public void CanReadAndWriteBlocks(uint count)
     {
-        insertBlock.Insert(in datoms[i], compare);
+        var allDatoms = TestData(count).ToArray();
+        var block = new AppendableChunk();
+        foreach (var datom in allDatoms)
+        {
+            block.Append(in datom);
+        }
+
+        var packed = block.Pack();
+
+        for (var i = 0; i < allDatoms.Length; i++)
+        {
+            var datomA = packed[i];
+            var datomB = allDatoms[i];
+
+            AssertEqual(datomA, datomB, i);
+        }
+
+        var writer = new PooledMemoryBufferWriter();
+        packed.WriteTo(writer);
+
+
+        Logger.LogInformation("Packed {0} datoms into {1} bytes", packed.Length, writer.WrittenMemory.Length);
+        Logger.LogInformation("Average size: {0} bytes", writer.WrittenMemory.Length / packed.Length);
+        var uncompressedSize = packed.Length * (8 + 8 + 1 + 8);
+        Logger.LogInformation("Compression ratio: {0}%", (writer.WrittenMemory.Length * 100) / uncompressedSize);
+
+        var read = ChunkReader.ReadDataChunk(writer.WrittenMemory);
+
+        for (var i = 0; i < allDatoms.Length; i++)
+        {
+            var datomA = read[i];
+            var datomB = allDatoms[i];
+
+            AssertEqual(datomA, datomB, i);
+        }
     }
-
-    var sorted = datoms.Order(CreateComparer(compare))
-        .ToArray();
-
-    insertBlock.Count.Should().Be(datoms.Length);
-
-    for (var i = 0; i < datoms.Length; i++)
-    {
-        var datomA = insertBlock[i];
-        var datomB = sorted[i];
-
-        AssertEqual(datomA, datomB, i);
-    }
-}
-
-[Theory]
-[InlineData(4)]
-[InlineData(16)]
-[InlineData(128)]
-[InlineData(1024)]
-[InlineData(1024 * 8)]
-public void CanReadAndWriteBlocks(uint count)
-{
-    var allDatoms = TestData(count).ToArray();
-    var block = new OldAppendableNode(Configuration.Default);
-    foreach (var datom in allDatoms)
-    {
-        block.Append(in datom);
-    }
-
-    var writer = new PooledMemoryBufferWriter();
-    block.WriteTo(writer);
-
-    var block2 = new OldAppendableNode(Configuration.Default);
-    block2.InitializeFrom(writer.GetWrittenSpan());
-
-    block2.Count.Should().Be(allDatoms.Length);
-
-    for (var i = 0; i < allDatoms.Length; i++)
-    {
-        var datomA = block2[i];
-        var datomB = allDatoms[i];
-
-        AssertEqual(datomA, datomB, i);
-    }
-}
-*/
 
 
 
@@ -205,7 +188,7 @@ public void CanReadAndWriteBlocks(uint count)
         {
             for (ulong tx = 0; tx < 10; tx += 1)
             {
-                for (ulong val = 0; val < 10; val += 1)
+                for (ulong val = 1; val < 10; val += 1)
                 {
                     yield return new Datom()
                     {

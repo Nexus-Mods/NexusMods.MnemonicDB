@@ -16,6 +16,7 @@ public class ComparatorTests(IServiceProvider provider, IEnumerable<IValueSerial
     public void EATVTests(Datom a, Datom b, int result)
     {
         var compare = new EATV(_registry);
+
         compare.Compare(in a, in b).Should().Be(result, "comparison should match expected result");
         compare.Compare(in b, in a).Should().Be(-result, "comparison should be symmetric");
     }
@@ -23,12 +24,12 @@ public class ComparatorTests(IServiceProvider provider, IEnumerable<IValueSerial
 
     public IEnumerable<object[]> ComparisonTestData()
     {
-        ITypedDatom? prev = null;
+        Datom? prev = null;
 
-        var emitters = new Func<EntityId, TxId, ulong, ITypedDatom>[]
+        var emitters = new Func<EntityId, TxId, ulong, Datom>[]
         {
-            (e, tx, v) => Assert<TestAttributes.FileHash>(e, tx, v),
-            (e, tx, v) => Assert<TestAttributes.FileName>(e, tx, "file " + v),
+            (e, tx, v) => _registry.Datom<TestAttributes.FileHash, ulong>(Assert<TestAttributes.FileHash>(e, tx, v)),
+            (e, tx, v) => _registry.Datom<TestAttributes.FileName, string>(Assert<TestAttributes.FileName>(e, tx, "file " + v)),
         };
 
         for (ulong e = 0; e < 2; e++)

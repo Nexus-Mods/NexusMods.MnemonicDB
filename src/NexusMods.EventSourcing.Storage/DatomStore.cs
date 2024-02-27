@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq.Expressions;
-using Cathei.LinqGen;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Storage.Nodes;
-using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage;
 
@@ -33,7 +29,7 @@ public class DatomStore : IDatomStore
     /// </summary>
     private void Bootstrap()
     {
-        _rootNode = new RootNode(_registry, Configuration.Default);
+        _rootNode = new RootNode(_registry);
         Transact(BuiltInAttributes.InitialDatoms);
     }
 

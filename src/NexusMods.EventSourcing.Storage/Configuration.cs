@@ -1,9 +1,7 @@
 ﻿namespace NexusMods.EventSourcing.Storage;
 
-public class Configuration
+public static class Configuration
 {
-    public uint IndexBlockSize { get; set; } = 1024 * 2;
-    public uint DataBlockSize { get; set; } = 1024 * 8;
-
-    public static Configuration Default { get; } = new();
+    public const int IndexBlockSize = 1024 * 2;
+    public const int DataBlockSize = 1024 * 8;
 }

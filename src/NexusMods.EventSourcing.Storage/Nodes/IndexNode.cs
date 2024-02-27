@@ -15,7 +15,6 @@ namespace NexusMods.EventSourcing.Storage.Nodes;
 public class IndexNode : INode
 {
     private readonly List<INode> _children;
-    private readonly Configuration _configuration;
 
     struct Child
     {
@@ -23,15 +22,13 @@ public class IndexNode : INode
         public INode Node;
     }
 
-    public IndexNode(Configuration configuration)
+    public IndexNode()
     {
-        _configuration = configuration;
         _children = new List<INode>();
     }
 
-    public IndexNode(INode toSplit, Configuration configuration)
+    public IndexNode(INode toSplit)
     {
-        _configuration = configuration;
         var (a, b) = toSplit.Split();
         _children = new List<INode>
         {
@@ -86,7 +83,7 @@ public class IndexNode : INode
 
     private IndexNode Clone()
     {
-        var clone = new IndexNode(_configuration);
+        var clone = new IndexNode();
         clone._children.AddRange(_children);
         return clone;
     }
@@ -163,15 +160,12 @@ public class IndexNode : INode
     {
         get
         {
-            if (_children.Count > _configuration.IndexBlockSize * 2)
+            return _children.Count switch
             {
-                return SizeStates.OverSized;
-            }
-            if (_children.Count < _configuration.IndexBlockSize / 2)
-            {
-                return SizeStates.UnderSized;
-            }
-            return SizeStates.Ok;
+                > Configuration.IndexBlockSize * 2 => SizeStates.OverSized,
+                < Configuration.IndexBlockSize / 2 => SizeStates.UnderSized,
+                _ => SizeStates.Ok
+            };
         }
     }
 

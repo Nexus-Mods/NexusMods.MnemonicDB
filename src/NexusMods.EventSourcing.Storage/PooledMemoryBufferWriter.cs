@@ -42,6 +42,9 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
     /// <returns></returns>
     public ReadOnlySpan<byte> GetWrittenSpan() => _data.Span.SliceFast(0, _idx);
 
+
+    public ReadOnlyMemory<byte> WrittenMemory => _data.Slice(0, _idx);
+
     private void Expand(int atLeast)
     {
         var newSize = _size;
@@ -79,12 +82,24 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Span<byte> GetSpan(int sizeHint = 0)
     {
+        if (sizeHint == 0)
+        {
+            if (_idx >= _size)
+                Expand(_idx + 1);
+            return _data.Span.SliceFast(_idx);
+        }
+
         if (_idx + sizeHint >= _size)
             Expand(_idx + sizeHint);
 
         Debug.Assert(_idx + sizeHint <= _size);
         return _data.Span.SliceFast(_idx, sizeHint);
     }
+
+    /// <summary>
+    /// Gets the written length of the data
+    /// </summary>
+    public int Length => _idx;
 
     public void Dispose()
     {

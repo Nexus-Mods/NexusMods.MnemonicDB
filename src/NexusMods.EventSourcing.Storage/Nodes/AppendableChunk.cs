@@ -1,6 +1,10 @@
-﻿using NexusMods.EventSourcing.Abstractions;
+﻿using System;
+using System.Buffers;
+using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions.Columns;
+using NexusMods.EventSourcing.Storage.Algorithms;
+using NexusMods.EventSourcing.Storage.Columns;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
@@ -61,6 +65,21 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
         F = _flags[idx],
         V = _values[idx]
     };
+
+    public void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
+    {
+        throw new NotSupportedException("Must pack the chunk before writing it to a buffer.");
+    }
+
+    public IDataChunk Pack()
+    {
+        return new PackedChunk(Length,
+            _entityIds.Pack(),
+            _attributeIds.Pack(),
+            _transactionIds.Pack(),
+            _flags.Pack(),
+            _values.Pack());
+    }
 
     #region SortImplementation
     private void Swap(int a, int b)
