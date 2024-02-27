@@ -1,4 +1,5 @@
 ﻿using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Algorithms;
 using NexusMods.EventSourcing.Storage.Nodes;
 using NexusMods.EventSourcing.Storage.Sorters;
 
@@ -60,50 +61,74 @@ public class OldAppendableNodeTests(IServiceProvider provider, IEnumerable<IValu
             AssertEqual(datomA, datomB, i);
         }
     }
-    /*
 
-[Theory]
-[InlineData(SortOrders.EATV)]
-[InlineData(SortOrders.AETV)]
-public void CanMergeBlock(SortOrders orders)
-{
-    var block = new OldAppendableNode(Configuration.Default);
-    var allDatoms = TestData(10).ToArray();
 
-    Random.Shared.Shuffle(allDatoms);
-
-    var block2 = new OldAppendableNode(Configuration.Default);
-
-    var half = allDatoms.Length / 2;
-    for (var i = 0; i < half; i++)
+    [Theory]
+    [InlineData(SortOrders.EATV)]
+    [InlineData(SortOrders.AETV)]
+    public void CanMergeBlock(SortOrders orders)
     {
-        block.Append(in allDatoms[i]);
+        var block = new AppendableChunk();
+        var allDatoms = TestData(10).ToArray();
+
+        Random.Shared.Shuffle(allDatoms);
+
+        var block2 = new AppendableChunk();
+
+        var half = allDatoms.Length / 2;
+        for (var i = 0; i < half; i++)
+        {
+            block.Append(in allDatoms[i]);
+        }
+
+        for (var i = half; i < allDatoms.Length; i++)
+        {
+            block2.Append(in allDatoms[i]);
+        }
+
+        var compare = IDatomComparator.Create(orders, _registry);
+
+        block.Sort(compare);
+        block2.Sort(compare);
+
+        var joined = SortedMerge.Merge(block, block2, compare);
+
+        var sorted = allDatoms.Order(CreateComparer(compare))
+            .ToArray();
+
+        for (var i = 0; i < allDatoms.Length; i++)
+        {
+            var datomA = joined[i];
+            var datomB = sorted[i];
+            AssertEqual(datomA, datomB, i);
+        }
     }
 
-    for (var i = half; i < allDatoms.Length; i++)
+    [Fact]
+    public void CanSeekToDatom()
     {
-        block2.Append(in allDatoms[i]);
+        var compare = new EATV(_registry);
+        var block = new AppendableChunk();
+        var allDatoms = TestData(10).ToArray();
+        foreach (var datom in allDatoms)
+        {
+            block.Append(in datom);
+        }
+
+        var sorted = allDatoms.Order(CreateComparer(compare)).ToArray();
+        block.Sort(compare);
+
+        for (var i = 0; i < sorted.Length; i++)
+        {
+            var datom = sorted[i];
+            var idx = BinarySearch.SeekEqualOrLess(block, compare, 0, block.Length, in datom);
+
+            var found = block[idx];
+            AssertEqual(found, datom, i);
+        }
     }
 
-    var compare = IDatomComparator.Create(orders, _registry);
-    block.Sort(compare);
-    block2.Sort(compare);
-
-    block.Ingest<OldAppendableNode.FlyweightIterator, OldAppendableNode.FlyweightRawDatom, OnHeapDatom, IDatomComparator>(block2.Iterate(), OnHeapDatom.Max, compare);
-
-    block.Count.Should().Be(allDatoms.Length);
-
-    var sorted = allDatoms.Order(CreateComparer(compare))
-        .ToArray();
-
-    for (var i = 0; i < allDatoms.Length; i++)
-    {
-        var datomA = block[i];
-        var datomB = sorted[i];
-        AssertEqual(datomA, datomB, i);
-    }
-}
-
+/*
 [Theory]
 [InlineData(SortOrders.EATV)]
 [InlineData(SortOrders.AETV)]
@@ -165,33 +190,9 @@ public void CanReadAndWriteBlocks(uint count)
         AssertEqual(datomA, datomB, i);
     }
 }
-
-[Fact]
-public void CanSeekToDatom()
-{
-    var compare = new EATV(_registry);
-    var block = new OldAppendableNode(Configuration.Default);
-    var allDatoms = TestData(10).ToArray();
-    foreach (var datom in allDatoms)
-    {
-        block.Append(in datom);
-    }
-
-    var sorted = allDatoms.Order(CreateComparer(compare)).ToArray();
-    block.Sort(compare);
-
-    for (var i = 0; i < sorted.Length; i++)
-    {
-        var datom = sorted[i];
-        var iter = block.Seek(datom, compare);
-
-        iter.Index.Should().Be(i, "for index " + i);
-
-        iter.Value(out var current);
-        AssertEqual(current, datom, i);
-    }
-}
 */
+
+
 
     public IComparer<Datom> CreateComparer(IDatomComparator datomComparator)
     {

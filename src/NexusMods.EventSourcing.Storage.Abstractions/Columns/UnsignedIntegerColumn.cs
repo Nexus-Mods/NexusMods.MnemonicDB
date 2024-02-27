@@ -22,6 +22,9 @@ public class UnsignedIntegerColumn<T> : IAppendableColumn<T>, IUnpackedColumn<T>
         _data.AsSpan().CopyTo(destination);
     }
 
+    /// <summary>
+    /// Appends a value to the end of the column.
+    /// </summary>
     public void Append(T value)
     {
         if (_length == _data.Length)
