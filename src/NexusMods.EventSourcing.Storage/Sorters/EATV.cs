@@ -1,25 +1,41 @@
-﻿using NexusMods.EventSourcing.Abstractions;
+﻿using System;
+using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Abstractions;
+using NexusMods.EventSourcing.Storage.Abstractions.Columns;
+using NexusMods.EventSourcing.Storage.Datoms;
 using NexusMods.EventSourcing.Storage.Nodes;
 
 namespace NexusMods.EventSourcing.Storage.Sorters;
 
 public class EATV(AttributeRegistry registry) : IDatomComparator
 {
-    public int Compare(in AppendableChunk chunk, int a, int b)
+    private ReadOnlyMemory<EntityId> _eids;
+    private ReadOnlyMemory<AttributeId> _attributeIds;
+    private ReadOnlyMemory<TxId> _transactionIds;
+
+    public void Prep(AppendableChunk chunk)
     {
-        var cmp = chunk.EntityIds[a].CompareTo(chunk.EntityIds[b]);
-        if (cmp != 0) return cmp;
+        _eids = ((UnsignedIntegerColumn<EntityId>)chunk.EntityIds).Memory;
+        _attributeIds = ((UnsignedIntegerColumn<AttributeId>)chunk.AttributeIds).Memory;
+        _transactionIds = ((UnsignedIntegerColumn<TxId>)chunk.TransactionIds).Memory;
+    }
 
-        cmp = chunk.AttributeIds[a].CompareTo(chunk.AttributeIds[b]);
-        if (cmp != 0) return cmp;
+    public int Compare<T>(in MemoryDatom<T> datoms, int a, int b)
+    where T : IBlobColumn
+    {
+        unsafe
+        {
+            var cmp = datoms.EntityIds[a].CompareTo(datoms.EntityIds[b]);
+            if (cmp != 0) return cmp;
 
-        cmp = chunk.TransactionIds[a].CompareTo(chunk.TransactionIds[b]);
-        if (cmp != 0) return cmp;
+            cmp = datoms.AttributeIds[a].CompareTo(datoms.AttributeIds[b]);
+            if (cmp != 0) return cmp;
 
-        var datomA = chunk[a];
-        var datomB = chunk[b];
+            cmp = datoms.TransactionIds[a].CompareTo(datoms.TransactionIds[b]);
+            if (cmp != 0) return cmp;
 
-        return registry.CompareValues(datomA, datomB);
+            return registry.CompareValues(datoms.Values, datoms.AttributeIds[a], a, b);
+        }
     }
 
     public int Compare(in Datom x, in Datom y)

@@ -5,6 +5,7 @@ using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions.Columns;
 using NexusMods.EventSourcing.Storage.Algorithms;
 using NexusMods.EventSourcing.Storage.Columns;
+using NexusMods.EventSourcing.Storage.Datoms;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
@@ -64,7 +65,45 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
     public void Sort<TComparator>(TComparator comparator)
         where TComparator : IDatomComparator
     {
-        Sort(comparator, 0, _entityIds.Length - 1);
+        var pidxs = GC.AllocateUninitializedArray<int>(_entityIds.Length);
+
+        for (var i = 0; i < _entityIds.Length; i++)
+        {
+            pidxs[i] = i;
+        }
+
+        unsafe
+        {
+            fixed (EntityId* entityIdsPtr = _entityIds.Data)
+            fixed (AttributeId* attributeIdsPtr = _attributeIds.Data)
+            fixed (TxId* transactionIdsPtr = _transactionIds.Data)
+            fixed (DatomFlags* flagsPtr = _flags.Data)
+            fixed (int* pidxsPtr = pidxs)
+            {
+                var datoms = new MemoryDatom<AppendableBlobColumn>
+                {
+                    EntityIds = entityIdsPtr,
+                    AttributeIds = attributeIdsPtr,
+                    TransactionIds = transactionIdsPtr,
+                    Flags = flagsPtr,
+                    Values = _values
+                };
+                Sort(comparator, ref datoms, pidxsPtr, 0, _entityIds.Length - 1);
+            }
+        }
+
+        for (var i = 0; i < _entityIds.Length; i++)
+        {
+            var idx = pidxs[i];
+            if (idx != i)
+            {
+                _entityIds.Swap(i, idx);
+                _attributeIds.Swap(i, idx);
+                _transactionIds.Swap(i, idx);
+                _flags.Swap(i, idx);
+                _values.Swap(i, idx);
+            }
+        }
     }
 
     public Datom this[int idx] => new() {
@@ -91,27 +130,24 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
     }
 
     #region SortImplementation
-    private void Swap(int a, int b)
+    private unsafe void Swap(int* pidxs, int a, int b)
     {
-        _entityIds.Swap(a, b);
-        _attributeIds.Swap(a, b);
-        _transactionIds.Swap(a, b);
-        _flags.Swap(a, b);
-        _values.Swap(a, b);
+        (pidxs[a], pidxs[b]) = (pidxs[b], pidxs[a]);
     }
 
-    private void Sort<TComparer>(TComparer comparer, int left, int right)
+    private unsafe void Sort<TComparer>(TComparer comparer, ref MemoryDatom<AppendableBlobColumn> datoms, int* pidxs, int left, int right)
         where TComparer : IDatomComparator
+
     {
         if (left < right)
         {
-            int pivotIndex = Partition(comparer, left, right);
-            Sort(comparer, left, pivotIndex - 1);
-            Sort(comparer, pivotIndex + 1, right);
+            int pivotIndex = Partition(comparer, ref datoms, pidxs, left, right);
+            Sort(comparer, ref datoms, pidxs, left, pivotIndex - 1);
+            Sort(comparer, ref datoms, pidxs, pivotIndex + 1, right);
         }
     }
 
-    private int Partition<TComparer>(TComparer comparer, int left, int right)
+    private unsafe int Partition<TComparer>(TComparer comparer, ref MemoryDatom<AppendableBlobColumn> datoms, int* pidxs, int left, int right)
         where TComparer : IDatomComparator
     {
         var pivot = right;
@@ -119,14 +155,14 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
 
         for (var j = left; j < right; j++)
         {
-            if (comparer.Compare(this, j, pivot) <= 0)
+            if (comparer.Compare(datoms, pidxs[j], pidxs[pivot]) <= 0)
             {
                 i++;
-                Swap(i, j);
+                Swap(pidxs, i, j);
             }
         }
 
-        Swap( i + 1, right);
+        Swap(pidxs,  i + 1, right);
         return i + 1;
     }
 

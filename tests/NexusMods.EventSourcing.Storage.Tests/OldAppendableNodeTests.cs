@@ -47,7 +47,7 @@ public class OldAppendableNodeTests(IServiceProvider provider, IEnumerable<IValu
             block.Append(in datom);
         }
 
-        var compare = new EATV(_registry);
+        var compare = IDatomComparator.Create(order, _registry);
         block.Sort(compare);
 
         var sorted = allDatoms.Order(CreateComparer(compare))

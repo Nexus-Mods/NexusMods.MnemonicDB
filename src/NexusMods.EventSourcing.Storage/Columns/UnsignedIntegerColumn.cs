@@ -68,4 +68,5 @@ where T : unmanaged
     }
 
     public ReadOnlySpan<T> Data => _data.AsSpan(0, (int)_length);
+    public ReadOnlyMemory<T> Memory => _data.AsMemory(0, (int)_length);
 }

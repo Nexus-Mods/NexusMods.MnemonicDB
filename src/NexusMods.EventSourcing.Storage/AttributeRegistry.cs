@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Datoms;
 using NexusMods.EventSourcing.Storage.Nodes;
 
@@ -142,5 +143,23 @@ public class AttributeRegistry
         var attr = _attributesByType[typeof(TAttribute)];
         var dbAttr = _dbAttributesByUniqueId[attr.Id];
         chunk.Append(entityId, dbAttr.AttrEntityId, tx, flags, serializer, value);
+    }
+
+    public int CompareValues<T>(T datomsValues, AttributeId attributeId, int a, int b) where T : IBlobColumn
+    {
+        var attr = _dbAttributesByEntityId[attributeId];
+        var type = _valueSerializersByUniqueId[attr.ValueTypeId];
+
+        var dA = new Datom()
+        {
+            V = datomsValues[a]
+        };
+
+        var dB = new Datom()
+        {
+            V = datomsValues[b]
+        };
+
+        return type.Compare(dA, dB);
     }
 }

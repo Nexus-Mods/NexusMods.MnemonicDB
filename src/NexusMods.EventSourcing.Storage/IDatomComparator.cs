@@ -1,5 +1,7 @@
 ﻿using System;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Abstractions;
+using NexusMods.EventSourcing.Storage.Datoms;
 using NexusMods.EventSourcing.Storage.Nodes;
 using NexusMods.EventSourcing.Storage.Sorters;
 
@@ -9,7 +11,8 @@ public interface IDatomComparator
 {
     public int Compare(in Datom x, in Datom y);
 
-    public int Compare(in AppendableChunk chunk, int a, int b);
+    public int Compare<T>(in MemoryDatom<T> chunk, int a, int b)
+    where T : IBlobColumn;
 
     public static IDatomComparator Create(SortOrders sortOrder, AttributeRegistry registry)
     {

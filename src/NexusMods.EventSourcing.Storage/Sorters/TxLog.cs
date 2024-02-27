@@ -1,4 +1,6 @@
 ﻿using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Abstractions;
+using NexusMods.EventSourcing.Storage.Datoms;
 using NexusMods.EventSourcing.Storage.Nodes;
 
 namespace NexusMods.EventSourcing.Storage.Sorters;
@@ -23,7 +25,7 @@ public class TxLog(AttributeRegistry registry) : IDatomComparator
         return registry.CompareValues(x, y);
     }
 
-    public int Compare(in AppendableChunk chunk, int a, int b)
+    public int Compare<T>(in MemoryDatom<T> chunk, int a, int b) where T : IBlobColumn
     {
         throw new System.NotImplementedException();
     }
