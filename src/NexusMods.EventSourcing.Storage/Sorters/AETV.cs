@@ -22,13 +22,28 @@ public class AETV(AttributeRegistry registry) : IDatomComparator
         return registry.CompareValues(x, y);
     }
 
-    public unsafe IComparer<int> MakeComparer<TBlob>(MemoryDatom<TBlob> datoms, int* indices) where TBlob : IBlobColumn
+    public IComparer<int> MakeComparer<TBlob>(MemoryDatom<TBlob> datoms) where TBlob : IBlobColumn
     {
-        throw new System.NotImplementedException();
+        return new AETVComparer<TBlob>(registry, datoms);
     }
+}
 
-    public int Compare<T>(in MemoryDatom<T> chunk, int a, int b) where T : IBlobColumn
+
+internal unsafe class AETVComparer<TBlob>(AttributeRegistry registry, MemoryDatom<TBlob> datoms) : IComparer<int>
+    where TBlob : IBlobColumn
+{
+
+    public int Compare(int a, int b)
     {
-        throw new System.NotImplementedException();
+        var cmp = datoms.AttributeIds[a].CompareTo(datoms.AttributeIds[b]);
+        if (cmp != 0) return cmp;
+
+        cmp = datoms.EntityIds[a].CompareTo(datoms.EntityIds[b]);
+        if (cmp != 0) return cmp;
+
+        cmp = datoms.TransactionIds[a].CompareTo(datoms.TransactionIds[b]);
+        if (cmp != 0) return cmp;
+
+        return registry.CompareValues(datoms.Values, datoms.AttributeIds[a], a, b);
     }
 }

@@ -29,7 +29,7 @@ public interface IDatomComparator
     /// comparison to make). This comparer is unsafe as the MemoryDatom contains raw pointers to
     /// arrays of integers being sorted in memory.
     /// </summary>
-    public unsafe IComparer<int> MakeComparer<TBlob>(MemoryDatom<TBlob> datoms, int* indices)
+    public unsafe IComparer<int> MakeComparer<TBlob>(MemoryDatom<TBlob> datoms)
         where TBlob : IBlobColumn;
 
     /// <summary>

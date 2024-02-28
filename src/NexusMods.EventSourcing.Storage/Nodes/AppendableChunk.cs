@@ -72,14 +72,10 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
         // Essentially we're creating an array of indices, and then sorting that array
         // using a custom comparer that uses the indices to access the actual data.
         // Once we're done, we shuffle the data in the columns using the sorted indices.
-        // However, due to the way this process works, we can't use the original index array
-        // or use the indexes to swap the old and new positions of the data.
         // This may not make sense at first, but the sorting algorithms may move the values around
         // in many different ways, so that A may move to B and D may move to C and C may move to A.
         // Meaning that we can't just swap the values because future swaps will be based on the original
         // positions of the values, not the new ones.
-        // Also the sort algorithms expect a certain ordering, so we can't just use a single array of
-        // indexes
         //
         // Essentially we have to create keys for each entry, then create a new chunk based on the
         // sorted keys
@@ -92,12 +88,11 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
             fixed (AttributeId* attributeIdsPtr = _attributeIds.Data)
             fixed (TxId* transactionIdsPtr = _transactionIds.Data)
             fixed (DatomFlags* flagsPtr = _flags.Data)
-            fixed (int* pidxsPtr = pidxs)
             {
 
-                for (var i = 0; i < _entityIds.Length; i++)
+                for (var i = 0; i < pidxs.Length; i++)
                 {
-                    pidxsPtr[i] = i;
+                    pidxs[i] = i;
                 }
 
                 var datoms = new MemoryDatom<AppendableBlobColumn>
@@ -109,17 +104,15 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
                     Values = _values
                 };
 
-                var comp = ((EATV)(object)comparator).MakeComparer(datoms, pidxsPtr);
+                var comp = comparator.MakeComparer(datoms);
 
-                var output = GC.AllocateUninitializedArray<int>(_entityIds.Length);
-                Array.Copy(pidxs, output, _entityIds.Length);
-                Array.Sort(output, 0, _entityIds.Length, comp);
+                Array.Sort(pidxs, 0, _entityIds.Length, comp);
 
-                _entityIds.Shuffle(output);
-                _attributeIds.Shuffle(output);
-                _transactionIds.Shuffle(output);
-                _flags.Shuffle(output);
-                _values.Shuffle(output);
+                _entityIds.Shuffle(pidxs);
+                _attributeIds.Shuffle(pidxs);
+                _transactionIds.Shuffle(pidxs);
+                _flags.Shuffle(pidxs);
+                _values.Shuffle(pidxs);
             }
         }
     }

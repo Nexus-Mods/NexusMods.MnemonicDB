@@ -93,10 +93,9 @@ public class IndexTests(IServiceProvider provider, IEnumerable<IValueSerializer>
 
     public IEnumerable<object[]> TestData()
     {
-        foreach (var idx in new[] {SortOrders.EATV})//, SortOrders.AETV})
+        foreach (var idx in new[] {SortOrders.EATV, SortOrders.AETV})
         {
             foreach (var size in new[] { 1, 2, 3, 4, 8, 16, 128, 1024, 1024 * 8, 1024 * 16, 1024 * 128 })
-            //foreach (var size in new[] { 1024 })
             {
                 foreach (var flush in new[] { true,}) // false })
                 {

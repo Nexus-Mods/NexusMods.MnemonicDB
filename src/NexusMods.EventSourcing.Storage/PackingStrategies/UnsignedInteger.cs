@@ -3,6 +3,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Storage.Abstractions.Columns;
 using NexusMods.EventSourcing.Storage.Abstractions.Columns.PackedColumns;
+using NexusMods.EventSourcing.Storage.Columns;
 using NexusMods.EventSourcing.Storage.Columns.PackedColumns;
 
 namespace NexusMods.EventSourcing.Storage.Abstractions.PackingStrategies;

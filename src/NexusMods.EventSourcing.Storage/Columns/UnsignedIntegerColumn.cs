@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Buffers;
-using System.Numerics;
+using NexusMods.EventSourcing.Storage.Abstractions;
+using NexusMods.EventSourcing.Storage.Abstractions.Columns;
 using NexusMods.EventSourcing.Storage.Abstractions.PackingStrategies;
 
-namespace NexusMods.EventSourcing.Storage.Abstractions.Columns;
+namespace NexusMods.EventSourcing.Storage.Columns;
 
 public class UnsignedIntegerColumn<T> : IAppendableColumn<T>, IUnpackedColumn<T>
 where T : unmanaged
@@ -68,7 +69,7 @@ where T : unmanaged
 
     public void Shuffle(int[] pidxs)
     {
-        var newData = new T[_data.Length];
+        var newData = GC.AllocateArray<T>((int)_length);
         for (var i = 0; i < _length; i++)
         {
             newData[i] = _data[pidxs[i]];

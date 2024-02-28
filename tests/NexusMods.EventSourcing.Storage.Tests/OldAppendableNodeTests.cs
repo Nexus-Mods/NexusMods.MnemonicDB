@@ -41,7 +41,13 @@ public class OldAppendableNodeTests(IServiceProvider provider, IEnumerable<IValu
     [InlineData(SortOrders.EATV, 16)]
     [InlineData(SortOrders.EATV, 1024)]
     [InlineData(SortOrders.EATV, 1024 * 16)]
-    //[InlineData(SortOrders.AETV, 1)]
+    [InlineData(SortOrders.AETV, 1)]
+    [InlineData(SortOrders.AETV, 2)]
+    [InlineData(SortOrders.AETV, 4)]
+    [InlineData(SortOrders.AETV, 8)]
+    [InlineData(SortOrders.AETV, 16)]
+    [InlineData(SortOrders.AETV, 1024)]
+    [InlineData(SortOrders.AETV, 1024 * 16)]
     public void CanSortBlock(SortOrders order, uint entities)
     {
         var block = new AppendableChunk();
@@ -73,7 +79,7 @@ public class OldAppendableNodeTests(IServiceProvider provider, IEnumerable<IValu
 
     [Theory]
     [InlineData(SortOrders.EATV)]
-    //[InlineData(SortOrders.AETV)]
+    [InlineData(SortOrders.AETV)]
     public void CanMergeBlock(SortOrders orders)
     {
         var block = new AppendableChunk();

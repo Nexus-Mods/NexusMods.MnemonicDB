@@ -26,7 +26,7 @@ public class TxLog(AttributeRegistry registry) : IDatomComparator
         return registry.CompareValues(x, y);
     }
 
-    public unsafe IComparer<int> MakeComparer<TBlob>(MemoryDatom<TBlob> datoms, int* indices) where TBlob : IBlobColumn
+    public unsafe IComparer<int> MakeComparer<TBlob>(MemoryDatom<TBlob> datoms) where TBlob : IBlobColumn
     {
         throw new System.NotImplementedException();
     }

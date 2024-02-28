@@ -10,11 +10,10 @@ namespace NexusMods.EventSourcing.Storage.Sorters;
 
 public class EATV(AttributeRegistry registry) : IDatomComparator
 {
-
-    public unsafe IComparer<int> MakeComparer<TBlob>(MemoryDatom<TBlob> datoms, int* indices)
+    public IComparer<int> MakeComparer<TBlob>(MemoryDatom<TBlob> datoms)
         where TBlob : IBlobColumn
     {
-        return new EATVComparer<TBlob>(registry, datoms, indices);
+        return new EATVComparer<TBlob>(registry, datoms);
     }
 
     public int Compare(in Datom x, in Datom y)
@@ -33,20 +32,20 @@ public class EATV(AttributeRegistry registry) : IDatomComparator
 }
 
 
-internal unsafe class EATVComparer<TBlob>(AttributeRegistry registry, MemoryDatom<TBlob> datoms, int* indices) : IComparer<int>
-where TBlob : IBlobColumn
+internal unsafe class EATVComparer<TBlob>(AttributeRegistry registry, MemoryDatom<TBlob> datoms) : IComparer<int>
+    where TBlob : IBlobColumn
 {
     public int Compare(int a, int b)
     {
-        var cmp = datoms.EntityIds[indices[a]].CompareTo(datoms.EntityIds[indices[b]]);
+        var cmp = datoms.EntityIds[a].CompareTo(datoms.EntityIds[b]);
         if (cmp != 0) return cmp;
 
-        cmp = datoms.AttributeIds[indices[a]].CompareTo(datoms.AttributeIds[indices[b]]);
+        cmp = datoms.AttributeIds[a].CompareTo(datoms.AttributeIds[b]);
         if (cmp != 0) return cmp;
 
-        cmp = datoms.TransactionIds[indices[a]].CompareTo(datoms.TransactionIds[indices[b]]);
+        cmp = datoms.TransactionIds[a].CompareTo(datoms.TransactionIds[b]);
         if (cmp != 0) return cmp;
 
-        return registry.CompareValues(datoms.Values, datoms.AttributeIds[indices[a]], indices[a], indices[b]);
+        return registry.CompareValues(datoms.Values, datoms.AttributeIds[a], a, b);
     }
 }
