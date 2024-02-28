@@ -12,11 +12,4 @@ public interface IAppendableColumn<in T>
     /// </summary>
     /// <param name="value"></param>
     public void Append(T value);
-
-    /// <summary>
-    /// Swaps the values at the given indices.
-    /// </summary>
-    /// <param name="idx1"></param>
-    /// <param name="idx2"></param>
-    public void Swap(int idx1, int idx2);
 }

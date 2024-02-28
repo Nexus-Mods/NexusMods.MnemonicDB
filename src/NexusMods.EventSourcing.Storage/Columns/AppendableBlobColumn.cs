@@ -57,9 +57,9 @@ public class AppendableBlobColumn : IAppendableBlobColumn
         _sizes.Append((uint)size);
     }
 
-    public void Swap(int idx1, int idx2)
+    public void Shuffle(int[] pidxs)
     {
-        _offsets.Swap(idx1, idx2);
-        _sizes.Swap(idx1, idx2);
+        _offsets.Shuffle(pidxs);
+        _sizes.Shuffle(pidxs);
     }
 }

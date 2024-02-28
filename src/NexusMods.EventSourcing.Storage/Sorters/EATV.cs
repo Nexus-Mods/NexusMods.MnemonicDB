@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions.Columns;
@@ -9,33 +10,11 @@ namespace NexusMods.EventSourcing.Storage.Sorters;
 
 public class EATV(AttributeRegistry registry) : IDatomComparator
 {
-    private ReadOnlyMemory<EntityId> _eids;
-    private ReadOnlyMemory<AttributeId> _attributeIds;
-    private ReadOnlyMemory<TxId> _transactionIds;
 
-    public void Prep(AppendableChunk chunk)
+    public unsafe IComparer<int> MakeComparer<TBlob>(MemoryDatom<TBlob> datoms, int* indices)
+        where TBlob : IBlobColumn
     {
-        _eids = ((UnsignedIntegerColumn<EntityId>)chunk.EntityIds).Memory;
-        _attributeIds = ((UnsignedIntegerColumn<AttributeId>)chunk.AttributeIds).Memory;
-        _transactionIds = ((UnsignedIntegerColumn<TxId>)chunk.TransactionIds).Memory;
-    }
-
-    public int Compare<T>(in MemoryDatom<T> datoms, int a, int b)
-    where T : IBlobColumn
-    {
-        unsafe
-        {
-            var cmp = datoms.EntityIds[a].CompareTo(datoms.EntityIds[b]);
-            if (cmp != 0) return cmp;
-
-            cmp = datoms.AttributeIds[a].CompareTo(datoms.AttributeIds[b]);
-            if (cmp != 0) return cmp;
-
-            cmp = datoms.TransactionIds[a].CompareTo(datoms.TransactionIds[b]);
-            if (cmp != 0) return cmp;
-
-            return registry.CompareValues(datoms.Values, datoms.AttributeIds[a], a, b);
-        }
+        return new EATVComparer<TBlob>(registry, datoms, indices);
     }
 
     public int Compare(in Datom x, in Datom y)
@@ -50,5 +29,24 @@ public class EATV(AttributeRegistry registry) : IDatomComparator
         if (cmp != 0) return cmp;
 
         return registry.CompareValues(x, y);
+    }
+}
+
+
+internal unsafe class EATVComparer<TBlob>(AttributeRegistry registry, MemoryDatom<TBlob> datoms, int* indices) : IComparer<int>
+where TBlob : IBlobColumn
+{
+    public int Compare(int a, int b)
+    {
+        var cmp = datoms.EntityIds[indices[a]].CompareTo(datoms.EntityIds[indices[b]]);
+        if (cmp != 0) return cmp;
+
+        cmp = datoms.AttributeIds[indices[a]].CompareTo(datoms.AttributeIds[indices[b]]);
+        if (cmp != 0) return cmp;
+
+        cmp = datoms.TransactionIds[indices[a]].CompareTo(datoms.TransactionIds[indices[b]]);
+        if (cmp != 0) return cmp;
+
+        return registry.CompareValues(datoms.Values, datoms.AttributeIds[indices[a]], indices[a], indices[b]);
     }
 }

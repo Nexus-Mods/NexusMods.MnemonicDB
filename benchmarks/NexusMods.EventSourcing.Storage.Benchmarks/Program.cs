@@ -4,10 +4,11 @@ using BenchmarkDotNet.Running;
 using NexusMods.EventSourcing.Storage.Benchmarks;
 using NexusMods.EventSourcing.Storage.Nodes;
 
-//BenchmarkRunner.Run<AppendableChunkBenchmarks>();
+BenchmarkRunner.Run<AppendableChunkBenchmarks>();
 
 
 //
+/*
 var benchmark = new AppendableChunkBenchmarks();
 benchmark.EntityCount = 1024;
 benchmark.IterationSetup();
@@ -15,3 +16,4 @@ benchmark.IterationSetup();
 for(int i = 0; i < 1; i++)
     benchmark.SortChunk();
 
+*/

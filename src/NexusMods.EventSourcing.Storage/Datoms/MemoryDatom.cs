@@ -3,7 +3,7 @@ using NexusMods.EventSourcing.Storage.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Datoms;
 
-public unsafe ref struct MemoryDatom<T>
+public unsafe struct MemoryDatom<T>
 where T : IBlobColumn
 {
     public EntityId* EntityIds;

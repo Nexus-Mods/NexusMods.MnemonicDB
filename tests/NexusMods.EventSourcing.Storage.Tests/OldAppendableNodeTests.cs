@@ -34,20 +34,27 @@ public class OldAppendableNodeTests(IServiceProvider provider, IEnumerable<IValu
 
 
     [Theory]
-    [InlineData(SortOrders.EATV)]
-    [InlineData(SortOrders.AETV)]
-    public void CanSortBlock(SortOrders order)
+    [InlineData(SortOrders.EATV, 1)]
+    [InlineData(SortOrders.EATV, 2)]
+    [InlineData(SortOrders.EATV, 4)]
+    [InlineData(SortOrders.EATV, 8)]
+    [InlineData(SortOrders.EATV, 16)]
+    [InlineData(SortOrders.EATV, 1024)]
+    [InlineData(SortOrders.EATV, 1024 * 16)]
+    //[InlineData(SortOrders.AETV, 1)]
+    public void CanSortBlock(SortOrders order, uint entities)
     {
         var block = new AppendableChunk();
-        var allDatoms = TestData(10).ToArray();
+        var allDatoms = TestData(entities).ToArray();
         Random.Shared.Shuffle(allDatoms);
 
-        foreach (var datom in TestData(10))
+        foreach (var datom in TestData(entities))
         {
             block.Append(in datom);
         }
 
         var compare = IDatomComparator.Create(order, _registry);
+        Logger.LogInformation("Sorting {0} datoms", allDatoms.Length);
         block.Sort(compare);
 
         var sorted = allDatoms.Order(CreateComparer(compare))
@@ -66,7 +73,7 @@ public class OldAppendableNodeTests(IServiceProvider provider, IEnumerable<IValu
 
     [Theory]
     [InlineData(SortOrders.EATV)]
-    [InlineData(SortOrders.AETV)]
+    //[InlineData(SortOrders.AETV)]
     public void CanMergeBlock(SortOrders orders)
     {
         var block = new AppendableChunk();

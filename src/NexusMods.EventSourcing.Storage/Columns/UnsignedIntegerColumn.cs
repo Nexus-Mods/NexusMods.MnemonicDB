@@ -62,11 +62,17 @@ where T : unmanaged
         throw new NotSupportedException("Columns must be packed before writing to a buffer.");
     }
 
-    public void Swap(int idx1, int idx2)
-    {
-        (_data[idx1], _data[idx2]) = (_data[idx2], _data[idx1]);
-    }
 
     public ReadOnlySpan<T> Data => _data.AsSpan(0, (int)_length);
     public ReadOnlyMemory<T> Memory => _data.AsMemory(0, (int)_length);
+
+    public void Shuffle(int[] pidxs)
+    {
+        var newData = new T[_data.Length];
+        for (var i = 0; i < _length; i++)
+        {
+            newData[i] = _data[pidxs[i]];
+        }
+        _data = newData;
+    }
 }
