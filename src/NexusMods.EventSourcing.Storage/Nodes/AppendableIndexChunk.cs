@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
+using NexusMods.EventSourcing.Storage.Abstractions.Columns.PackedColumns;
 using NexusMods.EventSourcing.Storage.Algorithms;
 using NexusMods.EventSourcing.Storage.Columns;
 
@@ -40,6 +41,19 @@ public class AppendableIndexChunk : IIndexChunk
     {
         _children = newChildren;
         ReprocessChildren();
+    }
+
+    private AppendableIndexChunk(IIndexChunk indexChunk)
+    {
+        _entityIds = UnsignedIntegerColumn<EntityId>.UnpackFrom(indexChunk.EntityIds);
+        _attributeIds = UnsignedIntegerColumn<AttributeId>.UnpackFrom(indexChunk.AttributeIds);
+        _transactionIds = UnsignedIntegerColumn<TxId>.UnpackFrom(indexChunk.TransactionIds);
+        _flags = UnsignedIntegerColumn<DatomFlags>.UnpackFrom(indexChunk.Flags);
+        _values = AppendableBlobColumn.UnpackFrom(indexChunk.Values);
+        _childCounts = UnsignedIntegerColumn<int>.UnpackFrom(indexChunk.ChildCounts);
+        _children = indexChunk.Children.ToList();
+        _comparator = indexChunk.Comparator;
+        _length = indexChunk.Length;
     }
 
     private void ReprocessChildren()
@@ -96,7 +110,27 @@ public class AppendableIndexChunk : IIndexChunk
         throw new System.NotImplementedException();
     }
 
+    public IDataChunk Flush(NodeStore store)
+    {
+        var packed = Pack();
+        return store.Flush(packed);
+    }
+
+    private IDataChunk Pack()
+    {
+        var length = _length;
+        var entityIds = _entityIds.Pack();
+        var attributeIds = _attributeIds.Pack();
+        var transactionIds = _transactionIds.Pack();
+        var flags = _flags.Pack();
+        var values = _values.Pack();
+
+        return new PackedIndexChunk(length, entityIds, attributeIds, transactionIds, flags, values, _childCounts.Pack(), _comparator, _children);
+    }
+
     public IEnumerable<IDataChunk> Children => _children;
+    public IColumn<int> ChildCounts => _childCounts;
+    public IDatomComparator Comparator => _comparator;
 
     public IEnumerator<Datom> GetEnumerator()
     {
@@ -194,4 +228,8 @@ public class AppendableIndexChunk : IIndexChunk
         return AppendableChunk.Initialize(child.Merge(datoms, _comparator));
     }
 
+    public static AppendableIndexChunk UnpackFrom(IIndexChunk indexChunk)
+    {
+        return new AppendableIndexChunk(indexChunk);
+    }
 }

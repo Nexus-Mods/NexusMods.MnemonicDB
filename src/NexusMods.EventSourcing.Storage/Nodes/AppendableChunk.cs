@@ -133,6 +133,12 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
         throw new NotSupportedException("Must pack the chunk before writing it to a buffer.");
     }
 
+    public IDataChunk Flush(NodeStore store)
+    {
+        var packed = Pack();
+        return store.Flush(packed);
+    }
+
     public IDataChunk Pack()
     {
         return new PackedChunk(Length,
@@ -185,7 +191,6 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
         {
             b.Append(this[i]);
         }
-
         return (a, b);
     }
 }

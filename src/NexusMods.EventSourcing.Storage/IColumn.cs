@@ -3,7 +3,7 @@ using System.Buffers;
 
 namespace NexusMods.EventSourcing.Storage.Abstractions;
 
-public interface IColumn<out T>
+public interface IColumn<T>
 {
     /// <summary>
     /// Gets the item at the specified index, this may be slow depending on the
@@ -29,4 +29,10 @@ public interface IColumn<out T>
     /// <param name="writer"></param>
     /// <typeparam name="TWriter"></typeparam>
     void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>;
+
+    /// <summary>
+    /// Copies the column to the specified destination.
+    /// </summary>
+    /// <param name="destination"></param>
+    void CopyTo(Span<T> destination);
 }

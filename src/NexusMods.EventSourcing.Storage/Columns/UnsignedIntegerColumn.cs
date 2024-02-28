@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions.Columns;
 using NexusMods.EventSourcing.Storage.Abstractions.PackingStrategies;
@@ -19,6 +20,13 @@ where T : unmanaged
     {
         _length = 0;
         _data = GC.AllocateUninitializedArray<T>((int)initialLength);
+    }
+
+    public UnsignedIntegerColumn(IColumn<T> data)
+    {
+        _length = (uint)data.Length;
+        _data = GC.AllocateUninitializedArray<T>(data.Length);
+        data.CopyTo(_data);
     }
 
     public T this[int index] => _data[index];
@@ -109,5 +117,11 @@ where T : unmanaged
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
+    }
+
+    public static UnsignedIntegerColumn<T> UnpackFrom<T>(IColumn<T> fromValues)
+        where T : unmanaged
+    {
+        return new UnsignedIntegerColumn<T>(fromValues);
     }
 }

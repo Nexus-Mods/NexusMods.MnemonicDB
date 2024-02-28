@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
@@ -73,5 +74,28 @@ public class AppendableBlobColumn : IAppendableBlobColumn
         {
             Append(value.Span);
         }
+    }
+
+    public static AppendableBlobColumn UnpackFrom(IBlobColumn indexChunkValues)
+    {
+        var newColumn = new AppendableBlobColumn();
+        foreach (var value in indexChunkValues)
+        {
+            newColumn.Append(value.Span);
+        }
+        return newColumn;
+    }
+
+    public IEnumerator<ReadOnlyMemory<byte>> GetEnumerator()
+    {
+        for (var i = 0; i < Length; i++)
+        {
+            yield return this[i];
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

@@ -46,6 +46,9 @@ public class IndexTests(IServiceProvider provider, IEnumerable<IValueSerializer>
             index = index.Ingest(newChunk);
             sw.Stop();
 
+            if (flush)
+                index = AppendableIndexChunk.UnpackFrom((IIndexChunk)index.Flush(NodeStore));
+
         }
 
         logger.LogInformation("Ingested {DatomCount} datoms in {ElapsedMs}ms", index.Length, sw.ElapsedMilliseconds);

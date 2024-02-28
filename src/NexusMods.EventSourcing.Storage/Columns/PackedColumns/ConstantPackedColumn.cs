@@ -59,6 +59,14 @@ public class ConstantPackedColumn<TElement, TPack> : IPackedColumn<TElement>
         throw new NotSupportedException($"Unsupported constant packed column type: {typeof(TPack)}");
     }
 
+    public void CopyTo(Span<TElement> destination)
+    {
+        for (var i = 0; i < _length; i++)
+        {
+            destination[i] = this[i];
+        }
+    }
+
     public static IColumn<TElement> ReadFrom(ref BufferReader data, int length)
     {
         var value = data.Read<TPack>();

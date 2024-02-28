@@ -51,6 +51,11 @@ public class PackedChunk : IDataChunk
         Values.WriteTo(writer);
     }
 
+    public IDataChunk Flush(NodeStore store)
+    {
+        return store.Flush(this);
+    }
+
     public static PackedChunk ReadFrom(ref BufferReader src)
     {
         var length = src.Read<uint>();

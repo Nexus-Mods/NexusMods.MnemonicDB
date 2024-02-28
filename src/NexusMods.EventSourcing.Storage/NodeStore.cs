@@ -35,13 +35,16 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore)
         return StoreKey.From(Interlocked.Increment(ref _nextBlockId));
     }
 
-    public ReferenceNode Flush(INode node)
+    public IDataChunk Flush(IDataChunk node)
     {
         return node switch
         {
-            ReferenceNode referenceNode => referenceNode,
+
+            //ReferenceNode referenceNode => referenceNode,
             //OldAppendableNode appendableBlock => Flush(appendableBlock),
-            IndexNode indexNode => Flush(indexNode),
+            //IndexNode indexNode => Flush(indexNode),
+            PackedChunk packedChunk => packedChunk,
+            PackedIndexChunk packedIndexChunk => packedIndexChunk,
             _ => throw new NotImplementedException("Unknown node type. " + node.GetType().Name)
         };
     }

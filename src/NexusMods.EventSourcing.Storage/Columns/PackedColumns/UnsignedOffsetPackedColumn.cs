@@ -95,8 +95,6 @@ public class UnsignedOffsetPackedColumn<TElement, TInternal, TPack> : IPackedCol
                 break;
             }
 
-
-
             default:
                 throw new NotSupportedException("Unsupported type combination: " + (typeof(TInternal), typeof(TPack)));
         }
@@ -105,7 +103,11 @@ public class UnsignedOffsetPackedColumn<TElement, TInternal, TPack> : IPackedCol
 
     public void CopyTo(Span<TElement> destination)
     {
-        throw new NotImplementedException();
+        var dataSpan = MemoryMarshal.Cast<byte, TPack>(_data.Span);
+        for (var i = 0; i < _length; i++)
+        {
+            destination[i] = Unsafe.BitCast<TInternal, TElement>(TInternal.CreateTruncating(dataSpan[i]) + _offset);
+        }
     }
 
     public static IColumn<TElement> ReadFrom(ref BufferReader src, int length)

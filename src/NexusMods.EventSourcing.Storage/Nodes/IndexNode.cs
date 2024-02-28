@@ -187,14 +187,10 @@ public class IndexNode : INode
 
     public INode Flush(NodeStore store)
     {
-        for(var idx = 0; idx < _children.Count; idx++)
-        {
-            _children[idx] = _children[idx].Flush(store);
-        }
-        return store.Flush(this);
+        throw new NotImplementedException();
     }
 
-        public void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
+    public void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
     {
         var span = writer.GetSpan(4);
         MemoryMarshal.Write(span, (ushort)NodeVersions.IndexNode);

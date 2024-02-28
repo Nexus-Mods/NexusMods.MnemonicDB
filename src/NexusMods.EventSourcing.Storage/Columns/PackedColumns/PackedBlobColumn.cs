@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections;
+using System.Collections.Generic;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions.Columns;
 using NexusMods.EventSourcing.Storage.Algorithms;
@@ -45,5 +47,18 @@ public class PackedBlobColumn : IBlobColumn
         var data = src.ReadMemory(dataLength);
 
         return new PackedBlobColumn(data, offsets, sizes);
+    }
+
+    public IEnumerator<ReadOnlyMemory<byte>> GetEnumerator()
+    {
+        for (var i = 0; i < Length; i++)
+        {
+            yield return this[i];
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

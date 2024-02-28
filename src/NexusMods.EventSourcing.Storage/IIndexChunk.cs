@@ -11,4 +11,7 @@ public interface IIndexChunk : IDataChunk
     /// by using the accessors in the IDataChunk interface
     /// </summary>
     public IEnumerable<IDataChunk> Children { get; }
+
+    public IColumn<int> ChildCounts { get; }
+    IDatomComparator Comparator { get; }
 }
