@@ -83,13 +83,14 @@ public class AppendableIndexChunk : IIndexChunk
         get
         {
             var acc = 0;
-            foreach (var child in _children)
+            for (var j = 0; j < _children.Count; j++)
             {
-                if (idx < acc + child.Length)
+                var childSize = _childCounts[idx];
+                if (idx < acc + childSize)
                 {
-                    return child[idx - acc];
+                    return _children[idx][idx - acc];
                 }
-                acc += child.Length;
+                acc += childSize;
             }
             throw new IndexOutOfRangeException();
         }

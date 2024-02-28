@@ -24,7 +24,7 @@ public class AStorageTest
             new DbAttribute(Symbol.Intern<TestAttributes.FileName>(), AttributeId.From(11), Symbol.Intern<StringSerializer>())
         ]);
         _kvStore = new InMemoryKvStore();
-        NodeStore = new NodeStore(provider.GetRequiredService<ILogger<NodeStore>>(), _kvStore);
+        NodeStore = new NodeStore(provider.GetRequiredService<ILogger<NodeStore>>(), _kvStore, _registry);
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
     }
 

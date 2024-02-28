@@ -79,6 +79,14 @@ public class UnsignedOffsetPackedColumn<TElement, TInternal, TPack> : IPackedCol
                 break;
             }
 
+            case ({ } t1, { } t2) when t1 == typeof(ulong) && t2 == typeof(uint):
+            {
+                writer.WriteFourCC(FourCC.OffsetULongAsUInt);
+                writer.Write(_offset);
+                writer.Write(_data.Span);
+                break;
+            }
+
             case ({ } t1, { } t2) when t1 == typeof(uint) && t2 == typeof(uint):
             {
                 writer.WriteFourCC(FourCC.OffsetUIntAsUInt);
@@ -90,6 +98,22 @@ public class UnsignedOffsetPackedColumn<TElement, TInternal, TPack> : IPackedCol
             case ({ } t1, { } t2) when t1 == typeof(uint) && t2 == typeof(ushort):
             {
                 writer.WriteFourCC(FourCC.OffsetUIntAsUShort);
+                writer.Write(_offset);
+                writer.Write(_data.Span);
+                break;
+            }
+
+            case ({ } t1, { } t2) when t1 == typeof(uint) && t2 == typeof(byte):
+            {
+                writer.WriteFourCC(FourCC.OffsetUIntAsByte);
+                writer.Write(_offset);
+                writer.Write(_data.Span);
+                break;
+            }
+
+            case ({ } t1, { } t2) when t1 == typeof(byte) && t2 == typeof(byte):
+            {
+                writer.WriteFourCC(FourCC.OffsetByteAsByte);
                 writer.Write(_offset);
                 writer.Write(_data.Span);
                 break;

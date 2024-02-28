@@ -34,6 +34,9 @@ public unsafe struct FourCC : IEquatable<FourCC>
     public static readonly FourCC PackedData = From("PDAT");
     public static readonly FourCC PackedIndex = From("PIDX");
 
+    public static readonly FourCC ReferenceData = From("RDAT");
+    public static readonly FourCC ReferenceIndex = From("RIDX");
+
     #endregion
 
     #region ColumnTypes
@@ -83,6 +86,17 @@ public unsafe struct FourCC : IEquatable<FourCC>
     /// A packed UInt column with a ushort data
     /// </summary>
     public static readonly FourCC OffsetUIntAsUShort = From("OUIS");
+
+    /// <summary>
+    /// A packed UInt column with a byte data
+    /// </summary>
+    public static readonly FourCC OffsetUIntAsByte = From("OUIB");
+
+    /// <summary>
+    /// A packed byte column with a byte data
+    /// </summary>
+    public static FourCC OffsetByteAsByte = From("OBYB");
+
 
 
     /// <summary>

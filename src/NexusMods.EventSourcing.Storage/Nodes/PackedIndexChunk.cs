@@ -4,11 +4,16 @@ using System.Collections;
 using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
+using NexusMods.EventSourcing.Storage.Algorithms;
+using NexusMods.EventSourcing.Storage.ValueTypes;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
 public class PackedIndexChunk : IIndexChunk
 {
+    private readonly IColumn<int> _childCounts;
+    private readonly List<IDataChunk> _children;
+
     public PackedIndexChunk(int length,
         IColumn<EntityId> entityIds,
         IColumn<AttributeId> attributeIds,
@@ -17,7 +22,7 @@ public class PackedIndexChunk : IIndexChunk
         IBlobColumn values,
         IColumn<int> childCounts,
         IDatomComparator comparator,
-        IEnumerable<IDataChunk> children)
+        List<IDataChunk> children)
     {
         Length = length;
         EntityIds = entityIds;
@@ -25,8 +30,8 @@ public class PackedIndexChunk : IIndexChunk
         TransactionIds = transactionIds;
         Flags = flags;
         Values = values;
-        Children = children;
-        ChildCounts = childCounts;
+        _children = children;
+        _childCounts = childCounts;
         Comparator = comparator;
     }
 
@@ -47,20 +52,106 @@ public class PackedIndexChunk : IIndexChunk
     public IColumn<DatomFlags> Flags { get; }
     public IBlobColumn Values { get; }
 
-    public Datom this[int idx] => throw new System.NotImplementedException();
+    public Datom this[int idx]
+    {
+        get
+        {
+            var acc = 0;
+            for (var j = 0; j < _children.Count; j++)
+            {
+                var childSize = _childCounts[j];
+                if (idx < acc + _childCounts[j])
+                {
+                    return _children[j][idx - acc];
+                }
+                acc += childSize;
+            }
+            throw new IndexOutOfRangeException();
+        }
+    }
 
     public Datom LastDatom => throw new NotImplementedException();
     public void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
     {
-        throw new System.NotImplementedException();
+        writer.WriteFourCC(FourCC.PackedIndex);
+        writer.Write(Length);
+        writer.Write(_childCounts.Length);
+        EntityIds.WriteTo(writer);
+        AttributeIds.WriteTo(writer);
+        TransactionIds.WriteTo(writer);
+        Flags.WriteTo(writer);
+        Values.WriteTo(writer);
+        _childCounts.WriteTo(writer);
+        writer.Write((byte)Comparator.SortOrder);
+        foreach (var child in _children)
+        {
+            if (child is ReferenceChunk indexChunk)
+            {
+                writer.WriteFourCC(FourCC.ReferenceIndex);
+                writer.Write((ulong)indexChunk.Key);
+            }
+            else if (child is ReferenceChunk dataChunk)
+            {
+                writer.WriteFourCC(FourCC.ReferenceData);
+                writer.Write((ulong)dataChunk.Key);
+            }
+            else
+            {
+                throw new NotSupportedException("Unknown child type: " + child.GetType().Name);
+            }
+        }
+    }
+
+
+    public static PackedIndexChunk ReadFrom(ref BufferReader reader, NodeStore nodeStore, AttributeRegistry registry)
+    {
+        var length = reader.Read<int>();
+        var childCount = reader.Read<int>();
+        var entityIds = ColumnReader.ReadColumn<EntityId>(ref reader, childCount - 1);
+        var attributeIds = ColumnReader.ReadColumn<AttributeId>(ref reader, childCount - 1);
+        var transactionIds = ColumnReader.ReadColumn<TxId>(ref reader, childCount - 1);
+        var flags = ColumnReader.ReadColumn<DatomFlags>(ref reader, childCount - 1);
+        var values = ColumnReader.ReadBlobColumn(ref reader, childCount - 1);
+        var childCounts = ColumnReader.ReadColumn<int>(ref reader, childCount);
+        var sortOrder = (SortOrders)reader.Read<byte>();
+        var comparator = IDatomComparator.Create(sortOrder, registry);
+
+        var children = new List<IDataChunk>();
+        for (var i = 0; i < childCount; i++)
+        {
+            var fourcc = reader.ReadFourCC();
+            var key = reader.Read<ulong>();
+            if (fourcc == FourCC.ReferenceIndex)
+            {
+                children.Add(new ReferenceChunk(nodeStore, StoreKey.From(key), null));
+            }
+            else if (fourcc == FourCC.ReferenceData)
+            {
+                children.Add(new ReferenceChunk(nodeStore, StoreKey.From(key), null));
+            }
+            else
+            {
+                throw new NotSupportedException("Unknown child type: " + fourcc);
+            }
+        }
+
+        return new PackedIndexChunk(length, entityIds, attributeIds, transactionIds, flags, values, childCounts, comparator, children);
     }
 
     public IDataChunk Flush(NodeStore store)
     {
-        throw new System.NotImplementedException();
+        for (var i = 0; i < _children.Count; i++)
+        {
+            _children[i] = _children[i].Flush(store);
+        }
+
+        return this;
     }
 
-    public IEnumerable<IDataChunk> Children { get; }
-    public IColumn<int> ChildCounts { get; }
+    public IEnumerable<IDataChunk> Children => _children;
+
+    public IColumn<int> ChildCounts => _childCounts;
+
     public IDatomComparator Comparator { get; }
+
 }

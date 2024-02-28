@@ -17,6 +17,11 @@ namespace NexusMods.EventSourcing.Storage;
 public interface IDatomComparator
 {
     /// <summary>
+    /// Get the enum value of the sort order.
+    /// </summary>
+    public SortOrders SortOrder { get; }
+
+    /// <summary>
     /// Compares two datoms and returns a value indicating whether one is less than, equal to, or greater than the other.
     /// </summary>
     public int Compare(in Datom x, in Datom y);

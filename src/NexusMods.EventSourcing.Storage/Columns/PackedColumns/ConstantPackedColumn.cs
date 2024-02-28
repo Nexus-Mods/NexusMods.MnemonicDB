@@ -35,21 +35,21 @@ public class ConstantPackedColumn<TElement, TPack> : IPackedColumn<TElement>
             return;
         }
 
-        else if (typeof(TPack) == typeof(ushort))
+        if (typeof(TPack) == typeof(ushort))
         {
             writer.WriteFourCC(FourCC.ConstUShort);
             writer.Write(Unsafe.BitCast<TPack, ushort>(_value));
             return;
         }
 
-        else if (typeof(TPack) == typeof(uint))
+        if (typeof(TPack) == typeof(uint))
         {
             writer.WriteFourCC(FourCC.ConstUInt);
             writer.Write(Unsafe.BitCast<TPack, uint>(_value));
             return;
         }
 
-        else if (typeof(TPack) == typeof(ulong))
+        if (typeof(TPack) == typeof(ulong))
         {
             writer.WriteFourCC(FourCC.ConstULong);
             writer.Write(Unsafe.BitCast<TPack, ulong>(_value));

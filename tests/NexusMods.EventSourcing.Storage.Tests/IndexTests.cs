@@ -51,15 +51,17 @@ public class IndexTests(IServiceProvider provider, IEnumerable<IValueSerializer>
 
         }
 
-        logger.LogInformation("Ingested {DatomCount} datoms in {ElapsedMs}ms", index.Length, sw.ElapsedMilliseconds);
 
-        index.Length.Should().Be(testData.Length, "all datoms should be ingested");
+        var finalIndex = (IIndexChunk)index.Flush(NodeStore);
+        logger.LogInformation("Ingested {DatomCount} datoms in {ElapsedMs}ms", finalIndex.Length, sw.ElapsedMilliseconds);
+
+        finalIndex.Length.Should().Be(testData.Length, "all datoms should be ingested");
 
         testData.Sort(comparator);
 
         for (var i = 0; i < testData.Length; i++)
         {
-            AssertEqual(index[i], testData[i], i);
+            AssertEqual(finalIndex[i], testData[i], i);
         }
     }
 

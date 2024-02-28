@@ -9,7 +9,7 @@ using NexusMods.EventSourcing.Storage.ValueTypes;
 
 namespace NexusMods.EventSourcing.Storage;
 
-public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore)
+public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeRegistry registry)
 {
     private ulong _txLogId = Ids.MinId(Ids.Partition.TxLog);
     private ulong _nextBlockId = Ids.MinId(Ids.Partition.Index);
@@ -39,14 +39,43 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore)
     {
         return node switch
         {
-
-            //ReferenceNode referenceNode => referenceNode,
-            //OldAppendableNode appendableBlock => Flush(appendableBlock),
-            //IndexNode indexNode => Flush(indexNode),
-            PackedChunk packedChunk => packedChunk,
-            PackedIndexChunk packedIndexChunk => packedIndexChunk,
+            PackedChunk packedChunk => Flush(packedChunk),
+            PackedIndexChunk packedIndexChunk => Flush(packedIndexChunk),
             _ => throw new NotImplementedException("Unknown node type. " + node.GetType().Name)
         };
+    }
+
+
+    public IDataChunk Flush(IIndexChunk node)
+    {
+        return node switch
+        {
+            PackedIndexChunk packedIndexChunk => Flush(packedIndexChunk),
+            _ => throw new NotImplementedException("Unknown node type. " + node.GetType().Name)
+        };
+    }
+
+    public IIndexChunk Flush(PackedIndexChunk chunk)
+    {
+        var node = (PackedIndexChunk)chunk.Flush(this);
+        var writer = new PooledMemoryBufferWriter();
+        chunk.WriteTo(writer);
+        var writtenSpan = writer.GetWrittenSpan();
+
+        var id = NextBlockId();
+        kvStore.Put(id, writtenSpan);
+        return new ReferenceIndexChunk(this, id, null);
+    }
+
+    public IDataChunk Flush(PackedChunk node)
+    {
+        var writer = new PooledMemoryBufferWriter();
+        node.WriteTo(writer);
+        var writtenSpan = writer.GetWrittenSpan();
+
+        var id = NextBlockId();
+        kvStore.Put(id, writtenSpan);
+        return new ReferenceChunk(this, id, null);
     }
 
     /*
@@ -75,56 +104,32 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore)
     }
     */
 
-    private ReferenceNode Flush(IndexNode indexNode)
-    {
-        var writer = new PooledMemoryBufferWriter();
-        indexNode.WriteTo(writer);
-        var key = Guid.NewGuid().ToUInt128Guid();
 
-        var writtenSpan = writer.GetWrittenSpan();
-
-        logger.LogDebug("Flushing index node {Key} with {Count} children of size {Size}", key, indexNode.ChildCount, writtenSpan.Length);
-
-
-        var id = NextBlockId();
-        kvStore.Put(id, writtenSpan);
-        return new ReferenceNode(this)
-        {
-            Id = id,
-            Count = indexNode.Count,
-            ChildCount = indexNode.ChildCount,
-            LastDatom = OnHeapDatom.Create(indexNode.LastDatom)
-        };
-    }
-
-    public INode Load(StoreKey id)
+    public IDataChunk Load(StoreKey id)
     {
         if (!kvStore.TryGet(id, out var value))
         {
             throw new InvalidOperationException("Node not found");
         }
 
-        var valueVersion = MemoryMarshal.Read<NodeVersions>(value);
-        switch (valueVersion)
+        var memory = GC.AllocateUninitializedArray<byte>(value.Length);
+        value.CopyTo(memory);
+
+        var reader = new BufferReader(memory);
+        var fourcc = reader.ReadFourCC();
+
+        if (fourcc == FourCC.PackedIndex)
         {
-            /*
-            case NodeVersions.DataNode:
-            {
-                var loaded = new OldAppendableNode(configuration);
-                loaded.InitializeFrom(value);
-                logger.LogDebug("Loaded data node {Key} with {Count} children of size {Size}", id, loaded.ChildCount, value.Length);
-                return loaded;
-            } */
-            case NodeVersions.IndexNode:
-            {
-                var loaded = new IndexNode();
-                loaded.InitializeFrom(this, value);
-                logger.LogDebug("Loaded index node {Key} with {Count} children of size {Size}", id, loaded.ChildCount, value.Length);
-                return loaded;
-            }
-            default:
-                throw new InvalidOperationException("Unknown node version " + valueVersion);
+            return PackedIndexChunk.ReadFrom(ref reader, this, registry);
+
         }
 
+        if (fourcc == FourCC.PackedData)
+        {
+            return PackedChunk.ReadFrom(ref reader);
+        }
+
+
+        throw new NotImplementedException("Unknown node type. " + fourcc);
     }
 }

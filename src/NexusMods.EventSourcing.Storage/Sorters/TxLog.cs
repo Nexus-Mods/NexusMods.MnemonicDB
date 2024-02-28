@@ -12,6 +12,8 @@ namespace NexusMods.EventSourcing.Storage.Sorters;
 /// <param name="registry"></param>
 public class TxLog(AttributeRegistry registry) : IDatomComparator
 {
+    public SortOrders SortOrder => SortOrders.TxLog;
+
     public int Compare(in Datom x, in Datom y)
     {
         var cmp = x.T.CompareTo(y.T);

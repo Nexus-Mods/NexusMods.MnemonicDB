@@ -21,7 +21,6 @@ public static class ColumnReader
         {
             return UnsignedOffsetPackedColumn<T, ulong, byte>.ReadFrom(ref src, length);
         }
-
         if (header == FourCC.ConstByte)
         {
             return ConstantPackedColumn<T, byte>.ReadFrom(ref src, length);
@@ -37,6 +36,16 @@ public static class ColumnReader
             return UnsignedOffsetPackedColumn<T, uint, uint>.ReadFrom(ref src, length);
         }
 
+        if (header == FourCC.OffsetULongAsUInt)
+        {
+            return UnsignedOffsetPackedColumn<T, ulong, uint>.ReadFrom(ref src, length);
+        }
+
+        if (header == FourCC.OffsetByteAsByte)
+        {
+            return UnsignedOffsetPackedColumn<T, byte, byte>.ReadFrom(ref src, length);
+        }
+
         if (header == FourCC.ConstUInt)
         {
             return ConstantPackedColumn<T, uint>.ReadFrom(ref src, length);
@@ -46,6 +55,12 @@ public static class ColumnReader
         {
             return UnsignedOffsetPackedColumn<T, uint, ushort>.ReadFrom(ref src, length);
         }
+
+        if (header == FourCC.OffsetUIntAsByte)
+        {
+            return UnsignedOffsetPackedColumn<T, uint, byte>.ReadFrom(ref src, length);
+        }
+
 
         throw new InvalidOperationException($"Unknown column type: {header}");
     }

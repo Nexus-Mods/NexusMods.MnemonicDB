@@ -8,6 +8,8 @@ namespace NexusMods.EventSourcing.Storage.Sorters;
 
 public class AETV(AttributeRegistry registry) : IDatomComparator
 {
+    public SortOrders SortOrder => SortOrders.AETV;
+
     public int Compare(in Datom x, in Datom y)
     {
         var cmp = x.A.CompareTo(y.A);

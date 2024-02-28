@@ -16,6 +16,8 @@ public class EATV(AttributeRegistry registry) : IDatomComparator
         return new EATVComparer<TBlob>(registry, datoms);
     }
 
+    public SortOrders SortOrder => SortOrders.EATV;
+
     public int Compare(in Datom x, in Datom y)
     {
         var cmp = x.E.CompareTo(y.E);

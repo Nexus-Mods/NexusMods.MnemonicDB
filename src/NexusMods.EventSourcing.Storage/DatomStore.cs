@@ -10,7 +10,7 @@ public class DatomStore : IDatomStore
     private static readonly UInt128 RootKey = "5C68CD24-A4BF-42EA-8892-6BF24956BE74".ToUInt128Guid();
     private readonly IKvStore _kvStore;
     private readonly AttributeRegistry _registry;
-    private RootNode _rootNode = null!;
+    //private RootNode _rootNode = null!;
     private readonly PooledMemoryBufferWriter _pooledWriter;
     private ulong _txId;
 
@@ -29,7 +29,8 @@ public class DatomStore : IDatomStore
     /// </summary>
     private void Bootstrap()
     {
-        _rootNode = new RootNode(_registry);
+
+//        _rootNode = new RootNode(_registry);
         Transact(BuiltInAttributes.InitialDatoms);
     }
 
