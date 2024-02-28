@@ -1,9 +1,11 @@
 ﻿using System.Buffers;
+using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Abstractions;
 
-namespace NexusMods.EventSourcing.Storage.Abstractions;
+namespace NexusMods.EventSourcing.Storage;
 
-public interface IDataChunk
+public interface IDataChunk : IEnumerable<Datom>
 {
     public int Length { get; }
     public IColumn<EntityId> EntityIds { get; }
@@ -13,6 +15,12 @@ public interface IDataChunk
     public IBlobColumn Values { get; }
 
     public Datom this[int idx] { get; }
+
+    /// <summary>
+    /// Used for indexing, called out for optimization, B+Tree branch nodes
+    /// can return their internal datoms instead of calling into the child.
+    /// </summary>
+    public Datom LastDatom { get; }
 
     void WriteTo<TWriter>(TWriter writer)
         where TWriter : IBufferWriter<byte>;

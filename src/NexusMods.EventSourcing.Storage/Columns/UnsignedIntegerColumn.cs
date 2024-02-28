@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions.Columns;
 using NexusMods.EventSourcing.Storage.Abstractions.PackingStrategies;
 
 namespace NexusMods.EventSourcing.Storage.Columns;
 
-public class UnsignedIntegerColumn<T> : IAppendableColumn<T>, IUnpackedColumn<T>
+public class UnsignedIntegerColumn<T> : IAppendableColumn<T>, IUnpackedColumn<T>, IEnumerable<T>
 where T : unmanaged
 {
     private uint _length;
@@ -39,6 +42,15 @@ where T : unmanaged
         _data[_length++] = value;
     }
 
+    /// <summary>
+    /// Clears the column, resetting the length to 0, does not remove the data or resize
+    /// the buffers
+    /// </summary>
+    public void Reset()
+    {
+        _length = 0;
+    }
+
     public void Initialize(ReadOnlySpan<T> value)
     {
         if (_length != 0)
@@ -51,6 +63,15 @@ where T : unmanaged
         }
         value.CopyTo(_data);
         _length = (uint)value.Length;
+    }
+
+    public void Initialize(IEnumerable<T> value)
+    {
+        _length = 0;
+        foreach (var v in value)
+        {
+            Append(v);
+        }
     }
 
     public IColumn<T> Pack()
@@ -75,5 +96,18 @@ where T : unmanaged
             newData[i] = _data[pidxs[i]];
         }
         _data = newData;
+    }
+
+    public IEnumerator<T> GetEnumerator()
+    {
+        for (var i = 0; i < _length; i++)
+        {
+            yield return _data[i];
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

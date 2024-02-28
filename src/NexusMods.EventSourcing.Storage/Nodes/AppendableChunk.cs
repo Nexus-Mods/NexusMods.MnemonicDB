@@ -125,6 +125,9 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
         V = _values[idx]
     };
 
+    public Datom LastDatom => this[Length - 1];
+
+
     public void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
     {
         throw new NotSupportedException("Must pack the chunk before writing it to a buffer.");
@@ -140,4 +143,49 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
             _values.Pack());
     }
 
+    public IEnumerator<Datom> GetEnumerator()
+    {
+        for (var i = 0; i < Length; i++)
+        {
+            yield return this[i];
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
+
+
+    /// <summary>
+    /// Initializes a new chunk with the given datoms.
+    /// </summary>
+    public static AppendableChunk Initialize(IEnumerable<Datom> datoms)
+    {
+        var chunk = new AppendableChunk();
+        foreach (var datom in datoms)
+        {
+            chunk.Append(datom);
+        }
+        return chunk;
+    }
+
+    public (AppendableChunk A, AppendableChunk B) Split()
+    {
+        var mid = Length / 2;
+        var a = new AppendableChunk();
+        var b = new AppendableChunk();
+
+        for (var i = 0; i < mid; i++)
+        {
+            a.Append(this[i]);
+        }
+
+        for (var i = mid; i < Length; i++)
+        {
+            b.Append(this[i]);
+        }
+
+        return (a, b);
+    }
 }

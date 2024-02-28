@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
@@ -35,6 +37,8 @@ public class PackedChunk : IDataChunk
         V = Values[idx]
     };
 
+    public Datom LastDatom => this[Length - 1];
+
     public void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
     {
         writer.WriteFourCC(FourCC.PackedData);
@@ -57,5 +61,18 @@ public class PackedChunk : IDataChunk
         var values = ColumnReader.ReadBlobColumn(ref src, (int)length);
 
         return new PackedChunk((int)length, entityIds, attributeIds, transactionIds, flags, values);
+    }
+
+    public IEnumerator<Datom> GetEnumerator()
+    {
+        for (var i = 0; i < Length; i++)
+        {
+            yield return this[i];
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

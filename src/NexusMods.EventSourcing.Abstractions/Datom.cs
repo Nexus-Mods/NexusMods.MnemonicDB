@@ -30,6 +30,15 @@ public readonly struct Datom
     /// </summary>
     public ReadOnlyMemory<byte> V { get; init; }
 
+    public static Datom Max = new()
+    {
+        E = EntityId.From(ulong.MaxValue),
+        A = AttributeId.From(ulong.MaxValue),
+        T = TxId.MaxValue,
+        F = (DatomFlags)byte.MaxValue,
+        V = ReadOnlyMemory<byte>.Empty
+    };
+
     /// <summary>
     /// Assumes the value is a struct and unmarshals it.
     /// </summary>

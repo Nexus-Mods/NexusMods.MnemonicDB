@@ -27,46 +27,37 @@ public class IndexTests(IServiceProvider provider, IEnumerable<IValueSerializer>
     {
         var testData = TestDatomChunk(entityCount);
 
-        Logger.LogInformation("Sorting initial dataset of {Count} datoms", testData.Length);
-        testData.Sort(comparator);
-        Logger.LogInformation("Sorted initial dataset");
+        var index = new AppendableIndexChunk(comparator);
 
 
-        /*
-        var index = new AppendableIndexChunk();
+        var grouped = testData
+            .GroupBy(d => d.T)
+            .ToArray();
 
         var sw = Stopwatch.StartNew();
+        sw.Stop();
+
         foreach (var group in grouped)
         {
-            var groupSorted = group.OrderBy(d => d.EntityId)
-                .ThenBy(d => d.AttributeId)
-                .ThenBy(d => d.TxId)
-                .ToArray();
-            index.Ingest<ArrayIterator<IRawDatom>, IRawDatom>(groupSorted.Iterate());
+            var newChunk = AppendableChunk.Initialize(group);
+            newChunk.Sort(comparator);
 
-            if (flush)
-                index.Flush(NodeStore);
+            sw.Start();
+            index = index.Ingest(newChunk);
+            sw.Stop();
+
         }
 
-        /*
+        logger.LogInformation("Ingested {DatomCount} datoms in {ElapsedMs}ms", index.Length, sw.ElapsedMilliseconds);
 
-        logger.LogInformation("Ingested {DatomCount} datoms in {ElapsedMs}ms", index.Count, sw.ElapsedMilliseconds);
+        index.Length.Should().Be(testData.Length, "all datoms should be ingested");
 
+        testData.Sort(comparator);
 
-        var allSorted = SortTestData(sortOrder, grouped);
-
-        for (var i = 0; i < allSorted.Length; i++)
+        for (var i = 0; i < testData.Length; i++)
         {
-            var datom = index[i];
-            AssertEqual(datom, allSorted[i], i);
-
+            AssertEqual(index[i], testData[i], i);
         }
-
-        index.Count.Should().Be(grouped.Sum(g => g.Count()), "all datoms should be ingested");
-        */
-
-        //index.ChildCount.Should().Be((int)(index.Count / Configuration.Default.IndexBlockSize), "child count should be correct");
-
     }
 
 
@@ -78,17 +69,6 @@ public class IndexTests(IServiceProvider provider, IEnumerable<IValueSerializer>
             SortOrders.AETV => new AETV(_registry),
             _ => throw new ArgumentOutOfRangeException(nameof(sortOrder), sortOrder, null)
         };
-    }
-    private IRawDatom[] SortTestData(SortOrders sortOrder, IGrouping<ulong, ITypedDatom>[] grouped)
-    {
-        throw new NotImplementedException();
-        /*
-        var comparator = GetComparator(sortOrder);
-        var allSorted = grouped.SelectMany(g => g)
-            .Order(Comparer<ITypedDatom>.Create((a, b) => comparator.Compare(a, b)))
-            .ToArray();
-        return allSorted;
-        */
     }
 
     public IEnumerable<object[]> TestData()

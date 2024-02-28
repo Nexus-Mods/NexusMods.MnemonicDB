@@ -62,4 +62,16 @@ public class AppendableBlobColumn : IAppendableBlobColumn
         _offsets.Shuffle(pidxs);
         _sizes.Shuffle(pidxs);
     }
+
+    public void Initialize(IEnumerable<ReadOnlyMemory<byte>> select)
+    {
+        _offsets.Reset();
+        _sizes.Reset();
+        _writer.Reset();
+
+        foreach (var value in select)
+        {
+            Append(value.Span);
+        }
+    }
 }
