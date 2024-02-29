@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Subjects;
+using System.Threading.Tasks;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage;
+using NexusMods.EventSourcing.Storage.Nodes;
 
 namespace NexusMods.EventSourcing;
 
@@ -43,30 +45,45 @@ public class Connection : IConnection
         if (missing.Length == 0)
             return;
 
-        var datoms = new List<IDatom>();
-
         var newAttrs = new List<DbAttribute>();
 
-        var attrId = existing.Values.Max(a => a.AttrEntityId);
+        var attrId = existing.Values.Max(a => a.AttrEntityId).Value;
         foreach (var attr in missing)
         {
             var id = ++attrId;
 
             var serializer = serializerByType[attr.ValueType];
             var uniqueId = attr.Id;
-            datoms.Add(new AssertDatom<BuiltInAttributes.UniqueId, Symbol>(id, uniqueId));
-            datoms.Add(new AssertDatom<BuiltInAttributes.ValueSerializerId, Symbol>(id, serializer.UniqueId));
-            newAttrs.Add(new DbAttribute(uniqueId, id, serializer.UniqueId));
+            newAttrs.Add(new DbAttribute(uniqueId, AttributeId.From(id), serializer.UniqueId));
         }
-        TxId = _store.Transact(datoms);
 
         _store.RegisterAttributes(newAttrs);
-
     }
 
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
+        var attrIds = _store.Where<BuiltInAttributes.UniqueId>(TxId.MaxValue);
+
+        foreach (var attr in attrIds)
+        {
+            var serializerId = Symbol.Unknown;
+            var uniqueId = Symbol.Unknown;
+
+            foreach (var entityValue in _store
+                         .Where(TxId.MaxValue, attr.E))
+            {
+                /*
+                if (entityValue.A == BuiltInAttributes.ValueSerializerId)
+                    serializerId = entityValue.V;
+                else if (entityValue.A == BuiltInAttributes.UniqueId)
+                    uniqueId = entityValue.V;
+                    */
+            }
+
+        }
+
         throw new NotImplementedException();
+
         /*
         var tx = TxId.MaxValue;
         var attrIterator = _store.Where<BuiltInAttributes.UniqueId>(tx);
@@ -106,11 +123,12 @@ public class Connection : IConnection
 
 
     /// <inheritdoc />
-    public ICommitResult Transact(IEnumerable<IDatom> datoms)
+    public async Task<ICommitResult> Transact(IEnumerable<IWriteDatom> datoms)
     {
         var remaps = new Dictionary<ulong, ulong>();
         var datomsArray = datoms.ToArray();
 
+        /*
         EntityId RemapFn(EntityId input)
         {
             if (Ids.GetPartition(input) == Ids.Partition.Tmp)
@@ -124,22 +142,27 @@ public class Connection : IConnection
                 return EntityId.From(id);
             }
             return input;
-        }
+        }*/
 
-        lock (_lock)
+        /*
+        var newDatoms = new List<ITypedDatom>();
+        foreach (var datom in datomsArray)
         {
-            var newDatoms = new List<IDatom>();
-            foreach (var datom in datomsArray)
-            {
-                datom.Remap(RemapFn);
-                newDatoms.Add(datom);
-            }
-            var newTx = _store.Transact(newDatoms);
-            TxId = newTx;
-            var result = new CommitResult(newTx, remaps, datomsArray);
-            _updates.OnNext(result);
-            return result;
+            datom.Remap(RemapFn);
+            newDatoms.Add(datom);
         }
+        var newTx = await _store.Transact(newDatoms);
+        TxId = newTx;
+        var result = new CommitResult(newTx, remaps, datomsArray);
+        _updates.OnNext(result);
+        return result;
+        */
+        throw new NotImplementedException();
+    }
+
+    public Task<ICommitResult> Transact(IEnumerable<Datom> datoms)
+    {
+        throw new NotImplementedException();
     }
 
     /// <inheritdoc />

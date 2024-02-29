@@ -33,11 +33,6 @@ public interface IAttribute
     /// in the datastore
     /// </summary>
     public Symbol Id { get; }
-
-    /// <summary>
-    /// Reads typed datom from the datom
-    /// </summary>
-    public ITypedDatom Read(in Datom datom);
 }
 
 
@@ -47,13 +42,6 @@ public interface IAttribute
 /// <typeparam name="TVal"></typeparam>
 public interface IAttribute<TVal> : IAttribute
 {
-
-    /// <summary>
-    /// Reads the value from the buffer and returns the value
-    /// </summary>
-    public TVal Read(ReadOnlySpan<byte> buffer);
-
-
     /// <summary>
     /// Creates a new assertion datom for the given entity and value
     /// </summary>

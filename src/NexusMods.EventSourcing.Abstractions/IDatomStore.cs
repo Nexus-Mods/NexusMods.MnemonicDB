@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -11,24 +12,31 @@ public interface IDatomStore : IDisposable
 {
 
     /// <summary>
+    /// Writes a no-op transaction and waits for it to be processed. This is useful
+    /// for making sure that all previous transactions have been processed before continuing.
+    /// </summary>
+    /// <returns></returns>
+    public Task<TxId> Sync();
+
+    /// <summary>
     /// Transacts (adds) the given datoms into the store.
     /// </summary>
-    public TxId Transact(IEnumerable<ITypedDatom> datoms);
+    public Task<TxId> Transact(IEnumerable<IWriteDatom> datoms);
+
+    /// <summary>
+    /// Gets the latest transaction id found in the log.
+    /// </summary>
+    public TxId AsOfTxId { get; }
 
     /// <summary>
     /// Returns all the most recent datoms (less than or equal to txId) with the given attribute.
     /// </summary>
-    /// <param name="txId"></param>
-    /// <typeparam name="TAttr"></typeparam>
-    /// <returns></returns>
-    //IIterator Where<TAttr>(TxId txId) where TAttr : IAttribute;
+    IEnumerable<Datom> Where<TAttr>(TxId txId) where TAttr : IAttribute;
 
     /// <summary>
-    /// Creates an iterator over all entities.
+    /// Returns all the most recent datoms (less than or equal to txId) with the given attribute.
     /// </summary>
-    /// <param name="txId"></param>
-    /// <returns></returns>
-    IEntityIterator EntityIterator(TxId txId);
+    IEnumerable<Datom> Where(TxId txId, EntityId id);
 
     /// <summary>
     /// Registers new attributes with the store. These should already have been transacted into the store.

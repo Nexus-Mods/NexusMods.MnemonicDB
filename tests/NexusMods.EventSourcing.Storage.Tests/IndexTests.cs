@@ -9,8 +9,7 @@ using Xunit.DependencyInjection;
 
 namespace NexusMods.EventSourcing.Storage.Tests;
 
-public class IndexTests(IServiceProvider provider, IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes, ILogger<IndexTests> logger)
-    : AStorageTest(provider, valueSerializers, attributes)
+public class IndexTests(IServiceProvider provider) : AStorageTest(provider)
 {
     [Theory]
     [MethodData(nameof(TestData))]
@@ -53,7 +52,7 @@ public class IndexTests(IServiceProvider provider, IEnumerable<IValueSerializer>
 
 
         var finalIndex = (IIndexChunk)index.Flush(NodeStore);
-        logger.LogInformation("Ingested {DatomCount} datoms in {ElapsedMs}ms", finalIndex.Length, sw.ElapsedMilliseconds);
+        Logger.LogInformation("Ingested {DatomCount} datoms in {ElapsedMs}ms", finalIndex.Length, sw.ElapsedMilliseconds);
 
         finalIndex.Length.Should().Be(testData.Length, "all datoms should be ingested");
 

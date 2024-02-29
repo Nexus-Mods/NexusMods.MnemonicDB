@@ -13,4 +13,16 @@ public readonly partial struct TxId
     /// Maximum possible value for a TxId.
     /// </summary>
     public static TxId MaxValue = From(ulong.MaxValue);
+
+    /// <summary>
+    /// The minimum possible value for a TxId.
+    /// </summary>
+    public static TxId MinValue = From(Ids.MakeId(Ids.Partition.Tx, 0));
+
+    /// <summary>
+    /// The minimum possible value for a TxId after the database has been bootstrapped.
+    /// </summary>
+    public static TxId MinValueAfterBootstrap = From(Ids.MakeId(Ids.Partition.Tx, 1));
+
+    public static TxId Tmp => TxId.From(Ids.MakeId(Ids.Partition.Tmp, 0));
 }

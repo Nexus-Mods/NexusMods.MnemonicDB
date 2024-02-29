@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.Models;
 
@@ -10,6 +11,8 @@ internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
 
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids) where TModel : IReadModel
     {
+        throw new NotImplementedException();
+        /*
         using var iterator = store.EntityIterator(txId);
         var reader = connection.ModelReflector.GetReader<TModel>();
         foreach (var id in ids)
@@ -18,19 +21,24 @@ internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
             var model = reader(id, iterator, this);
             yield return model;
         }
+        */
     }
 
     public TModel Get<TModel>(EntityId id) where TModel : IReadModel
     {
+        /*
         using var iterator = store.EntityIterator(txId);
         iterator.Set(id);
         var reader = connection.ModelReflector.GetReader<TModel>();
         return reader(id, iterator, this);
+        */
+        throw new NotImplementedException();
     }
 
     /// <inheritdoc />
     public IEnumerable<TModel> GetReverse<TAttribute, TModel>(EntityId id) where TAttribute : IAttribute<EntityId> where TModel : IReadModel
     {
+        /*
         var iterator = store.ReverseLookup<TAttribute>(txId);
         using var entityIterator = store.EntityIterator(txId);
         var reader = connection.ModelReflector.GetReader<TModel>();
@@ -40,5 +48,7 @@ internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
             var model = reader(entityId, entityIterator, this);
             yield return model;
         }
+        */
+        throw new NotImplementedException();
     }
 }

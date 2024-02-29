@@ -8,45 +8,27 @@ using NexusMods.EventSourcing.Storage.Serializers;
 
 namespace NexusMods.EventSourcing.Storage.Tests;
 
-public class AStorageTest
+public class AStorageTest : IAsyncLifetime
 {
     protected readonly AttributeRegistry _registry;
     protected readonly NodeStore NodeStore;
+    protected readonly IDatomStore DatomStore;
     private readonly InMemoryKvStore _kvStore;
 
     protected readonly ILogger Logger;
 
-    public AStorageTest(IServiceProvider provider, IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
+    public AStorageTest(IServiceProvider provider)
     {
-        _registry = new AttributeRegistry(valueSerializers, attributes);
+        _registry = new AttributeRegistry(provider.GetRequiredService<IEnumerable<IValueSerializer>>(),
+            provider.GetRequiredService<IEnumerable<IAttribute>>());
         _registry.Populate([
             new DbAttribute(Symbol.Intern<TestAttributes.FileHash>(), AttributeId.From(10), Symbol.Intern<UInt64Serializer>()),
             new DbAttribute(Symbol.Intern<TestAttributes.FileName>(), AttributeId.From(11), Symbol.Intern<StringSerializer>())
         ]);
         _kvStore = new InMemoryKvStore();
         NodeStore = new NodeStore(provider.GetRequiredService<ILogger<NodeStore>>(), _kvStore, _registry);
+        DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), NodeStore, _registry);
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
-    }
-
-
-    public IEnumerable<ITypedDatom> TestDatoms(ulong entityCount = 100)
-    {
-        var emitters = new Func<EntityId, TxId, ulong, ITypedDatom>[]
-        {
-            (e, tx, v) => Assert<TestAttributes.FileHash>(e, tx, v),
-            (e, tx, v) => Assert<TestAttributes.FileName>(e, tx, "file " + v),
-        };
-
-        for (ulong e = 0; e < entityCount; e++)
-        {
-            for (var a = 0; a < 2; a ++)
-            {
-                for (ulong v = 0; v < 3; v++)
-                {
-                    yield return emitters[a](EntityId.From(e), TxId.From(v), v);
-                }
-            }
-        }
     }
 
     public AppendableChunk TestDatomChunk(int entityCount = 100)
@@ -81,17 +63,13 @@ public class AStorageTest
         a.V.Span.SequenceEqual(b.V.Span).Should().BeTrue("at index " + i);
     }
 
-
-    protected ITypedDatom Assert<TAttribute>(EntityId e, TxId tx, ulong value)
-        where TAttribute : IAttribute<ulong>
+    public async Task InitializeAsync()
     {
-        return _registry.Datom<TAttribute, ulong>(e, tx, value);
+        await DatomStore.Sync();
     }
 
-    protected ITypedDatom Assert<TAttribute>(EntityId e, TxId tx, string value)
-        where TAttribute : IAttribute<string>
+    public Task DisposeAsync()
     {
-        return _registry.Datom<TAttribute, string>(e, tx, value);
+        return Task.CompletedTask;
     }
-
 }

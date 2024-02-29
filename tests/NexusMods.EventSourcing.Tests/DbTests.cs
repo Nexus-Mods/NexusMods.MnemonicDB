@@ -1,12 +1,12 @@
 ﻿using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.TestModel.Model;
 using NexusMods.EventSourcing.TestModel.Model.Attributes;
+using Xunit.Sdk;
 using File = NexusMods.EventSourcing.TestModel.Model.File;
 
 namespace NexusMods.EventSourcing.Tests;
 
-public class DbTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
-    : AEventSourcingTest(valueSerializers, attributes)
+public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
 {
     [Fact]
     public void ReadDatomsForEntity()
@@ -129,6 +129,9 @@ public class DbTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable
     [Fact]
     public void CanGetCommitUpdates()
     {
+
+        throw new NotImplementedException();
+        /*
         List<IDatom[]> updates = new();
 
         Connection.Commits.Subscribe(update =>
@@ -162,6 +165,7 @@ public class DbTests(IEnumerable<IValueSerializer> valueSerializers, IEnumerable
                 .First();
             updateDatom.V.Should().Be((ulong)idx);
         }
+        */
 
     }
 

@@ -19,16 +19,17 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeReg
     /// </summary>
     /// <param name="node"></param>
     /// <returns></returns>
-    /*
-    public TxId LogTx(OldAppendableNode node)
+    public TxId LogTx(AppendableChunk node)
     {
         var thisTx = ++_txLogId;
         Interlocked.Exchange(ref _nextBlockId, Ids.MakeId(Ids.Partition.Index, thisTx << 16));
         _nextBlockId = Ids.MakeId(Ids.Partition.Index, thisTx << 16);
         var logId = Ids.MakeId(Ids.Partition.TxLog, thisTx);
-        Flush(StoreKey.From(logId), node);
+
+        var packed = node.Pack();
+        Flush(StoreKey.From(logId), (PackedChunk)packed);
         return TxId.From(logId);
-    }*/
+    }
 
     private StoreKey NextBlockId()
     {
@@ -76,6 +77,14 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeReg
         var id = NextBlockId();
         kvStore.Put(id, writtenSpan);
         return new ReferenceChunk(this, id, null);
+    }
+
+    private void Flush(StoreKey key, PackedChunk chunk)
+    {
+        var writer = new PooledMemoryBufferWriter();
+        chunk.WriteTo(writer);
+        var writtenSpan = writer.GetWrittenSpan();
+        kvStore.Put(key, writtenSpan);
     }
 
     /*
@@ -131,5 +140,10 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeReg
 
 
         throw new NotImplementedException("Unknown node type. " + fourcc);
+    }
+
+    public TxId GetNextTx()
+    {
+        return TxId.From(_txLogId + 1);
     }
 }

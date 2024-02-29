@@ -6,8 +6,7 @@ using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage.Tests;
 
-public class OldAppendableNodeTests(IServiceProvider provider, IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
-    : AStorageTest(provider, valueSerializers, attributes)
+public class AppendableChunkTests(IServiceProvider provider) : AStorageTest(provider)
 {
     [Fact]
     public void CanAppendDataToBlock()

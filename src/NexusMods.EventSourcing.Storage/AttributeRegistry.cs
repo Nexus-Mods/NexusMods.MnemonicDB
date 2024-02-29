@@ -14,7 +14,7 @@ namespace NexusMods.EventSourcing.Storage;
 /// Tracks all attributes and their respective serializers as well as the DB entity IDs for each
 /// attribute
 /// </summary>
-public class AttributeRegistry
+public class AttributeRegistry : IAttributeRegistry
 {
     private readonly Dictionary<Type,IValueSerializer> _valueSerializersByNativeType;
     private readonly Dictionary<Symbol,IAttribute> _attributesById;
@@ -94,48 +94,6 @@ public class AttributeRegistry
         return Expression.Block([valueExpr], readExpression, valueExpr);
     }
 
-    public ITypedDatom Datom<TAttribute, TValue>(EntityId entity, TxId tx, TValue value)
-        where TAttribute : IAttribute<TValue>
-    {
-        return new TypedDatom<TAttribute, TValue>
-        {
-            E = entity,
-            V = value,
-            T = tx,
-            Flags = DatomFlags.Added
-        };
-    }
-
-    /// <summary>
-    /// Converts a typed datom to a datom, this is rather slow and should be used sparingly mostly for testing
-    /// </summary>
-    /// <param name="datom"></param>
-    /// <typeparam name="TAttribute"></typeparam>
-    /// <typeparam name="TValue"></typeparam>
-    /// <returns></returns>
-    /// <exception cref="InvalidOperationException"></exception>
-    public Datom Datom<TAttribute, TValue>(ITypedDatom datom)
-    where TAttribute : IAttribute<TValue>
-    {
-        if (datom is not TypedDatom<TAttribute, TValue> typedDatom)
-            throw new InvalidOperationException($"Invalid datom type {datom.GetType()}");
-
-        var attrInstance = _attributesByType[typeof(TAttribute)];
-        var dbAttr = _dbAttributesByUniqueId[attrInstance.Id];
-        var serializer = (IValueSerializer<TValue>)_valueSerializersByUniqueId[dbAttr.ValueTypeId];
-        var writer = new PooledMemoryBufferWriter();
-        serializer.Serialize(typedDatom.V, writer);
-
-        return new Datom
-        {
-            E = typedDatom.E,
-            A = GetAttributeId<TAttribute>(),
-            T = typedDatom.T,
-            F = typedDatom.Flags,
-            V = writer.WrittenMemory
-        };
-    }
-
     public void Append<TAttribute, TValue>(AppendableChunk chunk, EntityId entityId, TxId tx, DatomFlags flags, TValue value)
     where TAttribute : IAttribute<TValue>
     {
@@ -150,16 +108,24 @@ public class AttributeRegistry
         var attr = _dbAttributesByEntityId[attributeId];
         var type = _valueSerializersByUniqueId[attr.ValueTypeId];
 
-        var dA = new Datom()
+        var dA = new Datom
         {
             V = datomsValues[a]
         };
 
-        var dB = new Datom()
+        var dB = new Datom
         {
             V = datomsValues[b]
         };
 
         return type.Compare(dA, dB);
+    }
+
+    public void Append<TAttribute, TValue>(IAppendableChunk chunk, EntityId e, TValue value, TxId t, DatomFlags f) where TAttribute : IAttribute<TValue>
+    {
+        var serializer = (IValueSerializer<TValue>)_valueSerializersByNativeType[typeof(TValue)];
+        var attr = _attributesByType[typeof(TAttribute)];
+        var dbAttr = _dbAttributesByUniqueId[attr.Id];
+        chunk.Append(e, dbAttr.AttrEntityId, t, f, serializer, value);
     }
 }

@@ -13,6 +13,8 @@ public static class Services
         services.AddValueSerializer<SymbolSerializer>();
         services.AddValueSerializer<TxIdSerializer>();
         services.AddValueSerializer<EntityIdSerializer>();
+        services.AddAttribute<BuiltInAttributes.UniqueId>();
+        services.AddAttribute<BuiltInAttributes.ValueSerializerId>();
         services.AddSingleton<IDatomStore, DatomStore>();
         return services;
     }

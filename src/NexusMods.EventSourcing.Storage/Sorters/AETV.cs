@@ -19,7 +19,7 @@ public class AETV(AttributeRegistry registry) : IDatomComparator
         if (cmp != 0) return cmp;
 
         cmp = x.T.CompareTo(y.T);
-        if (cmp != 0) return cmp;
+        if (cmp != 0) return -cmp;
 
         return registry.CompareValues(x, y);
     }
@@ -43,8 +43,9 @@ internal unsafe class AETVComparer<TBlob>(AttributeRegistry registry, MemoryDato
         cmp = datoms.EntityIds[a].CompareTo(datoms.EntityIds[b]);
         if (cmp != 0) return cmp;
 
+        // Reverse the comparison of transaction ids to get the latest transaction first
         cmp = datoms.TransactionIds[a].CompareTo(datoms.TransactionIds[b]);
-        if (cmp != 0) return cmp;
+        if (cmp != 0) return -cmp;
 
         return registry.CompareValues(datoms.Values, datoms.AttributeIds[a], a, b);
     }

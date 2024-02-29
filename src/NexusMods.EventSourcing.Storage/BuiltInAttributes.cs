@@ -44,7 +44,7 @@ public static class BuiltInAttributes
         new DbAttribute(ValueSerializerIdStaticId, ValueSerializerIdEntityId, SymbolSerializer.Id),
     ];
 
-    public static readonly ITypedDatom[] InitialDatoms = [
+    public static readonly IWriteDatom[] InitialDatoms = [
         UniqueId.Assert(UniqueIdEntityId.ToEntityId(), UniqueIdStaticId),
         ValueSerializerId.Assert(UniqueIdEntityId.ToEntityId(), SymbolSerializer.Id),
 

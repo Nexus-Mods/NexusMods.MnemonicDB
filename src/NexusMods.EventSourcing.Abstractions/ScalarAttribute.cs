@@ -65,10 +65,6 @@ where TAttribute : IAttribute<TValueType>
     /// <inheritdoc />
     public Symbol Id { get; }
 
-    public ITypedDatom Read(in Datom datom)
-    {
-        throw new NotImplementedException();
-    }
 
 
     /// <summary>
@@ -77,15 +73,63 @@ where TAttribute : IAttribute<TValueType>
     /// <param name="e"></param>
     /// <param name="v"></param>
     /// <returns></returns>
-    public static TypedDatom<TAttribute, TValueType> Assert(EntityId e, TValueType v)
+    public static IWriteDatom Assert(EntityId e, TValueType v)
     {
-        return new TypedDatom<TAttribute, TValueType>
+        return new WriteDatom
         {
             E = e,
-            T = TxId.From(0),
             V = v,
-            Flags = DatomFlags.Added,
         };
+    }
+
+    public static IReadDatom Datom(EntityId id, TxId tx, TValueType valueType)
+    {
+        return new ReadDatom
+        {
+            E = id,
+            V = valueType,
+            T = tx,
+            Flags = DatomFlags.Added
+        };
+    }
+
+    /// <summary>
+    /// Typed datom for this attribute
+    /// </summary>
+    public readonly record struct WriteDatom : IWriteDatom
+    {
+        public required EntityId E { get; init; }
+        public required TValueType V { get; init; }
+        public DatomFlags Flags => DatomFlags.Added;
+
+        public void Append(IAttributeRegistry registry, IAppendableChunk chunk)
+        {
+            registry.Append<TAttribute, TValueType>(chunk, E, V, TxId.Tmp, Flags);
+        }
+
+        public override string ToString()
+        {
+            return $"({E}, {typeof(TAttribute).Name}, {V})";
+        }
+    }
+
+    /// <summary>
+    /// Typed datom for this attribute
+    /// </summary>
+    public readonly record struct ReadDatom : IReadDatom
+    {
+        public required EntityId E { get; init; }
+        public required TValueType V { get; init; }
+
+        public required TxId T { get; init; }
+        public DatomFlags Flags { get; init; }
+        public override string ToString()
+        {
+            return $"({E}, {typeof(TAttribute).Name}, {V}, {T}, {Flags})";
+        }
+
+        public Type AttributeType => typeof(TAttribute);
+        public Type ValueType => typeof(TValueType);
     }
 
 }

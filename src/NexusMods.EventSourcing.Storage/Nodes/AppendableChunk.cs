@@ -7,6 +7,7 @@ using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions.Columns;
 using NexusMods.EventSourcing.Storage.Algorithms;
 using NexusMods.EventSourcing.Storage.Columns;
+using NexusMods.EventSourcing.Storage.Columns.PackedColumns;
 using NexusMods.EventSourcing.Storage.Datoms;
 using NexusMods.EventSourcing.Storage.Sorters;
 
@@ -20,7 +21,7 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
 {
     private readonly UnsignedIntegerColumn<EntityId> _entityIds;
     private readonly UnsignedIntegerColumn<AttributeId> _attributeIds;
-    private readonly UnsignedIntegerColumn<TxId> _transactionIds;
+    private UnsignedIntegerColumn<TxId> _transactionIds;
     private readonly UnsignedIntegerColumn<DatomFlags> _flags;
     private readonly AppendableBlobColumn _values;
 
@@ -192,5 +193,19 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
             b.Append(this[i]);
         }
         return (a, b);
+    }
+
+    public void Append(IDataChunk chunk)
+    {
+        // TODO: Vectorize this
+        foreach (var t in chunk)
+        {
+            Append(t);
+        }
+    }
+
+    public void SetTx(TxId nextTx)
+    {
+        _transactionIds = UnsignedIntegerColumn<TxId>.UnpackFrom(new ConstantPackedColumn<TxId, ulong>(_transactionIds.Length, nextTx));
     }
 }
