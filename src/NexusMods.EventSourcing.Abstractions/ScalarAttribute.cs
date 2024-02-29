@@ -65,6 +65,18 @@ where TAttribute : IAttribute<TValueType>
     /// <inheritdoc />
     public Symbol Id { get; }
 
+    /// <inheritdoc />
+    public IReadDatom Resolve(Datom datom)
+    {
+        _serializer.Read(datom.V.Span, out var read);
+        return new ReadDatom
+        {
+            E = datom.E,
+            V = read,
+            T = datom.T,
+            Flags = datom.F
+        };
+    }
 
 
     /// <summary>

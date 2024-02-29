@@ -128,4 +128,16 @@ public class AttributeRegistry : IAttributeRegistry
         var dbAttr = _dbAttributesByUniqueId[attr.Id];
         chunk.Append(e, dbAttr.AttrEntityId, t, f, serializer, value);
     }
+
+    public IReadDatom Resolve(Datom datom)
+    {
+        if (!_dbAttributesByEntityId.TryGetValue(datom.A, out var dbAttr))
+            throw new InvalidOperationException($"No attribute found for entity ID {datom.A}");
+
+        if (!_attributesById.TryGetValue(dbAttr.UniqueId, out var attr))
+            throw new InvalidOperationException($"No attribute found for unique ID {dbAttr.UniqueId}");
+
+        return attr.Resolve(datom);
+
+    }
 }

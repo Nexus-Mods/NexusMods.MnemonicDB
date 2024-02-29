@@ -27,7 +27,8 @@ public class SymbolSerializer : IValueSerializer<Symbol>
 
     public int Read(ReadOnlySpan<byte> buffer, out Symbol val)
     {
-        throw new NotImplementedException();
+        val = Symbol.Intern(_encoding.GetString(buffer));
+        return _encoding.GetByteCount(val.Id);
     }
 
     public void Serialize<TWriter>(Symbol value, TWriter buffer) where TWriter : IBufferWriter<byte>

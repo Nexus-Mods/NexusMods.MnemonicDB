@@ -39,10 +39,16 @@ public interface IDatomStore : IDisposable
     IEnumerable<Datom> Where(TxId txId, EntityId id);
 
     /// <summary>
+    /// Resolves the given datoms to typed datoms.
+    /// </summary>
+    /// <param name="datoms"></param>
+    IEnumerable<IReadDatom> Resolved(IEnumerable<Datom> datoms);
+
+    /// <summary>
     /// Registers new attributes with the store. These should already have been transacted into the store.
     /// </summary>
     /// <param name="newAttrs"></param>
-    void RegisterAttributes(IEnumerable<DbAttribute> newAttrs);
+    Task<TxId> RegisterAttributes(IEnumerable<DbAttribute> newAttrs);
 
     /// <summary>
     /// Gets the attributeId for the given attribute. And returns an expression that reads the attribute

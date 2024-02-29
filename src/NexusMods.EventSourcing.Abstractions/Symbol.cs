@@ -17,6 +17,12 @@ public class Symbol
         nsAndName = nsAndName.Replace("+", ".");
         Id = nsAndName;
         var splitOn = nsAndName.LastIndexOf('.');
+        if (splitOn == -1)
+        {
+            Name = nsAndName;
+            Namespace = "";
+            return;
+        }
         Name = nsAndName[(splitOn + 1)..];
         Namespace = nsAndName[..splitOn];
     }

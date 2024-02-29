@@ -150,12 +150,51 @@ public class DatomStore : IDatomStore
 
     public IEnumerable<Datom> Where(TxId txId, EntityId id)
     {
-        throw new NotImplementedException();
+        var index = _indexes.EAVT;
+
+        var startDatom = new Datom
+        {
+            E = id,
+            A = AttributeId.From(0),
+            T = TxId.MaxValue,
+            F = DatomFlags.Added,
+        };
+        var offset = BinarySearch.SeekEqualOrLess(index.InMemory, index.Comparator, 0, index.InMemory.Length, startDatom);
+
+        var lastAttr = AttributeId.From(0);
+
+        for (var idx = offset; idx < index.InMemory.Length; idx++)
+        {
+            var datom = index.InMemory[idx];
+            if (datom.E != id) break;
+            if (datom.T > txId) continue;
+
+            if (datom.A != lastAttr)
+            {
+                lastAttr = datom.A;
+                yield return datom;
+            }
+
+            yield return datom;
+        }
     }
 
-    public void RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
+    public IEnumerable<IReadDatom> Resolved(IEnumerable<Datom> datoms)
     {
-        throw new NotImplementedException();
+        return datoms.Select(datom => _registry.Resolve(datom));
+    }
+
+    public Task<TxId> RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
+    {
+        var datoms = new List<IWriteDatom>();
+
+        foreach (var attr in newAttrs)
+        {
+            datoms.Add(BuiltInAttributes.UniqueId.Assert(EntityId.From(attr.AttrEntityId.Value), attr.UniqueId));
+            datoms.Add(BuiltInAttributes.ValueSerializerId.Assert(EntityId.From(attr.AttrEntityId.Value), attr.ValueTypeId));
+        }
+
+        return Transact(datoms);
     }
 
     public Expression GetValueReadExpression(Type attribute, Expression valueSpan, out ulong attributeId)

@@ -33,6 +33,13 @@ public interface IAttribute
     /// in the datastore
     /// </summary>
     public Symbol Id { get; }
+
+    /// <summary>
+    /// Converts the datom to a typed datom
+    /// </summary>
+    /// <param name="datom"></param>
+    /// <returns></returns>
+    IReadDatom Resolve(Datom datom);
 }
 
 

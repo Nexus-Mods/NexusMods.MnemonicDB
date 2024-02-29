@@ -17,31 +17,39 @@ public class Connection : IConnection
     private readonly object _lock = new();
     private ulong _nextEntityId = Ids.MinId(Ids.Partition.Entity);
     private readonly IDatomStore _store;
-    private readonly IAttribute[] _declaredAttributes;
     internal readonly ModelReflector<Transaction> ModelReflector;
     private readonly Subject<ICommitResult> _updates;
 
     /// <summary>
     /// Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    public Connection(IDatomStore store, IEnumerable<IAttribute> declaredAttributes, IEnumerable<IValueSerializer> serializers)
+    private Connection(IDatomStore store)
     {
         _store = store;
-        _declaredAttributes = declaredAttributes.ToArray();
         ModelReflector = new ModelReflector<Transaction>(store);
 
         _updates = new Subject<ICommitResult>();
 
-        AddMissingAttributes(serializers);
     }
 
-    private void AddMissingAttributes(IEnumerable<IValueSerializer> valueSerializers)
+    /// <summary>
+    /// Creates and starts a new connection, some setup and reflection is done here so it is async
+    /// </summary>
+    public static async Task<Connection> Start(IDatomStore store, IEnumerable<IValueSerializer> serializers, IEnumerable<IAttribute> declaredAttributes)
+    {
+        var conn = new Connection(store);
+        await conn.AddMissingAttributes(serializers, declaredAttributes);
+        return conn;
+    }
+
+
+    private async Task AddMissingAttributes(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> declaredAttributes)
     {
         var serializerByType = valueSerializers.ToDictionary(s => s.NativeType);
 
         var existing = ExistingAttributes().ToDictionary(a => a.UniqueId);
 
-        var missing = _declaredAttributes.Where(a => !existing.ContainsKey(a.Id)).ToArray();
+        var missing = declaredAttributes.Where(a => !existing.ContainsKey(a.Id)).ToArray();
         if (missing.Length == 0)
             return;
 
@@ -57,7 +65,7 @@ public class Connection : IConnection
             newAttrs.Add(new DbAttribute(uniqueId, AttributeId.From(id), serializer.UniqueId));
         }
 
-        _store.RegisterAttributes(newAttrs);
+        await _store.RegisterAttributes(newAttrs);
     }
 
     private IEnumerable<DbAttribute> ExistingAttributes()
@@ -69,48 +77,22 @@ public class Connection : IConnection
             var serializerId = Symbol.Unknown;
             var uniqueId = Symbol.Unknown;
 
-            foreach (var entityValue in _store
-                         .Where(TxId.MaxValue, attr.E))
+            foreach (var datom in _store
+                         .Where(TxId.MaxValue, attr.E)
+                         .Typed(_store))
             {
-                /*
-                if (entityValue.A == BuiltInAttributes.ValueSerializerId)
-                    serializerId = entityValue.V;
-                else if (entityValue.A == BuiltInAttributes.UniqueId)
-                    uniqueId = entityValue.V;
-                    */
-            }
-
-        }
-
-        throw new NotImplementedException();
-
-        /*
-        var tx = TxId.MaxValue;
-        var attrIterator = _store.Where<BuiltInAttributes.UniqueId>(tx);
-        var entIterator = _store.EntityIterator(tx);
-        while (attrIterator.Next())
-        {
-            entIterator.Set(attrIterator.EntityId);
-
-            var serializerId = Symbol.Unknown;
-            Symbol uniqueId = null!;
-
-            while (entIterator.Next())
-            {
-                var current = entIterator.Current;
-                switch (current)
+                switch (datom)
                 {
-                    case AssertDatom<BuiltInAttributes.ValueSerializerId, Symbol> serializerIdDatom:
+                    case BuiltInAttributes.ValueSerializerId.ReadDatom serializerIdDatom:
                         serializerId = serializerIdDatom.V;
                         break;
-                    case AssertDatom<BuiltInAttributes.UniqueId, Symbol> uniqueIdDatom:
+                    case BuiltInAttributes.UniqueId.ReadDatom uniqueIdDatom:
                         uniqueId = uniqueIdDatom.V;
                         break;
                 }
             }
-            yield return new DbAttribute(uniqueId, attrIterator.EntityId.Value, serializerId);
+            yield return new DbAttribute(uniqueId, AttributeId.From(attr.E.Value), serializerId);
         }
-        */
     }
 
 
