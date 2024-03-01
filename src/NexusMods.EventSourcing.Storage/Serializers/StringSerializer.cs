@@ -25,7 +25,8 @@ public class StringSerializer : IValueSerializer<string>
 
     public int Read(ReadOnlySpan<byte> buffer, out string val)
     {
-        throw new NotImplementedException();
+        val = _encoding.GetString(buffer);
+        return buffer.Length;
     }
 
     public void Serialize<TWriter>(string value, TWriter buffer) where TWriter : IBufferWriter<byte>

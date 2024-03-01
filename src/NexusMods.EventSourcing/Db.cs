@@ -14,7 +14,7 @@ internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
         var reader = connection.ModelReflector.GetReader<TModel>();
         foreach (var id in ids)
         {
-            var iterator = store.Where(txId, id);
+            var iterator = store.Where(txId, id).GetEnumerator();
             yield return reader(id, iterator, this);
         }
     }

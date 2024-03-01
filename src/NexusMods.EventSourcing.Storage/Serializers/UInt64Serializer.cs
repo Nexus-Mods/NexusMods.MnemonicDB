@@ -29,7 +29,8 @@ public class UInt64Serializer : IValueSerializer<ulong>
 
     public int Read(ReadOnlySpan<byte> buffer, out ulong val)
     {
-        throw new NotImplementedException();
+        val = MemoryMarshal.Read<ulong>(buffer);
+        return sizeof(ulong);
     }
 
     public void Serialize<TWriter>(ulong value, TWriter buffer) where TWriter : IBufferWriter<byte>

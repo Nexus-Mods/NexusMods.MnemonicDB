@@ -33,7 +33,7 @@ public class DatomStore : IDatomStore
         _nodeStore = nodeStore;
         _registry = registry;
         _pooledWriter = new PooledMemoryBufferWriter();
-        _nextEntId = EntityId.MinValue;
+        _nextEntId = EntityId.From(Ids.MinId(Ids.Partition.Entity) + 1);
 
         registry.Populate(BuiltInAttributes.Initial);
 
@@ -243,10 +243,10 @@ public class DatomStore : IDatomStore
                     }
                     else
                     {
-                        id = _nextEntId;
                         pendingTransaction.Remaps.Add(id, _nextEntId);
+                        var remapTo = _nextEntId;
                         _nextEntId = EntityId.From(_nextEntId.Value + 1);
-                        return _nextEntId;
+                        return remapTo;
                     }
                 }
                 else

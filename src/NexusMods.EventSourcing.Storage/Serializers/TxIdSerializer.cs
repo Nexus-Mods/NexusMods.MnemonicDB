@@ -21,7 +21,8 @@ public class TxIdSerializer : IValueSerializer<TxId>
 
     public int Read(ReadOnlySpan<byte> buffer, out TxId val)
     {
-        throw new NotImplementedException();
+        val = MemoryMarshal.Read<TxId>(buffer);
+        return sizeof(ulong);
     }
 
     public void Serialize<TWriter>(TxId value, TWriter buffer) where TWriter : IBufferWriter<byte>
