@@ -24,16 +24,20 @@ internal class Transaction(Connection connection) : ITransaction
     public void Add<TReadModel>(TReadModel model)
     where TReadModel : IReadModel
     {
-        connection.ModelReflector.Add(this, model);
+        _models.Add(model);
     }
 
     public void Add<TAttribute, TVal>(EntityId entityId, TVal val) where TAttribute : IAttribute<TVal>
     {
-        throw new NotImplementedException();
+        _datoms.Add(TAttribute.Assert(entityId, val));
     }
 
     public async Task<ICommitResult> Commit()
     {
+        foreach (var model in _models)
+        {
+            connection.ModelReflector.Add(this, model);
+        }
         return await connection.Transact(_datoms);
     }
 

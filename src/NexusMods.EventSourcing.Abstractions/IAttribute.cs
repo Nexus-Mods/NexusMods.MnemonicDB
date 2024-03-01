@@ -53,4 +53,12 @@ public interface IAttribute<TVal> : IAttribute
     /// Creates a new assertion datom for the given entity and value
     /// </summary>
     public static abstract void Add(ITransaction tx, EntityId entity, TVal value);
+
+    /// <summary>
+    /// Construct a new write Datom for the given entity and value
+    /// </summary>
+    /// <param name="e"></param>
+    /// <param name="v"></param>
+    /// <returns></returns>
+    public static abstract IWriteDatom Assert(EntityId e, TVal v);
 }
