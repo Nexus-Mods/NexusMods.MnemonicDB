@@ -24,6 +24,7 @@ public class DatomStore : IDatomStore
     private DatomStoreState _indexes;
     private readonly ILogger<DatomStore> _logger;
     private readonly Channel<PendingTransaction> _txChannel;
+    private EntityId _nextEntId;
 
 
     public DatomStore(ILogger<DatomStore> logger, NodeStore nodeStore, AttributeRegistry registry)
@@ -32,6 +33,7 @@ public class DatomStore : IDatomStore
         _nodeStore = nodeStore;
         _registry = registry;
         _pooledWriter = new PooledMemoryBufferWriter();
+        _nextEntId = EntityId.MinValue;
 
         registry.Populate(BuiltInAttributes.Initial);
 
@@ -49,27 +51,28 @@ public class DatomStore : IDatomStore
         var sw = Stopwatch.StartNew();
         while (await _txChannel.Reader.WaitToReadAsync())
         {
-            var value = await _txChannel.Reader.ReadAsync();
+            var pendingTransaction = await _txChannel.Reader.ReadAsync();
             try
             {
-                if (value.Data.Length == 0)
+                if (pendingTransaction.Data.Length == 0)
                 {
-                    value.CompletionSource.SetResult(_indexes.AsOfTxId);
+                    pendingTransaction.AssignedTxId = _indexes.AsOfTxId;
+                    pendingTransaction.CompletionSource.SetResult(_indexes.AsOfTxId);
                     continue;
                 }
 
-                _logger.LogDebug("Processing transaction with {DatomCount} datoms", value.Data.Length);
+                _logger.LogDebug("Processing transaction with {DatomCount} datoms", pendingTransaction.Data.Length);
                 sw.Restart();
-                var tx = Log(value.Data, out var chunk);
+                Log(pendingTransaction, out var chunk);
 
-                await UpdateInMemoryIndexes(chunk, tx);
+                await UpdateInMemoryIndexes(chunk, pendingTransaction.AssignedTxId!.Value);
 
-                value.CompletionSource.SetResult(tx);
-                _logger.LogDebug("Transaction {TxId} processed in {Elapsed}ms, new in-memory size is {Count} datoms", tx, sw.ElapsedMilliseconds, _indexes.InMemorySize);
+                pendingTransaction.CompletionSource.SetResult(pendingTransaction.AssignedTxId.Value);
+                _logger.LogDebug("Transaction {TxId} processed in {Elapsed}ms, new in-memory size is {Count} datoms", pendingTransaction.AssignedTxId!.Value, sw.ElapsedMilliseconds, _indexes.InMemorySize);
             }
             catch (Exception ex)
             {
-                value.CompletionSource.TrySetException(ex);
+                pendingTransaction.CompletionSource.TrySetException(ex);
             }
         }
     }
@@ -100,16 +103,19 @@ public class DatomStore : IDatomStore
 
     public async Task<TxId> Sync()
     {
-        return await Transact(Enumerable.Empty<IWriteDatom>());
+        await Transact(Enumerable.Empty<IWriteDatom>());
+        return _indexes.AsOfTxId;
     }
 
-    public async Task<TxId> Transact(IEnumerable<IWriteDatom> datoms)
+    public async Task<DatomStoreTransactResult> Transact(IEnumerable<IWriteDatom> datoms)
     {
         var pending = new PendingTransaction { Data = datoms.ToArray() };
         if (!_txChannel.Writer.TryWrite(pending))
             throw new InvalidOperationException("Failed to write to the transaction channel");
 
-        return await pending.CompletionSource.Task;
+        await pending.CompletionSource.Task;
+
+        return new DatomStoreTransactResult(pending.AssignedTxId!.Value, pending.Remaps);
     }
 
     private async Task UpdateInMemoryIndexes(IDataChunk chunk, TxId newTx)
@@ -184,7 +190,7 @@ public class DatomStore : IDatomStore
         return datoms.Select(datom => _registry.Resolve(datom));
     }
 
-    public Task<TxId> RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
+    public async Task RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
     {
         var datoms = new List<IWriteDatom>();
 
@@ -194,12 +200,12 @@ public class DatomStore : IDatomStore
             datoms.Add(BuiltInAttributes.ValueSerializerId.Assert(EntityId.From(attr.AttrEntityId.Value), attr.ValueTypeId));
         }
 
-        return Transact(datoms);
+        await Transact(datoms);
     }
 
-    public Expression GetValueReadExpression(Type attribute, Expression valueSpan, out ulong attributeId)
+    public Expression GetValueReadExpression(Type attribute, Expression valueSpan, out AttributeId attributeId)
     {
-        throw new NotImplementedException();
+        return _registry.GetReadExpression(attribute, valueSpan, out attributeId);
     }
 
     public IEnumerable<EntityId> ReverseLookup<TAttribute>(TxId txId) where TAttribute : IAttribute<EntityId>
@@ -210,24 +216,54 @@ public class DatomStore : IDatomStore
     #region Internals
 
 
-    public TxId Log(IEnumerable<IWriteDatom> input, out IDataChunk chunk)
+    private void Log(PendingTransaction pendingTransaction, out IDataChunk chunk)
     {
         var newChunk = new AppendableChunk();
-        foreach (var datom in input)
+        foreach (var datom in pendingTransaction.Data)
             datom.Append(_registry, newChunk);
 
         var nextTxBlock = _nodeStore.GetNextTx();
 
         var nextTx = TxId.From(Ids.MakeId(Ids.Partition.Tx, nextTxBlock.Value));
 
+        EntityId MaybeRemap(EntityId id)
+        {
+            if (Ids.GetPartition(id) == Ids.Partition.Tmp)
+            {
+                if (!pendingTransaction.Remaps.TryGetValue(id, out var newId))
+                {
+                    if (id.Value == Ids.MinId(Ids.Partition.Tmp))
+                    {
+                        var remapTo = EntityId.From(nextTx.Value);
+                        pendingTransaction.Remaps.Add(id, remapTo);
+                        return remapTo;
+                    }
+                    else
+                    {
+                        id = _nextEntId;
+                        pendingTransaction.Remaps.Add(id, _nextEntId);
+                        _nextEntId = EntityId.From(_nextEntId.Value + 1);
+                        return _nextEntId;
+                    }
+                }
+                else
+                {
+                    return newId;
+                }
+            }
+            return id;
+        }
+
         newChunk.SetTx(nextTx);
+        newChunk.RemapEntities(MaybeRemap);
 
         newChunk.Sort(_comparatorTxLog);
 
         var newTxBlock = _nodeStore.LogTx(newChunk);
-        Debug.Assert(newTxBlock == nextTxBlock, "newTxBlock == nextTxBlock");
+        Debug.Assert(newTxBlock.Value == nextTxBlock.Value, "newTxBlock == nextTxBlock");
         chunk = newChunk;
-        return nextTx;
+        pendingTransaction.AssignedTxId = nextTx;
+
     }
 
     #endregion

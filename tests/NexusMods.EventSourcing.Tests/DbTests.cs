@@ -9,7 +9,7 @@ namespace NexusMods.EventSourcing.Tests;
 public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
 {
     [Fact]
-    public void ReadDatomsForEntity()
+    public async Task ReadDatomsForEntity()
     {
         const int totalCount = 10;
         var tx = Connection.BeginTransaction();
@@ -28,8 +28,10 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
         }
 
         var oldTx = Connection.TxId;
-        var result = tx.Commit();
+        var result = await tx.Commit();
 
+        await Task.Delay(1000);
+        result.NewTx.Should().NotBe(oldTx, "transaction id should be incremented");
         result.NewTx.Value.Should().Be(oldTx.Value + 1, "transaction id should be incremented by 1");
 
         var db = Connection.Db;
@@ -47,7 +49,7 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
 
 
     [Fact]
-    public void DbIsImmutable()
+    public async Task DbIsImmutable()
     {
         const int times = 10;
 
@@ -60,7 +62,7 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
             Index = 0
         };
 
-        var result = tx.Commit();
+        var result = await tx.Commit();
 
         var realId = result[file.Id];
         var originalDb = Connection.Db;
@@ -77,7 +79,7 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
             var newTx = Connection.BeginTransaction();
             ModFileAttributes.Path.Add(newTx, realId, $"C:\\test_{i}.txt_mutate");
 
-            newTx.Commit();
+            await newTx.Commit();
 
             // Validate the data
             var newDb = Connection.Db;
@@ -94,7 +96,7 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
 
 
     [Fact]
-    public void ReadModelsCanHaveExtraAttributes()
+    public async Task ReadModelsCanHaveExtraAttributes()
     {
         // Insert some data
         var tx = Connection.BeginTransaction();
@@ -107,7 +109,7 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
         // Attach extra attributes to the entity
         ArchiveFileAttributes.Path.Add(tx, file.Id, "C:\\test.zip");
         ArchiveFileAttributes.ArchiveHash.Add(tx, file.Id, 0xFEEDBEEF);
-        var result = tx.Commit();
+        var result = await tx.Commit();
 
 
         var realId = result[file.Id];
@@ -170,13 +172,13 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
     }
 
     [Fact]
-    public void CanGetChildEntities()
+    public async Task CanGetChildEntities()
     {
         var tx = Connection.BeginTransaction();
         var loadout = Loadout.Create(tx, "Test Loadout");
         Mod.Create(tx, "Test Mod 1", loadout.Id);
         Mod.Create(tx, "Test Mod 2", loadout.Id);
-        var result = tx.Commit();
+        var result = await tx.Commit();
 
         var newDb = Connection.Db;
 

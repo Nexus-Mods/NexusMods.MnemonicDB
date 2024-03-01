@@ -19,7 +19,7 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeReg
     /// </summary>
     /// <param name="node"></param>
     /// <returns></returns>
-    public TxId LogTx(AppendableChunk node)
+    public StoreKey LogTx(AppendableChunk node)
     {
         var thisTx = ++_txLogId;
         Interlocked.Exchange(ref _nextBlockId, Ids.MakeId(Ids.Partition.Index, thisTx << 16));
@@ -27,8 +27,9 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeReg
         var logId = Ids.MakeId(Ids.Partition.TxLog, thisTx);
 
         var packed = node.Pack();
-        Flush(StoreKey.From(logId), (PackedChunk)packed);
-        return TxId.From(logId);
+        var key = StoreKey.From(logId);
+        Flush(key, (PackedChunk)packed);
+        return key;
     }
 
     private StoreKey NextBlockId()
@@ -87,31 +88,6 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeReg
         kvStore.Put(key, writtenSpan);
     }
 
-    /*
-    private ReferenceNode Flush(OldAppendableNode oldAppendableNode)
-    {
-        return Flush(NextBlockId(), oldAppendableNode);
-    }
-
-    private ReferenceNode Flush(StoreKey id, OldAppendableNode oldAppendableNode)
-    {
-        var writer = new PooledMemoryBufferWriter();
-        oldAppendableNode.WriteTo(writer);
-        var writtenSpan = writer.GetWrittenSpan();
-
-
-        logger.LogDebug("Flushing index node {Key} with {Count} children of size {Size}", id, oldAppendableNode.ChildCount, writtenSpan.Length);
-
-        kvStore.Put(id, writtenSpan);
-        return new ReferenceNode(this)
-        {
-            Id = id,
-            Count = oldAppendableNode.Count,
-            ChildCount = oldAppendableNode.Count,
-            LastDatom = OnHeapDatom.Create(oldAppendableNode.LastDatom)
-        };
-    }
-    */
 
 
     public IDataChunk Load(StoreKey id)

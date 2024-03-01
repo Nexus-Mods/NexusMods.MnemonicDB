@@ -4,15 +4,12 @@ using NexusMods.EventSourcing.Abstractions;
 namespace NexusMods.EventSourcing;
 
 /// <inheritdoc />
-public class CommitResult(TxId newTxId, IDictionary<ulong, ulong> remaps, IWriteDatom[] datoms) : ICommitResult
+public class CommitResult(TxId newTxId, IDictionary<EntityId, EntityId> remaps) : ICommitResult
 {
     /// <inheritdoc />
     public EntityId this[EntityId id] =>
-        remaps.TryGetValue(id.Value, out var found) ? EntityId.From(found) : id;
+        remaps.TryGetValue(id, out var found) ? found : id;
 
     /// <inheritdoc />
     public TxId NewTx => newTxId;
-
-    /// <inheritdoc />
-    public IEnumerable<IWriteDatom> Datoms => datoms;
 }

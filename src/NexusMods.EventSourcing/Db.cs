@@ -11,17 +11,12 @@ internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
 
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids) where TModel : IReadModel
     {
-        throw new NotImplementedException();
-        /*
-        using var iterator = store.EntityIterator(txId);
         var reader = connection.ModelReflector.GetReader<TModel>();
         foreach (var id in ids)
         {
-            iterator.Set(id);
-            var model = reader(id, iterator, this);
-            yield return model;
+            var iterator = store.Where(txId, id);
+            yield return reader(id, iterator, this);
         }
-        */
     }
 
     public TModel Get<TModel>(EntityId id) where TModel : IReadModel

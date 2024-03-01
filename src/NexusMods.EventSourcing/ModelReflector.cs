@@ -21,7 +21,7 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
     private delegate void EmitterFn<in TReadModel>(TTransaction tx, TReadModel model)
         where TReadModel : IReadModel;
 
-    internal delegate TReadModel ReaderFn<out TReadModel>(EntityId id, IEntityIterator iterator, IDb db)
+    internal delegate TReadModel ReaderFn<out TReadModel>(EntityId id, IEnumerable<Datom> iterator, IDb db)
         where TReadModel : IReadModel;
 
     public void Add(TTransaction tx, IReadModel model)

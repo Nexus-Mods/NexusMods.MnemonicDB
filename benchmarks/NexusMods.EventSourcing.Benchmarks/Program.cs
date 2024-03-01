@@ -13,7 +13,7 @@ var benchmark = new ReadTests
 };
 
 var sw = Stopwatch.StartNew();
-benchmark.Setup();
+await benchmark.Setup();
 for (var i = 0; i < 1000; i++)
 {
     benchmark.ReadFiles();

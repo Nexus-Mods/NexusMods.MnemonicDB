@@ -101,45 +101,16 @@ public class Connection : IConnection
 
 
     /// <inheritdoc />
-    public TxId TxId { get; private set; }
+    public TxId TxId => _store.AsOfTxId;
 
 
     /// <inheritdoc />
     public async Task<ICommitResult> Transact(IEnumerable<IWriteDatom> datoms)
     {
-        var remaps = new Dictionary<ulong, ulong>();
-        var datomsArray = datoms.ToArray();
-
-        /*
-        EntityId RemapFn(EntityId input)
-        {
-            if (Ids.GetPartition(input) == Ids.Partition.Tmp)
-            {
-                if (!remaps.TryGetValue(input.Value, out var id))
-                {
-                    var newId = _nextEntityId++;
-                    remaps[input.Value] = newId;
-                    return EntityId.From(newId);
-                }
-                return EntityId.From(id);
-            }
-            return input;
-        }*/
-
-        /*
-        var newDatoms = new List<ITypedDatom>();
-        foreach (var datom in datomsArray)
-        {
-            datom.Remap(RemapFn);
-            newDatoms.Add(datom);
-        }
-        var newTx = await _store.Transact(newDatoms);
-        TxId = newTx;
-        var result = new CommitResult(newTx, remaps, datomsArray);
+        var newTx = await _store.Transact(datoms);
+        var result = new CommitResult(newTx.TxId, newTx.Remaps);
         _updates.OnNext(result);
         return result;
-        */
-        throw new NotImplementedException();
     }
 
     public Task<ICommitResult> Transact(IEnumerable<Datom> datoms)

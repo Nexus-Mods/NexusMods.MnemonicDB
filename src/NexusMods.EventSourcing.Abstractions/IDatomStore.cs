@@ -21,7 +21,7 @@ public interface IDatomStore : IDisposable
     /// <summary>
     /// Transacts (adds) the given datoms into the store.
     /// </summary>
-    public Task<TxId> Transact(IEnumerable<IWriteDatom> datoms);
+    public Task<DatomStoreTransactResult> Transact(IEnumerable<IWriteDatom> datoms);
 
     /// <summary>
     /// Gets the latest transaction id found in the log.
@@ -48,13 +48,13 @@ public interface IDatomStore : IDisposable
     /// Registers new attributes with the store. These should already have been transacted into the store.
     /// </summary>
     /// <param name="newAttrs"></param>
-    Task<TxId> RegisterAttributes(IEnumerable<DbAttribute> newAttrs);
+    Task RegisterAttributes(IEnumerable<DbAttribute> newAttrs);
 
     /// <summary>
     /// Gets the attributeId for the given attribute. And returns an expression that reads the attribute
     /// value from the expression valueSpan.
     /// </summary>
-    Expression GetValueReadExpression(Type attribute, Expression valueSpan, out ulong attributeId);
+    Expression GetValueReadExpression(Type attribute, Expression valueSpan, out AttributeId attributeId);
 
     /// <summary>
     /// Gets all the entities that reference the given entity id with the given attribute.

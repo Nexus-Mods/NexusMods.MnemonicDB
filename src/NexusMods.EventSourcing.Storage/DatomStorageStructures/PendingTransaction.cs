@@ -16,7 +16,17 @@ internal class PendingTransaction
     public TaskCompletionSource<TxId> CompletionSource { get; } = new();
 
     /// <summary>
+    /// Entity IDs that are remapped in the transaction
+    /// </summary>
+    public Dictionary<EntityId, EntityId> Remaps { get; } = new();
+
+    /// <summary>
     /// The data to be commited
     /// </summary>
     public required IWriteDatom[] Data { get; init; }
+
+    /// <summary>
+    /// The transaction ID that was assigned to the transaction when it was commited
+    /// </summary>
+    public TxId? AssignedTxId { get; set; }
 }

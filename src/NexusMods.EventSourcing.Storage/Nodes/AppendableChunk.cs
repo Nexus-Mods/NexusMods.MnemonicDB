@@ -208,4 +208,18 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
     {
         _transactionIds = UnsignedIntegerColumn<TxId>.UnpackFrom(new ConstantPackedColumn<TxId, ulong>(_transactionIds.Length, nextTx));
     }
+
+    public void RemapEntities(Func<EntityId, EntityId> remapper)
+    {
+        unsafe
+        {
+            fixed (EntityId* entityIdsPtr = _entityIds.Data)
+            {
+                for (var i = 0; i < _entityIds.Length; i++)
+                {
+                    entityIdsPtr[i] = remapper(entityIdsPtr[i]);
+                }
+            }
+        }
+    }
 }

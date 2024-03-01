@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -22,5 +23,5 @@ public interface ICommitResult
     /// <summary>
     /// The datoms that were added to the store as a result of the transaction
     /// </summary>
-    public IEnumerable<IWriteDatom> Datoms { get; }
+    public IEnumerable<IWriteDatom> Datoms => throw new NotImplementedException();
 }
