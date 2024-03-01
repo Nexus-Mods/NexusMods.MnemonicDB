@@ -69,4 +69,9 @@ public class Symbol
     /// The full string name of the symbol, in the format of "Namespace/Name"
     /// </summary>
     public string Id { get; }
+
+    public override string ToString()
+    {
+        return Id;
+    }
 }

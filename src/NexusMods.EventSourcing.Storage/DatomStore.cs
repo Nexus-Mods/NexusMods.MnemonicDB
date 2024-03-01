@@ -193,14 +193,17 @@ public class DatomStore : IDatomStore
     public async Task RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
     {
         var datoms = new List<IWriteDatom>();
+        var newAttrsArray = newAttrs.ToArray();
 
-        foreach (var attr in newAttrs)
+        foreach (var attr in newAttrsArray)
         {
             datoms.Add(BuiltInAttributes.UniqueId.Assert(EntityId.From(attr.AttrEntityId.Value), attr.UniqueId));
             datoms.Add(BuiltInAttributes.ValueSerializerId.Assert(EntityId.From(attr.AttrEntityId.Value), attr.ValueTypeId));
         }
 
         await Transact(datoms);
+
+        _registry.Populate(newAttrsArray);
     }
 
     public Expression GetValueReadExpression(Type attribute, Expression valueSpan, out AttributeId attributeId)
