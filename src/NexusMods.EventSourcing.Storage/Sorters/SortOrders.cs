@@ -2,7 +2,8 @@
 
 public enum SortOrders : byte
 {
+    TxLog,
     EATV,
     AETV,
-    TxLog
+    AVTE,
 }

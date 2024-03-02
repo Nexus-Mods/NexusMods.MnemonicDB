@@ -59,5 +59,5 @@ public interface IDatomStore : IDisposable
     /// <summary>
     /// Gets all the entities that reference the given entity id with the given attribute.
     /// </summary>
-    IEnumerable<EntityId> ReverseLookup<TAttribute>(TxId txId) where TAttribute : IAttribute<EntityId>;
+    IEnumerable<EntityId> ReverseLookup<TAttribute>(TxId txId, EntityId id) where TAttribute : IAttribute<EntityId>;
 }

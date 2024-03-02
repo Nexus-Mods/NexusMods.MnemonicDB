@@ -15,7 +15,7 @@ public class IndexTests(IServiceProvider provider) : AStorageTest(provider)
     [MethodData(nameof(TestData))]
     public void CanIngestAndGetDatoms(int entityCount, SortOrders sortOrder, bool flush)
     {
-        var comparator = GetComparator(sortOrder);
+        var comparator = IDatomComparator.Create(sortOrder, _registry);
         var method = GetType().GetMethod(nameof(CanIngestAndGetDatomsInner), BindingFlags.Instance | BindingFlags.NonPublic);
         var generic = method!.MakeGenericMethod(comparator.GetType());
         generic.Invoke(this, [comparator, entityCount, sortOrder, flush]);
@@ -64,20 +64,9 @@ public class IndexTests(IServiceProvider provider) : AStorageTest(provider)
         }
     }
 
-
-    private IDatomComparator GetComparator(SortOrders sortOrder)
-    {
-        return sortOrder switch
-        {
-            SortOrders.EATV => new EATV(_registry),
-            SortOrders.AETV => new AETV(_registry),
-            _ => throw new ArgumentOutOfRangeException(nameof(sortOrder), sortOrder, null)
-        };
-    }
-
     public IEnumerable<object[]> TestData()
     {
-        foreach (var idx in new[] {SortOrders.EATV, SortOrders.AETV})
+        foreach (var idx in new[] {SortOrders.EATV, SortOrders.AETV, SortOrders.AVTE})
         {
             foreach (var size in new[] { 1, 2, 3, 4, 8, 16, 128, 1024, 1024 * 8, 1024 * 16, 1024 * 128 })
             {

@@ -211,7 +211,7 @@ public class DatomStore : IDatomStore
         return _registry.GetReadExpression(attribute, valueSpan, out attributeId);
     }
 
-    public IEnumerable<EntityId> ReverseLookup<TAttribute>(TxId txId) where TAttribute : IAttribute<EntityId>
+    public IEnumerable<EntityId> ReverseLookup<TAttribute>(TxId txId, EntityId id) where TAttribute : IAttribute<EntityId>
     {
         throw new NotImplementedException();
     }

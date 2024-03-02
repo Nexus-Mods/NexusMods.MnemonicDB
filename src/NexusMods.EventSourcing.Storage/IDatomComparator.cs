@@ -50,6 +50,7 @@ public interface IDatomComparator
         {
             SortOrders.EATV => new EATV(registry),
             SortOrders.AETV => new AETV(registry),
+            SortOrders.AVTE => new AVTE(registry),
             _ => throw new ArgumentOutOfRangeException(nameof(sortOrder), sortOrder, null)
         };
     }

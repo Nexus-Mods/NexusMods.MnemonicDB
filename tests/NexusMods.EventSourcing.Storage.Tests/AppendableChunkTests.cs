@@ -47,6 +47,13 @@ public class AppendableChunkTests(IServiceProvider provider) : AStorageTest(prov
     [InlineData(SortOrders.AETV, 16)]
     [InlineData(SortOrders.AETV, 1024)]
     [InlineData(SortOrders.AETV, 1024 * 16)]
+    [InlineData(SortOrders.AVTE, 1)]
+    [InlineData(SortOrders.AVTE, 2)]
+    [InlineData(SortOrders.AVTE, 4)]
+    [InlineData(SortOrders.AVTE, 8)]
+    [InlineData(SortOrders.AVTE, 16)]
+    [InlineData(SortOrders.AVTE, 1024)]
+    [InlineData(SortOrders.AVTE, 1024 * 16)]
     public void CanSortBlock(SortOrders order, uint entities)
     {
         var block = new AppendableChunk();
@@ -79,6 +86,7 @@ public class AppendableChunkTests(IServiceProvider provider) : AStorageTest(prov
     [Theory]
     [InlineData(SortOrders.EATV)]
     [InlineData(SortOrders.AETV)]
+    [InlineData(SortOrders.AVTE)]
     public void CanMergeBlock(SortOrders orders)
     {
         var block = new AppendableChunk();

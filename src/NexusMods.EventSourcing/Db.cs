@@ -33,17 +33,12 @@ internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
     /// <inheritdoc />
     public IEnumerable<TModel> GetReverse<TAttribute, TModel>(EntityId id) where TAttribute : IAttribute<EntityId> where TModel : IReadModel
     {
-        /*
-        var iterator = store.ReverseLookup<TAttribute>(txId);
-        using var entityIterator = store.EntityIterator(txId);
         var reader = connection.ModelReflector.GetReader<TModel>();
-        foreach (var entityId in iterator)
+        foreach (var entity in store.ReverseLookup<TAttribute>(txId, id))
         {
-            entityIterator.Set(entityId);
-            var model = reader(entityId, entityIterator, this);
-            yield return model;
+            var iterator = store.Where(txId, entity).GetEnumerator();
+            yield return reader(id, iterator, this);
         }
-        */
-        throw new NotImplementedException();
+
     }
 }
