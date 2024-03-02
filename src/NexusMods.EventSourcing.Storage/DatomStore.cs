@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -27,6 +28,7 @@ public class DatomStore : IDatomStore
     private readonly ILogger<DatomStore> _logger;
     private readonly Channel<PendingTransaction> _txChannel;
     private EntityId _nextEntId;
+    private readonly Subject<(TxId TxId, IDataChunk Datoms)> _updatesSubject;
 
 
     public DatomStore(ILogger<DatomStore> logger, NodeStore nodeStore, AttributeRegistry registry)
@@ -36,6 +38,8 @@ public class DatomStore : IDatomStore
         _registry = registry;
         _pooledWriter = new PooledMemoryBufferWriter();
         _nextEntId = EntityId.From(Ids.MinId(Ids.Partition.Entity) + 1);
+
+        _updatesSubject = new Subject<(TxId TxId, IDataChunk Datoms)>();
 
         registry.Populate(BuiltInAttributes.Initial);
 
@@ -70,6 +74,7 @@ public class DatomStore : IDatomStore
                 await UpdateInMemoryIndexes(chunk, pendingTransaction.AssignedTxId!.Value);
 
                 pendingTransaction.CompletionSource.SetResult(pendingTransaction.AssignedTxId.Value);
+                _updatesSubject.OnNext((pendingTransaction.AssignedTxId.Value, chunk));
                 _logger.LogDebug("Transaction {TxId} processed in {Elapsed}ms, new in-memory size is {Count} datoms", pendingTransaction.AssignedTxId!.Value, sw.ElapsedMilliseconds, _indexes.InMemorySize);
             }
             catch (Exception ex)
@@ -119,6 +124,8 @@ public class DatomStore : IDatomStore
 
         return new DatomStoreTransactResult(pending.AssignedTxId!.Value, pending.Remaps);
     }
+
+    public IObservable<(TxId TxId, IDataChunk Datoms)> TxLog => _updatesSubject;
 
     private async Task UpdateInMemoryIndexes(IDataChunk chunk, TxId newTx)
     {
@@ -294,9 +301,9 @@ public class DatomStore : IDatomStore
 
         newChunk.Sort(_comparatorTxLog);
 
-        var newTxBlock = _nodeStore.LogTx(newChunk);
+        chunk = newChunk.Pack();
+        var newTxBlock = _nodeStore.LogTx(chunk);
         Debug.Assert(newTxBlock.Value == nextTxBlock.Value, "newTxBlock == nextTxBlock");
-        chunk = newChunk;
         pendingTransaction.AssignedTxId = nextTx;
 
     }

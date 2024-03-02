@@ -35,5 +35,5 @@ public interface IConnection
     /// <summary>
     /// A sequential stream of commits to the database.
     /// </summary>
-    public IObservable<ICommitResult> Commits { get; }
+    public IObservable<(TxId TxId, IDataChunk Datoms)> Commits { get; }
 }

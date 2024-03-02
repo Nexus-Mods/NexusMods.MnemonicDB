@@ -24,6 +24,11 @@ public interface IDatomStore : IDisposable
     public Task<DatomStoreTransactResult> Transact(IEnumerable<IWriteDatom> datoms);
 
     /// <summary>
+    /// An observable of the transaction log, for getting the latest changes to the store.
+    /// </summary>
+    public IObservable<(TxId TxId, IDataChunk Datoms)> TxLog { get; }
+
+    /// <summary>
     /// Gets the latest transaction id found in the log.
     /// </summary>
     public TxId AsOfTxId { get; }

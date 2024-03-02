@@ -1,4 +1,5 @@
-﻿using NexusMods.EventSourcing.Abstractions;
+﻿using System.Runtime.InteropServices;
+using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.TestModel.Model;
 using NexusMods.EventSourcing.TestModel.Model.Attributes;
 using Xunit.Sdk;
@@ -129,17 +130,12 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
     }
 
     [Fact]
-    public void CanGetCommitUpdates()
+    public async Task CanGetCommitUpdates()
     {
 
-        throw new NotImplementedException();
-        /*
-        List<IDatom[]> updates = new();
+        List<Datom[]> updates = new();
 
-        Connection.Commits.Subscribe(update =>
-        {
-            updates.Add(update.Datoms.ToArray());
-        });
+
 
         var tx = Connection.BeginTransaction();
         var file = new File(tx)
@@ -148,27 +144,32 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
             Hash = 0xDEADBEEF,
             Index = 77
         };
-        var result = tx.Commit();
+        var result = await tx.Commit();
 
         var realId = result[file.Id];
 
-        updates.Should().HaveCount(1);
+        Connection.Commits.Subscribe(update =>
+        {
+            // Only Txes we care about
+            if (update.Datoms.Any(d => d.E == realId))
+                updates.Add(update.Datoms.ToArray());
+        });
 
         for (var idx = 0; idx < 10; idx++)
         {
             tx = Connection.BeginTransaction();
             ModFileAttributes.Index.Add(tx, realId, (ulong)idx);
-            result = tx.Commit();
+            result = await tx.Commit();
 
-            result.Datoms.Should().BeEquivalentTo(updates[idx + 1]);
+            //result.Datoms.Should().BeEquivalentTo(updates[idx + 1]);
 
-            updates.Should().HaveCount(idx + 2);
-            var updateDatom = updates[idx + 1].OfType<AssertDatom<ModFileAttributes.Index, ulong>>()
+            updates.Should().HaveCount(idx + 1);
+            var updateDatom = updates[idx]
                 .First();
-            updateDatom.V.Should().Be((ulong)idx);
-        }
-        */
 
+            var value = MemoryMarshal.Read<ulong>(updateDatom.V.Span);
+            value.Should().Be((ulong)idx);
+        }
     }
 
     [Fact]

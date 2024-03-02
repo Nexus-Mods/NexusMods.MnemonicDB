@@ -18,7 +18,6 @@ public class Connection : IConnection
     private ulong _nextEntityId = Ids.MinId(Ids.Partition.Entity);
     private readonly IDatomStore _store;
     internal readonly ModelReflector<Transaction> ModelReflector;
-    private readonly Subject<ICommitResult> _updates;
 
     /// <summary>
     /// Main connection class, co-ordinates writes and immutable reads
@@ -28,7 +27,6 @@ public class Connection : IConnection
         _store = store;
         ModelReflector = new ModelReflector<Transaction>(store);
 
-        _updates = new Subject<ICommitResult>();
 
     }
 
@@ -109,7 +107,6 @@ public class Connection : IConnection
     {
         var newTx = await _store.Transact(datoms);
         var result = new CommitResult(newTx.TxId, newTx.Remaps);
-        _updates.OnNext(result);
         return result;
     }
 
@@ -125,5 +122,5 @@ public class Connection : IConnection
     }
 
     /// <inheritdoc />
-    public IObservable<ICommitResult> Commits => _updates;
+    public IObservable<(TxId TxId, IDataChunk Datoms)> Commits => _store.TxLog;
 }
