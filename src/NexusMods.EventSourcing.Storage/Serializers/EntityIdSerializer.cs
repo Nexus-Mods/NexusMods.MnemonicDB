@@ -22,7 +22,8 @@ public class EntityIdSerializer : IValueSerializer<EntityId>
 
     public int Read(ReadOnlySpan<byte> buffer, out EntityId val)
     {
-        throw new NotImplementedException();
+        val = MemoryMarshal.Read<EntityId>(buffer);
+        return sizeof(ulong);
     }
 
     public void Serialize<TWriter>(EntityId value, TWriter buffer) where TWriter : IBufferWriter<byte>

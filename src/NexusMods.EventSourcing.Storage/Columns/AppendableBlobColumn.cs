@@ -2,6 +2,8 @@
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions.Columns;
@@ -97,5 +99,14 @@ public class AppendableBlobColumn : IAppendableBlobColumn
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
+    }
+
+    public void RemapEntities(int idx, Func<EntityId,EntityId> remapper)
+    {
+        Debug.Assert(_sizes[idx] == 8);
+
+        var old = MemoryMarshal.Read<EntityId>(_writer.WrittenMemory.Slice((int)_offsets[idx], 8).Span);
+        var newValue = remapper(old);
+        MemoryMarshal.Write(_writer.WrittenSpanWritable.Slice((int)_offsets[idx], 8), in newValue);
     }
 }

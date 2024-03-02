@@ -140,4 +140,11 @@ public class AttributeRegistry : IAttributeRegistry
         return attr.Resolve(datom);
 
     }
+
+    public bool IsReference(AttributeId attributeId)
+    {
+        var dbAttr = _dbAttributesByEntityId[attributeId];
+        var attrobj = _attributesById[dbAttr.UniqueId];
+        return attrobj.IsReference;
+    }
 }

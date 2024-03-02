@@ -21,13 +21,8 @@ internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
 
     public TModel Get<TModel>(EntityId id) where TModel : IReadModel
     {
-        /*
-        using var iterator = store.EntityIterator(txId);
-        iterator.Set(id);
         var reader = connection.ModelReflector.GetReader<TModel>();
-        return reader(id, iterator, this);
-        */
-        throw new NotImplementedException();
+        return reader(id, store.Where(txId, id).GetEnumerator(), this);
     }
 
     /// <inheritdoc />

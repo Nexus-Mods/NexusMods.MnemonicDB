@@ -209,7 +209,7 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
         _transactionIds = UnsignedIntegerColumn<TxId>.UnpackFrom(new ConstantPackedColumn<TxId, ulong>(_transactionIds.Length, nextTx));
     }
 
-    public void RemapEntities(Func<EntityId, EntityId> remapper)
+    public void RemapEntities(Func<EntityId, EntityId> remapper, AttributeRegistry registry)
     {
         unsafe
         {
@@ -217,6 +217,11 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
             {
                 for (var i = 0; i < _entityIds.Length; i++)
                 {
+                    var attrId = _attributeIds[i];
+                    if (registry.IsReference(_attributeIds[i]))
+                    {
+                        _values.RemapEntities(i, remapper);
+                    }
                     entityIdsPtr[i] = remapper(entityIdsPtr[i]);
                 }
             }

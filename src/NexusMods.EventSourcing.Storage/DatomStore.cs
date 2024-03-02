@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -213,7 +215,37 @@ public class DatomStore : IDatomStore
 
     public IEnumerable<EntityId> ReverseLookup<TAttribute>(TxId txId, EntityId id) where TAttribute : IAttribute<EntityId>
     {
-        throw new NotImplementedException();
+        var attr = _registry.GetAttributeId<TAttribute>();
+
+        var index = _indexes.AVTE;
+
+        var value = new byte[8];
+        MemoryMarshal.Write(value.AsSpan(), id);
+
+        var startDatom = new Datom
+        {
+            E = EntityId.From(UInt64.MaxValue),
+            A = attr,
+            T = TxId.MaxValue,
+            V = value,
+            F = DatomFlags.Added,
+        };
+        var offset = BinarySearch.SeekEqualOrLess(index.InMemory, index.Comparator, 0, index.InMemory.Length, startDatom);
+
+        for (var idx = offset; idx < index.InMemory.Length; idx++)
+        {
+            var datom = index.InMemory[idx];
+            if (datom.A != attr) break;
+
+            var vValue = MemoryMarshal.Read<EntityId>(datom.V.Span);
+            if (vValue != id) break;
+
+            if (datom.T > txId) continue;
+
+            yield return datom.E;
+
+        }
+
     }
 
     #region Internals
@@ -258,7 +290,7 @@ public class DatomStore : IDatomStore
         }
 
         newChunk.SetTx(nextTx);
-        newChunk.RemapEntities(MaybeRemap);
+        newChunk.RemapEntities(MaybeRemap, _registry);
 
         newChunk.Sort(_comparatorTxLog);
 

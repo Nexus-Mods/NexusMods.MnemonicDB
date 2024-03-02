@@ -60,7 +60,7 @@ where TAttribute : IAttribute<TValueType>
     public bool IsMultiCardinality => false;
 
     /// <inheritdoc />
-    public bool IsReference => false;
+    public bool IsReference => typeof(TValueType) == typeof(EntityId);
 
     /// <inheritdoc />
     public Symbol Id { get; }
