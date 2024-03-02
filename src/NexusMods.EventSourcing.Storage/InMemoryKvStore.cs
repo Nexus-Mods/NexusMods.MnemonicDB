@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Linq;
-using K4os.Compression.LZ4;
-using K4os.Compression.LZ4.Encoders;
-using NexusMods.EventSourcing.Storage.ValueTypes;
+using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage;
 

@@ -4,7 +4,6 @@ using System.Collections;
 using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
-using NexusMods.EventSourcing.Storage.ValueTypes;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
@@ -39,7 +38,7 @@ public class ReferenceIndexChunk(NodeStore store, StoreKey key, IIndexChunk? chu
         throw new NotSupportedException();
     }
 
-    public IDataChunk Flush(NodeStore store)
+    public IDataChunk Flush(INodeStore store)
     {
         throw new NotSupportedException();
     }

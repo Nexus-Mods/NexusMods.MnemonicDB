@@ -51,7 +51,7 @@ public class PackedChunk : IDataChunk
         Values.WriteTo(writer);
     }
 
-    public IDataChunk Flush(NodeStore store)
+    public IDataChunk Flush(INodeStore store)
     {
         return store.Flush(this);
     }

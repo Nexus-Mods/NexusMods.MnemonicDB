@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace NexusMods.EventSourcing.Storage.Abstractions;
+﻿namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// A column that can have data appended to it.

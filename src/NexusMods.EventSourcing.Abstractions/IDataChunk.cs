@@ -1,10 +1,8 @@
 ﻿using System.Buffers;
 using System.Collections.Generic;
-using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
-using NexusMods.EventSourcing.Storage.Nodes;
 
-namespace NexusMods.EventSourcing.Storage;
+namespace NexusMods.EventSourcing.Abstractions;
 
 public interface IDataChunk : IEnumerable<Datom>
 {
@@ -26,5 +24,5 @@ public interface IDataChunk : IEnumerable<Datom>
     void WriteTo<TWriter>(TWriter writer)
         where TWriter : IBufferWriter<byte>;
 
-    IDataChunk Flush(NodeStore store);
+    IDataChunk Flush(INodeStore store);
 }

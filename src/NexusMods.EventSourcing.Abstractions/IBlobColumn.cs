@@ -2,7 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 
-namespace NexusMods.EventSourcing.Storage.Abstractions;
+namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// A column that contains an array of blobs.

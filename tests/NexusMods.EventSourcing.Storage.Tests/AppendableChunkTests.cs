@@ -65,7 +65,7 @@ public class AppendableChunkTests(IServiceProvider provider) : AStorageTest(prov
             block.Append(in datom);
         }
 
-        var compare = IDatomComparator.Create(order, _registry);
+        var compare = _registry.CreateComparator(order);
         Logger.LogInformation("Sorting {0} datoms", allDatoms.Length);
         block.Sort(compare);
 
@@ -107,7 +107,7 @@ public class AppendableChunkTests(IServiceProvider provider) : AStorageTest(prov
             block2.Append(in allDatoms[i]);
         }
 
-        var compare = IDatomComparator.Create(orders, _registry);
+        var compare = _registry.CreateComparator(orders);
 
         block.Sort(compare);
         block2.Sort(compare);

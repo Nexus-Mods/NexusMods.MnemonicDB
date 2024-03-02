@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Algorithms;
-using NexusMods.EventSourcing.Storage.ValueTypes;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
@@ -114,7 +113,7 @@ public class PackedIndexChunk : IIndexChunk
         var values = ColumnReader.ReadBlobColumn(ref reader, childCount - 1);
         var childCounts = ColumnReader.ReadColumn<int>(ref reader, childCount);
         var sortOrder = (SortOrders)reader.Read<byte>();
-        var comparator = IDatomComparator.Create(sortOrder, registry);
+        var comparator = registry.CreateComparator(sortOrder);
 
         var children = new List<IDataChunk>();
         for (var i = 0; i < childCount; i++)
@@ -138,7 +137,7 @@ public class PackedIndexChunk : IIndexChunk
         return new PackedIndexChunk(length, entityIds, attributeIds, transactionIds, flags, values, childCounts, comparator, children);
     }
 
-    public IDataChunk Flush(NodeStore store)
+    public IDataChunk Flush(INodeStore store)
     {
         for (var i = 0; i < _children.Count; i++)
         {

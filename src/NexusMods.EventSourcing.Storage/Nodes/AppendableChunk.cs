@@ -4,12 +4,9 @@ using System.Collections;
 using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
-using NexusMods.EventSourcing.Storage.Abstractions.Columns;
-using NexusMods.EventSourcing.Storage.Algorithms;
 using NexusMods.EventSourcing.Storage.Columns;
 using NexusMods.EventSourcing.Storage.Columns.PackedColumns;
 using NexusMods.EventSourcing.Storage.Datoms;
-using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
@@ -134,7 +131,7 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
         throw new NotSupportedException("Must pack the chunk before writing it to a buffer.");
     }
 
-    public IDataChunk Flush(NodeStore store)
+    public IDataChunk Flush(INodeStore store)
     {
         var packed = Pack();
         return store.Flush(packed);

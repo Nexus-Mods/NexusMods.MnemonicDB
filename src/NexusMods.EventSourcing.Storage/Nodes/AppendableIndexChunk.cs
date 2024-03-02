@@ -111,9 +111,9 @@ public class AppendableIndexChunk : IIndexChunk
         throw new System.NotImplementedException();
     }
 
-    public IDataChunk Flush(NodeStore store)
+    public IDataChunk Flush(INodeStore store)
     {
-        var packed = Pack();
+        var packed =Pack();
         return store.Flush(packed);
     }
 

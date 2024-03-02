@@ -1,5 +1,4 @@
 ﻿using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Storage.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Datoms;
 

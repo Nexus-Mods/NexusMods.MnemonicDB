@@ -7,6 +7,7 @@ using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Datoms;
 using NexusMods.EventSourcing.Storage.Nodes;
+using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage;
 
@@ -146,5 +147,23 @@ public class AttributeRegistry : IAttributeRegistry
         var dbAttr = _dbAttributesByEntityId[attributeId];
         var attrobj = _attributesById[dbAttr.UniqueId];
         return attrobj.IsReference;
+    }
+
+    /// <summary>
+    /// Creates a comparator for the given sort order
+    /// </summary>
+    /// <param name="sortOrder"></param>
+    /// <param name="registry"></param>
+    /// <returns></returns>
+    /// <exception cref="ArgumentOutOfRangeException"></exception>
+    public IDatomComparator CreateComparator(SortOrders sortOrder)
+    {
+        return sortOrder switch
+        {
+            SortOrders.EATV => new EATV(this),
+            SortOrders.AETV => new AETV(this),
+            SortOrders.AVTE => new AVTE(this),
+            _ => throw new ArgumentOutOfRangeException(nameof(sortOrder), sortOrder, null)
+        };
     }
 }

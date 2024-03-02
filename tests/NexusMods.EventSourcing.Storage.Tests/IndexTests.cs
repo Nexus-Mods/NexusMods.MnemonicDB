@@ -15,7 +15,7 @@ public class IndexTests(IServiceProvider provider) : AStorageTest(provider)
     [MethodData(nameof(TestData))]
     public void CanIngestAndGetDatoms(int entityCount, SortOrders sortOrder, bool flush)
     {
-        var comparator = IDatomComparator.Create(sortOrder, _registry);
+        var comparator = _registry.CreateComparator(sortOrder);
         var method = GetType().GetMethod(nameof(CanIngestAndGetDatomsInner), BindingFlags.Instance | BindingFlags.NonPublic);
         var generic = method!.MakeGenericMethod(comparator.GetType());
         generic.Invoke(this, [comparator, entityCount, sortOrder, flush]);

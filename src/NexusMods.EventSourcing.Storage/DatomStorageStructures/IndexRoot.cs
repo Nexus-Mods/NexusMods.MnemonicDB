@@ -1,4 +1,5 @@
-﻿using NexusMods.EventSourcing.Storage.Nodes;
+﻿using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Nodes;
 
 namespace NexusMods.EventSourcing.Storage.DatomStorageStructures;
 
@@ -28,7 +29,7 @@ public record IndexRoot
         return new IndexRoot
         {
             SortOrder = order,
-            Comparator = IDatomComparator.Create(order, registry),
+            Comparator = registry.CreateComparator(order),
             InMemory = new AppendableChunk()
         };
     }

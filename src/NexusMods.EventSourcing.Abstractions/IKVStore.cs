@@ -1,7 +1,6 @@
 ﻿using System;
-using NexusMods.EventSourcing.Storage.ValueTypes;
 
-namespace NexusMods.EventSourcing.Storage;
+namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// Implements a interface for loading and saving blocks of data.

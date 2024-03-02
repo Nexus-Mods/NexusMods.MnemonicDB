@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Storage.Abstractions;
+using NexusMods.EventSourcing.Storage;
 using NexusMods.EventSourcing.Storage.Datoms;
-using NexusMods.EventSourcing.Storage.Nodes;
-using NexusMods.EventSourcing.Storage.Sorters;
 
-namespace NexusMods.EventSourcing.Storage;
+namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// Interface for a comparator. This is the backbone of the indexes construction
@@ -36,22 +33,4 @@ public interface IDatomComparator
     /// </summary>
     public unsafe IComparer<int> MakeComparer<TBlob>(MemoryDatom<TBlob> datoms)
         where TBlob : IBlobColumn;
-
-    /// <summary>
-    /// Creates a comparator for the given sort order and attribute registry.
-    /// </summary>
-    /// <param name="sortOrder"></param>
-    /// <param name="registry"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public static IDatomComparator Create(SortOrders sortOrder, AttributeRegistry registry)
-    {
-        return sortOrder switch
-        {
-            SortOrders.EATV => new EATV(registry),
-            SortOrders.AETV => new AETV(registry),
-            SortOrders.AVTE => new AVTE(registry),
-            _ => throw new ArgumentOutOfRangeException(nameof(sortOrder), sortOrder, null)
-        };
-    }
 }

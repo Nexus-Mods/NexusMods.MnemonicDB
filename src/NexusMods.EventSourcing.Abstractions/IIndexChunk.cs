@@ -1,8 +1,7 @@
 ﻿using System.Collections.Generic;
 using NexusMods.EventSourcing.Storage.Abstractions;
-using NexusMods.EventSourcing.Storage.ValueTypes;
 
-namespace NexusMods.EventSourcing.Storage;
+namespace NexusMods.EventSourcing.Abstractions;
 
 public interface IIndexChunk : IDataChunk
 {

@@ -1,6 +1,6 @@
 ﻿using TransparentValueObjects;
 
-namespace NexusMods.EventSourcing.Storage.ValueTypes;
+namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// Represents a IKVStore key, which is a 64-bit unsigned integer, these make heavy

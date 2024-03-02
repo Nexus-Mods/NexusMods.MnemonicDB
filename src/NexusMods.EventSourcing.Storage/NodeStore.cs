@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Storage.Datoms;
 using NexusMods.EventSourcing.Storage.Nodes;
-using NexusMods.EventSourcing.Storage.ValueTypes;
 
 namespace NexusMods.EventSourcing.Storage;
 
 public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeRegistry registry)
+: INodeStore
 {
     private ulong _txLogId = Ids.MinId(Ids.Partition.TxLog);
     private ulong _nextBlockId = Ids.MinId(Ids.Partition.Index);
@@ -19,14 +17,13 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeReg
     /// </summary>
     /// <param name="node"></param>
     /// <returns></returns>
-    public StoreKey LogTx(AppendableChunk node)
+    public StoreKey LogTx(IDataChunk packed)
     {
         var thisTx = ++_txLogId;
         Interlocked.Exchange(ref _nextBlockId, Ids.MakeId(Ids.Partition.Index, thisTx << 16));
         _nextBlockId = Ids.MakeId(Ids.Partition.Index, thisTx << 16);
         var logId = Ids.MakeId(Ids.Partition.TxLog, thisTx);
 
-        var packed = node.Pack();
         var key = StoreKey.From(logId);
         Flush(key, (PackedChunk)packed);
         return key;
