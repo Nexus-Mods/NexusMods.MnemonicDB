@@ -1,6 +1,4 @@
-﻿using NexusMods.EventSourcing.Abstractions;
-
-namespace NexusMods.EventSourcing.Storage.Datoms;
+﻿namespace NexusMods.EventSourcing.Abstractions;
 
 public unsafe struct MemoryDatom<T>
 where T : IBlobColumn

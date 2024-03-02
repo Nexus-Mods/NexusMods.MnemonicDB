@@ -1,4 +1,5 @@
 ﻿using System;
+using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Abstractions.Columns;
 

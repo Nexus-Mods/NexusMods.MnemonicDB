@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Storage.Datoms;
 
 namespace NexusMods.EventSourcing.Storage.Sorters;
 

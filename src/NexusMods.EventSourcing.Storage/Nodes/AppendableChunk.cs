@@ -6,7 +6,6 @@ using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Columns;
 using NexusMods.EventSourcing.Storage.Columns.PackedColumns;
-using NexusMods.EventSourcing.Storage.Datoms;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 

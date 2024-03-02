@@ -1,6 +1,5 @@
 ﻿using System.Buffers;
 using System.Collections.Generic;
-using NexusMods.EventSourcing.Storage.Abstractions;
 
 namespace NexusMods.EventSourcing.Abstractions;
 

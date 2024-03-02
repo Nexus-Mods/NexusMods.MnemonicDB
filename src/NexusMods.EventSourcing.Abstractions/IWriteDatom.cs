@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace NexusMods.EventSourcing.Abstractions;
+﻿namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// A typed datom for writing new datoms to the database. This is implemented by attributes
@@ -15,15 +13,3 @@ public interface IWriteDatom
     /// <param name="chunk"></param>
     void Append(IAttributeRegistry registry, IAppendableChunk chunk);
 }
-
-
-/// <summary>
-/// Marker interface for a read datom that will contain a TX value.
-/// </summary>
-public interface IReadDatom
-{
-    public Type AttributeType { get; }
-
-    public Type ValueType { get; }
-}
-

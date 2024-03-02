@@ -1,4 +1,4 @@
-﻿namespace NexusMods.EventSourcing.Storage;
+﻿namespace NexusMods.EventSourcing.Abstractions;
 
 public enum SortOrders : byte
 {

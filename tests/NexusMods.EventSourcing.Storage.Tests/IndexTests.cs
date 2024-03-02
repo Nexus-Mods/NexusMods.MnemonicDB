@@ -2,9 +2,7 @@
 using System.Reflection;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Abstractions.Iterators;
 using NexusMods.EventSourcing.Storage.Nodes;
-using NexusMods.EventSourcing.Storage.Sorters;
 using Xunit.DependencyInjection;
 
 namespace NexusMods.EventSourcing.Storage.Tests;

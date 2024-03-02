@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Buffers;
 
-namespace NexusMods.EventSourcing.Storage.Abstractions;
+namespace NexusMods.EventSourcing.Abstractions;
 
 public interface IColumn<T>
 {
