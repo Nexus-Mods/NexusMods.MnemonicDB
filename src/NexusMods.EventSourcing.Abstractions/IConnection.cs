@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -23,7 +24,7 @@ public interface IConnection
     /// </summary>
     /// <param name="datoms"></param>
     /// <returns></returns>
-    public ICommitResult Transact(IEnumerable<IDatom> datoms);
+    public Task<ICommitResult> Transact(IEnumerable<Datom> datoms);
 
     /// <summary>
     /// Starts a new transaction.
@@ -34,5 +35,5 @@ public interface IConnection
     /// <summary>
     /// A sequential stream of commits to the database.
     /// </summary>
-    public IObservable<ICommitResult> Commits { get; }
+    public IObservable<(TxId TxId, IDataChunk Datoms)> Commits { get; }
 }

@@ -60,21 +60,24 @@ where TAttribute : IAttribute<TValueType>
     public bool IsMultiCardinality => false;
 
     /// <inheritdoc />
-    public bool IsReference => false;
+    public bool IsReference => typeof(TValueType) == typeof(EntityId);
 
     /// <inheritdoc />
     public Symbol Id { get; }
 
-    /// <summary>
-    /// Read a datom from a buffer
-    /// </summary>
-    public IDatom Read(ulong entity, ulong tx, bool isAssert, ReadOnlySpan<byte> buffer)
+    /// <inheritdoc />
+    public IReadDatom Resolve(Datom datom)
     {
-        _serializer.Read(buffer, out var val);
-        return isAssert
-            ? new AssertDatomWithTx<TAttribute, TValueType>(entity, val, TxId.From(tx))
-            : throw new NotImplementedException();
+        _serializer.Read(datom.V.Span, out var read);
+        return new ReadDatom
+        {
+            E = datom.E,
+            V = read,
+            T = datom.T,
+            Flags = datom.F
+        };
     }
+
 
     /// <summary>
     /// Create a new datom for an assert on this attribute, and return it
@@ -82,9 +85,63 @@ where TAttribute : IAttribute<TValueType>
     /// <param name="e"></param>
     /// <param name="v"></param>
     /// <returns></returns>
-    public static IDatom Assert(ulong e, TValueType v)
+    public static IWriteDatom Assert(EntityId e, TValueType v)
     {
-        return new AssertDatom<TAttribute, TValueType>(e, v);
+        return new WriteDatom
+        {
+            E = e,
+            V = v,
+        };
+    }
+
+    public static IReadDatom Datom(EntityId id, TxId tx, TValueType valueType)
+    {
+        return new ReadDatom
+        {
+            E = id,
+            V = valueType,
+            T = tx,
+            Flags = DatomFlags.Added
+        };
+    }
+
+    /// <summary>
+    /// Typed datom for this attribute
+    /// </summary>
+    public readonly record struct WriteDatom : IWriteDatom
+    {
+        public required EntityId E { get; init; }
+        public required TValueType V { get; init; }
+        public DatomFlags Flags => DatomFlags.Added;
+
+        public void Append(IAttributeRegistry registry, IAppendableChunk chunk)
+        {
+            registry.Append<TAttribute, TValueType>(chunk, E, V, TxId.Tmp, Flags);
+        }
+
+        public override string ToString()
+        {
+            return $"({E}, {typeof(TAttribute).Name}, {V})";
+        }
+    }
+
+    /// <summary>
+    /// Typed datom for this attribute
+    /// </summary>
+    public readonly record struct ReadDatom : IReadDatom
+    {
+        public required EntityId E { get; init; }
+        public required TValueType V { get; init; }
+
+        public required TxId T { get; init; }
+        public DatomFlags Flags { get; init; }
+        public override string ToString()
+        {
+            return $"({E}, {typeof(TAttribute).Name}, {V}, {T}, {Flags})";
+        }
+
+        public Type AttributeType => typeof(TAttribute);
+        public Type ValueType => typeof(TValueType);
     }
 
 }

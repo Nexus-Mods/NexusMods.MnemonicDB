@@ -1,9 +1,7 @@
 ﻿using System;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using NexusMods.EventSourcing.DatomStore;
+using NexusMods.EventSourcing.Storage;
 using NexusMods.EventSourcing.TestModel;
-using NexusMods.Paths;
 
 namespace NexusMods.EventSourcing.Benchmarks;
 
@@ -14,13 +12,9 @@ public static class AppHost
         var builder = Host.CreateDefaultBuilder()
             .ConfigureServices(services =>
             {
-                services.AddDatomStore()
+                services.AddEventSourcingStorage()
                     .AddEventSourcing()
-                    .AddTestModel()
-                    .AddSingleton(new DatomStoreSettings()
-                    {
-                        Path = FileSystem.Shared.GetKnownPath(KnownPath.TempDirectory).Combine(Guid.NewGuid() + ".rocksdb")
-                    });
+                    .AddTestModel();
             });
 
         return builder.Build().Services;

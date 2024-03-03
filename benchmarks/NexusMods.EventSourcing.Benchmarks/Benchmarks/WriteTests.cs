@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,7 +25,7 @@ public class WriteTests
     public int Count { get; set; } = 1000;
 
     [Benchmark]
-    public void AddFiles()
+    public async Task AddFiles()
     {
         var tx = _connection.BeginTransaction();
         var ids = new List<EntityId>();
@@ -38,7 +39,7 @@ public class WriteTests
             };
             ids.Add(file.Id);
         }
-        var result = tx.Commit();
+        var result = await tx.Commit();
 
         ids = ids.Select(id => result[id]).ToList();
 

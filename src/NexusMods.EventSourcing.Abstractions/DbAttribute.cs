@@ -9,5 +9,5 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// <param name="UniqueId"></param>
 /// <param name="AttrEntityId"></param>
 /// <param name="ValueTypeId"></param>
-public record DbAttribute(Symbol UniqueId, ulong AttrEntityId, UInt128 ValueTypeId);
+public record DbAttribute(Symbol UniqueId, AttributeId AttrEntityId, Symbol ValueTypeId);
 

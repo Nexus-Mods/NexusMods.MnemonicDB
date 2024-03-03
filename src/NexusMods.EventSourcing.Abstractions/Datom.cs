@@ -1,118 +1,49 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
-/// <summary>
-/// Represents a single fact in the database. Consists of an entity, attribute, value, and transaction id.
-/// </summary>
-public interface IDatom
+public readonly struct Datom
 {
     /// <summary>
-    /// The entity id of the datom
+    /// Entity id.
     /// </summary>
-    ulong Entity { get; }
+    public EntityId E { get; init; }
 
     /// <summary>
-    /// The attribute of the datom
+    /// Attribute id
     /// </summary>
-    Type Attribute { get; }
+    public AttributeId A { get; init; }
 
     /// <summary>
-    /// The value of the datom
+    /// TX id
     /// </summary>
-    Type ValueType { get; }
+    public TxId T { get; init; }
 
     /// <summary>
-    /// Sends the datom to the sink
+    /// Flags
     /// </summary>
-    /// <param name="sink"></param>
-    /// <typeparam name="TSink"></typeparam>
-    void Emit<TSink>(ref TSink sink) where TSink : IDatomSink;
+    public DatomFlags F { get; init; }
 
     /// <summary>
-    /// The datom should call the remap function on each entity id it contains
-    /// to remap the entity ids to actual ids
+    /// Value Data
     /// </summary>
-    /// <param name="remapFn"></param>
-    void Remap(Func<EntityId, EntityId> remapFn);
-}
+    public ReadOnlyMemory<byte> V { get; init; }
 
-/// <summary>
-/// A datom that includes a transaction id
-/// </summary>
-public interface IDatomWithTx : IDatom
-{
-    /// <summary>
-    /// The transaction id of the datom
-    /// </summary>
-    TxId Tx { get; }
-}
-
-
-/// <summary>
-/// An assertion datom, most datoms are assertions, so these are called out in a specific class
-/// here to save memory
-/// </summary>
-/// <param name="e"></param>
-/// <param name="v"></param>
-/// <typeparam name="TAttr"></typeparam>
-/// <typeparam name="TVal"></typeparam>
-public class AssertDatom<TAttr, TVal>(ulong e, TVal v) : IDatom
-    where TAttr : IAttribute<TVal>
-{
-    /// <inheritdoc />
-    public ulong Entity => e;
-
-    /// <summary>
-    /// The value of the datom
-    /// </summary>
-    public TVal V => v;
-
-    /// <inheritdoc />
-    public Type Attribute => typeof(TAttr);
-
-    /// <inheritdoc />
-    public Type ValueType => typeof(TVal);
-
-    /// <inheritdoc />
-    public void Emit<TSink>(ref TSink sink) where TSink : IDatomSink
+    public static Datom Max = new()
     {
-        sink.Datom<TAttr, TVal>(e, v, true);
-    }
-
-    /// <inheritdoc />
-    public void Remap(Func<EntityId, EntityId> remapFn)
-    {
-        e = remapFn(EntityId.From(e)).Value;
-        if (v is EntityId entityId)
-        {
-            v = (TVal) (object) EntityId.From(remapFn(entityId).Value);
-        }
-    }
-}
-
-/// <summary>
-/// An assertion datom that has a transaction id
-/// </summary>
-/// <typeparam name="TAttr"></typeparam>
-/// <typeparam name="TVal"></typeparam>
-public class AssertDatomWithTx<TAttr, TVal> : AssertDatom<TAttr, TVal>, IDatomWithTx
-    where TAttr : IAttribute<TVal>
-{
-    /// <inheritdoc />
-    public TxId Tx { get; }
+        E = EntityId.From(ulong.MaxValue),
+        A = AttributeId.From(ulong.MaxValue),
+        T = TxId.MaxValue,
+        F = (DatomFlags)byte.MaxValue,
+        V = ReadOnlyMemory<byte>.Empty
+    };
 
     /// <summary>
-    /// Default Constructor
+    /// Assumes the value is a struct and unmarshals it.
     /// </summary>
-    public AssertDatomWithTx(ulong e, TVal v, TxId tx) : base(e, v)
+    public T Unmarshal<T>() where T : struct
     {
-        Tx = tx;
-    }
-
-    /// <inheritdoc />
-    public override string ToString()
-    {
-        return $"(assert! {Entity}, {Attribute.Namespace}/{Attribute.Name}, {V}, {Tx})";
+        return MemoryMarshal.Read<T>(V.Span);
     }
 }

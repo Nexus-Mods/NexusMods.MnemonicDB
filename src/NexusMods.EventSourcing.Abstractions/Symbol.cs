@@ -17,9 +17,17 @@ public class Symbol
         nsAndName = nsAndName.Replace("+", ".");
         Id = nsAndName;
         var splitOn = nsAndName.LastIndexOf('.');
+        if (splitOn == -1)
+        {
+            Name = nsAndName;
+            Namespace = "";
+            return;
+        }
         Name = nsAndName[(splitOn + 1)..];
         Namespace = nsAndName[..splitOn];
     }
+
+    public static Symbol Unknown => Intern("<unknown>");
 
     private static readonly ConcurrentDictionary<string, Symbol> InternedSymbols = new();
 
@@ -38,6 +46,16 @@ public class Symbol
     }
 
     /// <summary>
+    /// Construct a new symbol, based on the name of the given type
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <returns></returns>
+    public static Symbol Intern<T>()
+    {
+        return Intern(typeof(T).FullName!);
+    }
+
+    /// <summary>
     /// The namespace of the symbol, the part before the name
     /// </summary>
     public string Namespace { get; }
@@ -51,4 +69,9 @@ public class Symbol
     /// The full string name of the symbol, in the format of "Namespace/Name"
     /// </summary>
     public string Id { get; }
+
+    public override string ToString()
+    {
+        return Id;
+    }
 }

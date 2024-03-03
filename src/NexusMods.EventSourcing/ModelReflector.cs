@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,7 +22,7 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
     private delegate void EmitterFn<in TReadModel>(TTransaction tx, TReadModel model)
         where TReadModel : IReadModel;
 
-    internal delegate TReadModel ReaderFn<out TReadModel>(EntityId id, IEntityIterator iterator, IDb db)
+    internal delegate TReadModel ReaderFn<out TReadModel>(EntityId id, IEnumerator<Datom> iterator, IDb db)
         where TReadModel : IReadModel;
 
     public void Add(TTransaction tx, IReadModel model)
@@ -104,12 +105,12 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
 
 
         var entityIdParameter = Expression.Parameter(typeof(EntityId), "entityId");
-        var iteratorParameter = Expression.Parameter(typeof(IEntityIterator), "iterator");
+        var iteratorParameter = Expression.Parameter(typeof(IEnumerator<Datom>), "iterator");
         var dbParameter = Expression.Parameter(typeof(IDb), "db");
 
         var newModelExpr = Expression.Variable(typeof(TModel), "newModel");
 
-        var spanExpr = Expression.Property(iteratorParameter, "ValueSpan");
+        var spanExpr = Expression.Property(Expression.Property(Expression.Property(iteratorParameter, "Current"), "V"), "Span");
         var ctor = typeof(TModel).GetConstructor([typeof(ITransaction)])!;
 
 
@@ -119,13 +120,14 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
 
         exprs.Add(Expression.Label(whileTopLabel));
         exprs.Add(Expression.IfThen(
-            Expression.Not(Expression.Call(iteratorParameter, typeof(IEntityIterator).GetMethod("Next")!)),
+            Expression.Not(Expression.Call(iteratorParameter, typeof(IEnumerator).GetMethod("MoveNext")!)),
             Expression.Break(exitLabel)));
 
         var cases = new List<SwitchCase>();
 
         foreach (var (attribute, property) in properties)
         {
+
             var readSpanExpr = store.GetValueReadExpression(attribute, spanExpr, out var attributeId);
 
             var assigned = Expression.Assign(Expression.Property(newModelExpr, property), readSpanExpr);
@@ -133,8 +135,7 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
             cases.Add(Expression.SwitchCase(Expression.Block([assigned, Expression.Goto(whileTopLabel)]),
                 Expression.Constant(attributeId)));
         }
-
-        exprs.Add(Expression.Switch(Expression.Property(iteratorParameter, "AttributeId"), cases.ToArray()));
+        exprs.Add(Expression.Switch(Expression.Property(Expression.Property(iteratorParameter, "Current"), "A"), cases.ToArray()));
 
         exprs.Add(Expression.Goto(whileTopLabel));
         exprs.Add(Expression.Label(exitLabel));

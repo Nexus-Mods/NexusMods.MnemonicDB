@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
@@ -27,7 +28,7 @@ public class ReadTests
     private const int MaxCount = 10000;
 
     [GlobalSetup]
-    public void Setup()
+    public async Task Setup()
     {
         var tx = _connection.BeginTransaction();
         var entityIds = new List<EntityId>();
@@ -41,7 +42,7 @@ public class ReadTests
             };
             entityIds.Add(file.Id);
         }
-        var result = tx.Commit();
+        var result = await tx.Commit();
 
         entityIds = entityIds.Select(e => result[e]).ToList();
         _entityIdsAscending = entityIds.OrderBy(id => id.Value).ToList();

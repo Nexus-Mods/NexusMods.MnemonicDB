@@ -1,4 +1,5 @@
-﻿using NexusMods.EventSourcing.Abstractions.Models;
+﻿using System.Threading.Tasks;
+using NexusMods.EventSourcing.Abstractions.Models;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -34,7 +35,7 @@ public interface ITransaction
     /// <summary>
     /// Commits the transaction
     /// </summary>
-    ICommitResult Commit();
+    Task<ICommitResult> Commit();
 
     /// <summary>
     /// Gets the temporary id for the transaction

@@ -1,34 +1,41 @@
-﻿using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.DatomStore;
-using NexusMods.Paths;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage;
 
 namespace NexusMods.EventSourcing.Tests;
 
-public class AEventSourcingTest : IDisposable
+public class AEventSourcingTest : IAsyncLifetime
 {
-    private readonly AbsolutePath _tmpPath;
-    protected readonly RocksDBDatomStore Store;
-    protected readonly Connection Connection;
+    protected Connection Connection = null!;
+    private readonly DatomStore _store;
+    private readonly NodeStore _nodeStore;
+    private readonly IValueSerializer[] _valueSerializers;
+    private readonly IAttribute[] _attributes;
+    private readonly InMemoryKvStore _kvStore;
 
-    protected AEventSourcingTest(IEnumerable<IValueSerializer> valueSerializers,
-        IEnumerable<IAttribute> attributes)
+    protected AEventSourcingTest(IServiceProvider provider)
     {
-        _tmpPath = FileSystem.Shared.GetKnownPath(KnownPath.TempDirectory).Combine(Guid.NewGuid() + ".rocksdb");
-        var dbSettings = new DatomStoreSettings()
-        {
-            Path = _tmpPath,
-        };
-        var valueSerializerArray = valueSerializers.ToArray();
+        _valueSerializers = provider.GetRequiredService<IEnumerable<IValueSerializer>>().ToArray();
+        _attributes = provider.GetRequiredService<IEnumerable<IAttribute>>().ToArray();
 
-        var attributeArray = attributes.ToArray();
-        var registry = new AttributeRegistry(valueSerializerArray, attributeArray);
-        Store = new RocksDBDatomStore(registry, dbSettings);
-        Connection = new Connection(Store, attributeArray, valueSerializerArray);
+        var registry = new AttributeRegistry(_valueSerializers, _attributes);
+        _kvStore = new InMemoryKvStore();
+        _nodeStore = new NodeStore(provider.GetRequiredService<ILogger<NodeStore>>(), _kvStore, registry);
+
+        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _nodeStore, registry);
+
     }
 
-    public void Dispose()
+    public async Task InitializeAsync()
     {
-        Store.Dispose();
-        _tmpPath.DeleteDirectory();
+        await _store.Sync();
+
+        Connection = await Connection.Start(_store, _valueSerializers, _attributes);
+    }
+
+    public async Task DisposeAsync()
+    {
+        _store.Dispose();
     }
 }

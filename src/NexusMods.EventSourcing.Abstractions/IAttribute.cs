@@ -35,9 +35,11 @@ public interface IAttribute
     public Symbol Id { get; }
 
     /// <summary>
-    /// Reads the value from the buffer and returns all the data as a Datom
+    /// Converts the datom to a typed datom
     /// </summary>
-    public IDatom Read(ulong entity, ulong tx, bool isAssert, ReadOnlySpan<byte> buffer);
+    /// <param name="datom"></param>
+    /// <returns></returns>
+    IReadDatom Resolve(Datom datom);
 }
 
 
@@ -47,15 +49,16 @@ public interface IAttribute
 /// <typeparam name="TVal"></typeparam>
 public interface IAttribute<TVal> : IAttribute
 {
-
-    /// <summary>
-    /// Reads the value from the buffer and returns the value
-    /// </summary>
-    public TVal Read(ReadOnlySpan<byte> buffer);
-
-
     /// <summary>
     /// Creates a new assertion datom for the given entity and value
     /// </summary>
     public static abstract void Add(ITransaction tx, EntityId entity, TVal value);
+
+    /// <summary>
+    /// Construct a new write Datom for the given entity and value
+    /// </summary>
+    /// <param name="e"></param>
+    /// <param name="v"></param>
+    /// <returns></returns>
+    public static abstract IWriteDatom Assert(EntityId e, TVal v);
 }
