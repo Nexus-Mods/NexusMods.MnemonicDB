@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using NexusMods.EventSourcing.Abstractions.Models;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -36,4 +37,12 @@ public interface IConnection
     /// A sequential stream of commits to the database.
     /// </summary>
     public IObservable<(TxId TxId, IDataChunk Datoms)> Commits { get; }
+
+    /// <summary>
+    /// Gets the active read model for the given entity id, this entity will
+    /// automatically update as new commits are made to the database that modify
+    /// its state. It will update via INotifyPropertyChanged.
+    /// </summary>
+    public T GetActive<T>(EntityId id) where T : IActiveReadModel;
+
 }

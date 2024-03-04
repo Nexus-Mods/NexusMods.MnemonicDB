@@ -162,6 +162,7 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
             result = await tx.Commit();
 
             //result.Datoms.Should().BeEquivalentTo(updates[idx + 1]);
+            await Task.Delay(100);
 
             updates.Should().HaveCount(idx + 1);
             var updateDatom = updates[idx]
@@ -196,6 +197,43 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
         firstMod.Db.Should().Be(newDb);
         loadout.Name.Should().Be("Test Loadout");
         firstMod.Loadout.Name.Should().Be("Test Loadout");
+    }
+
+    [Fact]
+    public async Task CanGetActiveReadModels()
+    {
+
+        var tx = Connection.BeginTransaction();
+        var staticLoadout1 = Loadout.Create(tx, "Test Loadout 1");
+        var staticLoadout2 = Loadout.Create(tx, "Test Loadout 2");
+
+        var result = await tx.Commit();
+
+        var loadout1 = Connection.GetActive<LoadoutActiveReadModel>(result[staticLoadout1.Id]);
+        var loadout2 = Connection.GetActive<LoadoutActiveReadModel>(result[staticLoadout2.Id]);
+
+        loadout1.Name.Should().Be("Test Loadout 1");
+        loadout2.Name.Should().Be("Test Loadout 2");
+
+        var newTx = Connection.BeginTransaction();
+        LoadoutAttributes.Name.Add(newTx, result[staticLoadout1.Id], "Test Loadout 1 Updated");
+        await newTx.Commit();
+
+        var reloaded = Connection.Db.Get<Loadout>(result[staticLoadout1.Id]);
+        reloaded.Name.Should().Be("Test Loadout 1 Updated", "because the commit has been applied");
+
+
+        var loadout1Reloaded = Connection.GetActive<LoadoutActiveReadModel>(result[staticLoadout1.Id]);
+
+        await Task.Delay(100);
+        loadout1Reloaded.Name.Should().Be("Test Loadout 1 Updated", "because the model is reloaded from the db");
+
+
+        loadout1.BasisDb.BasisTxId.Should().Be(loadout1Reloaded.BasisDb.BasisTxId, "the basis db should be updated");
+
+        loadout1.Name.Should().Be("Test Loadout 1 Updated", "because the model is active");
+
+        loadout2.Name.Should().Be("Test Loadout 2", "because the model is active, but not updated");
     }
 
 
