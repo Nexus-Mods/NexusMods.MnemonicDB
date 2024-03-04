@@ -87,8 +87,30 @@ These nodes are all immutable after being packed, so the common update format fo
 index and a new appendable node of data. This results in a new index root node, and future queries can point to this node.
 
 Note: since the current index is filtered by T, previous versions of indexes are never read again after the last query against
-a given version of the index has finished. Thus old blocks are free to GC by a background process has proven no reader
-is reading from them.
+a given version of the index has finished. Thus old blocks are free to be GC'd by a background process has proven no reader
+is reading from them. This garbage collection process can easily be made non-blocking and lazy and need not run often.
+
+## Vectorized Querying
+A simplistic way to query this data is to leverage the fact that every column and every block supports a indexed value lookup.
+Blocks report their total number of datoms, and getting the datom at a given index is O(log n) where n is so low that it approaches
+the performance of O(1). This means that getting a datom at a given index is very fast, and due to that we can easily binary search
+an index to get to a specific datom, from there we can increment and decrement the index to get datoms around the target datom.
+
+However, in practice this involves a lot of random access for data that we likely will want to bulk process. Thus we take yet another
+page from DuckDB's book and support vectorized iterators.
+
+In this approach, data is iterated over in small compact chunks. Think of these chunks as subsections of the column's data stored
+as columns themselves, but this time they are always unpacked. This is also useful for columns that may store data in a binary packed
+or dictionary format, as it can allow us to bulk process column data and keep more state on the stack during the unpacking process.
+
+A nice side effect of using chunked iterators is that it allows us to leverage vector processing (and perhaps GPU processing) to
+process these queries. For example, when looking for all datoms with a given entity ID, we can look at a single array of ulongs and
+filter out the ones that do not match. In order to perform this filtering in a non-branching manner, we use another feature
+from DuckDB and store a "mask" of live datoms as a small array of ulongs. If a given filter or processor of the chunk wants to mark
+the datom as not matching, it simply sets the bit for that column to 0. Future processors can use this mask to either reduce work
+performed, or to filter out results of processing. With all this in play a modern processor can easily process several datoms
+at a time, without the need to perform conditional checks thanks to vectorized operations.
+
 
 
 
