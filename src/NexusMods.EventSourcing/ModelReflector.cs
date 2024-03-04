@@ -18,12 +18,16 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
 {
     private readonly ConcurrentDictionary<Type,object> _emitters = new();
     private readonly ConcurrentDictionary<Type, object> _readers = new();
+    private readonly ConcurrentDictionary<Type, object> _constructors = new();
+    private readonly ConcurrentDictionary<Type, object> _activeReaders = new();
 
     private delegate void EmitterFn<in TReadModel>(TTransaction tx, TReadModel model)
         where TReadModel : IReadModel;
 
     internal delegate TReadModel ReaderFn<out TReadModel>(EntityId id, IEnumerator<Datom> iterator, IDb db)
         where TReadModel : IReadModel;
+
+    internal delegate void ActiveReaderFn<TModel>(TModel model, IEnumerator<Datom> datom);
 
     public void Add(TTransaction tx, IReadModel model)
     {
@@ -69,6 +73,24 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
         return lambda.Compile();
     }
 
+    private Func<IDb, EntityId, object> GetConstructor(Type readModel)
+    {
+        if (_constructors.TryGetValue(readModel, out var found))
+            return (Func<IDb, EntityId, object>)found;
+
+        var ctor = readModel.GetConstructor(new[] {typeof(IDb), typeof(EntityId)})!;
+        var dbParameter = Expression.Parameter(typeof(IDb), "db");
+        var idParameter = Expression.Parameter(typeof(EntityId), "id");
+        var model = Expression.New(ctor, dbParameter, idParameter);
+        var casted = Expression.Convert(model, typeof(object));
+
+        var lambda = Expression.Lambda<Func<IDb, EntityId, object>>(casted, dbParameter, idParameter);
+        var compiled =  lambda.Compile();
+
+        _constructors.TryAdd(readModel, compiled);
+        return compiled;
+    }
+
     private static IEnumerable<(Type Attribute, PropertyInfo Property)> GetModelProperties(Type readModel)
     {
         var properties = readModel
@@ -90,6 +112,22 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
         var readerFn = MakeReader<TModel>();
         _readers.TryAdd(modelType, readerFn);
         return readerFn;
+    }
+
+    public ActiveReaderFn<TModel> GetActiveReader<TModel>() where TModel : IActiveReadModel
+    {
+        var modelType = typeof(TModel);
+        if (_activeReaders.TryGetValue(modelType, out var found))
+            return (ActiveReaderFn<TModel>)found;
+
+        var readerFn = MakeActiveReader<TModel>();
+        _activeReaders.TryAdd(modelType, readerFn);
+        return readerFn;
+    }
+
+    public Func<IDb, EntityId, object> GetActiveModelConstructor<TModel>() where TModel : IActiveReadModel
+    {
+        return GetConstructor(typeof(TModel));
     }
 
     private ReaderFn<TModel> MakeReader<TModel>() where TModel : IReadModel
@@ -144,6 +182,51 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
         var block = Expression.Block(new[] {newModelExpr}, exprs);
 
         var lambda = Expression.Lambda<ReaderFn<TModel>>(block, entityIdParameter, iteratorParameter, dbParameter);
+        return lambda.Compile();
+    }
+
+    private ActiveReaderFn<TModel> MakeActiveReader<TModel>()
+    {
+        var tmodel = typeof(TModel);
+        var properties = GetModelProperties(tmodel);
+
+        var exprs = new List<Expression>();
+
+        var whileTopLabel = Expression.Label("whileTop");
+        var exitLabel = Expression.Label("exit");
+
+        var modelParameter = Expression.Parameter(tmodel, "model");
+        var iteratorParameter = Expression.Parameter(typeof(IEnumerator<Datom>), "iterator");
+
+        var spanExpr = Expression.Property(Expression.Property(Expression.Property(iteratorParameter, "Current"), "V"), "Span");
+
+
+        exprs.Add(Expression.Label(whileTopLabel));
+        exprs.Add(Expression.IfThen(
+            Expression.Not(Expression.Call(iteratorParameter, typeof(IEnumerator).GetMethod("MoveNext")!)),
+            Expression.Break(exitLabel)));
+
+        var cases = new List<SwitchCase>();
+
+        foreach (var (attribute, property) in properties)
+        {
+
+            var readSpanExpr = store.GetValueReadExpression(attribute, spanExpr, out var attributeId);
+
+            var assigned = Expression.Assign(Expression.Property(modelParameter, property), readSpanExpr);
+
+            cases.Add(Expression.SwitchCase(Expression.Block([assigned, Expression.Goto(whileTopLabel)]),
+                Expression.Constant(attributeId)));
+        }
+        exprs.Add(Expression.Switch(Expression.Property(Expression.Property(iteratorParameter, "Current"), "A"), cases.ToArray()));
+
+        exprs.Add(Expression.Goto(whileTopLabel));
+        exprs.Add(Expression.Label(exitLabel));
+        exprs.Add(modelParameter);
+
+        var block = Expression.Block(exprs);
+
+        var lambda = Expression.Lambda<ActiveReaderFn<TModel>>(block, modelParameter, iteratorParameter);
         return lambda.Compile();
     }
 }

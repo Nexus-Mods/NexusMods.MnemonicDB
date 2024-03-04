@@ -14,6 +14,11 @@ public interface IDb
     TxId BasisTxId { get; }
 
     /// <summary>
+    /// The connection that this database is using for its state.
+    /// </summary>
+    IConnection Connection { get; }
+
+    /// <summary>
     /// Returns a read model for each of the given entity ids.
     /// </summary>
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids)
@@ -36,4 +41,9 @@ public interface IDb
     public IEnumerable<TModel> GetReverse<TAttribute, TModel>(EntityId id)
         where TModel : IReadModel
         where TAttribute : IAttribute<EntityId>;
+
+    /// <summary>
+    /// Reloads the active read model with the latest state from the database.
+    /// </summary>
+    void Reload<TOuter>(TOuter aActiveReadModel) where TOuter : IActiveReadModel;
 }

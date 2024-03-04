@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Models;
 using NexusMods.EventSourcing.Storage;
 using NexusMods.EventSourcing.Storage.Nodes;
 
@@ -26,8 +28,6 @@ public class Connection : IConnection
     {
         _store = store;
         ModelReflector = new ModelReflector<Transaction>(store);
-
-
     }
 
     /// <summary>
@@ -94,6 +94,8 @@ public class Connection : IConnection
     }
 
 
+
+
     /// <inheritdoc />
     public IDb Db => new Db(_store, this, TxId);
 
@@ -123,4 +125,12 @@ public class Connection : IConnection
 
     /// <inheritdoc />
     public IObservable<(TxId TxId, IDataChunk Datoms)> Commits => _store.TxLog;
+
+    public T GetActive<T>(EntityId id) where T : IActiveReadModel
+    {
+        var db = Db;
+        var ctor = ModelReflector.GetActiveModelConstructor<T>();
+        var activeModel = (T)ctor(db, id);
+        return activeModel;
+    }
 }

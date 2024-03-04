@@ -8,6 +8,7 @@ namespace NexusMods.EventSourcing;
 internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
 {
     public TxId BasisTxId => txId;
+    public IConnection Connection => connection;
 
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids) where TModel : IReadModel
     {
@@ -35,5 +36,12 @@ internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
             yield return reader(id, iterator, this);
         }
 
+    }
+
+    public void Reload<TOuter>(TOuter aActiveReadModel) where TOuter : IActiveReadModel
+    {
+        var reader = connection.ModelReflector.GetActiveReader<TOuter>();
+        var iterator = store.Where(txId, aActiveReadModel.Id).GetEnumerator();
+        reader(aActiveReadModel, iterator);
     }
 }
