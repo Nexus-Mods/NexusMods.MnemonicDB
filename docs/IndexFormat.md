@@ -111,6 +111,13 @@ the datom as not matching, it simply sets the bit for that column to 0. Future p
 performed, or to filter out results of processing. With all this in play a modern processor can easily process several datoms
 at a time, without the need to perform conditional checks thanks to vectorized operations.
 
+The number of datoms in a chunk is a tradeoff between the amount of memory used and the amount of work that can be done in a single
+step of the pipeline. DuckDB uses a chunk size of 2048, however it's likely that the data used in a desktop application like this will
+likely be much smaller, so perhaps a chunk size of 64 (so that the flags all fit in a single ulong) or 128 is more appropriate as in that
+case a single comparison of a 64 bit int can check all the null flags in a single step. This, naturally is a tradeoff between
+the reduction in number of calls between the unpacking code and the amount of memory used. 4x ulongs (256 bits or AVX2 register size)
+would result in a chunk size of 256 datoms, which may be a good tradeoff between the two.
+
 
 
 
