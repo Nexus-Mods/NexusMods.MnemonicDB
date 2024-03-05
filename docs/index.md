@@ -59,6 +59,10 @@ flowchart TD
 
 ## Nexus Event Sourcing Framework
 
+A major issue in event sourcing systems is allowing for the system to adapt to changes in the model over time, while the concept of events mutating a state is simple,
+the actual implementation can be quite complex. This framework reworks many aspects of the Event Sourcing model in order to present an interface that
+is easier to maintain, adapt and extend in extension code.
+
 This framework takes heavy inspiration from [Datomic](https://docs.datomic.com/pro/index.html), an immutable, tuple oriented, single writer, parallel reader database system. Unfortunately,
 Datomic is not open source, is written in Java, and not designed for a single process desktop application. However the information available about
 the database is very insightful and we are leveraging many aspects of its design in our framework.
@@ -83,4 +87,6 @@ This is a key feature of the system, as it allows us to order the events in the 
 Attributes and transactions are also entities, and are put into a separate `partition` via a prefix on their ids. The top byte of an ID is the partition, the actual value of these partition
 prefixes don't matter much, but it should be noted that the first partition is the partition for attributes, so at any time a quick check of the first byte in an entity id can tell us if it's an attribute id or not.
 
-Data is stored in an abstract "block store". This store does not need to be highly optimized as the framework performs heavy amounts of caching and only rarely writes to the store.
+Data is stored in several indexes which can be queried to find a specific datom (or datom that is closest to a specific datom), from there the data is stored in a sorted
+set so iterators can move forward and backwards through the data. By varying the order in which the parts of the datoms are sorted, we can efficently navigate through a model.
+
