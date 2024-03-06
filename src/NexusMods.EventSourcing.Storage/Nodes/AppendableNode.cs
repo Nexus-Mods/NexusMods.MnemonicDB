@@ -10,10 +10,10 @@ using NexusMods.EventSourcing.Storage.Columns.PackedColumns;
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
 /// <summary>
-/// A chunk that is appendable and not yet frozen. Can be sorted
+/// A node that is appendable and not yet frozen. Can be sorted
 /// after insertion.
 /// </summary>
-public class AppendableChunk : IDataChunk, IAppendableChunk
+public class AppendableNode : IDataNode, IAppendableChunk
 {
     private readonly UnsignedIntegerColumn<EntityId> _entityIds;
     private readonly UnsignedIntegerColumn<AttributeId> _attributeIds;
@@ -28,7 +28,7 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
     public IBlobColumn Values => _values;
 
     // Empty constructor for serialization
-    public AppendableChunk()
+    public AppendableNode()
     {
         _entityIds = new UnsignedIntegerColumn<EntityId>();
         _attributeIds = new UnsignedIntegerColumn<AttributeId>();
@@ -59,7 +59,7 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
     public int Length => _entityIds.Length;
 
     /// <summary>
-    /// Sorts the chunk using the given comparator.
+    /// Sorts the node using the given comparator.
     /// </summary>
     /// <param name="comparator"></param>
     public void Sort<TComparator>(TComparator comparator)
@@ -74,7 +74,7 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
         // Meaning that we can't just swap the values because future swaps will be based on the original
         // positions of the values, not the new ones.
         //
-        // Essentially we have to create keys for each entry, then create a new chunk based on the
+        // Essentially we have to create keys for each entry, then create a new node based on the
         // sorted keys
 
         var pidxs = GC.AllocateUninitializedArray<int>(_entityIds.Length);
@@ -127,18 +127,18 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
 
     public void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
     {
-        throw new NotSupportedException("Must pack the chunk before writing it to a buffer.");
+        throw new NotSupportedException("Must pack the node before writing it to a buffer.");
     }
 
-    public IDataChunk Flush(INodeStore store)
+    public IDataNode Flush(INodeStore store)
     {
         var packed = Pack();
         return store.Flush(packed);
     }
 
-    public IDataChunk Pack()
+    public IDataNode Pack()
     {
-        return new PackedChunk(Length,
+        return new PackedNode(Length,
             _entityIds.Pack(),
             _attributeIds.Pack(),
             _transactionIds.Pack(),
@@ -161,11 +161,11 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
 
 
     /// <summary>
-    /// Initializes a new chunk with the given datoms.
+    /// Initializes a new node with the given datoms.
     /// </summary>
-    public static AppendableChunk Initialize(IEnumerable<Datom> datoms)
+    public static AppendableNode Initialize(IEnumerable<Datom> datoms)
     {
-        var chunk = new AppendableChunk();
+        var chunk = new AppendableNode();
         foreach (var datom in datoms)
         {
             chunk.Append(datom);
@@ -173,11 +173,11 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
         return chunk;
     }
 
-    public (AppendableChunk A, AppendableChunk B) Split()
+    public (AppendableNode A, AppendableNode B) Split()
     {
         var mid = Length / 2;
-        var a = new AppendableChunk();
-        var b = new AppendableChunk();
+        var a = new AppendableNode();
+        var b = new AppendableNode();
 
         for (var i = 0; i < mid; i++)
         {
@@ -191,10 +191,10 @@ public class AppendableChunk : IDataChunk, IAppendableChunk
         return (a, b);
     }
 
-    public void Append(IDataChunk chunk)
+    public void Append(IDataNode node)
     {
         // TODO: Vectorize this
-        foreach (var t in chunk)
+        foreach (var t in node)
         {
             Append(t);
         }

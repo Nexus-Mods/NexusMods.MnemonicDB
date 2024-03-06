@@ -12,10 +12,9 @@ public class StringSerializer : IValueSerializer<string>
     public Type NativeType => typeof(string);
     public Symbol UniqueId { get; } = Symbol.Intern<StringSerializer>();
 
-    public int Compare(in Datom a, in Datom b)
+    public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
     {
-        // TODO: This can likely be vectorized so it keeps the strings in their original locations
-        return string.Compare(_encoding.GetString(a.V.Span), _encoding.GetString(b.V.Span), StringComparison.Ordinal);
+        return a.SequenceCompareTo(b);
     }
 
     public void Write<TWriter>(string value, TWriter buffer) where TWriter : IBufferWriter<byte>

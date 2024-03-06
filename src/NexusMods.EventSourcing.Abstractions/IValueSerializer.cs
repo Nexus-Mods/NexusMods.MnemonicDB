@@ -25,7 +25,7 @@ public interface IValueSerializer
     /// <param name="a"></param>
     /// <param name="b"></param>
     /// <returns></returns>
-    public int Compare(in Datom a, in Datom b);
+    public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b);
 }
 
 /// <summary>

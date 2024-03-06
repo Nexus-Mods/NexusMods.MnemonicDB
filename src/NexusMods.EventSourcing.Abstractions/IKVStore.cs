@@ -5,7 +5,7 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// <summary>
 /// Implements a interface for loading and saving blocks of data.
 /// </summary>
-public interface IKvStore
+public interface IKvStore : IDisposable
 {
     public void Put(StoreKey key, ReadOnlySpan<byte> value);
 

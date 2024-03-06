@@ -24,7 +24,7 @@ public class IndexTests(IServiceProvider provider) : AStorageTest(provider)
     {
         var testData = TestDatomChunk(entityCount);
 
-        var index = new AppendableIndexChunk(comparator);
+        var index = new AppendableIndexNode(comparator);
 
 
         var grouped = testData
@@ -36,7 +36,7 @@ public class IndexTests(IServiceProvider provider) : AStorageTest(provider)
 
         foreach (var group in grouped)
         {
-            var newChunk = AppendableChunk.Initialize(group);
+            var newChunk = AppendableNode.Initialize(group);
             newChunk.Sort(comparator);
 
             sw.Start();
@@ -44,12 +44,12 @@ public class IndexTests(IServiceProvider provider) : AStorageTest(provider)
             sw.Stop();
 
             if (flush)
-                index = AppendableIndexChunk.UnpackFrom((IIndexChunk)index.Flush(NodeStore));
+                index = AppendableIndexNode.UnpackFrom((IIndexNode)index.Flush(NodeStore));
 
         }
 
 
-        var finalIndex = (IIndexChunk)index.Flush(NodeStore);
+        var finalIndex = (IIndexNode)index.Flush(NodeStore);
         Logger.LogInformation("Ingested {DatomCount} datoms in {ElapsedMs}ms", finalIndex.Length, sw.ElapsedMilliseconds);
 
         finalIndex.Length.Should().Be(testData.Length, "all datoms should be ingested");

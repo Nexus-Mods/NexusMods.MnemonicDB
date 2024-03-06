@@ -11,7 +11,7 @@ using NexusMods.EventSourcing.Storage.Columns;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
-public class AppendableIndexChunk : IIndexChunk
+public class AppendableIndexNode : IIndexNode
 {
     private readonly UnsignedIntegerColumn<EntityId> _entityIds;
     private readonly UnsignedIntegerColumn<AttributeId> _attributeIds;
@@ -20,13 +20,13 @@ public class AppendableIndexChunk : IIndexChunk
     private readonly AppendableBlobColumn _values;
     private readonly UnsignedIntegerColumn<int> _childCounts;
 
-    private List<IDataChunk> _children;
+    private List<IDataNode> _children;
     private readonly IDatomComparator _comparator;
     private int _length;
 
-    public AppendableIndexChunk(IDatomComparator comparator)
+    public AppendableIndexNode(IDatomComparator comparator)
     {
-        _children = new List<IDataChunk> { new AppendableChunk() };
+        _children = new List<IDataNode> { new AppendableNode() };
         _entityIds = new UnsignedIntegerColumn<EntityId>();
         _attributeIds = new UnsignedIntegerColumn<AttributeId>();
         _transactionIds = new UnsignedIntegerColumn<TxId>();
@@ -37,23 +37,23 @@ public class AppendableIndexChunk : IIndexChunk
         _length = 0;
     }
 
-    private AppendableIndexChunk(IDatomComparator comparator, List<IDataChunk> newChildren) : this(comparator)
+    private AppendableIndexNode(IDatomComparator comparator, List<IDataNode> newChildren) : this(comparator)
     {
         _children = newChildren;
         ReprocessChildren();
     }
 
-    private AppendableIndexChunk(IIndexChunk indexChunk)
+    private AppendableIndexNode(IIndexNode indexNode)
     {
-        _entityIds = UnsignedIntegerColumn<EntityId>.UnpackFrom(indexChunk.EntityIds);
-        _attributeIds = UnsignedIntegerColumn<AttributeId>.UnpackFrom(indexChunk.AttributeIds);
-        _transactionIds = UnsignedIntegerColumn<TxId>.UnpackFrom(indexChunk.TransactionIds);
-        _flags = UnsignedIntegerColumn<DatomFlags>.UnpackFrom(indexChunk.Flags);
-        _values = AppendableBlobColumn.UnpackFrom(indexChunk.Values);
-        _childCounts = UnsignedIntegerColumn<int>.UnpackFrom(indexChunk.ChildCounts);
-        _children = indexChunk.Children.ToList();
-        _comparator = indexChunk.Comparator;
-        _length = indexChunk.Length;
+        _entityIds = UnsignedIntegerColumn<EntityId>.UnpackFrom(indexNode.EntityIds);
+        _attributeIds = UnsignedIntegerColumn<AttributeId>.UnpackFrom(indexNode.AttributeIds);
+        _transactionIds = UnsignedIntegerColumn<TxId>.UnpackFrom(indexNode.TransactionIds);
+        _flags = UnsignedIntegerColumn<DatomFlags>.UnpackFrom(indexNode.Flags);
+        _values = AppendableBlobColumn.UnpackFrom(indexNode.Values);
+        _childCounts = UnsignedIntegerColumn<int>.UnpackFrom(indexNode.ChildCounts);
+        _children = indexNode.Children.ToList();
+        _comparator = indexNode.Comparator;
+        _length = indexNode.Length;
     }
 
     private void ReprocessChildren()
@@ -111,13 +111,22 @@ public class AppendableIndexChunk : IIndexChunk
         throw new System.NotImplementedException();
     }
 
-    public IDataChunk Flush(INodeStore store)
+    public IDataNode Flush(INodeStore store)
     {
-        var packed =Pack();
+        for (var i = 0; i < _children.Count; i++)
+        {
+            var child = _children[i];
+            if (child is AppendableNode appendableChunk)
+            {
+                var packedChild = appendableChunk.Pack();
+                _children[i] = store.Flush(packedChild);
+            }
+        }
+        var packed = Pack();
         return store.Flush(packed);
     }
 
-    private IDataChunk Pack()
+    private IDataNode Pack()
     {
         var length = _length;
         var entityIds = _entityIds.Pack();
@@ -126,10 +135,10 @@ public class AppendableIndexChunk : IIndexChunk
         var flags = _flags.Pack();
         var values = _values.Pack();
 
-        return new PackedIndexChunk(length, entityIds, attributeIds, transactionIds, flags, values, _childCounts.Pack(), _comparator, _children);
+        return new PackedIndexNode(length, entityIds, attributeIds, transactionIds, flags, values, _childCounts.Pack(), _comparator, _children);
     }
 
-    public IEnumerable<IDataChunk> Children => _children;
+    public IEnumerable<IDataNode> Children => _children;
     public IColumn<int> ChildCounts => _childCounts;
     public IDatomComparator Comparator => _comparator;
 
@@ -168,13 +177,13 @@ public class AppendableIndexChunk : IIndexChunk
         yield return (Datom.Max, _children.Count - 1);
     }
 
-    public AppendableIndexChunk Ingest(IDataChunk chunk)
+    public AppendableIndexNode Ingest(IDataNode node)
     {
         var start = 0;
 
-        var newChildren = new List<IDataChunk>(_children.Count);
+        var newChildren = new List<IDataNode>(_children.Count);
 
-        void MaybeSplit(AppendableChunk chunk)
+        void MaybeSplit(AppendableNode chunk)
         {
             if (chunk.Length > Configuration.DataBlockSize * 2)
             {
@@ -192,16 +201,16 @@ public class AppendableIndexChunk : IIndexChunk
 
         foreach (var (lastDatom, idx) in ChildMarkers())
         {
-            var last = BinarySearch.SeekEqualOrLess(chunk, _comparator, start, chunk.Length, lastDatom);
-            if (last < chunk.Length)
+            var last = BinarySearch.SeekEqualOrLess(node, _comparator, start, node.Length, lastDatom);
+            if (last < node.Length)
             {
-                var newNode = Merge(_children[idx], chunk.Range(start, last));
+                var newNode = Merge(_children[idx], node.Range(start, last));
                 MaybeSplit(newNode);
                 start = last;
             }
-            else if (last == chunk.Length)
+            else if (last == node.Length)
             {
-                var newNode = Merge(_children[idx], chunk.Range(start, last));
+                var newNode = Merge(_children[idx], node.Range(start, last));
                 MaybeSplit(newNode);
 
                 // Add the remaining children nodes
@@ -218,19 +227,19 @@ public class AppendableIndexChunk : IIndexChunk
             }
         }
 
-        return new AppendableIndexChunk(_comparator, newChildren);
+        return new AppendableIndexNode(_comparator, newChildren);
 
     }
 
-    public AppendableChunk Merge<TChunk, TEnumerable>(TChunk child, TEnumerable datoms)
-    where TChunk : IDataChunk
+    public AppendableNode Merge<TChunk, TEnumerable>(TChunk child, TEnumerable datoms)
+    where TChunk : IDataNode
     where TEnumerable : IEnumerable<Datom>
     {
-        return AppendableChunk.Initialize(child.Merge(datoms, _comparator));
+        return AppendableNode.Initialize(child.Merge(datoms, _comparator));
     }
 
-    public static AppendableIndexChunk UnpackFrom(IIndexChunk indexChunk)
+    public static AppendableIndexNode UnpackFrom(IIndexNode indexNode)
     {
-        return new AppendableIndexChunk(indexChunk);
+        return new AppendableIndexNode(indexNode);
     }
 }

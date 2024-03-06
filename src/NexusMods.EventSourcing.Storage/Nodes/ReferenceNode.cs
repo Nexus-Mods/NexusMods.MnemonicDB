@@ -7,11 +7,17 @@ using NexusMods.EventSourcing.Storage.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
-public class ReferenceChunk(NodeStore store, StoreKey key, IDataChunk? chunk) : IDataChunk
+public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IDataNode>? chunk) : IDataNode
 {
-    private IDataChunk Resolve()
+    private IDataNode Resolve()
     {
-        return chunk ??= store.Load(key);
+        if (chunk?.TryGetTarget(out var target) == true)
+        {
+            return target;
+        }
+        var chunkData = store.Load(key);
+        chunk = new WeakReference<IDataNode>(chunkData);
+        return chunkData;
     }
     public IEnumerator<Datom> GetEnumerator()
     {
@@ -40,7 +46,7 @@ public class ReferenceChunk(NodeStore store, StoreKey key, IDataChunk? chunk) : 
         throw new NotSupportedException();
     }
 
-    public IDataChunk Flush(INodeStore store)
+    public IDataNode Flush(INodeStore store)
     {
         return this;
     }

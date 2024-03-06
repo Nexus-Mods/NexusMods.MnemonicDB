@@ -26,7 +26,7 @@ public interface IDatomStore : IDisposable
     /// <summary>
     /// An observable of the transaction log, for getting the latest changes to the store.
     /// </summary>
-    public IObservable<(TxId TxId, IDataChunk Datoms)> TxLog { get; }
+    public IObservable<(TxId TxId, IDataNode Datoms)> TxLog { get; }
 
     /// <summary>
     /// Gets the latest transaction id found in the log.

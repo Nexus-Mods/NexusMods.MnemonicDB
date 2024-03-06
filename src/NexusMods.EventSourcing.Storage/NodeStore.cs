@@ -17,7 +17,7 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeReg
     /// </summary>
     /// <param name="node"></param>
     /// <returns></returns>
-    public StoreKey LogTx(IDataChunk packed)
+    public StoreKey LogTx(IDataNode packed)
     {
         var thisTx = ++_txLogId;
         Interlocked.Exchange(ref _nextBlockId, Ids.MakeId(Ids.Partition.Index, thisTx << 16));
@@ -25,7 +25,7 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeReg
         var logId = Ids.MakeId(Ids.Partition.TxLog, thisTx);
 
         var key = StoreKey.From(logId);
-        Flush(key, (PackedChunk)packed);
+        Flush(key, (PackedNode)packed);
         return key;
     }
 
@@ -34,39 +34,27 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeReg
         return StoreKey.From(Interlocked.Increment(ref _nextBlockId));
     }
 
-    public IDataChunk Flush(IDataChunk node)
+    public IDataNode Flush(IDataNode node)
     {
         return node switch
         {
-            PackedChunk packedChunk => Flush(packedChunk),
-            PackedIndexChunk packedIndexChunk => Flush(packedIndexChunk),
+            PackedNode packedChunk => Flush(packedChunk),
+            PackedIndexNode packedIndexChunk => Flush(packedIndexChunk),
             _ => throw new NotImplementedException("Unknown node type. " + node.GetType().Name)
         };
     }
 
 
-    public IDataChunk Flush(IIndexChunk node)
+    public IDataNode Flush(IIndexNode node)
     {
         return node switch
         {
-            PackedIndexChunk packedIndexChunk => Flush(packedIndexChunk),
+            PackedIndexNode packedIndexChunk => Flush(packedIndexChunk),
             _ => throw new NotImplementedException("Unknown node type. " + node.GetType().Name)
         };
     }
 
-    public IIndexChunk Flush(PackedIndexChunk chunk)
-    {
-        var node = (PackedIndexChunk)chunk.Flush(this);
-        var writer = new PooledMemoryBufferWriter();
-        chunk.WriteTo(writer);
-        var writtenSpan = writer.GetWrittenSpan();
-
-        var id = NextBlockId();
-        kvStore.Put(id, writtenSpan);
-        return new ReferenceIndexChunk(this, id, null);
-    }
-
-    public IDataChunk Flush(PackedChunk node)
+    public IIndexNode Flush(PackedIndexNode node)
     {
         var writer = new PooledMemoryBufferWriter();
         node.WriteTo(writer);
@@ -74,20 +62,31 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeReg
 
         var id = NextBlockId();
         kvStore.Put(id, writtenSpan);
-        return new ReferenceChunk(this, id, null);
+        return new ReferenceIndexNode(this, id, null);
     }
 
-    private void Flush(StoreKey key, PackedChunk chunk)
+    public IDataNode Flush(PackedNode node)
     {
         var writer = new PooledMemoryBufferWriter();
-        chunk.WriteTo(writer);
+        node.WriteTo(writer);
+        var writtenSpan = writer.GetWrittenSpan();
+
+        var id = NextBlockId();
+        kvStore.Put(id, writtenSpan);
+        return new ReferenceNode(this, id, null);
+    }
+
+    private void Flush(StoreKey key, PackedNode node)
+    {
+        var writer = new PooledMemoryBufferWriter();
+        node.WriteTo(writer);
         var writtenSpan = writer.GetWrittenSpan();
         kvStore.Put(key, writtenSpan);
     }
 
 
 
-    public IDataChunk Load(StoreKey id)
+    public IDataNode Load(StoreKey id)
     {
         if (!kvStore.TryGet(id, out var value))
         {
@@ -102,13 +101,13 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeReg
 
         if (fourcc == FourCC.PackedIndex)
         {
-            return PackedIndexChunk.ReadFrom(ref reader, this, registry);
+            return PackedIndexNode.ReadFrom(ref reader, this, registry);
 
         }
 
         if (fourcc == FourCC.PackedData)
         {
-            return PackedChunk.ReadFrom(ref reader);
+            return PackedNode.ReadFrom(ref reader);
         }
 
 

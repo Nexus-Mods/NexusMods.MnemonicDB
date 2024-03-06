@@ -78,6 +78,11 @@ public unsafe struct FourCC : IEquatable<FourCC>
     public static readonly FourCC OffsetULongAsUInt = From("OULI");
 
     /// <summary>
+    /// A ulong column with a ulong data
+    /// </summary>
+    public static readonly FourCC OffsetULongAsULong = From("OULL");
+
+    /// <summary>
     /// A uint column with a uint data
     /// </summary>
     public static readonly FourCC OffsetUIntAsUInt = From("OUII");

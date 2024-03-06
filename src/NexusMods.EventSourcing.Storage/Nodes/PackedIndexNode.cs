@@ -2,18 +2,19 @@
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Algorithms;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
-public class PackedIndexChunk : IIndexChunk
+public class PackedIndexNode : IIndexNode
 {
     private readonly IColumn<int> _childCounts;
-    private readonly List<IDataChunk> _children;
+    private readonly List<IDataNode> _children;
 
-    public PackedIndexChunk(int length,
+    public PackedIndexNode(int length,
         IColumn<EntityId> entityIds,
         IColumn<AttributeId> attributeIds,
         IColumn<TxId> transactionIds,
@@ -21,7 +22,7 @@ public class PackedIndexChunk : IIndexChunk
         IBlobColumn values,
         IColumn<int> childCounts,
         IDatomComparator comparator,
-        List<IDataChunk> children)
+        List<IDataNode> children)
     {
         Length = length;
         EntityIds = entityIds;
@@ -84,12 +85,12 @@ public class PackedIndexChunk : IIndexChunk
         writer.Write((byte)Comparator.SortOrder);
         foreach (var child in _children)
         {
-            if (child is ReferenceChunk indexChunk)
+            if (child is ReferenceNode indexChunk)
             {
                 writer.WriteFourCC(FourCC.ReferenceIndex);
                 writer.Write((ulong)indexChunk.Key);
             }
-            else if (child is ReferenceChunk dataChunk)
+            else if (child is ReferenceNode dataChunk)
             {
                 writer.WriteFourCC(FourCC.ReferenceData);
                 writer.Write((ulong)dataChunk.Key);
@@ -102,7 +103,7 @@ public class PackedIndexChunk : IIndexChunk
     }
 
 
-    public static PackedIndexChunk ReadFrom(ref BufferReader reader, NodeStore nodeStore, AttributeRegistry registry)
+    public static PackedIndexNode ReadFrom(ref BufferReader reader, NodeStore nodeStore, AttributeRegistry registry)
     {
         var length = reader.Read<int>();
         var childCount = reader.Read<int>();
@@ -115,18 +116,18 @@ public class PackedIndexChunk : IIndexChunk
         var sortOrder = (SortOrders)reader.Read<byte>();
         var comparator = registry.CreateComparator(sortOrder);
 
-        var children = new List<IDataChunk>();
+        var children = new List<IDataNode>();
         for (var i = 0; i < childCount; i++)
         {
             var fourcc = reader.ReadFourCC();
             var key = reader.Read<ulong>();
             if (fourcc == FourCC.ReferenceIndex)
             {
-                children.Add(new ReferenceChunk(nodeStore, StoreKey.From(key), null));
+                children.Add(new ReferenceNode(nodeStore, StoreKey.From(key), null));
             }
             else if (fourcc == FourCC.ReferenceData)
             {
-                children.Add(new ReferenceChunk(nodeStore, StoreKey.From(key), null));
+                children.Add(new ReferenceNode(nodeStore, StoreKey.From(key), null));
             }
             else
             {
@@ -134,10 +135,10 @@ public class PackedIndexChunk : IIndexChunk
             }
         }
 
-        return new PackedIndexChunk(length, entityIds, attributeIds, transactionIds, flags, values, childCounts, comparator, children);
+        return new PackedIndexNode(length, entityIds, attributeIds, transactionIds, flags, values, childCounts, comparator, children);
     }
 
-    public IDataChunk Flush(INodeStore store)
+    public IDataNode Flush(INodeStore store)
     {
         for (var i = 0; i < _children.Count; i++)
         {
@@ -147,7 +148,7 @@ public class PackedIndexChunk : IIndexChunk
         return this;
     }
 
-    public IEnumerable<IDataChunk> Children => _children;
+    public IEnumerable<IDataNode> Children => _children;
 
     public IColumn<int> ChildCounts => _childCounts;
 

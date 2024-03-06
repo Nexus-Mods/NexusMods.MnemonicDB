@@ -35,4 +35,8 @@ public class InMemoryKvStore : IKvStore
     {
         _store.TryRemove(key, out _);
     }
+
+    public void Dispose()
+    {
+    }
 }

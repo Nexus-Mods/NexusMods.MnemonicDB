@@ -6,12 +6,12 @@ namespace NexusMods.EventSourcing.Storage.Algorithms;
 
 public static class SortedMerge
 {
-    public static AppendableChunk Merge<TNodeA, TNodeB, TComparator>(TNodeA a, TNodeB b, TComparator comparator)
-        where TNodeA : IDataChunk
-        where TNodeB : IDataChunk
+    public static AppendableNode Merge<TNodeA, TNodeB, TComparator>(TNodeA a, TNodeB b, TComparator comparator)
+        where TNodeA : IDataNode
+        where TNodeB : IDataNode
         where TComparator : IDatomComparator
     {
-        var newChunk = new AppendableChunk();
+        var newChunk = new AppendableNode();
 
         int i = 0, j = 0;
 

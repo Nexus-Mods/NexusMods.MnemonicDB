@@ -17,9 +17,9 @@ public class UInt64Serializer : IValueSerializer<ulong>
     public Type NativeType => typeof(ulong);
     public Symbol UniqueId { get; } = Symbol.Intern<UInt64Serializer>();
 
-    public int Compare(in Datom a, in Datom b)
+    public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
     {
-        return a.Unmarshal<ulong>().CompareTo(b.Unmarshal<ulong>());
+        return MemoryMarshal.Read<ulong>(a).CompareTo(MemoryMarshal.Read<ulong>(b));
     }
 
     public void Write<TWriter>(ulong value, TWriter buffer) where TWriter : IBufferWriter<byte>

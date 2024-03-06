@@ -7,7 +7,7 @@
 public interface IWriteDatom
 {
     /// <summary>
-    /// Appends the datom to the given chunk, using the given registry to resolve the attribute
+    /// Appends the datom to the given node, using the given registry to resolve the attribute
     /// </summary>
     /// <param name="registry"></param>
     /// <param name="chunk"></param>

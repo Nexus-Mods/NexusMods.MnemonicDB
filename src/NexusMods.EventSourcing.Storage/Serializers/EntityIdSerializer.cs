@@ -10,9 +10,9 @@ public class EntityIdSerializer : IValueSerializer<EntityId>
 {
     public Type NativeType => typeof(EntityId);
     public Symbol UniqueId => Symbol.Intern<EntityIdSerializer>();
-    public int Compare(in Datom a, in Datom b)
+    public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
     {
-        return a.Unmarshal<EntityId>().CompareTo(b.Unmarshal<EntityId>());
+        return MemoryMarshal.Read<EntityId>(a).CompareTo(MemoryMarshal.Read<EntityId>(b));
     }
 
     public void Write<TWriter>(EntityId value, TWriter buffer) where TWriter : IBufferWriter<byte>

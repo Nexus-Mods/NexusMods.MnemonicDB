@@ -9,9 +9,9 @@ using NexusMods.EventSourcing.Storage.Algorithms;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
-public class PackedChunk : IDataChunk
+public class PackedNode : IDataNode
 {
-    public PackedChunk(int length, IColumn<EntityId> entityIds, IColumn<AttributeId> attributeIds, IColumn<TxId> transactionIds, IColumn<DatomFlags> flags, IBlobColumn values)
+    public PackedNode(int length, IColumn<EntityId> entityIds, IColumn<AttributeId> attributeIds, IColumn<TxId> transactionIds, IColumn<DatomFlags> flags, IBlobColumn values)
     {
         EntityIds = entityIds;
         AttributeIds = attributeIds;
@@ -51,12 +51,12 @@ public class PackedChunk : IDataChunk
         Values.WriteTo(writer);
     }
 
-    public IDataChunk Flush(INodeStore store)
+    public IDataNode Flush(INodeStore store)
     {
         return store.Flush(this);
     }
 
-    public static PackedChunk ReadFrom(ref BufferReader src)
+    public static PackedNode ReadFrom(ref BufferReader src)
     {
         var length = src.Read<uint>();
         var entityIds = ColumnReader.ReadColumn<EntityId>(ref src, (int)length);
@@ -65,7 +65,7 @@ public class PackedChunk : IDataChunk
         var flags = ColumnReader.ReadColumn<DatomFlags>(ref src, (int)length);
         var values = ColumnReader.ReadBlobColumn(ref src, (int)length);
 
-        return new PackedChunk((int)length, entityIds, attributeIds, transactionIds, flags, values);
+        return new PackedNode((int)length, entityIds, attributeIds, transactionIds, flags, values);
     }
 
     public IEnumerator<Datom> GetEnumerator()

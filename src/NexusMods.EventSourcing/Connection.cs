@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Subjects;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.Models;
 using NexusMods.EventSourcing.Storage;
-using NexusMods.EventSourcing.Storage.Nodes;
 
 namespace NexusMods.EventSourcing;
 
@@ -38,6 +36,11 @@ public class Connection : IConnection
         var conn = new Connection(store);
         await conn.AddMissingAttributes(serializers, declaredAttributes);
         return conn;
+    }
+
+    public static Task<Connection> Start(IServiceProvider provider)
+    {
+        return Start(provider.GetRequiredService<IDatomStore>(), provider.GetRequiredService<IEnumerable<IValueSerializer>>(), provider.GetRequiredService<IEnumerable<IAttribute>>());
     }
 
 
@@ -124,7 +127,7 @@ public class Connection : IConnection
     }
 
     /// <inheritdoc />
-    public IObservable<(TxId TxId, IDataChunk Datoms)> Commits => _store.TxLog;
+    public IObservable<(TxId TxId, IDataNode Datoms)> Commits => _store.TxLog;
 
     public T GetActive<T>(EntityId id) where T : IActiveReadModel
     {

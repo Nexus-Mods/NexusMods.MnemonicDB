@@ -6,7 +6,7 @@ namespace NexusMods.EventSourcing.Storage.Algorithms;
 public static class BinarySearch
 {
     public static int SeekEqualOrLess<TChunk, TComparator>(TChunk node, TComparator comparator, int start, int end, in Datom target)
-        where TChunk : IDataChunk
+        where TChunk : IDataNode
         where TComparator : IDatomComparator
     {
         while (start < end)

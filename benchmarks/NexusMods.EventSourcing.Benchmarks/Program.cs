@@ -2,6 +2,7 @@
 
 using System;
 using System.Diagnostics;
+using BenchmarkDotNet.Running;
 using NexusMods.EventSourcing.Benchmarks.Benchmarks;
 
 

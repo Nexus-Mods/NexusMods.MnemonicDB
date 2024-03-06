@@ -3,13 +3,13 @@ using NexusMods.EventSourcing.Storage.Abstractions;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
-public interface IIndexChunk : IDataChunk
+public interface IIndexNode : IDataNode
 {
     /// <summary>
-    /// The child nodes of this index chunk, each child's last datom can be accessed
-    /// by using the accessors in the IDataChunk interface
+    /// The child nodes of this index node, each child's last datom can be accessed
+    /// by using the accessors in the IDataNode interface
     /// </summary>
-    public IEnumerable<IDataChunk> Children { get; }
+    public IEnumerable<IDataNode> Children { get; }
 
     public IColumn<int> ChildCounts { get; }
     IDatomComparator Comparator { get; }

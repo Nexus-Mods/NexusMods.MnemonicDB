@@ -8,7 +8,7 @@ namespace NexusMods.EventSourcing.Storage.Algorithms;
 
 public static class ChunkReader
 {
-    public static IDataChunk ReadDataChunk(ReadOnlyMemory<byte> data)
+    public static IDataNode ReadDataChunk(ReadOnlyMemory<byte> data)
     {
         var reader = new BufferReader(data);
         var header = reader.ReadFourCC();
@@ -17,11 +17,11 @@ public static class ChunkReader
 
         if (header == FourCC.PackedData)
         {
-            return PackedChunk.ReadFrom(ref reader);
+            return PackedNode.ReadFrom(ref reader);
         }
         else
         {
-            throw new InvalidOperationException($"Unknown chunk type: {header}");
+            throw new InvalidOperationException($"Unknown node type: {header}");
         }
     }
 

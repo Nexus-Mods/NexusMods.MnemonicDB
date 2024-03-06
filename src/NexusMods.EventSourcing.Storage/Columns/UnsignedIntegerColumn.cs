@@ -35,7 +35,7 @@ where T : unmanaged
 
     public void CopyTo(Span<T> destination)
     {
-        _data.AsSpan().CopyTo(destination);
+        _data.AsSpan()[..Length].CopyTo(destination);
     }
 
     /// <summary>

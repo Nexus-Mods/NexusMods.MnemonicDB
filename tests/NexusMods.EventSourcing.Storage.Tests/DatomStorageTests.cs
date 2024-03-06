@@ -1,4 +1,6 @@
-﻿using NexusMods.EventSourcing.Abstractions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Nodes;
 
 namespace NexusMods.EventSourcing.Storage.Tests;
 
@@ -17,5 +19,26 @@ public class DatomStorageTests(IServiceProvider provider) : AStorageTest(provide
 
         datoms.Should().Contain(EntityId.From(1));
         datoms.Should().Contain(EntityId.From(2));
+    }
+
+    [Fact]
+    public async Task CanFlushToDisk()
+    {
+        // Set the size super small so we get a flush on every transaction
+        DatomStoreSettings.MaxInMemoryDatoms = 128;
+
+
+        var chunks = TestDatoms(1024)
+            .GroupBy(d => d.Item2, d => d.Item1)
+            .OrderBy(d => d.Key)
+            .ToArray();
+
+        foreach (var chunk in chunks)
+        {
+            await DatomStore.Transact(chunk);
+        }
+
+
+
     }
 }

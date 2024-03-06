@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
-public interface IDataChunk : IEnumerable<Datom>
+public interface IDataNode : IEnumerable<Datom>
 {
     public int Length { get; }
     public IColumn<EntityId> EntityIds { get; }
@@ -23,5 +23,5 @@ public interface IDataChunk : IEnumerable<Datom>
     void WriteTo<TWriter>(TWriter writer)
         where TWriter : IBufferWriter<byte>;
 
-    IDataChunk Flush(INodeStore store);
+    IDataNode Flush(INodeStore store);
 }

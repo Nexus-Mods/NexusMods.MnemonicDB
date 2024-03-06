@@ -6,12 +6,12 @@ using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage.Tests;
 
-public class AppendableChunkTests(IServiceProvider provider) : AStorageTest(provider)
+public class AppendableNodeTests(IServiceProvider provider) : AStorageTest(provider)
 {
     [Fact]
     public void CanAppendDataToBlock()
     {
-        var block = new AppendableChunk();
+        var block = new AppendableNode();
         var allDatoms = TestData(10).ToArray();
         foreach (var datom in TestData(10))
         {
@@ -56,7 +56,7 @@ public class AppendableChunkTests(IServiceProvider provider) : AStorageTest(prov
     [InlineData(SortOrders.AVTE, 1024 * 16)]
     public void CanSortBlock(SortOrders order, uint entities)
     {
-        var block = new AppendableChunk();
+        var block = new AppendableNode();
         var allDatoms = TestData(entities).ToArray();
         Random.Shared.Shuffle(allDatoms);
 
@@ -89,12 +89,12 @@ public class AppendableChunkTests(IServiceProvider provider) : AStorageTest(prov
     [InlineData(SortOrders.AVTE)]
     public void CanMergeBlock(SortOrders orders)
     {
-        var block = new AppendableChunk();
+        var block = new AppendableNode();
         var allDatoms = TestData(10).ToArray();
 
         Random.Shared.Shuffle(allDatoms);
 
-        var block2 = new AppendableChunk();
+        var block2 = new AppendableNode();
 
         var half = allDatoms.Length / 2;
         for (var i = 0; i < half; i++)
@@ -129,7 +129,7 @@ public class AppendableChunkTests(IServiceProvider provider) : AStorageTest(prov
     public void CanSeekToDatom()
     {
         var compare = new EATV(_registry);
-        var block = new AppendableChunk();
+        var block = new AppendableNode();
         var allDatoms = TestData(10).ToArray();
         foreach (var datom in allDatoms)
         {
@@ -159,7 +159,7 @@ public class AppendableChunkTests(IServiceProvider provider) : AStorageTest(prov
     public void CanReadAndWriteBlocks(uint count)
     {
         var allDatoms = TestData(count).ToArray();
-        var block = new AppendableChunk();
+        var block = new AppendableNode();
         foreach (var datom in allDatoms)
         {
             block.Append(in datom);

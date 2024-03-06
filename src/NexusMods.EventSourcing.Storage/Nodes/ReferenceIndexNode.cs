@@ -7,11 +7,11 @@ using NexusMods.EventSourcing.Storage.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
-public class ReferenceIndexChunk(NodeStore store, StoreKey key, IIndexChunk? chunk) : IIndexChunk
+public class ReferenceIndexNode(NodeStore store, StoreKey key, IIndexNode? chunk) : IIndexNode
 {
-    public IIndexChunk Resolve()
+    public IIndexNode Resolve()
     {
-        return chunk ??= (IIndexChunk)store.Load(key);
+        return chunk ??= (IIndexNode)store.Load(key);
     }
     public IEnumerator<Datom> GetEnumerator()
     {
@@ -38,12 +38,12 @@ public class ReferenceIndexChunk(NodeStore store, StoreKey key, IIndexChunk? chu
         throw new NotSupportedException();
     }
 
-    public IDataChunk Flush(INodeStore store)
+    public IDataNode Flush(INodeStore store)
     {
         throw new NotSupportedException();
     }
 
-    public IEnumerable<IDataChunk> Children => Resolve().Children;
+    public IEnumerable<IDataNode> Children => Resolve().Children;
     public IColumn<int> ChildCounts => Resolve().ChildCounts;
     public IDatomComparator Comparator => Resolve().Comparator;
 }

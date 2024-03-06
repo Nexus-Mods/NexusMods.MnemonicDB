@@ -22,7 +22,7 @@ public class ComparatorTests(IServiceProvider provider) : AStorageTest(provider)
 
     public IEnumerable<object[]> ComparisonTestData()
     {
-        var chunk = new AppendableChunk();
+        var chunk = new AppendableNode();
 
         var emitters = new Action<EntityId, TxId, ulong>[]
         {

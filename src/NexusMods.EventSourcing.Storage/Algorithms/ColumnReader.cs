@@ -42,6 +42,11 @@ public static class ColumnReader
             return UnsignedOffsetPackedColumn<T, ulong, uint>.ReadFrom(ref src, length);
         }
 
+        if (header == FourCC.OffsetULongAsULong)
+        {
+            return UnsignedOffsetPackedColumn<T, ulong, ulong>.ReadFrom(ref src, length);
+        }
+
         if (header == FourCC.OffsetByteAsByte)
         {
             return UnsignedOffsetPackedColumn<T, byte, byte>.ReadFrom(ref src, length);

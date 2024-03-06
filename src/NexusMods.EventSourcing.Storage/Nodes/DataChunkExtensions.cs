@@ -6,7 +6,7 @@ namespace NexusMods.EventSourcing.Storage.Nodes;
 public static class DataChunkExtensions
 {
     public static IEnumerable<Datom> Range<TChunkA>(this TChunkA chunk, int start, int end)
-    where TChunkA : IDataChunk
+    where TChunkA : IDataNode
     {
         for (var i = start; i < end; i++)
         {

@@ -1,4 +1,5 @@
-﻿using NexusMods.EventSourcing.Abstractions;
+﻿using System.Threading.Tasks;
+using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Nodes;
 
 namespace NexusMods.EventSourcing.Storage.DatomStorageStructures;
@@ -22,7 +23,12 @@ public record IndexRoot
     /// <summary>
     /// The current in-memory index.
     /// </summary>
-    public required IDataChunk InMemory { get; init; }
+    public required IDataNode InMemory { get; init; }
+
+    /// <summary>
+    /// The history index
+    /// </summary>
+    public required IIndexNode History { get; init; }
 
     public static IndexRoot Empty(SortOrders order, AttributeRegistry registry)
     {
@@ -30,16 +36,28 @@ public record IndexRoot
         {
             SortOrder = order,
             Comparator = registry.CreateComparator(order),
-            InMemory = new AppendableChunk()
+            InMemory = new AppendableNode(),
+            History = new AppendableIndexNode(registry.CreateComparator(order))
         };
     }
 
-    public IDataChunk Update(IDataChunk chunk)
+    public IDataNode Update(IDataNode node)
     {
-        var newChunk = AppendableChunk.Initialize(InMemory);
-        newChunk.Append(chunk);
+        var newChunk = AppendableNode.Initialize(InMemory);
+        newChunk.Append(node);
         newChunk.Sort(Comparator);
         var packed = newChunk.Pack();
         return packed;
+    }
+
+    public Task<IndexRoot> FlushMemoryToHistory(INodeStore store)
+    {
+        return Task.Run(() =>
+        {
+            var newHistory = AppendableIndexNode.UnpackFrom(History)
+                .Ingest(InMemory);
+            var flushed = newHistory.Flush(store);
+            return this with { InMemory = new AppendableNode(), History = (IIndexNode)flushed };
+        });
     }
 }

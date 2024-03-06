@@ -88,6 +88,14 @@ public class UnsignedOffsetPackedColumn<TElement, TInternal, TPack> : IPackedCol
                 break;
             }
 
+            case ({ } t1, { } t2) when t1 == typeof(ulong) && t2 == typeof(ulong):
+            {
+                writer.WriteFourCC(FourCC.OffsetULongAsULong);
+                writer.Write(_offset);
+                writer.Write(_data.Span);
+                break;
+            }
+
             case ({ } t1, { } t2) when t1 == typeof(uint) && t2 == typeof(uint):
             {
                 writer.WriteFourCC(FourCC.OffsetUIntAsUInt);

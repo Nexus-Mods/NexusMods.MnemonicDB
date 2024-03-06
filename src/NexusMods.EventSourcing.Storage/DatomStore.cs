@@ -28,18 +28,20 @@ public class DatomStore : IDatomStore
     private readonly ILogger<DatomStore> _logger;
     private readonly Channel<PendingTransaction> _txChannel;
     private EntityId _nextEntId;
-    private readonly Subject<(TxId TxId, IDataChunk Datoms)> _updatesSubject;
+    private readonly Subject<(TxId TxId, IDataNode Datoms)> _updatesSubject;
+    private readonly DatomStoreSettings _settings;
 
 
-    public DatomStore(ILogger<DatomStore> logger, NodeStore nodeStore, AttributeRegistry registry)
+    public DatomStore(ILogger<DatomStore> logger, NodeStore nodeStore, AttributeRegistry registry, DatomStoreSettings settings)
     {
         _logger = logger;
+        _settings = settings;
         _nodeStore = nodeStore;
         _registry = registry;
         _pooledWriter = new PooledMemoryBufferWriter();
         _nextEntId = EntityId.From(Ids.MinId(Ids.Partition.Entity) + 1);
 
-        _updatesSubject = new Subject<(TxId TxId, IDataChunk Datoms)>();
+        _updatesSubject = new Subject<(TxId TxId, IDataNode Datoms)>();
 
         registry.Populate(BuiltInAttributes.Initial);
 
@@ -125,11 +127,11 @@ public class DatomStore : IDatomStore
         return new DatomStoreTransactResult(pending.AssignedTxId!.Value, pending.Remaps);
     }
 
-    public IObservable<(TxId TxId, IDataChunk Datoms)> TxLog => _updatesSubject;
+    public IObservable<(TxId TxId, IDataNode Datoms)> TxLog => _updatesSubject;
 
-    private async Task UpdateInMemoryIndexes(IDataChunk chunk, TxId newTx)
+    private async Task UpdateInMemoryIndexes(IDataNode node, TxId newTx)
     {
-        _indexes = _indexes.Update(chunk, newTx);
+        _indexes = await _indexes.Update(node, newTx, _settings, _nodeStore, _logger);
 
     }
 
@@ -258,9 +260,9 @@ public class DatomStore : IDatomStore
     #region Internals
 
 
-    private void Log(PendingTransaction pendingTransaction, out IDataChunk chunk)
+    private void Log(PendingTransaction pendingTransaction, out IDataNode node)
     {
-        var newChunk = new AppendableChunk();
+        var newChunk = new AppendableNode();
         foreach (var datom in pendingTransaction.Data)
             datom.Append(_registry, newChunk);
 
@@ -301,8 +303,8 @@ public class DatomStore : IDatomStore
 
         newChunk.Sort(_comparatorTxLog);
 
-        chunk = newChunk.Pack();
-        var newTxBlock = _nodeStore.LogTx(chunk);
+        node = newChunk.Pack();
+        var newTxBlock = _nodeStore.LogTx(node);
         Debug.Assert(newTxBlock.Value == nextTxBlock.Value, "newTxBlock == nextTxBlock");
         pendingTransaction.AssignedTxId = nextTx;
 

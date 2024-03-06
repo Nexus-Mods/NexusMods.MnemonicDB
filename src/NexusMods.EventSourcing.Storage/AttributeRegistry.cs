@@ -79,7 +79,7 @@ public class AttributeRegistry : IAttributeRegistry
     {
         var attr = _dbAttributesByEntityId[a.A];
         var type = _valueSerializersByUniqueId[attr.ValueTypeId];
-        return type.Compare(a, b);
+        return type.Compare(a.V.Span, b.V.Span);
     }
 
 
@@ -94,31 +94,32 @@ public class AttributeRegistry : IAttributeRegistry
         return Expression.Block([valueExpr], readExpression, valueExpr);
     }
 
-    public void Append<TAttribute, TValue>(AppendableChunk chunk, EntityId entityId, TxId tx, DatomFlags flags, TValue value)
+    public void Append<TAttribute, TValue>(AppendableNode node, EntityId entityId, TxId tx, DatomFlags flags, TValue value)
     where TAttribute : IAttribute<TValue>
     {
         var serializer = (IValueSerializer<TValue>)_valueSerializersByNativeType[typeof(TValue)];
         var attr = _attributesByType[typeof(TAttribute)];
         var dbAttr = _dbAttributesByUniqueId[attr.Id];
-        chunk.Append(entityId, dbAttr.AttrEntityId, tx, flags, serializer, value);
+        node.Append(entityId, dbAttr.AttrEntityId, tx, flags, serializer, value);
     }
 
+    private sealed class CompareCache
+    {
+        public AttributeId AttributeId;
+        public IValueSerializer Serializer = null!;
+    }
+
+    private CompareCache _compareCache = new();
     public int CompareValues<T>(T datomsValues, AttributeId attributeId, int a, int b) where T : IBlobColumn
     {
+        var cache = _compareCache;
+        if (cache.AttributeId == attributeId)
+            return cache.Serializer.Compare(datomsValues[a].Span, datomsValues[b].Span);
+
         var attr = _dbAttributesByEntityId[attributeId];
         var type = _valueSerializersByUniqueId[attr.ValueTypeId];
-
-        var dA = new Datom
-        {
-            V = datomsValues[a]
-        };
-
-        var dB = new Datom
-        {
-            V = datomsValues[b]
-        };
-
-        return type.Compare(dA, dB);
+        _compareCache = new CompareCache {AttributeId = attributeId, Serializer = type};
+        return type.Compare(datomsValues[a].Span, datomsValues[b].Span);
     }
 
     public void Append<TAttribute, TValue>(IAppendableChunk chunk, EntityId e, TValue value, TxId t, DatomFlags f) where TAttribute : IAttribute<TValue>

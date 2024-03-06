@@ -21,9 +21,4 @@
       <ProjectReference Include="..\NexusMods.EventSourcing.Abstractions\NexusMods.EventSourcing.Abstractions.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="Datoms\" />
-      <Folder Include="ValueTypes\" />
-    </ItemGroup>
-
 </Project>

@@ -6,7 +6,7 @@ namespace NexusMods.EventSourcing.Storage.Abstractions;
 
 /// <summary>
 /// The event sourcing storage system works in data chunks to reduce overhead of iteration and other operations.
-/// each chunk has a fixed size, and the data is stored in a contiguous memory block with each part of the chunk
+/// each node has a fixed size, and the data is stored in a contiguous memory block with each part of the node
 /// being a linear array of the same type, so something like (EntityId[], TxId[], ushort[], DatomFlags[]) etc.
 /// This allows data to be packed, and iteration to happen in a linear and even vectorized fashion.
 /// </summary>
@@ -19,7 +19,7 @@ public unsafe struct RawDataChunk
     public const int DefaultChunkSize = 2048;
 
     /// <summary>
-    /// The size of the DataChunk chunk in bytes.
+    /// The size of the DataChunk node in bytes.
     /// </summary>
     public const int DataChunkSize =
         (DefaultChunkSize * (sizeof(ulong) + sizeof(ulong) + sizeof(ushort) + sizeof(byte) + sizeof(ulong))) +
@@ -36,8 +36,8 @@ public unsafe struct RawDataChunk
     public fixed ulong InlinedData[DefaultChunkSize];
 
     /// <summary>
-    /// A reference to a block of memory that contains the outlined data for this chunk, this is data
-    /// that is too large to be inlined into the chunk column itself (larger than 8 bytes), like strings.
+    /// A reference to a block of memory that contains the outlined data for this node, this is data
+    /// that is too large to be inlined into the node column itself (larger than 8 bytes), like strings.
     /// </summary>
     public readonly Memory<byte> OutlinedData;
 }

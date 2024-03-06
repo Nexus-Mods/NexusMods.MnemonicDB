@@ -36,7 +36,7 @@ public interface IConnection
     /// <summary>
     /// A sequential stream of commits to the database.
     /// </summary>
-    public IObservable<(TxId TxId, IDataChunk Datoms)> Commits { get; }
+    public IObservable<(TxId TxId, IDataNode Datoms)> Commits { get; }
 
     /// <summary>
     /// Gets the active read model for the given entity id, this entity will

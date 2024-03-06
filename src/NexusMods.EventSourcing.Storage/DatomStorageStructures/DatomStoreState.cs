@@ -1,4 +1,7 @@
-﻿using NexusMods.EventSourcing.Abstractions;
+﻿using System.Diagnostics;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
+using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.DatomStorageStructures;
 
@@ -31,15 +34,37 @@ public record DatomStoreState
 
     }
 
-    public DatomStoreState Update(IDataChunk chunk, TxId newTx)
+    public async ValueTask<DatomStoreState> Update(IDataNode node, TxId newTx, DatomStoreSettings settings, INodeStore nodeStore, ILogger logger)
     {
-        return new DatomStoreState
+        var newState = new DatomStoreState
         {
-            InMemorySize = InMemorySize + chunk.Length,
+            InMemorySize = InMemorySize + node.Length,
             AsOfTxId = newTx,
-            EAVT = EAVT with { InMemory = EAVT.Update(chunk) },
-            AEVT = AEVT with { InMemory = AEVT.Update(chunk) },
-            AVTE = AVTE with { InMemory = AVTE.Update(chunk) }
+            EAVT = EAVT with { InMemory = EAVT.Update(node) },
+            AEVT = AEVT with { InMemory = AEVT.Update(node) },
+            AVTE = AVTE with { InMemory = AVTE.Update(node) }
         };
+
+        if (newState.InMemorySize > settings.MaxInMemoryDatoms)
+        {
+            var sw = Stopwatch.StartNew();
+            logger.LogDebug("Flushing in-memory indexes to history");
+
+            var newEatv = newState.EAVT.FlushMemoryToHistory(nodeStore);
+            var newAetv = newState.AEVT.FlushMemoryToHistory(nodeStore);
+            var newAvte = newState.AVTE.FlushMemoryToHistory(nodeStore);
+
+            newState = newState with
+            {
+                InMemorySize = 0,
+                EAVT = await newEatv,
+                AEVT = await newAetv,
+                AVTE = await newAvte
+            };
+            logger.LogInformation("Flushed in-memory indexes to history in {ElapsedMilliseconds}ms", sw.ElapsedMilliseconds);
+        }
+
+        return newState;
     }
+
 }

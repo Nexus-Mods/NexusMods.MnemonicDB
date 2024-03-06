@@ -2,7 +2,7 @@
 
 public interface INodeStore
 {
-    public StoreKey LogTx(IDataChunk node);
+    public StoreKey LogTx(IDataNode node);
 
-    public IDataChunk Flush(IDataChunk node);
+    public IDataNode Flush(IDataNode node);
 }
