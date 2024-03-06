@@ -8,11 +8,16 @@ namespace NexusMods.EventSourcing.Tests;
 public class AEventSourcingTest : IAsyncLifetime
 {
     protected Connection Connection = null!;
+    protected DatomStoreSettings Config { get; set; }
+    protected ILogger Logger;
+
     private readonly DatomStore _store;
     private readonly NodeStore _nodeStore;
     private readonly IValueSerializer[] _valueSerializers;
     private readonly IAttribute[] _attributes;
     private readonly InMemoryKvStore _kvStore;
+
+
 
     protected AEventSourcingTest(IServiceProvider provider)
     {
@@ -23,9 +28,13 @@ public class AEventSourcingTest : IAsyncLifetime
         _kvStore = new InMemoryKvStore();
         _nodeStore = new NodeStore(provider.GetRequiredService<ILogger<NodeStore>>(), _kvStore, registry);
 
-        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _nodeStore, registry);
+        Config = new DatomStoreSettings();
+        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _nodeStore, registry, Config);
+
+        Logger = provider.GetRequiredService<ILogger<AEventSourcingTest>>();
 
     }
+
 
     public async Task InitializeAsync()
     {

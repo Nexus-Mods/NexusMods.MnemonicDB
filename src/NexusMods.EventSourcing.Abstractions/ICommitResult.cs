@@ -14,7 +14,6 @@ public interface ICommitResult
     /// <param name="id"></param>
     public EntityId this[EntityId id] { get; }
 
-
     /// <summary>
     /// Gets the new TxId after the commit
     /// </summary>

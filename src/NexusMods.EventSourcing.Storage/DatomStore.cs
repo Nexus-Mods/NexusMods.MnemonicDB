@@ -169,20 +169,14 @@ public class DatomStore : IDatomStore
     {
         var index = _indexes.EAVT;
 
-        var startDatom = new Datom
-        {
-            E = id,
-            A = AttributeId.From(0),
-            T = TxId.MaxValue,
-            F = DatomFlags.Added,
-        };
-        var offset = BinarySearch.SeekEqualOrLess(index.InMemory, index.Comparator, 0, index.InMemory.Length, startDatom);
-
         var lastAttr = AttributeId.From(0);
 
-        for (var idx = offset; idx < index.InMemory.Length; idx++)
+        var inMemory = WhereInner(txId, id, index.InMemory, index.Comparator);
+        var history = WhereInner(txId, id, index.History, index.Comparator);
+        var merged = history.Merge(inMemory, _indexes.EAVT.Comparator);
+
+        foreach (var datom in merged)
         {
-            var datom = index.InMemory[idx];
             if (datom.E != id) break;
             if (datom.T > txId) continue;
 
@@ -191,8 +185,25 @@ public class DatomStore : IDatomStore
                 lastAttr = datom.A;
                 yield return datom;
             }
+        }
+    }
 
-            yield return datom;
+    private static IEnumerable<Datom> WhereInner(TxId txId, EntityId id, IDataNode node, IDatomComparator comparator)
+    {
+        var startDatom = new Datom
+        {
+            E = id,
+            A = AttributeId.From(0),
+            T = TxId.MaxValue,
+            F = DatomFlags.Added,
+        };
+        var offset = BinarySearch.SeekEqualOrLess(node, comparator, 0, node.Length, startDatom);
+
+
+
+        for (var idx = offset; idx < node.Length; idx++)
+        {
+            yield return node[idx];
         }
     }
 
@@ -224,26 +235,17 @@ public class DatomStore : IDatomStore
 
     public IEnumerable<EntityId> ReverseLookup<TAttribute>(TxId txId, EntityId id) where TAttribute : IAttribute<EntityId>
     {
-        var attr = _registry.GetAttributeId<TAttribute>();
-
         var index = _indexes.AVTE;
 
-        var value = new byte[8];
-        MemoryMarshal.Write(value.AsSpan(), id);
 
-        var startDatom = new Datom
-        {
-            E = EntityId.From(UInt64.MaxValue),
-            A = attr,
-            T = TxId.MaxValue,
-            V = value,
-            F = DatomFlags.Added,
-        };
-        var offset = BinarySearch.SeekEqualOrLess(index.InMemory, index.Comparator, 0, index.InMemory.Length, startDatom);
+        var inMemory = ReverseLookupForIndex<TAttribute>(txId, id, index.InMemory, index.Comparator);
+        var history = ReverseLookupForIndex<TAttribute>(txId, id, index.History, index.Comparator);
+        var merged = history.Merge(inMemory, _indexes.AVTE.Comparator);
 
-        for (var idx = offset; idx < index.InMemory.Length; idx++)
+        var attr = _registry.GetAttributeId<TAttribute>();
+
+        foreach (var datom in merged)
         {
-            var datom = index.InMemory[idx];
             if (datom.A != attr) break;
 
             var vValue = MemoryMarshal.Read<EntityId>(datom.V.Span);
@@ -252,9 +254,31 @@ public class DatomStore : IDatomStore
             if (datom.T > txId) continue;
 
             yield return datom.E;
-
         }
+    }
 
+    private IEnumerable<Datom> ReverseLookupForIndex<TAttribute>(TxId txId, EntityId id, IDataNode node, IDatomComparator comparator)
+        where TAttribute : IAttribute<EntityId>
+    {
+        var attr = _registry.GetAttributeId<TAttribute>();
+
+        var value = new byte[8];
+        MemoryMarshal.Write(value.AsSpan(), id);
+
+        var startDatom = new Datom
+        {
+            E = EntityId.From(ulong.MaxValue),
+            A = attr,
+            T = TxId.MaxValue,
+            V = value,
+            F = DatomFlags.Added,
+        };
+        var offset = BinarySearch.SeekEqualOrLess(node, comparator, 0, node.Length, startDatom);
+
+        for (var idx = offset; idx < node.Length; idx++)
+        {
+            yield return node[idx];
+        }
     }
 
     #region Internals

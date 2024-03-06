@@ -39,7 +39,10 @@ public class AttributeRegistry : IAttributeRegistry
 
         foreach (var attr in attributeArray)
         {
-            attr.SetSerializer(_valueSerializersByNativeType[attr.ValueType]);
+            if (!_valueSerializersByNativeType.TryGetValue(attr.ValueType, out var serializer))
+                throw new InvalidOperationException($"No serializer found for type {attr.ValueType}");
+
+            attr.SetSerializer(serializer);
         }
 
         _dbAttributesByEntityId = new Dictionary<AttributeId, DbAttribute>();
@@ -125,7 +128,10 @@ public class AttributeRegistry : IAttributeRegistry
     public void Append<TAttribute, TValue>(IAppendableChunk chunk, EntityId e, TValue value, TxId t, DatomFlags f) where TAttribute : IAttribute<TValue>
     {
         var serializer = (IValueSerializer<TValue>)_valueSerializersByNativeType[typeof(TValue)];
-        var attr = _attributesByType[typeof(TAttribute)];
+
+        if (!_attributesByType.TryGetValue(typeof(TAttribute), out var attr))
+            throw new InvalidOperationException($"No attribute definition found for type {typeof(TAttribute)}, did you forget to register it in the DI container?");
+
         var dbAttr = _dbAttributesByUniqueId[attr.Id];
         chunk.Append(e, dbAttr.AttrEntityId, t, f, serializer, value);
     }
