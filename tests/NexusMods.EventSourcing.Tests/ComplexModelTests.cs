@@ -19,6 +19,7 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
     [InlineData(16, 128)]
     [InlineData(128, 16)]
     [InlineData(128, 128)]
+    [InlineData(1024, 128)]
     public async Task CanCreateLoadout(int modCount, int filesPerMod)
     {
         Config.MaxInMemoryDatoms = 1024;

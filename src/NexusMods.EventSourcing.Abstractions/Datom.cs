@@ -46,4 +46,9 @@ public readonly struct Datom
     {
         return MemoryMarshal.Read<T>(V.Span);
     }
+
+    public override string ToString()
+    {
+        return $"({E}, {A}, {T}, {F}, {Convert.ToHexString(V.Span)}))";
+    }
 }

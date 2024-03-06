@@ -125,6 +125,18 @@ public class AttributeRegistry : IAttributeRegistry
         return type.Compare(datomsValues[a].Span, datomsValues[b].Span);
     }
 
+    public int CompareValues(AttributeId id, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        var cache = _compareCache;
+        if (cache.AttributeId == id)
+            return cache.Serializer.Compare(a, b);
+
+        var attr = _dbAttributesByEntityId[id];
+        var type = _valueSerializersByUniqueId[attr.ValueTypeId];
+        _compareCache = new CompareCache {AttributeId = id, Serializer = type};
+        return type.Compare(a, b);
+    }
+
     public void Append<TAttribute, TValue>(IAppendableChunk chunk, EntityId e, TValue value, TxId t, DatomFlags f) where TAttribute : IAttribute<TValue>
     {
         var serializer = (IValueSerializer<TValue>)_valueSerializersByNativeType[typeof(TValue)];

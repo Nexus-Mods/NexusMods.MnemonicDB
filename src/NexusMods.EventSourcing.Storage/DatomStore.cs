@@ -171,8 +171,8 @@ public class DatomStore : IDatomStore
 
         var lastAttr = AttributeId.From(0);
 
-        var inMemory = WhereInner(txId, id, index.InMemory, index.Comparator);
-        var history = WhereInner(txId, id, index.History, index.Comparator);
+        var inMemory = WhereInner(id, index.InMemory, _registry);
+        var history = WhereInner(id, index.History, _registry);
         var merged = history.Merge(inMemory, _indexes.EAVT.Comparator);
 
         foreach (var datom in merged)
@@ -188,7 +188,7 @@ public class DatomStore : IDatomStore
         }
     }
 
-    private static IEnumerable<Datom> WhereInner(TxId txId, EntityId id, IDataNode node, IDatomComparator comparator)
+    private static IEnumerable<Datom> WhereInner(EntityId id, IDataNode node, IAttributeRegistry registry)
     {
         var startDatom = new Datom
         {
@@ -197,9 +197,7 @@ public class DatomStore : IDatomStore
             T = TxId.MaxValue,
             F = DatomFlags.Added,
         };
-        var offset = BinarySearch.SeekEqualOrLess(node, comparator, 0, node.Length, startDatom);
-
-
+        var offset = node.FindEATV(0, node.Length, startDatom, registry);
 
         for (var idx = offset; idx < node.Length; idx++)
         {

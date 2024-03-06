@@ -50,4 +50,24 @@ public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IDataNod
     {
         return this;
     }
+
+    public int FindEATV(int start, int end, in Datom target, IAttributeRegistry registry)
+    {
+        return Resolve().FindEATV(start, end, target, registry);
+    }
+
+    public int FindAVTE(int start, int end, in Datom target, IAttributeRegistry registry)
+    {
+        return Resolve().FindAVTE(start, end, target, registry);
+    }
+
+    public int FindAETV(int start, int end, in Datom target, IAttributeRegistry registry)
+    {
+        return Resolve().FindAETV(start, end, target, registry);
+    }
+
+    public int Find(int start, int end, in Datom target, SortOrders order, IAttributeRegistry registry)
+    {
+        return Resolve().Find(start, end, target, order, registry);
+    }
 }

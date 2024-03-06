@@ -13,7 +13,7 @@ namespace NexusMods.EventSourcing.Storage.Nodes;
 /// A node that is appendable and not yet frozen. Can be sorted
 /// after insertion.
 /// </summary>
-public class AppendableNode : IDataNode, IAppendableChunk
+public class AppendableNode : ADataNode, IAppendableChunk
 {
     private readonly UnsignedIntegerColumn<EntityId> _entityIds;
     private readonly UnsignedIntegerColumn<AttributeId> _attributeIds;
@@ -21,11 +21,11 @@ public class AppendableNode : IDataNode, IAppendableChunk
     private readonly UnsignedIntegerColumn<DatomFlags> _flags;
     private readonly AppendableBlobColumn _values;
 
-    public IColumn<EntityId> EntityIds => _entityIds;
-    public IColumn<AttributeId> AttributeIds => _attributeIds;
-    public IColumn<TxId> TransactionIds => _transactionIds;
-    public IColumn<DatomFlags> Flags => _flags;
-    public IBlobColumn Values => _values;
+    public override IColumn<EntityId> EntityIds => _entityIds;
+    public override IColumn<AttributeId> AttributeIds => _attributeIds;
+    public override IColumn<TxId> TransactionIds => _transactionIds;
+    public override IColumn<DatomFlags> Flags => _flags;
+    public override IBlobColumn Values => _values;
 
     // Empty constructor for serialization
     public AppendableNode()
@@ -56,7 +56,7 @@ public class AppendableNode : IDataNode, IAppendableChunk
     }
 
 
-    public int Length => _entityIds.Length;
+    public override int Length => _entityIds.Length;
 
     /// <summary>
     /// Sorts the node using the given comparator.
@@ -114,7 +114,7 @@ public class AppendableNode : IDataNode, IAppendableChunk
         }
     }
 
-    public Datom this[int idx] => new() {
+    public override Datom this[int idx] => new() {
         E = _entityIds[idx],
         A = _attributeIds[idx],
         T = _transactionIds[idx],
@@ -122,15 +122,15 @@ public class AppendableNode : IDataNode, IAppendableChunk
         V = _values[idx]
     };
 
-    public Datom LastDatom => this[Length - 1];
+    public override Datom LastDatom => this[Length - 1];
 
 
-    public void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
+    public override void WriteTo<TWriter>(TWriter writer)
     {
         throw new NotSupportedException("Must pack the node before writing it to a buffer.");
     }
 
-    public IDataNode Flush(INodeStore store)
+    public override IDataNode Flush(INodeStore store)
     {
         var packed = Pack();
         return store.Flush(packed);
@@ -146,19 +146,13 @@ public class AppendableNode : IDataNode, IAppendableChunk
             _values.Pack());
     }
 
-    public IEnumerator<Datom> GetEnumerator()
+    public override IEnumerator<Datom> GetEnumerator()
     {
         for (var i = 0; i < Length; i++)
         {
             yield return this[i];
         }
     }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
-
 
     /// <summary>
     /// Initializes a new node with the given datoms.

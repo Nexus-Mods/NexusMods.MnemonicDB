@@ -11,7 +11,7 @@ using NexusMods.EventSourcing.Storage.Columns;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
-public class AppendableIndexNode : IIndexNode
+public class AppendableIndexNode : AIndexNode
 {
     private readonly UnsignedIntegerColumn<EntityId> _entityIds;
     private readonly UnsignedIntegerColumn<AttributeId> _attributeIds;
@@ -19,6 +19,7 @@ public class AppendableIndexNode : IIndexNode
     private readonly UnsignedIntegerColumn<DatomFlags> _flags;
     private readonly AppendableBlobColumn _values;
     private readonly UnsignedIntegerColumn<int> _childCounts;
+    private readonly UnsignedIntegerColumn<int> _childOffsets;
 
     private List<IDataNode> _children;
     private readonly IDatomComparator _comparator;
@@ -33,6 +34,7 @@ public class AppendableIndexNode : IIndexNode
         _flags = new UnsignedIntegerColumn<DatomFlags>();
         _values = new AppendableBlobColumn();
         _childCounts = new UnsignedIntegerColumn<int>();
+        _childOffsets = new UnsignedIntegerColumn<int>();
         _comparator = comparator;
         _length = 0;
     }
@@ -51,6 +53,7 @@ public class AppendableIndexNode : IIndexNode
         _flags = UnsignedIntegerColumn<DatomFlags>.UnpackFrom(indexNode.Flags);
         _values = AppendableBlobColumn.UnpackFrom(indexNode.Values);
         _childCounts = UnsignedIntegerColumn<int>.UnpackFrom(indexNode.ChildCounts);
+        _childOffsets = UnsignedIntegerColumn<int>.UnpackFrom(indexNode.ChildOffsets);
         _children = indexNode.Children.ToList();
         _comparator = indexNode.Comparator;
         _length = indexNode.Length;
@@ -66,19 +69,30 @@ public class AppendableIndexNode : IIndexNode
         _flags.Initialize(butLast.Select(c => c.LastDatom.F));
         _values.Initialize(butLast.Select(c => c.LastDatom.V));
         _childCounts.Initialize(_children.Select(c => c.Length));
+
+        var offsets = new int[_children.Count];
+        var acc = 0;
+        for (var i = 0; i < _children.Count; i++)
+        {
+            offsets[i] = acc;
+            acc += _children[i].Length;
+        }
+        _childOffsets.Initialize(offsets.AsSpan());
+
+
         _length = _childCounts.Sum();
     }
 
 
-    public int Length => _length;
-    public IColumn<EntityId> EntityIds => _entityIds;
-    public IColumn<AttributeId> AttributeIds => _attributeIds;
-    public IColumn<TxId> TransactionIds => _transactionIds;
-    public IColumn<DatomFlags> Flags => _flags;
+    public override int Length => _length;
+    public override IColumn<EntityId> EntityIds => _entityIds;
+    public override IColumn<AttributeId> AttributeIds => _attributeIds;
+    public override IColumn<TxId> TransactionIds => _transactionIds;
+    public override IColumn<DatomFlags> Flags => _flags;
 
-    public IBlobColumn Values => _values;
+    public override IBlobColumn Values => _values;
 
-    public Datom this[int idx]
+    public override Datom this[int idx]
     {
         get
         {
@@ -96,7 +110,7 @@ public class AppendableIndexNode : IIndexNode
         }
     }
 
-    public Datom LastDatom =>
+    public override Datom LastDatom =>
         new()
         {
             E = _entityIds[_length - 1],
@@ -106,12 +120,12 @@ public class AppendableIndexNode : IIndexNode
             V = _values[_length - 1]
         };
 
-    public void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
+    public override void WriteTo<TWriter>(TWriter writer)
     {
         throw new System.NotImplementedException();
     }
 
-    public IDataNode Flush(INodeStore store)
+    public override IDataNode Flush(INodeStore store)
     {
         for (var i = 0; i < _children.Count; i++)
         {
@@ -135,14 +149,20 @@ public class AppendableIndexNode : IIndexNode
         var flags = _flags.Pack();
         var values = _values.Pack();
 
-        return new PackedIndexNode(length, entityIds, attributeIds, transactionIds, flags, values, _childCounts.Pack(), _comparator, _children);
+        return new PackedIndexNode(length, entityIds, attributeIds, transactionIds, flags, values, _childCounts.Pack(), _childOffsets.Pack(), _comparator, _children);
     }
 
-    public IEnumerable<IDataNode> Children => _children;
-    public IColumn<int> ChildCounts => _childCounts;
-    public IDatomComparator Comparator => _comparator;
+    public override IEnumerable<IDataNode> Children => _children;
+    public override IColumn<int> ChildCounts => _childCounts;
+    public override IColumn<int> ChildOffsets => _childOffsets;
+    public override IDatomComparator Comparator => _comparator;
 
-    public IEnumerator<Datom> GetEnumerator()
+    public override IDataNode ChildAt(int idx)
+    {
+        return _children[idx];
+    }
+
+    public override IEnumerator<Datom> GetEnumerator()
     {
         foreach (var child in _children)
         {
@@ -151,11 +171,6 @@ public class AppendableIndexNode : IIndexNode
                 yield return datom;
             }
         }
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
     }
 
     private IEnumerable<(Datom Datom, int Index)> ChildMarkers()

@@ -84,7 +84,7 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
 
             // Validate the data
             var newDb = Connection.Db;
-            newDb.BasisTxId.Value.Should().Be(originalDb.BasisTxId.Value + 1UL + (ulong)i, "transaction id should be incremented by 1 for each mutation");
+            newDb.BasisTxId.Value.Should().Be(originalDb.BasisTxId.Value + 1UL + (ulong)i, "transaction id should be incremented by 1 for each mutation at iteration " + i);
 
             var newFound = newDb.Get<File>([realId]).First();
             newFound.Path.Should().Be($"C:\\test_{i}.txt_mutate");
@@ -219,6 +219,7 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
         LoadoutAttributes.Name.Add(newTx, result[staticLoadout1.Id], "Test Loadout 1 Updated");
         await newTx.Commit();
 
+        Connection.Db.BasisTxId.Value.Should().BeGreaterThan(loadout1.BasisDb.BasisTxId.Value, "the db should have been updated");
         var reloaded = Connection.Db.Get<Loadout>(result[staticLoadout1.Id]);
         reloaded.Name.Should().Be("Test Loadout 1 Updated", "because the commit has been applied");
 

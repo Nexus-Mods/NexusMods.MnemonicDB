@@ -24,4 +24,25 @@ public interface IDataNode : IEnumerable<Datom>
         where TWriter : IBufferWriter<byte>;
 
     IDataNode Flush(INodeStore store);
+
+    /// <summary>
+    /// Find the index of the first datom in the node that is equal to or greater than the target datom.
+    /// </summary>
+    int FindEATV(int start, int end, in Datom target, IAttributeRegistry registry);
+
+
+    /// <summary>
+    /// Find the index of the first datom in the node that is equal to or greater than the target datom.
+    /// </summary>
+    int FindAVTE(int start, int end, in Datom target, IAttributeRegistry registry);
+
+    /// <summary>
+    /// Find the index of the first datom in the node that is equal to or greater than the target datom.
+    /// </summary>
+    int FindAETV(int start, int end, in Datom target, IAttributeRegistry registry);
+
+    /// <summary>
+    /// Given a target datom, find the index of the first datom in the node that is equal to or greater than the target datom.
+    /// </summary>
+    int Find(int start, int end, in Datom target, SortOrders order, IAttributeRegistry registry);
 }

@@ -12,6 +12,7 @@ public class AStorageBenchmark
 {
     private readonly IServiceProvider _services;
     protected readonly AttributeRegistry _registry;
+    protected readonly NodeStore NodeStore;
 
     public AStorageBenchmark()
     {
@@ -39,5 +40,7 @@ public class AStorageBenchmark
             new DbAttribute(Symbol.Intern<TestAttributes.FileHash>(), AttributeId.From(10), Symbol.Intern<UInt64Serializer>()),
             new DbAttribute(Symbol.Intern<TestAttributes.FileName>(), AttributeId.From(11), Symbol.Intern<StringSerializer>())
         });
+
+        NodeStore = _services.GetRequiredService<NodeStore>();
     }
 }

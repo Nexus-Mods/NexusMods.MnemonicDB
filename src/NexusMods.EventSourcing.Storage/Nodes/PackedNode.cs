@@ -9,7 +9,7 @@ using NexusMods.EventSourcing.Storage.Algorithms;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
-public class PackedNode : IDataNode
+public class PackedNode : ADataNode
 {
     public PackedNode(int length, IColumn<EntityId> entityIds, IColumn<AttributeId> attributeIds, IColumn<TxId> transactionIds, IColumn<DatomFlags> flags, IBlobColumn values)
     {
@@ -21,14 +21,14 @@ public class PackedNode : IDataNode
         Length = length;
     }
 
-    public int Length { get; }
-    public IColumn<EntityId> EntityIds { get; }
-    public IColumn<AttributeId> AttributeIds { get; }
-    public IColumn<TxId> TransactionIds { get; }
-    public IColumn<DatomFlags> Flags { get; }
-    public IBlobColumn Values { get; }
+    public override int Length { get; }
+    public override IColumn<EntityId> EntityIds { get; }
+    public override IColumn<AttributeId> AttributeIds { get; }
+    public override IColumn<TxId> TransactionIds { get; }
+    public override IColumn<DatomFlags> Flags { get; }
+    public override IBlobColumn Values { get; }
 
-    public Datom this[int idx] => new()
+    public override Datom this[int idx] => new()
     {
         E = EntityIds[idx],
         A = AttributeIds[idx],
@@ -37,9 +37,9 @@ public class PackedNode : IDataNode
         V = Values[idx]
     };
 
-    public Datom LastDatom => this[Length - 1];
+    public override Datom LastDatom => this[Length - 1];
 
-    public void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
+    public override void WriteTo<TWriter>(TWriter writer)
     {
         writer.WriteFourCC(FourCC.PackedData);
         writer.Write(Length);
@@ -51,7 +51,7 @@ public class PackedNode : IDataNode
         Values.WriteTo(writer);
     }
 
-    public IDataNode Flush(INodeStore store)
+    public override IDataNode Flush(INodeStore store)
     {
         return store.Flush(this);
     }
@@ -68,16 +68,11 @@ public class PackedNode : IDataNode
         return new PackedNode((int)length, entityIds, attributeIds, transactionIds, flags, values);
     }
 
-    public IEnumerator<Datom> GetEnumerator()
+    public override IEnumerator<Datom> GetEnumerator()
     {
         for (var i = 0; i < Length; i++)
         {
             yield return this[i];
         }
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
     }
 }

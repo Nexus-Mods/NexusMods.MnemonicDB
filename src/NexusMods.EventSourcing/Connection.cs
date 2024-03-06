@@ -38,9 +38,11 @@ public class Connection : IConnection
         return conn;
     }
 
-    public static Task<Connection> Start(IServiceProvider provider)
+    public static async Task<Connection> Start(IServiceProvider provider)
     {
-        return Start(provider.GetRequiredService<IDatomStore>(), provider.GetRequiredService<IEnumerable<IValueSerializer>>(), provider.GetRequiredService<IEnumerable<IAttribute>>());
+        var db = provider.GetRequiredService<IDatomStore>();
+        await db.Sync();
+        return await Start(provider.GetRequiredService<IDatomStore>(), provider.GetRequiredService<IEnumerable<IValueSerializer>>(), provider.GetRequiredService<IEnumerable<IAttribute>>());
     }
 
 

@@ -32,7 +32,7 @@ internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
         var reader = connection.ModelReflector.GetReader<TModel>();
         foreach (var entity in store.ReverseLookup<TAttribute>(txId, id))
         {
-            var iterator = store.Where(txId, entity).GetEnumerator();
+            using var iterator = store.Where(txId, entity).GetEnumerator();
             yield return reader(entity, iterator, this);
         }
 

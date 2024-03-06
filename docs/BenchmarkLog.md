@@ -53,3 +53,37 @@
 | Sort   | 8192  | EATV      |  6,633.710 us |  76.5107 us |  71.5681 us | 437.5000 | 398.4375 | 398.4375 | 6096.81 KB |
 | Sort   | 8192  | AETV      |  7,492.636 us | 143.3817 us | 140.8200 us | 453.1250 | 453.1250 | 453.1250 | 5328.76 KB |
 | Sort   | 8192  | AVTE      | 27,392.986 us | 522.2735 us | 580.5056 us | 406.2500 | 406.2500 | 406.2500 | 5328.51 KB |
+
+
+## Binary Search
+
+### Before Modifications
+| Method       | Count | TxCount | SortOrder | Mean     | Error     | StdDev    |
+|------------- |------ |-------- |---------- |---------:|----------:|----------:|
+| BinarySearch | 1024  | 1024    | EATV      | 3.587 us | 0.0092 us | 0.0081 us |
+| BinarySearch | 1024  | 1024    | AETV      | 1.069 us | 0.0083 us | 0.0077 us |
+| BinarySearch | 1024  | 1024    | AVTE      | 6.652 us | 0.0254 us | 0.0237 us |
+
+### Step2
+
+Inlined the comparison function for EATV, only loads the values required for each comparison, never loads the V
+(as it is always unique for a given EAT combination). Specialized the binary search code in the index nodes to use the
+inlined data directly and not require loading the child nodes. 53x improvement in this case
+
+| Method       | Count | TxCount | SortOrder | Mean        | Error     | StdDev    |
+|------------- |------ |-------- |---------- |------------:|----------:|----------:|
+| BinarySearch | 1024  | 1024    | EATV      |    67.25 ns |  0.631 ns |  0.591 ns |
+| BinarySearch | 1024  | 1024    | AETV      |   969.01 ns |  2.388 ns |  2.117 ns |
+| BinarySearch | 1024  | 1024    | AVTE      | 6,286.26 ns | 20.278 ns | 17.976 ns |
+
+### Step3
+
+The same, for the AVTE sort order 157x improvement
+
+| Method       | Count | TxCount | SortOrder | Mean        | Error    | StdDev   |
+|------------- |------ |-------- |---------- |------------:|---------:|---------:|
+| BinarySearch | 1024  | 1024    | EATV      |    70.98 ns | 0.585 ns | 0.547 ns |
+| BinarySearch | 1024  | 1024    | AETV      | 1,031.54 ns | 6.539 ns | 5.797 ns |
+| BinarySearch | 1024  | 1024    | AVTE      |    40.19 ns | 0.091 ns | 0.071 ns |
+
+

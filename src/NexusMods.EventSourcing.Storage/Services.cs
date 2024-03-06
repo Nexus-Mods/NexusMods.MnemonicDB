@@ -17,6 +17,7 @@ public static class Services
         services.AddAttribute<BuiltInAttributes.ValueSerializerId>();
         services.AddSingleton<DatomStoreSettings>();
         services.AddSingleton<IDatomStore, DatomStore>();
+        services.AddSingleton<AttributeRegistry>();
         services.AddSingleton<NodeStore>();
         return services;
     }

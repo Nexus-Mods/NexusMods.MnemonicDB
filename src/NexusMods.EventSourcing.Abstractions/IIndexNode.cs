@@ -12,5 +12,7 @@ public interface IIndexNode : IDataNode
     public IEnumerable<IDataNode> Children { get; }
 
     public IColumn<int> ChildCounts { get; }
-    IDatomComparator Comparator { get; }
+    public IColumn<int> ChildOffsets { get; }
+    public IDatomComparator Comparator { get; }
+    public IDataNode ChildAt(int idx);
 }

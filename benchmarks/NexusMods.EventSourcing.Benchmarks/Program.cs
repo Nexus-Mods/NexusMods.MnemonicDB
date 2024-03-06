@@ -10,12 +10,12 @@ using NexusMods.EventSourcing.Benchmarks.Benchmarks;
 
 var benchmark = new ReadTests
 {
-    Count = 1000
+    Count = 128
 };
 
 var sw = Stopwatch.StartNew();
 await benchmark.Setup();
-for (var i = 0; i < 1000; i++)
+for (var i = 0; i < 1000000; i++)
 {
     benchmark.ReadFiles();
 }

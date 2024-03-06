@@ -11,11 +11,15 @@ public class IndexBenchmarks : AStorageBenchmark
 {
     private List<AppendableNode> _chunks = null!;
     private IDatomComparator _sorter = null!;
+    private IDataNode _preBuilt = null!;
+    private Datom _midPoint;
 
-    [Params(2, 128, 1024)]
+    //[Params(2, 128, 1024)]
+    [Params(1024)]
     public ulong Count { get; set; }
 
-    [Params(2, 128, 1024)]
+    //[Params(2, 128, 1024)]
+    [Params(1024)]
     public ulong TxCount { get; set; }
 
     [Params(SortOrders.EATV, SortOrders.AVTE, SortOrders.AETV)]
@@ -54,9 +58,12 @@ public class IndexBenchmarks : AStorageBenchmark
         {
             chunk.Sort(_sorter);
         }
+
+        _preBuilt = IndexAll().Flush(NodeStore);
+        _midPoint = _preBuilt[(int)((float)_preBuilt.Length / 1.75)];
     }
 
-    [Benchmark]
+    //[Benchmark]
     public AppendableIndexNode IndexAll()
     {
         var index = new AppendableIndexNode(_sorter);
@@ -66,5 +73,11 @@ public class IndexBenchmarks : AStorageBenchmark
         }
 
         return index;
+    }
+
+    [Benchmark]
+    public int BinarySearch()
+    {
+        return _preBuilt.Find(0, _preBuilt.Length, _midPoint, SortOrder, _registry);
     }
 }

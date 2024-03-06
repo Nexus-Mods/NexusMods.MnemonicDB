@@ -9,9 +9,10 @@ using NexusMods.EventSourcing.Storage.Algorithms;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
-public class PackedIndexNode : IIndexNode
+public class PackedIndexNode : AIndexNode
 {
     private readonly IColumn<int> _childCounts;
+    private readonly IColumn<int> _childOffsets;
     private readonly List<IDataNode> _children;
 
     public PackedIndexNode(int length,
@@ -21,6 +22,7 @@ public class PackedIndexNode : IIndexNode
         IColumn<DatomFlags> flags,
         IBlobColumn values,
         IColumn<int> childCounts,
+        IColumn<int> childOffsets,
         IDatomComparator comparator,
         List<IDataNode> children)
     {
@@ -32,27 +34,23 @@ public class PackedIndexNode : IIndexNode
         Values = values;
         _children = children;
         _childCounts = childCounts;
+        _childOffsets = childOffsets;
         Comparator = comparator;
     }
 
-    public IEnumerator<Datom> GetEnumerator()
+    public override IEnumerator<Datom> GetEnumerator()
     {
         throw new System.NotImplementedException();
     }
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
+    public override int Length { get; }
+    public override IColumn<EntityId> EntityIds { get; }
+    public override IColumn<AttributeId> AttributeIds { get; }
+    public override IColumn<TxId> TransactionIds { get; }
+    public override IColumn<DatomFlags> Flags { get; }
+    public override IBlobColumn Values { get; }
 
-    public int Length { get; }
-    public IColumn<EntityId> EntityIds { get; }
-    public IColumn<AttributeId> AttributeIds { get; }
-    public IColumn<TxId> TransactionIds { get; }
-    public IColumn<DatomFlags> Flags { get; }
-    public IBlobColumn Values { get; }
-
-    public Datom this[int idx]
+    public override Datom this[int idx]
     {
         get
         {
@@ -70,8 +68,8 @@ public class PackedIndexNode : IIndexNode
         }
     }
 
-    public Datom LastDatom => throw new NotImplementedException();
-    public void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
+    public override Datom LastDatom => throw new NotImplementedException();
+    public override void WriteTo<TWriter>(TWriter writer)
     {
         writer.WriteFourCC(FourCC.PackedIndex);
         writer.Write(Length);
@@ -82,6 +80,7 @@ public class PackedIndexNode : IIndexNode
         Flags.WriteTo(writer);
         Values.WriteTo(writer);
         _childCounts.WriteTo(writer);
+        _childOffsets.WriteTo(writer);
         writer.Write((byte)Comparator.SortOrder);
         foreach (var child in _children)
         {
@@ -113,6 +112,7 @@ public class PackedIndexNode : IIndexNode
         var flags = ColumnReader.ReadColumn<DatomFlags>(ref reader, childCount - 1);
         var values = ColumnReader.ReadBlobColumn(ref reader, childCount - 1);
         var childCounts = ColumnReader.ReadColumn<int>(ref reader, childCount);
+        var childOffsets = ColumnReader.ReadColumn<int>(ref reader, childCount);
         var sortOrder = (SortOrders)reader.Read<byte>();
         var comparator = registry.CreateComparator(sortOrder);
 
@@ -135,10 +135,10 @@ public class PackedIndexNode : IIndexNode
             }
         }
 
-        return new PackedIndexNode(length, entityIds, attributeIds, transactionIds, flags, values, childCounts, comparator, children);
+        return new PackedIndexNode(length, entityIds, attributeIds, transactionIds, flags, values, childCounts, childOffsets, comparator, children);
     }
 
-    public IDataNode Flush(INodeStore store)
+    public override IDataNode Flush(INodeStore store)
     {
         for (var i = 0; i < _children.Count; i++)
         {
@@ -148,10 +148,15 @@ public class PackedIndexNode : IIndexNode
         return this;
     }
 
-    public IEnumerable<IDataNode> Children => _children;
+    public override IEnumerable<IDataNode> Children => _children;
 
-    public IColumn<int> ChildCounts => _childCounts;
+    public override IColumn<int> ChildCounts => _childCounts;
+    public override IColumn<int> ChildOffsets => _childOffsets;
 
-    public IDatomComparator Comparator { get; }
+    public override IDatomComparator Comparator { get; }
 
+    public override IDataNode ChildAt(int idx)
+    {
+        return _children[idx];
+    }
 }

@@ -125,10 +125,13 @@ public class AppendableNodeTests(IServiceProvider provider) : AStorageTest(provi
         }
     }
 
-    [Fact]
-    public void CanSeekToDatom()
+    [Theory]
+    [InlineData(SortOrders.EATV)]
+    [InlineData(SortOrders.AETV)]
+    [InlineData(SortOrders.AVTE)]
+    public void CanSeekToDatom(SortOrders order)
     {
-        var compare = new EATV(_registry);
+        var compare = _registry.CreateComparator(order);
         var block = new AppendableNode();
         var allDatoms = TestData(10).ToArray();
         foreach (var datom in allDatoms)
@@ -142,7 +145,9 @@ public class AppendableNodeTests(IServiceProvider provider) : AStorageTest(provi
         for (var i = 0; i < sorted.Length; i++)
         {
             var datom = sorted[i];
-            var idx = BinarySearch.SeekEqualOrLess(block, compare, 0, block.Length, in datom);
+            var idx = block.Find(0, block.Length, in datom, order, _registry);
+
+            idx.Should().Be(i, "both sources are sorted and should match");
 
             var found = block[idx];
             AssertEqual(found, datom, i);

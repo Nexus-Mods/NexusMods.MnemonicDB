@@ -19,7 +19,6 @@ var host = Host.CreateDefaultBuilder()
         s.AddEventSourcingStorage()
             .AddEventSourcing()
             .AddTestModel()
-            .AddSingleton<AttributeRegistry>()
             .AddSingleton<RocksDbKvStoreConfig>(_ => new RocksDbKvStoreConfig()
             {
                 Path = FileSystem.Shared.FromUnsanitizedFullPath(@"c:\tmp\billionDatomsTest" + Guid.NewGuid())

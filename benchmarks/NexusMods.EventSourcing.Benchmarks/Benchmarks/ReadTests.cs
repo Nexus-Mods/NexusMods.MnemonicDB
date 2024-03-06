@@ -6,23 +6,25 @@ using BenchmarkDotNet.Attributes;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.TestModel.Model;
+using Xunit;
+
 // ReSharper disable MemberCanBePrivate.Global
 
 namespace NexusMods.EventSourcing.Benchmarks.Benchmarks;
 
 [MemoryDiagnoser]
-public class ReadTests
+public class ReadTests : IAsyncLifetime
 {
-    private readonly IConnection _connection;
+    private IConnection _connection = null!;
     private List<EntityId> _entityIdsAscending = null!;
     private List<EntityId> _entityIdsDescending = null!;
     private List<EntityId> _entityIdsRandom = null!;
+    private readonly IServiceProvider _services;
+    private EntityId _readId;
 
     public ReadTests()
     {
-        var services = AppHost.Create();
-
-        _connection = services.GetRequiredService<IConnection>();
+        _services = AppHost.Create();
     }
 
     private const int MaxCount = 10000;
@@ -30,6 +32,7 @@ public class ReadTests
     [GlobalSetup]
     public async Task Setup()
     {
+        await InitializeAsync();
         var tx = _connection.BeginTransaction();
         var entityIds = new List<EntityId>();
         for (var i = 0; i < MaxCount; i++)
@@ -51,11 +54,13 @@ public class ReadTests
         var idArray = entityIds.ToArray();
         Random.Shared.Shuffle(idArray);
         _entityIdsRandom = idArray.ToList();
+
+        _readId = Ids.Take(Count).Skip(Count / 2).First();
     }
 
 
     [Params(1, 1000, MaxCount)]
-    public int Count { get; init; } = MaxCount;
+    public int Count { get; set; } = MaxCount;
 
     public enum SortOrder
     {
@@ -81,11 +86,17 @@ public class ReadTests
     {
         var db = _connection.Db;
         ulong sum = 0;
-        foreach (var itm in db.Get<File>(Ids.Take(Count)))
-        {
-            sum += itm.Index;
-        }
+        sum += db.Get<File>(_readId).Index;
         return sum;
     }
 
+    public async Task InitializeAsync()
+    {
+        _connection = await AppHost.CreateConnection(_services);
+    }
+
+    public Task DisposeAsync()
+    {
+        return Task.CompletedTask;
+    }
 }
