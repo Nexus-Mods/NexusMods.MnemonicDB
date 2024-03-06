@@ -15,10 +15,21 @@ public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IDataNod
         {
             return target;
         }
+        return LoadNode();
+    }
+
+    private IDataNode LoadNode()
+    {
         var chunkData = store.Load(key);
         chunk = new WeakReference<IDataNode>(chunkData);
+        if (chunkData.Length != Length)
+        {
+            throw new InvalidOperationException("Node length mismatch");
+        }
+
         return chunkData;
     }
+
     public IEnumerator<Datom> GetEnumerator()
     {
         return Resolve().GetEnumerator();

@@ -86,4 +86,12 @@ The same, for the AVTE sort order 157x improvement
 | BinarySearch | 1024  | 1024    | AETV      | 1,031.54 ns | 6.539 ns | 5.797 ns |
 | BinarySearch | 1024  | 1024    | AVTE      |    40.19 ns | 0.091 ns | 0.071 ns |
 
+### Step4
 
+After adding back in value testing to ensure proper sorting, 5x decrease in the worst case
+
+| Method       | Count | TxCount | SortOrder | Mean      | Error    | StdDev   |
+|------------- |------ |-------- |---------- |----------:|---------:|---------:|
+| BinarySearch | 1024  | 1024    | EATV      |  92.30 ns | 0.436 ns | 0.408 ns |
+| BinarySearch | 1024  | 1024    | AETV      | 114.23 ns | 0.348 ns | 0.291 ns |
+| BinarySearch | 1024  | 1024    | AVTE      | 204.30 ns | 0.699 ns | 0.653 ns |

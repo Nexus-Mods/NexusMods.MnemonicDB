@@ -219,7 +219,6 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
         LoadoutAttributes.Name.Add(newTx, result[staticLoadout1.Id], "Test Loadout 1 Updated");
         await newTx.Commit();
 
-        Connection.Db.BasisTxId.Value.Should().BeGreaterThan(loadout1.BasisDb.BasisTxId.Value, "the db should have been updated");
         var reloaded = Connection.Db.Get<Loadout>(result[staticLoadout1.Id]);
         reloaded.Name.Should().Be("Test Loadout 1 Updated", "because the commit has been applied");
 

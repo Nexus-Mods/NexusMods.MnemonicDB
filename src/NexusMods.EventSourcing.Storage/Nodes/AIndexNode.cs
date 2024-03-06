@@ -14,7 +14,7 @@ public abstract class AIndexNode : ADataNode, IIndexNode
     public abstract IDataNode ChildAt(int idx);
 
 
-    public int FindEATV(int start, int end, in Datom target, IAttributeRegistry registry)
+    public override int FindEATV(int start, int end, in Datom target, IAttributeRegistry registry)
     {
         var childIdx = base.FindEATV(0, EntityIds.Length, target, registry);
 
@@ -23,7 +23,7 @@ public abstract class AIndexNode : ADataNode, IIndexNode
         return index + ChildOffsets[childIdx];
     }
 
-    public int FindAETV(int start, int end, in Datom target, IAttributeRegistry registry)
+    public override int FindAETV(int start, int end, in Datom target, IAttributeRegistry registry)
     {
         var childIdx = base.FindAETV(0, EntityIds.Length, target, registry);
 
@@ -32,7 +32,7 @@ public abstract class AIndexNode : ADataNode, IIndexNode
         return index + ChildOffsets[childIdx];
     }
 
-    public int FindAVTE(int start, int end, in Datom target, IAttributeRegistry registry)
+    public override int FindAVTE(int start, int end, in Datom target, IAttributeRegistry registry)
     {
         var childIdx = base.FindAVTE(0, EntityIds.Length, target, registry);
 

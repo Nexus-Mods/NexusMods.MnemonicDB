@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
@@ -31,8 +32,13 @@ public abstract partial class ADataNode : IDataNode
     #endregion
 
 
-    public int FindEATV(int start, int end, in Datom target, IAttributeRegistry registry)
+    public virtual int FindEATV(int start, int end, in Datom target, IAttributeRegistry registry)
     {
+        start = 0;
+        end = EntityIds.Length;
+
+        Debug.Assert(start <= end, "Start index should be less than or equal to end index");
+        Debug.Assert(end <= EntityIds.Length, "End index should be less than or equal to the length of the node");
         while (start < end)
         {
             var mid = start + (end - start) / 2;
@@ -51,7 +57,7 @@ public abstract partial class ADataNode : IDataNode
                     }
                     else
                     {
-                        cmp = tmpCmp;
+                        cmp = -tmpCmp;
                     }
                 }
                 else
@@ -72,7 +78,7 @@ public abstract partial class ADataNode : IDataNode
         return start;
     }
 
-    public int FindAETV(int start, int end, in Datom target, IAttributeRegistry registry)
+    public virtual int FindAETV(int start, int end, in Datom target, IAttributeRegistry registry)
     {
         while (start < end)
         {
@@ -113,7 +119,7 @@ public abstract partial class ADataNode : IDataNode
         return start;
     }
 
-    public int FindAVTE(int start, int end, in Datom target, IAttributeRegistry registry)
+    public virtual int FindAVTE(int start, int end, in Datom target, IAttributeRegistry registry)
     {
         while (start < end)
         {
@@ -166,7 +172,4 @@ public abstract partial class ADataNode : IDataNode
             _ => throw new ArgumentOutOfRangeException(nameof(order), order, "Unknown sort order")
         };
     }
-
-
-
 }

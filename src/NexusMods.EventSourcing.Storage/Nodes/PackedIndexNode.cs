@@ -40,7 +40,13 @@ public class PackedIndexNode : AIndexNode
 
     public override IEnumerator<Datom> GetEnumerator()
     {
-        throw new System.NotImplementedException();
+        for (var i = 0; i < _children.Count; i++)
+        {
+            foreach (var datom in _children[i])
+            {
+                yield return datom;
+            }
+        }
     }
 
     public override int Length { get; }

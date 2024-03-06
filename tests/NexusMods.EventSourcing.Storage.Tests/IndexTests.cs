@@ -58,6 +58,10 @@ public class IndexTests(IServiceProvider provider) : AStorageTest(provider)
 
         for (var i = 0; i < testData.Length; i++)
         {
+            var testDatom = testData[i];
+
+            var idx = finalIndex.Find(0, finalIndex.Length, testDatom, sortOrder, _registry);
+            idx.Should().Be(i, "the index should find the correct datom");
             AssertEqual(finalIndex[i], testData[i], i);
         }
     }
@@ -68,7 +72,7 @@ public class IndexTests(IServiceProvider provider) : AStorageTest(provider)
         {
             foreach (var size in new[] { 1, 2, 3, 4, 8, 16, 128, 1024, 1024 * 8, 1024 * 16, 1024 * 128 })
             {
-                foreach (var flush in new[] { true,}) // false })
+                foreach (var flush in new[] { true, false })
                 {
                     yield return [size, idx, flush];
                 }

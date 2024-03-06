@@ -26,7 +26,7 @@ public class EATV(AttributeRegistry registry) : IDatomComparator
         if (cmp != 0) return cmp;
 
         cmp = x.T.CompareTo(y.T);
-        if (cmp != 0) return cmp;
+        if (cmp != 0) return -cmp;
 
         return registry.CompareValues(x, y);
     }
@@ -45,7 +45,7 @@ internal unsafe class EATVComparer<TBlob>(AttributeRegistry registry, MemoryDato
         if (cmp != 0) return cmp;
 
         cmp = datoms.TransactionIds[a].CompareTo(datoms.TransactionIds[b]);
-        if (cmp != 0) return cmp;
+        if (cmp != 0) return -cmp;
 
         return registry.CompareValues(datoms.Values, datoms.AttributeIds[a], a, b);
     }
