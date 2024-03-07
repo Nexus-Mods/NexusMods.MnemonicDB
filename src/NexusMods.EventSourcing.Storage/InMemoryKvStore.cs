@@ -50,7 +50,7 @@ public class InMemoryKvStore : IKvStore
             return false;
         }
 
-        key = TxId.From(max);
+        key = TxId.From(Ids.MakeId(Ids.Partition.Tx, max));
         return true;
 
     }

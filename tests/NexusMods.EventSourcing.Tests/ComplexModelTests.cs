@@ -69,7 +69,14 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
 
     [Theory]
     [InlineData(1, 1)]
-
+    [InlineData(1, 16)]
+    [InlineData(16, 1)]
+    [InlineData(16, 16)]
+    [InlineData(16, 128)]
+    [InlineData(128, 16)]
+    [InlineData(128, 128)]
+    [InlineData(1024, 128)]
+    [InlineData(128, 1024)]
     public async Task CanRestartStorage(int modCount, int filesPerMod)
     {
         var tx = Connection.BeginTransaction();
@@ -93,7 +100,9 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
 
         var result = await tx.Commit();
 
+        Logger.LogInformation("Restarting storage");
         await RestartDatomStore();
+        Logger.LogInformation("Storage restarted");
 
         var db = Connection.Db;
 
@@ -107,6 +116,13 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
             totalSize += mod.Files.Sum(f => f.Size);
             mod.Files.Count().Should().Be(filesPerMod, "every mod should have the same amount of files");
         }
+
+        tx = Connection.BeginTransaction();
+        var newLoadOut = Loadout.Create(tx, "My Loadout 2");
+        var result2 = await tx.Commit();
+        newLoadOut = db.Get<Loadout>(result2[newLoadOut.Id]);
+
+        newLoadOut.Id.Should().NotBe(loadout.Id, "new loadout should have a different id because the connection re-detected the max EntityId");
 
     }
 

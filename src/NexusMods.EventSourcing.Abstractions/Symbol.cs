@@ -12,37 +12,55 @@ public class Symbol
     /// The constructor, which is private to ensure that all symbols are interned
     /// </summary>
     /// <param name="nsAndName"></param>
-    private Symbol(string nsAndName)
+    private Symbol((string Namespace, string Name) nsAndName)
     {
-        nsAndName = nsAndName.Replace("+", ".");
-        Id = nsAndName;
-        var splitOn = nsAndName.LastIndexOf('.');
-        if (splitOn == -1)
-        {
-            Name = nsAndName;
-            Namespace = "";
-            return;
-        }
-        Name = nsAndName[(splitOn + 1)..];
-        Namespace = nsAndName[..splitOn];
+        Id = $"{nsAndName.Namespace}/{nsAndName.Name}";
+        Name = nsAndName.Name;
+        Namespace = nsAndName.Namespace;
     }
 
     public static Symbol Unknown => Intern("<unknown>");
 
-    private static readonly ConcurrentDictionary<string, Symbol> InternedSymbols = new();
+    private static readonly ConcurrentDictionary<(string Namespace, string Name), Symbol> InternedSymbols = new();
 
     /// <summary>
     /// Construct a new symbol, or return an existing one that matches the given name
     /// </summary>
     /// <param name="nsAndName"></param>
     /// <returns></returns>
-    public static Symbol Intern(string nsAndName)
+    public static Symbol Intern(string fullName)
     {
+        var nsAndName = Sanitize(fullName);
         if (InternedSymbols.TryGetValue(nsAndName, out var symbol))
             return symbol;
 
         symbol = new Symbol(nsAndName);
         return !InternedSymbols.TryAdd(nsAndName, symbol) ? InternedSymbols[nsAndName] : symbol;
+    }
+
+    /// <summary>
+    /// Construct a new symbol, or return an existing one that matches the given name
+    /// </summary>
+    /// <param name="nsAndName"></param>
+    /// <returns></returns>
+    public static Symbol InternPreSanitized(string fullName)
+    {
+        var split = fullName.Split("/");
+        var nsAndName = (split[0], split[1]);
+        if (InternedSymbols.TryGetValue(nsAndName, out var symbol))
+            return symbol;
+
+        symbol = new Symbol(nsAndName);
+        return !InternedSymbols.TryAdd(nsAndName, symbol) ? InternedSymbols[nsAndName] : symbol;
+    }
+
+    public static (string Namespace, string Name) Sanitize(string nsAndName)
+    {
+        nsAndName = nsAndName.Replace("+", ".");
+        var lastDot = nsAndName.LastIndexOf('.');
+        if (lastDot == -1)
+            return ("<unknown>", nsAndName);
+        return (nsAndName[..lastDot], nsAndName[(lastDot + 1)..]);
     }
 
     /// <summary>
@@ -52,7 +70,7 @@ public class Symbol
     /// <returns></returns>
     public static Symbol Intern<T>()
     {
-        return Intern(typeof(T).FullName!);
+        return Intern(typeof(T).FullName!.Replace("+", "."));
     }
 
     /// <summary>
@@ -70,8 +88,21 @@ public class Symbol
     /// </summary>
     public string Id { get; }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         return Id;
+    }
+
+    /// <inheritdoc />
+    public override bool Equals(object? obj)
+    {
+        return ReferenceEquals(this, obj);
+    }
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        return Id.GetHashCode();
     }
 }

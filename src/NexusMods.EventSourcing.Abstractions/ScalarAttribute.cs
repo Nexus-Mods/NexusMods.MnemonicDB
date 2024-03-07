@@ -17,9 +17,9 @@ where TAttribute : IAttribute<TValueType>
     /// </summary>
     protected ScalarAttribute(string uniqueName = "")
     {
-        if (uniqueName == "")
-            uniqueName = typeof(TAttribute).FullName!;
-        Id = Symbol.Intern(uniqueName);
+        Id = uniqueName == "" ?
+            Symbol.Intern(typeof(TAttribute).FullName!) :
+            Symbol.InternPreSanitized(uniqueName);
     }
 
     /// <summary>

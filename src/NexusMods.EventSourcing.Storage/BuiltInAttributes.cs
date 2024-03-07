@@ -13,7 +13,7 @@ public static class BuiltInAttributes
     /// <summary>
     /// Static unique id of the UniqueId attribute
     /// </summary>
-    private static readonly Symbol UniqueIdStaticId = Symbol.Intern("NexusMods.EventSourcing.DatomStore/UniqueId");
+    private static readonly Symbol UniqueIdStaticId = Symbol.InternPreSanitized("NexusMods.EventSourcing.DatomStore/UniqueId");
 
     /// <summary>
     /// The database entity id of the UniqueId attribute
@@ -28,7 +28,7 @@ public static class BuiltInAttributes
     /// <summary>
     /// Static unique id of the UniqueId attribute
     /// </summary>
-    private static readonly Symbol ValueSerializerIdStaticId = Symbol.Intern("NexusMods.EventSourcing.DatomStore/ValueSerializerId");
+    private static readonly Symbol ValueSerializerIdStaticId = Symbol.InternPreSanitized("NexusMods.EventSourcing.DatomStore/ValueSerializerId");
 
     /// <summary>
     /// The database entity id of the UniqueId attribute

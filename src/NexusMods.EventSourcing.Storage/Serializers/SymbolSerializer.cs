@@ -16,7 +16,6 @@ public class SymbolSerializer : IValueSerializer<Symbol>
 
     public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
     {
-        // TODO: This can likely be vectorized so it keeps the strings in their original locations
         return a.SequenceCompareTo(b);
     }
 
@@ -27,7 +26,7 @@ public class SymbolSerializer : IValueSerializer<Symbol>
 
     public int Read(ReadOnlySpan<byte> buffer, out Symbol val)
     {
-        val = Symbol.Intern(_encoding.GetString(buffer));
+        val = Symbol.InternPreSanitized(_encoding.GetString(buffer));
         return _encoding.GetByteCount(val.Id);
     }
 

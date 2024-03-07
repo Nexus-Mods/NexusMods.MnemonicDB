@@ -75,8 +75,8 @@ public class DatomStore : IDatomStore
 
                 await UpdateInMemoryIndexes(chunk, pendingTransaction.AssignedTxId!.Value);
 
-                pendingTransaction.CompletionSource.SetResult(pendingTransaction.AssignedTxId.Value);
                 _updatesSubject.OnNext((pendingTransaction.AssignedTxId.Value, chunk));
+                pendingTransaction.CompletionSource.SetResult(pendingTransaction.AssignedTxId.Value);
                 _logger.LogDebug("Transaction {TxId} processed in {Elapsed}ms, new in-memory size is {Count} datoms", pendingTransaction.AssignedTxId!.Value, sw.ElapsedMilliseconds, _indexes.InMemorySize);
             }
             catch (Exception ex)
@@ -95,9 +95,12 @@ public class DatomStore : IDatomStore
         {
             if (!_nodeStore.TryGetLastTx(out var tx))
             {
+                _logger.LogInformation("Bootstrapping the datom store no existing state found");
                 var _ = await Transact(BuiltInAttributes.InitialDatoms);
                 return;
             }
+
+            _logger.LogInformation("Bootstrapping the datom store from tx {TxId}", tx.Value);
 
             if (_nodeStore.LoadRoot(out var root))
             {
@@ -119,7 +122,7 @@ public class DatomStore : IDatomStore
                     await UpdateInMemoryIndexes(appendableNode, TxId.From(thisTx));
                     replayed++;
                 }
-                _logger.LogInformation("Replayed {TxCount} transactions in {Elapsed}ms", replayed, sw.ElapsedMilliseconds);
+                _logger.LogInformation("Replayed {TxCount} transactions in {Elapsed}ms new in-memory size is {Datoms} datoms", replayed, sw.ElapsedMilliseconds, _indexes.InMemorySize);
             }
 
 
