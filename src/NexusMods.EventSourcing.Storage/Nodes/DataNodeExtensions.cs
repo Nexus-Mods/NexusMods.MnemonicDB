@@ -5,12 +5,12 @@ namespace NexusMods.EventSourcing.Storage.Nodes;
 
 public static class DataNodeExtensions
 {
-    public static IEnumerable<Datom> Range<TChunkA>(this TChunkA chunk, int start, int end)
-    where TChunkA : IDataNode
+    public static IEnumerable<Datom> Range<TNodeA>(this TNodeA node, int start, int end)
+    where TNodeA : IDataNode
     {
         for (var i = start; i < end; i++)
         {
-            yield return chunk[i];
+            yield return node[i];
         }
     }
 

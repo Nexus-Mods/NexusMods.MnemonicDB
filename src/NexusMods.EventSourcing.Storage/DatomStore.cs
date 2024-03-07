@@ -71,11 +71,11 @@ public class DatomStore : IDatomStore
 
                 _logger.LogDebug("Processing transaction with {DatomCount} datoms", pendingTransaction.Data.Length);
                 sw.Restart();
-                Log(pendingTransaction, out var chunk);
+                Log(pendingTransaction, out var node);
 
-                await UpdateInMemoryIndexes(chunk, pendingTransaction.AssignedTxId!.Value);
+                await UpdateInMemoryIndexes(node, pendingTransaction.AssignedTxId!.Value);
 
-                _updatesSubject.OnNext((pendingTransaction.AssignedTxId.Value, chunk));
+                _updatesSubject.OnNext((pendingTransaction.AssignedTxId.Value, node));
                 pendingTransaction.CompletionSource.SetResult(pendingTransaction.AssignedTxId.Value);
                 _logger.LogDebug("Transaction {TxId} processed in {Elapsed}ms, new in-memory size is {Count} datoms", pendingTransaction.AssignedTxId!.Value, sw.ElapsedMilliseconds, _indexes.InMemorySize);
             }
@@ -383,9 +383,9 @@ public class DatomStore : IDatomStore
 
     private void Log(PendingTransaction pendingTransaction, out AppendableNode node)
     {
-        var newChunk = new AppendableNode();
+        var newNode = new AppendableNode();
         foreach (var datom in pendingTransaction.Data)
-            datom.Append(_registry, newChunk);
+            datom.Append(_registry, newNode);
 
         var nextTxBlock = _nodeStore.GetNextTx();
 
@@ -419,13 +419,13 @@ public class DatomStore : IDatomStore
             return id;
         }
 
-        newChunk.SetTx(nextTx);
-        newChunk.RemapEntities(MaybeRemap, _registry);
+        newNode.SetTx(nextTx);
+        newNode.RemapEntities(MaybeRemap, _registry);
 
-        newChunk.Sort(_comparatorTxLog);
+        newNode.Sort(_comparatorTxLog);
 
-        node = newChunk;
-        var newTxBlock = _nodeStore.LogTx(newChunk.Pack());
+        node = newNode;
+        var newTxBlock = _nodeStore.LogTx(newNode.Pack());
         Debug.Assert(newTxBlock.Value == nextTxBlock.Value, "newTxBlock == nextTxBlock");
         pendingTransaction.AssignedTxId = nextTx;
 

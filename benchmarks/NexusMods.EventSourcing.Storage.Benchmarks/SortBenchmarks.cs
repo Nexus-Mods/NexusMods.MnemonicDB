@@ -21,12 +21,12 @@ public class SortBenchmarks : AStorageBenchmark
     [GlobalSetup]
     public void GlobalSetup()
     {
-        var chunk = new AppendableNode();
+        var node = new AppendableNode();
 
         var emitters = new Action<EntityId, TxId, ulong>[]
         {
-            (e, tx, v) => _registry.Append<TestAttributes.FileHash, ulong>(chunk, e, tx, DatomFlags.Added, v),
-            (e, tx, v) => _registry.Append<TestAttributes.FileName, string>(chunk, e, tx, DatomFlags.Added, "file " + v),
+            (e, tx, v) => _registry.Append<TestAttributes.FileHash, ulong>(node, e, tx, DatomFlags.Added, v),
+            (e, tx, v) => _registry.Append<TestAttributes.FileName, string>(node, e, tx, DatomFlags.Added, "file " + v),
         };
 
         for (ulong e = 0; e < Count; e++)
@@ -43,7 +43,7 @@ public class SortBenchmarks : AStorageBenchmark
             }
         }
 
-        _node = chunk;
+        _node = node;
 
     }
 

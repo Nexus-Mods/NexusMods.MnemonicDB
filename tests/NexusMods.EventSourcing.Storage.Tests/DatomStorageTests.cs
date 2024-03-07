@@ -28,14 +28,14 @@ public class DatomStorageTests(IServiceProvider provider) : AStorageTest(provide
         DatomStoreSettings.MaxInMemoryDatoms = 128;
 
 
-        var chunks = TestDatoms(1024)
+        var nodes = TestDatoms(1024)
             .GroupBy(d => d.Item2, d => d.Item1)
             .OrderBy(d => d.Key)
             .ToArray();
 
-        foreach (var chunk in chunks)
+        foreach (var node in nodes)
         {
-            await DatomStore.Transact(chunk);
+            await DatomStore.Transact(node);
         }
     }
 }

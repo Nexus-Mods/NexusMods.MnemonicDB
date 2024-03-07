@@ -44,14 +44,14 @@ public abstract class AStorageTest : IAsyncLifetime
     }
 
 
-    public AppendableNode TestDatomChunk(int entityCount = 100)
+    public AppendableNode TestDatomNode(int entityCount = 100)
     {
-        var chunk = new AppendableNode();
+        var node = new AppendableNode();
 
         var emitters = new Action<EntityId, TxId, ulong>[]
         {
-            (e, tx, v) => _registry.Append<TestAttributes.FileHash, ulong>(chunk, e, tx, DatomFlags.Added, v),
-            (e, tx, v) => _registry.Append<TestAttributes.FileName, string>(chunk, e, tx, DatomFlags.Added, "file " + v),
+            (e, tx, v) => _registry.Append<TestAttributes.FileHash, ulong>(node, e, tx, DatomFlags.Added, v),
+            (e, tx, v) => _registry.Append<TestAttributes.FileName, string>(node, e, tx, DatomFlags.Added, "file " + v),
         };
 
         for (ulong e = 0; e < (ulong)entityCount; e++)
@@ -64,7 +64,7 @@ public abstract class AStorageTest : IAsyncLifetime
                 }
             }
         }
-        return chunk;
+        return node;
     }
 
     public IEnumerable<(IWriteDatom, ulong)> TestDatoms(int entityCount = 100)

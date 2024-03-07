@@ -22,7 +22,7 @@ public class IndexTests(IServiceProvider provider) : AStorageTest(provider)
     private void CanIngestAndGetDatomsInner<TType>(TType comparator, int entityCount, SortOrders sortOrder, bool flush)
     where TType : IDatomComparator
     {
-        var testData = TestDatomChunk(entityCount);
+        var testData = TestDatomNode(entityCount);
 
         var index = new AppendableIndexNode(comparator);
 
@@ -36,11 +36,11 @@ public class IndexTests(IServiceProvider provider) : AStorageTest(provider)
 
         foreach (var group in grouped)
         {
-            var newChunk = AppendableNode.Initialize(group);
-            newChunk.Sort(comparator);
+            var newNode = AppendableNode.Initialize(group);
+            newNode.Sort(comparator);
 
             sw.Start();
-            index = index.Ingest(newChunk);
+            index = index.Ingest(newNode);
             sw.Stop();
 
             if (flush)

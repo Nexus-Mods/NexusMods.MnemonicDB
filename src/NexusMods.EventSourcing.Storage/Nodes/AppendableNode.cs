@@ -224,12 +224,12 @@ public class AppendableNode : ADataNode, IAppendableNode
     /// </summary>
     public static AppendableNode Initialize(IEnumerable<Datom> datoms)
     {
-        var chunk = new AppendableNode();
+        var node = new AppendableNode();
         foreach (var datom in datoms)
         {
-            chunk.Append(datom);
+            node.Append(datom);
         }
-        return chunk;
+        return node;
     }
 
     public (AppendableNode A, AppendableNode B) Split()

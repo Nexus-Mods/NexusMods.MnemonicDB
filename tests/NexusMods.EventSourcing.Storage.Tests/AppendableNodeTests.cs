@@ -189,7 +189,7 @@ public class AppendableNodeTests(IServiceProvider provider) : AStorageTest(provi
         var uncompressedSize = packed.Length * (8 + 8 + 1 + 8);
         Logger.LogInformation("Compression ratio: {0}%", (writer.WrittenMemory.Length * 100) / uncompressedSize);
 
-        var read = ChunkReader.ReadDataChunk(writer.WrittenMemory);
+        var read = NodeReader.ReadDataNode(writer.WrittenMemory);
 
         for (var i = 0; i < allDatoms.Length; i++)
         {

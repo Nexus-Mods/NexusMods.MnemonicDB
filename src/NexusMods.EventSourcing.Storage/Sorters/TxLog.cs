@@ -31,11 +31,6 @@ public class TxLog(AttributeRegistry registry) : IDatomComparator
     {
         return new TxLogComparer<TBlob>(registry, datoms);
     }
-
-    public int Compare<T>(in MemoryDatom<T> chunk, int a, int b) where T : IBlobColumn
-    {
-        throw new System.NotImplementedException();
-    }
 }
 
 internal unsafe class TxLogComparer<TBlob>(AttributeRegistry registry, MemoryDatom<TBlob> datoms) : IComparer<int>

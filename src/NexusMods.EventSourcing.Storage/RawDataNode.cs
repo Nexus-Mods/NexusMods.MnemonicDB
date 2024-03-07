@@ -10,30 +10,30 @@ namespace NexusMods.EventSourcing.Storage.Abstractions;
 /// being a linear array of the same type, so something like (EntityId[], TxId[], ushort[], DatomFlags[]) etc.
 /// This allows data to be packed, and iteration to happen in a linear and even vectorized fashion.
 /// </summary>
-[StructLayout(LayoutKind.Sequential, Pack = 1, Size = DataChunkSize)]
-public unsafe struct RawDataChunk
+[StructLayout(LayoutKind.Sequential, Pack = 1, Size = DataNodeSize)]
+public unsafe struct RawDataNode
 {
     /// <summary>
     /// Size of the vector, must be a power of 16 for maximum vectorization support.
     /// </summary>
-    public const int DefaultChunkSize = 2048;
+    public const int DefaultNodeSize = 2048;
 
     /// <summary>
     /// The size of the DataChunk node in bytes.
     /// </summary>
-    public const int DataChunkSize =
-        (DefaultChunkSize * (sizeof(ulong) + sizeof(ulong) + sizeof(ushort) + sizeof(byte) + sizeof(ulong))) +
-        (DefaultChunkSize / 8);
+    public const int DataNodeSize =
+        (DefaultNodeSize * (sizeof(ulong) + sizeof(ulong) + sizeof(ushort) + sizeof(byte) + sizeof(ulong))) +
+        (DefaultNodeSize / 8);
 
-    public fixed ulong EntityIdVector[DefaultChunkSize];
+    public fixed ulong EntityIdVector[DefaultNodeSize];
 
-    public fixed ulong TxIdVector[DefaultChunkSize];
+    public fixed ulong TxIdVector[DefaultNodeSize];
 
-    public fixed ushort AttributeIdVector[DefaultChunkSize];
+    public fixed ushort AttributeIdVector[DefaultNodeSize];
 
-    public fixed byte FlagsVector[DefaultChunkSize];
+    public fixed byte FlagsVector[DefaultNodeSize];
 
-    public fixed ulong InlinedData[DefaultChunkSize];
+    public fixed ulong InlinedData[DefaultNodeSize];
 
     /// <summary>
     /// A reference to a block of memory that contains the outlined data for this node, this is data

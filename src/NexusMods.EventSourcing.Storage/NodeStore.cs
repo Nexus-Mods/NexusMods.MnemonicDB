@@ -38,8 +38,8 @@ public class NodeStore(IKvStore kvStore, AttributeRegistry registry)
     {
         return node switch
         {
-            PackedNode packedChunk => Flush(packedChunk),
-            PackedIndexNode packedIndexChunk => Flush(packedIndexChunk),
+            PackedNode packedNode => Flush(packedNode),
+            PackedIndexNode packedIndexNode => Flush(packedIndexNode),
             _ => throw new NotImplementedException("Unknown node type. " + node.GetType().Name)
         };
     }
@@ -56,7 +56,7 @@ public class NodeStore(IKvStore kvStore, AttributeRegistry registry)
     {
         return node switch
         {
-            PackedIndexNode packedIndexChunk => Flush(packedIndexChunk),
+            PackedIndexNode packedIndexNode => Flush(packedIndexNode),
             _ => throw new NotImplementedException("Unknown node type. " + node.GetType().Name)
         };
     }

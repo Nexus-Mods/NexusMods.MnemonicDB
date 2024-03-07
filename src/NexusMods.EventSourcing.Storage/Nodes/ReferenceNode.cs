@@ -7,11 +7,11 @@ using NexusMods.EventSourcing.Storage.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
-public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IDataNode>? chunk) : IDataNode
+public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IDataNode>? node) : IDataNode
 {
     private IDataNode Resolve()
     {
-        if (chunk?.TryGetTarget(out var target) == true)
+        if (node?.TryGetTarget(out var target) == true)
         {
             return target;
         }
@@ -20,14 +20,14 @@ public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IDataNod
 
     private IDataNode LoadNode()
     {
-        var chunkData = store.Load(key);
-        chunk = new WeakReference<IDataNode>(chunkData);
-        if (chunkData.Length != Length)
+        var nodeData = store.Load(key);
+        node = new WeakReference<IDataNode>(nodeData);
+        if (nodeData.Length != Length)
         {
             throw new InvalidOperationException("Node length mismatch");
         }
 
-        return chunkData;
+        return nodeData;
     }
 
     public IEnumerator<Datom> GetEnumerator()
@@ -42,7 +42,7 @@ public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IDataNod
 
     public StoreKey Key => key;
 
-    public bool IsResolved => chunk != null;
+    public bool IsResolved => node != null;
     public int Length => Resolve().Length;
     public IColumn<EntityId> EntityIds => Resolve().EntityIds;
     public IColumn<AttributeId> AttributeIds => Resolve().AttributeIds;

@@ -6,9 +6,9 @@ using NexusMods.EventSourcing.Storage.Nodes;
 
 namespace NexusMods.EventSourcing.Storage.Algorithms;
 
-public static class ChunkReader
+public static class NodeReader
 {
-    public static IDataNode ReadDataChunk(ReadOnlyMemory<byte> data)
+    public static IDataNode ReadDataNode(ReadOnlyMemory<byte> data)
     {
         var reader = new BufferReader(data);
         var header = reader.ReadFourCC();

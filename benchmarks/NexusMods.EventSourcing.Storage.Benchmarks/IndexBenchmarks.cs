@@ -9,7 +9,7 @@ namespace NexusMods.EventSourcing.Storage.Benchmarks;
 
 public class IndexBenchmarks : AStorageBenchmark
 {
-    private List<AppendableNode> _chunks = null!;
+    private List<AppendableNode> _nodes = null!;
     private IDatomComparator _sorter = null!;
     private IDataNode _preBuilt = null!;
     private Datom _midPoint;
@@ -28,17 +28,17 @@ public class IndexBenchmarks : AStorageBenchmark
     [GlobalSetup]
     public void GlobalSetup()
     {
-        _chunks = new List<AppendableNode>();
+        _nodes = new List<AppendableNode>();
 
-        for (ulong chunk = 0; chunk < TxCount; chunk++)
+        for (ulong node = 0; node < TxCount; node++)
         {
-            _chunks.Add(new AppendableNode());
+            _nodes.Add(new AppendableNode());
         }
 
         var emitters = new Action<EntityId, TxId, ulong>[]
         {
-            (e, tx, v) => _registry.Append<TestAttributes.FileHash, ulong>(_chunks[(int)tx.Value], e, tx, DatomFlags.Added, v),
-            (e, tx, v) => _registry.Append<TestAttributes.FileName, string>(_chunks[(int)tx.Value], e, tx, DatomFlags.Added, "file " + v),
+            (e, tx, v) => _registry.Append<TestAttributes.FileHash, ulong>(_nodes[(int)tx.Value], e, tx, DatomFlags.Added, v),
+            (e, tx, v) => _registry.Append<TestAttributes.FileName, string>(_nodes[(int)tx.Value], e, tx, DatomFlags.Added, "file " + v),
         };
 
         for (ulong e = 0; e < Count; e++)
@@ -54,9 +54,9 @@ public class IndexBenchmarks : AStorageBenchmark
 
         _sorter = _registry.CreateComparator(SortOrder);
 
-        foreach (var chunk in _chunks)
+        foreach (var node in _nodes)
         {
-            chunk.Sort(_sorter);
+            node.Sort(_sorter);
         }
 
         _preBuilt = IndexAll().Flush(NodeStore);
@@ -67,9 +67,9 @@ public class IndexBenchmarks : AStorageBenchmark
     public AppendableIndexNode IndexAll()
     {
         var index = new AppendableIndexNode(_sorter);
-        foreach (var chunk in _chunks)
+        foreach (var node in _nodes)
         {
-            index = index.Ingest(chunk);
+            index = index.Ingest(node);
         }
 
         return index;

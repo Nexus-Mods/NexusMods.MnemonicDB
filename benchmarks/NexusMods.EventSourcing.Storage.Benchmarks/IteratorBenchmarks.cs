@@ -29,22 +29,22 @@ public class IteratorBenchmarks : AStorageBenchmark
 
         var emitters = new Action<AppendableNode, EntityId, TxId, ulong>[]
         {
-            (chunk, e, tx, v) => _registry.Append<TestAttributes.FileHash, ulong>(chunk, e, tx, DatomFlags.Added, v),
-            (chunk, e, tx, v) => _registry.Append<TestAttributes.FileName, string>(chunk, e, tx, DatomFlags.Added, "file " + v),
+            (node, e, tx, v) => _registry.Append<TestAttributes.FileHash, ulong>(node, e, tx, DatomFlags.Added, v),
+            (node, e, tx, v) => _registry.Append<TestAttributes.FileName, string>(node, e, tx, DatomFlags.Added, "file " + v),
         };
 
         for (ulong tx = 0; tx < TxCount; tx++)
         {
-            var chunk = new AppendableNode();
+            var node = new AppendableNode();
             for (ulong e = 0; e < Count; e++)
             {
                 for (var a = 0; a < 2; a++)
                 {
-                    emitters[a](chunk, EntityId.From(e), TxId.From(tx), tx);
+                    emitters[a](node, EntityId.From(e), TxId.From(tx), tx);
                 }
             }
-            chunk.Sort(_sorter);
-            _index = _index.Ingest(chunk);
+            node.Sort(_sorter);
+            _index = _index.Ingest(node);
         }
     }
 

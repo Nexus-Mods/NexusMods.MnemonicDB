@@ -13,13 +13,13 @@ using NexusMods.EventSourcing.Storage.Tests;
 namespace NexusMods.EventSourcing.Storage.Benchmarks;
 
 [MemoryDiagnoser]
-public class AppendableChunkBenchmarks
+public class AppendableNodeBenchmarks
 {
     private readonly IServiceProvider _services;
     private readonly AttributeRegistry _registry;
     private AppendableNode _node = null!;
 
-    public AppendableChunkBenchmarks()
+    public AppendableNodeBenchmarks()
     {
         var host = Host.CreateDefaultBuilder()
             .ConfigureServices(s =>
@@ -73,7 +73,7 @@ public class AppendableChunkBenchmarks
     public ulong EntityCount { get; set; }
 
     [Benchmark]
-    public void SortChunk()
+    public void SortNode()
     {
         var comparator = new EATV(_registry);
         _node.Sort(comparator);

@@ -78,10 +78,10 @@ public class AppendableBlobColumn : IAppendableBlobColumn
         }
     }
 
-    public static AppendableBlobColumn UnpackFrom(IBlobColumn indexChunkValues)
+    public static AppendableBlobColumn UnpackFrom(IBlobColumn indexNodeValues)
     {
         var newColumn = new AppendableBlobColumn();
-        foreach (var value in indexChunkValues)
+        foreach (var value in indexNodeValues)
         {
             newColumn.Append(value.Span);
         }

@@ -11,7 +11,7 @@ public static class SortedMerge
         where TNodeB : IDataNode
         where TComparator : IDatomComparator
     {
-        var newChunk = new AppendableNode();
+        var newNode = new AppendableNode();
 
         int i = 0, j = 0;
 
@@ -23,18 +23,18 @@ public static class SortedMerge
             var cmp = comparator.Compare(aDatom, bDatom);
             if (cmp < 0)
             {
-                newChunk.Append(aDatom);
+                newNode.Append(aDatom);
                 i++;
             }
             else if (cmp > 0)
             {
-                newChunk.Append(bDatom);
+                newNode.Append(bDatom);
                 j++;
             }
             else
             {
-                newChunk.Append(aDatom);
-                newChunk.Append(bDatom);
+                newNode.Append(aDatom);
+                newNode.Append(bDatom);
                 i++;
                 j++;
             }
@@ -42,18 +42,18 @@ public static class SortedMerge
 
         while (i < a.Length)
         {
-            newChunk.Append(a[i]);
+            newNode.Append(a[i]);
             i++;
         }
 
 
         while (j < b.Length)
         {
-            newChunk.Append(b[j]);
+            newNode.Append(b[j]);
             j++;
         }
 
-        return newChunk;
+        return newNode;
     }
 
 }

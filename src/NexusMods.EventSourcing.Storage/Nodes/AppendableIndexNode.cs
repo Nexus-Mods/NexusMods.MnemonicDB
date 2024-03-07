@@ -130,9 +130,9 @@ public class AppendableIndexNode : AIndexNode
         for (var i = 0; i < _children.Count; i++)
         {
             var child = _children[i];
-            if (child is AppendableNode appendableChunk)
+            if (child is AppendableNode appendableNode)
             {
-                var packedChild = appendableChunk.Pack();
+                var packedChild = appendableNode.Pack();
                 _children[i] = store.Flush(packedChild);
             }
         }
@@ -198,17 +198,17 @@ public class AppendableIndexNode : AIndexNode
 
         var newChildren = new List<IDataNode>(_children.Count);
 
-        void MaybeSplit(AppendableNode chunk)
+        void MaybeSplit(AppendableNode node)
         {
-            if (chunk.Length > Configuration.DataBlockSize * 2)
+            if (node.Length > Configuration.DataBlockSize * 2)
             {
-                var (a, b) = chunk.Split();
+                var (a, b) = node.Split();
                 MaybeSplit(a);
                 MaybeSplit(b);
             }
             else
             {
-                newChildren.Add(chunk);
+                newChildren.Add(node);
             }
 
         }
@@ -246,8 +246,8 @@ public class AppendableIndexNode : AIndexNode
 
     }
 
-    public AppendableNode Merge<TChunk, TEnumerable>(TChunk child, TEnumerable datoms)
-    where TChunk : IDataNode
+    public AppendableNode Merge<TNode, TEnumerable>(TNode child, TEnumerable datoms)
+    where TNode : IDataNode
     where TEnumerable : IEnumerable<Datom>
     {
         return AppendableNode.Initialize(child.Merge(datoms, _comparator));

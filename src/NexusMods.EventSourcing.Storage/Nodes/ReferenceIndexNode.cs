@@ -11,20 +11,20 @@ public class ReferenceIndexNode : IIndexNode
 {
     private readonly NodeStore _store;
     private readonly StoreKey _key;
-    private WeakReference<IIndexNode>? _chunk;
+    private WeakReference<IIndexNode>? _node;
 
-    public ReferenceIndexNode(NodeStore store, StoreKey key, WeakReference<IIndexNode>? chunk)
+    public ReferenceIndexNode(NodeStore store, StoreKey key, WeakReference<IIndexNode>? node)
     {
         _store = store;
         _key = key;
-        _chunk = chunk;
+        _node = node;
     }
 
     public StoreKey Key => _key;
 
     public IIndexNode Resolve()
     {
-        if (_chunk?.TryGetTarget(out var target) == true)
+        if (_node?.TryGetTarget(out var target) == true)
         {
             return target;
         }
@@ -34,14 +34,14 @@ public class ReferenceIndexNode : IIndexNode
 
     private IIndexNode Load()
     {
-        var chunkData = (IIndexNode)_store.Load(_key);
-        _chunk = new WeakReference<IIndexNode>(chunkData);
-        if (chunkData.Length != Length)
+        var nodeData = (IIndexNode)_store.Load(_key);
+        _node = new WeakReference<IIndexNode>(nodeData);
+        if (nodeData.Length != Length)
         {
             throw new InvalidOperationException("Node length mismatch");
         }
 
-        return chunkData;
+        return nodeData;
     }
 
     public IEnumerator<Datom> GetEnumerator()

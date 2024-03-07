@@ -16,7 +16,7 @@ where T : unmanaged
     private uint _length;
     private T[] _data;
 
-    public UnsignedIntegerColumn(uint initialLength = RawDataChunk.DefaultChunkSize)
+    public UnsignedIntegerColumn(uint initialLength = RawDataNode.DefaultNodeSize)
     {
         _length = 0;
         _data = GC.AllocateUninitializedArray<T>((int)initialLength);

@@ -90,15 +90,15 @@ public class PackedIndexNode : AIndexNode
         writer.Write((byte)Comparator.SortOrder);
         foreach (var child in _children)
         {
-            if (child is ReferenceNode indexChunk)
+            if (child is ReferenceNode indexNode)
             {
                 writer.WriteFourCC(FourCC.ReferenceIndex);
-                writer.Write((ulong)indexChunk.Key);
+                writer.Write((ulong)indexNode.Key);
             }
-            else if (child is ReferenceNode dataChunk)
+            else if (child is ReferenceNode dataNode)
             {
                 writer.WriteFourCC(FourCC.ReferenceData);
-                writer.Write((ulong)dataChunk.Key);
+                writer.Write((ulong)dataNode.Key);
             }
             else
             {

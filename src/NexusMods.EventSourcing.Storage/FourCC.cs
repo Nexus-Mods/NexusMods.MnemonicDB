@@ -29,7 +29,7 @@ public unsafe struct FourCC : IEquatable<FourCC>
         return result;
     }
 
-    #region Chunk Types
+    #region Node Types
 
     public static readonly FourCC PackedData = From("PDAT");
     public static readonly FourCC PackedIndex = From("PIDX");
