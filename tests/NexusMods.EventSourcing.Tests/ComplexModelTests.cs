@@ -68,16 +68,16 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
     }
 
     [Theory]
-    [InlineData(1, 1)]
-    [InlineData(1, 16)]
-    [InlineData(16, 1)]
-    [InlineData(16, 16)]
-    [InlineData(16, 128)]
-    [InlineData(128, 16)]
-    [InlineData(128, 128)]
-    [InlineData(1024, 128)]
-    [InlineData(128, 1024)]
-    public async Task CanRestartStorage(int modCount, int filesPerMod)
+    [InlineData(1, 1, 1)]
+    [InlineData(1, 16, 16)]
+    [InlineData(16, 1, 1)]
+    [InlineData(16, 16, 16)]
+    [InlineData(16, 128, 128)]
+    [InlineData(128, 16, 16)]
+    [InlineData(128, 128, 128)]
+    [InlineData(1024, 128, 128)]
+    [InlineData(128, 1024, 128)]
+    public async Task CanRestartStorage(int modCount, int filesPerMod, int extraFiles)
     {
         var tx = Connection.BeginTransaction();
 
@@ -100,11 +100,24 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
 
         var result = await tx.Commit();
 
+        var extraTx = Connection.BeginTransaction();
+
+        var db = Connection.Db;
+        var firstMod = db.Get<Mod>(result[mods[0].Id]);
+        for (int idx = 0; idx < extraFiles; idx++)
+        {
+            var name = $"Extra File {idx}";
+            var file = File.Create(extraTx, name, firstMod, Size.FromLong(name.Length), Hash.FromLong(name.XxHash64AsUtf8()));
+            files.Add(file);
+        }
+
+        await extraTx.Commit();
+
         Logger.LogInformation("Restarting storage");
         await RestartDatomStore();
         Logger.LogInformation("Storage restarted");
 
-        var db = Connection.Db;
+        db = Connection.Db;
 
         loadout =  db.Get<Loadout>(result[loadout.Id]);
 
@@ -114,7 +127,15 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
         foreach (var mod in loadout.Mods)
         {
             totalSize += mod.Files.Sum(f => f.Size);
-            mod.Files.Count().Should().Be(filesPerMod, "every mod should have the same amount of files");
+
+            if (mod.Id == firstMod.Id)
+            {
+                mod.Files.Count().Should().Be(filesPerMod + extraFiles, "first mod should have the extra files");
+            }
+            else
+            {
+                mod.Files.Count().Should().Be(filesPerMod, "every mod should have the same amount of files");
+            }
         }
 
         tx = Connection.BeginTransaction();
@@ -124,8 +145,7 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
 
         newLoadOut.Id.Should().NotBe(loadout.Id, "new loadout should have a different id because the connection re-detected the max EntityId");
 
+
     }
-
-
 
 }
