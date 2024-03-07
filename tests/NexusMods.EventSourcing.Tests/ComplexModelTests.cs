@@ -67,6 +67,49 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
         Logger.LogInformation($"Loadout: {loadout.Name} ({modCount * filesPerMod} entities) loaded in {sw.ElapsedMilliseconds}ms");
     }
 
+    [Theory]
+    [InlineData(1, 1)]
+
+    public async Task CanRestartStorage(int modCount, int filesPerMod)
+    {
+        var tx = Connection.BeginTransaction();
+
+        var loadout = Loadout.Create(tx, "My Loadout");
+
+        var mods = new List<Mod>();
+        var files = new List<File>();
+
+        for (var i = 0; i < modCount; i++)
+        {
+            var mod = Mod.Create(tx, $"Mod {i}", new Uri($"http://mod{i}.com"), loadout);
+            mods.Add(mod);
+            for (var j = 0; j < filesPerMod; j++)
+            {
+                var name = $"File {j}";
+                var file = File.Create(tx, name, mod, Size.FromLong(name.Length), Hash.FromLong(name.XxHash64AsUtf8()));
+                files.Add(file);
+            }
+        }
+
+        var result = await tx.Commit();
+
+        await RestartDatomStore();
+
+        var db = Connection.Db;
+
+        loadout =  db.Get<Loadout>(result[loadout.Id]);
+
+        var totalSize = Size.Zero;
+
+        loadout.Mods.Count().Should().Be(modCount, "all mods should be loaded");
+        foreach (var mod in loadout.Mods)
+        {
+            totalSize += mod.Files.Sum(f => f.Size);
+            mod.Files.Count().Should().Be(filesPerMod, "every mod should have the same amount of files");
+        }
+
+    }
+
 
 
 }

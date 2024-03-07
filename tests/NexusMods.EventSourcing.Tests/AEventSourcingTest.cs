@@ -11,30 +11,44 @@ public class AEventSourcingTest : IAsyncLifetime
     protected DatomStoreSettings Config { get; set; }
     protected ILogger Logger;
 
-    private readonly DatomStore _store;
+    private DatomStore _store;
     private readonly NodeStore _nodeStore;
     private readonly IValueSerializer[] _valueSerializers;
     private readonly IAttribute[] _attributes;
     private readonly InMemoryKvStore _kvStore;
-
+    private readonly IServiceProvider _provider;
+    private readonly AttributeRegistry _registry;
 
 
     protected AEventSourcingTest(IServiceProvider provider)
     {
+        _provider = provider;
         _valueSerializers = provider.GetRequiredService<IEnumerable<IValueSerializer>>().ToArray();
         _attributes = provider.GetRequiredService<IEnumerable<IAttribute>>().ToArray();
 
-        var registry = new AttributeRegistry(_valueSerializers, _attributes);
+        _registry = new AttributeRegistry(_valueSerializers, _attributes);
         _kvStore = new InMemoryKvStore();
-        _nodeStore = new NodeStore(provider.GetRequiredService<ILogger<NodeStore>>(), _kvStore, registry);
+        _nodeStore = new NodeStore(provider.GetRequiredService<ILogger<NodeStore>>(), _kvStore, _registry);
 
         Config = new DatomStoreSettings();
-        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _nodeStore, registry, Config);
+        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _nodeStore, _registry, Config);
 
         Logger = provider.GetRequiredService<ILogger<AEventSourcingTest>>();
 
     }
 
+
+    protected async Task RestartDatomStore()
+    {
+
+        _store.Dispose();
+
+
+        _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _nodeStore, _registry, Config);
+        await _store.Sync();
+
+        Connection = await Connection.Start(_store, _valueSerializers, _attributes);
+    }
 
     public async Task InitializeAsync()
     {

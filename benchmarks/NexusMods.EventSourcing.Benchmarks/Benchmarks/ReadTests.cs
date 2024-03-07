@@ -21,6 +21,7 @@ public class ReadTests : IAsyncLifetime
     private List<EntityId> _entityIdsRandom = null!;
     private readonly IServiceProvider _services;
     private EntityId _readId;
+    private IDb _db = null!;
 
     public ReadTests()
     {
@@ -56,6 +57,8 @@ public class ReadTests : IAsyncLifetime
         _entityIdsRandom = idArray.ToList();
 
         _readId = Ids.Take(Count).Skip(Count / 2).First();
+
+        _db = _connection.Db;
     }
 
 
@@ -84,9 +87,8 @@ public class ReadTests : IAsyncLifetime
     [Benchmark]
     public ulong ReadFiles()
     {
-        var db = _connection.Db;
         ulong sum = 0;
-        sum += db.Get<File>(_readId).Index;
+        sum += _db.Get<File>(_readId).Index;
         return sum;
     }
 

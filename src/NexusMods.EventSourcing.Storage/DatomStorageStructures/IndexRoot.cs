@@ -41,12 +41,10 @@ public record IndexRoot
         };
     }
 
-    public IDataNode Update(IDataNode node)
+    public IDataNode Update(AppendableNode node)
     {
-        var newChunk = AppendableNode.Initialize(InMemory);
-        newChunk.Append(node);
-        newChunk.Sort(Comparator);
-        var packed = newChunk.Pack();
+        var sorted = node.AsSorted(Comparator);
+        var packed = AppendableNode.Merge(InMemory, sorted, Comparator).Pack();
         return packed;
     }
 

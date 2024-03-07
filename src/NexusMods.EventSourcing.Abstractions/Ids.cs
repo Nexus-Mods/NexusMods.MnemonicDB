@@ -78,7 +78,7 @@ public static class Ids
     /// </summary>
     /// <param name="id"></param>
     /// <returns></returns>
-    private static Partition GetPartition(ulong id)
+    public static Partition GetPartition(ulong id)
     {
         return (id >> 56) switch
         {

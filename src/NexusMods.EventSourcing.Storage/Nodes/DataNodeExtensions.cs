@@ -3,7 +3,7 @@ using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
-public static class DataChunkExtensions
+public static class DataNodeExtensions
 {
     public static IEnumerable<Datom> Range<TChunkA>(this TChunkA chunk, int start, int end)
     where TChunkA : IDataNode

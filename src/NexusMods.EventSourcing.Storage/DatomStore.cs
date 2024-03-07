@@ -93,7 +93,35 @@ public class DatomStore : IDatomStore
     {
         try
         {
-            var _ = await Transact(BuiltInAttributes.InitialDatoms);
+            if (!_nodeStore.TryGetLastTx(out var tx))
+            {
+                var _ = await Transact(BuiltInAttributes.InitialDatoms);
+                return;
+            }
+
+            if (_nodeStore.LoadRoot(out var root))
+            {
+                _indexes = root;
+            }
+
+
+            var txToReplay = tx.Value - _indexes.LastFlushedTxId.Value;
+            if (txToReplay > 0)
+            {
+                _logger.LogInformation("Replaying {TxCount} transactions", txToReplay);
+                var sw = Stopwatch.StartNew();
+                var replayed = 0;
+                for (var thisTx = _indexes.LastFlushedTxId.Value + 1; thisTx <= tx.Value; thisTx++)
+                {
+                    var key = StoreKey.From(Ids.MakeId(Ids.Partition.TxLog, thisTx));
+                    var packed = _nodeStore.Load(key);
+                    var appendableNode = AppendableNode.Initialize(packed);
+                    await UpdateInMemoryIndexes(appendableNode, TxId.From(thisTx));
+                    replayed++;
+                }
+                _logger.LogInformation("Replayed {TxCount} transactions in {Elapsed}ms", replayed, sw.ElapsedMilliseconds);
+            }
+
 
         }
         catch (Exception ex)
@@ -129,7 +157,7 @@ public class DatomStore : IDatomStore
 
     public IObservable<(TxId TxId, IDataNode Datoms)> TxLog => _updatesSubject;
 
-    private async Task UpdateInMemoryIndexes(IDataNode node, TxId newTx)
+    private async Task UpdateInMemoryIndexes(AppendableNode node, TxId newTx)
     {
         _indexes = await _indexes.Update(node, newTx, _settings, _nodeStore, _logger);
 
@@ -255,6 +283,7 @@ public class DatomStore : IDatomStore
         }
     }
 
+
     private IEnumerable<Datom> ReverseLookupForIndex<TAttribute>(TxId txId, EntityId id, IDataNode node, IDatomComparator comparator)
         where TAttribute : IAttribute<EntityId>
     {
@@ -271,7 +300,7 @@ public class DatomStore : IDatomStore
             V = value,
             F = DatomFlags.Added,
         };
-        var offset = BinarySearch.SeekEqualOrLess(node, comparator, 0, node.Length, startDatom);
+        var offset = node.FindAVTE(0, node.Length, startDatom, _registry);
 
         for (var idx = offset; idx < node.Length; idx++)
         {
@@ -282,7 +311,7 @@ public class DatomStore : IDatomStore
     #region Internals
 
 
-    private void Log(PendingTransaction pendingTransaction, out IDataNode node)
+    private void Log(PendingTransaction pendingTransaction, out AppendableNode node)
     {
         var newChunk = new AppendableNode();
         foreach (var datom in pendingTransaction.Data)
@@ -325,8 +354,8 @@ public class DatomStore : IDatomStore
 
         newChunk.Sort(_comparatorTxLog);
 
-        node = newChunk.Pack();
-        var newTxBlock = _nodeStore.LogTx(node);
+        node = newChunk;
+        var newTxBlock = _nodeStore.LogTx(newChunk.Pack());
         Debug.Assert(newTxBlock.Value == nextTxBlock.Value, "newTxBlock == nextTxBlock");
         pendingTransaction.AssignedTxId = nextTx;
 

@@ -50,6 +50,11 @@ public class RocksDbKvStore : IKvStore
         throw new NotImplementedException();
     }
 
+    public bool TryGetLatestTx(out TxId key)
+    {
+        throw new NotImplementedException();
+    }
+
     public void Dispose()
     {
         _db.Dispose();

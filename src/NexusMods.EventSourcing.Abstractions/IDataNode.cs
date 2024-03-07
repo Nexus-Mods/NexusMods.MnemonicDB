@@ -45,4 +45,5 @@ public interface IDataNode : IEnumerable<Datom>
     /// Given a target datom, find the index of the first datom in the node that is equal to or greater than the target datom.
     /// </summary>
     int Find(int start, int end, in Datom target, SortOrders order, IAttributeRegistry registry);
+
 }

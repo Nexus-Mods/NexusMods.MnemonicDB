@@ -11,14 +11,16 @@ public abstract class AStorageTest : IAsyncLifetime
 {
     protected readonly AttributeRegistry _registry;
     protected readonly NodeStore NodeStore;
-    protected readonly IDatomStore DatomStore;
+    protected IDatomStore DatomStore;
     protected readonly DatomStoreSettings DatomStoreSettings;
     private readonly InMemoryKvStore _kvStore;
 
     protected readonly ILogger Logger;
+    private readonly IServiceProvider _provider;
 
     protected AStorageTest(IServiceProvider provider, KVStoreType storeType = KVStoreType.InMemory)
     {
+        _provider = provider;
         _registry = new AttributeRegistry(provider.GetRequiredService<IEnumerable<IValueSerializer>>(),
             provider.GetRequiredService<IEnumerable<IAttribute>>());
         _registry.Populate([
@@ -40,6 +42,7 @@ public abstract class AStorageTest : IAsyncLifetime
         DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), NodeStore, _registry, DatomStoreSettings);
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
     }
+
 
     public AppendableNode TestDatomChunk(int entityCount = 100)
     {

@@ -36,6 +36,25 @@ public class InMemoryKvStore : IKvStore
         _store.TryRemove(key, out _);
     }
 
+    public bool TryGetLatestTx(out TxId key)
+    {
+        var max = _store.Keys
+            .Select(k => k.Value)
+            .Where(k => Ids.GetPartition(k) == Ids.Partition.TxLog)
+            .OrderDescending()
+            .FirstOrDefault();
+
+        if (max == default)
+        {
+            key = default;
+            return false;
+        }
+
+        key = TxId.From(max);
+        return true;
+
+    }
+
     public void Dispose()
     {
     }

@@ -2,6 +2,7 @@
 using System.Threading;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.DatomStorageStructures;
 using NexusMods.EventSourcing.Storage.Nodes;
 
 namespace NexusMods.EventSourcing.Storage;
@@ -44,6 +45,13 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeReg
         };
     }
 
+    public void PutRoot(DatomStoreState state)
+    {
+        var writer = new PooledMemoryBufferWriter();
+        state.WriteTo(writer);
+        var writtenSpan = writer.GetWrittenSpan();
+        kvStore.Put(StoreKey.RootKey, writtenSpan);
+    }
 
     public IDataNode Flush(IIndexNode node)
     {
@@ -118,4 +126,34 @@ public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeReg
     {
         return TxId.From(_txLogId + 1);
     }
+
+    public bool TryGetLastTx(out TxId key)
+    {
+        return kvStore.TryGetLatestTx(out key);
+    }
+
+    public bool LoadRoot(out DatomStoreState state)
+    {
+        if (!kvStore.TryGet(StoreKey.RootKey, out var value))
+        {
+            state = default!;
+            return false;
+        }
+
+        var memory = GC.AllocateUninitializedArray<byte>(value.Length);
+        value.CopyTo(memory);
+
+        var reader = new BufferReader(memory);
+        var fourcc = reader.ReadFourCC();
+
+        if (fourcc != FourCC.DatomStoreStateRoot)
+        {
+            throw new InvalidOperationException("Root not found");
+        }
+
+        state = DatomStoreState.ReadFrom(reader, registry, this);
+        return true;
+    }
+
+
 }

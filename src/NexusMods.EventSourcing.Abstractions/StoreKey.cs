@@ -10,4 +10,8 @@ namespace NexusMods.EventSourcing.Abstractions;
 [ValueObject<ulong>]
 public readonly partial struct StoreKey
 {
+    /// <summary>
+    /// The root key, where the root of all the indexes are stored
+    /// </summary>
+    public static StoreKey RootKey => new(0);
 }

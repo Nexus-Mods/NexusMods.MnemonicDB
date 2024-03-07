@@ -37,8 +37,5 @@ public class DatomStorageTests(IServiceProvider provider) : AStorageTest(provide
         {
             await DatomStore.Transact(chunk);
         }
-
-
-
     }
 }
