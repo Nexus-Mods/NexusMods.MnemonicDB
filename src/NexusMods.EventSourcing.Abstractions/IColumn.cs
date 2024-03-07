@@ -3,6 +3,10 @@ using System.Buffers;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
+/// <summary>
+/// Generic interface for a value column.
+/// </summary>
+/// <typeparam name="T"></typeparam>
 public interface IColumn<T>
 {
     /// <summary>

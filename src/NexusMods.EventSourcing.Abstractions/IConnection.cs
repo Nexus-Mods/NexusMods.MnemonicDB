@@ -21,13 +21,6 @@ public interface IConnection
     public TxId TxId { get; }
 
     /// <summary>
-    /// Commits a transaction to the database, and returns the result.
-    /// </summary>
-    /// <param name="datoms"></param>
-    /// <returns></returns>
-    public Task<ICommitResult> Transact(IEnumerable<Datom> datoms);
-
-    /// <summary>
     /// Starts a new transaction.
     /// </summary>
     /// <returns></returns>
@@ -44,5 +37,4 @@ public interface IConnection
     /// its state. It will update via INotifyPropertyChanged.
     /// </summary>
     public T GetActive<T>(EntityId id) where T : IActiveReadModel;
-
 }

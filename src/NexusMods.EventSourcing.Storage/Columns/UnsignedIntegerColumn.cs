@@ -119,8 +119,7 @@ where T : unmanaged
         return GetEnumerator();
     }
 
-    public static UnsignedIntegerColumn<T> UnpackFrom<T>(IColumn<T> fromValues)
-        where T : unmanaged
+    public static UnsignedIntegerColumn<T> UnpackFrom(IColumn<T> fromValues)
     {
         return new UnsignedIntegerColumn<T>(fromValues);
     }

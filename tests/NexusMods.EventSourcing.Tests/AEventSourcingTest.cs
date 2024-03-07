@@ -28,7 +28,7 @@ public class AEventSourcingTest : IAsyncLifetime
 
         _registry = new AttributeRegistry(_valueSerializers, _attributes);
         _kvStore = new InMemoryKvStore();
-        _nodeStore = new NodeStore(provider.GetRequiredService<ILogger<NodeStore>>(), _kvStore, _registry);
+        _nodeStore = new NodeStore(_kvStore, _registry);
 
         Config = new DatomStoreSettings();
         _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _nodeStore, _registry, Config);
@@ -57,8 +57,9 @@ public class AEventSourcingTest : IAsyncLifetime
         Connection = await Connection.Start(_store, _valueSerializers, _attributes);
     }
 
-    public async Task DisposeAsync()
+    public Task DisposeAsync()
     {
         _store.Dispose();
+        return Task.CompletedTask;
     }
 }

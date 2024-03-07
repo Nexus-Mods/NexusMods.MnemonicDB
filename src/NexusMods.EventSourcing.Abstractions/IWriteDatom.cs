@@ -10,6 +10,6 @@ public interface IWriteDatom
     /// Appends the datom to the given node, using the given registry to resolve the attribute
     /// </summary>
     /// <param name="registry"></param>
-    /// <param name="chunk"></param>
-    void Append(IAttributeRegistry registry, IAppendableChunk chunk);
+    /// <param name="node"></param>
+    void Append(IAttributeRegistry registry, IAppendableNode node);
 }

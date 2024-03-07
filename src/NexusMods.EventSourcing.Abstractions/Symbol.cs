@@ -19,6 +19,9 @@ public class Symbol
         Namespace = nsAndName.Namespace;
     }
 
+    /// <summary>
+    /// Placeholder for unknown symbols
+    /// </summary>
     public static Symbol Unknown => Intern("<unknown>");
 
     private static readonly ConcurrentDictionary<(string Namespace, string Name), Symbol> InternedSymbols = new();
@@ -26,8 +29,6 @@ public class Symbol
     /// <summary>
     /// Construct a new symbol, or return an existing one that matches the given name
     /// </summary>
-    /// <param name="nsAndName"></param>
-    /// <returns></returns>
     public static Symbol Intern(string fullName)
     {
         var nsAndName = Sanitize(fullName);
@@ -41,8 +42,6 @@ public class Symbol
     /// <summary>
     /// Construct a new symbol, or return an existing one that matches the given name
     /// </summary>
-    /// <param name="nsAndName"></param>
-    /// <returns></returns>
     public static Symbol InternPreSanitized(string fullName)
     {
         var split = fullName.Split("/");
@@ -54,7 +53,7 @@ public class Symbol
         return !InternedSymbols.TryAdd(nsAndName, symbol) ? InternedSymbols[nsAndName] : symbol;
     }
 
-    public static (string Namespace, string Name) Sanitize(string nsAndName)
+    private static (string Namespace, string Name) Sanitize(string nsAndName)
     {
         nsAndName = nsAndName.Replace("+", ".");
         var lastDot = nsAndName.LastIndexOf('.');

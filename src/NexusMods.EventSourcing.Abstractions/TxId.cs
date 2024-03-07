@@ -24,5 +24,8 @@ public readonly partial struct TxId
     /// </summary>
     public static TxId MinValueAfterBootstrap = From(Ids.MakeId(Ids.Partition.Tx, 1));
 
-    public static TxId Tmp => TxId.From(Ids.MakeId(Ids.Partition.Tmp, 0));
+    /// <summary>
+    /// The temporary transaction id, used for referencing the transaction entity
+    /// </summary>
+    public static TxId Tmp => From(Ids.MakeId(Ids.Partition.Tmp, 0));
 }

@@ -38,6 +38,9 @@ public class Connection : IConnection
         return conn;
     }
 
+    /// <summary>
+    /// Creates and starts a new connection, some setup and reflection is done here so it is async
+    /// </summary>
     public static async Task<Connection> Start(IServiceProvider provider)
     {
         var db = provider.GetRequiredService<IDatomStore>();
@@ -117,11 +120,6 @@ public class Connection : IConnection
         return result;
     }
 
-    public Task<ICommitResult> Transact(IEnumerable<Datom> datoms)
-    {
-        throw new NotImplementedException();
-    }
-
     /// <inheritdoc />
     public ITransaction BeginTransaction()
     {
@@ -131,6 +129,7 @@ public class Connection : IConnection
     /// <inheritdoc />
     public IObservable<(TxId TxId, IDataNode Datoms)> Commits => _store.TxLog;
 
+    /// <inheritdoc />
     public T GetActive<T>(EntityId id) where T : IActiveReadModel
     {
         var db = Db;

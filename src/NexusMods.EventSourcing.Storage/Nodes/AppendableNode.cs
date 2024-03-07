@@ -13,7 +13,7 @@ namespace NexusMods.EventSourcing.Storage.Nodes;
 /// A node that is appendable and not yet frozen. Can be sorted
 /// after insertion.
 /// </summary>
-public class AppendableNode : ADataNode, IAppendableChunk
+public class AppendableNode : ADataNode, IAppendableNode
 {
     private readonly UnsignedIntegerColumn<EntityId> _entityIds;
     private readonly UnsignedIntegerColumn<AttributeId> _attributeIds;

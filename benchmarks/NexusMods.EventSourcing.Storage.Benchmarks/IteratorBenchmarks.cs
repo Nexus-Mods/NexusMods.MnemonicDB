@@ -9,7 +9,6 @@ namespace NexusMods.EventSourcing.Storage.Benchmarks;
 
 public class IteratorBenchmarks : AStorageBenchmark
 {
-    private List<AppendableNode> _chunks = null!;
     private IDatomComparator _sorter = null!;
     private AppendableIndexNode _index = null!;
 

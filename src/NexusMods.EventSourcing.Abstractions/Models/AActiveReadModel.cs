@@ -15,6 +15,11 @@ where TOuter : AActiveReadModel<TOuter>, IActiveReadModel
 {
     private IDb _basisDb = null!;
 
+    /// <summary>
+    /// Base constructor for an active read model.
+    /// </summary>
+    /// <param name="basisDb"></param>
+    /// <param name="id"></param>
     protected AActiveReadModel(IDb basisDb, EntityId id)
     {
         Id = id;
@@ -22,11 +27,17 @@ where TOuter : AActiveReadModel<TOuter>, IActiveReadModel
         Attach((TOuter)this, basisDb.Connection);
     }
 
-    private class Box<T>()
+    private class Box<T>
     {
         public T? Value { get; set; }
     }
 
+    /// <summary>
+    /// Attaches the active read model to the given connection, once the last reference to the model is gone,
+    /// the subscription is disposed.
+    /// </summary>
+    /// <param name="model"></param>
+    /// <param name="connection"></param>
     public static void Attach(TOuter model, IConnection connection)
     {
         var weakRef = new WeakReference<TOuter>(model);
@@ -74,6 +85,7 @@ where TOuter : AActiveReadModel<TOuter>, IActiveReadModel
     /// </summary>
     public EntityId Id { get; set; }
 
+    /// <inheritdoc />
     public event PropertyChangedEventHandler? PropertyChanged;
 
     protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)

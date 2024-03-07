@@ -7,10 +7,20 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// </summary>
 public interface IKvStore : IDisposable
 {
+    /// <summary>
+    /// Puts the value into the store with the given key.
+    /// </summary>
     public void Put(StoreKey key, ReadOnlySpan<byte> value);
 
+    /// <summary>
+    /// Tried to get the value from the store with the given key.
+    /// </summary>
     public bool TryGet(StoreKey key, out ReadOnlySpan<byte> value);
 
+    /// <summary>
+    /// Deletes the value from the store with the given key.
+    /// </summary>
+    /// <param name="key"></param>
     public void Delete(StoreKey key);
 
     /// <summary>

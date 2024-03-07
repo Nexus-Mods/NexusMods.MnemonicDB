@@ -37,7 +37,7 @@ public abstract class AStorageTest : IAsyncLifetime
             _kvStore = new InMemoryKvStore();
         }
 
-        NodeStore = new NodeStore(provider.GetRequiredService<ILogger<NodeStore>>(), _kvStore, _registry);
+        NodeStore = new NodeStore(_kvStore, _registry);
         DatomStoreSettings = new();
         DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), NodeStore, _registry, DatomStoreSettings);
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();

@@ -14,7 +14,7 @@
       <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
       <PackageReference Include="Reloaded.Memory" Version="9.3.2" />
       <PackageReference Include="System.Threading.Channels" Version="8.0.0" />
-      <PackageReference Include="TransparentValueObjects" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
+      <PackageReference Include="TransparentValueObjects" Version="1.0.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
     </ItemGroup>
 
     <ItemGroup>

@@ -94,31 +94,37 @@ where TAttribute : IAttribute<TValueType>
         };
     }
 
-    public static IReadDatom Datom(EntityId id, TxId tx, TValueType valueType)
-    {
-        return new ReadDatom
-        {
-            E = id,
-            V = valueType,
-            T = tx,
-            Flags = DatomFlags.Added
-        };
-    }
 
     /// <summary>
     /// Typed datom for this attribute
     /// </summary>
     public readonly record struct WriteDatom : IWriteDatom
     {
+        /// <summary>
+        /// The entity id for this datom
+        /// </summary>
         public required EntityId E { get; init; }
+
+        /// <summary>
+        /// The value for this datom
+        /// </summary>
         public required TValueType V { get; init; }
+
+        /// <summary>
+        /// The flags for this datom
+        /// </summary>
         public DatomFlags Flags => DatomFlags.Added;
 
-        public void Append(IAttributeRegistry registry, IAppendableChunk chunk)
+        /// <summary>
+        /// Appends this datom to the given node
+        /// </summary>
+        public void Append(IAttributeRegistry registry, IAppendableNode node)
         {
-            registry.Append<TAttribute, TValueType>(chunk, E, V, TxId.Tmp, Flags);
+            registry.Append<TAttribute, TValueType>(node, E, V, TxId.Tmp, Flags);
         }
 
+
+        /// <inheritdoc />
         public override string ToString()
         {
             return $"({E}, {typeof(TAttribute).Name}, {V})";
@@ -130,17 +136,36 @@ where TAttribute : IAttribute<TValueType>
     /// </summary>
     public readonly record struct ReadDatom : IReadDatom
     {
+        /// <summary>
+        /// The entity id for this datom
+        /// </summary>
         public required EntityId E { get; init; }
+
+        /// <summary>
+        /// The value for this datom
+        /// </summary>
         public required TValueType V { get; init; }
 
+        /// <summary>
+        /// The transaction id for this datom
+        /// </summary>
         public required TxId T { get; init; }
+
+        /// <summary>
+        /// The flags for this datom
+        /// </summary>
         public DatomFlags Flags { get; init; }
+
+        /// <inheritdoc />
         public override string ToString()
         {
             return $"({E}, {typeof(TAttribute).Name}, {V}, {T}, {Flags})";
         }
 
+        /// <inheritdoc />
         public Type AttributeType => typeof(TAttribute);
+
+        /// <inheritdoc />
         public Type ValueType => typeof(TValueType);
     }
 

@@ -137,7 +137,7 @@ public class AttributeRegistry : IAttributeRegistry
         return type.Compare(a, b);
     }
 
-    public void Append<TAttribute, TValue>(IAppendableChunk chunk, EntityId e, TValue value, TxId t, DatomFlags f) where TAttribute : IAttribute<TValue>
+    public void Append<TAttribute, TValue>(IAppendableNode node, EntityId e, TValue value, TxId t, DatomFlags f) where TAttribute : IAttribute<TValue>
     {
         var serializer = (IValueSerializer<TValue>)_valueSerializersByNativeType[typeof(TValue)];
 
@@ -145,7 +145,7 @@ public class AttributeRegistry : IAttributeRegistry
             throw new InvalidOperationException($"No attribute definition found for type {typeof(TAttribute)}, did you forget to register it in the DI container?");
 
         var dbAttr = _dbAttributesByUniqueId[attr.Id];
-        chunk.Append(e, dbAttr.AttrEntityId, t, f, serializer, value);
+        node.Append(e, dbAttr.AttrEntityId, t, f, serializer, value);
     }
 
     public IReadDatom Resolve(Datom datom)

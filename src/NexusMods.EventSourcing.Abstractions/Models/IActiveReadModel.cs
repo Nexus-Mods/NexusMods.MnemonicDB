@@ -7,5 +7,8 @@ namespace NexusMods.EventSourcing.Abstractions.Models;
 /// </summary>
 public interface IActiveReadModel : INotifyPropertyChanged
 {
+    /// <summary>
+    /// The unique identifier of the entity.
+    /// </summary>
     public EntityId Id { get; }
 }

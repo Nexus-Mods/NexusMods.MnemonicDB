@@ -144,8 +144,6 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
         newLoadOut = db.Get<Loadout>(result2[newLoadOut.Id]);
 
         newLoadOut.Id.Should().NotBe(loadout.Id, "new loadout should have a different id because the connection re-detected the max EntityId");
-
-
     }
 
 }

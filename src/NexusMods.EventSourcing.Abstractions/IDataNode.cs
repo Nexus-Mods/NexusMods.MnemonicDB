@@ -1,17 +1,49 @@
 ﻿using System.Buffers;
 using System.Collections.Generic;
+// ReSharper disable InconsistentNaming
 
 namespace NexusMods.EventSourcing.Abstractions;
 
+/// <summary>
+/// Interface for a data node. These are often the leaf nodes of a B+Tree, but the index
+/// nodes also implement this interface.
+/// </summary>
 public interface IDataNode : IEnumerable<Datom>
 {
+    /// <summary>
+    /// The number of datoms in the node.
+    /// </summary>
     public int Length { get; }
+
+    /// <summary>
+    /// A column containing the entity ids for the datoms in the node.
+    /// </summary>
     public IColumn<EntityId> EntityIds { get; }
+
+    /// <summary>
+    /// A column containing the attribute ids for the datoms in the node.
+    /// </summary>
     public IColumn<AttributeId> AttributeIds { get; }
+
+    /// <summary>
+    /// A column containing the transaction ids for the datoms in the node.
+    /// </summary>
     public IColumn<TxId> TransactionIds { get; }
+
+    /// <summary>
+    /// A column containing the flags for the datoms in the node.
+    /// </summary>
     public IColumn<DatomFlags> Flags { get; }
+
+    /// <summary>
+    /// A column containing the values for the datoms in the node.
+    /// </summary>
     public IBlobColumn Values { get; }
 
+    /// <summary>
+    /// Get the datom at the given index.
+    /// </summary>
+    /// <param name="idx"></param>
     public Datom this[int idx] { get; }
 
     /// <summary>
@@ -20,9 +52,17 @@ public interface IDataNode : IEnumerable<Datom>
     /// </summary>
     public Datom LastDatom { get; }
 
+    /// <summary>
+    /// Writes the node to the given writer.
+    /// </summary>
+    /// <param name="writer"></param>
+    /// <typeparam name="TWriter"></typeparam>
     void WriteTo<TWriter>(TWriter writer)
         where TWriter : IBufferWriter<byte>;
 
+    /// <summary>
+    /// Pack this node, and write it to the given store, should return a new node that is a reference to the packed data.
+    /// </summary>
     IDataNode Flush(INodeStore store);
 
     /// <summary>

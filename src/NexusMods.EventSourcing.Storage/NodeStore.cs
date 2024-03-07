@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Threading;
-using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.DatomStorageStructures;
 using NexusMods.EventSourcing.Storage.Nodes;
 
 namespace NexusMods.EventSourcing.Storage;
 
-public class NodeStore(ILogger<NodeStore> logger, IKvStore kvStore, AttributeRegistry registry)
+public class NodeStore(IKvStore kvStore, AttributeRegistry registry)
 : INodeStore
 {
     private ulong _txLogId = Ids.MinId(Ids.Partition.TxLog);

@@ -3,6 +3,9 @@ using System.Runtime.InteropServices;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
+/// <summary>
+/// A untyped tuple of (E, A, T, F, V) values.
+/// </summary>
 public readonly struct Datom
 {
     /// <summary>
@@ -30,6 +33,9 @@ public readonly struct Datom
     /// </summary>
     public ReadOnlyMemory<byte> V { get; init; }
 
+    /// <summary>
+    /// A datom with the maximum possible values for each field.
+    /// </summary>
     public static Datom Max = new()
     {
         E = EntityId.From(ulong.MaxValue),
@@ -47,6 +53,7 @@ public readonly struct Datom
         return MemoryMarshal.Read<T>(V.Span);
     }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         return $"({E}, {A}, {T}, {F}, {Convert.ToHexString(V.Span)}))";
