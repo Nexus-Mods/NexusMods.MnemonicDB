@@ -125,6 +125,8 @@ public class DatomStore : IDatomStore
                 _logger.LogInformation("Replayed {TxCount} transactions in {Elapsed}ms new in-memory size is {Datoms} datoms", replayed, sw.ElapsedMilliseconds, _indexes.InMemorySize);
             }
 
+            _nextEntId = GetLastEntityId(_indexes);
+
 
         }
         catch (Exception ex)
@@ -132,6 +134,60 @@ public class DatomStore : IDatomStore
             _logger.LogError(ex, "Failed to bootstrap the datom store");
         }
 
+    }
+
+    private EntityId GetLastEntityId(DatomStoreState indexes)
+    {
+        var toFind = new Datom()
+        {
+            E = EntityId.From(Ids.MakeId(Ids.Partition.Entity, ulong.MaxValue)),
+            A = AttributeId.From(ulong.MinValue),
+            T = TxId.MaxValue,
+            F = DatomFlags.Added,
+            V = Array.Empty<byte>()
+        };
+
+        ulong startValue = 0;
+
+        var startInMemory = indexes.EAVT.InMemory.FindEATV(0, indexes.EAVT.InMemory.Length, toFind, _registry);
+        if (startInMemory == indexes.EAVT.InMemory.Length)
+        {
+            startValue = 0;
+        }
+        else
+        {
+            startValue = indexes.EAVT.InMemory[startInMemory].E.Value;
+        }
+
+        var startHistory = indexes.EAVT.History.FindEATV(0, indexes.EAVT.History.Length, toFind, _registry);
+        if (startHistory == indexes.EAVT.History.Length)
+        {
+            startValue = 0;
+        }
+        else
+        {
+            var historyValue = indexes.EAVT.History[startHistory].E.Value;
+            if (historyValue > startValue)
+            {
+                startValue = historyValue;
+            }
+        }
+
+        if (startValue == 0)
+            return EntityId.From(Ids.MakeId(Ids.Partition.Entity, 0));
+
+
+        var entityInMemory = indexes.EAVT.InMemory[startInMemory].E;
+        var entityHistory = indexes.EAVT.History[startHistory].E;
+
+        var max =  EntityId.From(Math.Max(entityHistory.Value, entityInMemory.Value));
+
+        if (!Ids.IsPartition(max.Value, Ids.Partition.Entity))
+        {
+            throw new InvalidOperationException("Invalid max id");
+        }
+
+        return max;
     }
 
     public TxId AsOfTxId => _indexes.AsOfTxId;
@@ -169,8 +225,8 @@ public class DatomStore : IDatomStore
     public IEnumerable<Datom> Where<TAttr>(TxId txId) where TAttr : IAttribute
     {
         var attr = _registry.GetAttributeId<TAttr>();
-
         var index = _indexes.AEVT;
+
 
         var startDatom = new Datom
         {
@@ -179,12 +235,14 @@ public class DatomStore : IDatomStore
             T = TxId.MaxValue,
             F = DatomFlags.Added,
         };
-        var offset = BinarySearch.SeekEqualOrLess(index.InMemory, index.Comparator, 0, index.InMemory.Length, startDatom);
+
+        var inMemory = WhereInner(index.InMemory, startDatom);
+        var history = WhereInner(index.History, startDatom);
+        var merged = history.Merge(inMemory, _indexes.AEVT.Comparator);
 
         var lastEntity = EntityId.From(0);
-        for (var idx = offset; idx < index.InMemory.Length; idx++)
+        foreach (var datom in merged)
         {
-            var datom = index.InMemory[idx];
             if (datom.A != attr) break;
             if (datom.T > txId) continue;
 
@@ -193,6 +251,15 @@ public class DatomStore : IDatomStore
                 lastEntity = datom.E;
                 yield return datom;
             }
+        }
+    }
+
+    private IEnumerable<Datom> WhereInner(IDataNode node, Datom startDatom)
+    {
+        var offset = node.FindAETV(0, node.Length, startDatom, _registry);
+        for (var idx = offset; idx < node.Length; idx++)
+        {
+            yield return node[idx];
         }
     }
 
