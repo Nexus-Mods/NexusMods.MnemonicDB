@@ -35,6 +35,7 @@ public interface IReadable<T> : IReadable where T : struct
     {
         var appendable = Appendable<T>.Create(Length);
         CopyTo(0, appendable.GetWritableSpan(Length));
+        appendable.SetLength(Length);
         return appendable;
     }
 }

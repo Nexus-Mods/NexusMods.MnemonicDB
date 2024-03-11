@@ -30,4 +30,10 @@ public interface IAppendable<T>
     /// Gets a writeable span of the specified size and increases the length of the column by the size.
     /// </summary>
     public Span<T> GetWritableSpan(int size);
+
+    /// <summary>
+    /// Sets the length of the column, any values in the expanded area are undefined.
+    /// </summary>
+    /// <param name="length"></param>
+    public void SetLength(int length);
 }

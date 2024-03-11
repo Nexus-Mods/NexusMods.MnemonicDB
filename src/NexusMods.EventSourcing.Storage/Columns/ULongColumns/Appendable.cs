@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 
-public partial class Appendable<T> : IDisposable, IAppendable<T>, IReadable<T>, IUnpacked<T>
+public partial class Appendable<T> : IDisposable, IAppendable<T>, IReadable<T>, ICanBePacked<T>
     where T : struct
 {
     private const int DefaultSize = 16;
@@ -66,6 +66,12 @@ public partial class Appendable<T> : IDisposable, IAppendable<T>, IReadable<T>, 
     {
         Ensure(size);
         return CastedSpan.Slice(_length, size);
+    }
+
+    public void SetLength(int length)
+    {
+        Ensure(_length - length);
+        _length = length;
     }
 
     public int Length => _length;

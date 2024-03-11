@@ -7,7 +7,7 @@ using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Benchmarks;
 using NexusMods.EventSourcing.Storage.Nodes;
 
-BenchmarkRunner.Run<IndexBenchmarks>();
+BenchmarkRunner.Run<BitPackingBenchmarks>();
 
 
 //

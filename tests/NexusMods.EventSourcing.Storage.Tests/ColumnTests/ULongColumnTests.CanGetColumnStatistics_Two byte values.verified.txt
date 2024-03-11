@@ -1,0 +1,8 @@
+﻿{
+  MinValue: 1,
+  MaxValue: 1024,
+  Count: 2,
+  ValueBits: 10,
+  TotalBytes: 2,
+  MemorySize: 36
+}

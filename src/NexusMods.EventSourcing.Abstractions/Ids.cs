@@ -3,7 +3,7 @@
 namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
-/// A lot of ids in this system are 64 bit unsigned integers. This class provides a way to partition those ids
+/// A lot of ids in this system are 64bit unsigned integers. This class provides a way to partition those ids
 /// into different categories. 64 bits is a lot of space, so we can use the high 8 bits to store the partition,
 /// and the low 56 bits to store the id. This allows us to have 256 different partitions, each with way more ids
 /// than we would ever need.

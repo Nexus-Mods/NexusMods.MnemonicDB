@@ -18,6 +18,10 @@
     </ItemGroup>
 
     <ItemGroup>
+        <InternalsVisibleTo Include="NexusMods.EventSourcing.Storage.Tests" />
+    </ItemGroup>
+
+    <ItemGroup>
       <ProjectReference Include="..\NexusMods.EventSourcing.Abstractions\NexusMods.EventSourcing.Abstractions.csproj" />
     </ItemGroup>
 
