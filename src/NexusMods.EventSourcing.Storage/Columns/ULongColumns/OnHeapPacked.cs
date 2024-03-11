@@ -16,7 +16,7 @@ public sealed class OnHeapPacked<T>(IMemoryOwner<byte> memory) : IPacked<T> wher
 
     public void CopyTo(int offset, Span<ulong> dest)
     {
-        LowLevel.CopyTo(offset, dest);
+        LowLevel.CopyTo(Span, offset, dest);
     }
 
     public T this[int idx] => Unsafe.BitCast<ulong, T>(LowLevel.Get(memory.Memory.Span, idx));

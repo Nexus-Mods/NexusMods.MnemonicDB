@@ -1,6 +1,5 @@
 ﻿{
   Header: {
-    Length: 2,
     ValueBytes: 1,
     PartitionBits: 1
   },

@@ -55,4 +55,17 @@ public unsafe struct LowLevelPacked
         var partition = (valAndPartition & ((1UL << PartitionBits) - 1)) + PartitionOffset;
         return (partition << (8 * 7)) | value;
     }
+
+    public void CopyTo(ReadOnlySpan<byte> src, int offset, Span<ulong> dest)
+    {
+
+        for (var idx = 0; idx < dest.Length; idx += 1)
+        {
+            var span = src.SliceFast((idx + offset) * ValueBytes);
+            var valAndPartition = MemoryMarshal.Read<ulong>(span) & ((1UL << (ValueBytes * 8)) - 1);
+            var value = (valAndPartition >> PartitionBits) + ValueOffset;
+            var partition = (valAndPartition & ((1UL << PartitionBits) - 1)) + PartitionOffset;
+            dest[idx] = (partition << (8 * 7)) | value;
+        }
+    }
 }

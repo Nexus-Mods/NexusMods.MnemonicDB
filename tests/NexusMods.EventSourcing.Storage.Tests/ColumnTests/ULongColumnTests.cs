@@ -89,8 +89,7 @@ public class ULongColumnTests
             {
                 Header = casted.LowLevel.Packed,
                 Values = values.ToArray()
-            })
-            .UseTextForParameters(name);
+            }).UseTextForParameters(name);
     }
 
 

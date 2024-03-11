@@ -49,6 +49,15 @@ public unsafe struct LowLevelHeader
         LowLevelType.Packed => data.SliceFast(HeaderSize())
     };
 
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ReadOnlySpan<byte> DataSpan(ReadOnlySpan<byte> data) => Type switch
+    {
+        LowLevelType.Unpacked => data.SliceFast(HeaderSize()),
+        LowLevelType.Constant => data.SliceFast(HeaderSize()),
+        LowLevelType.Packed => data.SliceFast(HeaderSize())
+    };
+
     public ulong Get(ReadOnlySpan<byte> span, int idx)
     {
         return Type switch
@@ -59,13 +68,21 @@ public unsafe struct LowLevelHeader
         };
     }
 
-    public void CopyTo(int offset, Span<ulong> dest)
+    public void CopyTo(ReadOnlySpan<byte> src, int offset, Span<ulong> dest)
     {
-        return Type switch
+        switch (Type)
         {
-            LowLevelType.Unpacked => Unpacked.CopyTo(offset, dest),
-            LowLevelType.Constant => Constant.CopyTo(offset, dest),
-            LowLevelType.Packed => Packed.CopyTo(offset, dest)
-        };
+            case LowLevelType.Unpacked:
+                Unpacked.CopyTo(offset, dest);
+                return;
+            case LowLevelType.Constant:
+                Constant.CopyTo(offset, dest);
+                return;
+            case LowLevelType.Packed:
+                Packed.CopyTo(DataSpan(src), offset, dest);
+                return;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(Type));
+        }
     }
 }
