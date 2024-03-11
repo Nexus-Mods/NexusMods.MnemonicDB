@@ -1,8 +1,8 @@
 ﻿namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 
-public enum PackedType : int
+public enum LowLevelType : ushort
 {
     Unpacked,
     Constant,
-    MinMax,
+    Packed,
 }

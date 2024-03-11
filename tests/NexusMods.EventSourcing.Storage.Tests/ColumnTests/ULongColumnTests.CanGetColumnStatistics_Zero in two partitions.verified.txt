@@ -3,5 +3,5 @@
   Count: 2,
   PartitionBits: 1,
   TotalBytes: 1,
-  MemorySize: 34
+  MemorySize: 26
 }

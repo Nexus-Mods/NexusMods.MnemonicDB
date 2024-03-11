@@ -1,9 +1,9 @@
 ﻿{
   Header: {
-    ValueBytes: 5
+    ValueBytes: 2
   },
   Values: [
     0,
-    549755813888
+    32768
   ]
 }

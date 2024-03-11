@@ -73,15 +73,21 @@ public class ULongColumnTests
 
         var values = new List<ulong>();
 
-        var mask = (1UL << (header.ValueBytes * 8)) - 1;
+        casted.LowLevel.Type.Should().Be(LowLevelType.Packed, "the column should be packed.");
+
+        var packedHeader = casted.LowLevel.Packed;
+
+        var mask = (1UL << (packedHeader.ValueBytes * 8)) - 1;
+        var dataSpan = casted.LowLevel.DataSpan(casted.Span);
+
         for (var i = 0; i < header.Length; i++)
         {
-            values.Add(MemoryMarshal.Read<ulong>(casted.Data.SliceFast(i * header.ValueBytes)) & mask);
+            values.Add(MemoryMarshal.Read<ulong>(dataSpan.SliceFast(i * packedHeader.ValueBytes)) & mask);
         }
 
         return Verify(new
             {
-                Header = casted.LowLevel,
+                Header = casted.LowLevel.Packed,
                 Values = values.ToArray()
             })
             .UseTextForParameters(name);

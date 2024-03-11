@@ -26,11 +26,6 @@ namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 public unsafe struct LowLevelPacked
 {
     /// <summary>
-    /// Number of rows in the column.
-    /// </summary>
-    public int Length;
-
-    /// <summary>
     /// The number added to every value in the column.
     /// </summary>
     public ulong ValueOffset;

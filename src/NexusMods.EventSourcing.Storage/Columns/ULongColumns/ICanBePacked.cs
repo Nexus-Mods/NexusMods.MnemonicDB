@@ -28,34 +28,33 @@ public interface ICanBePacked<T> : IUnpacked<T>
         var data = MemoryPool<byte>.Shared.Rent(stats.MemorySize);
         var srcSpan = MemoryMarshal.Cast<T, ulong>(Span);
 
-        var header = MemoryMarshal.Cast<byte, LowLevelPacked>(data.Memory.Span);
+        var header = MemoryMarshal.Cast<byte, LowLevelHeader>(data.Memory.Span);
+        header[0].Type = LowLevelType.Packed;
         header[0].Length = stats.Count;
-        header[0].ValueOffset = stats.MinValue;
-        header[0].PartitionOffset = stats.MinPartition;
-        header[0].ValueBytes = stats.TotalBytes;
-        header[0].PartitionBits = stats.PartitionBits;
+        header[0].Packed.ValueOffset = stats.MinValue;
+        header[0].Packed.PartitionOffset = stats.MinPartition;
+        header[0].Packed.ValueBytes = stats.TotalBytes;
+        header[0].Packed.PartitionBits = stats.PartitionBits;
 
-        unsafe
+        var destSpan = header[0].DataSpan(data.Memory.Span);
+
+        const ulong partitionMask = 0xFF00000000000000UL;
+        const ulong valueMask = 0x00FFFFFFFFFFFFFFUL;
+
+        var valueOffset = stats.MinValue;
+        var partitionOffset = stats.MinPartition;
+
+        for (var idx = 0; idx < srcSpan.Length; idx += 1)
         {
-            var destSpan = data.Memory.Span.SliceFast(sizeof(LowLevelPacked));
+            var srcValue = srcSpan[idx];
+            var partition = (byte)(srcValue >> (8 * 7)) - partitionOffset;
+            var value = (srcValue & valueMask) - valueOffset;
 
-            const ulong partitionMask = 0xFF00000000000000UL;
-            const ulong valueMask = 0x00FFFFFFFFFFFFFFUL;
-
-            var valueOffset = stats.MinValue;
-            var partitionOffset = stats.MinPartition;
-
-            for (var idx = 0; idx < srcSpan.Length; idx += 1)
-            {
-                var srcValue = srcSpan[idx];
-                var partition = (byte)(srcValue >> (8 * 7)) - partitionOffset;
-                var value = (srcValue & valueMask) - valueOffset;
-
-                var packedValue = value << stats.PartitionBits | (byte)partition;
-                var slice = destSpan.SliceFast(stats.TotalBytes * idx);
-                BinaryPrimitives.WriteUInt64LittleEndian(slice, packedValue);
-            }
+            var packedValue = value << stats.PartitionBits | (byte)partition;
+            var slice = destSpan.SliceFast(stats.TotalBytes * idx);
+            BinaryPrimitives.WriteUInt64LittleEndian(slice, packedValue);
         }
+
 
         return new OnHeapPacked<T>(data);
     }

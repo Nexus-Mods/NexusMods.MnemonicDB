@@ -3,5 +3,5 @@
   Count: 2,
   ValueBits: 56,
   TotalBytes: 7,
-  MemorySize: 46
+  MemorySize: 38
 }

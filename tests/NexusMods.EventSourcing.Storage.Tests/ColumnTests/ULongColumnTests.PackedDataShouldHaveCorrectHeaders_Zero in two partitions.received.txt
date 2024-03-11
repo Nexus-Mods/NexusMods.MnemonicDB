@@ -1,10 +1,10 @@
 ﻿{
   Header: {
-    Length: 2,
-    ValueBytes: 3
+    ValueBytes: 1,
+    PartitionBits: 1
   },
   Values: [
     0,
-    8388608
+    1
   ]
 }

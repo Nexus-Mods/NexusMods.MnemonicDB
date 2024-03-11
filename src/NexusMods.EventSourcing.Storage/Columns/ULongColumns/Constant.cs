@@ -28,4 +28,9 @@ public class Constant<T> : IPacked<T>
     {
         dest.Slice(0, _length).Fill(Unsafe.BitCast<ulong, T>(_value));
     }
+
+    public void Dispose()
+    {
+        // TODO release managed resources here
+    }
 }

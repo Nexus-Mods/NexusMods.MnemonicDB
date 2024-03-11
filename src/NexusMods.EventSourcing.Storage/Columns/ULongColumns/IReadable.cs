@@ -5,7 +5,7 @@ namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 /// <summary>
 /// A readable column of ulong values.
 /// </summary>
-public interface IReadable
+public interface IReadable : IDisposable
 {
     /// <summary>
     /// Gets the length of the column in rows.
