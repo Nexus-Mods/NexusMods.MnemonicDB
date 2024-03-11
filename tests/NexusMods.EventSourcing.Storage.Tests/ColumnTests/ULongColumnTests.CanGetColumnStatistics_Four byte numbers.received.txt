@@ -1,0 +1,7 @@
+﻿{
+  MaxValue: 35,
+  Count: 2,
+  ValueBits: 6,
+  TotalBytes: 1,
+  MemorySize: 34
+}

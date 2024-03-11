@@ -1,0 +1,10 @@
+﻿{
+  Header: {
+    Length: 2,
+    ValueBytes: 4
+  },
+  Values: [
+    0,
+    2147483648
+  ]
+}

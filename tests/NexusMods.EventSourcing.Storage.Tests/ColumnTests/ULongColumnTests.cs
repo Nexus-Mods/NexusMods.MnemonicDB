@@ -72,25 +72,13 @@ public class ULongColumnTests
         var header = casted.LowLevel;
 
         var values = new List<ulong>();
-        switch (header.ValueBytes)
+
+        var mask = (1UL << (header.ValueBytes * 8)) - 1;
+        for (var i = 0; i < header.Length; i++)
         {
-            case 1:
-                for (var i = 0; i < header.Length; i++)
-                {
-                    values.Add(casted.Data[i]);
-                }
-                break;
-            case 2:
-                for (var i = 0; i < header.Length; i++)
-                {
-                    values.Add(MemoryMarshal.Read<ushort>(casted.Data.SliceFast(i * 2)));
-                }
-                break;
-
-            default:
-                throw new NotSupportedException();
-
+            values.Add(MemoryMarshal.Read<ulong>(casted.Data.SliceFast(i * header.ValueBytes)) & mask);
         }
+
         return Verify(new
             {
                 Header = casted.LowLevel,
@@ -115,13 +103,18 @@ public class ULongColumnTests
             ("One value", [42]),
             ("One value two entries", [42, 42]),
             ("Two values", [42, 43]),
-            ("Two byte values", [1, 1024])
-
+            ("Zero in two partitions", [Ids.MakeId(Ids.Partition.Attribute, 0), Ids.MakeId(Ids.Partition.Tx, 0)]),
+            ("Same value two partitions", [Ids.MakeId(Ids.Partition.Attribute, 1), Ids.MakeId(Ids.Partition.Entity, 1)]),
         };
 
         foreach (var (name, values) in data)
         {
             yield return [name, values];
+        }
+
+        foreach (var bytes in (int[])[1, 2, 3, 4, 5, 6, 7])
+        {
+            yield return [bytes + " byte values", new ulong[] { 0, 1UL << (8 * bytes) - 1}];
         }
     }
 

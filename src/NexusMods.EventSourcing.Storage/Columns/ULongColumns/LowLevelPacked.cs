@@ -56,8 +56,8 @@ public unsafe struct LowLevelPacked
 
         var offset = idx * ValueBytes;
         var valAndPartition = MemoryMarshal.Read<ulong>(span.SliceFast(offset, 8)) & bytesMask;
-        var partition = (valAndPartition >> (ValueBytes * 8 - PartitionBits)) + PartitionOffset << (8 * 7);
-        var value = (valAndPartition & 0x00FFFFFFFFFFFFFFUL) + ValueOffset;
-        return partition | value;
+        var value = (valAndPartition >> PartitionBits) + ValueOffset;
+        var partition = (valAndPartition & ((1UL << PartitionBits) - 1)) + PartitionOffset;
+        return (partition << (8 * 7)) | value;
     }
 }
