@@ -11,8 +11,8 @@ public unsafe struct LowLevelUnpacked
         return MemoryMarshal.Read<ulong>(span.SliceFast(idx * sizeof(ulong), sizeof(ulong)));
     }
 
-    public void CopyTo(int offset, Span<ulong> dest)
+    public void CopyTo(ReadOnlySpan<byte> src, int offset, Span<ulong> dest)
     {
-        throw new NotImplementedException();
+        src.Cast<byte, ulong>().SliceFast(offset, dest.Length).CopyTo(dest);
     }
 }

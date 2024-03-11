@@ -30,9 +30,9 @@ public unsafe struct LowLevelHeader
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int HeaderSize() => Type switch
     {
-        LowLevelType.Unpacked => 4 + sizeof(LowLevelUnpacked),
-        LowLevelType.Constant => 4 + sizeof(LowLevelConstant),
-        LowLevelType.Packed => 4 + sizeof(LowLevelPacked),
+        LowLevelType.Unpacked => SelfHeaderSize + sizeof(LowLevelUnpacked),
+        LowLevelType.Constant => SelfHeaderSize + sizeof(LowLevelConstant),
+        LowLevelType.Packed => SelfHeaderSize + sizeof(LowLevelPacked),
         _ => sizeof(LowLevelPacked)
     };
 
@@ -63,11 +63,12 @@ public unsafe struct LowLevelHeader
 
     public ulong Get(ReadOnlySpan<byte> span, int idx)
     {
+        var dataSpan = DataSpan(span);
         return Type switch
         {
-            LowLevelType.Unpacked => Unpacked.Get(span.SliceFast(HeaderSize()), idx),
-            LowLevelType.Constant => Constant.Get(span.SliceFast(HeaderSize()), idx),
-            LowLevelType.Packed => Packed.Get(span.SliceFast(HeaderSize()), idx)
+            LowLevelType.Unpacked => Unpacked.Get(dataSpan, idx),
+            LowLevelType.Constant => Constant.Get(dataSpan, idx),
+            LowLevelType.Packed => Packed.Get(dataSpan, idx)
         };
     }
 
@@ -76,7 +77,7 @@ public unsafe struct LowLevelHeader
         switch (Type)
         {
             case LowLevelType.Unpacked:
-                Unpacked.CopyTo(offset, dest);
+                Unpacked.CopyTo(DataSpan(src), offset, dest);
                 return;
             case LowLevelType.Constant:
                 Constant.CopyTo(offset, dest);

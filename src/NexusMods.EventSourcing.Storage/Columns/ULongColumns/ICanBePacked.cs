@@ -44,7 +44,6 @@ public interface ICanBePacked<T> : IUnpacked<T>
 
                 var destSpan = casted[0].DataSpan(rented.Memory.Span);
 
-                const ulong partitionMask = 0xFF00000000000000UL;
                 const ulong valueMask = 0x00FFFFFFFFFFFFFFUL;
 
                 var valueOffset = stats.MinValue;

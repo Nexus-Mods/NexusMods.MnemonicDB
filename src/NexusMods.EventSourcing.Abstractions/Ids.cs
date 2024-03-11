@@ -88,7 +88,7 @@ public static class Ids
             3 => Partition.Tmp,
             4 => Partition.TxLog,
             5 => Partition.Index,
-            _ => throw new ArgumentOutOfRangeException(nameof(id), "Unknown partition")
+            _ => throw new ArgumentOutOfRangeException(nameof(id), "Unknown partition: " + (id >> 56))
         };
     }
 

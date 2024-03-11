@@ -111,7 +111,6 @@ public class ULongColumnTests
         a.Length.Should().Be(b.Length, "the columns should have the same length.");
         for (var i = 0; i < a.Length; i++)
         {
-            Ids.GetPartition(Unsafe.BitCast<T, ulong>(a[i])).Should().Be(Ids.GetPartition(Unsafe.BitCast<T, ulong>(b[i])), "the columns should have the same partition at index " + i);
             a[i].Should().Be(b[i], "the columns should have the same values at index " + i);
         }
     }
