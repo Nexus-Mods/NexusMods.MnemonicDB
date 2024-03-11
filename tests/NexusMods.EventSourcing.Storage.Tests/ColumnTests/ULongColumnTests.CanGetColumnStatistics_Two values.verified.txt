@@ -3,6 +3,5 @@
   MaxValue: 43,
   Count: 2,
   ValueBits: 1,
-  TotalBytes: 1,
-  MemorySize: 26
+  TotalBytes: 1
 }

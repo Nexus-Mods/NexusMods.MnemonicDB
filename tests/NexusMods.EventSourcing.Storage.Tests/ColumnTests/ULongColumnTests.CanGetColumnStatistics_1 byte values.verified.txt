@@ -2,6 +2,5 @@
   MaxValue: 128,
   Count: 2,
   ValueBits: 8,
-  TotalBytes: 1,
-  MemorySize: 26
+  TotalBytes: 1
 }

@@ -4,6 +4,5 @@
   MaxPartition: 2,
   Count: 2,
   PartitionBits: 2,
-  TotalBytes: 1,
-  MemorySize: 26
+  TotalBytes: 1
 }

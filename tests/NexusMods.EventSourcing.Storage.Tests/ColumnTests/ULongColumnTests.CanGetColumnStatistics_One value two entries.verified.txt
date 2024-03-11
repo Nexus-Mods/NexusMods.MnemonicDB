@@ -1,6 +1,5 @@
 ﻿{
   MinValue: 42,
   MaxValue: 42,
-  Count: 2,
-  MemorySize: 24
+  Count: 2
 }

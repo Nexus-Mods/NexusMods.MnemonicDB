@@ -5,8 +5,6 @@ namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 public struct LowLevelConstant
 {
     public ulong Value;
-    public int Length;
-
     public ulong Get(ReadOnlySpan<byte> span, int idx)
     {
         return Value;
@@ -14,6 +12,6 @@ public struct LowLevelConstant
 
     public void CopyTo(int offset, Span<ulong> dest)
     {
-        throw new NotImplementedException();
+        dest.Fill(Value);
     }
 }

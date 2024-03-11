@@ -1,13 +1,17 @@
 ﻿using System;
+using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 
-[StructLayout(LayoutKind.Explicit, Size = 8)]
+[StructLayout(LayoutKind.Explicit, Size = SelfHeaderSize)]
 public unsafe struct LowLevelHeader
 {
+    public const int LengthOffset = 2;
+    public const int SelfHeaderSize = 6;
+
     [FieldOffset(0)]
     public LowLevelType Type;
 
@@ -48,7 +52,6 @@ public unsafe struct LowLevelHeader
         LowLevelType.Constant => data.SliceFast(HeaderSize()),
         LowLevelType.Packed => data.SliceFast(HeaderSize())
     };
-
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ReadOnlySpan<byte> DataSpan(ReadOnlySpan<byte> data) => Type switch

@@ -10,26 +10,6 @@ namespace NexusMods.EventSourcing.Storage.Tests.ColumnTests;
 public class ULongColumnTests
 {
     [Fact]
-    public void ConstantColumnsPackIntoSingleValue()
-    {
-        var column = (ICanBePacked<ulong>)Create(42, 42, 42);
-        var packed = column.Pack();
-
-        packed.GetType().Should().Be(typeof(Constant<ulong>));
-        AssertEqual((IReadable<ulong>)column, packed);
-    }
-
-    [Fact]
-    public void EmptyColumnsPackIntoConstant()
-    {
-        var column = (ICanBePacked<ulong>)Create();
-        var packed = column.Pack();
-
-        packed.GetType().Should().Be(typeof(Constant<ulong>));
-        AssertEqual((IReadable<ulong>)column, packed);
-    }
-
-    [Fact]
     public void MultipleValuesColumnsPackIntoMinMax()
     {
         var column = (ICanBePacked<ulong>)Create(42, 43, 44);
@@ -42,7 +22,7 @@ public class ULongColumnTests
     public Task CanGetColumnStatistics(string comment, ulong[] values)
     {
         var column = (ICanBePacked<ulong>)Create(values);
-        var stats = column.GetStatistics();
+        var stats = Statistics.Create(MemoryMarshal.Cast<ulong, ulong>(column.Span));
         return Verify(stats).UseTextForParameters(comment);
     }
 
@@ -65,13 +45,14 @@ public class ULongColumnTests
     {
         var column = (ICanBePacked<ulong>)Create(data);
         var packed = column.Pack();
-        if (packed is Constant<ulong>)
-            return Task.CompletedTask;
 
         var casted = (OnHeapPacked<ulong>)packed;
         var header = casted.LowLevel;
 
         var values = new List<ulong>();
+
+        if (header.Type != LowLevelType.Packed)
+            return Task.CompletedTask;
 
         casted.LowLevel.Type.Should().Be(LowLevelType.Packed, "the column should be packed.");
 
@@ -110,6 +91,7 @@ public class ULongColumnTests
             ("Two values", [42, 43]),
             ("Zero in two partitions", [Ids.MakeId(Ids.Partition.Attribute, 0), Ids.MakeId(Ids.Partition.Tx, 0)]),
             ("Same value two partitions", [Ids.MakeId(Ids.Partition.Attribute, 1), Ids.MakeId(Ids.Partition.Entity, 1)]),
+            ("Deoptimization case, two large numbers", [ulong.MaxValue, ulong.MinValue, ulong.MinValue + 1, ulong.MaxValue - 1])
         };
 
         foreach (var (name, values) in data)

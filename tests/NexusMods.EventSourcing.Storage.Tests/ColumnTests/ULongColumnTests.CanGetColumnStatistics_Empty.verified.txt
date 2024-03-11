@@ -1,5 +1,3 @@
 ﻿{
-  ValueBits: 1,
-  TotalBytes: 9,
-  MemorySize: 24
+  ValueBits: 1
 }

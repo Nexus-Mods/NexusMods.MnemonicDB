@@ -2,6 +2,5 @@
   MaxValue: 140737488355328,
   Count: 2,
   ValueBits: 48,
-  TotalBytes: 6,
-  MemorySize: 36
+  TotalBytes: 6
 }

@@ -1,0 +1,8 @@
+﻿{
+  MaxValue: 72057594037927935,
+  MaxPartition: 255,
+  Count: 4,
+  PartitionBits: 8,
+  ValueBits: 56,
+  TotalBytes: 8
+}
