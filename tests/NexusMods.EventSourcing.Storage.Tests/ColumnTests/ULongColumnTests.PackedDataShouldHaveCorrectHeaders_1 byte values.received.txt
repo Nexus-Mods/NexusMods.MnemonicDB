@@ -1,9 +1,0 @@
-﻿{
-  Header: {
-    ValueBytes: 1
-  },
-  Values: [
-    0,
-    128
-  ]
-}
