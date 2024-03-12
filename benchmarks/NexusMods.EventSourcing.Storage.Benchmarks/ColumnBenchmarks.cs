@@ -9,21 +9,21 @@ namespace NexusMods.EventSourcing.Storage.Benchmarks;
 [MemoryDiagnoser]
 public class ColumnBenchmarks
 {
-    private readonly IReadable<ulong> _unpacked;
-    private readonly IReadable<ulong> _packed;
-    private readonly IReadable<ulong> _onHeap;
+    private readonly IReadable _unpacked;
+    private readonly IReadable _packed;
+    private readonly IReadable _onHeap;
     private readonly ulong[] _dest;
 
     public ColumnBenchmarks()
     {
-        var unpacked = Appendable<ulong>.Create(1024);
+        var unpacked = Appendable.Create(1024);
         _unpacked = unpacked;
         for (ulong i = 0; i < 1024; i++)
         {
             unpacked.Append(i);
         }
 
-        var packed = (ULongPackedColumn)((IUnpacked<ulong>)_unpacked).Pack();
+        var packed = (ULongPackedColumn)((IUnpacked)_unpacked).Pack();
         _packed = packed;
 
         var writer = new PooledMemoryBufferWriter();

@@ -13,7 +13,7 @@ public class ULongColumnTests
     [Fact]
     public void MultipleValuesColumnsPackIntoMinMax()
     {
-        var column = (IUnpacked<ulong>)Create(42, 43, 44);
+        var column = (IUnpacked)Create(42, 43, 44);
         var packed = column.Pack();
 
     }
@@ -22,7 +22,7 @@ public class ULongColumnTests
     [MethodData(nameof(TestData))]
     public Task CanGetColumnStatistics(string comment, ulong[] values)
     {
-        var column = (IUnpacked<ulong>)Create(values);
+        var column = (IUnpacked)Create(values);
         var stats = Statistics.Create(MemoryMarshal.Cast<ulong, ulong>(column.Span));
         return Verify(stats).UseTextForParameters(comment);
     }
@@ -31,17 +31,17 @@ public class ULongColumnTests
     [MethodData(nameof(TestData))]
     public void PackedDataShouldRoundTrip(string name, ulong[] values)
     {
-        var column = (IUnpacked<ulong>)Create(values);
+        var column = (IUnpacked)Create(values);
         var packed = column.Pack();
-        AssertEqual(packed, (IReadable<ulong>)column);
+        AssertEqual(packed, (IReadable)column);
 
         var unpacked = packed.Unpack();
-        AssertEqual(unpacked, (IReadable<ulong>)column);
+        AssertEqual(unpacked, (IReadable)column);
 
         var writer = new ArrayBufferWriter<byte>();
         ULongPackedColumn.Serializer.Write(writer, (ULongPackedColumn)packed);
         var unpackedUL = ULongPackedColumn.Serializer.Parse(writer.WrittenMemory);
-        AssertEqual(unpackedUL, (IReadable<ulong>)column);
+        AssertEqual(unpackedUL, (IReadable)column);
 
 
     }
@@ -50,7 +50,7 @@ public class ULongColumnTests
     [MethodData(nameof(TestData))]
     public Task PackedDataShouldHaveCorrectHeaders(string name, ulong[] data)
     {
-        var column = (IUnpacked<ulong>)Create(data);
+        var column = (IUnpacked)Create(data);
         var packed = column.Pack();
 
         var casted = (ULongPackedColumn)packed;
@@ -79,9 +79,9 @@ public class ULongColumnTests
     }
 
 
-    private Appendable<ulong> Create(params ulong[] values)
+    private Appendable Create(params ulong[] values)
     {
-        var column = Appendable<ulong>.Create(values.Length);
+        var column = Appendable.Create(values.Length);
         column.Append(values.AsSpan());
         return column;
     }
@@ -110,8 +110,7 @@ public class ULongColumnTests
         }
     }
 
-    private void AssertEqual<T>(IReadable<T> a, IReadable<T> b)
-        where T : struct
+    private void AssertEqual(IReadable a, IReadable b)
     {
         a.Length.Should().Be(b.Length, "the columns should have the same length.");
         for (var i = 0; i < a.Length; i++)

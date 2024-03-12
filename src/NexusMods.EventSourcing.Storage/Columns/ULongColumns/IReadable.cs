@@ -16,22 +16,16 @@ public interface IReadable
     /// Copies the column to the specified destination offset by the specified offset.
     /// </summary>
     public void CopyTo(int offset, Span<ulong> dest);
-}
 
-public interface IReadable<T> : IReadable where T : struct
-{
-    public T this[int idx] { get; }
-
-    public void CopyTo(int offset, Span<T> dest);
 
     /// <summary>
-    /// Expands this column into an appendable column with the same type. Think
-    /// of this as the opposite of the "pack" operation.
+    /// Get the value at the given index.
     /// </summary>
-    /// <returns></returns>
-    public Appendable<T> Unpack()
+    public ulong this[int idx] { get; }
+
+    public Appendable Unpack()
     {
-        var appendable = Appendable<T>.Create(Length);
+        var appendable = Appendable.Create(Length);
         CopyTo(0, appendable.GetWritableSpan(Length));
         appendable.SetLength(Length);
         return appendable;

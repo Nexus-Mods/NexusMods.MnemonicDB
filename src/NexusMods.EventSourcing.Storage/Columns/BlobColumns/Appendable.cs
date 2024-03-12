@@ -14,8 +14,8 @@ public class Appendable : IReadable, IUnpacked, IAppendable
     private Memory<byte> _memory;
     private ulong _currentOffset;
 
-    private readonly Appendable<ulong> _offsets;
-    private readonly Appendable<ulong> _lengths;
+    private readonly ULongColumns.Appendable _offsets;
+    private readonly ULongColumns.Appendable _lengths;
 
     public Appendable(int initialSize = 1024)
     {
@@ -23,8 +23,8 @@ public class Appendable : IReadable, IUnpacked, IAppendable
         _memory = _memoryOwner.Memory;
         _currentOffset = 0;
 
-        _offsets = ULongColumns.Appendable<ulong>.Create();
-        _lengths = ULongColumns.Appendable<ulong>.Create();
+        _offsets = ULongColumns.Appendable.Create();
+        _lengths = ULongColumns.Appendable.Create();
     }
 
     public int Count => _offsets.Length;
@@ -46,12 +46,12 @@ public class Appendable : IReadable, IUnpacked, IAppendable
     /// <summary>
     /// Span of offsets into the column for each value.
     /// </summary>
-    public IUnpacked<ulong> Offsets => _offsets;
+    public ULongColumns.IUnpacked Offsets => _offsets;
 
     /// <summary>
     /// Span of lengths for each value in the column.
     /// </summary>
-    public IUnpacked<ulong> Lengths => _lengths;
+    public ULongColumns.IUnpacked Lengths => _lengths;
 
 
     /// <summary>

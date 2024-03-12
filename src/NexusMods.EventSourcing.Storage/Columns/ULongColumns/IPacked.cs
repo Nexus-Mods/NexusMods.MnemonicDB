@@ -4,6 +4,6 @@
 /// Classes that do not exist as a contiguous block of memory, but rather as a packed representation,
 /// will implement this interface.
 /// </summary>
-public interface IPacked<T> : IReadable<T> where T : struct {
+public interface IPacked : IReadable {
 
 }

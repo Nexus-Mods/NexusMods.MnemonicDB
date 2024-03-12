@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 
@@ -10,8 +11,7 @@ namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 /// Backed by the shared memory pool
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class Appendable<T> : IDisposable, IAppendable<T>, IReadable<T>, IUnpacked<T>
-    where T : struct
+public class Appendable : IDisposable, IAppendable, IReadable, IUnpacked
 {
     private const int DefaultSize = 16;
     private IMemoryOwner<ulong> _data;
@@ -23,22 +23,23 @@ public class Appendable<T> : IDisposable, IAppendable<T>, IReadable<T>, IUnpacke
         _length = length;
     }
 
-    public static Appendable<T> Create(int initialSize = DefaultSize)
+    public static Appendable Create(int initialSize = DefaultSize)
     {
-        return new Appendable<T>(MemoryPool<ulong>.Shared.Rent(DefaultSize), 0);
+        return new Appendable(MemoryPool<ulong>.Shared.Rent(DefaultSize), 0);
     }
 
-    private Span<T> CastedSpan => MemoryMarshal.Cast<ulong, T>(_data.Memory.Span);
+    private Span<ulong> CastedSpan => _data.Memory.Span;
+
 
     public void Dispose()
     {
         _data.Dispose();
     }
 
-    public void Append(T value)
+    public void Append(ulong value)
     {
         Ensure(1);
-        CastedSpan[_length] = value;
+        _data.Memory.Span[_length] = value;
         _length++;
     }
 
@@ -52,14 +53,14 @@ public class Appendable<T> : IDisposable, IAppendable<T>, IReadable<T>, IUnpacke
 
     }
 
-    public void Append(ReadOnlySpan<T> values)
+    public void Append(ReadOnlySpan<ulong> values)
     {
         Ensure(values.Length);
         values.CopyTo(CastedSpan.Slice(_length));
         _length += values.Length;
     }
 
-    public void Append(IEnumerable<T> values)
+    public void Append(IEnumerable<ulong> values)
     {
         foreach (var value in values)
         {
@@ -67,7 +68,7 @@ public class Appendable<T> : IDisposable, IAppendable<T>, IReadable<T>, IUnpacke
         }
     }
 
-    public Span<T> GetWritableSpan(int size)
+    public Span<ulong> GetWritableSpan(int size)
     {
         Ensure(size);
         return CastedSpan.Slice(_length, size);
@@ -83,16 +84,10 @@ public class Appendable<T> : IDisposable, IAppendable<T>, IReadable<T>, IUnpacke
 
     public void CopyTo(int offset, Span<ulong> dest)
     {
-        var src = MemoryMarshal.Cast<T, ulong>(CastedSpan);
-        src.Slice(offset, dest.Length).CopyTo(dest);
-    }
-
-    public T this[int idx] => CastedSpan[idx];
-
-    public void CopyTo(int offset, Span<T> dest)
-    {
         CastedSpan.Slice(offset, dest.Length).CopyTo(dest);
     }
 
-    public ReadOnlySpan<T> Span => CastedSpan.Slice(0, _length);
+    public ulong this[int idx] => CastedSpan[idx];
+
+    public ReadOnlySpan<ulong> Span => CastedSpan.SliceFast(0, _length);
 }

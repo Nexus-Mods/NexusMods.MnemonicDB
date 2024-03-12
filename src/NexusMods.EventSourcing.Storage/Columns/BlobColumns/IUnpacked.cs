@@ -17,12 +17,12 @@ public interface IUnpacked : IReadable
     /// <summary>
     /// A span of offsets into the column for each value.
     /// </summary>
-    public IUnpacked<ulong> Offsets { get; }
+    public ULongColumns.IUnpacked Offsets { get; }
 
     /// <summary>
     /// A span of lengths for each value in the column.
     /// </summary>
-    public IUnpacked<ulong> Lengths { get; }
+    public ULongColumns.IUnpacked Lengths { get; }
 
 
     public IReadable Pack()

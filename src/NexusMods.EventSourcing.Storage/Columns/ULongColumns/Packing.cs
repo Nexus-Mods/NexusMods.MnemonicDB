@@ -12,17 +12,17 @@ namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 /// T should be a ulong sized struct, or a ulong
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public partial interface IUnpacked<T>
+public partial interface IUnpacked
 {
     /// <summary>
     /// Analyze the column and pack it into a more efficient representation, this will either be a constant
     /// value, an unpacked array, or a packed array. Packed arrays use a bit of bit twiddling to efficiently
     /// store the most common patterns of ids in the system
     /// </summary>
-    public IReadable<T> Pack()
+    public IReadable Pack()
     {
-        var stats = Statistics.Create(MemoryMarshal.Cast<T, ulong>(Span));
-        return (IReadable<T>)Pack(stats);
+        var stats = Statistics.Create(MemoryMarshal.Cast<ulong, ulong>(Span));
+        return (IReadable)Pack(stats);
     }
     private ULongPackedColumn Pack(Statistics stats)
     {
@@ -52,7 +52,7 @@ public partial interface IUnpacked<T>
                         {
                             Unused = 0
                         }),
-                    Data = new Memory<byte>(Span.CastFast<T, byte>().SliceFast(0, sizeof(ulong) * stats.Count).ToArray()),
+                    Data = new Memory<byte>(Span.CastFast<ulong, byte>().SliceFast(0, sizeof(ulong) * stats.Count).ToArray()),
                 };
             }
 
@@ -66,7 +66,7 @@ public partial interface IUnpacked<T>
             {
                 var destData = GC.AllocateUninitializedArray<byte>(stats.TotalBytes * stats.Count + 8);
 
-                var srcSpan = Span.CastFast<T, ulong>().SliceFast(0, stats.Count);
+                var srcSpan = Span.CastFast<ulong, ulong>().SliceFast(0, stats.Count);
                 var destSpan = destData.AsSpan();
 
                 const ulong valueMask = 0x00FFFFFFFFFFFFFFUL;
