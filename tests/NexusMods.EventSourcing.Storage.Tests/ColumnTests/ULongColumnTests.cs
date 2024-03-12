@@ -1,4 +1,5 @@
-﻿using System.Runtime.CompilerServices;
+﻿using System.Buffers;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Columns.ULongColumns;
@@ -38,9 +39,12 @@ public class ULongColumnTests
         var unpacked = packed.Unpack();
         AssertEqual(unpacked, (IReadable<ulong>)column);
 
+        var writer = new ArrayBufferWriter<byte>();
+        column.Pack(writer);
+
         unsafe
         {
-            fixed (byte* ptr = ((OnHeapPacked<ulong>)packed).Span)
+            fixed (byte* ptr = writer.WrittenMemory.Span)
             {
                 var offHeap = new OffHeapPacked<ulong>(ptr);
                 AssertEqual(offHeap, (IReadable<ulong>)column);

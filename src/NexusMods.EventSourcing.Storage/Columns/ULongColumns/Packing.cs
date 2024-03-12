@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Storage.Columns.ULongColumns.LowLevel;
 using Reloaded.Memory.Extensions;
@@ -26,22 +27,40 @@ public partial interface IUnpacked<T>
 
         var rented = stats.Rent();
 
-        var casted = MemoryMarshal.Cast<byte, LowLevelHeader>(rented.Memory.Span);
+        Pack(rented.Memory.Span, stats);
+
+        return new OnHeapPacked<T>(rented);
+    }
+
+    public void Pack(IBufferWriter<byte> writer)
+    {
+        var stats = Statistics.Create(MemoryMarshal.Cast<T, ulong>(Span));
+
+        var span = stats.FromWriter(writer);
+
+        Pack(span, stats);
+
+        writer.Write(span);
+    }
+
+    private void Pack(Span<byte> span, Statistics stats)
+    {
+        var casted = MemoryMarshal.Cast<byte, LowLevelHeader>(span);
 
         switch (casted[0].Type)
         {
             // Only one value appear in the column
             case LowLevelType.Constant:
                 casted[0].Constant.Value = stats.MinValue;
-                return new OnHeapPacked<T>(rented);
+                break;
 
             // Packing won't help, so just pack it down to a struct
             case LowLevelType.Unpacked:
             {
-                var destSpan = MemoryMarshal.Cast<byte, ulong>(casted[0].DataSpan(rented.Memory.Span));
+                var destSpan = MemoryMarshal.Cast<byte, ulong>(casted[0].DataSpan(span));
                 var srcSpan = MemoryMarshal.Cast<T, ulong>(Span);
                 srcSpan.CopyTo(destSpan);
-                return new OnHeapPacked<T>(rented);
+                break;
             }
 
             // Pack the column. This process looks at the partition byte (highest byte) and the remainder of the
@@ -52,8 +71,6 @@ public partial interface IUnpacked<T>
             // allocated memory.
             case LowLevelType.Packed:
             {
-
-
                 var srcSpan = MemoryMarshal.Cast<T, ulong>(Span);
 
                 casted[0].Packed.ValueOffset = stats.MinValue;
@@ -61,7 +78,7 @@ public partial interface IUnpacked<T>
                 casted[0].Packed.ValueBytes = stats.TotalBytes;
                 casted[0].Packed.PartitionBits = stats.PartitionBits;
 
-                var destSpan = casted[0].DataSpan(rented.Memory.Span);
+                var destSpan = casted[0].DataSpan(span);
 
                 const ulong valueMask = 0x00FFFFFFFFFFFFFFUL;
 
@@ -78,9 +95,7 @@ public partial interface IUnpacked<T>
                     var slice = destSpan.SliceFast(stats.TotalBytes * idx);
                     MemoryMarshal.Write(slice, packedValue);
                 }
-
-
-                return new OnHeapPacked<T>(rented);
+                break;
             }
             default:
                 throw new ArgumentOutOfRangeException();

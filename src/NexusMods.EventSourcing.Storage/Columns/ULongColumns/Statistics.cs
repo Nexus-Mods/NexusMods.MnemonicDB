@@ -115,38 +115,58 @@ public struct Statistics
     /// <returns></returns>
     public IMemoryOwner<byte> Rent()
     {
-        unsafe
-        {
-            int size;
-            LowLevelType type;
+        var (size, type) = GetSizeAndType();
 
-            switch (TotalBytes)
-            {
-                // No bytes are needed, just a constant value
-                case 0:
-                    size = sizeof(LowLevelHeader) + sizeof(LowLevelConstant);
-                    type = LowLevelType.Constant;
-                    break;
-                // Compression is worse than just storing the values, so we store the values
-                case 8:
-                case 9:
-                    size = sizeof(LowLevelHeader) + sizeof(LowLevelUnpacked) + Count * 8;
-                    type = LowLevelType.Unpacked;
-                    break;
+        var rented = MemoryPool<byte>.Shared.Rent(size);
+        Prepare(rented.Memory.Span, type);
 
-                // Everything else is packed
-                default:
-                    size = sizeof(LowLevelHeader) + sizeof(LowLevelPacked) + Count * TotalBytes + 8;
-                    type = LowLevelType.Packed;
-                    break;
-            }
-
-            var memory = MemoryPool<byte>.Shared.Rent(size);
-            var header = MemoryMarshal.Cast<byte, LowLevelHeader>(memory.Memory.Span);
-            header[0].Type = type;
-            header[0].Length = Count;
-
-            return memory;
-        }
+        return rented;
     }
+
+
+    public Span<byte> FromWriter(IBufferWriter<byte> writer)
+    {
+        var (size, type) = GetSizeAndType();
+
+        var span = writer.GetSpan(size);
+        Prepare(span, type);
+
+        return span;
+    }
+
+    private void Prepare(Span<byte> span, LowLevelType type)
+    {
+        var header = MemoryMarshal.Cast<byte, LowLevelHeader>(span);
+        header[0].Type = type;
+        header[0].Length = Count;
+    }
+
+    private unsafe (int size, LowLevelType type) GetSizeAndType()
+    {
+        int size;
+        LowLevelType type;
+        switch (TotalBytes)
+        {
+            // No bytes are needed, just a constant value
+            case 0:
+                size = sizeof(LowLevelHeader) + sizeof(LowLevelConstant);
+                type = LowLevelType.Constant;
+                break;
+            // Compression is worse than just storing the values, so we store the values
+            case 8:
+            case 9:
+                size = sizeof(LowLevelHeader) + sizeof(LowLevelUnpacked) + Count * 8;
+                type = LowLevelType.Unpacked;
+                break;
+
+            // Everything else is packed
+            default:
+                size = sizeof(LowLevelHeader) + sizeof(LowLevelPacked) + Count * TotalBytes + 8;
+                type = LowLevelType.Packed;
+                break;
+        }
+
+        return (size, type);
+    }
+
 }
