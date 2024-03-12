@@ -1,0 +1,39 @@
+﻿
+attribute "fs_serializer";
+attribute "fs_unsafeUnion";
+attribute "fs_valueStruct";
+attribute "fs_vector";
+
+namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
+
+struct UL_Unpacked (fs_valueStruct)
+{
+   Unused: ubyte;
+}
+
+struct UL_Constant (fs_valueStruct)
+{
+   Value : ulong;
+}
+
+struct UL_Packed (fs_valueStruct)
+{
+   ValueOffset: ulong;
+   PartitionOffset: ubyte;
+   ValueBytes: ubyte;
+   PartitionBits: ubyte;
+}
+
+union UL_Column_Union (fs_unsafeUnion)
+{
+    Unpacked : UL_Unpacked,
+    Packed : UL_Packed,
+    Constant : UL_Constant
+}
+
+table ULongPackedColumn(fs_serializer)
+{
+   Length: int;
+   Header: UL_Column_Union (required);
+   Data: [ubyte] (required, fs_vector : "ReadOnlyMemory");
+}

@@ -7,7 +7,11 @@ using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Benchmarks;
 using NexusMods.EventSourcing.Storage.Nodes;
 
-BenchmarkRunner.Run<BitPackingBenchmarks>();
+//BenchmarkRunner.Run<ColumnBenchmarks>();
+
+var benchmark = new ColumnBenchmarks();
+for (int i = 0; i < 1024 * 8; i += 1)
+    benchmark.OnHeapPacked();
 
 
 //

@@ -20,6 +20,14 @@
     <ItemGroup>
         <InternalsVisibleTo Include="NexusMods.EventSourcing.Storage.Tests" />
     </ItemGroup>
+    
+    <ItemGroup>
+        <PackageReference Include="FlatSharp.Compiler" Version="7.5.1">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="FlatSharp.Runtime" Version="7.5.1" />
+    </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\NexusMods.EventSourcing.Abstractions\NexusMods.EventSourcing.Abstractions.csproj" />
@@ -29,6 +37,10 @@
       <Compile Update="Columns\ULongColumns\Packing.cs">
         <DependentUpon>IUnpacked.cs</DependentUpon>
       </Compile>
+    </ItemGroup>
+
+    <ItemGroup>
+      <FlatSharpSchema Include="Columns\ULongColumns\Schema.fbs" />
     </ItemGroup>
 
 </Project>

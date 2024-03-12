@@ -6,8 +6,9 @@ namespace NexusMods.EventSourcing.Storage.Columns.BlobColumns;
 /// <summary>
 /// A unpacked blob column. This column
 /// </summary>
-public interface IUnpacked
+public interface IUnpacked : IReadable
 {
+
     /// <summary>
     /// Get the data span for the column.
     /// </summary>

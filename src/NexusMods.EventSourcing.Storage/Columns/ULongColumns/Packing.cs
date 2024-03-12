@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Buffers;
 using System.Runtime.InteropServices;
-using NexusMods.EventSourcing.Storage.Columns.ULongColumns.LowLevel;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
@@ -24,43 +22,38 @@ public partial interface IUnpacked<T>
     public IReadable<T> Pack()
     {
         var stats = Statistics.Create(MemoryMarshal.Cast<T, ulong>(Span));
-
-        var rented = stats.Rent();
-
-        Pack(rented.Memory.Span, stats);
-
-        return new OnHeapPacked<T>(rented);
+        return (IReadable<T>)Pack(stats);
     }
-
-    public void Pack(IBufferWriter<byte> writer)
+    private ULongPackedColumn Pack(Statistics stats)
     {
-        var stats = Statistics.Create(MemoryMarshal.Cast<T, ulong>(Span));
-
-        var span = stats.FromWriter(writer);
-
-        Pack(span, stats);
-
-        writer.Write(span);
-    }
-
-    private void Pack(Span<byte> span, Statistics stats)
-    {
-        var casted = MemoryMarshal.Cast<byte, LowLevelHeader>(span);
-
-        switch (casted[0].Type)
+        switch (stats.GetKind())
         {
-            // Only one value appear in the column
-            case LowLevelType.Constant:
-                casted[0].Constant.Value = stats.MinValue;
-                break;
+            // Only one value appears in the column
+            case UL_Column_Union.ItemKind.Constant:
+                return new ULongPackedColumn
+                {
+                    Length = stats.Count,
+                    Header = new UL_Column_Union(
+                        new UL_Constant
+                        {
+                            Value = stats.MinValue
+                        }),
+                    Data = Memory<byte>.Empty,
+                };
 
             // Packing won't help, so just pack it down to a struct
-            case LowLevelType.Unpacked:
+            case UL_Column_Union.ItemKind.Unpacked:
             {
-                var destSpan = MemoryMarshal.Cast<byte, ulong>(casted[0].DataSpan(span));
-                var srcSpan = MemoryMarshal.Cast<T, ulong>(Span);
-                srcSpan.CopyTo(destSpan);
-                break;
+                return new ULongPackedColumn
+                {
+                    Length = stats.Count,
+                    Header = new UL_Column_Union(
+                        new UL_Unpacked
+                        {
+                            Unused = 0
+                        }),
+                    Data = new Memory<byte>(Span.CastFast<T, byte>().SliceFast(0, sizeof(ulong) * stats.Count).ToArray()),
+                };
             }
 
             // Pack the column. This process looks at the partition byte (highest byte) and the remainder of the
@@ -69,23 +62,19 @@ public partial interface IUnpacked<T>
             // byte boundaries, but the bytes can be odd numbers, anywhere from 1 to 7 bytes per value. We make sure
             // the resulting chunk is large enough that we can over-read and mask values without overrunning the
             // allocated memory.
-            case LowLevelType.Packed:
+            case UL_Column_Union.ItemKind.Packed:
             {
-                var srcSpan = MemoryMarshal.Cast<T, ulong>(Span);
+                var destData = GC.AllocateUninitializedArray<byte>(stats.TotalBytes * stats.Count + 8);
 
-                casted[0].Packed.ValueOffset = stats.MinValue;
-                casted[0].Packed.PartitionOffset = stats.MinPartition;
-                casted[0].Packed.ValueBytes = stats.TotalBytes;
-                casted[0].Packed.PartitionBits = stats.PartitionBits;
-
-                var destSpan = casted[0].DataSpan(span);
+                var srcSpan = Span.CastFast<T, ulong>().SliceFast(0, stats.Count);
+                var destSpan = destData.AsSpan();
 
                 const ulong valueMask = 0x00FFFFFFFFFFFFFFUL;
 
                 var valueOffset = stats.MinValue;
                 var partitionOffset = stats.MinPartition;
 
-                for (var idx = 0; idx < srcSpan.Length; idx += 1)
+                for (var idx = 0; idx < Span.Length; idx += 1)
                 {
                     var srcValue = srcSpan[idx];
                     var partition = (byte)(srcValue >> (8 * 7)) - partitionOffset;
@@ -95,10 +84,24 @@ public partial interface IUnpacked<T>
                     var slice = destSpan.SliceFast(stats.TotalBytes * idx);
                     MemoryMarshal.Write(slice, packedValue);
                 }
-                break;
+
+                return new ULongPackedColumn
+                {
+                    Length = stats.Count,
+                    Header = new UL_Column_Union(
+                        new UL_Packed
+                        {
+                            ValueOffset = valueOffset,
+                            PartitionOffset = partitionOffset,
+                            ValueBytes = stats.TotalBytes,
+                            PartitionBits = stats.PartitionBits
+                        }),
+                    Data = new Memory<byte>(destData)
+                };
             }
             default:
                 throw new ArgumentOutOfRangeException();
         }
     }
+
 }

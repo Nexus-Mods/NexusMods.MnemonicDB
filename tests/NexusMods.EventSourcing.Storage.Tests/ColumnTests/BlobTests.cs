@@ -23,7 +23,6 @@ public class BlobTests
             column[i].ToArray().Should().Equal(values[i]);
         }
 
-        var packed = ((ICanPack)column).Pack();
     }
 
 

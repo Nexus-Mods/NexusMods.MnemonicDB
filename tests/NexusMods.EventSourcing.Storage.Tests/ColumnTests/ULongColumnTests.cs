@@ -1,9 +1,8 @@
 ﻿using System.Buffers;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using FlatSharp;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Columns.ULongColumns;
-using NexusMods.EventSourcing.Storage.Columns.ULongColumns.LowLevel;
 using Reloaded.Memory.Extensions;
 using Xunit.DependencyInjection;
 
@@ -40,16 +39,11 @@ public class ULongColumnTests
         AssertEqual(unpacked, (IReadable<ulong>)column);
 
         var writer = new ArrayBufferWriter<byte>();
-        column.Pack(writer);
+        ULongPackedColumn.Serializer.Write(writer, (ULongPackedColumn)packed);
+        var unpackedUL = ULongPackedColumn.Serializer.Parse(writer.WrittenMemory);
+        AssertEqual(unpackedUL, (IReadable<ulong>)column);
 
-        unsafe
-        {
-            fixed (byte* ptr = writer.WrittenMemory.Span)
-            {
-                var offHeap = new OffHeapPacked<ulong>(ptr);
-                AssertEqual(offHeap, (IReadable<ulong>)column);
-            }
-        }
+
     }
 
     [Theory]
@@ -59,29 +53,27 @@ public class ULongColumnTests
         var column = (IUnpacked<ulong>)Create(data);
         var packed = column.Pack();
 
-        var casted = (OnHeapPacked<ulong>)packed;
-        var header = casted.LowLevel;
-
+        var casted = (ULongPackedColumn)packed;
         var values = new List<ulong>();
 
-        if (header.Type != LowLevelType.Packed)
+        if (casted.Header.Kind != UL_Column_Union.ItemKind.Packed)
             return Task.CompletedTask;
 
-        casted.LowLevel.Type.Should().Be(LowLevelType.Packed, "the column should be packed.");
+        casted.Header.Kind.Should().Be(UL_Column_Union.ItemKind.Packed, "the column should be packed");
 
-        var packedHeader = casted.LowLevel.Packed;
+        var packedHeader = casted.Header.Packed;
 
         var mask = (1UL << (packedHeader.ValueBytes * 8)) - 1;
-        var dataSpan = casted.LowLevel.DataSpan(casted.Span);
+        var dataSpan = casted.Data.Span;
 
-        for (var i = 0; i < header.Length; i++)
+        for (var i = 0; i < casted.Length; i++)
         {
             values.Add(MemoryMarshal.Read<ulong>(dataSpan.SliceFast(i * packedHeader.ValueBytes)) & mask);
         }
 
         return Verify(new
             {
-                Header = casted.LowLevel.Packed,
+                Header = casted.Header.Packed,
                 Values = values.ToArray()
             }).UseTextForParameters(name);
     }

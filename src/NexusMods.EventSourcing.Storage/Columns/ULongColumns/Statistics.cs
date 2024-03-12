@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Buffers;
 using System.Numerics;
-using System.Runtime.InteropServices;
-using NexusMods.EventSourcing.Storage.Columns.ULongColumns.LowLevel;
 
 namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 
@@ -109,64 +106,16 @@ public struct Statistics
         return stats;
     }
 
-    /// <summary>
-    /// Allocate enough space for the column and the headers. Takes into account the type of column and the number of values.
-    /// </summary>
-    /// <returns></returns>
-    public IMemoryOwner<byte> Rent()
+    public UL_Column_Union.ItemKind GetKind()
     {
-        var (size, type) = GetSizeAndType();
-
-        var rented = MemoryPool<byte>.Shared.Rent(size);
-        Prepare(rented.Memory.Span, type);
-
-        return rented;
-    }
-
-
-    public Span<byte> FromWriter(IBufferWriter<byte> writer)
-    {
-        var (size, type) = GetSizeAndType();
-
-        var span = writer.GetSpan(size);
-        Prepare(span, type);
-
-        return span;
-    }
-
-    private void Prepare(Span<byte> span, LowLevelType type)
-    {
-        var header = MemoryMarshal.Cast<byte, LowLevelHeader>(span);
-        header[0].Type = type;
-        header[0].Length = Count;
-    }
-
-    private unsafe (int size, LowLevelType type) GetSizeAndType()
-    {
-        int size;
-        LowLevelType type;
-        switch (TotalBytes)
+        return TotalBytes switch
         {
             // No bytes are needed, just a constant value
-            case 0:
-                size = sizeof(LowLevelHeader) + sizeof(LowLevelConstant);
-                type = LowLevelType.Constant;
-                break;
+            0 => UL_Column_Union.ItemKind.Constant,
             // Compression is worse than just storing the values, so we store the values
-            case 8:
-            case 9:
-                size = sizeof(LowLevelHeader) + sizeof(LowLevelUnpacked) + Count * 8;
-                type = LowLevelType.Unpacked;
-                break;
-
-            // Everything else is packed
-            default:
-                size = sizeof(LowLevelHeader) + sizeof(LowLevelPacked) + Count * TotalBytes + 8;
-                type = LowLevelType.Packed;
-                break;
-        }
-
-        return (size, type);
+            8 or 9 => UL_Column_Union.ItemKind.Unpacked,
+            _ => UL_Column_Union.ItemKind.Packed
+        };
     }
 
 }
