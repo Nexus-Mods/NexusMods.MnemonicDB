@@ -14,4 +14,9 @@ public interface IReadable
     /// Get the span for teh value at the specified offset.
     /// </summary>
     public ReadOnlySpan<byte> this[int offset] { get; }
+
+    /// <summary>
+    /// Get the memory for the value at the specified offset.
+    /// </summary>
+    public ReadOnlyMemory<byte> GetMemory(int offset);
 }

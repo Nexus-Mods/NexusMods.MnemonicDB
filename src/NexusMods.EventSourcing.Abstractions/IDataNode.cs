@@ -11,34 +11,14 @@ namespace NexusMods.EventSourcing.Abstractions;
 public interface IDataNode : IEnumerable<Datom>
 {
     /// <summary>
+    /// The number of datoms in the node and all of its children.
+    /// </summary>
+    public long DeepLength { get; }
+
+    /// <summary>
     /// The number of datoms in the node.
     /// </summary>
     public int Length { get; }
-
-    /// <summary>
-    /// A column containing the entity ids for the datoms in the node.
-    /// </summary>
-    public IColumn<EntityId> EntityIds { get; }
-
-    /// <summary>
-    /// A column containing the attribute ids for the datoms in the node.
-    /// </summary>
-    public IColumn<AttributeId> AttributeIds { get; }
-
-    /// <summary>
-    /// A column containing the transaction ids for the datoms in the node.
-    /// </summary>
-    public IColumn<TxId> TransactionIds { get; }
-
-    /// <summary>
-    /// A column containing the flags for the datoms in the node.
-    /// </summary>
-    public IColumn<DatomFlags> Flags { get; }
-
-    /// <summary>
-    /// A column containing the values for the datoms in the node.
-    /// </summary>
-    public IBlobColumn Values { get; }
 
     /// <summary>
     /// Get the datom at the given index.

@@ -17,7 +17,7 @@ public class Appendable : IReadable, IUnpacked, IAppendable
     private readonly ULongColumns.Appendable _offsets;
     private readonly ULongColumns.Appendable _lengths;
 
-    public Appendable(int initialSize = 1024)
+    private Appendable(int initialSize = 1024)
     {
         _memoryOwner = MemoryPool<byte>.Shared.Rent(initialSize);
         _memory = _memoryOwner.Memory;
@@ -26,6 +26,8 @@ public class Appendable : IReadable, IUnpacked, IAppendable
         _offsets = ULongColumns.Appendable.Create();
         _lengths = ULongColumns.Appendable.Create();
     }
+
+    public static Appendable Create(int initialSize = 1024) => new(initialSize);
 
     public int Count => _offsets.Length;
 
@@ -36,6 +38,12 @@ public class Appendable : IReadable, IUnpacked, IAppendable
             var length = _lengths.Span[offset];
             return _memory.Slice((int)_offsets.Span[offset], (int)length).Span;
         }
+    }
+
+    public ReadOnlyMemory<byte> GetMemory(int offset)
+    {
+        var length = _lengths.Span[offset];
+        return _memory.Slice((int)_offsets.Span[offset], (int)length);
     }
 
 /// <summary>
