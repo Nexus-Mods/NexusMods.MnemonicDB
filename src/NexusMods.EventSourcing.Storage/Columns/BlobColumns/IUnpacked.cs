@@ -23,4 +23,16 @@ public interface IUnpacked : IReadable
     /// A span of lengths for each value in the column.
     /// </summary>
     public IUnpacked<ulong> Lengths { get; }
+
+
+    public IReadable Pack()
+    {
+        return new BlobPackedColumn
+        {
+            Count = Count,
+            Offsets = (ULongPackedColumn)Offsets.Pack(),
+            Lengths = (ULongPackedColumn)Lengths.Pack(),
+            Data = Span.ToArray()
+        };
+    }
 }

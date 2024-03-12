@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Buffers;
 using NexusMods.EventSourcing.Storage.Columns.ULongColumns;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage.Columns.BlobColumns;
 
 /// <summary>
 /// An appendable blob column. This column allows for appending of new spans of data.
 /// </summary>
-public class Appendable : IReadable, IUnpacked, IAppendable, ICanPack
+public class Appendable : IReadable, IUnpacked, IAppendable
 {
     private IMemoryOwner<byte> _memoryOwner;
     private Memory<byte> _memory;
@@ -40,7 +41,7 @@ public class Appendable : IReadable, IUnpacked, IAppendable, ICanPack
 /// <summary>
     /// Span to the raw memory used by the column.
     /// </summary>
-    public ReadOnlySpan<byte> Span => _memory.Span;
+    public ReadOnlySpan<byte> Span => _memory.Span.SliceFast(0, (int)_currentOffset);
 
     /// <summary>
     /// Span of offsets into the column for each value.

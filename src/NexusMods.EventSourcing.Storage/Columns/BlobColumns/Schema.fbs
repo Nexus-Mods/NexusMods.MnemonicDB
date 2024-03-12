@@ -1,0 +1,17 @@
+﻿
+include "../ULongColumns/Schema.fbs";
+
+attribute "fs_serializer";
+attribute "fs_unsafeUnion";
+attribute "fs_valueStruct";
+attribute "fs_vector";
+
+namespace NexusMods.EventSourcing.Storage.Columns.BlobColumns;
+
+
+table BlobPackedColumn(fs_serializer) {
+    Count: int;
+    Offsets: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongPackedColumn (required);
+    Lengths: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongPackedColumn (required);
+    Data: [ubyte] (required, fs_vector : "ReadOnlyMemory");
+}

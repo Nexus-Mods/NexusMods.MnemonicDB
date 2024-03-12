@@ -1,5 +1,8 @@
-﻿using System.Text;
+﻿using System.Buffers;
+using System.Text;
+using FlatSharp;
 using NexusMods.EventSourcing.Storage.Columns.BlobColumns;
+using NexusMods.Hashing.xxHash64;
 using Xunit.DependencyInjection;
 
 namespace NexusMods.EventSourcing.Storage.Tests.ColumnTests;
@@ -9,7 +12,7 @@ public class BlobTests
 
     [Theory]
     [MethodData(nameof(TestData))]
-    public void Test(string name, byte[][] values)
+    public Task Test(string name, byte[][] values)
     {
         var column = new Appendable();
         foreach (var value in values)
@@ -23,6 +26,31 @@ public class BlobTests
             column[i].ToArray().Should().Equal(values[i]);
         }
 
+        var packed = ((IUnpacked)column).Pack();
+
+        packed.Count.Should().Be(values.Length);
+        for (var i = 0; i < values.Length; i++)
+        {
+            packed[i].ToArray().Should().Equal(values[i]);
+        }
+
+
+        var writer = new ArrayBufferWriter<byte>();
+        BlobPackedColumn.Serializer.Write(writer, (BlobPackedColumn)packed);
+
+        var unpacked = BlobPackedColumn.Serializer.Parse(writer.WrittenMemory);
+        unpacked.Count.Should().Be(values.Length);
+        for (var i = 0; i < values.Length; i++)
+        {
+            unpacked[i].ToArray().Should().Equal(values[i]);
+        }
+
+        return Verify(
+        new {
+            Hash = writer.WrittenSpan.XxHash64().ToHex(),
+            Size = writer.WrittenSpan.Length,
+        })
+            .UseTextForParameters(name);
     }
 
 

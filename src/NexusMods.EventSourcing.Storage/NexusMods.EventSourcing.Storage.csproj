@@ -41,6 +41,8 @@
 
     <ItemGroup>
       <FlatSharpSchema Include="Columns\ULongColumns\Schema.fbs" />
+      <None Remove="Columns\BlobColumns\Schema.fbs" />
+      <FlatSharpSchema Include="Columns\BlobColumns\Schema.fbs" />
     </ItemGroup>
 
 </Project>

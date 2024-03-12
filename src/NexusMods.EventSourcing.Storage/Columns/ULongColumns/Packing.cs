@@ -96,7 +96,7 @@ public partial interface IUnpacked<T>
                             ValueBytes = stats.TotalBytes,
                             PartitionBits = stats.PartitionBits
                         }),
-                    Data = new Memory<byte>(destData)
+                    Data = new Memory<byte>(destData),
                 };
             }
             default:
