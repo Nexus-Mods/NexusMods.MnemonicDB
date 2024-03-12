@@ -25,4 +25,10 @@
       <ProjectReference Include="..\NexusMods.EventSourcing.Abstractions\NexusMods.EventSourcing.Abstractions.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Update="Columns\ULongColumns\Packing.cs">
+        <DependentUpon>IUnpacked.cs</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
 </Project>

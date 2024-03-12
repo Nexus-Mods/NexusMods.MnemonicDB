@@ -1,10 +1,9 @@
 ﻿using System;
-using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Reloaded.Memory.Extensions;
 
-namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
+namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns.LowLevel;
 
 [StructLayout(LayoutKind.Explicit, Size = SelfHeaderSize)]
 public unsafe struct LowLevelHeader
@@ -54,6 +53,14 @@ public unsafe struct LowLevelHeader
     };
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public byte* Data(byte* data) => Type switch
+    {
+        LowLevelType.Unpacked => data + HeaderSize(),
+        LowLevelType.Constant => data + HeaderSize(),
+        LowLevelType.Packed => data + HeaderSize()
+    };
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ReadOnlySpan<byte> DataSpan(ReadOnlySpan<byte> data) => Type switch
     {
         LowLevelType.Unpacked => data.SliceFast(HeaderSize()),
@@ -67,7 +74,18 @@ public unsafe struct LowLevelHeader
         return Type switch
         {
             LowLevelType.Unpacked => Unpacked.Get(dataSpan, idx),
-            LowLevelType.Constant => Constant.Get(dataSpan, idx),
+            LowLevelType.Constant => Constant.Get(),
+            LowLevelType.Packed => Packed.Get(dataSpan, idx)
+        };
+    }
+
+    public unsafe ulong Get(byte* span, int idx)
+    {
+        var dataSpan = Data(span);
+        return Type switch
+        {
+            LowLevelType.Unpacked => Unpacked.Get(dataSpan, idx),
+            LowLevelType.Constant => Constant.Get(),
             LowLevelType.Packed => Packed.Get(dataSpan, idx)
         };
     }
@@ -80,10 +98,28 @@ public unsafe struct LowLevelHeader
                 Unpacked.CopyTo(DataSpan(src), offset, dest);
                 return;
             case LowLevelType.Constant:
-                Constant.CopyTo(offset, dest);
+                Constant.CopyTo(dest);
                 return;
             case LowLevelType.Packed:
                 Packed.CopyTo(DataSpan(src), offset, dest);
+                return;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(Type));
+        }
+    }
+
+    public unsafe void CopyTo(byte* ptr, int offset, Span<ulong> dest)
+    {
+        switch (Type)
+        {
+            case LowLevelType.Unpacked:
+                Unpacked.CopyTo(Data(ptr), offset, dest);
+                return;
+            case LowLevelType.Constant:
+                Constant.CopyTo(dest);
+                return;
+            case LowLevelType.Packed:
+                Packed.CopyTo(Data(ptr), offset, dest);
                 return;
             default:
                 throw new ArgumentOutOfRangeException(nameof(Type));

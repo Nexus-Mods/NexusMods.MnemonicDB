@@ -5,7 +5,12 @@ using System.Runtime.InteropServices;
 
 namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 
-public partial class Appendable<T> : IDisposable, IAppendable<T>, IReadable<T>, ICanBePacked<T>
+/// <summary>
+/// An appendable column of ulong values. This stores values as a auto-expanding array of ulong values.
+/// Backed by the shared memory pool
+/// </summary>
+/// <typeparam name="T"></typeparam>
+public class Appendable<T> : IDisposable, IAppendable<T>, IReadable<T>, IUnpacked<T>
     where T : struct
 {
     private const int DefaultSize = 16;

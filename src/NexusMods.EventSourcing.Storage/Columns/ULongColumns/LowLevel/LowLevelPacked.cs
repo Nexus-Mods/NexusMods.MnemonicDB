@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Reloaded.Memory.Extensions;
 
-namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
+namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns.LowLevel;
 
 /// <summary>
 /// Represents a packed offset column. The compression format for this is fairly simple:
@@ -45,6 +45,7 @@ public unsafe struct LowLevelPacked
     /// </summary>
     public byte PartitionBits;
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ulong Get(ReadOnlySpan<byte> span, int idx)
     {
         var bytesMask = (1UL << (ValueBytes * 8)) - 1;
@@ -56,13 +57,36 @@ public unsafe struct LowLevelPacked
         return (partition << (8 * 7)) | value;
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ulong Get(byte* ptr, int idx)
+    {
+        var bytesMask = (1UL << (ValueBytes * 8)) - 1;
+
+        var offset = idx * ValueBytes;
+        var valAndPartition = *(ulong *)(ptr + offset) & bytesMask;
+        var value = (valAndPartition >> PartitionBits) + ValueOffset;
+        var partition = (valAndPartition & ((1UL << PartitionBits) - 1)) + PartitionOffset;
+        return (partition << (8 * 7)) | value;
+    }
+
     public void CopyTo(ReadOnlySpan<byte> src, int offset, Span<ulong> dest)
     {
-
         for (var idx = 0; idx < dest.Length; idx += 1)
         {
             var span = src.SliceFast((idx + offset) * ValueBytes);
             var valAndPartition = MemoryMarshal.Read<ulong>(span) & ((1UL << (ValueBytes * 8)) - 1);
+            var value = (valAndPartition >> PartitionBits) + ValueOffset;
+            var partition = (valAndPartition & ((1UL << PartitionBits) - 1)) + PartitionOffset;
+            dest[idx] = (partition << (8 * 7)) | value;
+        }
+    }
+
+    public void CopyTo(byte* src, int offset, Span<ulong> dest)
+    {
+        for (var idx = 0; idx < dest.Length; idx += 1)
+        {
+            var ptr = (ulong*)(src + (idx + offset) * ValueBytes);
+            var valAndPartition = *ptr & ((1UL << (ValueBytes * 8)) - 1);
             var value = (valAndPartition >> PartitionBits) + ValueOffset;
             var partition = (valAndPartition & ((1UL << PartitionBits) - 1)) + PartitionOffset;
             dest[idx] = (partition << (8 * 7)) | value;

@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using NexusMods.EventSourcing.Storage.Columns.ULongColumns.LowLevel;
 
 namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 
@@ -108,6 +109,10 @@ public struct Statistics
         return stats;
     }
 
+    /// <summary>
+    /// Allocate enough space for the column and the headers. Takes into account the type of column and the number of values.
+    /// </summary>
+    /// <returns></returns>
     public IMemoryOwner<byte> Rent()
     {
         unsafe
@@ -117,15 +122,19 @@ public struct Statistics
 
             switch (TotalBytes)
             {
+                // No bytes are needed, just a constant value
                 case 0:
                     size = sizeof(LowLevelHeader) + sizeof(LowLevelConstant);
                     type = LowLevelType.Constant;
                     break;
+                // Compression is worse than just storing the values, so we store the values
                 case 8:
                 case 9:
                     size = sizeof(LowLevelHeader) + sizeof(LowLevelUnpacked) + Count * 8;
                     type = LowLevelType.Unpacked;
                     break;
+
+                // Everything else is packed
                 default:
                     size = sizeof(LowLevelHeader) + sizeof(LowLevelPacked) + Count * TotalBytes + 8;
                     type = LowLevelType.Packed;

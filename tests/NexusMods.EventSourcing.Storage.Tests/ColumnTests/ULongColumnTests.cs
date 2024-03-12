@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Columns.ULongColumns;
+using NexusMods.EventSourcing.Storage.Columns.ULongColumns.LowLevel;
 using Reloaded.Memory.Extensions;
 using Xunit.DependencyInjection;
 
@@ -12,7 +13,7 @@ public class ULongColumnTests
     [Fact]
     public void MultipleValuesColumnsPackIntoMinMax()
     {
-        var column = (ICanBePacked<ulong>)Create(42, 43, 44);
+        var column = (IUnpacked<ulong>)Create(42, 43, 44);
         var packed = column.Pack();
 
     }
@@ -21,7 +22,7 @@ public class ULongColumnTests
     [MethodData(nameof(TestData))]
     public Task CanGetColumnStatistics(string comment, ulong[] values)
     {
-        var column = (ICanBePacked<ulong>)Create(values);
+        var column = (IUnpacked<ulong>)Create(values);
         var stats = Statistics.Create(MemoryMarshal.Cast<ulong, ulong>(column.Span));
         return Verify(stats).UseTextForParameters(comment);
     }
@@ -30,20 +31,28 @@ public class ULongColumnTests
     [MethodData(nameof(TestData))]
     public void PackedDataShouldRoundTrip(string name, ulong[] values)
     {
-        var column = (ICanBePacked<ulong>)Create(values);
+        var column = (IUnpacked<ulong>)Create(values);
         var packed = column.Pack();
         AssertEqual(packed, (IReadable<ulong>)column);
 
-
         var unpacked = packed.Unpack();
         AssertEqual(unpacked, (IReadable<ulong>)column);
+
+        unsafe
+        {
+            fixed (byte* ptr = ((OnHeapPacked<ulong>)packed).Span)
+            {
+                var offHeap = new OffHeapPacked<ulong>(ptr);
+                AssertEqual(offHeap, (IReadable<ulong>)column);
+            }
+        }
     }
 
     [Theory]
     [MethodData(nameof(TestData))]
     public Task PackedDataShouldHaveCorrectHeaders(string name, ulong[] data)
     {
-        var column = (ICanBePacked<ulong>)Create(data);
+        var column = (IUnpacked<ulong>)Create(data);
         var packed = column.Pack();
 
         var casted = (OnHeapPacked<ulong>)packed;
