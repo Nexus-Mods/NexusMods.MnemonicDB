@@ -25,20 +25,6 @@ public class EATV(AttributeRegistry registry) : IDatomComparator
 
         return registry.CompareValues(x, y);
     }
-
-    public int Compare(in IDataNode a, int idxA, in IDataNode b, int idxB)
-    {
-        var cmp = a.EntityIds[idxA].CompareTo(b.EntityIds[idxB]);
-        if (cmp != 0) return cmp;
-
-        cmp = a.AttributeIds[idxA].CompareTo(b.AttributeIds[idxB]);
-        if (cmp != 0) return cmp;
-
-        cmp = a.TransactionIds[idxA].CompareTo(b.TransactionIds[idxB]);
-        if (cmp != 0) return -cmp;
-
-        return registry.CompareValues(a.AttributeIds[idxA], a.Values[idxA].Span, b.Values[idxB].Span);
-    }
 }
 
 

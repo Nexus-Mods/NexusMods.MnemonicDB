@@ -12,6 +12,7 @@ public class ColumnBenchmarks
     private readonly IReadable<ulong> _unpacked;
     private readonly IReadable<ulong> _packed;
     private readonly IReadable<ulong> _onHeap;
+    private readonly ulong[] _dest;
 
     public ColumnBenchmarks()
     {
@@ -30,6 +31,8 @@ public class ColumnBenchmarks
 
         _onHeap = ULongPackedColumn.Serializer.Parse(writer.WrittenMemory);
 
+        _dest = new ulong[1024];
+
     }
 
     [Benchmark]
@@ -45,7 +48,14 @@ public class ColumnBenchmarks
     }
 
     [Benchmark]
-    public ulong OnHeapPacked()
+    public ulong UnpackedCopy()
+    {
+        _unpacked.CopyTo(0, _dest.AsSpan());
+        return _dest[^1];
+    }
+
+    [Benchmark]
+    public ulong Packed()
     {
         var sum = 0UL;
         for (var i = 0; i < _packed.Length; i++)
@@ -57,7 +67,14 @@ public class ColumnBenchmarks
     }
 
     [Benchmark]
-    public ulong OffHeapPacked()
+    public ulong PackedCopy()
+    {
+        _packed.CopyTo(0, _dest.AsSpan());
+        return _dest[^1];
+    }
+
+    [Benchmark]
+    public ulong OnHeap()
     {
         var sum = 0UL;
         for (var i = 0; i < _onHeap.Length; i++)
@@ -66,6 +83,13 @@ public class ColumnBenchmarks
         }
 
         return sum;
+    }
+
+    [Benchmark]
+    public ulong OnHeapCopy()
+    {
+        _onHeap.CopyTo(0, _dest.AsSpan());
+        return _dest[^1];
     }
 
 }
