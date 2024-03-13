@@ -1,11 +1,10 @@
 ﻿using System.Buffers;
 using System.Text;
 using FlatSharp;
-using NexusMods.EventSourcing.Abstractions.Columns.BlobColumns;
-using NexusMods.EventSourcing.Abstractions.Columns.ULongColumns;
 using NexusMods.EventSourcing.Storage.Columns.BlobColumns;
 using NexusMods.Hashing.xxHash64;
 using Xunit.DependencyInjection;
+using IUnpacked = NexusMods.EventSourcing.Abstractions.Columns.BlobColumns.IUnpacked;
 
 namespace NexusMods.EventSourcing.Storage.Tests.ColumnTests;
 
@@ -16,7 +15,7 @@ public class BlobTests
     [MethodData(nameof(TestData))]
     public Task Test(string name, byte[][] values)
     {
-        var column = new Appendable();
+        var column = Appendable.Create();
         foreach (var value in values)
         {
             column.Append(value);

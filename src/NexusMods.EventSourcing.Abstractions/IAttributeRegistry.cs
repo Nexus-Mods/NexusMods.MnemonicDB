@@ -1,4 +1,5 @@
 ﻿using System;
+using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -11,7 +12,7 @@ public interface IAttributeRegistry
     /// <summary>
     /// Appends the data to the given node
     /// </summary>
-    public void Append<TAttribute, TValue>(IAppendableNode node, EntityId e, TValue value, TxId t, DatomFlags f)
+    public void Append<TAttribute, TValue>(IAppendable node, EntityId e, TValue value, TxId t, DatomFlags f)
         where TAttribute : IAttribute<TValue>;
 
     /// <summary>

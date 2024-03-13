@@ -1,22 +1,23 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
-using NexusMods.EventSourcing.Abstractions.Nodes.DataNode;
-using NexusMods.EventSourcing.Storage.Columns.BlobColumns;
+using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 using Reloaded.Memory.Extensions;
-using IAppendable = NexusMods.EventSourcing.Abstractions.Nodes.DataNode.IAppendable;
+using Data_IAppendable = NexusMods.EventSourcing.Abstractions.Nodes.Data.IAppendable;
+using IAppendable = NexusMods.EventSourcing.Abstractions.Nodes.Data.IAppendable;
+using IPacked = NexusMods.EventSourcing.Abstractions.Nodes.Data.IPacked;
 
-namespace NexusMods.EventSourcing.Storage.Nodes.DataNode;
+namespace NexusMods.EventSourcing.Storage.Nodes.Data;
 
-public class Appendable : AReadable, IAppendable
+public class Appendable : Data_IAppendable, IReadable
 {
     private Columns.ULongColumns.Appendable _entityIds;
     private Columns.ULongColumns.Appendable _attributeIds;
     private Columns.BlobColumns.Appendable _values;
     private Columns.ULongColumns.Appendable _transactionIds;
+    private int _length;
 
     public Appendable(int initialSize = Columns.ULongColumns.Appendable.DefaultSize)
     {
@@ -27,27 +28,59 @@ public class Appendable : AReadable, IAppendable
         _transactionIds = Columns.ULongColumns.Appendable.Create();
     }
 
-    public override EntityId GetEntityId(int idx)
+    #region Public Constructors
+
+    /// <summary>
+    /// Creates a new <see cref="Appendable"/> via cloning the given <see cref="IReadable"/>.
+    /// </summary>
+    public static Appendable Create(IReadable readable)
+    {
+        var appendable = new Appendable(readable.Length);
+        appendable.Add(readable);
+        return appendable;
+    }
+
+
+    #endregion
+
+    /// <inheritdoc />
+    public int Length => _length;
+
+    /// <inheritdoc />
+    public long DeepLength => _length;
+
+    /// <inheritdoc />
+    public Datom this[int idx] => new()
+    {
+        E = EntityId.From(_entityIds[idx]),
+        A = AttributeId.From(_attributeIds[idx]),
+        T = TxId.From(_transactionIds[idx]),
+        V = _values.GetMemory(idx)
+    };
+
+    public Datom LastDatom { get; }
+
+    public EntityId GetEntityId(int idx)
     {
         return EntityId.From(_entityIds[idx]);
     }
 
-    public override AttributeId GetAttributeId(int idx)
+    public AttributeId GetAttributeId(int idx)
     {
         return AttributeId.From(_attributeIds[idx]);
     }
 
-    public override TxId GetTransactionId(int idx)
+    public TxId GetTransactionId(int idx)
     {
         return TxId.From(_transactionIds[idx]);
     }
 
-    public override ReadOnlySpan<byte> GetValue(int idx)
+    public ReadOnlySpan<byte> GetValue(int idx)
     {
         return _values[idx];
     }
 
-    public override int FillChunk(int offset, int length, ref DatomChunk chunk)
+    public int FillChunk(int offset, int length, ref DatomChunk chunk)
     {
         throw new NotImplementedException();
     }
@@ -58,6 +91,20 @@ public class Appendable : AReadable, IAppendable
         IsFrozen = true;
     }
 
+    public IPacked Pack()
+    {
+        /*
+        return new DataPackedNode
+        {
+            Length = _length,
+            EntityIds = (ULongPackedColumn)_entityIds.Pack(),
+            AttributeIds = (ULongPackedColumn)_attributeIds.Pack(),
+            Values = (BlobPackedColumn)_values.Pack(),
+            TransactionIds = (ULongPackedColumn)_transactionIds.Pack()
+        };*/
+        throw new NotImplementedException();
+    }
+
     private void EnsureNotFrozen()
     {
         if (IsFrozen)
@@ -66,9 +113,10 @@ public class Appendable : AReadable, IAppendable
         }
     }
 
-    public void Add(Datom datom)
+    public void Add(in Datom datom)
     {
         EnsureNotFrozen();
+        _length++;
         _entityIds.Append(datom.E.Value);
         _attributeIds.Append(datom.A.Value);
         _values.Append(datom.V.Span);
@@ -78,6 +126,7 @@ public class Appendable : AReadable, IAppendable
     public void Add(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId transactionId)
     {
         EnsureNotFrozen();
+        _length++;
         _entityIds.Append(entityId.Value);
         _attributeIds.Append(attributeId.Value);
         _values.Append(value);
@@ -87,6 +136,7 @@ public class Appendable : AReadable, IAppendable
     public void Add<T>(EntityId entityId, AttributeId attributeId, IValueSerializer<T> serializer, T value, TxId transactionId)
     {
         EnsureNotFrozen();
+        _length++;
         _entityIds.Append(entityId.Value);
         _attributeIds.Append(attributeId.Value);
         _values.Append(serializer, value);
@@ -111,5 +161,15 @@ public class Appendable : AReadable, IAppendable
     public IAppendable[] Split(int groupCount)
     {
         throw new NotImplementedException();
+    }
+
+    public IEnumerator<Datom> GetEnumerator()
+    {
+        throw new NotImplementedException();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

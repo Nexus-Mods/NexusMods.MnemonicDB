@@ -1,8 +1,5 @@
-﻿using System.Threading.Tasks;
-using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Storage.Nodes;
-using NexusMods.EventSourcing.Storage.Nodes.IndexNode;
-
+﻿using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Nodes;
 namespace NexusMods.EventSourcing.Storage.DatomStorageStructures;
 
 /// <summary>
@@ -24,13 +21,14 @@ public record IndexRoot
     /// <summary>
     /// The current in-memory index.
     /// </summary>
-    public required IDataNode InMemory { get; init; }
+    public required NexusMods.EventSourcing.Abstractions.Nodes.Data.IReadable InMemory { get; init; }
 
     /// <summary>
     /// The history index
     /// </summary>
-    public required IIndexNode History { get; init; }
+    public required NexusMods.EventSourcing.Abstractions.Nodes.Index.IReadable History { get; init; }
 
+    /*
     public static IndexRoot Empty(SortOrders order, AttributeRegistry registry)
     {
         return new IndexRoot
@@ -59,4 +57,5 @@ public record IndexRoot
             return this with { InMemory = new AppendableNode(), History = (IIndexNode)flushed };
         });
     }
+    */
 }

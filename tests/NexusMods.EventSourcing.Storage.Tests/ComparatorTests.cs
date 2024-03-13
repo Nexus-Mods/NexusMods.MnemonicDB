@@ -1,5 +1,6 @@
 ﻿using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Nodes;
+using NexusMods.EventSourcing.Storage.Nodes.Data;
 using NexusMods.EventSourcing.Storage.Sorters;
 using Xunit.DependencyInjection;
 
@@ -22,12 +23,12 @@ public class ComparatorTests(IServiceProvider provider) : AStorageTest(provider)
 
     public IEnumerable<object[]> ComparisonTestData()
     {
-        var node = new AppendableNode();
+        var node = new Appendable();
 
         var emitters = new Action<EntityId, TxId, ulong>[]
         {
-            (e, tx, v) => _registry.Append<TestAttributes.FileHash, ulong>(node, e, tx, DatomFlags.Added, v),
-            (e, tx, v) => _registry.Append<TestAttributes.FileName, string>(node, e, tx, DatomFlags.Added, "file " + v),
+            (e, tx, v) => _registry.Append<TestAttributes.FileHash, ulong>(node, e, tx, v),
+            (e, tx, v) => _registry.Append<TestAttributes.FileName, string>(node, e, tx, "file " + v),
         };
 
         for (ulong e = 0; e < 2; e++)

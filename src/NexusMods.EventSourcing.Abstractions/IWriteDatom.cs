@@ -1,4 +1,6 @@
-﻿namespace NexusMods.EventSourcing.Abstractions;
+﻿using NexusMods.EventSourcing.Abstractions.Nodes.Data;
+
+namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
 /// A typed datom for writing new datoms to the database. This is implemented by attributes
@@ -11,5 +13,5 @@ public interface IWriteDatom
     /// </summary>
     /// <param name="registry"></param>
     /// <param name="node"></param>
-    void Append(IAttributeRegistry registry, IAppendableNode node);
+    void Append(IAttributeRegistry registry, IAppendable node);
 }

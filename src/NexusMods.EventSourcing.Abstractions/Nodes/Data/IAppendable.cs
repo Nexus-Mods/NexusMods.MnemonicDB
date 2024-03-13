@@ -1,7 +1,7 @@
 ﻿using System;
 using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 
-namespace NexusMods.EventSourcing.Abstractions.Nodes.DataNode;
+namespace NexusMods.EventSourcing.Abstractions.Nodes.Data;
 
 /// <summary>
 /// A node that can be appended to, and then possibly frozen.
@@ -19,9 +19,15 @@ public interface IAppendable
     public void Freeze();
 
     /// <summary>
+    /// Packs the node into a packed representation.
+    /// </summary>
+    /// <returns></returns>
+    public IPacked Pack();
+
+    /// <summary>
     /// Adds a datom to the node.
     /// </summary>
-    public void Add(Datom datom);
+    public void Add(in Datom datom);
 
     /// <summary>
     /// Adds a datom to the node.

@@ -6,7 +6,7 @@ namespace NexusMods.EventSourcing.Abstractions.Columns.ULongColumns;
 /// Represents a column that exists in an unpacked state and thus
 /// can return its contents as a span.
 /// </summary>
-public partial interface IUnpacked
+public partial interface IUnpacked : IReadable
 {
     /// <summary>
     /// Gets a read-only span of the column.

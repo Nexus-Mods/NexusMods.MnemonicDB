@@ -23,9 +23,10 @@ public class IndexTests(IServiceProvider provider) : AStorageTest(provider)
     private void CanIngestAndGetDatomsInner<TType>(TType comparator, int entityCount, SortOrders sortOrder, bool flush)
     where TType : IDatomComparator
     {
+        /*
         var testData = TestDatomNode(entityCount);
 
-        var index = new AppendableIndexNode(comparator);
+        var index = new Appendable(comparator);
 
 
         var grouped = testData
@@ -65,6 +66,8 @@ public class IndexTests(IServiceProvider provider) : AStorageTest(provider)
             idx.Should().Be(i, "the index should find the correct datom");
             AssertEqual(finalIndex[i], testData[i], i);
         }
+        */
+        throw new NotImplementedException();
     }
 
     public IEnumerable<object[]> TestData()

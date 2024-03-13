@@ -1,14 +1,32 @@
 ﻿using System;
+using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 
-namespace NexusMods.EventSourcing.Abstractions.Nodes.DataNode;
+namespace NexusMods.EventSourcing.Abstractions.Nodes.Data;
 
-public interface IReadable
+public interface IReadable : IEnumerable<Datom>
 {
     /// <summary>
     /// Length of the node in tuples
     /// </summary>
     public int Length { get; }
+
+    /// <summary>
+    /// Length of the node (including children) in tuples
+    /// </summary>
+    public long DeepLength { get; }
+
+    /// <summary>
+    /// Gets the datom at the given index.
+    /// </summary>
+    /// <param name="idx"></param>
+    public Datom this[int idx] { get; }
+
+    /// <summary>
+    /// Gets the last datom in the node, called out as a separate property for performance reasons as index nodes
+    /// may be able to provide this without iterating the entire tree
+    /// </summary>
+    public Datom LastDatom { get; }
 
     /// <summary>
     /// Get the entity id at the given index.

@@ -1,4 +1,5 @@
 ﻿using System;
+using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -117,7 +118,7 @@ where TAttribute : IAttribute<TValueType>
         /// <summary>
         /// Appends this datom to the given node
         /// </summary>
-        public void Append(IAttributeRegistry registry, IAppendableNode node)
+        public void Append(IAttributeRegistry registry, IAppendable node)
         {
             registry.Append<TAttribute, TValueType>(node, E, V, TxId.Tmp, Flags);
         }

@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Threading;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 using NexusMods.EventSourcing.Storage.DatomStorageStructures;
-using NexusMods.EventSourcing.Storage.Nodes;
-using NexusMods.EventSourcing.Storage.Nodes.DataNode;
 
 namespace NexusMods.EventSourcing.Storage;
 
@@ -18,8 +17,9 @@ public class NodeStore(IKvStore kvStore, AttributeRegistry registry)
     /// </summary>
     /// <param name="node"></param>
     /// <returns></returns>
-    public StoreKey LogTx(IDataNode packed)
+    public StoreKey LogTx(IReadable packed)
     {
+        /*
         var thisTx = ++_txLogId;
         Interlocked.Exchange(ref _nextBlockId, Ids.MakeId(Ids.Partition.Index, thisTx << 16));
         _nextBlockId = Ids.MakeId(Ids.Partition.Index, thisTx << 16);
@@ -28,98 +28,13 @@ public class NodeStore(IKvStore kvStore, AttributeRegistry registry)
         var key = StoreKey.From(logId);
         Flush(key, (PackedNode)packed);
         return key;
+        */
+        throw new NotImplementedException();
     }
 
     private StoreKey NextBlockId()
     {
         return StoreKey.From(Interlocked.Increment(ref _nextBlockId));
-    }
-
-    public IDataNode Flush(IDataNode node)
-    {
-        return node switch
-        {
-            PackedNode packedNode => Flush(packedNode),
-            PackedIndexNode packedIndexNode => Flush(packedIndexNode),
-            _ => throw new NotImplementedException("Unknown node type. " + node.GetType().Name)
-        };
-    }
-
-    public void PutRoot(DatomStoreState state)
-    {
-        var writer = new PooledMemoryBufferWriter();
-        state.WriteTo(writer);
-        var writtenSpan = writer.GetWrittenSpan();
-        kvStore.Put(StoreKey.RootKey, writtenSpan);
-    }
-
-    public IDataNode Flush(IIndexNode node)
-    {
-        return node switch
-        {
-            PackedIndexNode packedIndexNode => Flush(packedIndexNode),
-            _ => throw new NotImplementedException("Unknown node type. " + node.GetType().Name)
-        };
-    }
-
-    public IIndexNode Flush(PackedIndexNode node)
-    {
-        var writer = new PooledMemoryBufferWriter();
-        node.WriteTo(writer);
-        var writtenSpan = writer.GetWrittenSpan();
-
-        var id = NextBlockId();
-        kvStore.Put(id, writtenSpan);
-        return new ReferenceIndexNode(this, id, null);
-    }
-
-    public IDataNode Flush(PackedNode node)
-    {
-        var writer = new PooledMemoryBufferWriter();
-        node.WriteTo(writer);
-        var writtenSpan = writer.GetWrittenSpan();
-
-        var id = NextBlockId();
-        kvStore.Put(id, writtenSpan);
-        return new ReferenceNode(this, id, null);
-    }
-
-    private void Flush(StoreKey key, PackedNode node)
-    {
-        var writer = new PooledMemoryBufferWriter();
-        node.WriteTo(writer);
-        var writtenSpan = writer.GetWrittenSpan();
-        kvStore.Put(key, writtenSpan);
-    }
-
-
-
-    public IDataNode Load(StoreKey id)
-    {
-        if (!kvStore.TryGet(id, out var value))
-        {
-            throw new InvalidOperationException("Node not found");
-        }
-
-        var memory = GC.AllocateUninitializedArray<byte>(value.Length);
-        value.CopyTo(memory);
-
-        var reader = new BufferReader(memory);
-        var fourcc = reader.ReadFourCC();
-
-        if (fourcc == FourCC.PackedIndex)
-        {
-            return PackedIndexNode.ReadFrom(ref reader, this, registry);
-
-        }
-
-        if (fourcc == FourCC.PackedData)
-        {
-            return PackedNode.ReadFrom(ref reader);
-        }
-
-
-        throw new NotImplementedException("Unknown node type. " + fourcc);
     }
 
     public TxId GetNextTx()
@@ -134,6 +49,8 @@ public class NodeStore(IKvStore kvStore, AttributeRegistry registry)
 
     public bool LoadRoot(out DatomStoreState state)
     {
+        throw new NotImplementedException();
+        /*
         if (!kvStore.TryGet(StoreKey.RootKey, out var value))
         {
             state = default!;
@@ -153,7 +70,22 @@ public class NodeStore(IKvStore kvStore, AttributeRegistry registry)
 
         state = DatomStoreState.ReadFrom(reader, registry, this);
         return true;
+        */
     }
 
 
+    public IReadable Load(StoreKey key)
+    {
+        throw new NotImplementedException();
+    }
+
+    public StoreKey LogTx(EventSourcing.Abstractions.Columns.BlobColumns.IReadable node)
+    {
+        throw new NotImplementedException();
+    }
+
+    public EventSourcing.Abstractions.Columns.BlobColumns.IReadable Flush(EventSourcing.Abstractions.Columns.BlobColumns.IReadable node)
+    {
+        throw new NotImplementedException();
+    }
 }

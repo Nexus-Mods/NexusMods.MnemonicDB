@@ -44,4 +44,12 @@ public readonly struct Datom
     {
         return $"({E}, {A}, {T}, {Convert.ToHexString(V.Span)}))";
     }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is not Datom other)
+            return false;
+
+        return E == other.E && A == other.A && T == other.T && V.Span.SequenceEqual(other.V.Span);
+    }
 }

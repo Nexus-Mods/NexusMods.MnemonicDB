@@ -1,19 +1,17 @@
 ﻿using System;
-using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reactive.Subjects;
-using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Storage.Algorithms;
+using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 using NexusMods.EventSourcing.Storage.DatomStorageStructures;
-using NexusMods.EventSourcing.Storage.Nodes;
-using NexusMods.EventSourcing.Storage.Nodes.DataNode;
+using NexusMods.EventSourcing.Storage.Nodes.Data;
 using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage;
@@ -29,7 +27,7 @@ public class DatomStore : IDatomStore
     private readonly ILogger<DatomStore> _logger;
     private readonly Channel<PendingTransaction> _txChannel;
     private EntityId _nextEntId;
-    private readonly Subject<(TxId TxId, IDataNode Datoms)> _updatesSubject;
+    private readonly Subject<(TxId TxId, IReadable Datoms)> _updatesSubject;
     private readonly DatomStoreSettings _settings;
 
 
@@ -42,7 +40,7 @@ public class DatomStore : IDatomStore
         _pooledWriter = new PooledMemoryBufferWriter();
         _nextEntId = EntityId.From(Ids.MinId(Ids.Partition.Entity) + 1);
 
-        _updatesSubject = new Subject<(TxId TxId, IDataNode Datoms)>();
+        _updatesSubject = new Subject<(TxId TxId, IReadable Datoms)>();
 
         registry.Populate(BuiltInAttributes.Initial);
 
@@ -76,7 +74,7 @@ public class DatomStore : IDatomStore
 
                 await UpdateInMemoryIndexes(node, pendingTransaction.AssignedTxId!.Value);
 
-                _updatesSubject.OnNext((pendingTransaction.AssignedTxId.Value, node));
+                _updatesSubject.OnNext((pendingTransaction.AssignedTxId.Value, (IReadable)node));
                 pendingTransaction.CompletionSource.SetResult(pendingTransaction.AssignedTxId.Value);
                 _logger.LogDebug("Transaction {TxId} processed in {Elapsed}ms, new in-memory size is {Count} datoms", pendingTransaction.AssignedTxId!.Value, sw.ElapsedMilliseconds, _indexes.InMemorySize);
             }
@@ -119,7 +117,7 @@ public class DatomStore : IDatomStore
                 {
                     var key = StoreKey.From(Ids.MakeId(Ids.Partition.TxLog, thisTx));
                     var packed = _nodeStore.Load(key);
-                    var appendableNode = Appendable.Unpack(packed);
+                    var appendableNode = Appendable.Create(packed);
                     await UpdateInMemoryIndexes(appendableNode, TxId.From(thisTx));
                     replayed++;
                 }
@@ -144,11 +142,11 @@ public class DatomStore : IDatomStore
             E = EntityId.From(Ids.MakeId(Ids.Partition.Entity, ulong.MaxValue)),
             A = AttributeId.From(ulong.MinValue),
             T = TxId.MaxValue,
-            F = DatomFlags.Added,
             V = Array.Empty<byte>()
         };
 
         ulong startValue = 0;
+        /*
 
         var startInMemory = indexes.EAVT.InMemory.FindEATV(0, indexes.EAVT.InMemory.Length, toFind, _registry);
         if (startInMemory == indexes.EAVT.InMemory.Length)
@@ -189,6 +187,8 @@ public class DatomStore : IDatomStore
         }
 
         return max;
+        */
+        throw new NotImplementedException();
     }
 
     public TxId AsOfTxId => _indexes.AsOfTxId;
@@ -215,11 +215,12 @@ public class DatomStore : IDatomStore
         return new DatomStoreTransactResult(pending.AssignedTxId!.Value, pending.Remaps);
     }
 
-    public IObservable<(TxId TxId, IDataNode Datoms)> TxLog => _updatesSubject;
+    public IObservable<(TxId TxId, IReadable Datoms)> TxLog => _updatesSubject;
 
     private async Task UpdateInMemoryIndexes(Appendable node, TxId newTx)
     {
-        _indexes = await _indexes.Update(node, newTx, _settings, _nodeStore, _logger);
+        throw new NotImplementedException();
+        //_indexes = await _indexes.Update(node, newTx, _settings, _nodeStore, _logger);
 
     }
 
@@ -228,6 +229,7 @@ public class DatomStore : IDatomStore
         var attr = _registry.GetAttributeId<TAttr>();
         var index = _indexes.AEVT;
 
+        /*
 
         var startDatom = new Datom
         {
@@ -253,19 +255,24 @@ public class DatomStore : IDatomStore
                 yield return datom;
             }
         }
+        */
+        throw new NotImplementedException();
     }
 
-    private IEnumerable<Datom> WhereInner(IDataNode node, Datom startDatom)
+    private IEnumerable<Datom> WhereInner(IReadable node, Datom startDatom)
     {
+        throw new NotImplementedException();
+        /*
         var offset = node.FindAETV(0, node.Length, startDatom, _registry);
         for (var idx = offset; idx < node.Length; idx++)
         {
             yield return node[idx];
-        }
+        }*/
     }
 
     public IEnumerable<Datom> Where(TxId txId, EntityId id)
     {
+        /*
         var index = _indexes.EAVT;
 
         var lastAttr = AttributeId.From(0);
@@ -285,23 +292,26 @@ public class DatomStore : IDatomStore
                 yield return datom;
             }
         }
+        */
+        throw new NotImplementedException();
     }
 
-    private static IEnumerable<Datom> WhereInner(EntityId id, IDataNode node, IAttributeRegistry registry)
+    private static IEnumerable<Datom> WhereInner(EntityId id, IReadable node, IAttributeRegistry registry)
     {
+        /*
         var startDatom = new Datom
         {
             E = id,
             A = AttributeId.From(0),
             T = TxId.MaxValue,
-            F = DatomFlags.Added,
         };
         var offset = node.FindEATV(0, node.Length, startDatom, registry);
 
         for (var idx = offset; idx < node.Length; idx++)
         {
             yield return node[idx];
-        }
+        }*/
+        throw new NotImplementedException();
     }
 
     public IEnumerable<IReadDatom> Resolved(IEnumerable<Datom> datoms)
@@ -332,6 +342,7 @@ public class DatomStore : IDatomStore
 
     public IEnumerable<EntityId> ReverseLookup<TAttribute>(TxId txId, EntityId id) where TAttribute : IAttribute<EntityId>
     {
+        /*
         var index = _indexes.AVTE;
 
 
@@ -352,12 +363,15 @@ public class DatomStore : IDatomStore
 
             yield return datom.E;
         }
+        */
+        throw new NotImplementedException();
     }
 
 
-    private IEnumerable<Datom> ReverseLookupForIndex<TAttribute>(TxId txId, EntityId id, IDataNode node, IDatomComparator comparator)
+    private IEnumerable<Datom> ReverseLookupForIndex<TAttribute>(TxId txId, EntityId id, IReadable node, IDatomComparator comparator)
         where TAttribute : IAttribute<EntityId>
     {
+        /*
         var attr = _registry.GetAttributeId<TAttribute>();
 
         var value = new byte[8];
@@ -377,6 +391,8 @@ public class DatomStore : IDatomStore
         {
             yield return node[idx];
         }
+        */
+        throw new NotImplementedException();
     }
 
     #region Internals
@@ -384,6 +400,7 @@ public class DatomStore : IDatomStore
 
     private void Log(PendingTransaction pendingTransaction, out Appendable node)
     {
+        /*
         var newNode = new Appendable();
         foreach (var datom in pendingTransaction.Data)
             datom.Append(_registry, newNode);
@@ -429,6 +446,8 @@ public class DatomStore : IDatomStore
         var newTxBlock = _nodeStore.LogTx(newNode.Pack());
         Debug.Assert(newTxBlock.Value == nextTxBlock.Value, "newTxBlock == nextTxBlock");
         pendingTransaction.AssignedTxId = nextTx;
+        */
+        throw new RowNotInTableException();
 
     }
 

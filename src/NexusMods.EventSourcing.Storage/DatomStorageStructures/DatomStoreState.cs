@@ -1,4 +1,5 @@
-﻿using System.Buffers;
+﻿using System;
+using System.Buffers;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -27,6 +28,7 @@ public record DatomStoreState
 
     public static DatomStoreState Empty(TxId id, AttributeRegistry registry)
     {
+        /*
         return new DatomStoreState
         {
             InMemorySize = 0,
@@ -36,25 +38,18 @@ public record DatomStoreState
             AEVT = IndexRoot.Empty(SortOrders.AETV, registry),
             AVTE = IndexRoot.Empty(SortOrders.AVTE, registry)
         };
+        */
+        throw new NotImplementedException();
 
     }
 
     public void WriteTo<TBufferWriter>(TBufferWriter writer)
         where TBufferWriter : IBufferWriter<byte>
     {
-        writer.WriteFourCC(FourCC.DatomStoreStateRoot);
-        writer.Write(LastFlushedTxId.Value);
-
-        var historyNode = (ReferenceIndexNode)EAVT.History;
-        writer.Write(historyNode.Key.Value);
-
-        historyNode = (ReferenceIndexNode)AEVT.History;
-        writer.Write(historyNode.Key.Value);
-
-        historyNode = (ReferenceIndexNode)AVTE.History;
-        writer.Write(historyNode.Key.Value);
+        throw new NotImplementedException();
     }
 
+    /*
     public static DatomStoreState ReadFrom(in BufferReader reader, AttributeRegistry registry, NodeStore store)
     {
         var lastFlushedId = reader.Read<TxId>();
@@ -127,5 +122,6 @@ public record DatomStoreState
 
         return newState;
     }
+    */
 
 }

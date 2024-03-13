@@ -3,12 +3,14 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
+using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 
-namespace NexusMods.EventSourcing.Storage.Nodes.DataNode;
+namespace NexusMods.EventSourcing.Storage.Nodes.Data;
 
-public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IDataNode>? node) : IDataNode
+public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IReadable>? node) : IReadable
 {
-    private IDataNode Resolve()
+    private IReadable Resolve()
     {
         if (node?.TryGetTarget(out var target) == true)
         {
@@ -17,15 +19,10 @@ public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IDataNod
         return LoadNode();
     }
 
-    private IDataNode LoadNode()
+    private IReadable LoadNode()
     {
         var nodeData = store.Load(key);
-        node = new WeakReference<IDataNode>(nodeData);
-        if (nodeData.Length != Length)
-        {
-            throw new InvalidOperationException("Node length mismatch");
-        }
-
+        node = new WeakReference<IReadable>(nodeData);
         return nodeData;
     }
 
@@ -42,7 +39,8 @@ public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IDataNod
     public StoreKey Key => key;
 
     public bool IsResolved => node != null;
-    public long DeepLength { get; }
+
+    public long DeepLength => Resolve().DeepLength;
     public int Length => Resolve().Length;
 
     public Datom this[int idx] => Resolve()[idx];
@@ -50,31 +48,6 @@ public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IDataNod
     public void WriteTo<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
     {
         throw new NotSupportedException();
-    }
-
-    public IDataNode Flush(INodeStore store)
-    {
-        return this;
-    }
-
-    public int FindEATV(int start, int end, in Datom target, IAttributeRegistry registry)
-    {
-        return Resolve().FindEATV(start, end, target, registry);
-    }
-
-    public int FindAVTE(int start, int end, in Datom target, IAttributeRegistry registry)
-    {
-        return Resolve().FindAVTE(start, end, target, registry);
-    }
-
-    public int FindAETV(int start, int end, in Datom target, IAttributeRegistry registry)
-    {
-        return Resolve().FindAETV(start, end, target, registry);
-    }
-
-    public int Find(int start, int end, in Datom target, SortOrders order, IAttributeRegistry registry)
-    {
-        return Resolve().Find(start, end, target, order, registry);
     }
 
     public EntityId GetEntityId(int idx)
@@ -95,5 +68,10 @@ public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IDataNod
     public ReadOnlySpan<byte> GetValue(int idx)
     {
         return Resolve().GetValue(idx);
+    }
+
+    public int FillChunk(int offset, int length, ref DatomChunk chunk)
+    {
+        throw new NotImplementedException();
     }
 }

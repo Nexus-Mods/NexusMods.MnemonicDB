@@ -44,7 +44,7 @@ public class Appendable : IReadable, IUnpacked, IAppendable
     public ReadOnlyMemory<byte> GetMemory(int offset)
     {
         var length = _lengths.Span[offset];
-        return _writer.GetMemory().Slice((int)_offsets.Span[offset], (int)length);
+        return _writer.WrittenMemory.Slice((int)_offsets.Span[offset], (int)length);
     }
 
     /// <summary>
