@@ -36,6 +36,12 @@ public class Appendable : IReadable, IUnpacked, IAppendable
         }
     }
 
+    public ReadOnlyMemory<byte> Memory => _writer.WrittenMemory;
+
+    EventSourcing.Abstractions.Columns.ULongColumns.IReadable IReadable.Lengths => Lengths;
+
+    EventSourcing.Abstractions.Columns.ULongColumns.IReadable IReadable.Offsets => Offsets;
+
     public IUnpacked Unpack()
     {
         throw new NotImplementedException();

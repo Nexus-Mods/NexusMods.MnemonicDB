@@ -17,5 +17,25 @@ public interface IReadable
     /// </summary>
     public ReadOnlySpan<byte> this[int idx] { get; }
 
-    public IUnpacked Unpack();
+
+    /// <summary>
+    /// Gets the memory of the column, this is a blob that contains the data for the column,
+    /// items that are in this area can be found by indexing through Offset and Lengths.
+    /// </summary>
+    public ReadOnlyMemory<byte> Memory { get; }
+
+    /// <summary>
+    /// Gets the lengths of the values in the column, this is likely less efficient than using
+    /// other methods and may result in allocations in order to return a projected column. Prefer
+    /// other methods if possible.
+    /// </summary>
+    public ULongColumns.IReadable Lengths { get; }
+
+    /// <summary>
+    /// Gets the offsets of the values in the column, this is likely less efficient than using
+    /// other methods and may result in allocations in order to return a projected column. Prefer
+    /// other methods if possible.
+    /// </summary>
+    public ULongColumns.IReadable Offsets { get; }
+
 }

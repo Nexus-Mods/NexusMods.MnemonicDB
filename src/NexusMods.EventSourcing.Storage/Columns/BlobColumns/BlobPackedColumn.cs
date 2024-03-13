@@ -15,6 +15,8 @@ public partial class BlobPackedColumn : IReadable
         }
     }
 
+    public ReadOnlyMemory<byte> Memory => Data;
+
     public IUnpacked Unpack()
     {
         throw new NotImplementedException();

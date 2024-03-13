@@ -5,6 +5,10 @@ using System.Diagnostics;
 using FlatSharp;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.Nodes.Data;
+using NexusMods.EventSourcing.Storage.Columns.BlobColumns;
+using NexusMods.EventSourcing.Storage.Columns.ULongColumns;
+using IAppendable = NexusMods.EventSourcing.Abstractions.Nodes.Data.IAppendable;
+using IPacked = NexusMods.EventSourcing.Abstractions.Nodes.Data.IPacked;
 
 namespace NexusMods.EventSourcing.Storage.Nodes.Data;
 
@@ -276,18 +280,31 @@ public static class ExtensionMethods
     /// </summary>
     public static IReadable Pack(this IReadable readable)
     {
-        if (readable is IPacked packed)
+        return readable switch
         {
-            return packed;
-        }
-        else if (readable is IAppendable appendable)
+            IPacked packed => packed,
+            // Appendable nodes store columns unpacked, so they can use direct span access during the packing
+            IAppendable appendable => appendable.Pack(),
+            // Everything else will require copying the columns into a span, then packing it
+            _ => PackSlow(readable)
+        };
+    }
+
+    /// <summary>
+    /// Slower version of <see cref="Pack"/> that requires copying every column into a span, then packing it.
+    /// This is required for nodes that are not <see cref="IAppendable"/> and not <see cref="IPacked"/>, such as
+    /// views and sorted nodes.
+    /// </summary>
+    private static IReadable PackSlow(this IReadable readable)
+    {
+        return new DataPackedNode
         {
-            return appendable.Pack();
-        }
-        else
-        {
-            throw new InvalidOperationException("The node is neither packed nor appendable.");
-        }
+            Length = readable.Length,
+            EntityIds = (ULongPackedColumn)readable.EntityIds.Pack(),
+            AttributeIds = (ULongPackedColumn)readable.AttributeIds.Pack(),
+            Values = (BlobPackedColumn)readable.Values.Pack(),
+            TransactionIds = (ULongPackedColumn)readable.TransactionIds.Pack()
+        };
     }
 
     public static IReadable ReadDataNode(ReadOnlyMemory<byte> writerWrittenMemory)

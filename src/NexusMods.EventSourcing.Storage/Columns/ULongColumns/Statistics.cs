@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Numerics;
+using System.Runtime.InteropServices;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 
@@ -116,6 +118,86 @@ public struct Statistics
             8 or 9 => UL_Column_Union.ItemKind.Unpacked,
             _ => UL_Column_Union.ItemKind.Packed
         };
+    }
+
+    public ULongPackedColumn Pack(ReadOnlySpan<ulong> span)
+    {
+        switch (GetKind())
+        {
+            // Only one value appears in the column
+            case UL_Column_Union.ItemKind.Constant:
+                return new ULongPackedColumn
+                {
+                    Length = Count,
+                    Header = new UL_Column_Union(
+                        new UL_Constant
+                        {
+                            Value = MinValue
+                        }),
+                    Data = Memory<byte>.Empty,
+                };
+
+            // Packing won't help, so just pack it down to a struct
+            case UL_Column_Union.ItemKind.Unpacked:
+            {
+                return new ULongPackedColumn
+                {
+                    Length = Count,
+                    Header = new UL_Column_Union(
+                        new UL_Unpacked
+                        {
+                            Unused = 0
+                        }),
+                    Data = new Memory<byte>(span.CastFast<ulong, byte>().SliceFast(0, sizeof(ulong) * Count).ToArray()),
+                };
+            }
+
+            // Pack the column. This process looks at the partition byte (highest byte) and the remainder of the
+            // ulong. It then diffs the highest and lowest values in each section to find the offsets. It then
+            // stores the offsets and each value becomes a pair of (value, partition). The pairs always fall on
+            // byte boundaries, but the bytes can be odd numbers, anywhere from 1 to 7 bytes per value. We make sure
+            // the resulting chunk is large enough that we can over-read and mask values without overrunning the
+            // allocated memory.
+            case UL_Column_Union.ItemKind.Packed:
+            {
+                var destData = GC.AllocateUninitializedArray<byte>(TotalBytes * Count + 8);
+
+                var srcSpan = span.CastFast<ulong, ulong>().SliceFast(0, Count);
+                var destSpan = destData.AsSpan();
+
+                const ulong valueMask = 0x00FFFFFFFFFFFFFFUL;
+
+                var valueOffset = MinValue;
+                var partitionOffset = MinPartition;
+
+                for (var idx = 0; idx < span.Length; idx += 1)
+                {
+                    var srcValue = srcSpan[idx];
+                    var partition = (byte)(srcValue >> (8 * 7)) - partitionOffset;
+                    var value = (srcValue & valueMask) - valueOffset;
+
+                    var packedValue = value << PartitionBits | (byte)partition;
+                    var slice = destSpan.SliceFast(TotalBytes * idx);
+                    MemoryMarshal.Write(slice, packedValue);
+                }
+
+                return new ULongPackedColumn
+                {
+                    Length = Count,
+                    Header = new UL_Column_Union(
+                        new UL_Packed
+                        {
+                            ValueOffset = valueOffset,
+                            PartitionOffset = partitionOffset,
+                            ValueBytes = TotalBytes,
+                            PartitionBits = PartitionBits
+                        }),
+                    Data = new Memory<byte>(destData),
+                };
+            }
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
     }
 
 }

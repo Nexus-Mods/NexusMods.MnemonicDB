@@ -9,7 +9,7 @@ namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 /// <summary>
 /// A column backed by a FlatBuffer
 /// </summary>
-public partial class ULongPackedColumn : IReadable
+public partial class ULongPackedColumn : IPacked
 {
     /// <summary>
     /// Create a new column from a FlatBuffer in memory.

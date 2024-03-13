@@ -57,4 +57,29 @@ public interface IReadable : IEnumerable<Datom>
     /// or if values are in multiple memory segments (and thus a different chunk would be needed).
     /// </summary>
     public int FillChunk(int offset, int length, ref DatomChunk chunk);
+
+
+    /// <summary>
+    /// The entity ids in the node, may not be efficient to call this repeatedly, prefer to use FillChunk
+    /// or other introspective methods to avoid repeated allocations.
+    /// </summary>
+    public Columns.ULongColumns.IReadable EntityIds { get; }
+
+    /// <summary>
+    /// The attribute ids in the node, may not be efficient to call this repeatedly, prefer to use FillChunk
+    /// or other introspective methods to avoid repeated allocations.
+    /// </summary>
+    public Columns.ULongColumns.IReadable AttributeIds { get; }
+
+    /// <summary>
+    /// The transaction ids in the node, may not be efficient to call this repeatedly, prefer to use FillChunk
+    /// or other introspective methods to avoid repeated allocations.
+    /// </summary>
+    public Columns.ULongColumns.IReadable TransactionIds { get; }
+
+    /// <summary>
+    /// The values in the node, may not be efficient to call this repeatedly, prefer to use FillChunk
+    /// or other introspective methods to avoid repeated allocations.
+    /// </summary>
+    public Columns.BlobColumns.IReadable Values { get; }
 }
