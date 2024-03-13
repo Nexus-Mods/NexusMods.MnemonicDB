@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Nodes;
 
@@ -25,6 +26,11 @@ public class TxLog(AttributeRegistry registry) : IDatomComparator
         if (cmp != 0) return cmp;
 
         return registry.CompareValues(x, y);
+    }
+
+    public IComparer<int> MakeComparer(IReadable datoms)
+    {
+        throw new System.NotImplementedException();
     }
 
     public IComparer<int> MakeComparer<TBlob>(MemoryDatom<TBlob> datoms) where TBlob : IBlobColumn

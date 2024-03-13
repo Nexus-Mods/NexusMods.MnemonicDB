@@ -1,16 +1,24 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Serializers;
 
 namespace NexusMods.EventSourcing.Storage.Tests.NodeTests;
 
-public abstract class ADataNodeTests<TSubclass>(IServiceProvider provider)
-where TSubclass : ADataNodeTests<TSubclass>
+public abstract class ADataNodeTests<TSubclass> where TSubclass : ADataNodeTests<TSubclass>
 {
-    protected readonly AttributeRegistry Registry =
-        new(provider.GetServices<IValueSerializer>(), provider.GetServices<IAttribute>());
+    protected readonly AttributeRegistry Registry;
 
-    protected readonly ILogger Logger = provider.GetRequiredService<ILogger<TSubclass>>();
+    protected readonly ILogger Logger;
+
+    protected ADataNodeTests(IServiceProvider provider)
+    {
+        Registry = new(provider.GetServices<IValueSerializer>(), provider.GetServices<IAttribute>());
+        Logger = provider.GetRequiredService<ILogger<TSubclass>>();
+        Registry.Populate([
+            new DbAttribute(Symbol.Intern("test/attr1"), AttributeId.From(10), new StringSerializer().UniqueId)
+        ]);
+    }
 
     #region Helpers
 

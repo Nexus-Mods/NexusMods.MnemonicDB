@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Nodes.Data;
 
@@ -34,14 +35,14 @@ public class SortedNodeTests(IServiceProvider provider) : ADataNodeTests<SortedN
         var allDatoms = TestData(entities).ToArray();
         Random.Shared.Shuffle(allDatoms);
 
-        foreach (var datom in TestData(entities))
-        {
-            block.Add(in datom);
-        }
+        block.Add(allDatoms);
 
         var compare = Registry.CreateComparator(order);
         Logger.LogInformation("Sorting {0} datoms", allDatoms.Length);
-        block.Sort(compare);
+
+        var sw = Stopwatch.StartNew();
+        var sortedBlock = block.AsSorted(compare);
+        Logger.LogInformation("Sorted {0} datoms in {1}ms", allDatoms.Length, sw.ElapsedMilliseconds);
 
         var sorted = allDatoms.Order(CreateComparer(compare))
             .ToArray();
@@ -50,7 +51,7 @@ public class SortedNodeTests(IServiceProvider provider) : ADataNodeTests<SortedN
 
         for (var i = 0; i < allDatoms.Length; i++)
         {
-            var datomA = block[i];
+            var datomA = sortedBlock[i];
             var datomB = sorted[i];
             datomA.Should().BeEquivalentTo(datomB);
         }

@@ -1,15 +1,11 @@
 ﻿using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 
 namespace NexusMods.EventSourcing.Storage.Sorters;
 
 public class EATV(AttributeRegistry registry) : IDatomComparator
 {
-    public IComparer<int> MakeComparer<TBlob>(MemoryDatom<TBlob> datoms)
-        where TBlob : IBlobColumn
-    {
-        return new EATVComparer<TBlob>(registry, datoms);
-    }
     public SortOrders SortOrder => SortOrders.EATV;
 
     public int Compare(in Datom x, in Datom y)
@@ -25,23 +21,29 @@ public class EATV(AttributeRegistry registry) : IDatomComparator
 
         return registry.CompareValues(x, y);
     }
-}
 
-
-internal unsafe class EATVComparer<TBlob>(AttributeRegistry registry, MemoryDatom<TBlob> datoms) : IComparer<int>
-    where TBlob : IBlobColumn
-{
-    public int Compare(int a, int b)
+    public IComparer<int> MakeComparer(IReadable datoms)
     {
-        var cmp = datoms.EntityIds[a].CompareTo(datoms.EntityIds[b]);
-        if (cmp != 0) return cmp;
+        return new EATVComparer(registry, datoms);
+    }
 
-        cmp = datoms.AttributeIds[a].CompareTo(datoms.AttributeIds[b]);
-        if (cmp != 0) return cmp;
+    private class EATVComparer(AttributeRegistry registry, IReadable datoms) : IComparer<int>
+    {
+        public int Compare(int a, int b)
+        {
+            var cmp = datoms.GetEntityId(a).CompareTo(datoms.GetEntityId(b));
+            if (cmp != 0) return cmp;
 
-        cmp = datoms.TransactionIds[a].CompareTo(datoms.TransactionIds[b]);
-        if (cmp != 0) return -cmp;
+            cmp = datoms.GetAttributeId(a).CompareTo(datoms.GetAttributeId(b));
+            if (cmp != 0) return cmp;
 
-        return registry.CompareValues(datoms.Values, datoms.AttributeIds[a], a, b);
+            cmp = datoms.GetTransactionId(a).CompareTo(datoms.GetTransactionId(b));
+            if (cmp != 0) return -cmp;
+
+            return registry.CompareValues(datoms.GetAttributeId(a), datoms.GetValue(a), datoms.GetValue(b));
+        }
     }
 }
+
+
+

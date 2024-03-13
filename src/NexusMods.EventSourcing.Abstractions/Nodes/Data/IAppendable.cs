@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 
 namespace NexusMods.EventSourcing.Abstractions.Nodes.Data;
@@ -6,7 +7,7 @@ namespace NexusMods.EventSourcing.Abstractions.Nodes.Data;
 /// <summary>
 /// A node that can be appended to, and then possibly frozen.
 /// </summary>
-public interface IAppendable
+public interface IAppendable : IReadable
 {
     /// <summary>
     /// True if the node is frozen, false otherwise.
@@ -49,14 +50,9 @@ public interface IAppendable
     /// </summary>
     public void Add(in DatomChunk chunk);
 
-    /// <summary>
-    /// Sorts the node using the given comparator, returning a special node that can be used to read the sorted data. The original node is not modified,
-    /// so this will throw an exception if the node is not frozen.
-    /// </summary>
-    public IReadable Sort(IDatomComparator comparator);
 
     /// <summary>
-    /// Split the appendable into groupCount number of other nodes, each will be of approximately equal size.
+    /// Adds a collection of datoms to the node.
     /// </summary>
-    public IAppendable[] Split(int groupCount);
+    public void Add(IEnumerable<Datom> datoms);
 }

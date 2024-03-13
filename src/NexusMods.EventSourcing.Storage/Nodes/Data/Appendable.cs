@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 using NexusMods.EventSourcing.Abstractions.Nodes.Data;
+using NexusMods.EventSourcing.Storage.Columns.BlobColumns;
+using NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 using Reloaded.Memory.Extensions;
 using Data_IAppendable = NexusMods.EventSourcing.Abstractions.Nodes.Data.IAppendable;
 using IAppendable = NexusMods.EventSourcing.Abstractions.Nodes.Data.IAppendable;
@@ -93,7 +95,6 @@ public class Appendable : Data_IAppendable, IReadable
 
     public IPacked Pack()
     {
-        /*
         return new DataPackedNode
         {
             Length = _length,
@@ -101,8 +102,7 @@ public class Appendable : Data_IAppendable, IReadable
             AttributeIds = (ULongPackedColumn)_attributeIds.Pack(),
             Values = (BlobPackedColumn)_values.Pack(),
             TransactionIds = (ULongPackedColumn)_transactionIds.Pack()
-        };*/
-        throw new NotImplementedException();
+        };
     }
 
     private void EnsureNotFrozen()
@@ -153,14 +153,12 @@ public class Appendable : Data_IAppendable, IReadable
         _entityIds.Append(chunk.EntityIds.CastFast<EntityId, ulong>(), chunk.Mask);
     }
 
-    public IReadable Sort(IDatomComparator comparator)
+    public void Add(IEnumerable<Datom> datoms)
     {
-        throw new NotImplementedException();
-    }
-
-    public IAppendable[] Split(int groupCount)
-    {
-        throw new NotImplementedException();
+        foreach (var datom in datoms)
+        {
+            Add(in datom);
+        }
     }
 
     public IEnumerator<Datom> GetEnumerator()

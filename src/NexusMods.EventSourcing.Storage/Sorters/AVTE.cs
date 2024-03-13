@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Nodes;
 
@@ -23,29 +24,26 @@ public class AVTE(AttributeRegistry registry) : IDatomComparator
         return x.E.CompareTo(y.E);
     }
 
-    public IComparer<int> MakeComparer<TBlob>(MemoryDatom<TBlob> datoms) where TBlob : IBlobColumn
+    public IComparer<int> MakeComparer(IReadable datoms)
     {
-        return new AVTEComparer<TBlob>(registry, datoms);
+        return new Comparer(registry, datoms);
     }
-}
 
-
-internal unsafe class AVTEComparer<TBlob>(AttributeRegistry registry, MemoryDatom<TBlob> datoms) : IComparer<int>
-    where TBlob : IBlobColumn
-{
-
-    public int Compare(int a, int b)
+    private class Comparer(AttributeRegistry registry, IReadable datoms) : IComparer<int>
     {
-        var cmp = datoms.AttributeIds[a].CompareTo(datoms.AttributeIds[b]);
-        if (cmp != 0) return cmp;
+        public int Compare(int a, int b)
+        {
+            var cmp = datoms.GetAttributeId(a).CompareTo(datoms.GetAttributeId(b));
+            if (cmp != 0) return cmp;
 
-        cmp = registry.CompareValues(datoms.Values, datoms.AttributeIds[a], a, b);
-        if (cmp != 0) return cmp;
+            cmp = registry.CompareValues(datoms.GetAttributeId(a), datoms.GetValue(a), datoms.GetValue(b));
+            if (cmp != 0) return cmp;
 
-        // Reverse the comparison of transaction ids to get the latest transaction first
-        cmp = datoms.TransactionIds[a].CompareTo(datoms.TransactionIds[b]);
-        if (cmp != 0) return -cmp;
+            // Reverse the comparison of transaction ids to get the latest transaction first
+            cmp = datoms.GetTransactionId(a).CompareTo(datoms.GetTransactionId(b));
+            if (cmp != 0) return -cmp;
 
-        return datoms.EntityIds[a].CompareTo(datoms.EntityIds[b]);
+            return datoms.GetEntityId(a).CompareTo(datoms.GetEntityId(b));
+        }
     }
 }

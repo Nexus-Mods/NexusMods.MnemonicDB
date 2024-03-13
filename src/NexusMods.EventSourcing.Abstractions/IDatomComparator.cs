@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 using NexusMods.EventSourcing.Storage;
 
 namespace NexusMods.EventSourcing.Abstractions;
@@ -22,13 +23,8 @@ public interface IDatomComparator
     public int Compare(in Datom x, in Datom y);
 
     /// <summary>
-    /// Make a comparer for the given datoms using indices as a key to the datoms. This is used
-    /// so that the .NET sorting algorithm can sort be used to sort datoms, but yet we can still
-    /// only retrieve the parts of of the datoms that we need. In other words if to datoms differ
-    /// only in the E part, we don't need to compare the A, T and V parts (V being a rather expensive
-    /// comparison to make). This comparer is unsafe as the MemoryDatom contains raw pointers to
-    /// arrays of integers being sorted in memory.
+    /// Make a comparer for the given reader, the comparer will get ints to compare which should be treated as indexes
+    /// into the given reader.
     /// </summary>
-    public unsafe IComparer<int> MakeComparer<TBlob>(MemoryDatom<TBlob> datoms)
-        where TBlob : IBlobColumn;
+    public IComparer<int> MakeComparer(IReadable datoms);
 }
