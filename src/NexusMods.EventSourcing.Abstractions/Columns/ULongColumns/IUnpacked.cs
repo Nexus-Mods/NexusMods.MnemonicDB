@@ -1,7 +1,6 @@
 ﻿using System;
-using NexusMods.EventSourcing.Abstractions;
 
-namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
+namespace NexusMods.EventSourcing.Abstractions.Columns.ULongColumns;
 
 /// <summary>
 /// Represents a column that exists in an unpacked state and thus
@@ -13,4 +12,6 @@ public partial interface IUnpacked
     /// Gets a read-only span of the column.
     /// </summary>
     public ReadOnlySpan<ulong> Span { get; }
+
+    public IReadable Pack();
 }

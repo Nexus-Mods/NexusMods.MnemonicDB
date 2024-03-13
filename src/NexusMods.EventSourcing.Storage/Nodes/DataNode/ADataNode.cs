@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using NexusMods.EventSourcing.Abstractions;
 
-namespace NexusMods.EventSourcing.Storage.Nodes;
+namespace NexusMods.EventSourcing.Storage.Nodes.DataNode;
 
 public abstract partial class ADataNode : IDataNode
 {
@@ -16,12 +16,8 @@ public abstract partial class ADataNode : IDataNode
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     public abstract int Length { get; }
-    public abstract IColumn<EntityId> EntityIds { get; }
-    public abstract IColumn<AttributeId> AttributeIds { get; }
-    public abstract IColumn<TxId> TransactionIds { get; }
-    public abstract IColumn<DatomFlags> Flags { get; }
-    public abstract IBlobColumn Values { get; }
 
+    public abstract long DeepLength { get; }
     public abstract Datom this[int idx] { get; }
 
     public abstract Datom LastDatom { get; }
@@ -31,29 +27,54 @@ public abstract partial class ADataNode : IDataNode
 
     #endregion
 
+    #region Lookup Methods
+
+    /// <summary>
+    /// Gets the entity id at the given index.
+    /// </summary>
+    public abstract EntityId GetEntityId(int idx);
+
+    /// <summary>
+    /// Gets the attribute id at the given index.
+    /// </summary>
+    public abstract AttributeId GetAttributeId(int idx);
+
+    /// <summary>
+    /// Gets the transaction id at the given index.
+    /// </summary>
+    public abstract TxId GetTransactionId(int idx);
+
+    /// <summary>
+    /// Gets the flags at the given index.
+    /// </summary>
+    public abstract ReadOnlySpan<byte> GetValue(int idx);
+
+
+    #endregion
+
 
     public virtual int FindEATV(int start, int end, in Datom target, IAttributeRegistry registry)
     {
         start = 0;
-        end = EntityIds.Length;
+        end = Length;
 
         Debug.Assert(start <= end, "Start index should be less than or equal to end index");
-        Debug.Assert(end <= EntityIds.Length, "End index should be less than or equal to the length of the node");
+        Debug.Assert(end <= Length, "End index should be less than or equal to the length of the node");
         while (start < end)
         {
             var mid = start + (end - start) / 2;
 
-            var cmp = target.E.CompareTo(EntityIds[mid]);
+            var cmp = target.E.CompareTo(GetEntityId(mid));
             if (cmp == 0)
             {
-                var attrId = AttributeIds[mid];
+                var attrId = GetAttributeId(mid);
                 var attrCmp = target.A.CompareTo(attrId);
                 if (attrCmp == 0)
                 {
-                    var tmpCmp = target.T.CompareTo(TransactionIds[mid]);
+                    var tmpCmp = target.T.CompareTo(GetTransactionId(mid));
                     if (tmpCmp == 0)
                     {
-                        cmp = registry.CompareValues(attrId, target.V.Span, Values[mid].Span);
+                        cmp = registry.CompareValues(attrId, target.V.Span, GetValue(mid));
                     }
                     else
                     {
@@ -84,16 +105,16 @@ public abstract partial class ADataNode : IDataNode
         {
             var mid = start + (end - start) / 2;
 
-            var cmp = target.A.CompareTo(AttributeIds[mid]);
+            var cmp = target.A.CompareTo(GetAttributeId(mid));
             if (cmp == 0)
             {
-                var entCmp = target.E.CompareTo(EntityIds[mid]);
+                var entCmp = target.E.CompareTo(GetEntityId(mid));
                 if (entCmp == 0)
                 {
-                    var tCmp = -target.T.CompareTo(TransactionIds[mid]);
+                    var tCmp = -target.T.CompareTo(GetTransactionId(mid));
                     if (tCmp == 0)
                     {
-                        cmp = registry.CompareValues(target.A, target.V.Span, Values[mid].Span);
+                        cmp = registry.CompareValues(target.A, target.V.Span, GetValue(mid));
                     }
                     else
                     {
@@ -125,16 +146,16 @@ public abstract partial class ADataNode : IDataNode
         {
             var mid = start + (end - start) / 2;
 
-            var cmp = target.A.CompareTo(AttributeIds[mid]);
+            var cmp = target.A.CompareTo(GetAttributeId(mid));
             if (cmp == 0)
             {
-                var valueCmp = registry.CompareValues(target.A, target.V.Span, Values[mid].Span);
+                var valueCmp = registry.CompareValues(target.A, target.V.Span, GetValue(mid));
                 if (valueCmp == 0)
                 {
-                    var tCmp = -target.T.CompareTo(TransactionIds[mid]);
+                    var tCmp = -target.T.CompareTo(GetTransactionId(mid));
                     if (tCmp == 0)
                     {
-                        cmp = target.E.CompareTo(EntityIds[mid]);
+                        cmp = target.E.CompareTo(GetEntityId(mid));
                     }
                     else
                     {

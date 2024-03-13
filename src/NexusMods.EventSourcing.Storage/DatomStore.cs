@@ -13,6 +13,7 @@ using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Algorithms;
 using NexusMods.EventSourcing.Storage.DatomStorageStructures;
 using NexusMods.EventSourcing.Storage.Nodes;
+using NexusMods.EventSourcing.Storage.Nodes.DataNode;
 using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage;
@@ -118,7 +119,7 @@ public class DatomStore : IDatomStore
                 {
                     var key = StoreKey.From(Ids.MakeId(Ids.Partition.TxLog, thisTx));
                     var packed = _nodeStore.Load(key);
-                    var appendableNode = AppendableNode.Initialize(packed);
+                    var appendableNode = Appendable.Unpack(packed);
                     await UpdateInMemoryIndexes(appendableNode, TxId.From(thisTx));
                     replayed++;
                 }
@@ -216,7 +217,7 @@ public class DatomStore : IDatomStore
 
     public IObservable<(TxId TxId, IDataNode Datoms)> TxLog => _updatesSubject;
 
-    private async Task UpdateInMemoryIndexes(AppendableNode node, TxId newTx)
+    private async Task UpdateInMemoryIndexes(Appendable node, TxId newTx)
     {
         _indexes = await _indexes.Update(node, newTx, _settings, _nodeStore, _logger);
 
@@ -381,9 +382,9 @@ public class DatomStore : IDatomStore
     #region Internals
 
 
-    private void Log(PendingTransaction pendingTransaction, out AppendableNode node)
+    private void Log(PendingTransaction pendingTransaction, out Appendable node)
     {
-        var newNode = new AppendableNode();
+        var newNode = new Appendable();
         foreach (var datom in pendingTransaction.Data)
             datom.Append(_registry, newNode);
 

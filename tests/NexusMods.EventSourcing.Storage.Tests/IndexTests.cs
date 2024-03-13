@@ -3,6 +3,7 @@ using System.Reflection;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Nodes;
+using NexusMods.EventSourcing.Storage.Nodes.IndexNode;
 using Xunit.DependencyInjection;
 
 namespace NexusMods.EventSourcing.Storage.Tests;

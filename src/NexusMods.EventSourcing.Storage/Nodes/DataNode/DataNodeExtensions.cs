@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 
-namespace NexusMods.EventSourcing.Storage.Nodes;
+namespace NexusMods.EventSourcing.Storage.Nodes.DataNode;
 
 public static class DataNodeExtensions
 {

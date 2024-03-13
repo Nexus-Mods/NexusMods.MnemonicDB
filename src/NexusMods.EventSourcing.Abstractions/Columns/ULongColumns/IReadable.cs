@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
+namespace NexusMods.EventSourcing.Abstractions.Columns.ULongColumns;
 
 /// <summary>
 /// A readable column of ulong values.
@@ -23,11 +23,5 @@ public interface IReadable
     /// </summary>
     public ulong this[int idx] { get; }
 
-    public Appendable Unpack()
-    {
-        var appendable = Appendable.Create(Length);
-        CopyTo(0, appendable.GetWritableSpan(Length));
-        appendable.SetLength(Length);
-        return appendable;
-    }
+    public IUnpacked Unpack();
 }

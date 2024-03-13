@@ -34,12 +34,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Update="Columns\ULongColumns\Packing.cs">
-        <DependentUpon>IUnpacked.cs</DependentUpon>
-      </Compile>
-    </ItemGroup>
-
-    <ItemGroup>
       <FlatSharpSchema Include="Columns\ULongColumns\Schema.fbs" />
       <None Remove="Columns\BlobColumns\Schema.fbs" />
       <FlatSharpSchema Include="Columns\BlobColumns\Schema.fbs" />

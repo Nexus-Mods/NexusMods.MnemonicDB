@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Nodes;
+using NexusMods.EventSourcing.Storage.Nodes.DataNode;
 using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage;
@@ -97,7 +98,7 @@ public class AttributeRegistry : IAttributeRegistry
         return Expression.Block([valueExpr], readExpression, valueExpr);
     }
 
-    public void Append<TAttribute, TValue>(AppendableNode node, EntityId entityId, TxId tx, DatomFlags flags, TValue value)
+    public void Append<TAttribute, TValue>(Appendable node, EntityId entityId, TxId tx, DatomFlags flags, TValue value)
     where TAttribute : IAttribute<TValue>
     {
         var serializer = (IValueSerializer<TValue>)_valueSerializersByNativeType[typeof(TValue)];

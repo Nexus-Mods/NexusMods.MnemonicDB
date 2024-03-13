@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using BenchmarkDotNet.Attributes;
 using FlatSharp;
+using NexusMods.EventSourcing.Abstractions.Columns.ULongColumns;
 using NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 
 namespace NexusMods.EventSourcing.Storage.Benchmarks;

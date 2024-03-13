@@ -1,6 +1,8 @@
 ﻿using System.Buffers;
 using System.Text;
 using FlatSharp;
+using NexusMods.EventSourcing.Abstractions.Columns.BlobColumns;
+using NexusMods.EventSourcing.Abstractions.Columns.ULongColumns;
 using NexusMods.EventSourcing.Storage.Columns.BlobColumns;
 using NexusMods.Hashing.xxHash64;
 using Xunit.DependencyInjection;

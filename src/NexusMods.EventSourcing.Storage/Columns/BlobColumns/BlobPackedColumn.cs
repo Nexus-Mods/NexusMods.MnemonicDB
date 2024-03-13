@@ -1,4 +1,5 @@
 ﻿using System;
+using NexusMods.EventSourcing.Abstractions.Columns.BlobColumns;
 
 namespace NexusMods.EventSourcing.Storage.Columns.BlobColumns;
 
@@ -12,5 +13,17 @@ public partial class BlobPackedColumn : IReadable
             var end = Lengths[offset];
             return Data.Slice((int)start, (int)end).Span;
         }
+    }
+
+    public IUnpacked Unpack()
+    {
+        throw new NotImplementedException();
+    }
+
+    public ReadOnlyMemory<byte> GetMemory(int offset)
+    {
+        var start = Offsets[offset];
+        var end = Lengths[offset];
+        return Data.Slice((int)start, (int)end);
     }
 }

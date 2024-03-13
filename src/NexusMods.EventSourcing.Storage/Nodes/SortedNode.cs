@@ -4,6 +4,7 @@ using System.Collections;
 using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Columns;
+using NexusMods.EventSourcing.Storage.Nodes.DataNode;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
@@ -24,15 +25,10 @@ public class SortedNode(int[] indexes, IDataNode inner) : ADataNode
     }
 
     public override int Length => indexes.Length;
-    public override IColumn<EntityId> EntityIds => new SortedColumn<EntityId>(indexes, inner.EntityIds);
-    public override IColumn<AttributeId> AttributeIds => new SortedColumn<AttributeId>(indexes, inner.AttributeIds);
-    public override IColumn<TxId> TransactionIds => new SortedColumn<TxId>(indexes, inner.TransactionIds);
-    public override IColumn<DatomFlags> Flags => new SortedColumn<DatomFlags>(indexes, inner.Flags);
-    public override IBlobColumn Values => new SortedBlobColumn(indexes, inner.Values);
+    public override long DeepLength => indexes.Length;
+    public override Datom this[int idx] => inner[indexes[idx]];
 
-    public override Datom this[int idx] => throw new System.NotImplementedException();
-
-    public override Datom LastDatom { get; }
+    public override Datom LastDatom => inner[indexes[^1]];
 
     public override void WriteTo<TWriter>(TWriter writer)
     {
@@ -42,5 +38,25 @@ public class SortedNode(int[] indexes, IDataNode inner) : ADataNode
     public override IDataNode Flush(INodeStore store)
     {
         throw new NotSupportedException();
+    }
+
+    public override EntityId GetEntityId(int idx)
+    {
+        return inner.GetEntityId(indexes[idx]);
+    }
+
+    public override AttributeId GetAttributeId(int idx)
+    {
+        return inner.GetAttributeId(indexes[idx]);
+    }
+
+    public override TxId GetTransactionId(int idx)
+    {
+        return inner.GetTransactionId(indexes[idx]);
+    }
+
+    public override ReadOnlySpan<byte> GetValue(int idx)
+    {
+        return inner.GetValue(indexes[idx]);
     }
 }

@@ -3,9 +3,8 @@ using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Storage.Abstractions;
 
-namespace NexusMods.EventSourcing.Storage.Nodes;
+namespace NexusMods.EventSourcing.Storage.Nodes.DataNode;
 
 public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IDataNode>? node) : IDataNode
 {
@@ -43,12 +42,8 @@ public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IDataNod
     public StoreKey Key => key;
 
     public bool IsResolved => node != null;
+    public long DeepLength { get; }
     public int Length => Resolve().Length;
-    public IColumn<EntityId> EntityIds => Resolve().EntityIds;
-    public IColumn<AttributeId> AttributeIds => Resolve().AttributeIds;
-    public IColumn<TxId> TransactionIds => Resolve().TransactionIds;
-    public IColumn<DatomFlags> Flags => Resolve().Flags;
-    public IBlobColumn Values => Resolve().Values;
 
     public Datom this[int idx] => Resolve()[idx];
     public Datom LastDatom => Resolve().LastDatom;
@@ -80,5 +75,25 @@ public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IDataNod
     public int Find(int start, int end, in Datom target, SortOrders order, IAttributeRegistry registry)
     {
         return Resolve().Find(start, end, target, order, registry);
+    }
+
+    public EntityId GetEntityId(int idx)
+    {
+        return Resolve().GetEntityId(idx);
+    }
+
+    public AttributeId GetAttributeId(int idx)
+    {
+        return Resolve().GetAttributeId(idx);
+    }
+
+    public TxId GetTransactionId(int idx)
+    {
+        return Resolve().GetTransactionId(idx);
+    }
+
+    public ReadOnlySpan<byte> GetValue(int idx)
+    {
+        return Resolve().GetValue(idx);
     }
 }

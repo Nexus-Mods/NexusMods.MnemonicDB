@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using FlatSharp;
+using NexusMods.EventSourcing.Abstractions.Columns.ULongColumns;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
@@ -45,6 +46,14 @@ public partial class ULongPackedColumn : IReadable
                     throw new ArgumentOutOfRangeException();
             }
         }
+    }
+
+    public IUnpacked Unpack()
+    {
+        var appendable = Appendable.Create(Length);
+        CopyTo(0, appendable.GetWritableSpan(Length));
+        appendable.SetLength(Length);
+        return appendable;
     }
 
     public void CopyTo(int offset, Span<ulong> dest)

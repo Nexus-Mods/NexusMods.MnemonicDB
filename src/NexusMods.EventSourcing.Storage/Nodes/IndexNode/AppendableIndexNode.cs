@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Buffers;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Storage.Abstractions;
-using NexusMods.EventSourcing.Storage.Abstractions.Columns.PackedColumns;
 using NexusMods.EventSourcing.Storage.Algorithms;
 using NexusMods.EventSourcing.Storage.Columns;
+using NexusMods.EventSourcing.Storage.Nodes.DataNode;
 
-namespace NexusMods.EventSourcing.Storage.Nodes;
+namespace NexusMods.EventSourcing.Storage.Nodes.IndexNode;
 
 public class AppendableIndexNode : AIndexNode
 {
@@ -27,7 +24,7 @@ public class AppendableIndexNode : AIndexNode
 
     public AppendableIndexNode(IDatomComparator comparator)
     {
-        _children = new List<IDataNode> { new AppendableNode() };
+        _children = new List<IDataNode> { new Appendable() };
         _entityIds = new UnsignedIntegerColumn<EntityId>();
         _attributeIds = new UnsignedIntegerColumn<AttributeId>();
         _transactionIds = new UnsignedIntegerColumn<TxId>();
@@ -85,6 +82,7 @@ public class AppendableIndexNode : AIndexNode
 
 
     public override int Length => _length;
+    public override long DeepLength { get; }
     public override IColumn<EntityId> EntityIds => _entityIds;
     public override IColumn<AttributeId> AttributeIds => _attributeIds;
     public override IColumn<TxId> TransactionIds => _transactionIds;
@@ -138,6 +136,26 @@ public class AppendableIndexNode : AIndexNode
         }
         var packed = Pack();
         return store.Flush(packed);
+    }
+
+    public override EntityId GetEntityId(int idx)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override AttributeId GetAttributeId(int idx)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override TxId GetTransactionId(int idx)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override ReadOnlySpan<byte> GetValue(int idx)
+    {
+        throw new NotImplementedException();
     }
 
     private IDataNode Pack()

@@ -1,6 +1,7 @@
 ﻿using System.Threading.Tasks;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Nodes;
+using NexusMods.EventSourcing.Storage.Nodes.IndexNode;
 
 namespace NexusMods.EventSourcing.Storage.DatomStorageStructures;
 

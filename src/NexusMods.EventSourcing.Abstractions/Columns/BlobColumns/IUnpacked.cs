@@ -1,7 +1,6 @@
 ﻿using System;
-using NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 
-namespace NexusMods.EventSourcing.Storage.Columns.BlobColumns;
+namespace NexusMods.EventSourcing.Abstractions.Columns.BlobColumns;
 
 /// <summary>
 /// A unpacked blob column. This column
@@ -24,15 +23,5 @@ public interface IUnpacked : IReadable
     /// </summary>
     public ULongColumns.IUnpacked Lengths { get; }
 
-
-    public IReadable Pack()
-    {
-        return new BlobPackedColumn
-        {
-            Count = Count,
-            Offsets = (ULongPackedColumn)Offsets.Pack(),
-            Lengths = (ULongPackedColumn)Lengths.Pack(),
-            Data = Span.ToArray()
-        };
-    }
+    public IReadable Pack();
 }

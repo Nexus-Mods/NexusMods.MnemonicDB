@@ -3,6 +3,7 @@ using System.Threading;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.DatomStorageStructures;
 using NexusMods.EventSourcing.Storage.Nodes;
+using NexusMods.EventSourcing.Storage.Nodes.DataNode;
 
 namespace NexusMods.EventSourcing.Storage;
 

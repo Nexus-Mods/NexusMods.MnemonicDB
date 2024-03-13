@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using FlatSharp;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Columns.ULongColumns;
 using NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 using Reloaded.Memory.Extensions;
 using Xunit.DependencyInjection;
