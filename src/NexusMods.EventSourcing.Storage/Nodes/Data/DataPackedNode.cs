@@ -19,7 +19,7 @@ public partial class DataPackedNode : IPacked
         return GetEnumerator();
     }
 
-    public long DeepLength { get; }
+    public long DeepLength => Length;
 
     public Datom this[int idx] => new()
     {
@@ -29,27 +29,26 @@ public partial class DataPackedNode : IPacked
         V = Values.GetMemory(idx)
     };
 
-    public Datom LastDatom { get; }
+    public Datom LastDatom => this[Length - 1];
     public EntityId GetEntityId(int idx)
     {
-        throw new NotImplementedException();
+        return EntityId.From(EntityIds[idx]);
     }
 
     public AttributeId GetAttributeId(int idx)
     {
-        throw new NotImplementedException();
+        return AttributeId.From(AttributeIds[idx]);
     }
 
     public TxId GetTransactionId(int idx)
     {
-        throw new NotImplementedException();
+        return TxId.From(TransactionIds[idx]);
     }
 
     public ReadOnlySpan<byte> GetValue(int idx)
     {
-        throw new NotImplementedException();
+        return Values[idx];
     }
-
 
     public int FillChunk(int offset, int length, ref DatomChunk chunk)
     {

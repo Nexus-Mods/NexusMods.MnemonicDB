@@ -1,4 +1,6 @@
-﻿using NexusMods.EventSourcing.Abstractions;
+﻿using System.Diagnostics;
+using Microsoft.Extensions.Logging;
+using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Nodes.Data;
 
 namespace NexusMods.EventSourcing.Storage.Tests.NodeTests;
@@ -130,9 +132,14 @@ public class DataTests(IServiceProvider provider) : ADataNodeTests<DataTests>(pr
         }
 
         var writer = new PooledMemoryBufferWriter();
-        block.WriteTo(writer);
 
+        var sw = Stopwatch.StartNew();
+        block.WriteTo(writer);
+        Logger.LogInformation("Packed {0} datoms into {1} bytes in {2}ms", block.Length, writer.WrittenMemory.Length, sw.ElapsedMilliseconds);
+
+        sw.Restart();
         var readNode = ExtensionMethods.ReadDataNode(writer.WrittenMemory);
+        Logger.LogInformation("Read {0} datoms from {1} bytes in {2}ms", readNode.Length, writer.WrittenMemory.Length, sw.ElapsedMilliseconds);
 
         for (var i = 0; i < allDatoms.Length; i++)
         {
