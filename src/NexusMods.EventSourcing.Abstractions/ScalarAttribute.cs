@@ -74,7 +74,6 @@ where TAttribute : IAttribute<TValueType>
             E = datom.E,
             V = read,
             T = datom.T,
-            Flags = datom.F
         };
     }
 

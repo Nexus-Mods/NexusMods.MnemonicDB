@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 using NexusMods.EventSourcing.Abstractions.Columns.ULongColumns;
 using Reloaded.Memory.Extensions;
 
@@ -67,6 +68,18 @@ public class Appendable : IDisposable, IAppendable, IReadable, IUnpacked
         Ensure(values.Length);
         values.CopyTo(CastedSpan.Slice(_length));
         _length += values.Length;
+    }
+
+    public void Append(ReadOnlySpan<ulong> values, ReadOnlySpan<ulong> mask)
+    {
+        Ensure(values.Length);
+        for (var i = 0; i < values.Length; i++)
+        {
+            if ((mask[i >> 6] & (1UL << (i & 63))) != 0)
+            {
+                Append(values[i]);
+            }
+        }
     }
 
     public void Append(IEnumerable<ulong> values)

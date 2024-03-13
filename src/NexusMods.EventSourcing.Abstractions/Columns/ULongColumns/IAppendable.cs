@@ -21,6 +21,14 @@ public interface IAppendable
     public void Append(ReadOnlySpan<ulong> values);
 
     /// <summary>
+    /// Appends the specified values to the column using the specified mask as a filter, assumes that the mask
+    /// is the size of DatomChunk.ChunkSize / 64.
+    /// </summary>
+    /// <param name="values"></param>
+    /// <param name="mask"></param>
+    public void Append(ReadOnlySpan<ulong> values, ReadOnlySpan<ulong> mask);
+
+    /// <summary>
     /// Appends the specified values to the column.
     /// </summary>
     /// <param name="values"></param>
