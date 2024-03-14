@@ -55,4 +55,37 @@ public class ReadableView(IReadable inner, int offset, int length) : IReadable
     {
         throw new NotImplementedException();
     }
+
+    private class ReadableViewBlobColumn(int offset, int length, EventSourcing.Abstractions.Columns.BlobColumns.IReadable inner)
+      : EventSourcing.Abstractions.Columns.BlobColumns.IReadable
+    {
+        public int Count => length;
+
+        public ReadOnlySpan<byte> this[int idx] => inner[idx + offset];
+
+        public ReadOnlyMemory<byte> Memory => inner.Memory;
+        public EventSourcing.Abstractions.Columns.ULongColumns.IReadable LengthsColumn => new ReadableViewULongColumn(offset, length, inner.LengthsColumn);
+        public EventSourcing.Abstractions.Columns.ULongColumns.IReadable OffsetsColumn => new ReadableViewULongColumn(offset, length, inner.OffsetsColumn);
+    }
+
+    private class ReadableViewULongColumn(int offset, int length, EventSourcing.Abstractions.Columns.ULongColumns.IReadable inner)
+      : EventSourcing.Abstractions.Columns.ULongColumns.IReadable
+    {
+        public int Length => length;
+        public void CopyTo(int innerOffset, Span<ulong> dest)
+        {
+            for (var i = 0; i < dest.Length; i++)
+            {
+                dest[i] = inner[i + offset + innerOffset];
+            }
+        }
+        public ulong this[int idx] => inner[idx + offset];
+    }
+
+
+
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable EntityIdsColumn => new ReadableViewULongColumn(offset, length, inner.EntityIdsColumn);
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable AttributeIdsColumn => new ReadableViewULongColumn(offset, length, inner.AttributeIdsColumn);
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable TransactionIdsColumn => new ReadableViewULongColumn(offset, length, inner.TransactionIdsColumn);
+    public EventSourcing.Abstractions.Columns.BlobColumns.IReadable ValuesColumn => new ReadableViewBlobColumn(offset, length, inner.ValuesColumn);
 }

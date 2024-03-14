@@ -38,9 +38,9 @@ public class Appendable : IReadable, IUnpacked, IAppendable
 
     public ReadOnlyMemory<byte> Memory => _writer.WrittenMemory;
 
-    EventSourcing.Abstractions.Columns.ULongColumns.IReadable IReadable.Lengths => Lengths;
+    EventSourcing.Abstractions.Columns.ULongColumns.IReadable IReadable.LengthsColumn => Lengths;
 
-    EventSourcing.Abstractions.Columns.ULongColumns.IReadable IReadable.Offsets => Offsets;
+    EventSourcing.Abstractions.Columns.ULongColumns.IReadable IReadable.OffsetsColumn => Offsets;
 
     public IUnpacked Unpack()
     {

@@ -16,6 +16,8 @@ public partial class BlobPackedColumn : IReadable
     }
 
     public ReadOnlyMemory<byte> Memory => Data;
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable LengthsColumn => Lengths;
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable OffsetsColumn => Offsets;
 
     public IUnpacked Unpack()
     {

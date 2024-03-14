@@ -87,10 +87,10 @@ public class Appendable : Data_IAppendable, IReadable
         throw new NotImplementedException();
     }
 
-    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable EntityIds => _entityIds;
-    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable AttributeIds => _attributeIds;
-    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable TransactionIds => _transactionIds;
-    public EventSourcing.Abstractions.Columns.BlobColumns.IReadable Values => _values;
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable EntityIdsColumn => _entityIds;
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable AttributeIdsColumn => _attributeIds;
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable TransactionIdsColumn => _transactionIds;
+    public EventSourcing.Abstractions.Columns.BlobColumns.IReadable ValuesColumn => _values;
 
     public bool IsFrozen { get; private set; }
     public void Freeze()

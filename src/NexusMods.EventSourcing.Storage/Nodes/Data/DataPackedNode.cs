@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 using NexusMods.EventSourcing.Abstractions.Nodes.Data;
+using IReadable = NexusMods.EventSourcing.Abstractions.Columns.ULongColumns.IReadable;
 
 namespace NexusMods.EventSourcing.Storage.Nodes.Data;
 
@@ -54,4 +55,9 @@ public partial class DataPackedNode : IPacked
     {
         throw new NotImplementedException();
     }
+
+    public IReadable EntityIdsColumn => EntityIds;
+    public IReadable AttributeIdsColumn => AttributeIds;
+    public IReadable TransactionIdsColumn => TransactionIds;
+    public EventSourcing.Abstractions.Columns.BlobColumns.IReadable ValuesColumn => Values;
 }

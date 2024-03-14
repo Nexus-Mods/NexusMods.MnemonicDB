@@ -22,6 +22,4 @@ public interface IReadable
     /// Get the value at the given index.
     /// </summary>
     public ulong this[int idx] { get; }
-
-    public IUnpacked Unpack();
 }

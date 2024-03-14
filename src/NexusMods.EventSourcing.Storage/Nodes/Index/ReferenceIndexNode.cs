@@ -86,6 +86,11 @@ public class ReferenceIndexNode : IReadable
         throw new NotImplementedException();
     }
 
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable EntityIdsColumn => Resolve().EntityIdsColumn;
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable AttributeIdsColumn => Resolve().AttributeIdsColumn;
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable TransactionIdsColumn => Resolve().TransactionIdsColumn;
+    public EventSourcing.Abstractions.Columns.BlobColumns.IReadable ValuesColumn => Resolve().ValuesColumn;
+
     public IEnumerable<IReadable> Children => throw new NotImplementedException();
     IEnumerator IEnumerable.GetEnumerator()
     {

@@ -29,13 +29,13 @@ public interface IReadable
     /// other methods and may result in allocations in order to return a projected column. Prefer
     /// other methods if possible.
     /// </summary>
-    public ULongColumns.IReadable Lengths { get; }
+    public ULongColumns.IReadable LengthsColumn { get; }
 
     /// <summary>
     /// Gets the offsets of the values in the column, this is likely less efficient than using
     /// other methods and may result in allocations in order to return a projected column. Prefer
     /// other methods if possible.
     /// </summary>
-    public ULongColumns.IReadable Offsets { get; }
+    public ULongColumns.IReadable OffsetsColumn { get; }
 
 }

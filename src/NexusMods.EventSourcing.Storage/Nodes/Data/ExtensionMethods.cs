@@ -300,10 +300,10 @@ public static class ExtensionMethods
         return new DataPackedNode
         {
             Length = readable.Length,
-            EntityIds = (ULongPackedColumn)readable.EntityIds.Pack(),
-            AttributeIds = (ULongPackedColumn)readable.AttributeIds.Pack(),
-            Values = (BlobPackedColumn)readable.Values.Pack(),
-            TransactionIds = (ULongPackedColumn)readable.TransactionIds.Pack()
+            EntityIds = (ULongPackedColumn)readable.EntityIdsColumn.Pack(),
+            AttributeIds = (ULongPackedColumn)readable.AttributeIdsColumn.Pack(),
+            Values = (BlobPackedColumn)readable.ValuesColumn.Pack(),
+            TransactionIds = (ULongPackedColumn)readable.TransactionIdsColumn.Pack()
         };
     }
 

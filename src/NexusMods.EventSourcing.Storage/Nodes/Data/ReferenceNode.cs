@@ -74,4 +74,9 @@ public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IReadabl
     {
         throw new NotImplementedException();
     }
+
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable EntityIdsColumn => Resolve().EntityIdsColumn;
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable AttributeIdsColumn => Resolve().AttributeIdsColumn;
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable TransactionIdsColumn => Resolve().TransactionIdsColumn;
+    public EventSourcing.Abstractions.Columns.BlobColumns.IReadable ValuesColumn => Resolve().ValuesColumn;
 }

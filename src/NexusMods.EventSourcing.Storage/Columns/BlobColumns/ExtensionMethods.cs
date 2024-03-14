@@ -10,8 +10,8 @@ public static class ExtensionMethods
         return new BlobPackedColumn
         {
             Count = column.Count,
-            Lengths = (ULongPackedColumn)column.Lengths.Pack(),
-            Offsets = (ULongPackedColumn)column.Offsets.Pack(),
+            Lengths = (ULongPackedColumn)column.LengthsColumn.Pack(),
+            Offsets = (ULongPackedColumn)column.OffsetsColumn.Pack(),
             Data = column.Memory,
         };
     }

@@ -36,9 +36,6 @@ public class ULongColumnTests
         var packed = column.Pack();
         AssertEqual(packed, (IReadable)column);
 
-        var unpacked = packed.Unpack();
-        AssertEqual(unpacked, (IReadable)column);
-
         var writer = new ArrayBufferWriter<byte>();
         ULongPackedColumn.Serializer.Write(writer, (ULongPackedColumn)packed);
         var unpackedUL = ULongPackedColumn.Serializer.Parse(writer.WrittenMemory);

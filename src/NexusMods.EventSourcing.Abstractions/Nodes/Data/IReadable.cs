@@ -63,23 +63,23 @@ public interface IReadable : IEnumerable<Datom>
     /// The entity ids in the node, may not be efficient to call this repeatedly, prefer to use FillChunk
     /// or other introspective methods to avoid repeated allocations.
     /// </summary>
-    public Columns.ULongColumns.IReadable EntityIds { get; }
+    public Columns.ULongColumns.IReadable EntityIdsColumn { get; }
 
     /// <summary>
     /// The attribute ids in the node, may not be efficient to call this repeatedly, prefer to use FillChunk
     /// or other introspective methods to avoid repeated allocations.
     /// </summary>
-    public Columns.ULongColumns.IReadable AttributeIds { get; }
+    public Columns.ULongColumns.IReadable AttributeIdsColumn { get; }
 
     /// <summary>
     /// The transaction ids in the node, may not be efficient to call this repeatedly, prefer to use FillChunk
     /// or other introspective methods to avoid repeated allocations.
     /// </summary>
-    public Columns.ULongColumns.IReadable TransactionIds { get; }
+    public Columns.ULongColumns.IReadable TransactionIdsColumn { get; }
 
     /// <summary>
     /// The values in the node, may not be efficient to call this repeatedly, prefer to use FillChunk
     /// or other introspective methods to avoid repeated allocations.
     /// </summary>
-    public Columns.BlobColumns.IReadable Values { get; }
+    public Columns.BlobColumns.IReadable ValuesColumn { get; }
 }

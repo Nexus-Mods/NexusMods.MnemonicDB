@@ -3,7 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
-using NexusMods.EventSourcing.Abstractions.Nodes.Data;
+using NexusMods.EventSourcing.Abstractions.Columns.ULongColumns;
+using IReadable = NexusMods.EventSourcing.Abstractions.Nodes.Data.IReadable;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
 
@@ -58,4 +59,36 @@ public class SortedReadable(int[] indexes, IReadable inner) : IReadable
     {
         throw new NotImplementedException();
     }
+
+    private class SortedULongColumn(int[] indexes, EventSourcing.Abstractions.Columns.ULongColumns.IReadable inner)
+        : EventSourcing.Abstractions.Columns.ULongColumns.IReadable
+    {
+        public int Length => indexes.Length;
+        public void CopyTo(int offset, Span<ulong> dest)
+        {
+            for (var i = 0; i < dest.Length; i++)
+            {
+                dest[i] = inner[indexes[i + offset]];
+            }
+        }
+
+        public ulong this[int idx] => inner[indexes[idx]];
+    }
+
+    private class SortedValueColumn(int[] indexes, EventSourcing.Abstractions.Columns.BlobColumns.IReadable inner)
+        : EventSourcing.Abstractions.Columns.BlobColumns.IReadable
+    {
+        public int Count => indexes.Length;
+
+        public ReadOnlySpan<byte> this[int idx] => inner[indexes[idx]];
+
+        public ReadOnlyMemory<byte> Memory => inner.Memory;
+        public EventSourcing.Abstractions.Columns.ULongColumns.IReadable LengthsColumn => new SortedULongColumn(indexes, inner.LengthsColumn);
+        public EventSourcing.Abstractions.Columns.ULongColumns.IReadable OffsetsColumn => new SortedULongColumn(indexes, inner.OffsetsColumn);
+    }
+
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable EntityIdsColumn => new SortedULongColumn(indexes, inner.EntityIdsColumn);
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable AttributeIdsColumn => new SortedULongColumn(indexes, inner.AttributeIdsColumn);
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable TransactionIdsColumn => new SortedULongColumn(indexes, inner.TransactionIdsColumn);
+    public EventSourcing.Abstractions.Columns.BlobColumns.IReadable ValuesColumn => new SortedValueColumn(indexes, inner.ValuesColumn);
 }
