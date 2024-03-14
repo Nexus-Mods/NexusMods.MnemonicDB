@@ -34,7 +34,7 @@ public class Appendable : IDisposable, IAppendable, IUnpacked
     public static Appendable Create(IReadable src, int offset, int length)
     {
         var memory = MemoryPool<ulong>.Shared.Rent(length);
-        src.CopyTo(offset, memory.Memory.Span);
+        src.CopyTo(offset, memory.Memory.Span.SliceFast(0, length));
         return new Appendable(memory, length);
     }
 
@@ -117,7 +117,11 @@ public class Appendable : IDisposable, IAppendable, IUnpacked
         CastedSpan.Slice(offset, dest.Length).CopyTo(dest);
     }
 
-    public ulong this[int idx] => CastedSpan[idx];
+    public ulong this[int idx]
+    {
+        get => CastedSpan[idx];
+        set => CastedSpan[idx] = value;
+    }
 
     public IUnpacked Unpack()
     {

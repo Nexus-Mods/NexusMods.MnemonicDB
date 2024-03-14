@@ -45,6 +45,13 @@ public class Appendable : IReadable, IUnpacked, IAppendable
             var length = _lengths.Span[offset];
             return _writer.GetWrittenSpan().Slice((int)_offsets.Span[offset], (int)length);
         }
+        set
+        {
+            var length = value.Length;
+            _lengths[offset] = (ulong)length;
+            _offsets[offset] = (ulong)_writer.Length;
+            _writer.Write(value);
+        }
     }
 
     public ReadOnlyMemory<byte> Memory => _writer.WrittenMemory;

@@ -11,4 +11,10 @@ public interface IAppendable
     /// Add the specified span to the column.
     /// </summary>
     public void Append(ReadOnlySpan<byte> span);
+
+    /// <summary>
+    /// Setter for items in the column.
+    /// </summary>
+    /// <param name="offset"></param>
+    public ReadOnlySpan<byte> this[int offset] { set; }
 }

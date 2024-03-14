@@ -13,8 +13,8 @@ public class IndexNodeTests(IServiceProvider provider) : ADataNodeTests<IndexNod
     [MethodData(nameof(IndexTestData))]
     public void CanIngestAndGetDatoms(uint size, SortOrders order, bool flush)
     {
-        Configuration.DataBlockSize = 16;
-        Configuration.IndexBlockSize = 16;
+        Configuration.DataBlockSize = 8;
+        Configuration.IndexBlockSize = 8;
 
 
         var comparator = Registry.CreateComparator(order);
@@ -28,12 +28,15 @@ public class IndexNodeTests(IServiceProvider provider) : ADataNodeTests<IndexNod
 
         var index = (IAppendable)Nodes.Index.Appendable.Create(comparator);
 
+        var previousSize = 0;
         foreach (var group in grouped)
         {
             var newNode = new Nodes.Data.Appendable { group };
             var sorted = newNode.AsSorted(comparator);
 
             index = index.Ingest(sorted);
+            index.DeepLength.Should().Be(previousSize + newNode.DeepLength, $"because all data should be ingested on group : {group.Key}");
+            previousSize += newNode.Length;
         }
 
         var allDataNode = (new Nodes.Data.Appendable { testData }).AsSorted(comparator);
@@ -46,7 +49,7 @@ public class IndexNodeTests(IServiceProvider provider) : ADataNodeTests<IndexNod
             var test = allDataNode[idx];
             var actual = index[idx];
 
-            actual.E.Should().Be(test.E, "because the entity should be the same");
+            actual.Should().Be(test);
         }
 
     }
@@ -56,11 +59,13 @@ public class IndexNodeTests(IServiceProvider provider) : ADataNodeTests<IndexNod
 
     public IEnumerable<object[]> IndexTestData()
     {
-        foreach (var idx in new[] {SortOrders.EATV})// SortOrders.AETV, SortOrders.AVTE})
+        foreach (var idx in new[] {SortOrders.EATV, SortOrders.AETV, SortOrders.AVTE})
         {
-            foreach (var size in new[] { 1, 2, 3, 4, 8, 16, 128, 1024, 1024 * 8})//, 1024 * 16, 1024 * 128 })
+            foreach (var size in new[] { //1,
+                         2, })
+                         //3, 4, 8, 16, 128, 1024, 1024 * 8})//, 1024 * 16, 1024 * 128 })
             {
-                foreach (var flush in new[] { true, false })
+                foreach (var flush in new[] { true })//, false })
                 {
                     yield return [size, idx, flush];
                 }

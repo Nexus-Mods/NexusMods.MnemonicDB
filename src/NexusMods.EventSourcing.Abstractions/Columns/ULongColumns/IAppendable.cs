@@ -44,4 +44,10 @@ public interface IAppendable
     /// </summary>
     /// <param name="length"></param>
     public void SetLength(int length);
+
+    /// <summary>
+    /// Sets the value at the specified index.
+    /// </summary>
+    /// <param name="idx"></param>
+    public ulong this[int idx] { set; }
 }
