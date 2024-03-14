@@ -73,6 +73,18 @@ public class SortedReadable(int[] indexes, IReadable inner) : IReadable
         }
 
         public ulong this[int idx] => inner[indexes[idx]];
+        public IEnumerator<ulong> GetEnumerator()
+        {
+            for (var i = 0; i < indexes.Length; i++)
+            {
+                yield return inner[indexes[i]];
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 
     private class SortedValueColumn(int[] indexes, EventSourcing.Abstractions.Columns.BlobColumns.IReadable inner)

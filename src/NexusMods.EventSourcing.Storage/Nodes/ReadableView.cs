@@ -80,6 +80,18 @@ public class ReadableView(IReadable inner, int offset, int length) : IReadable
             }
         }
         public ulong this[int idx] => inner[idx + offset];
+        public IEnumerator<ulong> GetEnumerator()
+        {
+            for (var i = 0; i < Length; i++)
+            {
+                yield return inner[i + offset];
+            }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
     }
 
 

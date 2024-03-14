@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using FlatSharp;
 using NexusMods.EventSourcing.Abstractions.Columns.ULongColumns;
@@ -82,6 +84,19 @@ public partial class ULongPackedColumn : IPacked
             default:
                 throw new ArgumentOutOfRangeException();
         }
+    }
+
+    public IEnumerator<ulong> GetEnumerator()
+    {
+        for (var i = 0; i < Length; i++)
+        {
+            yield return this[i];
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }
 

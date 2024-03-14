@@ -18,6 +18,11 @@ public interface IDatomComparator
     public SortOrders SortOrder { get; }
 
     /// <summary>
+    /// Get the attribute registry, associated with the comparator.
+    /// </summary>
+    public IAttributeRegistry AttributeRegistry { get; }
+
+    /// <summary>
     /// Compares two datoms and returns a value indicating whether one is less than, equal to, or greater than the other.
     /// </summary>
     public int Compare(in Datom x, in Datom y);

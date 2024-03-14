@@ -9,6 +9,7 @@ namespace NexusMods.EventSourcing.Storage.Sorters;
 public class AVTE(AttributeRegistry registry) : IDatomComparator
 {
     public SortOrders SortOrder => SortOrders.AVTE;
+    public IAttributeRegistry AttributeRegistry => registry;
 
     public int Compare(in Datom x, in Datom y)
     {

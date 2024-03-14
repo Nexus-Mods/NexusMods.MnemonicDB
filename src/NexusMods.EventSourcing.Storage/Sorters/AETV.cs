@@ -7,6 +7,7 @@ namespace NexusMods.EventSourcing.Storage.Sorters;
 public class AETV(AttributeRegistry registry) : IDatomComparator
 {
     public SortOrders SortOrder => SortOrders.AETV;
+    public IAttributeRegistry AttributeRegistry => registry;
 
     public int Compare(in Datom x, in Datom y)
     {

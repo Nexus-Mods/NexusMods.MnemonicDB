@@ -3,7 +3,7 @@
 /// <summary>
 /// Appendable index node, allows for merging of data into the node.
 /// </summary>
-public interface IAppendable
+public interface IAppendable : IReadable
 {
     /// <summary>
     /// Merges the given data into this node, and possibly returns a new node.

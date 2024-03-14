@@ -1,11 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace NexusMods.EventSourcing.Abstractions.Columns.ULongColumns;
 
 /// <summary>
 /// A readable column of ulong values.
 /// </summary>
-public interface IReadable
+public interface IReadable : IEnumerable<ulong>
 {
     /// <summary>
     /// Gets the length of the column in rows.

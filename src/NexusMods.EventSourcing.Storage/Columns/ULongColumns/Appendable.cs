@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
@@ -13,7 +14,7 @@ namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 /// Backed by the shared memory pool
 /// </summary>
 /// <typeparam name="T"></typeparam>
-public class Appendable : IDisposable, IAppendable, IReadable, IUnpacked
+public class Appendable : IDisposable, IAppendable, IUnpacked
 {
     public const int DefaultSize = 16;
     private IMemoryOwner<ulong> _data;
@@ -132,4 +133,16 @@ public class Appendable : IDisposable, IAppendable, IReadable, IUnpacked
         return (IReadable)stats.Pack(Span);
     }
 
+    public IEnumerator<ulong> GetEnumerator()
+    {
+        for (var i = 0; i < _length; i++)
+        {
+            yield return CastedSpan[i];
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
 }

@@ -260,6 +260,15 @@ public static class ExtensionMethods
         };
     }
 
+
+    /// <summary>
+    /// Finds the index of the first occurrence of the given <see cref="Datom"/> in the <see cref="IReadable"/>.
+    /// </summary>
+    public static int Find(this IReadable readable, in Datom target, IDatomComparator comparator)
+    {
+        return readable.Find(target, comparator.SortOrder, comparator.AttributeRegistry);
+    }
+
     /// <summary>
     /// Writes the node to the given <see cref="IBufferWriter{T}"/>.
     /// </summary>
@@ -311,5 +320,18 @@ public static class ExtensionMethods
     {
         var dataPackedNode = DataPackedNode.Serializer.Parse(writerWrittenMemory);
         return dataPackedNode;
+    }
+
+    public static IReadable Merge(this IReadable src, IReadable other)
+    {
+        switch (src)
+        {
+            case EventSourcing.Abstractions.Nodes.Index.IReadable index:
+                throw new Exception("Cannot merge an index node.");
+            case IReadable readable:
+
+            default:
+                throw new NotImplementedException();
+        }
     }
 }
