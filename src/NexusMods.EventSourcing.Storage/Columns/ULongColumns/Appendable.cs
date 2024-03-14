@@ -31,6 +31,13 @@ public class Appendable : IDisposable, IAppendable, IUnpacked
         return new Appendable(MemoryPool<ulong>.Shared.Rent(DefaultSize), 0);
     }
 
+    public static Appendable Create(IReadable src, int offset, int length)
+    {
+        var memory = MemoryPool<ulong>.Shared.Rent(length);
+        src.CopyTo(offset, memory.Memory.Span);
+        return new Appendable(memory, length);
+    }
+
     public static Appendable Unpack(IReadable column)
     {
         var node = Create(column.Length);

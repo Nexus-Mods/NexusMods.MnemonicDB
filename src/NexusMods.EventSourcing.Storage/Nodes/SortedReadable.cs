@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 using NexusMods.EventSourcing.Abstractions.Columns.ULongColumns;
+using NexusMods.EventSourcing.Storage.Nodes.Data;
 using IReadable = NexusMods.EventSourcing.Abstractions.Nodes.Data.IReadable;
 
 namespace NexusMods.EventSourcing.Storage.Nodes;
@@ -12,15 +13,28 @@ namespace NexusMods.EventSourcing.Storage.Nodes;
 /// Represents a sorted view of another node, this is most often used as a temporary view of a
 /// node before it is merged into another node.
 /// </summary>
-/// <param name="indexes"></param>
-/// <param name="inner"></param>
-public class SortedReadable(int[] indexes, IReadable inner) : IReadable
+public class SortedReadable : IReadable
 {
+    private readonly int[] _indexes;
+    private readonly IReadable _inner;
+
+    /// <summary>
+    /// Represents a sorted view of another node, this is most often used as a temporary view of a
+    /// node before it is merged into another node.
+    /// </summary>
+    /// <param name="indexes"></param>
+    /// <param name="inner"></param>
+    public SortedReadable(int[] indexes, IReadable inner)
+    {
+        _indexes = indexes;
+        _inner = inner;
+    }
+
     public IEnumerator<Datom> GetEnumerator()
     {
-        for (var i = 0; i < indexes.Length; i++)
+        for (var i = 0; i < _indexes.Length; i++)
         {
-            yield return inner[indexes[i]];
+            yield return _inner[_indexes[i]];
         }
     }
 
@@ -29,30 +43,30 @@ public class SortedReadable(int[] indexes, IReadable inner) : IReadable
         return GetEnumerator();
     }
 
-    public int Length => indexes.Length;
-    public long DeepLength => indexes.Length;
+    public int Length => _indexes.Length;
+    public long DeepLength => _indexes.Length;
 
-    public Datom this[int idx] => inner[indexes[idx]];
+    public Datom this[int idx] => _inner[_indexes[idx]];
 
-    public Datom LastDatom => inner[indexes[^1]];
+    public Datom LastDatom => _inner[_indexes[^1]];
     public EntityId GetEntityId(int idx)
     {
-        return inner.GetEntityId(indexes[idx]);
+        return _inner.GetEntityId(_indexes[idx]);
     }
 
     public AttributeId GetAttributeId(int idx)
     {
-        return inner.GetAttributeId(indexes[idx]);
+        return _inner.GetAttributeId(_indexes[idx]);
     }
 
     public TxId GetTransactionId(int idx)
     {
-        return inner.GetTransactionId(indexes[idx]);
+        return _inner.GetTransactionId(_indexes[idx]);
     }
 
     public ReadOnlySpan<byte> GetValue(int idx)
     {
-        return inner.GetValue(indexes[idx]);
+        return _inner.GetValue(_indexes[idx]);
     }
 
     public int FillChunk(int offset, int length, ref DatomChunk chunk)
@@ -99,8 +113,13 @@ public class SortedReadable(int[] indexes, IReadable inner) : IReadable
         public EventSourcing.Abstractions.Columns.ULongColumns.IReadable OffsetsColumn => new SortedULongColumn(indexes, inner.OffsetsColumn);
     }
 
-    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable EntityIdsColumn => new SortedULongColumn(indexes, inner.EntityIdsColumn);
-    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable AttributeIdsColumn => new SortedULongColumn(indexes, inner.AttributeIdsColumn);
-    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable TransactionIdsColumn => new SortedULongColumn(indexes, inner.TransactionIdsColumn);
-    public EventSourcing.Abstractions.Columns.BlobColumns.IReadable ValuesColumn => new SortedValueColumn(indexes, inner.ValuesColumn);
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable EntityIdsColumn => new SortedULongColumn(_indexes, _inner.EntityIdsColumn);
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable AttributeIdsColumn => new SortedULongColumn(_indexes, _inner.AttributeIdsColumn);
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable TransactionIdsColumn => new SortedULongColumn(_indexes, _inner.TransactionIdsColumn);
+    public EventSourcing.Abstractions.Columns.BlobColumns.IReadable ValuesColumn => new SortedValueColumn(_indexes, _inner.ValuesColumn);
+
+    public override string ToString()
+    {
+        return this.NodeToString();
+    }
 }

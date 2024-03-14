@@ -11,7 +11,8 @@ namespace NexusMods.EventSourcing.Storage.Nodes.Index;
 
 public class Appendable : IReadable, IAppendable
 {
-    private readonly int _length;
+    private int _shallowLength;
+    private long _deepLength;
     private readonly bool _isFrozen;
 
     private readonly Columns.ULongColumns.Appendable _entityIds;
@@ -24,11 +25,11 @@ public class Appendable : IReadable, IAppendable
     private List<EventSourcing.Abstractions.Nodes.Data.IReadable> _children;
     private readonly IDatomComparator _comparator;
 
-    public Appendable(IDatomComparator comparator, int initialSize = Columns.ULongColumns.Appendable.DefaultSize)
+    private Appendable(IDatomComparator comparator, int initialSize = Columns.ULongColumns.Appendable.DefaultSize)
     {
         _comparator = comparator;
         _isFrozen = false;
-        _length = 0;
+        _shallowLength = 0;
         _entityIds = Columns.ULongColumns.Appendable.Create(initialSize);
         _attributeIds = Columns.ULongColumns.Appendable.Create(initialSize);
         _transactionIds = Columns.ULongColumns.Appendable.Create(initialSize);
@@ -38,6 +39,24 @@ public class Appendable : IReadable, IAppendable
         _children = new List<EventSourcing.Abstractions.Nodes.Data.IReadable> { new Data.Appendable() };
     }
 
+    private Appendable(IDatomComparator comparator, IReadable readable, int offset, int childCount)
+    {
+        _comparator = comparator;
+        _isFrozen = false;
+        _shallowLength = childCount;
+        _entityIds = Columns.ULongColumns.Appendable.Create(readable.EntityIdsColumn, offset, childCount);
+        _attributeIds = Columns.ULongColumns.Appendable.Create(readable.AttributeIdsColumn, offset, childCount);
+        _transactionIds = Columns.ULongColumns.Appendable.Create(readable.TransactionIdsColumn, offset, childCount);
+        _values = Columns.BlobColumns.Appendable.Create(readable.ValuesColumn, offset, childCount);
+        _childCounts = Columns.ULongColumns.Appendable.Create(readable.ChildCountsColumn, offset, childCount);
+        _childOffsets = Columns.ULongColumns.Appendable.Create(readable.ChildOffsetsColumn, offset, childCount);
+        _children = new List<EventSourcing.Abstractions.Nodes.Data.IReadable>();
+        for (var i = 0; i < childCount; i++)
+        {
+            _children.Add(readable.GetChild(offset + i));
+        }
+    }
+
     private Appendable(IDatomComparator comparator, List<EventSourcing.Abstractions.Nodes.Data.IReadable> newChildren)
         : this(comparator)
     {
@@ -45,30 +64,67 @@ public class Appendable : IReadable, IAppendable
         ReprocessChildren();
     }
 
+    /// <summary>
+    /// Creates an index node for a completely new tree, internally it nests two index nodes and places a data node
+    /// at the third level. This removes any need for top-level logic of splitting of nodes, as the top most node
+    /// will just continue to expand forever. With a proper branching rate this should be a non-issue. As it allows
+    /// for BranchFactor ^ 3 nodes in total.
+    /// </summary>
+    public static Appendable Create(IDatomComparator comparator)
+    {
+        return new Appendable(comparator, [new Appendable(comparator, [new Data.Appendable()])]);
+    }
+
+    /// <summary>
+    /// Creates a new index that is a subsection of the given readable. Think of this as a sub-view but a concrete one,
+    /// the contents of the input node will be copied into the new node.
+    /// </summary>
+    public static Appendable Create(IReadable readable, int childOffset, int numberOfChildren)
+    {
+        return new Appendable(readable.Comparator, readable, childOffset, numberOfChildren);
+    }
+
     private void ReprocessChildren()
     {
-        throw new NotImplementedException();
+        var offset = 0UL;
+        for (var idx = 0; idx < _children.Count -1 ; idx++)
+        {
+            var child = _children[idx];
+            var lastDatom = child.LastDatom;
+            _entityIds.Append(lastDatom.E.Value);
+            _attributeIds.Append(lastDatom.A.Value);
+            _transactionIds.Append(lastDatom.T.Value);
+            _values.Append(lastDatom.V.Span);
+            _childCounts.Append((ulong)child.DeepLength);
+            _childOffsets.Append(offset);
+            offset += (ulong)child.Length;
+            _shallowLength++;
+            _deepLength += child.DeepLength;
+        }
+
+        var lastChild = _children[^1];
+        _childOffsets.Append(offset);
+        _childCounts.Append((ulong)lastChild.DeepLength);
+        _shallowLength++;
+        _deepLength += lastChild.DeepLength;
     }
 
 
-    public int Length => _length;
-    public long DeepLength => _childCounts.Sum(c => (long)c);
+    public int Length => _shallowLength;
+    public long DeepLength => _deepLength;
 
     public Datom this[int idx]
     {
         get
         {
-            var acc = 0;
-            for (var i = 0; i < _children.Count; i++)
+            for (var i = 0; i < _childOffsets.Length; i++)
             {
-                var child = _children[i];
-                var childLength = child.Length;
-                if (acc + childLength > idx)
+                var offset = (int)_childOffsets[i];
+                var childLength = (int)_childCounts[i];
+                if (idx >= offset && idx < offset + childLength)
                 {
-                    return child[idx - acc];
+                    return _children[i][idx - offset];
                 }
-
-                acc += childLength;
             }
             throw new IndexOutOfRangeException();
         }
@@ -76,10 +132,10 @@ public class Appendable : IReadable, IAppendable
 
     public Datom LastDatom => new()
     {
-        E = EntityId.From(_entityIds[_length - 1]),
-        A = AttributeId.From(_attributeIds[_length - 1]),
-        T = TxId.From(_transactionIds[_length - 1]),
-        V = _values.GetMemory(_length - 1)
+        E = EntityId.From(_entityIds[_shallowLength - 1]),
+        A = AttributeId.From(_attributeIds[_shallowLength - 1]),
+        T = TxId.From(_transactionIds[_shallowLength - 1]),
+        V = _values.GetMemory(_shallowLength - 1)
     };
 
     /// <summary>
@@ -149,6 +205,10 @@ public class Appendable : IReadable, IAppendable
         return _children[idx];
     }
 
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable ChildCountsColumn => _childCounts;
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable ChildOffsetsColumn => _childOffsets;
+    public IDatomComparator Comparator => _comparator;
+
     public IEnumerator<Datom> GetEnumerator()
     {
         throw new NotImplementedException();
@@ -185,13 +245,13 @@ public class Appendable : IReadable, IAppendable
             var last = node.Find(lastDatom, _comparator);
             if (last < node.Length)
             {
-                var newNode = _children[idx].Merge(node.SubView(start, last));
+                var newNode = _children[idx].Merge(node.SubView(start, last - start), _comparator);
                 MaybeSplit(newNode);
                 start = last;
             }
             else if (last == node.Length)
             {
-                var newNode = _children[idx].Merge(node.SubView(start, last));
+                var newNode = _children[idx].Merge(node.SubView(start, last - start), _comparator);
                 MaybeSplit(newNode);
 
                 // Add the remaining children nodes
@@ -209,5 +269,10 @@ public class Appendable : IReadable, IAppendable
         }
 
         return new Appendable(_comparator, newChildren);
+    }
+
+    public override string ToString()
+    {
+        return this.NodeToString();
     }
 }

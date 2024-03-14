@@ -20,4 +20,9 @@ public interface IReadable : Data.IReadable
     /// Gets the child node at the given index.
     /// </summary>
     public Data.IReadable GetChild(int idx);
+
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable ChildCountsColumn { get; }
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable ChildOffsetsColumn { get; }
+
+    public IDatomComparator Comparator { get; }
 }

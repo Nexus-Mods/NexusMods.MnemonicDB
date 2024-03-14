@@ -5,7 +5,7 @@ using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 
-namespace NexusMods.EventSourcing.Storage.Nodes;
+namespace NexusMods.EventSourcing.Storage.Nodes.Data;
 
 /// <summary>
 /// Provides a read-only view of a portion of an <see cref="IReadable"/>.
@@ -56,7 +56,7 @@ public class ReadableView(IReadable inner, int offset, int length) : IReadable
         throw new NotImplementedException();
     }
 
-    private class ReadableViewBlobColumn(int offset, int length, EventSourcing.Abstractions.Columns.BlobColumns.IReadable inner)
+    internal class ReadableViewBlobColumn(int offset, int length, EventSourcing.Abstractions.Columns.BlobColumns.IReadable inner)
       : EventSourcing.Abstractions.Columns.BlobColumns.IReadable
     {
         public int Count => length;
@@ -68,7 +68,7 @@ public class ReadableView(IReadable inner, int offset, int length) : IReadable
         public EventSourcing.Abstractions.Columns.ULongColumns.IReadable OffsetsColumn => new ReadableViewULongColumn(offset, length, inner.OffsetsColumn);
     }
 
-    private class ReadableViewULongColumn(int offset, int length, EventSourcing.Abstractions.Columns.ULongColumns.IReadable inner)
+    internal class ReadableViewULongColumn(int offset, int length, EventSourcing.Abstractions.Columns.ULongColumns.IReadable inner)
       : EventSourcing.Abstractions.Columns.ULongColumns.IReadable
     {
         public int Length => length;
@@ -100,4 +100,9 @@ public class ReadableView(IReadable inner, int offset, int length) : IReadable
     public EventSourcing.Abstractions.Columns.ULongColumns.IReadable AttributeIdsColumn => new ReadableViewULongColumn(offset, length, inner.AttributeIdsColumn);
     public EventSourcing.Abstractions.Columns.ULongColumns.IReadable TransactionIdsColumn => new ReadableViewULongColumn(offset, length, inner.TransactionIdsColumn);
     public EventSourcing.Abstractions.Columns.BlobColumns.IReadable ValuesColumn => new ReadableViewBlobColumn(offset, length, inner.ValuesColumn);
+
+    public override string ToString()
+    {
+        return this.NodeToString();
+    }
 }

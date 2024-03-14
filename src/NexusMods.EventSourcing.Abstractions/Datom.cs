@@ -42,7 +42,7 @@ public readonly struct Datom
     /// <inheritdoc />
     public override string ToString()
     {
-        return $"({E}, {A}, {T}, {Convert.ToHexString(V.Span)}))";
+        return $"({E}, {A}, {Convert.ToHexString(V.Span)}, {T}))";
     }
 
     public override bool Equals(object? obj)

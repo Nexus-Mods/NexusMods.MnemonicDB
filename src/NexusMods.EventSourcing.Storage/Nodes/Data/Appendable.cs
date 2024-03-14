@@ -150,7 +150,11 @@ public class Appendable : Data_IAppendable, IReadable
 
     public void Add(IReadable other)
     {
-        throw new NotImplementedException();
+        EnsureNotFrozen();
+        for (var i = 0; i < other.Length; i++)
+        {
+            Add(other[i]);
+        }
     }
 
     public void Add(in DatomChunk chunk)
@@ -174,5 +178,10 @@ public class Appendable : Data_IAppendable, IReadable
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
+    }
+
+    public override string ToString()
+    {
+        return this.NodeToString();
     }
 }

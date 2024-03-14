@@ -25,6 +25,17 @@ public class Appendable : IReadable, IUnpacked, IAppendable
 
     public static Appendable Create(int initialSize = 1024) => new(initialSize);
 
+    public static Appendable Create(IReadable src, int offset, int length)
+    {
+        var appendable = Appendable.Create();
+        for (var i = 0; i < length; i++)
+        {
+            var span = src[offset + i];
+            appendable.Append(span);
+        }
+        return appendable;
+    }
+
     public int Count => _offsets.Length;
 
     public ReadOnlySpan<byte> this[int offset]

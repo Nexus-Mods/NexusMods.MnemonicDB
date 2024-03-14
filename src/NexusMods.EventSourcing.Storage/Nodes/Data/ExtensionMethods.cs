@@ -49,6 +49,7 @@ public static class ExtensionMethods
     public static IReadable SubView(this IReadable src, int offset, int length)
     {
         EnsureFrozen(src);
+        Debug.Assert(offset >= 0 && length >= 0 && offset + length <= src.Length, "Index out of range during SubView creation");
         return new ReadableView(src, offset, length);
     }
 
@@ -74,7 +75,16 @@ public static class ExtensionMethods
                 currentBlockSize++;
                 remainder--;
             }
-            yield return src.SubView(offset, currentBlockSize);
+
+            if (src is EventSourcing.Abstractions.Nodes.Index.IReadable indexSrc)
+            {
+                yield return Index.Appendable.Create(indexSrc, offset, currentBlockSize);
+            }
+            else
+            {
+                yield return src.SubView(offset, currentBlockSize);
+            }
+
             offset += currentBlockSize;
         }
     }
@@ -322,16 +332,61 @@ public static class ExtensionMethods
         return dataPackedNode;
     }
 
-    public static IReadable Merge(this IReadable src, IReadable other)
+    public static IReadable Merge(this IReadable src, IReadable other, IDatomComparator comparator)
     {
         switch (src)
         {
             case EventSourcing.Abstractions.Nodes.Index.IReadable index:
-                throw new Exception("Cannot merge an index node.");
+                return MergeIndex(index, other, comparator);
             case IReadable readable:
-
+                return MergeData(src, other, comparator);
             default:
                 throw new NotImplementedException();
         }
+    }
+
+    private static IReadable MergeIndex(IReadable index, IReadable other, IDatomComparator comparator)
+    {
+        if (index is EventSourcing.Abstractions.Nodes.Index.IAppendable appendable)
+            return appendable.Ingest(other);
+        throw new NotImplementedException();
+    }
+
+    private static IReadable MergeData(IReadable src, IReadable other, IDatomComparator comparator)
+    {
+        // TODO: use sorted merge, maybe?
+        var appendable = Appendable.Create(src);
+        appendable.Add(other);
+        return appendable.AsSorted(comparator);
+    }
+
+    internal static string NodeToString(this IReadable node)
+    {
+        string repr;
+
+        var className = node switch
+        {
+            EventSourcing.Abstractions.Nodes.Index.IAppendable => "Index.Appendable",
+            IAppendable => "Data.Appendable",
+            SortedReadable => "SortedReadable",
+            ReadableView => "ReadableView",
+            IPacked => "Data.Packed",
+            _ => "Readable"
+        };
+
+        if (node.DeepLength == 0)
+        {
+            repr = "[]";
+        }
+        else if (node.DeepLength == 1)
+        {
+            repr = $"[{node[0]}]";
+        }
+        else
+        {
+            repr = $"[{node[0]} -> {node.LastDatom}]";
+        }
+
+        return $"{className}({node.DeepLength}) {repr}";
     }
 }

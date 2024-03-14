@@ -111,4 +111,8 @@ public class ReferenceIndexNode : IReadable
     {
         throw new NotImplementedException();
     }
+
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable ChildCountsColumn => Resolve().ChildCountsColumn;
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable ChildOffsetsColumn => Resolve().ChildOffsetsColumn;
+    public IDatomComparator Comparator => Resolve().Comparator;
 }

@@ -19,7 +19,7 @@ public static class ExtensionMethods
 
         var stats = Statistics.Create(tmpSpan);
         return (IPacked)stats.Pack(tmpSpan);
-
     }
+
 
 }
