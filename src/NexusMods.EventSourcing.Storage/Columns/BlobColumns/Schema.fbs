@@ -9,9 +9,10 @@ attribute "fs_vector";
 namespace NexusMods.EventSourcing.Storage.Columns.BlobColumns;
 
 
-table BlobPackedColumn(fs_serializer) {
+table BlobColumn(fs_serializer) {
     Count: int;
-    Offsets: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongPackedColumn (required);
-    Lengths: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongPackedColumn (required);
-    Data: [ubyte] (required, fs_vector : "ReadOnlyMemory");
+    UsedDataLength: int;
+    Offsets: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongColumn (required);
+    Lengths: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongColumn (required);
+    Data: [ubyte] (required, fs_vector : "Memory");
 }

@@ -24,13 +24,13 @@ public class ColumnBenchmarks
             unpacked.Append(i);
         }
 
-        var packed = (ULongPackedColumn)((IUnpacked)_unpacked).Pack();
+        var packed = (ULongColumn)((IUnpacked)_unpacked).Pack();
         _packed = packed;
 
         var writer = new PooledMemoryBufferWriter();
-        ULongPackedColumn.Serializer.Write(writer, packed);
+        ULongColumn.Serializer.Write(writer, packed);
 
-        _onHeap = ULongPackedColumn.Serializer.Parse(writer.WrittenMemory);
+        _onHeap = ULongColumn.Serializer.Parse(writer.WrittenMemory);
 
         _dest = new ulong[1024];
 

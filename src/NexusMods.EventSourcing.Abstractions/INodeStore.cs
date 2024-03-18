@@ -1,6 +1,4 @@
-﻿
-
-using NexusMods.EventSourcing.Abstractions.Nodes.Data;
+﻿using NexusMods.EventSourcing.Abstractions.Nodes;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -12,17 +10,17 @@ public interface INodeStore
     /// <summary>
     /// Write a new tx to the store, and return the assigned key.
     /// </summary>
-    public StoreKey LogTx(IReadable node);
+    public StoreKey LogTx(INode node);
 
     /// <summary>
     /// Puts the node into the store, and returns the assigned key.
     /// </summary>
-    public StoreKey Put(IReadable node);
+    public StoreKey Put(INode node);
 
 
     /// <summary>
     /// Gets the node with the given key, or null if it does not exist.
     /// </summary>
-    public IReadable Get(StoreKey key);
+    public INode Get(StoreKey key);
 
 }

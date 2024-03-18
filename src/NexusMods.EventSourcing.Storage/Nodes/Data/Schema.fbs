@@ -8,11 +8,11 @@ attribute "fs_vector";
 
 namespace NexusMods.EventSourcing.Storage.Nodes.Data;
 
-table DataPackedNode(fs_serializer)
+table DataNode(fs_serializer)
 {
    Length: int;
-   EntityIds: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongPackedColumn (required);
-   AttributeIds: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongPackedColumn (required);
-   Values: NexusMods.EventSourcing.Storage.Columns.BlobColumns.BlobPackedColumn (required);
-   TransactionIds: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongPackedColumn (required);
+   EntityIds: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongColumn (required);
+   AttributeIds: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongColumn (required);
+   Values: NexusMods.EventSourcing.Storage.Columns.BlobColumns.BlobColumn (required);
+   TransactionIds: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongColumn (required);
 }

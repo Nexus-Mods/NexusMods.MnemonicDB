@@ -31,9 +31,9 @@ union UL_Column_Union (fs_unsafeUnion)
     Constant : UL_Constant
 }
 
-table ULongPackedColumn(fs_serializer)
+table ULongColumn(fs_serializer)
 {
    Length: int;
    Header: UL_Column_Union (required);
-   Data: [ubyte] (required, fs_vector : "ReadOnlyMemory");
+   Data: [ubyte] (required, fs_vector : "Memory");
 }

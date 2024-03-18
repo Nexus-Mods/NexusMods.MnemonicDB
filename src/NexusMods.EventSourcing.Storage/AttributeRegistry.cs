@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Abstractions.Nodes.Data;
+using NexusMods.EventSourcing.Abstractions.Nodes;
 using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage;
@@ -96,13 +96,15 @@ public class AttributeRegistry : IAttributeRegistry
         return Expression.Block([valueExpr], readExpression, valueExpr);
     }
 
-    public void Append<TAttribute, TValue>(IAppendable node, EntityId entityId, TxId tx, TValue value)
+    public void Append<TAttribute, TValue>(INode node, EntityId entityId, TxId tx, TValue value)
     where TAttribute : IAttribute<TValue>
     {
+        throw new NotImplementedException();
+        /*
         var serializer = (IValueSerializer<TValue>)_valueSerializersByNativeType[typeof(TValue)];
         var attr = _attributesByType[typeof(TAttribute)];
         var dbAttr = _dbAttributesByUniqueId[attr.Id];
-        node.Add(entityId, dbAttr.AttrEntityId, serializer, value, tx);
+        node.Add(entityId, dbAttr.AttrEntityId, serializer, value, tx);*/
     }
 
     private sealed class CompareCache
@@ -136,8 +138,9 @@ public class AttributeRegistry : IAttributeRegistry
         return type.Compare(a, b);
     }
 
-    public void Append<TAttribute, TValue>(IAppendable node, EntityId e, TValue value, TxId t, DatomFlags f) where TAttribute : IAttribute<TValue>
+    public void Append<TAttribute, TValue>(INode node, EntityId e, TValue value, TxId t, DatomFlags f) where TAttribute : IAttribute<TValue>
     {
+        /*
         var serializer = (IValueSerializer<TValue>)_valueSerializersByNativeType[typeof(TValue)];
 
         if (!_attributesByType.TryGetValue(typeof(TAttribute), out var attr))
@@ -146,6 +149,8 @@ public class AttributeRegistry : IAttributeRegistry
         var dbAttr = _dbAttributesByUniqueId[attr.Id];
         throw new NotImplementedException();
         //node.Add(e, dbAttr.AttrEntityId, t, f, serializer, value);
+        */
+        throw new NotImplementedException();
     }
 
     public IReadDatom Resolve(Datom datom)

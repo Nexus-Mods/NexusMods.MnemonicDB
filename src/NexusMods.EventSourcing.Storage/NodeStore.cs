@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Threading;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Abstractions.Nodes.Data;
-using NexusMods.EventSourcing.Storage.Nodes.Index;
+using NexusMods.EventSourcing.Abstractions.Nodes;
+using NexusMods.EventSourcing.Storage.Nodes.Data;
 
 namespace NexusMods.EventSourcing.Storage;
 
@@ -17,10 +17,10 @@ public class NodeStore(IKvStore kvStore, AttributeRegistry registry)
     /// </summary>
     /// <param name="node"></param>
     /// <returns></returns>
-    public StoreKey LogTx(IReadable node)
+    public StoreKey LogTx(DataNode node)
     {
         using var writer = new PooledMemoryBufferWriter();
-        Pack(node, writer);
+
 
         var thisTx = ++_txLogId;
         Interlocked.Exchange(ref _nextBlockId, Ids.MakeId(Ids.Partition.Index, thisTx << 16));
@@ -32,26 +32,19 @@ public class NodeStore(IKvStore kvStore, AttributeRegistry registry)
         throw new NotImplementedException();
     }
 
-    public StoreKey Put(IReadable node)
+    public StoreKey LogTx(INode node)
     {
         throw new NotImplementedException();
     }
 
-    public IReadable Get(StoreKey key)
+    public StoreKey Put(INode node)
     {
         throw new NotImplementedException();
     }
 
-    private void Pack(IReadable node, PooledMemoryBufferWriter writer)
+    public INode Get(StoreKey key)
     {
-        switch (node)
-        {
-            case EventSourcing.Abstractions.Nodes.Index.IReadable index:
-                //PackIndex(index, writer);
-                break;
-
-            default:
-                throw new InvalidOperationException("Cant pack node");
-        }
+        throw new NotImplementedException();
     }
+
 }

@@ -1,6 +1,4 @@
 ﻿using System;
-using NexusMods.EventSourcing.Abstractions.Nodes.Data;
-
 namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
@@ -9,11 +7,13 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// </summary>
 public interface IAttributeRegistry
 {
+    /*
     /// <summary>
     /// Appends the data to the given node
     /// </summary>
-    public void Append<TAttribute, TValue>(IAppendable node, EntityId e, TValue value, TxId t, DatomFlags f)
+    public void Append<TAttribute, TValue>(INode node, EntityId e, TValue value, TxId t, DatomFlags f)
         where TAttribute : IAttribute<TValue>;
+        */
 
     /// <summary>
     /// Compares the given values in the given spans assuming both are tagged with the given attribute

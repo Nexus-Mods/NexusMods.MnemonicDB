@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Abstractions.Nodes.Index;
-using NexusMods.EventSourcing.Storage.Nodes.Data;
+﻿using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Nodes.Index;
 
@@ -10,6 +6,7 @@ public static class ExtensionMethods
 {
     internal record struct ChildInfo(Datom LastDatom, StoreKey Child, ulong DeepLength);
 
+    /*
     static void MaybeSplit(EventSourcing.Abstractions.Nodes.Data.IReadable src, List<ChildInfo> children, INodeStore store)
     {
         if (src is IAppendable index && index.Length > Configuration.IndexBlockSize)
@@ -90,5 +87,7 @@ public static class ExtensionMethods
 
         return new Appendable(index.Comparator, children);
     }
+
+    */
 
 }

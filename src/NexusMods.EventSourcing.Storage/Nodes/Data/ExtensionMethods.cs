@@ -1,16 +1,12 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
-using FlatSharp;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 using NexusMods.EventSourcing.Abstractions.Nodes;
-using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 using NexusMods.EventSourcing.Storage.Columns.BlobColumns;
 using NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 using NexusMods.EventSourcing.Storage.Nodes.Index;
-using IAppendable = NexusMods.EventSourcing.Abstractions.Nodes.Data.IAppendable;
-using IPacked = NexusMods.EventSourcing.Abstractions.Nodes.Data.IPacked;
 
 namespace NexusMods.EventSourcing.Storage.Nodes.Data;
 
@@ -19,9 +15,9 @@ public static class ExtensionMethods
     /// <summary>
     /// Returns the indices that would sort the <see cref="IReadable"/> according to the given <see cref="IDatomComparator"/>.
     /// </summary>
-    public static int[] GetSortIndices(this IReadable readable, IDatomComparator comparator)
+    public static int[] GetSortIndices(this IDatomResult readable, IDatomComparator comparator)
     {
-        var pidxs = GC.AllocateUninitializedArray<int>(readable.Length);
+        var pidxs = GC.AllocateUninitializedArray<int>((int)readable.Length);
 
         // TODO: may not matter, but we could probably use a vectorized version of this
         for (var i = 0; i < pidxs.Length; i++)
@@ -30,7 +26,7 @@ public static class ExtensionMethods
         }
 
         var comp = comparator.MakeComparer(readable);
-        Array.Sort(pidxs, 0, readable.Length, comp);
+        Array.Sort(pidxs, 0, (int)readable.Length, comp);
 
         return pidxs;
     }
@@ -38,29 +34,37 @@ public static class ExtensionMethods
     /// <summary>
     /// Sorts the node using the given comparator and returns a lightweight sorted view of the node.
     /// </summary>
-    public static IReadable AsSorted(this IReadable src, IDatomComparator comparator)
+    public static IDatomResult AsSorted(this IDatomResult src, IDatomComparator comparator)
     {
+        throw new NotImplementedException();
+        /*
         EnsureFrozen(src);
         var indexes = src.GetSortIndices(comparator);
-        return new SortedReadable(indexes, src);
+        return new SortedReadable(indexes, src);*/
     }
 
     /// <summary>
     /// Creates a new IReadable by creating a read-only view of a portion of the given IReadable.
     /// </summary>
-    public static IReadable SubView(this IReadable src, int offset, int length)
+    public static IDatomResult SubView(this IDatomResult src, int offset, int length)
     {
+        throw new NotImplementedException();
+        /*
         EnsureFrozen(src);
         Debug.Assert(offset >= 0 && length >= 0 && offset + length <= src.Length, "Index out of range during SubView creation");
         return new ReadableView(src, offset, length);
+        */
     }
 
     /// <summary>
     /// Splits the node into sub nodes of the given maximum size, attempts to split the nodes into
     /// blocks of size no larger than the given block size, but all of the same size.
     /// </summary>
-    public static IEnumerable<INode> Split(this IReadable src, int blockSize)
+    public static IEnumerable<IDatomResult> Split(this INode src, int blockSize)
     {
+        throw new NotImplementedException();
+        /*
+
         EnsureFrozen(src);
 
         var length = src.Length;
@@ -89,19 +93,11 @@ public static class ExtensionMethods
 
             offset += currentBlockSize;
         }
+        */
     }
 
-    /// <summary>
-    /// Freezes the given IReadable if it is an IAppendable and not already frozen.
-    /// </summary>
-    private static void EnsureFrozen(IReadable src)
-    {
-        if (src is IAppendable { IsFrozen: false } appendable)
-        {
-            appendable.Freeze();
-        }
-    }
 
+    /*
 
     private static int FindEATVReader(this IReadable readable, in Datom target, IAttributeRegistry registry)
     {
@@ -291,10 +287,10 @@ public static class ExtensionMethods
         return new DataPackedNode
         {
             Length = readable.Length,
-            EntityIds = (ULongPackedColumn)readable.EntityIdsColumn.Pack(),
-            AttributeIds = (ULongPackedColumn)readable.AttributeIdsColumn.Pack(),
-            Values = (BlobPackedColumn)readable.ValuesColumn.Pack(),
-            TransactionIds = (ULongPackedColumn)readable.TransactionIdsColumn.Pack()
+            EntityIds = (ULongColumn)readable.EntityIdsColumn.Pack(),
+            AttributeIds = (ULongColumn)readable.AttributeIdsColumn.Pack(),
+            Values = (BlobColumn)readable.ValuesColumn.Pack(),
+            TransactionIds = (ULongColumn)readable.TransactionIdsColumn.Pack()
         };
     }
 
@@ -361,4 +357,5 @@ public static class ExtensionMethods
 
         return $"{className}({node.DeepLength}) {repr}";
     }
+    */
 }

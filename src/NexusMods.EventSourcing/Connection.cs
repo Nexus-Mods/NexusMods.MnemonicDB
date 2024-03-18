@@ -4,8 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 using NexusMods.EventSourcing.Abstractions.Models;
-using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 using NexusMods.EventSourcing.Storage;
 
 namespace NexusMods.EventSourcing;
@@ -128,7 +128,7 @@ public class Connection : IConnection
     }
 
     /// <inheritdoc />
-    public IObservable<(TxId TxId, IReadable Datoms)> Commits => _store.TxLog;
+    public IObservable<(TxId TxId, IDatomResult Datoms)> Commits => _store.TxLog;
 
     /// <inheritdoc />
     public T GetActive<T>(EntityId id) where T : IActiveReadModel

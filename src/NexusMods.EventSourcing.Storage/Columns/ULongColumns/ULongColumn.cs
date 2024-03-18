@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using FlatSharp;
-using NexusMods.EventSourcing.Abstractions.Columns.ULongColumns;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
@@ -11,18 +11,62 @@ namespace NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 /// <summary>
 /// A column backed by a FlatBuffer
 /// </summary>
-public partial class ULongPackedColumn : IPacked
+public partial class ULongColumn : IEnumerable<ulong>
 {
-    /// <summary>
-    /// Create a new column from a FlatBuffer in memory.
-    /// </summary>
-    /// <param name="memory"></param>
-    /// <returns></returns>
-    public static ULongPackedColumn From(ReadOnlyMemory<byte> memory)
+    private readonly bool _isFrozen = true;
+
+    public bool IsFrozen => _isFrozen;
+
+    private ULongColumn(bool isFrozen) : this()
     {
-        return Serializer.Parse(memory);
+        _isFrozen = isFrozen;
     }
 
+    public static ULongColumn Create(int initialSize = 32)
+    {
+        return new ULongColumn(false)
+        {
+            Length = 0,
+            Header = new UL_Column_Union(new UL_Unpacked()),
+            Data = new Memory<byte>(new byte[initialSize * sizeof(ulong)])
+        };
+    }
+
+    public ULongColumn Freeze()
+    {
+        if (_isFrozen)
+        {
+            return this;
+        }
+
+        var span = Data.Span.CastFast<byte, ulong>();
+        var stats = Statistics.Create(span);
+        var packed = stats.Pack(span);
+        return packed;
+    }
+
+    /// <summary>
+    /// Ensure the column is not frozen, and if it is, unfreeze it
+    /// </summary>
+    public ULongColumn NotFrozen()
+    {
+        return !_isFrozen ? this : Thaw();
+    }
+
+    /// <summary>
+    /// Unfreezes the column, allowing for modifications
+    /// </summary>
+    public ULongColumn Thaw()
+    {
+        var memory = new Memory<byte>(new byte[Length * sizeof(ulong)]);
+        CopyTo(0, memory.Span.CastFast<byte, ulong>());
+        return new ULongColumn(false)
+        {
+            Length = Length,
+            Header = new UL_Column_Union(new UL_Unpacked()),
+            Data = memory
+        };
+    }
 
     public ulong this[int idx]
     {
@@ -50,12 +94,61 @@ public partial class ULongPackedColumn : IPacked
         }
     }
 
-    public IUnpacked Unpack()
+    public ULongColumn Set(int idx, ulong value)
     {
-        var appendable = Appendable.Create(Length);
-        CopyTo(0, appendable.GetWritableSpan(Length));
-        appendable.SetLength(Length);
-        return appendable;
+        var column = NotFrozen();
+        column.Data.Span.Cast<byte, ulong>()[idx] = value;
+        return column;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void EnsureNotFrozen()
+    {
+        if (_isFrozen)
+        {
+            throw new InvalidOperationException("Column is frozen");
+        }
+    }
+
+    private void Ensure(int i)
+    {
+        Debug.Assert(!_isFrozen);
+        if (Length + i <= Data.Length / sizeof(ulong)) return;
+        var newData = new Memory<byte>(new byte[Data.Length * 2]);
+        Data.Span.CopyTo(newData.Span);
+        Data = newData;
+    }
+
+    public ULongColumn Add(ulong value)
+    {
+        EnsureNotFrozen();
+        Ensure(1);
+        Data.Span.CastFast<byte, ulong>()[Length] = value;
+        Length += 1;
+        return this;
+    }
+
+    public void Add(ReadOnlySpan<ulong> values)
+    {
+        EnsureNotFrozen();
+        Ensure(values.Length);
+        values.CopyTo(Data.Span.CastFast<byte, ulong>().SliceFast(Length));
+        Length += values.Length;
+    }
+
+    public void Add(IEnumerable<ulong> values)
+    {
+        EnsureNotFrozen();
+        foreach (var value in values)
+        {
+            Add(value);
+        }
+    }
+
+    public void Add(params ulong[] values)
+    {
+        EnsureNotFrozen();
+        Add(values.AsSpan());
     }
 
     public void CopyTo(int offset, Span<ulong> dest)

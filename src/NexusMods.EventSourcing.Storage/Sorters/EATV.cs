@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Abstractions.Nodes.Data;
+using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 
 namespace NexusMods.EventSourcing.Storage.Sorters;
 
@@ -23,12 +23,12 @@ public class EATV(AttributeRegistry registry) : IDatomComparator
         return registry.CompareValues(x, y);
     }
 
-    public IComparer<int> MakeComparer(IReadable datoms)
+    public IComparer<int> MakeComparer(IDatomResult datoms)
     {
         return new EATVComparer(registry, datoms);
     }
 
-    private class EATVComparer(AttributeRegistry registry, IReadable datoms) : IComparer<int>
+    private class EATVComparer(AttributeRegistry registry, IDatomResult datoms) : IComparer<int>
     {
         public int Compare(int a, int b)
         {

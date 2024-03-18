@@ -4,7 +4,6 @@ using FlatSharp;
 using NexusMods.EventSourcing.Storage.Columns.BlobColumns;
 using NexusMods.Hashing.xxHash64;
 using Xunit.DependencyInjection;
-using IUnpacked = NexusMods.EventSourcing.Abstractions.Columns.BlobColumns.IUnpacked;
 
 namespace NexusMods.EventSourcing.Storage.Tests.ColumnTests;
 
@@ -15,10 +14,10 @@ public class BlobTests
     [MethodData(nameof(TestData))]
     public Task Test(string name, byte[][] values)
     {
-        var column = Appendable.Create();
+        var column = BlobColumn.Create();
         foreach (var value in values)
         {
-            column.Append(value);
+            column.Add(value);
         }
 
         column.Count.Should().Be(values.Length);
@@ -27,7 +26,7 @@ public class BlobTests
             column[i].ToArray().Should().Equal(values[i]);
         }
 
-        var packed = ((IUnpacked)column).Pack();
+        var packed = column.Freeze();
 
         packed.Count.Should().Be(values.Length);
         for (var i = 0; i < values.Length; i++)
@@ -36,21 +35,17 @@ public class BlobTests
         }
 
 
-        var writer = new ArrayBufferWriter<byte>();
-        BlobPackedColumn.Serializer.Write(writer, (BlobPackedColumn)packed);
+        using var writer = new PooledMemoryBufferWriter();
+        BlobColumn.Serializer.Write(writer, packed);
 
-        var unpacked = BlobPackedColumn.Serializer.Parse(writer.WrittenMemory);
+        var unpacked = BlobColumn.Serializer.Parse(writer.WrittenMemoryWritable);
         unpacked.Count.Should().Be(values.Length);
         for (var i = 0; i < values.Length; i++)
         {
             unpacked[i].ToArray().Should().Equal(values[i]);
         }
 
-        return Verify(
-        new {
-            Hash = writer.WrittenSpan.XxHash64().ToHex(),
-            Size = writer.WrittenSpan.Length,
-        })
+        return Verify(writer.WrittenMemory.Span.ToHex())
             .UseTextForParameters(name);
     }
 

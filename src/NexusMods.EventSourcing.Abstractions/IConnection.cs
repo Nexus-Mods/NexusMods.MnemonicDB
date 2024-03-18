@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 using NexusMods.EventSourcing.Abstractions.Models;
-using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -30,7 +28,7 @@ public interface IConnection
     /// <summary>
     /// A sequential stream of commits to the database.
     /// </summary>
-    public IObservable<(TxId TxId, IReadable Datoms)> Commits { get; }
+    public IObservable<(TxId TxId, IDatomResult Datoms)> Commits { get; }
 
     /// <summary>
     /// Gets the active read model for the given entity id, this entity will

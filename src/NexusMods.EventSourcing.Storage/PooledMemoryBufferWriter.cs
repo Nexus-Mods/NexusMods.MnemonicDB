@@ -47,6 +47,8 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
 
     public Span<byte> WrittenSpanWritable => _data.Span.SliceFast(0, _idx);
 
+    public Memory<byte> WrittenMemoryWritable => _data.Slice(0, _idx);
+
     private void Expand(int atLeast)
     {
         var newSize = _size;

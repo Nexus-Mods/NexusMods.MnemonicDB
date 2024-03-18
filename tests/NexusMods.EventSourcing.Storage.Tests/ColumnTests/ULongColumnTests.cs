@@ -2,7 +2,6 @@
 using System.Runtime.InteropServices;
 using FlatSharp;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Abstractions.Columns.ULongColumns;
 using NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 using Reloaded.Memory.Extensions;
 using Xunit.DependencyInjection;
@@ -14,8 +13,8 @@ public class ULongColumnTests
     [Fact]
     public void MultipleValuesColumnsPackIntoMinMax()
     {
-        var column = (IUnpacked)Create(42, 43, 44);
-        var packed = column.Pack();
+        var column = Create(42, 43, 44);
+        var packed = column.Freeze();
 
     }
 
@@ -23,8 +22,8 @@ public class ULongColumnTests
     [MethodData(nameof(TestData))]
     public Task CanGetColumnStatistics(string comment, ulong[] values)
     {
-        var column = (IUnpacked)Create(values);
-        var stats = Statistics.Create(MemoryMarshal.Cast<ulong, ulong>(column.Span));
+        var column = Create(values);
+        var stats = Statistics.Create(MemoryMarshal.Cast<ulong, ulong>(column.Data.Span.CastFast<byte, ulong>()));
         return Verify(stats).UseTextForParameters(comment);
     }
 
@@ -32,15 +31,14 @@ public class ULongColumnTests
     [MethodData(nameof(TestData))]
     public void PackedDataShouldRoundTrip(string name, ulong[] values)
     {
-        var column = (IUnpacked)Create(values);
-        var packed = column.Pack();
-        AssertEqual(packed, (IReadable)column);
+        var column = Create(values);
+        var packed = column.Freeze();
+        AssertEqual(packed, column);
 
-        var writer = new ArrayBufferWriter<byte>();
-        ULongPackedColumn.Serializer.Write(writer, (ULongPackedColumn)packed);
-        var unpackedUL = ULongPackedColumn.Serializer.Parse(writer.WrittenMemory);
-        AssertEqual(unpackedUL, (IReadable)column);
-
+        using var writer = new PooledMemoryBufferWriter();
+        ULongColumn.Serializer.Write(writer, packed);
+        var unpackedUL = ULongColumn.Serializer.Parse(writer.WrittenMemoryWritable);
+        AssertEqual(unpackedUL, column);
 
     }
 
@@ -48,10 +46,10 @@ public class ULongColumnTests
     [MethodData(nameof(TestData))]
     public Task PackedDataShouldHaveCorrectHeaders(string name, ulong[] data)
     {
-        var column = (IUnpacked)Create(data);
-        var packed = column.Pack();
+        var column = Create(data);
+        var packed = column.Freeze();
 
-        var casted = (ULongPackedColumn)packed;
+        var casted = (ULongColumn)packed;
         var values = new List<ulong>();
 
         if (casted.Header.Kind != UL_Column_Union.ItemKind.Packed)
@@ -77,10 +75,10 @@ public class ULongColumnTests
     }
 
 
-    private Appendable Create(params ulong[] values)
+    private ULongColumn Create(params ulong[] values)
     {
-        var column = Appendable.Create(values.Length);
-        column.Append(values.AsSpan());
+        var column = ULongColumn.Create(values.Length);
+        column.Add(values.AsSpan());
         return column;
     }
 
@@ -108,7 +106,7 @@ public class ULongColumnTests
         }
     }
 
-    private void AssertEqual(IReadable a, IReadable b)
+    private void AssertEqual(ULongColumn a, ULongColumn b)
     {
         a.Length.Should().Be(b.Length, "the columns should have the same length.");
         for (var i = 0; i < a.Length; i++)

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using FluentAssertions.Equivalency;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
@@ -45,9 +46,10 @@ public abstract class AStorageTest : IAsyncLifetime
     }
 
 
-    public Appendable TestDatomNode(int entityCount = 100)
+    public DataNode TestDatomNode(int entityCount = 100)
     {
-        var node = new Appendable();
+
+        var node = DataNode.Create();
 
         var emitters = new Action<EntityId, TxId, ulong>[]
         {

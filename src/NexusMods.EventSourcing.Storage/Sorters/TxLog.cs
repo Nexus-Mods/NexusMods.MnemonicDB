@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Abstractions.Nodes.Data;
-using NexusMods.EventSourcing.Storage.Abstractions;
-using NexusMods.EventSourcing.Storage.Nodes;
+using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 
 namespace NexusMods.EventSourcing.Storage.Sorters;
 
@@ -29,7 +27,7 @@ public class TxLog(AttributeRegistry registry) : IDatomComparator
         return registry.CompareValues(x, y);
     }
 
-    public IComparer<int> MakeComparer(IReadable datoms)
+    public IComparer<int> MakeComparer(IDatomResult datoms)
     {
         throw new System.NotImplementedException();
     }

@@ -1,5 +1,7 @@
 ﻿using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.Nodes;
+using NexusMods.EventSourcing.Storage.Nodes.Data;
+
 namespace NexusMods.EventSourcing.Storage.DatomStorageStructures;
 
 /// <summary>
@@ -21,12 +23,12 @@ public record IndexRoot
     /// <summary>
     /// The current in-memory index.
     /// </summary>
-    public required NexusMods.EventSourcing.Abstractions.Nodes.Data.IReadable InMemory { get; init; }
+    public required DataNode InMemory { get; init; }
 
     /// <summary>
     /// The history index
     /// </summary>
-    public required NexusMods.EventSourcing.Abstractions.Nodes.Index.IReadable History { get; init; }
+    public required INode History { get; init; }
 
     /*
     public static IndexRoot Empty(SortOrders order, AttributeRegistry registry)

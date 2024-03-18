@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 using NexusMods.EventSourcing.Storage.Serializers;
 
 namespace NexusMods.EventSourcing.Storage.Tests.NodeTests;

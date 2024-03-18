@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using NexusMods.EventSourcing.Abstractions.Nodes.Data;
+using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -27,7 +27,7 @@ public interface IDatomStore : IDisposable
     /// <summary>
     /// An observable of the transaction log, for getting the latest changes to the store.
     /// </summary>
-    public IObservable<(TxId TxId, IReadable Datoms)> TxLog { get; }
+    public IObservable<(TxId TxId, IDatomResult Datoms)> TxLog { get; }
 
     /// <summary>
     /// Gets the latest transaction id found in the log.

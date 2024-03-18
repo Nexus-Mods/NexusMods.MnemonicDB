@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
-using NexusMods.EventSourcing.Abstractions.Nodes.Data;
-using NexusMods.EventSourcing.Storage;
+using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -31,5 +30,5 @@ public interface IDatomComparator
     /// Make a comparer for the given reader, the comparer will get ints to compare which should be treated as indexes
     /// into the given reader.
     /// </summary>
-    public IComparer<int> MakeComparer(IReadable datoms);
+    public IComparer<int> MakeComparer(IDatomResult datoms);
 }

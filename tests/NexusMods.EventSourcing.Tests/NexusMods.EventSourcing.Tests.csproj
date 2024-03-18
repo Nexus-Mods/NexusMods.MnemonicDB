@@ -25,4 +25,8 @@
         <ProjectReference Include="..\NexusMods.EventSourcing.TestModel\NexusMods.EventSourcing.TestModel.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <Compile Remove="DbTests.cs" />
+    </ItemGroup>
+
 </Project>

@@ -120,13 +120,13 @@ public struct Statistics
         };
     }
 
-    public ULongPackedColumn Pack(ReadOnlySpan<ulong> span)
+    public ULongColumn Pack(ReadOnlySpan<ulong> span)
     {
         switch (GetKind())
         {
             // Only one value appears in the column
             case UL_Column_Union.ItemKind.Constant:
-                return new ULongPackedColumn
+                return new ULongColumn
                 {
                     Length = Count,
                     Header = new UL_Column_Union(
@@ -140,7 +140,7 @@ public struct Statistics
             // Packing won't help, so just pack it down to a struct
             case UL_Column_Union.ItemKind.Unpacked:
             {
-                return new ULongPackedColumn
+                return new ULongColumn
                 {
                     Length = Count,
                     Header = new UL_Column_Union(
@@ -181,7 +181,7 @@ public struct Statistics
                     MemoryMarshal.Write(slice, packedValue);
                 }
 
-                return new ULongPackedColumn
+                return new ULongColumn
                 {
                     Length = Count,
                     Header = new UL_Column_Union(

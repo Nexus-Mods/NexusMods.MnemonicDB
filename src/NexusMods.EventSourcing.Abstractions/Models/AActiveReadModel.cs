@@ -51,8 +51,11 @@ where TOuter : AActiveReadModel<TOuter>, IActiveReadModel
                 // TODO: This is O(n * m) on the number of datoms and the number of active read models.
                 // We should probably have a map of entity ids to active read models, and some sort of
                 // map if entity ids in the datom list.
+                throw new NotImplementedException();
+                /*
                 if (changes.Datoms.Any(d => d.E == target.Id))
                     connection.Db.Reload(target);
+                    */
             }
             else
             {
