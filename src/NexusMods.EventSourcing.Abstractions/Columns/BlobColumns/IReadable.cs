@@ -17,6 +17,13 @@ public interface IReadable
     /// </summary>
     public ReadOnlySpan<byte> this[int idx] { get; }
 
+    /// <summary>
+    /// Gets the value at the given index as read only memory.
+    /// </summary>
+    /// <param name="idx"></param>
+    /// <returns></returns>
+    public ReadOnlyMemory<byte> GetValue(int idx);
+
 
     /// <summary>
     /// Gets the memory of the column, this is a blob that contains the data for the column,

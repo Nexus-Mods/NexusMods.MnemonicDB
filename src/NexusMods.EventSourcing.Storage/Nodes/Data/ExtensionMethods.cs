@@ -4,9 +4,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using FlatSharp;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Nodes;
 using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 using NexusMods.EventSourcing.Storage.Columns.BlobColumns;
 using NexusMods.EventSourcing.Storage.Columns.ULongColumns;
+using NexusMods.EventSourcing.Storage.Nodes.Index;
 using IAppendable = NexusMods.EventSourcing.Abstractions.Nodes.Data.IAppendable;
 using IPacked = NexusMods.EventSourcing.Abstractions.Nodes.Data.IPacked;
 
@@ -57,7 +59,7 @@ public static class ExtensionMethods
     /// Splits the node into sub nodes of the given maximum size, attempts to split the nodes into
     /// blocks of size no larger than the given block size, but all of the same size.
     /// </summary>
-    public static IEnumerable<IReadable> Split(this IReadable src, int blockSize)
+    public static IEnumerable<INode> Split(this IReadable src, int blockSize)
     {
         EnsureFrozen(src);
 
@@ -280,41 +282,11 @@ public static class ExtensionMethods
     }
 
     /// <summary>
-    /// Writes the node to the given <see cref="IBufferWriter{T}"/>.
-    /// </summary>
-    public static void WriteTo(this IReadable readable, IBufferWriter<byte> writer)
-    {
-        var packed = readable.Pack();
-
-        if (packed is not DataPackedNode dataPackedNode)
-        {
-            throw new InvalidOperationException("The node is not a DataPackedNode.");
-        }
-
-        DataPackedNode.Serializer.Write(writer, dataPackedNode);
-    }
-
-    /// <summary>
-    /// Packs the node into a new <see cref="IReadable"/>.
-    /// </summary>
-    public static IReadable Pack(this IReadable readable)
-    {
-        return readable switch
-        {
-            IPacked packed => packed,
-            // Appendable nodes store columns unpacked, so they can use direct span access during the packing
-            IAppendable appendable => appendable.Pack(),
-            // Everything else will require copying the columns into a span, then packing it
-            _ => PackSlow(readable)
-        };
-    }
-
-    /// <summary>
     /// Slower version of <see cref="Pack"/> that requires copying every column into a span, then packing it.
     /// This is required for nodes that are not <see cref="IAppendable"/> and not <see cref="IPacked"/>, such as
     /// views and sorted nodes.
     /// </summary>
-    private static IReadable PackSlow(this IReadable readable)
+    private static IReadable PackSlow(this IReadable readable, INodeStore store)
     {
         return new DataPackedNode
         {
@@ -332,7 +304,7 @@ public static class ExtensionMethods
         return dataPackedNode;
     }
 
-    public static IReadable Merge(this IReadable src, IReadable other, IDatomComparator comparator)
+    public static IReadable Merge(this INode src, IReadable other, IDatomComparator comparator)
     {
         switch (src)
         {
@@ -345,10 +317,10 @@ public static class ExtensionMethods
         }
     }
 
-    private static IReadable MergeIndex(IReadable index, IReadable other, IDatomComparator comparator)
+    private static IReadable MergeIndex(INode index, IReadable other, IDatomComparator comparator, INodeStore store)
     {
         if (index is EventSourcing.Abstractions.Nodes.Index.IAppendable appendable)
-            return appendable.Ingest(other);
+            return appendable.Ingest(other, store);
         throw new NotImplementedException();
     }
 

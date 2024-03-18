@@ -6,7 +6,8 @@
 public interface IAppendable : IReadable
 {
     /// <summary>
-    /// Merges the given data into this node, and possibly returns a new node.
+    /// Packs the index node into a packed representation.
     /// </summary>
-    public IAppendable Ingest(Data.IReadable data);
+    /// <returns></returns>
+    public IReadable PackIndex(INodeStore store);
 }

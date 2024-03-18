@@ -39,6 +39,8 @@
       <FlatSharpSchema Include="Columns\BlobColumns\Schema.fbs" />
       <None Remove="Nodes\DataNode\Schema.fbs" />
       <FlatSharpSchema Include="Nodes\Data\Schema.fbs" />
+      <None Remove="Nodes\Index\Schema.fbs" />
+      <FlatSharpSchema Include="Nodes\Index\Schema.fbs" />
     </ItemGroup>
 
 </Project>

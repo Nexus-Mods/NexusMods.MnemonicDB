@@ -23,7 +23,7 @@ public interface IAppendable : IReadable
     /// Packs the node into a packed representation.
     /// </summary>
     /// <returns></returns>
-    public IPacked Pack();
+    public IPacked PackDataNode();
 
     /// <summary>
     /// Adds a datom to the node.

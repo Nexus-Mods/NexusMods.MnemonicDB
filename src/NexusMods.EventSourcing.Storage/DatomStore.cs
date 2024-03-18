@@ -90,6 +90,8 @@ public class DatomStore : IDatomStore
     /// </summary>
     private async Task Bootstrap()
     {
+        throw new NotImplementedException();
+        /*
         try
         {
             if (!_nodeStore.TryGetLastTx(out var tx))
@@ -132,6 +134,7 @@ public class DatomStore : IDatomStore
         {
             _logger.LogError(ex, "Failed to bootstrap the datom store");
         }
+        */
 
     }
 

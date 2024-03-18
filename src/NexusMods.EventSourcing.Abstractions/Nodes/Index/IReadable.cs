@@ -1,9 +1,11 @@
-﻿namespace NexusMods.EventSourcing.Abstractions.Nodes.Index;
+﻿using System.Collections.Generic;
+
+namespace NexusMods.EventSourcing.Abstractions.Nodes.Index;
 
 /// <summary>
 /// Readable index node.
 /// </summary>
-public interface IReadable : Data.IReadable
+public interface IReadable : INode
 {
     /// <summary>
     /// Get the number of datoms in the child node at the given index, this will include all datoms in the child and its children.
@@ -17,12 +19,13 @@ public interface IReadable : Data.IReadable
     public long GetChildOffset(int idx);
 
     /// <summary>
-    /// Gets the child node at the given index.
+    /// Gets the store key of the child node at the given index.
     /// </summary>
-    public Data.IReadable GetChild(int idx);
+    public StoreKey GetChild(int idx);
 
     public EventSourcing.Abstractions.Columns.ULongColumns.IReadable ChildCountsColumn { get; }
     public EventSourcing.Abstractions.Columns.ULongColumns.IReadable ChildOffsetsColumn { get; }
+    public EventSourcing.Abstractions.Columns.ULongColumns.IReadable ChildNodeIdsColumn { get; }
 
     public IDatomComparator Comparator { get; }
 }

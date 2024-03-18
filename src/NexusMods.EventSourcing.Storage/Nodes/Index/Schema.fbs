@@ -1,0 +1,23 @@
+﻿include "../../Columns/ULongColumns/Schema.fbs";
+include "../../Columns/BlobColumns/Schema.fbs";
+
+attribute "fs_serializer";
+attribute "fs_unsafeUnion";
+attribute "fs_valueStruct";
+attribute "fs_vector";
+
+namespace NexusMods.EventSourcing.Storage.Nodes.Index;
+
+table IndexPackedNode(fs_serializer)
+{
+   SortOrder: ubyte;
+   DeepLength: long;
+   ShallowLength: long;
+   EntityIds: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongPackedColumn (required);
+   AttributeIds: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongPackedColumn (required);
+   Values: NexusMods.EventSourcing.Storage.Columns.BlobColumns.BlobPackedColumn (required);
+   TransactionIds: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongPackedColumn (required);
+   ChildCounts: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongPackedColumn (required);
+   ChildOffsets: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongPackedColumn (required);
+   ChildNodes: [ulong] (required);
+}

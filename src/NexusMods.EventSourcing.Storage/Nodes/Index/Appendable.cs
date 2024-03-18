@@ -6,12 +6,17 @@ using System.Linq;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 using NexusMods.EventSourcing.Abstractions.Nodes.Index;
+using NexusMods.EventSourcing.Storage.Columns.BlobColumns;
+using NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 using NexusMods.EventSourcing.Storage.Nodes.Data;
+using IAppendable = NexusMods.EventSourcing.Abstractions.Nodes.Index.IAppendable;
 
 namespace NexusMods.EventSourcing.Storage.Nodes.Index;
 
 public class Appendable : IReadable, IAppendable
 {
+    public INodeStore Store { get; }
+
     private int _shallowLength;
     private long _deepLength;
     private readonly bool _isFrozen;
@@ -23,8 +28,8 @@ public class Appendable : IReadable, IAppendable
     private readonly Columns.ULongColumns.Appendable _childCounts;
     private readonly Columns.ULongColumns.Appendable _childOffsets;
 
-    private List<EventSourcing.Abstractions.Nodes.Data.IReadable> _children;
-    private readonly IDatomComparator _comparator;
+    private readonly Columns.ULongColumns.Appendable _children;
+    private IDatomComparator _comparator = null!;
 
     private Appendable(IDatomComparator comparator, int initialSize = Columns.ULongColumns.Appendable.DefaultSize)
     {
@@ -37,7 +42,7 @@ public class Appendable : IReadable, IAppendable
         _values = Columns.BlobColumns.Appendable.Create(initialSize);
         _childCounts = Columns.ULongColumns.Appendable.Create(initialSize);
         _childOffsets = Columns.ULongColumns.Appendable.Create(initialSize);
-        _children = new List<EventSourcing.Abstractions.Nodes.Data.IReadable> { new Data.Appendable() };
+        _children = Columns.ULongColumns.Appendable.Create(initialSize);
     }
 
     private Appendable(IDatomComparator comparator, IReadable readable, int offset, int childCount)
@@ -52,11 +57,7 @@ public class Appendable : IReadable, IAppendable
         _values = Columns.BlobColumns.Appendable.Create(readable.ValuesColumn, offset, childCount);
         _childCounts = Columns.ULongColumns.Appendable.Create(readable.ChildCountsColumn, offset, childCount);
         _childOffsets = Columns.ULongColumns.Appendable.Create(readable.ChildOffsetsColumn, offset, childCount);
-        _children = new List<EventSourcing.Abstractions.Nodes.Data.IReadable>();
-        for (var i = 0; i < childCount; i++)
-        {
-            _children.Add(readable.GetChild(offset + i));
-        }
+        _children = Columns.ULongColumns.Appendable.Create(readable.ChildNodeIdsColumn, offset, childCount);
 
         var start = _childOffsets[0];
         for (var i = 0; i < childCount; i++)
@@ -65,17 +66,9 @@ public class Appendable : IReadable, IAppendable
         }
 
         Debug.Assert(_childOffsets[0] == 0, "First child offset should be 0");
-        _deepLength = _children.Sum(c => c.DeepLength);
+        _deepLength = _childCounts.Sum(x => (long)x);
     }
-
-    private Appendable(IDatomComparator comparator, List<EventSourcing.Abstractions.Nodes.Data.IReadable> newChildren)
-        : this(comparator)
-    {
-        _children = newChildren;
-        ReprocessChildren();
-    }
-
-    private Appendable(IDatomComparator comparator, List<ChildInfo> children)
+    internal Appendable(IDatomComparator comparator, List<ExtensionMethods.ChildInfo> children)
     {
         _comparator = comparator;
         _isFrozen = false;
@@ -86,7 +79,7 @@ public class Appendable : IReadable, IAppendable
         _values = Columns.BlobColumns.Appendable.Create();
         _childCounts = Columns.ULongColumns.Appendable.Create();
         _childOffsets = Columns.ULongColumns.Appendable.Create();
-        _children = new List<EventSourcing.Abstractions.Nodes.Data.IReadable>();
+        _children = Columns.ULongColumns.Appendable.Create();
         _deepLength = 0;
 
         foreach (var child in children)
@@ -98,7 +91,6 @@ public class Appendable : IReadable, IAppendable
             _childCounts.Append(child.DeepLength);
             _childOffsets.Append((ulong)_deepLength);
             _deepLength += (long)child.DeepLength;
-            _children.Add(child.Child);
         }
         Debug.Assert(_childOffsets[0] == 0, "First child offset should be 0");
 
@@ -112,7 +104,8 @@ public class Appendable : IReadable, IAppendable
     /// </summary>
     public static Appendable Create(IDatomComparator comparator)
     {
-        return new Appendable(comparator, [new Appendable(comparator, [new Data.Appendable()])]);
+        throw new NotImplementedException();
+        //return new Appendable(comparator, [new Appendable(comparator, [new Data.Appendable()])]);
     }
 
     /// <summary>
@@ -123,26 +116,6 @@ public class Appendable : IReadable, IAppendable
     {
         return new Appendable(readable.Comparator, readable, childOffset, numberOfChildren);
     }
-
-    private void ReprocessChildren()
-    {
-        var offset = 0UL;
-        for (var idx = 0; idx < _children.Count; idx++)
-        {
-            var child = _children[idx];
-            var lastDatom = child.Length == 0 ? Datom.Max : child.LastDatom;
-            _entityIds.Append(lastDatom.E.Value);
-            _attributeIds.Append(lastDatom.A.Value);
-            _transactionIds.Append(lastDatom.T.Value);
-            _values.Append(lastDatom.V.Span);
-            _childCounts.Append((ulong)child.DeepLength);
-            _childOffsets.Append(offset);
-            offset += (ulong)child.DeepLength;
-            _shallowLength++;
-            _deepLength += child.DeepLength;
-        }
-    }
-
 
     public int Length => _shallowLength;
     public long DeepLength => _deepLength;
@@ -171,28 +144,6 @@ public class Appendable : IReadable, IAppendable
         T = TxId.From(_transactionIds[_shallowLength - 1]),
         V = _values.GetMemory(_shallowLength - 1)
     };
-
-    /// <summary>
-    /// Gets the last datom in each child node, except for the last which is always
-    /// Datom.Max.
-    /// </summary>
-    private IEnumerable<(Datom Datom, int Index)> ChildMarkers()
-    {
-        var length = _entityIds.Length;
-        for (var i = 0; i < length; i++)
-        {
-            var datom = new Datom
-            {
-                E = EntityId.From(_entityIds[i]),
-                A = AttributeId.From(_attributeIds[i]),
-                T = TxId.From(_transactionIds[i]),
-                V = _values.GetMemory(i)
-            };
-            yield return (datom, i);
-        }
-
-        yield return (Datom.Max, _children.Count - 1);
-    }
 
     public EntityId GetEntityId(int idx)
     {
@@ -260,71 +211,49 @@ public class Appendable : IReadable, IAppendable
     }
 
 
-    private record struct ChildInfo(Datom LastDatom, EventSourcing.Abstractions.Nodes.Data.IReadable Child, ulong DeepLength, int ShallowLength);
 
 
-    static void MaybeSplit(EventSourcing.Abstractions.Nodes.Data.IReadable src, List<ChildInfo> children)
+
+    public IReadable PackIndex(INodeStore store)
     {
-        if (src is IAppendable index && index.Length > Configuration.IndexBlockSize)
+        List<ulong> childrenIds = new();
+        List<EventSourcing.Abstractions.Nodes.Data.IReadable> children = new();
+
+        foreach (var item in _children)
         {
-            var split = index.Split(Configuration.IndexBlockSize).ToArray();
-            foreach (var child in split)
+            var child = item;
+        TOP:
+            switch (child)
             {
-                children.Add(new ChildInfo(child.LastDatom, child, (ulong)child.DeepLength, child.Length));
-            }
-        }
-        else if (src is EventSourcing.Abstractions.Nodes.Data.IReadable data &&
-                 data.Length > Configuration.DataBlockSize)
-        {
-            var split = data.Split(Configuration.DataBlockSize).ToArray();
-            foreach (var child in split)
-            {
-                children.Add(new ChildInfo(child.LastDatom, child, (ulong)child.DeepLength, child.Length));
-            }
-        }
-        else
-        {
-            children.Add(new ChildInfo(src.LastDatom, src, (ulong)src.DeepLength, src.Length));
-        }
-
-    }
-
-    public IAppendable Ingest(EventSourcing.Abstractions.Nodes.Data.IReadable node)
-    {
-        var start = 0;
-
-        var children = new List<ChildInfo>();
-
-
-
-        for (int idx = 0; idx < _children.Count; idx++)
-        {
-            var datom = idx == _children.Count - 1 ? Datom.Max : _children[idx].LastDatom;
-            var last = node.Find(datom, _comparator);
-
-            if (last < node.Length)
-            {
-                var newNode = _children[idx].Merge(node.SubView(start, last - start), _comparator);
-                MaybeSplit(newNode, children);
-                start = last;
-            }
-            else if (last == node.Length)
-            {
-                var newNode = _children[idx].Merge(node.SubView(start, last - start), _comparator);
-                MaybeSplit(newNode, children);
-
-                for (int i = idx + 1; i < _children.Count; i++)
-                {
-                    children.Add(new ChildInfo(_children[i].LastDatom, _children[i], (ulong)_children[i].DeepLength, _children[i].Length));
-                }
-
-                break;
+                case ReferenceNode node:
+                    children.Add(child);
+                    childrenIds.Add(node.StoreKey.Value);
+                    break;
+                case ReferenceIndexNode indexNode:
+                    children.Add(child);
+                    childrenIds.Add(indexNode.StoreKey.Value);
+                    break;
+                default:
+                    // Pack it then re-evaluate it
+                    child = child.Pack(store);
+                    goto TOP;
             }
         }
 
-
-
-        return new Appendable(_comparator, children);
+        return new IndexPackedNode
+        {
+            SortOrder = (byte)_comparator.SortOrder,
+            EntityIds = (ULongPackedColumn)_entityIds.Pack(),
+            AttributeIds = (ULongPackedColumn)_attributeIds.Pack(),
+            TransactionIds = (ULongPackedColumn)_transactionIds.Pack(),
+            Values = (BlobPackedColumn)_values.Pack(),
+            ChildCounts = (ULongPackedColumn)_childCounts.Pack(),
+            ChildOffsets = (ULongPackedColumn)_childOffsets.Pack(),
+            ChildNodes = childrenIds,
+            Children = children,
+            DeepLength = _deepLength,
+            ShallowLength = _shallowLength
+        };
     }
 
     public override string ToString()

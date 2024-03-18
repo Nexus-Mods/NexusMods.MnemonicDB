@@ -2,7 +2,7 @@
 using System.Threading;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.Nodes.Data;
-using NexusMods.EventSourcing.Storage.DatomStorageStructures;
+using NexusMods.EventSourcing.Storage.Nodes.Index;
 
 namespace NexusMods.EventSourcing.Storage;
 
@@ -17,75 +17,41 @@ public class NodeStore(IKvStore kvStore, AttributeRegistry registry)
     /// </summary>
     /// <param name="node"></param>
     /// <returns></returns>
-    public StoreKey LogTx(IReadable packed)
+    public StoreKey LogTx(IReadable node)
     {
-        /*
+        using var writer = new PooledMemoryBufferWriter();
+        Pack(node, writer);
+
         var thisTx = ++_txLogId;
         Interlocked.Exchange(ref _nextBlockId, Ids.MakeId(Ids.Partition.Index, thisTx << 16));
         _nextBlockId = Ids.MakeId(Ids.Partition.Index, thisTx << 16);
         var logId = Ids.MakeId(Ids.Partition.TxLog, thisTx);
 
         var key = StoreKey.From(logId);
-        Flush(key, (PackedNode)packed);
-        return key;
-        */
+
         throw new NotImplementedException();
     }
 
-    private StoreKey NextBlockId()
-    {
-        return StoreKey.From(Interlocked.Increment(ref _nextBlockId));
-    }
-
-    public TxId GetNextTx()
-    {
-        return TxId.From(_txLogId + 1);
-    }
-
-    public bool TryGetLastTx(out TxId key)
-    {
-        return kvStore.TryGetLatestTx(out key);
-    }
-
-    public bool LoadRoot(out DatomStoreState state)
+    public StoreKey Put(IReadable node)
     {
         throw new NotImplementedException();
-        /*
-        if (!kvStore.TryGet(StoreKey.RootKey, out var value))
+    }
+
+    public IReadable Get(StoreKey key)
+    {
+        throw new NotImplementedException();
+    }
+
+    private void Pack(IReadable node, PooledMemoryBufferWriter writer)
+    {
+        switch (node)
         {
-            state = default!;
-            return false;
+            case EventSourcing.Abstractions.Nodes.Index.IReadable index:
+                //PackIndex(index, writer);
+                break;
+
+            default:
+                throw new InvalidOperationException("Cant pack node");
         }
-
-        var memory = GC.AllocateUninitializedArray<byte>(value.Length);
-        value.CopyTo(memory);
-
-        var reader = new BufferReader(memory);
-        var fourcc = reader.ReadFourCC();
-
-        if (fourcc != FourCC.DatomStoreStateRoot)
-        {
-            throw new InvalidOperationException("Root not found");
-        }
-
-        state = DatomStoreState.ReadFrom(reader, registry, this);
-        return true;
-        */
-    }
-
-
-    public IReadable Load(StoreKey key)
-    {
-        throw new NotImplementedException();
-    }
-
-    public StoreKey LogTx(EventSourcing.Abstractions.Columns.BlobColumns.IReadable node)
-    {
-        throw new NotImplementedException();
-    }
-
-    public EventSourcing.Abstractions.Columns.BlobColumns.IReadable Flush(EventSourcing.Abstractions.Columns.BlobColumns.IReadable node)
-    {
-        throw new NotImplementedException();
     }
 }

@@ -22,7 +22,7 @@ public class ReferenceIndexNode : IReadable
         _node = node;
     }
 
-    public StoreKey Key => _key;
+    public StoreKey StoreKey => _key;
 
     public IReadable Resolve()
     {
@@ -36,6 +36,8 @@ public class ReferenceIndexNode : IReadable
 
     private IReadable Load()
     {
+        throw new NotImplementedException();
+        /*
         var nodeData = (IReadable)_store.Load(_key);
         _node = new WeakReference<IReadable>(nodeData);
         if (nodeData.Length != Length)
@@ -44,6 +46,7 @@ public class ReferenceIndexNode : IReadable
         }
 
         return nodeData;
+        */
     }
 
     public IEnumerator<Datom> GetEnumerator()

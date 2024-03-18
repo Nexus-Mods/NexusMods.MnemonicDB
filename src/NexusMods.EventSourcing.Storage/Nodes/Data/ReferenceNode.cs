@@ -10,6 +10,7 @@ namespace NexusMods.EventSourcing.Storage.Nodes.Data;
 
 public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IReadable>? node) : IReadable
 {
+    public StoreKey StoreKey => key;
     private IReadable Resolve()
     {
         if (node?.TryGetTarget(out var target) == true)
@@ -21,9 +22,11 @@ public class ReferenceNode(NodeStore store, StoreKey key, WeakReference<IReadabl
 
     private IReadable LoadNode()
     {
+        throw new NotImplementedException();
+        /*
         var nodeData = store.Load(key);
         node = new WeakReference<IReadable>(nodeData);
-        return nodeData;
+        return nodeData;*/
     }
 
     public IEnumerator<Datom> GetEnumerator()

@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 using NexusMods.EventSourcing.Storage.Serializers;
 
 namespace NexusMods.EventSourcing.Storage.Tests.NodeTests;
@@ -10,6 +11,8 @@ public abstract class ADataNodeTests<TSubclass> where TSubclass : ADataNodeTests
     protected readonly AttributeRegistry Registry;
 
     protected readonly ILogger Logger;
+    protected readonly NodeStore NodeStore;
+    private readonly InMemoryKvStore _kvStore;
 
     protected ADataNodeTests(IServiceProvider provider)
     {
@@ -18,6 +21,9 @@ public abstract class ADataNodeTests<TSubclass> where TSubclass : ADataNodeTests
         Registry.Populate([
             new DbAttribute(Symbol.Intern("test/attr1"), AttributeId.From(10), new StringSerializer().UniqueId)
         ]);
+
+        _kvStore = new InMemoryKvStore();
+        NodeStore = new NodeStore(_kvStore, Registry);
     }
 
     #region Helpers

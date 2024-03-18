@@ -135,7 +135,7 @@ public class DataTests(IServiceProvider provider) : ADataNodeTests<DataTests>(pr
         var writer = new PooledMemoryBufferWriter();
 
         var sw = Stopwatch.StartNew();
-        sorted.WriteTo(writer);
+        sorted.WriteTo(NodeStore, writer);
         Logger.LogInformation("Packed {0} datoms into {1} bytes in {2}ms", block.Length, writer.WrittenMemory.Length, sw.ElapsedMilliseconds);
 
         sw.Restart();

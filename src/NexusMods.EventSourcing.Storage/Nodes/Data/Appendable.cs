@@ -98,6 +98,11 @@ public class Appendable : Data_IAppendable, IReadable
         IsFrozen = true;
     }
 
+    public IPacked PackDataNode()
+    {
+        throw new NotImplementedException();
+    }
+
     public IPacked Pack()
     {
         return new DataPackedNode

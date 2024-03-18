@@ -1,4 +1,6 @@
-﻿using NexusMods.EventSourcing.Abstractions.Columns.BlobColumns;
+﻿
+
+using NexusMods.EventSourcing.Abstractions.Nodes.Data;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -13,7 +15,14 @@ public interface INodeStore
     public StoreKey LogTx(IReadable node);
 
     /// <summary>
-    /// Flushes the node to the store, and returns a reference node.
+    /// Puts the node into the store, and returns the assigned key.
     /// </summary>
-    public IReadable Flush(IReadable node);
+    public StoreKey Put(IReadable node);
+
+
+    /// <summary>
+    /// Gets the node with the given key, or null if it does not exist.
+    /// </summary>
+    public IReadable Get(StoreKey key);
+
 }

@@ -63,6 +63,8 @@ public class ReadableView(IReadable inner, int offset, int length) : IReadable
 
         public ReadOnlySpan<byte> this[int idx] => inner[idx + offset];
 
+        public ReadOnlyMemory<byte> GetValue(int idx) => inner.GetValue(idx + offset);
+
         public ReadOnlyMemory<byte> Memory => inner.Memory;
         public EventSourcing.Abstractions.Columns.ULongColumns.IReadable LengthsColumn => new ReadableViewULongColumn(offset, length, inner.LengthsColumn);
         public EventSourcing.Abstractions.Columns.ULongColumns.IReadable OffsetsColumn => new ReadableViewULongColumn(offset, length, inner.OffsetsColumn);

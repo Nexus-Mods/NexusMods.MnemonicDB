@@ -4,7 +4,7 @@ using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 
 namespace NexusMods.EventSourcing.Abstractions.Nodes.Data;
 
-public interface IReadable : IEnumerable<Datom>
+public interface IReadable : INode, IEnumerable<Datom>
 {
     /// <summary>
     /// Length of the node in tuples
