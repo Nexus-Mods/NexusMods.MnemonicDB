@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using Reloaded.Memory.Extensions;
 
@@ -20,7 +21,7 @@ namespace NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 /// The values are stored in a single Memory reference, so sources that need to use multiple memory sources will need
 /// to return multiple chunks of various sizes.
 /// </summary>
-public struct DatomChunk : IDisposable, IEnumerable<Datom>
+public class DatomChunk : IDisposable, IEnumerable<Datom>
 {
     /// <summary>
     /// Size of the chunk, in datoms, should be a multiple of 64
@@ -45,15 +46,18 @@ public struct DatomChunk : IDisposable, IEnumerable<Datom>
     private const int MaskOffset = ValuesOffsetOffset + ChunkSize * sizeof(uint);
 
     private Memory<byte> _columns;
-    private ReadOnlyMemory<byte> _values;
+    private Memory<byte> _values;
     private IMemoryOwner<byte> _owner;
+    private int _valuesUsed;
 
     #region Constructors
 
-    private DatomChunk(Memory<byte> columns, ReadOnlyMemory<byte> values, IMemoryOwner<byte> owner)
+    private DatomChunk(IMemoryOwner<byte> owner)
     {
-        _columns = columns;
-        _values = values;
+        var memory = owner.Memory;
+        _valuesUsed = 0;
+        _columns = memory[..ColumnSize];
+        _values = memory[ColumnSize..];
         _owner = owner;
     }
 
@@ -62,11 +66,34 @@ public struct DatomChunk : IDisposable, IEnumerable<Datom>
     /// </summary>
     /// <param name="values"></param>
     /// <returns></returns>
-    public static DatomChunk Create(Memory<byte> values)
+    public static DatomChunk Create()
     {
-        var owner = MemoryPool<byte>.Shared.Rent(ColumnSize);
-        var columns = owner.Memory[..ColumnSize];
-        return new DatomChunk(columns, values, owner);
+        var owner = MemoryPool<byte>.Shared.Rent(ColumnSize + 1024 * 4);
+        var chunk = new DatomChunk(owner);
+        chunk.Reset();
+        return chunk;
+    }
+
+    public void Reset()
+    {
+        Mask.Clear();
+        _valuesUsed = 0;
+    }
+
+    /// <summary>
+    /// Returns the number of active (filled) datoms in the chunk.
+    /// </summary>
+    public long FilledDatoms
+    {
+        get
+        {
+            var count = 0;
+            for (var i = 0; i < MaskLength; i++)
+            {
+                count += BitOperations.PopCount(Mask[i]);
+            }
+            return count;
+        }
     }
 
     #endregion
@@ -117,7 +144,6 @@ public struct DatomChunk : IDisposable, IEnumerable<Datom>
         var length = ValuesLengths[idx];
         return _values.Span.Slice((int)offset, (int)length);
     }
-
 
     /// <summary>
     /// Get a specific value in the chunk.
@@ -190,6 +216,59 @@ public struct DatomChunk : IDisposable, IEnumerable<Datom>
         _owner?.Dispose();
         _owner = null!;
         _columns = null!;
+    }
+
+    /// <summary>
+    /// Sets the mask to indicate that the first count rows are valid.
+    /// </summary>
+    public void SetMaskToCount(int count)
+    {
+        if (count == ChunkSize)
+        {
+            Mask.Fill(ulong.MaxValue);
+        }
+        else
+        {
+            var fullWords = count / 64;
+            var remainder = count % 64;
+
+            for (var i = 0; i < fullWords; i++)
+            {
+                Mask[i] = ulong.MaxValue;
+            }
+
+            if (remainder > 0)
+            {
+                Mask[fullWords] = (1UL << remainder) - 1;
+            }
+        }
+    }
+
+    private void Ensure(int size)
+    {
+        if (_valuesUsed + size <= _values.Length)
+        {
+            return;
+        }
+
+        var newMemory = MemoryPool<byte>.Shared.Rent(_owner.Memory.Length * 2);
+        _owner.Memory.CopyTo(newMemory.Memory);
+        _owner.Dispose();
+        _owner = newMemory;
+        _columns = newMemory.Memory[..ColumnSize];
+        _values = newMemory.Memory[ColumnSize..];
+    }
+
+    /// <summary>
+    /// Sets the memory for the given value, and copies the value into the chunk's interal buffer
+    /// </summary>
+    public void SetValue(int idx, ReadOnlySpan<byte> value)
+    {
+        Ensure(value.Length);
+        value.CopyTo(_values.Span.SliceFast(_valuesUsed));
+        ValuesOffsets[idx] = (uint)_valuesUsed;
+        ValuesLengths[idx] = (uint)value.Length;
+        _valuesUsed += value.Length;
     }
 }
 

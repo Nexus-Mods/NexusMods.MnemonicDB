@@ -10,7 +10,7 @@ namespace NexusMods.EventSourcing.Storage.Nodes.Data;
 
 table DataNode(fs_serializer)
 {
-   Length: int;
+   NumberOfDatoms: int;
    EntityIds: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongColumn (required);
    AttributeIds: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongColumn (required);
    Values: NexusMods.EventSourcing.Storage.Columns.BlobColumns.BlobColumn (required);

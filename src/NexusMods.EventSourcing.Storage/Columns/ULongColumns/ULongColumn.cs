@@ -151,6 +151,33 @@ public partial class ULongColumn : IEnumerable<ulong>
         Add(values.AsSpan());
     }
 
+    public void Add(ReadOnlySpan<ulong> values, ReadOnlySpan<ulong> mask)
+    {
+        EnsureNotFrozen();
+
+        for(var i = 0; i < mask.Length; i++)
+        {
+            if (mask[i] == ulong.MaxValue)
+            {
+                Ensure(64);
+                values.SliceFast(i * 64, 64).CopyTo(Data.Span.CastFast<byte, ulong>().SliceFast(Length));
+                Length += 64;
+            }
+            else if (mask[i] != 0)
+            {
+                for (var j = 0; j < 64; j++)
+                {
+                    if ((mask[i] & (1UL << j)) == 0)
+                        continue;
+
+                    Ensure(1);
+                    Data.Span.CastFast<byte, ulong>()[Length] = values[i * 64 + j];
+                    Length += 1;
+                }
+            }
+        }
+    }
+
     public void CopyTo(int offset, Span<ulong> dest)
     {
         switch (Header.Kind)

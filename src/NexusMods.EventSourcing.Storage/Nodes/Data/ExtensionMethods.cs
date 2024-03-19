@@ -32,18 +32,6 @@ public static class ExtensionMethods
     }
 
     /// <summary>
-    /// Sorts the node using the given comparator and returns a lightweight sorted view of the node.
-    /// </summary>
-    public static IDatomResult AsSorted(this IDatomResult src, IDatomComparator comparator)
-    {
-        throw new NotImplementedException();
-        /*
-        EnsureFrozen(src);
-        var indexes = src.GetSortIndices(comparator);
-        return new SortedReadable(indexes, src);*/
-    }
-
-    /// <summary>
     /// Creates a new IReadable by creating a read-only view of a portion of the given IReadable.
     /// </summary>
     public static IDatomResult SubView(this IDatomResult src, int offset, int length)
@@ -56,45 +44,7 @@ public static class ExtensionMethods
         */
     }
 
-    /// <summary>
-    /// Splits the node into sub nodes of the given maximum size, attempts to split the nodes into
-    /// blocks of size no larger than the given block size, but all of the same size.
-    /// </summary>
-    public static IEnumerable<IDatomResult> Split(this INode src, int blockSize)
-    {
-        throw new NotImplementedException();
-        /*
 
-        EnsureFrozen(src);
-
-        var length = src.Length;
-        var numBlocks = (length + blockSize - 1) / blockSize;
-        var baseBlockSize = length / numBlocks;
-        var remainder = length % numBlocks;
-
-        var offset = 0;
-        for (var i = 0; i < numBlocks; i++)
-        {
-            var currentBlockSize = baseBlockSize;
-            if (remainder > 0)
-            {
-                currentBlockSize++;
-                remainder--;
-            }
-
-            if (src is EventSourcing.Abstractions.Nodes.Index.IReadable indexSrc)
-            {
-                yield return Index.Appendable.Create(indexSrc, offset, currentBlockSize);
-            }
-            else
-            {
-                yield return src.SubView(offset, currentBlockSize);
-            }
-
-            offset += currentBlockSize;
-        }
-        */
-    }
 
 
     /*
@@ -328,34 +278,6 @@ public static class ExtensionMethods
         return appendable.AsSorted(comparator);
     }
 
-    internal static string NodeToString(this IReadable node)
-    {
-        string repr;
 
-        var className = node switch
-        {
-            EventSourcing.Abstractions.Nodes.Index.IAppendable => "Index.Appendable",
-            IAppendable => "Data.Appendable",
-            SortedReadable => "SortedReadable",
-            ReadableView => "ReadableView",
-            IPacked => "Data.Packed",
-            _ => "Readable"
-        };
-
-        if (node.DeepLength == 0)
-        {
-            repr = "[]";
-        }
-        else if (node.DeepLength == 1)
-        {
-            repr = $"[{node[0]}]";
-        }
-        else
-        {
-            repr = $"[{node[0]} -> {node.LastDatom}]";
-        }
-
-        return $"{className}({node.DeepLength}) {repr}";
-    }
     */
 }

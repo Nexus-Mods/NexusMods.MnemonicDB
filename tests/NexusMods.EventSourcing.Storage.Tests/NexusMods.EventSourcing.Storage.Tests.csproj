@@ -77,7 +77,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Remove="NodeTests\DataTests.cs" />
       <Compile Remove="NodeTests\IndexNodeTests.cs" />
       <Compile Remove="NodeTests\SortedNodeTests.cs" />
       <Compile Remove="AStorageTest.cs" />

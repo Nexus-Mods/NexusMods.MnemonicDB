@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 using NexusMods.EventSourcing.Storage.Columns.ULongColumns;
 using Reloaded.Memory.Extensions;
 
@@ -106,6 +107,20 @@ public partial class BlobColumn
     public void Add(byte[] value)
     {
         Add(value.AsSpan());
+    }
+
+    /// <summary>
+    /// Add all the valid values from the chunk to the column
+    /// </summary>
+    public void Add(in DatomChunk chunk)
+    {
+        for (var idx = 0; idx < DatomChunk.ChunkSize; idx++)
+        {
+            if (chunk.IsValid(idx))
+            {
+                Add(chunk.GetValue(idx));
+            }
+        }
     }
 
     public void Add(ReadOnlySpan<byte> value)
