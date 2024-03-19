@@ -139,7 +139,7 @@ public static class BinarySearchExtensions
     }
 
     /// <summary>
-    /// Finds the index of the first occurrence of the given <see cref="Datom"/> in the <see cref="IReadable"/>.
+    /// Finds the index of the first occurrence of the given <see cref="Datom"/> in the input
     /// </summary>
     public static long Find(this IDatomResult readable, in Datom target, SortOrders order, IAttributeRegistry registry)
     {
@@ -150,6 +150,14 @@ public static class BinarySearchExtensions
             SortOrders.AVTE => readable.FindAVTEFromResult(target, registry),
             _ => throw new ArgumentOutOfRangeException(nameof(order), order, "Unknown sort order")
         };
+    }
+
+    /// <summary>
+    /// Finds the index of the first occurrence of the given <see cref="Datom"/> in the input
+    /// </summary>
+    public static long Find(this IDatomResult readable, in Datom target, IDatomComparator comparator)
+    {
+        return Find(readable, target, comparator.SortOrder, comparator.AttributeRegistry);
     }
 
 

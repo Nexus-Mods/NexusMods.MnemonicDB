@@ -130,15 +130,7 @@ public partial class DataNode : INode
             AttributeIds.Add(iterator.Current.AttributeIds.CastFast<AttributeId, ulong>(), iterator.Current.Mask);
             TransactionIds.Add(iterator.Current.TransactionIds.CastFast<TxId, ulong>(), iterator.Current.Mask);
             Values.Add(iterator.Current);
-        }
-
-        foreach (var datom in result)
-        {
-            NumberOfDatoms++;
-            EntityIds.Add(datom.E.Value);
-            AttributeIds.Add(datom.A.Value);
-            TransactionIds.Add(datom.T.Value);
-            Values.Add(datom.V.Span);
+            NumberOfDatoms += (int)iterator.Current.FilledDatoms;
         }
     }
 
@@ -155,7 +147,16 @@ public partial class DataNode : INode
 
     public void Fill(long offset, DatomChunk chunk)
     {
-        throw new NotImplementedException();
+        var size = Math.Min(DatomChunk.ChunkSize, NumberOfDatoms - offset);
+        EntityIds.CopyTo((int)offset, chunk.EntityIds.CastFast<EntityId, ulong>().SliceFast(0, (int)size));
+        AttributeIds.CopyTo((int)offset, chunk.AttributeIds.CastFast<AttributeId, ulong>().SliceFast(0, (int)size));
+        TransactionIds.CopyTo((int)offset, chunk.TransactionIds.CastFast<TxId, ulong>().SliceFast(0, (int)size));
+
+        for (var i = 0; i < size; i++)
+        {
+            chunk.SetValue(i, Values[(int)(i + offset)]);
+        }
+        chunk.SetMaskToCount((int)size);
     }
 
     public void FillValue(long offset, DatomChunk chunk, int idx)

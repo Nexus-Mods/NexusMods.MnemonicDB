@@ -10,7 +10,6 @@ namespace NexusMods.EventSourcing.Storage.Nodes.Index;
 
 table IndexNode(fs_serializer)
 {
-   SortOrder: ubyte;
    DeepLength: long;
    ShallowLength: long;
    EntityIds: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongColumn (required);
@@ -19,5 +18,5 @@ table IndexNode(fs_serializer)
    TransactionIds: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongColumn (required);
    ChildCounts: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongColumn (required);
    ChildOffsets: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongColumn (required);
-   ChildNodes: [ulong] (required);
+   ChildKeys: NexusMods.EventSourcing.Storage.Columns.ULongColumns.ULongColumn (required);
 }

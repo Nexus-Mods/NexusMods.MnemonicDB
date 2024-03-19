@@ -229,6 +229,7 @@ public class DatomChunk : IDisposable, IEnumerable<Datom>
         }
         else
         {
+            Mask.Clear();
             var fullWords = count / 64;
             var remainder = count % 64;
 
@@ -270,14 +271,4 @@ public class DatomChunk : IDisposable, IEnumerable<Datom>
         ValuesLengths[idx] = (uint)value.Length;
         _valuesUsed += value.Length;
     }
-}
-
-internal unsafe struct Columns
-{
-    public fixed ulong EntityIds[DatomChunk.ChunkSize];
-    public fixed ulong AttributeIds[DatomChunk.ChunkSize];
-    public fixed ulong TransactionIds[DatomChunk.ChunkSize];
-    public fixed ulong Masks[DatomChunk.MaskLength];
-    public fixed uint ValuesLengths[DatomChunk.ChunkSize];
-    public fixed uint ValuesOffsets[DatomChunk.ChunkSize];
 }

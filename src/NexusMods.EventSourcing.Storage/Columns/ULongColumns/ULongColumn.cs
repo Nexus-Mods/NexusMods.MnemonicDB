@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Reloaded.Memory.Extensions;
@@ -165,12 +166,13 @@ public partial class ULongColumn : IEnumerable<ulong>
             }
             else if (mask[i] != 0)
             {
+                var count = BitOperations.PopCount(mask[i]);
+                Ensure(count);
                 for (var j = 0; j < 64; j++)
                 {
                     if ((mask[i] & (1UL << j)) == 0)
                         continue;
 
-                    Ensure(1);
                     Data.Span.CastFast<byte, ulong>()[Length] = values[i * 64 + j];
                     Length += 1;
                 }

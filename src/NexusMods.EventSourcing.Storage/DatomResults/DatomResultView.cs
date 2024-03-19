@@ -21,9 +21,9 @@ public class DatomResultView(IDatomResult src, long offset, long length) : IDato
     public long Length => length;
 
 
-    public void Fill(long offset, DatomChunk chunk)
+    public void Fill(long selfOffset, DatomChunk chunk)
     {
-        throw new NotImplementedException();
+        src.Fill(selfOffset + offset, chunk);
     }
 
     public void FillValue(long offset, DatomChunk chunk, int idx)

@@ -1,0 +1,23 @@
+﻿include "Data/Schema.fbs";
+include "Index/Schema.fbs";
+
+attribute "fs_serializer";
+attribute "fs_unsafeUnion";
+attribute "fs_valueStruct";
+attribute "fs_vector";
+
+namespace NexusMods.EventSourcing.Storage.Nodes.Index;
+
+union NodeUnion
+{
+    Data : NexusMods.EventSourcing.Storage.Nodes.Data.DataNode,
+    Index : NexusMods.EventSourcing.Storage.Nodes.Index.IndexNode,
+}
+
+
+table ContainerNode(fs_serializer)
+{
+    Id: ulong;
+    Timestamp: ulong;
+    Node : NodeUnion (required);
+}

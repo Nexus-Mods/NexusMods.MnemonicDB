@@ -77,7 +77,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Compile Remove="NodeTests\IndexNodeTests.cs" />
       <Compile Remove="NodeTests\SortedNodeTests.cs" />
       <Compile Remove="AStorageTest.cs" />
       <Compile Remove="ComparatorTests.cs" />
@@ -85,6 +84,6 @@
       <Compile Remove="DatomStorageTests.cs" />
       <Compile Remove="IndexTests.cs" />
     </ItemGroup>
-    
+
 
 </Project>

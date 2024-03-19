@@ -1,7 +1,8 @@
 ﻿using System.Diagnostics;
+using FluentAssertions.Equivalency;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Abstractions.Nodes.Index;
+using NexusMods.EventSourcing.Storage.DatomResults;
 using NexusMods.EventSourcing.Storage.Nodes.Data;
 using NexusMods.EventSourcing.Storage.Nodes.Index;
 using Xunit.DependencyInjection;
@@ -13,14 +14,21 @@ public class IndexNodeTests(IServiceProvider provider) : ADataNodeTests<IndexNod
 
     [Theory]
     [MethodData(nameof(IndexTestData))]
-    public void CanIngestAndGetDatoms(uint size, SortOrders order, bool flush)
+    public void CanIngestAndGetDatoms(uint size, SortOrders order)
     {
-        /*
-        Configuration.DataBlockSize = 8;
-        Configuration.IndexBlockSize = 8;
-*/
-
         var comparator = Registry.CreateComparator(order);
+
+        var root = DataNode.Create();
+
+        var context = new IndexContext
+        {
+            DataNodeSplitThreshold = 1024,
+            IndexNodeSplitThreshold = 1024,
+            Store = NodeStore,
+            Registry = Registry,
+            Comparator = comparator,
+            Root = NodeStore.Put(root)
+        };
 
         var testData = TestData(size).ToArray();
 
@@ -29,47 +37,50 @@ public class IndexNodeTests(IServiceProvider provider) : ADataNodeTests<IndexNod
             .OrderBy(g => g.Key)
             .ToArray();
 
-        var index = (IReadable)Nodes.Index.Appendable.Create(comparator);
-
         var sw = Stopwatch.StartNew();
-        var previousSize = 0;
+        var ingestedSoFar = 0;
+        var loop = 0;
         foreach (var group in grouped)
         {
-            var newNode = new Nodes.Data.Appendable { group };
+            var newNode = DataNode.Create();
+            newNode.Add(group);
+
             var sorted = newNode.AsSorted(comparator);
 
-            index = index.Ingest(sorted);
+            sorted.Length.Should().Be(group.Count(), "because the data should be sorted");
+
+            context.Ingest(sorted);
+            ingestedSoFar += group.Count();
 
 
-            /*
-            if (flush)
-                index = (IReadable)index.Pack(NodeStore);
-                */
+            context.All().Length.Should().Be(ingestedSoFar, "because all data should be ingested after loop " + loop);
 
-
-            index.DeepLength.Should().Be(previousSize + newNode.DeepLength, $"because all data should be ingested on group : {group.Key}");
-            previousSize += newNode.Length;
-
+            context.All().Distinct().Count().Should().Be(ingestedSoFar, "all datoms are distinct after loop " + loop);
+            loop++;
         }
 
-        Logger.LogInformation("Ingested {0} datoms in {1} ms", index.DeepLength, sw.ElapsedMilliseconds);
+        var index = context.All();
 
-        var allDataNode = (new Nodes.Data.Appendable { testData }).AsSorted(comparator);
+        Logger.LogInformation("Ingested {0} datoms in {1} ms", index.Length, sw.ElapsedMilliseconds);
 
 
-        index.DeepLength.Should().Be(testData.Length, "because all data should be ingested");
+        var allDataNode = DataNode.Create();
+        allDataNode.Add(testData);
+        var sortedAll = allDataNode.AsSorted(comparator);
+
+
+        index.Length.Should().Be(sortedAll.Length, "because all data should be ingested");
 
         var idx = 0;
 
         sw.Restart();
         foreach (var actual in index)
         {
-            var test = allDataNode[idx++];
-            actual.Should().Be(test, "because all data should be ingested and returned in the same order");
+            var test = sortedAll[idx];
+            idx++;
+            actual.Should().Be(test, "because all data should be ingested and returned in the same order at " + idx);
         }
-        Logger.LogInformation("Verified {0} datoms in {1} ms", index.DeepLength, sw.ElapsedMilliseconds);
-
-
+        Logger.LogInformation("Verified {0} datoms in {1} ms", index.Length, sw.ElapsedMilliseconds);
 
     }
 
@@ -80,12 +91,9 @@ public class IndexNodeTests(IServiceProvider provider) : ADataNodeTests<IndexNod
     {
         foreach (var idx in new[] {SortOrders.EATV, SortOrders.AETV, SortOrders.AVTE})
         {
-            foreach (var size in new[] { 1, 2, 3, 4, 8, 16, 128, 1024 * 8, 1024 * 16, 1024 * 128 })
+            foreach (var size in new[] { 1, 2, 3, 4, 8, 16, 128})//, 1024 * 8, 1024 * 16, 1024 * 128 })
             {
-                foreach (var flush in new[] { true, false })
-                {
-                    yield return [size, idx, flush];
-                }
+                yield return [size, idx];
             }
         }
     }

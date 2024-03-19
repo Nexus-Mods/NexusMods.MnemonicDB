@@ -42,6 +42,7 @@ public static class ExtensionMethods
             if (_offset >= _result.Length)
                 return false;
 
+            _chunk.Reset();
             _result.Fill(_offset, _chunk);
             _offset += _chunk.FilledDatoms;
             return true;

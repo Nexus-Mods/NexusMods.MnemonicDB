@@ -6,6 +6,7 @@ using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
 using NexusMods.EventSourcing.Abstractions.Nodes;
 using NexusMods.EventSourcing.Storage.Columns.BlobColumns;
 using NexusMods.EventSourcing.Storage.Columns.ULongColumns;
+using NexusMods.EventSourcing.Storage.DatomResults;
 using NexusMods.EventSourcing.Storage.Nodes.Index;
 
 namespace NexusMods.EventSourcing.Storage.Nodes.Data;
@@ -36,12 +37,16 @@ public static class ExtensionMethods
     /// </summary>
     public static IDatomResult SubView(this IDatomResult src, int offset, int length)
     {
-        throw new NotImplementedException();
-        /*
-        EnsureFrozen(src);
-        Debug.Assert(offset >= 0 && length >= 0 && offset + length <= src.Length, "Index out of range during SubView creation");
-        return new ReadableView(src, offset, length);
-        */
+        return new DatomResultView(src, offset, length);
+    }
+
+
+    public static IDatomResult Merge(this IDatomResult src, IDatomResult other, IDatomComparator comparator)
+    {
+        var newNode = DataNode.Create();
+        newNode.Add(src);
+        newNode.Add(other);
+        return newNode.AsSorted(comparator);
     }
 
 

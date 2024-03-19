@@ -41,6 +41,8 @@
       <FlatSharpSchema Include="Nodes\Data\Schema.fbs" />
       <None Remove="Nodes\Index\Schema.fbs" />
       <FlatSharpSchema Include="Nodes\Index\Schema.fbs" />
+      <None Remove="Nodes\RootSchema.fbs" />
+      <FlatSharpSchema Include="Nodes\RootSchema.fbs" />
     </ItemGroup>
 
 </Project>
