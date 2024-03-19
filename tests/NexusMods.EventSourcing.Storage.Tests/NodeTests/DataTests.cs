@@ -76,18 +76,28 @@ public class DataTests(IServiceProvider provider) : ADataNodeTests<DataTests>(pr
         }
     }
 
-    /*
-
 
     [Theory]
-    [InlineData(SortOrders.EATV)]
-    [InlineData(SortOrders.AETV)]
-    [InlineData(SortOrders.AVTE)]
-    public void CanSeekToDatom(SortOrders order)
+    [InlineData(SortOrders.EATV, 1)]
+    [InlineData(SortOrders.AETV, 1)]
+    [InlineData(SortOrders.AVTE, 1)]
+    [InlineData(SortOrders.EATV, 2)]
+    [InlineData(SortOrders.AETV, 2)]
+    [InlineData(SortOrders.AVTE, 2)]
+    [InlineData(SortOrders.EATV, 16)]
+    [InlineData(SortOrders.AETV, 16)]
+    [InlineData(SortOrders.AVTE, 16)]
+    [InlineData(SortOrders.EATV, 128)]
+    [InlineData(SortOrders.AETV, 128)]
+    [InlineData(SortOrders.AVTE, 128)]
+    [InlineData(SortOrders.EATV, 1024)]
+    [InlineData(SortOrders.AETV, 1024)]
+    [InlineData(SortOrders.AVTE, 1024)]
+    public void CanSeekToDatom(SortOrders order, uint entityCount)
     {
         var compare = Registry.CreateComparator(order);
         var block = DataNode.Create();
-        var allDatoms = TestData(10).ToArray();
+        var allDatoms = TestData(entityCount).ToArray();
         foreach (var datom in allDatoms)
         {
             block.Add(in datom);
@@ -107,7 +117,6 @@ public class DataTests(IServiceProvider provider) : ADataNodeTests<DataTests>(pr
             found.Should().BeEquivalentTo(datom, "datoms should be equal at index " + i);
         }
     }
-    */
 
 
     [Theory]

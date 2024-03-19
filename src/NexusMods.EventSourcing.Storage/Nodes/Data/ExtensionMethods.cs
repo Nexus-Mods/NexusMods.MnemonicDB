@@ -49,136 +49,8 @@ public static class ExtensionMethods
 
     /*
 
-    private static int FindEATVReader(this IReadable readable, in Datom target, IAttributeRegistry registry)
-    {
-        var start = 0;
-        var end = readable.Length;
 
-        while (start < end)
-        {
-            var mid = start + (end - start) / 2;
 
-            var cmp = target.E.CompareTo(readable.GetEntityId(mid));
-            if (cmp == 0)
-            {
-                var attrId = readable.GetAttributeId(mid);
-                var attrCmp = target.A.CompareTo(attrId);
-                if (attrCmp == 0)
-                {
-                    var tmpCmp = target.T.CompareTo(readable.GetTransactionId(mid));
-                    if (tmpCmp == 0)
-                    {
-                        cmp = registry.CompareValues(attrId, target.V.Span, readable.GetValue(mid));
-                    }
-                    else
-                    {
-                        cmp = -tmpCmp;
-                    }
-                }
-                else
-                {
-                    cmp = attrCmp;
-                }
-            }
-
-            if (cmp > 0)
-            {
-                start = mid + 1;
-            }
-            else
-            {
-                end = mid;
-            }
-        }
-        return start;
-    }
-
-    private static int FindAETVReader(this IReadable src, in Datom target, IAttributeRegistry registry)
-    {
-        var start = 0;
-        var end = src.Length;
-
-        while (start < end)
-        {
-            var mid = start + (end - start) / 2;
-
-            var cmp = target.A.CompareTo(src.GetAttributeId(mid));
-            if (cmp == 0)
-            {
-                var entCmp = target.E.CompareTo(src.GetEntityId(mid));
-                if (entCmp == 0)
-                {
-                    var tCmp = -target.T.CompareTo(src.GetTransactionId(mid));
-                    if (tCmp == 0)
-                    {
-                        cmp = registry.CompareValues(target.A, target.V.Span, src.GetValue(mid));
-                    }
-                    else
-                    {
-                        cmp = tCmp;
-                    }
-
-                }
-                else
-                {
-                    cmp = entCmp;
-                }
-            }
-
-            if (cmp > 0)
-            {
-                start = mid + 1;
-            }
-            else
-            {
-                end = mid;
-            }
-        }
-        return start;
-    }
-
-    private static int FindAVTEReader(this IReadable src, in Datom target, IAttributeRegistry registry)
-    {
-        var start = 0;
-        var end = src.Length;
-
-        while (start < end)
-        {
-            var mid = start + (end - start) / 2;
-
-            var cmp = target.A.CompareTo(src.GetAttributeId(mid));
-            if (cmp == 0)
-            {
-                var valueCmp = registry.CompareValues(target.A, target.V.Span, src.GetValue(mid));
-                if (valueCmp == 0)
-                {
-                    var tCmp = -target.T.CompareTo(src.GetTransactionId(mid));
-                    if (tCmp == 0)
-                    {
-                        cmp = target.E.CompareTo(src.GetEntityId(mid));
-                    }
-                    else
-                    {
-                        cmp = tCmp;
-                    }
-                }
-                else
-                {
-                    cmp = valueCmp;
-                }
-            }
-
-            if (cmp > 0)
-            {
-                start = mid + 1;
-            }
-            else
-            {
-                end = mid;
-            }
-        }
-        return start;
-    }
 
     /// <summary>
     /// Finds the index of the first occurrence of the given <see cref="Datom"/> in the <see cref="IReadable"/>.
@@ -204,19 +76,6 @@ public static class ExtensionMethods
         return readable.FindAVTEReader(target, registry);
     }
 
-    /// <summary>
-    /// Finds the index of the first occurrence of the given <see cref="Datom"/> in the <see cref="IReadable"/>.
-    /// </summary>
-    public static int Find(this IReadable readable, in Datom target, SortOrders order, IAttributeRegistry registry)
-    {
-        return order switch
-        {
-            SortOrders.EATV => readable.FindEATV(target, registry),
-            SortOrders.AETV => readable.FindAETV(target, registry),
-            SortOrders.AVTE => readable.FindAVTE(target, registry),
-            _ => throw new ArgumentOutOfRangeException(nameof(order), order, "Unknown sort order")
-        };
-    }
 
 
     /// <summary>
