@@ -8,7 +8,7 @@ namespace NexusMods.EventSourcing.Storage.DatomResults;
 /// <summary>
 /// A result set of datoms that are a subview over a larger result set.
 /// </summary>
-public class DatomResultView(IDatomResult src, long offset, long length) : IDatomResult
+public class DatomResultView(IDatomResult src, long offsetInSrc, long length) : IDatomResult
 {
     public static DatomResultView Create(IDatomResult src, long offset, long length)
     {
@@ -21,9 +21,9 @@ public class DatomResultView(IDatomResult src, long offset, long length) : IDato
     public long Length => length;
 
 
-    public void Fill(long selfOffset, DatomChunk chunk)
+    public void Fill(long offset, DatomChunk chunk)
     {
-        src.Fill(selfOffset + offset, chunk);
+        src.Fill(offset + offsetInSrc, chunk);
     }
 
     public void FillValue(long offset, DatomChunk chunk, int idx)
@@ -33,27 +33,27 @@ public class DatomResultView(IDatomResult src, long offset, long length) : IDato
 
     public EntityId GetEntityId(long idx)
     {
-        return src.GetEntityId(idx + offset);
+        return src.GetEntityId(idx + offsetInSrc);
     }
 
     public AttributeId GetAttributeId(long idx)
     {
-        return src.GetAttributeId(idx + offset);
+        return src.GetAttributeId(idx + offsetInSrc);
     }
 
     public TxId GetTransactionId(long idx)
     {
-        return src.GetTransactionId(idx + offset);
+        return src.GetTransactionId(idx + offsetInSrc);
     }
 
     public ReadOnlySpan<byte> GetValue(long idx)
     {
-        return src.GetValue(idx + offset);
+        return src.GetValue(idx + offsetInSrc);
     }
 
     public ReadOnlyMemory<byte> GetValueMemory(long idx)
     {
-        return src.GetValueMemory(idx + offset);
+        return src.GetValueMemory(idx + offsetInSrc);
     }
 
     public override string ToString()

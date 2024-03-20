@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
@@ -49,7 +50,7 @@ public partial class IndexContext
         if (root is IndexNode indexNode)
         {
             var newIndexNode = (IndexNode)Merge(indexNode, additions, Comparator);
-            if (newIndexNode.DeepLength > IndexNodeSplitThreshold)
+            if (newIndexNode.ShallowLength > IndexNodeSplitThreshold)
             {
                 var split = SplitIndex(newIndexNode, IndexNodeSplitThreshold);
                 var list = new List<IndexNode.ChildInfo>();
@@ -72,92 +73,80 @@ public partial class IndexContext
         throw new NotImplementedException();
     }
 
+    void MaybeSplit(INode node, List<IndexNode.ChildInfo> newChildren)
+    {
+        if (node is DataNode dataNode)
+        {
+            if (dataNode.Length >= DataNodeSplitThreshold)
+            {
+                var split = dataNode.Split(DataNodeSplitThreshold);
+                foreach (var child in split)
+                {
+                    var key = Store.Put(child.ToDataNode());
+                    var lastDatom = child[(int)(child.Length - 1L)];
+                    newChildren.Add(new IndexNode.ChildInfo(key, lastDatom, child.Length));
+                }
+            }
+            else
+            {
+                var frozen = dataNode.Freeze();
+                newChildren.Add(new IndexNode.ChildInfo(Store.Put(frozen), frozen.All()[(int)(dataNode.Length - 1L)], dataNode.Length));
+            }
+        }
+        else if (node is IndexNode indexChild)
+        {
+            if (indexChild.DeepLength >= IndexNodeSplitThreshold)
+            {
+                Debug.Print("Splitting index node.");
+                var split = SplitIndex(indexChild, IndexNodeSplitThreshold);
+                foreach (var child in split)
+                {
+                    var key = Store.Put(child);
+                    var lastDatom = child.GetLastDatom((int)child.ShallowLength - 1);
+                    newChildren.Add(new IndexNode.ChildInfo(key, lastDatom, child.DeepLength));
+                }
+            }
+            else
+            {
+                newChildren.Add(new IndexNode.ChildInfo(Store.Put(indexChild), indexChild.GetLastDatom((int)indexChild.ShallowLength - 1), indexChild.DeepLength));
+            }
+        }
+        else
+        {
+            throw new InvalidOperationException("Invalid node type in index node merge operation.");
+        }
+    }
+
     private INode Merge(IndexNode indexNode, IDatomResult additions, IDatomComparator comparator)
     {
         long start = 0;
-        long end = additions.Length;
         var newChildren = new List<IndexNode.ChildInfo>();
 
-        void MaybeSplit(INode node)
-        {
-            if (node is DataNode dataNode)
-            {
-                if (dataNode.Length >= DataNodeSplitThreshold)
-                {
-                    var split = dataNode.Split(DataNodeSplitThreshold);
-                    foreach (var child in split)
-                    {
-                        var key = Store.Put(child.ToDataNode());
-                        var lastDatom = child[(int)(child.Length - 1L)];
-                        newChildren.Add(new IndexNode.ChildInfo(key, lastDatom, child.Length));
-                    }
-                }
-                else
-                {
-                    newChildren.Add(new IndexNode.ChildInfo(Store.Put(dataNode), dataNode.All()[(int)(dataNode.Length - 1L)], dataNode.Length));
-                }
-            }
-            else if (node is IndexNode indexChild)
-            {
-                if (indexChild.DeepLength >= IndexNodeSplitThreshold)
-                {
-                    var split = SplitIndex(indexChild, IndexNodeSplitThreshold);
-                    foreach (var child in split)
-                    {
-                        var key = Store.Put(child);
-                        var lastDatom = child.GetLastDatom((int)child.ShallowLength - 1);
-                        newChildren.Add(new IndexNode.ChildInfo(key, lastDatom, child.DeepLength));
-                    }
-                }
-                else
-                {
-                    newChildren.Add(new IndexNode.ChildInfo(Store.Put(indexChild), indexChild.GetLastDatom((int)indexChild.ShallowLength - 1), indexChild.DeepLength));
-                }
-            }
-            else
-            {
-                throw new InvalidOperationException("Invalid node type in index node merge operation.");
-            }
-        }
-
-        for(var i = 0; i < indexNode.ChildKeys.Length; i++)
+        for (var i = 0; i < indexNode.ChildKeys.Length; i++)
         {
             var lastDatom = i == indexNode.ChildKeys.Length - 1 ? Datom.Max : indexNode.GetLastDatom(i);
-
             var last = additions.Find(lastDatom, Comparator);
 
-            if (last < additions.Length)
+            if ((last - start) > 0)
             {
-
-                var newNode = MergeChild(indexNode, i, additions.SubView((int)start, (int)(last - start)), comparator);
-                MaybeSplit(newNode);
-
+                var subView = additions.SubView((int)start, (int)(last - start));
+                var newNode = MergeChild(StoreKey.From(indexNode.ChildKeys[i]), subView, comparator);
+                MaybeSplit(newNode, newChildren);
                 start = last;
-            }
-            else if (last == indexNode.ShallowLength)
-            {
-                var newNode = MergeChild(indexNode, i, additions.SubView((int)start, (int)(end - start)), comparator);
-                MaybeSplit(newNode);
-
-                for (var j = i + 1; j < indexNode.ChildKeys.Length; j++)
-                {
-                    newChildren.Add(new IndexNode.ChildInfo(StoreKey.From(indexNode.ChildKeys[j]), indexNode.GetLastDatom(j), (long)indexNode.ChildCounts[j]));
-                }
-
-                break;
             }
             else
             {
-                newChildren.Add(new IndexNode.ChildInfo(StoreKey.From(indexNode.ChildKeys[i]), indexNode.GetLastDatom(i), (long)indexNode.ChildCounts[i]));
+                newChildren.Add(new IndexNode.ChildInfo(StoreKey.From(indexNode.ChildKeys[i]), lastDatom, (long)indexNode.ChildCounts[i]));
             }
+
         }
 
         return IndexNode.Create(newChildren);
     }
 
-    private INode MergeChild(IndexNode indexNode, int i, IDatomResult subView, IDatomComparator comparator)
+    private INode MergeChild(StoreKey childKey, IDatomResult subView, IDatomComparator comparator)
     {
-        var child = Store.Get(StoreKey.From(indexNode.ChildKeys[i]));
+        var child = Store.Get(childKey);
         if (child is DataNode dataNode)
         {
             var newDataNode = dataNode.Merge(subView, comparator);

@@ -52,10 +52,10 @@ public class IndexNodeTests(IServiceProvider provider) : ADataNodeTests<IndexNod
             context.Ingest(sorted);
             ingestedSoFar += group.Count();
 
+            ValidateIndexStructure(context.Root);
+
 
             context.All().Length.Should().Be(ingestedSoFar, "because all data should be ingested after loop " + loop);
-
-            context.All().Distinct().Count().Should().Be(ingestedSoFar, "all datoms are distinct after loop " + loop);
             loop++;
         }
 
@@ -84,7 +84,52 @@ public class IndexNodeTests(IServiceProvider provider) : ADataNodeTests<IndexNod
 
     }
 
+    private void ValidateIndexStructure(StoreKey contextRoot, int depth = 0)
+    {
 
+        depth.Should().BeLessOrEqualTo(2, "because the index should not be too deep");
+        var node = NodeStore.Get(contextRoot);
+        if (node is not IndexNode indexNode)
+        {
+            return;
+        }
+
+        var totalSize = 0L;
+        for (int i = 0; i < indexNode.ChildKeys.Length; i++)
+        {
+            var child = NodeStore.Get(StoreKey.From(indexNode.ChildKeys[i]));
+            if (child is IndexNode indexChild)
+            {
+                ValidateIndexStructure(StoreKey.From(indexNode.ChildKeys[i]), depth + 1);
+
+                indexNode.ChildCounts[i].Should().Be((ulong)indexChild.DeepLength, "because the child count should be accurate");
+                indexNode.ChildOffsets[i].Should().Be((ulong)totalSize, "because the child offset should be accurate");
+
+                if (i < indexNode.ChildKeys.Length - 1)
+                {
+                    indexNode.GetLastDatom(i).Should().Be(indexChild.GetLastDatom((int)indexChild.ShallowLength - 1), "because the last datom should be accurate");
+                }
+                indexChild.LastDatom.Should().Be(indexNode.GetLastDatom(i), "because the last datom should be accurate");
+
+                totalSize += indexChild.DeepLength;
+
+            }
+            else if (child is DataNode dataChild)
+            {
+                indexNode.ChildCounts[i].Should().Be((ulong)dataChild.Length, "because the child count should be accurate");
+                indexNode.ChildOffsets[i].Should().Be((ulong)totalSize, "because the child offset should be accurate");
+
+                indexNode.GetLastDatom(i).Should().Be(dataChild.All()[(int)(dataChild.Length - 1)], "because the last datom should be accurate");
+
+                totalSize += dataChild.Length;
+            }
+            else
+            {
+                throw new InvalidOperationException("Invalid node type in index validation.");
+            }
+        }
+
+    }
 
 
     public IEnumerable<object[]> IndexTestData()

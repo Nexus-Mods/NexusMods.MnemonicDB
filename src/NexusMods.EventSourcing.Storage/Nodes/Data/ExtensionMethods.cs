@@ -46,6 +46,7 @@ public static class ExtensionMethods
         var newNode = DataNode.Create();
         newNode.Add(src);
         newNode.Add(other);
+        newNode.Freeze();
         return newNode.AsSorted(comparator);
     }
 

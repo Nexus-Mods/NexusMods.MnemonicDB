@@ -1,4 +1,5 @@
-﻿using System.Buffers;
+﻿using System;
+using System.Buffers;
 using Microsoft.Extensions.ObjectPool;
 
 namespace NexusMods.EventSourcing.Abstractions.ChunkedEnumerables;
@@ -22,12 +23,14 @@ public static class ExtensionMethods
         private readonly DatomChunk _chunk;
         private readonly IDatomResult _result;
         private long _offset;
+        private readonly long _length;
 
         internal DatomChunkIterator(DatomChunk chunk, IDatomResult result)
         {
             _chunk = chunk;
             _result = result;
             _offset = 0;
+            _length = result.Length;
         }
 
         /// <inheritdoc />
@@ -44,6 +47,10 @@ public static class ExtensionMethods
 
             _chunk.Reset();
             _result.Fill(_offset, _chunk);
+
+            if (_chunk.FilledDatoms + _offset > _length)
+                _chunk.ApplyLimit((int)(_length - _offset));
+
             _offset += _chunk.FilledDatoms;
             return true;
         }

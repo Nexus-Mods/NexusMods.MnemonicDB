@@ -34,26 +34,54 @@ internal class IndexNodeResults(IndexNode root, INodeStore store) : IDatomResult
 
     public EntityId GetEntityId(long idx)
     {
-        throw new NotImplementedException();
+        var dataNode = FindDataNode(root, idx, out var remainder);
+        return dataNode.GetEntityId(remainder);
+    }
+
+    private DataNode FindDataNode(IndexNode node, long index, out long remainder)
+    {
+        for (var i = 0; i < node.ShallowLength; i++)
+        {
+            var offset = (long)node.ChildOffsets[i];
+            var childLength = (long)node.ChildCounts[i];
+            if (index >= offset && index < offset + childLength)
+            {
+                remainder = index - offset;
+                var nextNode = store.Get(StoreKey.From(node.ChildKeys[i]));
+                return nextNode switch
+                {
+                    DataNode dataNode => dataNode,
+                    IndexNode indexNode => FindDataNode(indexNode, remainder, out remainder),
+                    _ => throw new NotSupportedException()
+                };
+            }
+        }
+
+        throw new IndexOutOfRangeException();
     }
 
     public AttributeId GetAttributeId(long idx)
     {
-        throw new NotImplementedException();
+        var dataNode = FindDataNode(root, idx, out var remainder);
+        return dataNode.GetAttributeId(remainder);
+
     }
 
     public TxId GetTransactionId(long idx)
     {
-        throw new NotImplementedException();
+        var dataNode = FindDataNode(root, idx, out var remainder);
+        return dataNode.GetTransactionId(remainder);
     }
 
     public ReadOnlySpan<byte> GetValue(long idx)
     {
-        throw new NotImplementedException();
+        var dataNode = FindDataNode(root, idx, out var remainder);
+        return dataNode.GetValue(remainder);
     }
 
     public ReadOnlyMemory<byte> GetValueMemory(long idx)
     {
-        throw new NotImplementedException();
+        var dataNode = FindDataNode(root, idx, out var remainder);
+        return dataNode.GetValueMemory(remainder);
     }
 }

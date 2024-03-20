@@ -271,4 +271,40 @@ public class DatomChunk : IDisposable, IEnumerable<Datom>
         ValuesLengths[idx] = (uint)value.Length;
         _valuesUsed += value.Length;
     }
+
+    public void ApplyLimit(int length)
+    {
+        if (length == 0)
+        {
+            Reset();
+            return;
+        }
+
+        var toReset = FilledDatoms - length;
+
+
+        for (var i = ChunkSize - 1; i >= 0; i--)
+        {
+            if (IsValid(i))
+            {
+                SetValid(i, false);
+                toReset--;
+            }
+
+            if (toReset == 0)
+                break;
+        }
+    }
+
+    private void SetValid(int idx, bool valid)
+    {
+        if (valid)
+        {
+            Mask[idx / 64] |= 1UL << (idx % 64);
+        }
+        else
+        {
+            Mask[idx / 64] &= ~(1UL << (idx % 64));
+        }
+    }
 }
