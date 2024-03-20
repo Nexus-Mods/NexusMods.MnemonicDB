@@ -4,9 +4,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Storage.Abstractions;
-using NexusMods.EventSourcing.Storage.Nodes;
-using NexusMods.EventSourcing.Storage.Sorters;
 
 namespace NexusMods.EventSourcing.Storage;
 
@@ -97,15 +94,6 @@ public class AttributeRegistry : IAttributeRegistry
         return Expression.Block([valueExpr], readExpression, valueExpr);
     }
 
-    public void Append<TAttribute, TValue>(AppendableNode node, EntityId entityId, TxId tx, DatomFlags flags, TValue value)
-    where TAttribute : IAttribute<TValue>
-    {
-        var serializer = (IValueSerializer<TValue>)_valueSerializersByNativeType[typeof(TValue)];
-        var attr = _attributesByType[typeof(TAttribute)];
-        var dbAttr = _dbAttributesByUniqueId[attr.Id];
-        node.Append(entityId, dbAttr.AttrEntityId, tx, flags, serializer, value);
-    }
-
     private sealed class CompareCache
     {
         public AttributeId AttributeId;
@@ -137,15 +125,13 @@ public class AttributeRegistry : IAttributeRegistry
         return type.Compare(a, b);
     }
 
-    public void Append<TAttribute, TValue>(IAppendableNode node, EntityId e, TValue value, TxId t, DatomFlags f) where TAttribute : IAttribute<TValue>
+    public void Explode<TAttribute, TValueType>(ref StackDatom datom, TValueType valueType, IBufferWriter<byte> writer) where TAttribute : IAttribute<TValueType>
     {
-        var serializer = (IValueSerializer<TValue>)_valueSerializersByNativeType[typeof(TValue)];
-
-        if (!_attributesByType.TryGetValue(typeof(TAttribute), out var attr))
-            throw new InvalidOperationException($"No attribute definition found for type {typeof(TAttribute)}, did you forget to register it in the DI container?");
-
+        var attr = _attributesByType[typeof(TAttribute)];
         var dbAttr = _dbAttributesByUniqueId[attr.Id];
-        node.Append(e, dbAttr.AttrEntityId, t, f, serializer, value);
+        var serializer = (IValueSerializer<TValueType>)_valueSerializersByUniqueId[dbAttr.ValueTypeId];
+        serializer.Serialize(valueType, writer);
+        datom.A = (ushort)dbAttr.AttrEntityId.Value;
     }
 
     public IReadDatom Resolve(Datom datom)
@@ -167,21 +153,20 @@ public class AttributeRegistry : IAttributeRegistry
         return attrobj.IsReference;
     }
 
-    /// <summary>
-    /// Creates a comparator for the given sort order
-    /// </summary>
-    /// <param name="sortOrder"></param>
-    /// <param name="registry"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentOutOfRangeException"></exception>
-    public IDatomComparator CreateComparator(SortOrders sortOrder)
+    public IValueSerializer<TValueType> GetSerializer<TValueType>()
     {
-        return sortOrder switch
-        {
-            SortOrders.EATV => new EATV(this),
-            SortOrders.AETV => new AETV(this),
-            SortOrders.AVTE => new AVTE(this),
-            _ => throw new ArgumentOutOfRangeException(nameof(sortOrder), sortOrder, null)
-        };
+        if (!_valueSerializersByNativeType.TryGetValue(typeof(TValueType), out var serializer))
+            throw new InvalidOperationException($"No serializer found for type {typeof(TValueType)}");
+
+        return (IValueSerializer<TValueType>)serializer;
+    }
+
+    public TValue Read<TAttr, TValue>(ReadOnlySpan<byte> tValueSpan) where TAttr : IAttribute<TValue>
+    {
+        var attr = _attributesByType[typeof(TAttr)];
+        var dbAttr = _dbAttributesByUniqueId[attr.Id];
+        var serializer = (IValueSerializer<TValue>)_valueSerializersByUniqueId[dbAttr.ValueTypeId];
+        serializer.Read(tValueSpan, out var val);
+        return val;
     }
 }

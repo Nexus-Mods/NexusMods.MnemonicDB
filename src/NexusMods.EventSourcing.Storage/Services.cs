@@ -18,7 +18,6 @@ public static class Services
         services.AddSingleton<DatomStoreSettings>();
         services.AddSingleton<IDatomStore, DatomStore>();
         services.AddSingleton<AttributeRegistry>();
-        services.AddSingleton<NodeStore>();
         return services;
     }
 }

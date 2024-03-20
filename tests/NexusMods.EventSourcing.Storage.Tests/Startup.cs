@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.TestModel.ComplexModel.Attributes;
 using Xunit.DependencyInjection.Logging;
 
 namespace NexusMods.EventSourcing.Storage.Tests;
@@ -11,8 +12,6 @@ public class Startup
     {
         services.AddEventSourcingStorage()
             .AddLogging(builder => builder.AddXunitOutput().SetMinimumLevel(LogLevel.Debug))
-            .AddSingleton<IKvStore, InMemoryKvStore>()
-            .AddAttribute<TestAttributes.FileHash>()
-            .AddAttribute<TestAttributes.FileName>();
+            .AddAttribute<ModAttributes.Name>();
     }
 }

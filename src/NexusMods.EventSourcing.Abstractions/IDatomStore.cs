@@ -26,7 +26,7 @@ public interface IDatomStore : IDisposable
     /// <summary>
     /// An observable of the transaction log, for getting the latest changes to the store.
     /// </summary>
-    public IObservable<(TxId TxId, IDataNode Datoms)> TxLog { get; }
+    public IObservable<(TxId TxId, IReadDatom[] Datoms)> TxLog { get; }
 
     /// <summary>
     /// Gets the latest transaction id found in the log.
@@ -37,6 +37,8 @@ public interface IDatomStore : IDisposable
     /// Returns all the most recent datoms (less than or equal to txId) with the given attribute.
     /// </summary>
     IEnumerable<Datom> Where<TAttr>(TxId txId) where TAttr : IAttribute;
+
+
 
     /// <summary>
     /// Returns all the most recent datoms (less than or equal to txId) with the given attribute.
@@ -65,4 +67,14 @@ public interface IDatomStore : IDisposable
     /// Gets all the entities that reference the given entity id with the given attribute.
     /// </summary>
     IEnumerable<EntityId> ReverseLookup<TAttribute>(TxId txId, EntityId id) where TAttribute : IAttribute<EntityId>;
+
+    /// <summary>
+    /// Gets the value of the given attribute for the given entity id where the transaction id exactly matches the given txId.
+    /// </summary>
+    bool TryGetExact<TAttr, TValue>(EntityId e, TxId tx, out TValue val) where TAttr : IAttribute<TValue>;
+
+    /// <summary>
+    /// Gets the latest value of the given attribute for the given entity id where the transaction id is less than or equal to the given txId.
+    /// </summary>
+    bool TryGetLatest<TAttribute, TValue>(EntityId e, TxId tx, out TValue value) where TAttribute : IAttribute<TValue>;
 }

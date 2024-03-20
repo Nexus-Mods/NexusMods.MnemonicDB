@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -73,8 +74,7 @@ where TAttribute : IAttribute<TValueType>
         {
             E = datom.E,
             V = read,
-            T = datom.T,
-            Flags = datom.F
+            T = datom.T
         };
     }
 
@@ -110,24 +110,18 @@ where TAttribute : IAttribute<TValueType>
         /// </summary>
         public required TValueType V { get; init; }
 
-        /// <summary>
-        /// The flags for this datom
-        /// </summary>
-        public DatomFlags Flags => DatomFlags.Added;
-
-        /// <summary>
-        /// Appends this datom to the given node
-        /// </summary>
-        public void Append(IAttributeRegistry registry, IAppendableNode node)
-        {
-            registry.Append<TAttribute, TValueType>(node, E, V, TxId.Tmp, Flags);
-        }
 
 
         /// <inheritdoc />
         public override string ToString()
         {
             return $"({E}, {typeof(TAttribute).Name}, {V})";
+        }
+
+        public void Explode<TWriter>(IAttributeRegistry registry, Func<EntityId, EntityId> remapFn, ref StackDatom datom, TWriter writer) where TWriter : IBufferWriter<byte>
+        {
+            datom.E = Ids.IsPartition(E.Value, Ids.Partition.Tmp) ? remapFn(E).Value : E.Value;
+            registry.Explode<TAttribute, TValueType>(ref datom, V, writer);
         }
     }
 
@@ -151,15 +145,10 @@ where TAttribute : IAttribute<TValueType>
         /// </summary>
         public required TxId T { get; init; }
 
-        /// <summary>
-        /// The flags for this datom
-        /// </summary>
-        public DatomFlags Flags { get; init; }
-
         /// <inheritdoc />
         public override string ToString()
         {
-            return $"({E}, {typeof(TAttribute).Name}, {V}, {T}, {Flags})";
+            return $"({E}, {typeof(TAttribute).Name}, {V}, {T})";
         }
 
         /// <inheritdoc />
