@@ -27,9 +27,13 @@ public class DatomStore : IDatomStore
     private readonly RocksDb _db;
 
     #region Indexes
+    private readonly TxLog _txLog;
+
     private readonly EATVCurrent _eatvCurrent;
     private readonly EATVHistory _eatvHistory;
     private readonly AETVCurrent _aetvCurrent;
+
+
 
 
 
@@ -47,12 +51,14 @@ public class DatomStore : IDatomStore
             .SetCreateIfMissing()
             .SetCreateMissingColumnFamilies();
 
+        _txLog = new TxLog(registry);
         _eatvCurrent = new EATVCurrent(registry);
         _eatvHistory = new EATVHistory(registry);
         _aetvCurrent = new AETVCurrent(registry);
 
         _db = RocksDb.Open(options, settings.Path.ToString(), new ColumnFamilies());
 
+        _txLog.Init(_db);
         _eatvCurrent.Init(_db);
         _eatvHistory.Init(_db);
         _aetvCurrent.Init(_db);
@@ -329,6 +335,14 @@ public class DatomStore : IDatomStore
         return _eatvCurrent.GetMaxEntityId();
     }
 
+    /// <summary>
+    /// Gets the most recent transaction id.
+    /// </summary>
+    public TxId GetMostRecentTxId()
+    {
+        return _txLog.GetMostRecentTxId();
+    }
+
 
     #region Internals
 
@@ -379,6 +393,7 @@ public class DatomStore : IDatomStore
             stackDatom.PaddedSpan = _writer.GetWrittenSpanWritable();
             stackDatom.V = stackDatom.PaddedSpan.SliceFast(StackDatom.PaddingSize);
 
+            _txLog.Add(batch, ref stackDatom);
             _eatvHistory.Add(batch, ref stackDatom);
             _eatvCurrent.Add(batch, ref stackDatom);
             _aetvCurrent.Add(batch, ref stackDatom);

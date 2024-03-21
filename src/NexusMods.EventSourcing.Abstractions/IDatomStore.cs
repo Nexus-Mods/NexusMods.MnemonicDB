@@ -92,4 +92,9 @@ public interface IDatomStore : IDisposable
     /// Gets the maximum entity id in the store.
     /// </summary>
     EntityId GetMaxEntityId();
+
+    /// <summary>
+    /// Gets the most recent transaction id for the given entity id.
+    /// </summary>
+    TxId GetMostRecentTxId();
 }
