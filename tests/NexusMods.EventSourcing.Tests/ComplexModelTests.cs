@@ -22,7 +22,6 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
     [InlineData(1024, 128)]
     public async Task CanCreateLoadout(int modCount, int filesPerMod)
     {
-        Config.MaxInMemoryDatoms = 1024;
         var tx = Connection.BeginTransaction();
 
         var loadout = Loadout.Create(tx, "My Loadout");

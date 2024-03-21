@@ -47,7 +47,7 @@ internal class AETVCurrent(AttributeRegistry registry) : AIndex(ColumnFamilyName
         batch.Put(keySpan, valueSpan, ColumnFamily);
     }
 
-    public IEnumerable<EntityId> GetEntitiesWithAttribute<TAttribute>() where TAttribute : IAttribute
+    public IEnumerable<EntityId> GetEntitiesWithAttribute<TAttribute>(TxId asOf) where TAttribute : IAttribute
     {
         Key key = new()
         {
@@ -62,7 +62,16 @@ internal class AETVCurrent(AttributeRegistry registry) : AIndex(ColumnFamilyName
             if (keyRead.Attribute != key.Attribute)
                 break;
 
-            yield return EntityId.From(keyRead.Entity);
+            var tx = MemoryMarshal.Read<TxId>(value.ValueSpan);
+            if (tx <= asOf)
+            {
+                yield return EntityId.From(keyRead.Entity);
+                continue;
+            }
+
+            throw new NotImplementedException();
+
+
         }
 
     }

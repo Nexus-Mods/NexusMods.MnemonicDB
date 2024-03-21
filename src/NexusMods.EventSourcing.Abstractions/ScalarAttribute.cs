@@ -90,6 +90,12 @@ where TAttribute : IAttribute<TValueType>
         };
     }
 
+    /// <inheritdoc />
+    public Type GetReadDatomType()
+    {
+        return typeof(ReadDatom);
+    }
+
 
     /// <summary>
     /// Create a new datom for an assert on this attribute, and return it

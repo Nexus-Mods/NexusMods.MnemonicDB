@@ -15,7 +15,7 @@ public class ByAttributeTests(IServiceProvider provider) : AStorageTest(provider
 
         var realId = tx.Remaps[tmpId];
 
-        var entities = DatomStore.GetEntitiesWithAttribute<ModAttributes.Name>().ToList();
+        var entities = DatomStore.GetEntitiesWithAttribute<ModAttributes.Name>(TxId.MaxValue).ToList();
 
         entities.Should().Contain(realId);
 

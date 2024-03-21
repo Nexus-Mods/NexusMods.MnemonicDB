@@ -133,7 +133,7 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
     public async Task CanGetCommitUpdates()
     {
 
-        List<Datom[]> updates = new();
+        List<IReadDatom[]> updates = new();
 
 
 
@@ -168,7 +168,7 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
             var updateDatom = updates[idx]
                 .First();
 
-            var value = MemoryMarshal.Read<ulong>(updateDatom.V.Span);
+            var value = ((ModFileAttributes.Index.ReadDatom)updateDatom).V;
             value.Should().Be((ulong)idx);
         }
     }

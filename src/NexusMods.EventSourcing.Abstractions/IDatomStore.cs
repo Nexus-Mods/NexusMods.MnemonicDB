@@ -64,9 +64,10 @@ public interface IDatomStore : IDisposable
     Expression GetValueReadExpression(Type attribute, Expression valueSpan, out AttributeId attributeId);
 
     /// <summary>
-    /// Gets all the entities that reference the given entity id with the given attribute.
+    /// Gets the entities that have the given attribute that reference the given entity id.
     /// </summary>
-    IEnumerable<EntityId> ReverseLookup<TAttribute>(TxId txId, EntityId id) where TAttribute : IAttribute<EntityId>;
+    IEnumerable<EntityId> GetReferencesToEntityThroughAttribute<TAttribute>(EntityId id, TxId txId)
+        where TAttribute : IAttribute<EntityId>;
 
     /// <summary>
     /// Gets the value of the given attribute for the given entity id where the transaction id exactly matches the given txId.
@@ -81,7 +82,7 @@ public interface IDatomStore : IDisposable
     /// <summary>
     /// Gets all the entities that have the given attribute.
     /// </summary>
-    IEnumerable<EntityId> GetEntitiesWithAttribute<TAttribute>() where TAttribute : IAttribute;
+    IEnumerable<EntityId> GetEntitiesWithAttribute<TAttribute>(TxId tx) where TAttribute : IAttribute;
 
     /// <summary>
     /// Gets all the attributes for the given entity id where the transaction id is less than or equal to the given txId.
@@ -97,4 +98,9 @@ public interface IDatomStore : IDisposable
     /// Gets the most recent transaction id for the given entity id.
     /// </summary>
     TxId GetMostRecentTxId();
+
+    /// <summary>
+    /// Gets the type of the read datom for the given attribute.
+    /// </summary>
+    Type GetReadDatomType(Type attribute);
 }

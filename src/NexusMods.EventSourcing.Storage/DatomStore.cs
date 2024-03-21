@@ -21,7 +21,7 @@ public class DatomStore : IDatomStore
     private readonly AttributeRegistry _registry;
     private readonly ILogger<DatomStore> _logger;
     private readonly Channel<PendingTransaction> _txChannel;
-    private EntityId _nextEntId;
+    private EntityId _nextEntityId;
     private readonly Subject<(TxId TxId, IReadDatom[] Datoms)> _updatesSubject;
     private readonly DatomStoreSettings _settings;
     private readonly RocksDb _db;
@@ -32,6 +32,8 @@ public class DatomStore : IDatomStore
     private readonly EATVCurrent _eatvCurrent;
     private readonly EATVHistory _eatvHistory;
     private readonly AETVCurrent _aetvCurrent;
+    private readonly VATEHistory _vateHistory;
+
 
 
 
@@ -49,12 +51,14 @@ public class DatomStore : IDatomStore
     {
         var options = new DbOptions()
             .SetCreateIfMissing()
-            .SetCreateMissingColumnFamilies();
+            .SetCreateMissingColumnFamilies()
+            .SetCompression(Compression.Zstd);
 
         _txLog = new TxLog(registry);
         _eatvCurrent = new EATVCurrent(registry);
         _eatvHistory = new EATVHistory(registry);
         _aetvCurrent = new AETVCurrent(registry);
+        _vateHistory = new VATEHistory(registry);
 
         _db = RocksDb.Open(options, settings.Path.ToString(), new ColumnFamilies());
 
@@ -62,6 +66,7 @@ public class DatomStore : IDatomStore
         _eatvCurrent.Init(_db);
         _eatvHistory.Init(_db);
         _aetvCurrent.Init(_db);
+        _vateHistory.Init(_db);
 
         _writer = new PooledMemoryBufferWriter();
 
@@ -69,13 +74,14 @@ public class DatomStore : IDatomStore
         _logger = logger;
         _settings = settings;
         _registry = registry;
-        _nextEntId = EntityId.From(Ids.MinId(Ids.Partition.Entity) + 1);
+        _nextEntityId = EntityId.From(Ids.MinId(Ids.Partition.Entity) + 1);
 
         _updatesSubject = new Subject<(TxId TxId, IReadDatom[] Datoms)>();
 
         registry.Populate(BuiltInAttributes.Initial);
 
         _txChannel = Channel.CreateUnbounded<PendingTransaction>();
+        var _ = Bootstrap();
         Task.Run(ConsumeTransactions);
     }
 
@@ -105,51 +111,22 @@ public class DatomStore : IDatomStore
     /// </summary>
     private async Task Bootstrap()
     {
-
-        /*
         try
         {
-            if (!_nodeStore.TryGetLastTx(out var tx))
+            var lastTx = GetMostRecentTxId();
+            if (lastTx == TxId.MinValue)
             {
                 _logger.LogInformation("Bootstrapping the datom store no existing state found");
                 var _ = await Transact(BuiltInAttributes.InitialDatoms);
                 return;
             }
 
-            _logger.LogInformation("Bootstrapping the datom store from tx {TxId}", tx.Value);
-
-            if (_nodeStore.LoadRoot(out var root))
-            {
-                _indexes = root;
-            }
-
-
-            var txToReplay = tx.Value - _indexes.LastFlushedTxId.Value;
-            if (txToReplay > 0)
-            {
-                _logger.LogInformation("Replaying {TxCount} transactions", txToReplay);
-                var sw = Stopwatch.StartNew();
-                var replayed = 0;
-                for (var thisTx = _indexes.LastFlushedTxId.Value + 1; thisTx <= tx.Value; thisTx++)
-                {
-                    var key = StoreKey.From(Ids.MakeId(Ids.Partition.TxLog, thisTx));
-                    var packed = _nodeStore.Load(key);
-                    var appendableNode = AppendableNode.Initialize(packed);
-                    await UpdateInMemoryIndexes(appendableNode, TxId.From(thisTx));
-                    replayed++;
-                }
-                _logger.LogInformation("Replayed {TxCount} transactions in {Elapsed}ms new in-memory size is {Datoms} datoms", replayed, sw.ElapsedMilliseconds, _indexes.InMemorySize);
-            }
-
-            _nextEntId = GetLastEntityId(_indexes);
-
-
+            _nextEntityId = EntityId.From(GetMaxEntityId().Value + 1);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to bootstrap the datom store");
         }
-        */
     }
 
     /*
@@ -208,15 +185,17 @@ public class DatomStore : IDatomStore
     }
     */
 
-    public TxId AsOfTxId => throw new NotImplementedException();
+    public TxId AsOfTxId => _asOfTxId;
 
     public void Dispose()
     {
         _txChannel.Writer.Complete();
         _db.Dispose();
+        _txLog.Dispose();
         _eatvCurrent.Dispose();
         _eatvHistory.Dispose();
         _aetvCurrent.Dispose();
+        _vateHistory.Dispose();
     }
 
     public async Task<TxId> Sync()
@@ -276,9 +255,10 @@ public class DatomStore : IDatomStore
         return _registry.GetReadExpression(attribute, valueSpan, out attributeId);
     }
 
-    public IEnumerable<EntityId> ReverseLookup<TAttribute>(TxId txId, EntityId id) where TAttribute : IAttribute<EntityId>
+    public IEnumerable<EntityId> GetReferencesToEntityThroughAttribute<TAttribute>(EntityId id, TxId txId)
+        where TAttribute : IAttribute<EntityId>
     {
-        throw new NotImplementedException();
+           return _vateHistory.GetReferencesToEntityThroughAttribute<TAttribute>(id, txId);
     }
 
 
@@ -313,10 +293,10 @@ public class DatomStore : IDatomStore
         return false;
     }
 
-    public IEnumerable<EntityId> GetEntitiesWithAttribute<TAttribute>()
+    public IEnumerable<EntityId> GetEntitiesWithAttribute<TAttribute>(TxId txId)
         where TAttribute : IAttribute
     {
-        return _aetvCurrent.GetEntitiesWithAttribute<TAttribute>();
+        return _aetvCurrent.GetEntitiesWithAttribute<TAttribute>(txId);
     }
 
     public IEnumerable<IReadDatom> GetAttributesForEntity(EntityId realId, TxId txId)
@@ -343,47 +323,56 @@ public class DatomStore : IDatomStore
         return _txLog.GetMostRecentTxId();
     }
 
+    public Type GetReadDatomType(Type attribute)
+    {
+        return _registry.GetReadDatomType(attribute);
+    }
+
 
     #region Internals
+
+
+    EntityId MaybeRemap(EntityId id, PendingTransaction pendingTransaction, TxId thisTx)
+    {
+        if (Ids.GetPartition(id) == Ids.Partition.Tmp)
+        {
+            if (!pendingTransaction.Remaps.TryGetValue(id, out var newId))
+            {
+                if (id.Value == Ids.MinId(Ids.Partition.Tmp))
+                {
+                    var remapTo = EntityId.From(thisTx.Value);
+                    pendingTransaction.Remaps.Add(id, remapTo);
+                    return remapTo;
+                }
+                else
+                {
+                    pendingTransaction.Remaps.Add(id, _nextEntityId);
+                    var remapTo = _nextEntityId;
+                    _nextEntityId = EntityId.From(_nextEntityId.Value + 1);
+                    return remapTo;
+                }
+            }
+            else
+            {
+                return newId;
+            }
+        }
+        return id;
+    }
+
 
 
     private void Log(PendingTransaction pendingTransaction, out IWriteDatom[] node)
     {
         var thisTx = TxId.From(_asOfTxId.Value + 1);
 
-        EntityId MaybeRemap(EntityId id)
-        {
-            if (Ids.GetPartition(id) == Ids.Partition.Tmp)
-            {
-                if (!pendingTransaction.Remaps.TryGetValue(id, out var newId))
-                {
-                    if (id.Value == Ids.MinId(Ids.Partition.Tmp))
-                    {
-                        var remapTo = EntityId.From(thisTx.Value);
-                        pendingTransaction.Remaps.Add(id, remapTo);
-                        return remapTo;
-                    }
-                    else
-                    {
-                        pendingTransaction.Remaps.Add(id, _nextEntId);
-                        var remapTo = _nextEntId;
-                        _nextEntId = EntityId.From(_nextEntId.Value + 1);
-                        return remapTo;
-                    }
-                }
-                else
-                {
-                    return newId;
-                }
-            }
-            return id;
-        }
 
         var stackDatom = new StackDatom();
 
-        var remapFn = (Func<EntityId, EntityId>)MaybeRemap;
+        var remapFn = (Func<EntityId, EntityId>)(id => MaybeRemap(id, pendingTransaction, thisTx));
         var batch = new WriteBatch();
 
+        var swPrepare = Stopwatch.StartNew();
         foreach (var datom in pendingTransaction.Data)
         {
             _writer.Reset();
@@ -397,9 +386,24 @@ public class DatomStore : IDatomStore
             _eatvHistory.Add(batch, ref stackDatom);
             _eatvCurrent.Add(batch, ref stackDatom);
             _aetvCurrent.Add(batch, ref stackDatom);
+
+            if (_registry.IsReference(AttributeId.From(stackDatom.A)))
+                _vateHistory.Add(batch, ref stackDatom);
         }
 
+        var swWrite = Stopwatch.StartNew();
         _db.Write(batch);
+
+        if (_logger.IsEnabled(LogLevel.Debug))
+        {
+            _logger.LogDebug("Transaction {TxId} ({Count} datoms) prepared in {Elapsed}ms, written in {WriteElapsed}ms",
+                thisTx.Value,
+                pendingTransaction.Data.Length,
+                swPrepare.ElapsedMilliseconds - swWrite.ElapsedMilliseconds,
+                swWrite.ElapsedMilliseconds);
+        }
+
+
         _asOfTxId = thisTx;
         pendingTransaction.AssignedTxId = thisTx;
         node = [];

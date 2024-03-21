@@ -115,6 +115,11 @@ public class AttributeRegistry : IAttributeRegistry
 
     public int CompareValues(AttributeId id, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
+        if (a.Length == 0 || b.Length == 0)
+        {
+            return a.Length < b.Length ? -1 : a.Length > b.Length ? 1 : 0;
+        }
+
         var cache = _compareCache;
         if (cache.AttributeId == id)
             return cache.Serializer.Compare(a, b);
@@ -178,5 +183,11 @@ public class AttributeRegistry : IAttributeRegistry
         var serializer = (IValueSerializer<TValue>)_valueSerializersByUniqueId[dbAttr.ValueTypeId];
         serializer.Read(tValueSpan, out var val);
         return val;
+    }
+
+    public Type GetReadDatomType(Type attribute)
+    {
+        var attr = _attributesByType[attribute];
+        return attr.GetReadDatomType();
     }
 }
