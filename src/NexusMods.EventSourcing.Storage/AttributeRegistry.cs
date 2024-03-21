@@ -143,7 +143,17 @@ public class AttributeRegistry : IAttributeRegistry
             throw new InvalidOperationException($"No attribute found for unique ID {dbAttr.UniqueId}");
 
         return attr.Resolve(datom);
+    }
 
+    public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx)
+    {
+        if (!_dbAttributesByEntityId.TryGetValue(attributeId, out var dbAttr))
+            throw new InvalidOperationException($"No attribute found for entity ID {attributeId}");
+
+        if (!_attributesById.TryGetValue(dbAttr.UniqueId, out var attr))
+            throw new InvalidOperationException($"No attribute found for unique ID {dbAttr.UniqueId}");
+
+        return attr.Resolve(entityId, attributeId, value, tx);
     }
 
     public bool IsReference(AttributeId attributeId)

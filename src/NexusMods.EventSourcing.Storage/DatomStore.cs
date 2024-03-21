@@ -29,6 +29,7 @@ public class DatomStore : IDatomStore
     #region Indexes
     private readonly EATVCurrent _eatvCurrent;
     private readonly EATVHistory _eatvHistory;
+    private readonly AETVCurrent _aetvCurrent;
 
 
 
@@ -46,16 +47,15 @@ public class DatomStore : IDatomStore
             .SetCreateIfMissing()
             .SetCreateMissingColumnFamilies();
 
-        var columnFamilies = new ColumnFamilies
-        {
-            { EATVCurrent.ColumnFamilyName, new ColumnFamilyOptions() },
-            { EATVHistory.ColumnFamilyName, new ColumnFamilyOptions() }
-        };
+        _eatvCurrent = new EATVCurrent(registry);
+        _eatvHistory = new EATVHistory(registry);
+        _aetvCurrent = new AETVCurrent(registry);
 
+        _db = RocksDb.Open(options, settings.Path.ToString(), new ColumnFamilies());
 
-        _db = RocksDb.Open(options, settings.Path.ToString(), columnFamilies);
-        _eatvCurrent = new EATVCurrent(_db, registry);
-        _eatvHistory = new EATVHistory(_db, registry);
+        _eatvCurrent.Init(_db);
+        _eatvHistory.Init(_db);
+        _aetvCurrent.Init(_db);
 
         _writer = new PooledMemoryBufferWriter();
 
@@ -207,6 +207,10 @@ public class DatomStore : IDatomStore
     public void Dispose()
     {
         _txChannel.Writer.Complete();
+        _db.Dispose();
+        _eatvCurrent.Dispose();
+        _eatvHistory.Dispose();
+        _aetvCurrent.Dispose();
     }
 
     public async Task<TxId> Sync()
@@ -303,6 +307,28 @@ public class DatomStore : IDatomStore
         return false;
     }
 
+    public IEnumerable<EntityId> GetEntitiesWithAttribute<TAttribute>()
+        where TAttribute : IAttribute
+    {
+        return _aetvCurrent.GetEntitiesWithAttribute<TAttribute>();
+    }
+
+    public IEnumerable<IReadDatom> GetAttributesForEntity(EntityId realId, TxId txId)
+    {
+        foreach (var datom in _eatvCurrent.GetAttributesForEntity(realId, txId))
+        {
+            yield return datom;
+        }
+    }
+
+    /// <summary>
+    /// Gets the maximum entity id in the store.
+    /// </summary>
+    public EntityId GetMaxEntityId()
+    {
+        return _eatvCurrent.GetMaxEntityId();
+    }
+
 
     #region Internals
 
@@ -355,6 +381,7 @@ public class DatomStore : IDatomStore
 
             _eatvHistory.Add(batch, ref stackDatom);
             _eatvCurrent.Add(batch, ref stackDatom);
+            _aetvCurrent.Add(batch, ref stackDatom);
         }
 
         _db.Write(batch);

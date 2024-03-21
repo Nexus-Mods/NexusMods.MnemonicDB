@@ -7,6 +7,8 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// </summary>
 public interface IReadDatom
 {
+    public EntityId E { get; }
+
     /// <summary>
     /// The C# type of the attribute.
     /// </summary>
@@ -16,4 +18,9 @@ public interface IReadDatom
     /// The value type of the datom, this is used to find the correct serializer.
     /// </summary>
     public Type ValueType { get; }
+
+    /// <summary>
+    /// The transaction id of the datom.
+    /// </summary>
+    public TxId T { get; }
 }

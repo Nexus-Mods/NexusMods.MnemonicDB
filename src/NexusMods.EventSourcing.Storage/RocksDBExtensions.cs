@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Cathei.LinqGen;
 using RocksDbSharp;
 
 namespace NexusMods.EventSourcing.Storage;
@@ -68,13 +69,21 @@ public static class RocksDBExtensions
         }
     }
 
-    public struct IteratorValue
+    /// <summary>
+    /// A wrapper around RocksDb iterator that uses structs and spans to avoid allocations. None of the spans from this
+    /// iterator should be used outside of the scope of the iterator.
+    /// </summary>
+    public static ScopedIteratorThunk<TKey> GetScopedIterator<TKey>(this RocksDb db, TKey key, ColumnFamilyHandle columnFamily)
+    where TKey : unmanaged
     {
-        public Iterator _iterator;
+        return new ScopedIteratorThunk<TKey>(key, db, columnFamily);
+    }
 
-        public ReadOnlySpan<byte> KeySpan => _iterator.Key();
+    public readonly struct IteratorValue(Iterator iterator)
+    {
+        public ReadOnlySpan<byte> KeySpan => iterator.Key();
 
-        public ReadOnlySpan<byte> ValueSpan => _iterator.Value();
+        public ReadOnlySpan<byte> ValueSpan => iterator.Value();
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public TKey Key<TKey>() where TKey : unmanaged
@@ -83,17 +92,44 @@ public static class RocksDBExtensions
         }
     }
 
-    public static IEnumerable<IteratorValue> GetScopedIterator<TKey>(this RocksDb db, TKey key, ColumnFamilyHandle columnFamily)
-    where TKey : unmanaged
+    public readonly struct ScopedIteratorThunk<TKey>(TKey key, RocksDb db, ColumnFamilyHandle handle)
+        : IStructEnumerable<IteratorValue, ScopedIteratorEnumerator<TKey>>
+        where TKey : unmanaged
     {
-        using var iterator = db.NewIterator(columnFamily);
-        var keySpan = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref key, 1));
-        iterator.Seek(keySpan);
-
-        while (iterator.Valid())
+        public ScopedIteratorEnumerator<TKey> GetEnumerator()
         {
-            yield return new IteratorValue { _iterator = iterator };
+            return new ScopedIteratorEnumerator<TKey>(key, db.NewIterator(handle), false);
+        }
+    }
+
+    public struct ScopedIteratorEnumerator<TKey>(TKey key, Iterator iterator, bool primed)
+        : IEnumerator<IteratorValue>
+        where TKey : unmanaged
+    {
+        public bool MoveNext()
+        {
+            if (!primed)
+            {
+                var keySpan = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref key, 1));
+                iterator.Seek(keySpan);
+                primed = true;
+
+                return iterator.Valid();
+            }
+
             iterator.Next();
+            return iterator.Valid();
+        }
+
+        public void Reset() => throw new NotSupportedException();
+
+        public IteratorValue Current => new(iterator);
+
+        object IEnumerator.Current => Current;
+
+        public void Dispose()
+        {
+            iterator.Dispose();
         }
     }
 }

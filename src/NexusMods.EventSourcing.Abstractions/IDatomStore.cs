@@ -77,4 +77,19 @@ public interface IDatomStore : IDisposable
     /// Gets the latest value of the given attribute for the given entity id where the transaction id is less than or equal to the given txId.
     /// </summary>
     bool TryGetLatest<TAttribute, TValue>(EntityId e, TxId tx, out TValue value) where TAttribute : IAttribute<TValue>;
+
+    /// <summary>
+    /// Gets all the entities that have the given attribute.
+    /// </summary>
+    IEnumerable<EntityId> GetEntitiesWithAttribute<TAttribute>() where TAttribute : IAttribute;
+
+    /// <summary>
+    /// Gets all the attributes for the given entity id where the transaction id is less than or equal to the given txId.
+    /// </summary>
+    IEnumerable<IReadDatom> GetAttributesForEntity(EntityId realId, TxId txId);
+
+    /// <summary>
+    /// Gets the maximum entity id in the store.
+    /// </summary>
+    EntityId GetMaxEntityId();
 }

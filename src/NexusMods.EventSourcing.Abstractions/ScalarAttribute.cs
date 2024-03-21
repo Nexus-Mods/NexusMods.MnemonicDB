@@ -79,6 +79,18 @@ where TAttribute : IAttribute<TValueType>
     }
 
 
+    /// <inheritdoc />
+    public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx)
+    {
+        return new ReadDatom
+        {
+            E = entityId,
+            V = Read(value),
+            T = tx
+        };
+    }
+
+
     /// <summary>
     /// Create a new datom for an assert on this attribute, and return it
     /// </summary>
@@ -111,11 +123,10 @@ where TAttribute : IAttribute<TValueType>
         public required TValueType V { get; init; }
 
 
-
         /// <inheritdoc />
         public override string ToString()
         {
-            return $"({E}, {typeof(TAttribute).Name}, {V})";
+            return $"({E.Value:x}, {typeof(TAttribute).Name}, {V})";
         }
 
         public void Explode<TWriter>(IAttributeRegistry registry, Func<EntityId, EntityId> remapFn, ref StackDatom datom, TWriter writer) where TWriter : IBufferWriter<byte>

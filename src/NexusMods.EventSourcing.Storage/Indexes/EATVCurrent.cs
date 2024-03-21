@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
 using Reloaded.Memory.Extensions;
@@ -12,23 +13,9 @@ namespace NexusMods.EventSourcing.Storage.Indexes;
 /// a given TX, and then the history index can be used to retrieve the full history of a given attribute to fill in the
 /// filtered results.
 /// </summary>
-public class EATVCurrent
+public class EATVCurrent(AttributeRegistry attributeRegistry) : AIndex(ColumnFamilyName, attributeRegistry)
 {
-    private readonly PooledMemoryBufferWriter _writer;
-    private readonly ColumnFamilyHandle _columnFamily;
-    private readonly RocksDb _db;
-    private static readonly SpanDeserializer Deserializer = new();
-    private readonly AttributeRegistry _registry;
-
     public static string ColumnFamilyName => "EATVCurrent";
-
-    public EATVCurrent(RocksDb db, AttributeRegistry attributeRegistry)
-    {
-        _registry = attributeRegistry;
-        _db = db;
-        _columnFamily = db.GetColumnFamily("EATVCurrent");
-        _writer = new PooledMemoryBufferWriter();
-    }
 
     [StructLayout(LayoutKind.Explicit, Size = sizeof(ulong) + sizeof(ushort))]
     private unsafe struct Key
@@ -36,35 +23,6 @@ public class EATVCurrent
         [FieldOffset(0)] public ulong Entity;
         [FieldOffset(sizeof(ulong))] public ushort Attribute;
     }
-
-    private class SpanDeserializer : ISpanDeserializer<(TxId, byte[])>
-    {
-        public (TxId, byte[]) Deserialize(ReadOnlySpan<byte> buffer)
-        {
-            var tx = MemoryMarshal.Read<TxId>(buffer);
-            return (tx, buffer.SliceFast(sizeof(ulong)).ToArray());
-        }
-    }
-
-
-    public Datom Get(EntityId id, AttributeId attributeId)
-    {
-        Span<byte> key = stackalloc byte[sizeof(ulong) * sizeof(ushort)];
-        MemoryMarshal.Write(key, id.Value);
-        MemoryMarshal.Write(key.SliceFast(sizeof(ulong)), (ushort)attributeId.Value);
-
-        // Still some wasted memory usage here, but oh well
-        var (tx, valData) = _db.Get(key, Deserializer, _columnFamily);
-
-        return new Datom
-        {
-            E = id,
-            A = attributeId,
-            T = tx,
-            V = valData
-        };
-    }
-
     public void Add(WriteBatch batch, ref StackDatom stackDatom)
     {
         Key key = new()
@@ -77,7 +35,7 @@ public class EATVCurrent
         MemoryMarshal.Write(valueSpan, stackDatom.T);
 
         var keySpan = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref key, 1));
-        batch.Put(keySpan, valueSpan, _columnFamily);
+        batch.Put(keySpan, valueSpan, ColumnFamily);
     }
 
     public LookupResult TryGet<TAttr, TValue>(EntityId e, TxId tx, out TValue val) where TAttr : IAttribute<TValue>
@@ -85,10 +43,10 @@ public class EATVCurrent
         Key key = new()
         {
             Entity = e.Value,
-            Attribute = (ushort)_registry.GetAttributeId<TAttr>()
+            Attribute = (ushort)Registry.GetAttributeId<TAttr>()
         };
 
-        using var tValue = _db.GetScoped(ref key, _columnFamily);
+        using var tValue = Db.GetScoped(ref key, ColumnFamily);
         if (!tValue.IsValid)
         {
             val = default!;
@@ -98,11 +56,64 @@ public class EATVCurrent
         var datomTx = MemoryMarshal.Read<TxId>(tValue.Span);
         if (datomTx <= tx)
         {
-            val = _registry.Read<TAttr, TValue>(tValue.Span.SliceFast(sizeof(ulong)));
+            val = Registry.Read<TAttr, TValue>(tValue.Span.SliceFast(sizeof(ulong)));
             return LookupResult.Found;
         }
 
         val = default!;
         return LookupResult.FoundNewer;
+    }
+
+    protected override int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        var keyA = MemoryMarshal.Read<Key>(a);
+        var keyB = MemoryMarshal.Read<Key>(b);
+
+        var cmp = keyA.Entity.CompareTo(keyB.Entity);
+        if (cmp != 0) return cmp;
+
+        return keyA.Attribute.CompareTo(keyB.Attribute);
+    }
+
+    public IEnumerable<IReadDatom> GetAttributesForEntity(EntityId e, TxId txId)
+    {
+        var key = new Key
+        {
+            Entity = e.Value,
+            Attribute = 0
+        };
+
+        foreach (var value in Db.GetScopedIterator(key, ColumnFamily))
+        {
+            var thisKey = value.Key<Key>();
+            if (thisKey.Entity != e.Value)
+                break;
+
+            var thisTxId = MemoryMarshal.Read<TxId>(value.ValueSpan);
+            var valueSpan = value.ValueSpan.SliceFast(sizeof(ulong));
+
+            yield return Registry.Resolve(EntityId.From(thisKey.Entity),
+                AttributeId.From(thisKey.Attribute), valueSpan, thisTxId);
+        }
+    }
+
+    public EntityId GetMaxEntityId()
+    {
+        var seekKey = new Key
+        {
+            Entity = Ids.MakeId(Ids.Partition.Entity, ulong.MaxValue),
+            Attribute = ushort.MaxValue
+        };
+
+        using var iterator = Db.NewIterator(ColumnFamily);
+        var span = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref seekKey, 1));
+        iterator.SeekForPrev(span);
+
+        if (!iterator.Valid())
+            return EntityId.From(Ids.MakeId(Ids.Partition.Entity, 0));
+
+        var key = MemoryMarshal.Read<Key>(iterator.Key());
+
+        return EntityId.From(key.Entity);
     }
 }
