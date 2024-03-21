@@ -19,6 +19,7 @@ public class AttributeRegistry : IAttributeRegistry
     private readonly Dictionary<AttributeId,DbAttribute> _dbAttributesByEntityId;
     private readonly Dictionary<Symbol,DbAttribute> _dbAttributesByUniqueId;
     private readonly Dictionary<Symbol,IValueSerializer> _valueSerializersByUniqueId;
+    private readonly Dictionary<AttributeId, IAttribute> _attributesByAttributeId;
 
     /// <summary>
     /// Tracks all attributes and their respective serializers as well as the DB entity IDs for each
@@ -33,6 +34,7 @@ public class AttributeRegistry : IAttributeRegistry
         var attributeArray = attributes.ToArray();
         _attributesById = attributeArray.ToDictionary(x => x.Id);
         _attributesByType = attributeArray.ToDictionary(x => x.GetType());
+        _attributesByAttributeId = new();
 
         foreach (var attr in attributeArray)
         {
@@ -52,6 +54,14 @@ public class AttributeRegistry : IAttributeRegistry
         {
             _dbAttributesByEntityId[attr.AttrEntityId] = attr;
             _dbAttributesByUniqueId[attr.UniqueId] = attr;
+        }
+
+        _attributesByAttributeId.Clear();
+
+        foreach (var (id, dbAttr) in _dbAttributesByEntityId)
+        {
+            var attr = _attributesById[dbAttr.UniqueId];
+            _attributesByAttributeId[id] = attr;
         }
     }
     public void WriteValue<TWriter, TVal>(TVal val, in TWriter writer)
@@ -153,11 +163,8 @@ public class AttributeRegistry : IAttributeRegistry
 
     public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx)
     {
-        if (!_dbAttributesByEntityId.TryGetValue(attributeId, out var dbAttr))
-            throw new InvalidOperationException($"No attribute found for entity ID {attributeId}");
-
-        if (!_attributesById.TryGetValue(dbAttr.UniqueId, out var attr))
-            throw new InvalidOperationException($"No attribute found for unique ID {dbAttr.UniqueId}");
+        if (!_attributesByAttributeId.TryGetValue(attributeId, out var attr))
+            throw new InvalidOperationException($"No attribute found for AttributeId {attributeId}");
 
         return attr.Resolve(entityId, attributeId, value, tx);
     }

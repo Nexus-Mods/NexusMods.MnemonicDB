@@ -5,7 +5,7 @@ using RocksDbSharp;
 
 namespace NexusMods.EventSourcing.Storage.Indexes;
 
-public class TxLog(AttributeRegistry registry) : AIndex(ColumnFamilyName, registry)
+public class TxLog(AttributeRegistry registry, ColumnFamilies columnFamilies) : AIndex(ColumnFamilyName, registry, columnFamilies)
 {
     private static string ColumnFamilyName => "TxLog";
 

@@ -18,15 +18,10 @@ public abstract class AIndex
     private IntPtr _comparator;
     private readonly string _columnFamilyName;
 
-    protected AIndex(string columnFamilyName, AttributeRegistry registry)
+    protected AIndex(string columnFamilyName, AttributeRegistry registry, ColumnFamilies columnFamilies)
     {
         Registry = registry;
         _columnFamilyName = columnFamilyName;
-    }
-
-    public void Init(RocksDb db)
-    {
-        Db = db;
 
         _options = new ColumnFamilyOptions();
         _namePtr = Marshal.StringToHGlobalAnsi(_columnFamilyName);
@@ -42,8 +37,14 @@ public abstract class AIndex
         };
         _comparator = Native.Instance.rocksdb_comparator_create(IntPtr.Zero, _destructorDelegate, _comparatorDelegate, _nameDelegate);
         _options.SetComparator(_comparator);
-        ColumnFamily = Db.CreateColumnFamily(_options, _columnFamilyName);
 
+        columnFamilies.Add(_columnFamilyName, _options);
+    }
+
+    public void Init(RocksDb db)
+    {
+        Db = db;
+        ColumnFamily = Db.GetColumnFamily(_columnFamilyName);
     }
 
     protected abstract int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);

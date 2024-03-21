@@ -13,7 +13,7 @@ namespace NexusMods.EventSourcing.Storage.Indexes;
 /// a given TX, and then the history index can be used to retrieve the full history of a given attribute to fill in the
 /// filtered results.
 /// </summary>
-public class EATVCurrent(AttributeRegistry attributeRegistry) : AIndex(ColumnFamilyName, attributeRegistry)
+public class EATVCurrent(AttributeRegistry attributeRegistry, ColumnFamilies columnFamilies) : AIndex(ColumnFamilyName, attributeRegistry, columnFamilies)
 {
     public static string ColumnFamilyName => "EATVCurrent";
 

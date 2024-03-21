@@ -13,7 +13,7 @@ namespace NexusMods.EventSourcing.Storage.Indexes;
 /// where the value is always an entity ID.
 /// </summary>
 /// <param name="registry"></param>
-public class BackrefHistory(AttributeRegistry registry) : AIndex(ColumnFamilyName, registry)
+public class BackrefHistory(AttributeRegistry registry, ColumnFamilies columnFamilies) : AIndex(ColumnFamilyName, registry, columnFamilies)
 {
     private static string ColumnFamilyName => "VATEHistory";
 

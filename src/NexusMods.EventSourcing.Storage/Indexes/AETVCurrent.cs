@@ -6,7 +6,7 @@ using RocksDbSharp;
 
 namespace NexusMods.EventSourcing.Storage.Indexes;
 
-internal class AETVCurrent(AttributeRegistry registry) : AIndex(ColumnFamilyName, registry)
+internal class AETVCurrent(AttributeRegistry registry, ColumnFamilies columnFamilies) : AIndex(ColumnFamilyName, registry, columnFamilies)
 {
     private static string ColumnFamilyName => "AETVCurrent";
 

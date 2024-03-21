@@ -6,7 +6,7 @@ using RocksDbSharp;
 
 namespace NexusMods.EventSourcing.Storage.Indexes;
 
-public class EATVHistory(AttributeRegistry registry) : AIndex(ColumnFamilyName, registry)
+public class EATVHistory(AttributeRegistry registry, ColumnFamilies columnFamilies) : AIndex(ColumnFamilyName, registry, columnFamilies)
 {
     public static string ColumnFamilyName => "EATVHistory";
 

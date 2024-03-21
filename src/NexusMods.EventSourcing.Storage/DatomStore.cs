@@ -54,13 +54,15 @@ public class DatomStore : IDatomStore
             .SetCreateMissingColumnFamilies()
             .SetCompression(Compression.Zstd);
 
-        _txLog = new TxLog(registry);
-        _eatvCurrent = new EATVCurrent(registry);
-        _eatvHistory = new EATVHistory(registry);
-        _aetvCurrent = new AETVCurrent(registry);
-        _backrefHistory = new BackrefHistory(registry);
+        var columnFamilies = new ColumnFamilies();
 
-        _db = RocksDb.Open(options, settings.Path.ToString(), new ColumnFamilies());
+        _txLog = new TxLog(registry, columnFamilies);
+        _eatvCurrent = new EATVCurrent(registry, columnFamilies);
+        _eatvHistory = new EATVHistory(registry, columnFamilies);
+        _aetvCurrent = new AETVCurrent(registry, columnFamilies);
+        _backrefHistory = new BackrefHistory(registry, columnFamilies);
+
+        _db = RocksDb.Open(options, settings.Path.ToString(), columnFamilies);
 
         _txLog.Init(_db);
         _eatvCurrent.Init(_db);
@@ -93,6 +95,14 @@ public class DatomStore : IDatomStore
             var pendingTransaction = await _txChannel.Reader.ReadAsync();
             try
             {
+                // Sync transactions have no data, and are used to verify that the store is up to date.
+                if (pendingTransaction.Data.Length == 0)
+                {
+                    pendingTransaction.AssignedTxId = _asOfTxId;
+                    pendingTransaction.CompletionSource.SetResult(_asOfTxId);
+                    continue;
+                }
+
                 Log(pendingTransaction, out var readAbles);
 
                 pendingTransaction.CompletionSource.SetResult(_asOfTxId);
@@ -119,6 +129,11 @@ public class DatomStore : IDatomStore
                 _logger.LogInformation("Bootstrapping the datom store no existing state found");
                 var _ = await Transact(BuiltInAttributes.InitialDatoms);
                 return;
+            }
+            else
+            {
+                _logger.LogInformation("Bootstrapping the datom store, existing state found, last tx: {LastTx}", lastTx.Value.ToString("x"));
+                _asOfTxId = lastTx;
             }
 
             _nextEntityId = EntityId.From(GetMaxEntityId().Value + 1);
