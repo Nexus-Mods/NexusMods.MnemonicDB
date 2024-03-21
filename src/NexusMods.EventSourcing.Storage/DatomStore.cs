@@ -32,7 +32,7 @@ public class DatomStore : IDatomStore
     private readonly EATVCurrent _eatvCurrent;
     private readonly EATVHistory _eatvHistory;
     private readonly AETVCurrent _aetvCurrent;
-    private readonly VATEHistory _vateHistory;
+    private readonly BackrefHistory _backrefHistory;
 
 
 
@@ -58,7 +58,7 @@ public class DatomStore : IDatomStore
         _eatvCurrent = new EATVCurrent(registry);
         _eatvHistory = new EATVHistory(registry);
         _aetvCurrent = new AETVCurrent(registry);
-        _vateHistory = new VATEHistory(registry);
+        _backrefHistory = new BackrefHistory(registry);
 
         _db = RocksDb.Open(options, settings.Path.ToString(), new ColumnFamilies());
 
@@ -66,7 +66,7 @@ public class DatomStore : IDatomStore
         _eatvCurrent.Init(_db);
         _eatvHistory.Init(_db);
         _aetvCurrent.Init(_db);
-        _vateHistory.Init(_db);
+        _backrefHistory.Init(_db);
 
         _writer = new PooledMemoryBufferWriter();
 
@@ -195,7 +195,7 @@ public class DatomStore : IDatomStore
         _eatvCurrent.Dispose();
         _eatvHistory.Dispose();
         _aetvCurrent.Dispose();
-        _vateHistory.Dispose();
+        _backrefHistory.Dispose();
     }
 
     public async Task<TxId> Sync()
@@ -258,7 +258,7 @@ public class DatomStore : IDatomStore
     public IEnumerable<EntityId> GetReferencesToEntityThroughAttribute<TAttribute>(EntityId id, TxId txId)
         where TAttribute : IAttribute<EntityId>
     {
-           return _vateHistory.GetReferencesToEntityThroughAttribute<TAttribute>(id, txId);
+           return _backrefHistory.GetReferencesToEntityThroughAttribute<TAttribute>(id, txId);
     }
 
 
@@ -370,7 +370,7 @@ public class DatomStore : IDatomStore
         var stackDatom = new StackDatom();
 
         var remapFn = (Func<EntityId, EntityId>)(id => MaybeRemap(id, pendingTransaction, thisTx));
-        var batch = new WriteBatch();
+        using var batch = new WriteBatch();
 
         var swPrepare = Stopwatch.StartNew();
         foreach (var datom in pendingTransaction.Data)
@@ -388,7 +388,7 @@ public class DatomStore : IDatomStore
             _aetvCurrent.Add(batch, ref stackDatom);
 
             if (_registry.IsReference(AttributeId.From(stackDatom.A)))
-                _vateHistory.Add(batch, ref stackDatom);
+                _backrefHistory.Add(batch, ref stackDatom);
         }
 
         var swWrite = Stopwatch.StartNew();
