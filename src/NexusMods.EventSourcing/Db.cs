@@ -41,7 +41,7 @@ internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
     public void Reload<TOuter>(TOuter aActiveReadModel) where TOuter : IActiveReadModel
     {
         var reader = connection.ModelReflector.GetActiveReader<TOuter>();
-        var iterator = store.Where(txId, aActiveReadModel.Id).GetEnumerator();
+        var iterator = store.GetAttributesForEntity(aActiveReadModel.Id, txId).GetEnumerator();
         reader(aActiveReadModel, iterator);
     }
 }

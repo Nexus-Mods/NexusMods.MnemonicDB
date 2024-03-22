@@ -77,6 +77,31 @@ public class EATVHistory(AttributeRegistry registry, ColumnFamilies columnFamili
         return false;
     }
 
+    /// <summary>
+    /// Gets the latest value of the given attribute for the given entity id where the transaction id is less than or equal to the given txId.
+    /// </summary>
+    public bool TryGetLatest(EntityId entityId, AttributeId attributeId, TxId tx, out IReadDatom foundVal)
+    {
+        Key key = new()
+        {
+            Entity = entityId.Value,
+            Tx = tx.Value,
+            Attribute = (ushort)attributeId
+        };
+
+        foreach (var value in Db.GetScopedIterator(key, ColumnFamily))
+        {
+            var currKey = value.Key<Key>();
+            if (currKey.Tx > tx.Value || currKey.Entity != entityId.Value || currKey.Attribute != key.Attribute)
+                break;
+            foundVal = Registry.Resolve(EntityId.From(currKey.Entity), AttributeId.From(currKey.Attribute), value.ValueSpan, TxId.From(currKey.Tx));
+            return true;
+        }
+
+        foundVal = default!;
+        return false;
+    }
+
     protected override int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         var casted = MemoryMarshal.Read<Key>(a);

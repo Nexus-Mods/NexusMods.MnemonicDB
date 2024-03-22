@@ -22,7 +22,7 @@ public class DatomStore : IDatomStore
     private readonly ILogger<DatomStore> _logger;
     private readonly Channel<PendingTransaction> _txChannel;
     private EntityId _nextEntityId;
-    private readonly Subject<(TxId TxId, IReadDatom[] Datoms)> _updatesSubject;
+    private readonly Subject<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)> _updatesSubject;
     private readonly DatomStoreSettings _settings;
     private readonly RocksDb _db;
 
@@ -78,7 +78,7 @@ public class DatomStore : IDatomStore
         _registry = registry;
         _nextEntityId = EntityId.From(Ids.MinId(Ids.Partition.Entity) + 1);
 
-        _updatesSubject = new Subject<(TxId TxId, IReadDatom[] Datoms)>();
+        _updatesSubject = new Subject<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)>();
 
         registry.Populate(BuiltInAttributes.Initial);
 
@@ -103,8 +103,9 @@ public class DatomStore : IDatomStore
                     continue;
                 }
 
-                Log(pendingTransaction, out var readAbles);
+                Log(pendingTransaction, out var readables);
 
+                _updatesSubject.OnNext((_asOfTxId, readables));
                 pendingTransaction.CompletionSource.SetResult(_asOfTxId);
 
                 //_logger.LogDebug("Transaction {TxId} processed in {Elapsed}ms, new in-memory size is {Count} datoms", pendingTransaction.AssignedTxId!.Value, sw.ElapsedMilliseconds, _indexes.InMemorySize);
@@ -230,7 +231,7 @@ public class DatomStore : IDatomStore
         return new DatomStoreTransactResult(pending.AssignedTxId!.Value, pending.Remaps);
     }
 
-    public IObservable<(TxId TxId, IReadDatom[] Datoms)> TxLog => _updatesSubject;
+    public IObservable<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)> TxLog => _updatesSubject;
 
 
     public IEnumerable<Datom> Where<TAttr>(TxId txId) where TAttr : IAttribute
@@ -316,9 +317,19 @@ public class DatomStore : IDatomStore
 
     public IEnumerable<IReadDatom> GetAttributesForEntity(EntityId realId, TxId txId)
     {
-        foreach (var datom in _eatvCurrent.GetAttributesForEntity(realId, txId))
+        foreach (var datom in _eatvCurrent.GetAttributesForEntity(realId))
         {
-            yield return datom;
+            if (datom.T > txId)
+            {
+                if (_eatvHistory.TryGetLatest(datom.E, _registry.GetAttributeId(datom.AttributeType), txId,
+                        out var val))
+                {
+                    yield return val;
+                }
+            }
+            else {
+                yield return datom;
+            }
         }
     }
 
@@ -377,8 +388,10 @@ public class DatomStore : IDatomStore
 
 
 
-    private void Log(PendingTransaction pendingTransaction, out IWriteDatom[] node)
+    private void Log(PendingTransaction pendingTransaction, out IReadOnlyCollection<IReadDatom> resultDatoms)
     {
+        var output = new List<IReadDatom>();
+
         var thisTx = TxId.From(_asOfTxId.Value + 1);
 
 
@@ -404,6 +417,8 @@ public class DatomStore : IDatomStore
 
             if (_registry.IsReference(AttributeId.From(stackDatom.A)))
                 _backrefHistory.Add(batch, ref stackDatom);
+
+            output.Add(_registry.Resolve(EntityId.From(stackDatom.E), AttributeId.From(stackDatom.A), stackDatom.V, TxId.From(stackDatom.T)));
         }
 
         var swWrite = Stopwatch.StartNew();
@@ -421,8 +436,7 @@ public class DatomStore : IDatomStore
 
         _asOfTxId = thisTx;
         pendingTransaction.AssignedTxId = thisTx;
-        node = [];
-
+        resultDatoms = output;
     }
 
     #endregion

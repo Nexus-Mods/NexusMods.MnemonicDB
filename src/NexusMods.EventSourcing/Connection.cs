@@ -125,7 +125,7 @@ public class Connection : IConnection
     }
 
     /// <inheritdoc />
-    public IObservable<(TxId TxId, IReadDatom[] Datoms)> Commits => _store.TxLog;
+    public IObservable<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)> Commits => _store.TxLog;
 
     /// <inheritdoc />
     public T GetActive<T>(EntityId id) where T : IActiveReadModel

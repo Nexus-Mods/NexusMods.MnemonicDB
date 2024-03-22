@@ -74,7 +74,7 @@ public class AttributeRegistry : IAttributeRegistry
     }
 
     public AttributeId GetAttributeId<TAttr>()
-    where TAttr : IAttribute
+        where TAttr : IAttribute
     {
         if (!_attributesByType.TryGetValue(typeof(TAttr), out var attribute))
             throw new InvalidOperationException($"No attribute found for type {typeof(TAttr)}");
@@ -84,6 +84,18 @@ public class AttributeRegistry : IAttributeRegistry
 
         return dbAttribute.AttrEntityId;
     }
+
+    public AttributeId GetAttributeId(Type datomAttributeType)
+    {
+        if (!_attributesByType.TryGetValue(datomAttributeType, out var attribute))
+            throw new InvalidOperationException($"No attribute found for type {datomAttributeType}");
+
+        if (!_dbAttributesByUniqueId.TryGetValue(attribute.Id, out var dbAttribute))
+            throw new InvalidOperationException($"No DB attribute found for attribute {attribute}");
+
+        return dbAttribute.AttrEntityId;
+    }
+
 
     public int CompareValues(in Datom a, in Datom b)
     {
@@ -198,4 +210,5 @@ public class AttributeRegistry : IAttributeRegistry
         var attr = _attributesByType[attribute];
         return attr.GetReadDatomType();
     }
+
 }

@@ -75,7 +75,7 @@ public class EATVCurrent(AttributeRegistry attributeRegistry, ColumnFamilies col
         return keyA.Attribute.CompareTo(keyB.Attribute);
     }
 
-    public IEnumerable<IReadDatom> GetAttributesForEntity(EntityId e, TxId txId)
+    public IEnumerable<IReadDatom> GetAttributesForEntity(EntityId e)
     {
         var key = new Key
         {
@@ -90,6 +90,7 @@ public class EATVCurrent(AttributeRegistry attributeRegistry, ColumnFamilies col
                 break;
 
             var thisTxId = MemoryMarshal.Read<TxId>(value.ValueSpan);
+
             var valueSpan = value.ValueSpan.SliceFast(sizeof(ulong));
 
             yield return Registry.Resolve(EntityId.From(thisKey.Entity),
