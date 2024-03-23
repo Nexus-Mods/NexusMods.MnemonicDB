@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage;
-using NexusMods.EventSourcing.Storage.RocksDb;
-using NexusMods.EventSourcing.Storage.Serializers;
-using NexusMods.EventSourcing.Storage.Tests;
 using NexusMods.EventSourcing.TestModel;
 using NexusMods.EventSourcing.TestModel.Model;
 using NexusMods.Paths;
@@ -19,11 +17,10 @@ var host = Host.CreateDefaultBuilder()
         s.AddEventSourcingStorage()
             .AddEventSourcing()
             .AddTestModel()
-            .AddSingleton<RocksDbKvStoreConfig>(_ => new RocksDbKvStoreConfig()
+            .AddSingleton<DatomStoreSettings>(_ => new DatomStoreSettings
             {
-                Path = FileSystem.Shared.FromUnsanitizedFullPath(@"c:\tmp\billionDatomsTest" + Guid.NewGuid())
-            })
-            .AddSingleton<IKvStore, RocksDbKvStore>();
+                Path = FileSystem.Shared.FromUnsanitizedFullPath(@"billionDatomsTest" + Guid.NewGuid())
+            });
     })
     .ConfigureLogging(logging =>
     {
@@ -40,20 +37,18 @@ await store.Sync();
 
 var connection = await Connection.Start(services);
 
-var settings = services.GetRequiredService<DatomStoreSettings>();
-//settings.MaxInMemoryDatoms = 1024 * 32;
-
 ulong batchSize = 1024;
-ulong datomCount = 10_000_00;
+ulong datomCount = 1_000_000_000;
 ulong entityCount = datomCount / 3; // 3 attributes per entity
 var batches = entityCount / batchSize;
 
 
 
-Console.WriteLine($"Inserting {entityCount} entities in {batches} batches of 1024 entities each");
+Console.WriteLine($"Inserting {entityCount} entities in {batches} batches of {batchSize} datoms each");
 
 var globalSw = Stopwatch.StartNew();
 ulong fileNumber = 0;
+var lastPrint = DateTime.UtcNow;
 for (ulong i = 0; i < batches; i++)
 {
     var tx = connection.BeginTransaction();
@@ -68,12 +63,18 @@ for (ulong i = 0; i < batches; i++)
             Index = entityCount - fileNumber
         };
     }
-    var sw = Stopwatch.StartNew();
     await tx.Commit();
 
     var perSecond = (int)((batchSize * i * 3) / globalSw.Elapsed.TotalSeconds);
 
-    Console.WriteLine($"({i}/{batches}) Elapsed: {sw.ElapsedMilliseconds}ms - Datoms per second: {perSecond}");
+    if (DateTime.UtcNow - lastPrint > TimeSpan.FromSeconds(1))
+    {
+        var estimatedRemaining = (batches - i) * (globalSw.Elapsed.TotalSeconds / i);
+        Console.WriteLine($"({i}/{batches}) Elapsed: {globalSw.Elapsed} - Datoms per second: {perSecond} - ETA: {TimeSpan.FromSeconds(estimatedRemaining)}");
+        lastPrint = DateTime.UtcNow;
+    }
 }
 
+
+Console.WriteLine($"Elapsed: {globalSw.ElapsedMilliseconds}ms - Datoms per second: {datomCount / globalSw.Elapsed.TotalSeconds}");
 

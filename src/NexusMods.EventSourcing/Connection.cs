@@ -76,16 +76,14 @@ public class Connection : IConnection
 
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
-        var attrIds = _store.Where<BuiltInAttributes.UniqueId>(TxId.MaxValue);
+        var attrIds = _store.GetEntitiesWithAttribute<BuiltInAttributes.UniqueId>(TxId.MaxValue);
 
         foreach (var attr in attrIds)
         {
             var serializerId = Symbol.Unknown;
             var uniqueId = Symbol.Unknown;
 
-            foreach (var datom in _store
-                         .Where(TxId.MaxValue, attr.E)
-                         .Typed(_store))
+            foreach (var datom in _store.GetAttributesForEntity(attr, TxId.MaxValue))
             {
                 switch (datom)
                 {
@@ -97,7 +95,7 @@ public class Connection : IConnection
                         break;
                 }
             }
-            yield return new DbAttribute(uniqueId, AttributeId.From(attr.E.Value), serializerId);
+            yield return new DbAttribute(uniqueId, AttributeId.From(attr.Value), serializerId);
         }
     }
 
@@ -127,7 +125,7 @@ public class Connection : IConnection
     }
 
     /// <inheritdoc />
-    public IObservable<(TxId TxId, IDataNode Datoms)> Commits => _store.TxLog;
+    public IObservable<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)> Commits => _store.TxLog;
 
     /// <inheritdoc />
     public T GetActive<T>(EntityId id) where T : IActiveReadModel

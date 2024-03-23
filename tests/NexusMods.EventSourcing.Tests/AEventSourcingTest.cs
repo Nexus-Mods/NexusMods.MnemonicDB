@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage;
+using NexusMods.Paths;
 
 namespace NexusMods.EventSourcing.Tests;
 
@@ -12,10 +13,8 @@ public class AEventSourcingTest : IAsyncLifetime
     protected ILogger Logger;
 
     private DatomStore _store;
-    private readonly NodeStore _nodeStore;
     private readonly IValueSerializer[] _valueSerializers;
     private readonly IAttribute[] _attributes;
-    private readonly InMemoryKvStore _kvStore;
     private readonly IServiceProvider _provider;
     private readonly AttributeRegistry _registry;
 
@@ -27,11 +26,14 @@ public class AEventSourcingTest : IAsyncLifetime
         _attributes = provider.GetRequiredService<IEnumerable<IAttribute>>().ToArray();
 
         _registry = new AttributeRegistry(_valueSerializers, _attributes);
-        _kvStore = new InMemoryKvStore();
-        _nodeStore = new NodeStore(_kvStore, _registry);
 
-        Config = new DatomStoreSettings();
-        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _nodeStore, _registry, Config);
+        Config = new DatomStoreSettings
+        {
+            Path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory)
+                .Combine("tests_eventsourcing" + Guid.NewGuid())
+        };
+
+        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config);
 
         Logger = provider.GetRequiredService<ILogger<AEventSourcingTest>>();
 
@@ -44,7 +46,7 @@ public class AEventSourcingTest : IAsyncLifetime
         _store.Dispose();
 
 
-        _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _nodeStore, _registry, Config);
+        _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config);
         await _store.Sync();
 
         Connection = await Connection.Start(_store, _valueSerializers, _attributes);

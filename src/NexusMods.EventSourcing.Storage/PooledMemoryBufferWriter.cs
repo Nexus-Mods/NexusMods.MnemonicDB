@@ -43,6 +43,12 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
     public ReadOnlySpan<byte> GetWrittenSpan() => _data.Span.SliceFast(0, _idx);
 
 
+    /// <summary>
+    /// Gets the written span, but allows it to be written to.
+    /// </summary>
+    public Span<byte> GetWrittenSpanWritable() => _data.Span.SliceFast(0, _idx);
+
+
     public ReadOnlyMemory<byte> WrittenMemory => _data.Slice(0, _idx);
 
     public Span<byte> WrittenSpanWritable => _data.Span.SliceFast(0, _idx);

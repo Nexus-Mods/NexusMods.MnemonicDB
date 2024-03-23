@@ -26,7 +26,7 @@ public interface IDatomStore : IDisposable
     /// <summary>
     /// An observable of the transaction log, for getting the latest changes to the store.
     /// </summary>
-    public IObservable<(TxId TxId, IDataNode Datoms)> TxLog { get; }
+    public IObservable<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)> TxLog { get; }
 
     /// <summary>
     /// Gets the latest transaction id found in the log.
@@ -37,6 +37,8 @@ public interface IDatomStore : IDisposable
     /// Returns all the most recent datoms (less than or equal to txId) with the given attribute.
     /// </summary>
     IEnumerable<Datom> Where<TAttr>(TxId txId) where TAttr : IAttribute;
+
+
 
     /// <summary>
     /// Returns all the most recent datoms (less than or equal to txId) with the given attribute.
@@ -62,7 +64,43 @@ public interface IDatomStore : IDisposable
     Expression GetValueReadExpression(Type attribute, Expression valueSpan, out AttributeId attributeId);
 
     /// <summary>
-    /// Gets all the entities that reference the given entity id with the given attribute.
+    /// Gets the entities that have the given attribute that reference the given entity id.
     /// </summary>
-    IEnumerable<EntityId> ReverseLookup<TAttribute>(TxId txId, EntityId id) where TAttribute : IAttribute<EntityId>;
+    IEnumerable<EntityId> GetReferencesToEntityThroughAttribute<TAttribute>(EntityId id, TxId txId)
+        where TAttribute : IAttribute<EntityId>;
+
+    /// <summary>
+    /// Gets the value of the given attribute for the given entity id where the transaction id exactly matches the given txId.
+    /// </summary>
+    bool TryGetExact<TAttr, TValue>(EntityId e, TxId tx, out TValue val) where TAttr : IAttribute<TValue>;
+
+    /// <summary>
+    /// Gets the latest value of the given attribute for the given entity id where the transaction id is less than or equal to the given txId.
+    /// </summary>
+    bool TryGetLatest<TAttribute, TValue>(EntityId e, TxId tx, out TValue value) where TAttribute : IAttribute<TValue>;
+
+    /// <summary>
+    /// Gets all the entities that have the given attribute.
+    /// </summary>
+    IEnumerable<EntityId> GetEntitiesWithAttribute<TAttribute>(TxId tx) where TAttribute : IAttribute;
+
+    /// <summary>
+    /// Gets all the attributes for the given entity id where the transaction id is less than or equal to the given txId.
+    /// </summary>
+    IEnumerable<IReadDatom> GetAttributesForEntity(EntityId realId, TxId txId);
+
+    /// <summary>
+    /// Gets the maximum entity id in the store.
+    /// </summary>
+    EntityId GetMaxEntityId();
+
+    /// <summary>
+    /// Gets the most recent transaction id for the given entity id.
+    /// </summary>
+    TxId GetMostRecentTxId();
+
+    /// <summary>
+    /// Gets the type of the read datom for the given attribute.
+    /// </summary>
+    Type GetReadDatomType(Type attribute);
 }

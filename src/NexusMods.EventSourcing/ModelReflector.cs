@@ -24,10 +24,10 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
     private delegate void EmitterFn<in TReadModel>(TTransaction tx, TReadModel model)
         where TReadModel : IReadModel;
 
-    internal delegate TReadModel ReaderFn<out TReadModel>(EntityId id, IEnumerator<Datom> iterator, IDb db)
+    internal delegate TReadModel ReaderFn<out TReadModel>(EntityId id, IEnumerator<IReadDatom> iterator, IDb db)
         where TReadModel : IReadModel;
 
-    internal delegate void ActiveReaderFn<TModel>(TModel model, IEnumerator<Datom> datom);
+    internal delegate void ActiveReaderFn<TModel>(TModel model, IEnumerator<IReadDatom> datom);
 
     public void Add(TTransaction tx, IReadModel model)
     {
@@ -143,12 +143,11 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
 
 
         var entityIdParameter = Expression.Parameter(typeof(EntityId), "entityId");
-        var iteratorParameter = Expression.Parameter(typeof(IEnumerator<Datom>), "iterator");
+        var iteratorParameter = Expression.Parameter(typeof(IEnumerator<IReadDatom>), "iterator");
         var dbParameter = Expression.Parameter(typeof(IDb), "db");
 
         var newModelExpr = Expression.Variable(typeof(TModel), "newModel");
 
-        var spanExpr = Expression.Property(Expression.Property(Expression.Property(iteratorParameter, "Current"), "V"), "Span");
         var ctor = typeof(TModel).GetConstructor([typeof(ITransaction)])!;
 
 
@@ -161,19 +160,17 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
             Expression.Not(Expression.Call(iteratorParameter, typeof(IEnumerator).GetMethod("MoveNext")!)),
             Expression.Break(exitLabel)));
 
-        var cases = new List<SwitchCase>();
 
         foreach (var (attribute, property) in properties)
         {
+            var readDatomType = store.GetReadDatomType(attribute);
 
-            var readSpanExpr = store.GetValueReadExpression(attribute, spanExpr, out var attributeId);
+            var ifExpr = Expression.IfThen(
+                Expression.TypeIs(Expression.Property(iteratorParameter, "Current"), readDatomType),
+                Expression.Assign(Expression.Property(newModelExpr, property), Expression.Property(Expression.Convert(Expression.Property(iteratorParameter, "Current"), readDatomType), "V")));
 
-            var assigned = Expression.Assign(Expression.Property(newModelExpr, property), readSpanExpr);
-
-            cases.Add(Expression.SwitchCase(Expression.Block([assigned, Expression.Goto(whileTopLabel)]),
-                Expression.Constant(attributeId)));
+            exprs.Add(ifExpr);
         }
-        exprs.Add(Expression.Switch(Expression.Property(Expression.Property(iteratorParameter, "Current"), "A"), cases.ToArray()));
 
         exprs.Add(Expression.Goto(whileTopLabel));
         exprs.Add(Expression.Label(exitLabel));
@@ -196,29 +193,24 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
         var exitLabel = Expression.Label("exit");
 
         var modelParameter = Expression.Parameter(tmodel, "model");
-        var iteratorParameter = Expression.Parameter(typeof(IEnumerator<Datom>), "iterator");
-
-        var spanExpr = Expression.Property(Expression.Property(Expression.Property(iteratorParameter, "Current"), "V"), "Span");
-
+        var iteratorParameter = Expression.Parameter(typeof(IEnumerator<IReadDatom>), "iterator");
 
         exprs.Add(Expression.Label(whileTopLabel));
         exprs.Add(Expression.IfThen(
             Expression.Not(Expression.Call(iteratorParameter, typeof(IEnumerator).GetMethod("MoveNext")!)),
             Expression.Break(exitLabel)));
 
-        var cases = new List<SwitchCase>();
-
         foreach (var (attribute, property) in properties)
         {
+            var readDatomType = store.GetReadDatomType(attribute);
 
-            var readSpanExpr = store.GetValueReadExpression(attribute, spanExpr, out var attributeId);
+            var ifExpr = Expression.IfThen(
+                Expression.TypeIs(Expression.Property(iteratorParameter, "Current"), readDatomType),
+                Expression.Assign(Expression.Property(modelParameter, property), Expression.Property(Expression.Convert(Expression.Property(iteratorParameter, "Current"), readDatomType), "V")));
 
-            var assigned = Expression.Assign(Expression.Property(modelParameter, property), readSpanExpr);
+            exprs.Add(ifExpr);
 
-            cases.Add(Expression.SwitchCase(Expression.Block([assigned, Expression.Goto(whileTopLabel)]),
-                Expression.Constant(attributeId)));
         }
-        exprs.Add(Expression.Switch(Expression.Property(Expression.Property(iteratorParameter, "Current"), "A"), cases.ToArray()));
 
         exprs.Add(Expression.Goto(whileTopLabel));
         exprs.Add(Expression.Label(exitLabel));

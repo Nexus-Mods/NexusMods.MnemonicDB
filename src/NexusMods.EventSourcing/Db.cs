@@ -15,7 +15,7 @@ internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
         var reader = connection.ModelReflector.GetReader<TModel>();
         foreach (var id in ids)
         {
-            var iterator = store.Where(txId, id).GetEnumerator();
+            var iterator = store.GetAttributesForEntity(id, txId).GetEnumerator();
             yield return reader(id, iterator, this);
         }
     }
@@ -23,16 +23,16 @@ internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
     public TModel Get<TModel>(EntityId id) where TModel : IReadModel
     {
         var reader = connection.ModelReflector.GetReader<TModel>();
-        return reader(id, store.Where(txId, id).GetEnumerator(), this);
+        return reader(id, store.GetAttributesForEntity(id, txId).GetEnumerator(), this);
     }
 
     /// <inheritdoc />
     public IEnumerable<TModel> GetReverse<TAttribute, TModel>(EntityId id) where TAttribute : IAttribute<EntityId> where TModel : IReadModel
     {
         var reader = connection.ModelReflector.GetReader<TModel>();
-        foreach (var entity in store.ReverseLookup<TAttribute>(txId, id))
+        foreach (var entity in store.GetReferencesToEntityThroughAttribute<TAttribute>(id, txId))
         {
-            using var iterator = store.Where(txId, entity).GetEnumerator();
+            using var iterator = store.GetAttributesForEntity(entity, txId).GetEnumerator();
             yield return reader(entity, iterator, this);
         }
 
@@ -41,7 +41,7 @@ internal class Db(IDatomStore store, Connection connection, TxId txId) : IDb
     public void Reload<TOuter>(TOuter aActiveReadModel) where TOuter : IActiveReadModel
     {
         var reader = connection.ModelReflector.GetActiveReader<TOuter>();
-        var iterator = store.Where(txId, aActiveReadModel.Id).GetEnumerator();
+        var iterator = store.GetAttributesForEntity(aActiveReadModel.Id, txId).GetEnumerator();
         reader(aActiveReadModel, iterator);
     }
 }

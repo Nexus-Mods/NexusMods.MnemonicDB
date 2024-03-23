@@ -12,7 +12,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\NexusMods.EventSourcing.Storage.RocksDb\NexusMods.EventSourcing.Storage.RocksDb.csproj" />
       <ProjectReference Include="..\..\src\NexusMods.EventSourcing.Storage\NexusMods.EventSourcing.Storage.csproj" />
       <ProjectReference Include="..\..\src\NexusMods.EventSourcing\NexusMods.EventSourcing.csproj" />
       <ProjectReference Include="..\..\tests\NexusMods.EventSourcing.Storage.Tests\NexusMods.EventSourcing.Storage.Tests.csproj" />

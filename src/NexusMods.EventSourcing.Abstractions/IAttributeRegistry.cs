@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -9,13 +10,12 @@ namespace NexusMods.EventSourcing.Abstractions;
 public interface IAttributeRegistry
 {
     /// <summary>
-    /// Appends the data to the given node
-    /// </summary>
-    public void Append<TAttribute, TValue>(IAppendableNode node, EntityId e, TValue value, TxId t, DatomFlags f)
-        where TAttribute : IAttribute<TValue>;
-
-    /// <summary>
     /// Compares the given values in the given spans assuming both are tagged with the given attribute
     /// </summary>
     public int CompareValues(AttributeId id, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
+
+    /// <summary>
+    /// Sets the attribute id and value in the given datom based on the given attribute and value
+    /// </summary>
+    void Explode<TAttribute, TValueType>(ref StackDatom datom, TValueType valueType, IBufferWriter<byte> writer) where TAttribute : IAttribute<TValueType>;
 }
