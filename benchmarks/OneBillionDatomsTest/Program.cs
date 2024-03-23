@@ -19,7 +19,7 @@ var host = Host.CreateDefaultBuilder()
             .AddTestModel()
             .AddSingleton<DatomStoreSettings>(_ => new DatomStoreSettings
             {
-                Path = FileSystem.Shared.FromUnsanitizedFullPath(@"c:\tmp\billionDatomsTest" + Guid.NewGuid())
+                Path = FileSystem.Shared.FromUnsanitizedFullPath(@"billionDatomsTest" + Guid.NewGuid())
             });
     })
     .ConfigureLogging(logging =>

@@ -16,7 +16,6 @@ public static class AppHost
             .ConfigureServices(services =>
             {
                 services.AddEventSourcingStorage()
-                    .AddSingleton<IKvStore, InMemoryKvStore>()
                     .AddEventSourcing()
                     .AddTestModel();
             });
