@@ -2,6 +2,7 @@
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
 using RocksDbSharp;
+using IWriteBatch = RocksDbSharp.IWriteBatch;
 
 namespace NexusMods.EventSourcing.Storage.Indexes;
 
@@ -38,7 +39,7 @@ public class TxLog(AttributeRegistry registry, ColumnFamilies columnFamilies) : 
         return keyA.Attribute.CompareTo(keyB.Attribute);
     }
 
-    public void Add(WriteBatch batch, ref StackDatom datom)
+    public void Add(IWriteBatch batch, ref StackDatom datom)
     {
         var key = new Key(datom.T, datom.E, datom.A);
 
