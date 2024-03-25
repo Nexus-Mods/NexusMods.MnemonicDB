@@ -117,4 +117,14 @@ public class EATVCurrent(AttributeRegistry attributeRegistry, ColumnFamilies col
 
         return EntityId.From(key.Entity);
     }
+
+    public RocksDBExtensions.ValueRef GetScoped(ulong stackDatomE, ushort stackDatomA)
+    {
+        Key key = new()
+        {
+            Entity = stackDatomE,
+            Attribute = stackDatomA
+        };
+        return Db.GetScoped(ref key, ColumnFamily);
+    }
 }

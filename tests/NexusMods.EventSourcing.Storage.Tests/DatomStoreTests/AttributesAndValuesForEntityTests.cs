@@ -3,7 +3,7 @@ using NexusMods.EventSourcing.TestModel.ComplexModel.Attributes;
 
 namespace NexusMods.EventSourcing.Storage.Tests.DatomStoreTests;
 
-public class AttributesAndValuesForEntity(IServiceProvider provider) : AStorageTest(provider)
+public class AttributesAndValuesForEntityTests(IServiceProvider provider) : AStorageTest(provider)
 {
 
     [Fact]

@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reactive.Subjects;
+using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -145,62 +146,6 @@ public class DatomStore : IDatomStore
         }
     }
 
-    /*
-    private EntityId GetLastEntityId(DatomStoreState indexes)
-    {
-        var toFind = new Datom()
-        {
-            E = EntityId.From(Ids.MakeId(Ids.Partition.Entity, ulong.MaxValue)),
-            A = AttributeId.From(ulong.MinValue),
-            T = TxId.MaxValue,
-            F = DatomFlags.Added,
-            V = Array.Empty<byte>()
-        };
-
-        ulong startValue = 0;
-
-        var startInMemory = indexes.EAVT.InMemory.FindEATV(0, indexes.EAVT.InMemory.Length, toFind, _registry);
-        if (startInMemory == indexes.EAVT.InMemory.Length)
-        {
-            startValue = 0;
-        }
-        else
-        {
-            startValue = indexes.EAVT.InMemory[startInMemory].E.Value;
-        }
-
-        var startHistory = indexes.EAVT.History.FindEATV(0, indexes.EAVT.History.Length, toFind, _registry);
-        if (startHistory == indexes.EAVT.History.Length)
-        {
-            startValue = 0;
-        }
-        else
-        {
-            var historyValue = indexes.EAVT.History[startHistory].E.Value;
-            if (historyValue > startValue)
-            {
-                startValue = historyValue;
-            }
-        }
-
-        if (startValue == 0)
-            return EntityId.From(Ids.MakeId(Ids.Partition.Entity, 0));
-
-
-        var entityInMemory = indexes.EAVT.InMemory[startInMemory].E;
-        var entityHistory = indexes.EAVT.History[startHistory].E;
-
-        var max =  EntityId.From(Math.Max(entityHistory.Value, entityInMemory.Value));
-
-        if (!Ids.IsPartition(max.Value, Ids.Partition.Entity))
-        {
-            throw new InvalidOperationException("Invalid max id");
-        }
-
-        return max;
-    }
-    */
-
     public TxId AsOfTxId => _asOfTxId;
 
     public void Dispose()
@@ -276,7 +221,6 @@ public class DatomStore : IDatomStore
     {
            return _backrefHistory.GetReferencesToEntityThroughAttribute<TAttribute>(id, txId);
     }
-
 
 
     public bool TryGetExact<TAttr, TValue>(EntityId e, TxId tx, out TValue val) where TAttr : IAttribute<TValue>
@@ -396,6 +340,7 @@ public class DatomStore : IDatomStore
 
 
         var stackDatom = new StackDatom();
+        var previousStackDatom = new StackDatom();
 
         var remapFn = (Func<EntityId, EntityId>)(id => MaybeRemap(id, pendingTransaction, thisTx));
         using var batch = new WriteBatch();
@@ -410,6 +355,14 @@ public class DatomStore : IDatomStore
             stackDatom.PaddedSpan = _writer.GetWrittenSpanWritable();
             stackDatom.V = stackDatom.PaddedSpan.SliceFast(StackDatom.PaddingSize);
 
+
+            using var previousValue = _eatvCurrent.GetScoped(stackDatom.E, stackDatom.A);
+            previousStackDatom.E = stackDatom.E;
+            previousStackDatom.A = stackDatom.A;
+            previousStackDatom.T = previousValue.IsValid ? MemoryMarshal.Read<ulong>(previousValue.Span) : TxId.MinValue.Value;
+            previousStackDatom.V = previousValue.IsValid ? previousValue.Span.SliceFast(sizeof(ulong)) : default;
+
+
             _txLog.Add(batch, ref stackDatom);
             _eatvHistory.Add(batch, ref stackDatom);
             _eatvCurrent.Add(batch, ref stackDatom);
@@ -419,6 +372,9 @@ public class DatomStore : IDatomStore
                 _backrefHistory.Add(batch, ref stackDatom);
 
             output.Add(_registry.Resolve(EntityId.From(stackDatom.E), AttributeId.From(stackDatom.A), stackDatom.V, TxId.From(stackDatom.T)));
+
+            // Reset the value, so we don't end up with a bad reference
+            previousStackDatom.V = ReadOnlySpan<byte>.Empty;
         }
 
         var swWrite = Stopwatch.StartNew();

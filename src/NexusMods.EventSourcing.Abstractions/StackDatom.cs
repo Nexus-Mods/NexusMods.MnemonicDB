@@ -10,9 +10,24 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// </summary>
 public ref struct StackDatom
 {
+    /// <summary>
+    /// The entity id
+    /// </summary>
     public ulong E;
+
+    /// <summary>
+    /// The Attribute id
+    /// </summary>
     public ushort A;
+
+    /// <summary>
+    /// The Transaction id
+    /// </summary>
     public ulong T;
+
+    /// <summary>
+    /// The value span
+    /// </summary>
     public ReadOnlySpan<byte> V;
 
     /// <summary>

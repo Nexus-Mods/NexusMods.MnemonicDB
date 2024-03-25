@@ -5,9 +5,7 @@ hide:
 
 ## Index Format
 
-The index format of the framework follows fairly closely to one found in Datomic, although differences likely exist due it having
-a different set of constraints and requirements. The base format of the system is a sorted set of tuples. However each tuple
-exists in multiple indexes with a different sorting and conflict resolution strategy for each.
+The index format of the framework will look familiar to those who have used Datomic in the past, although there's some very critical
 
 In general data flows through 4 core indexes:
 

@@ -17,6 +17,8 @@ public abstract class AStorageTest : IAsyncLifetime
     private readonly IServiceProvider _provider;
     private readonly AbsolutePath _path;
 
+    private ulong _tempId = 1;
+
     protected AStorageTest(IServiceProvider provider)
     {
         _provider = provider;
@@ -37,6 +39,11 @@ public abstract class AStorageTest : IAsyncLifetime
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
     }
 
+    public EntityId NextTempId()
+    {
+        var id = Interlocked.Increment(ref _tempId);
+        return EntityId.From(Ids.MakeId(Ids.Partition.Tmp, id));
+    }
 
     public async Task InitializeAsync()
     {

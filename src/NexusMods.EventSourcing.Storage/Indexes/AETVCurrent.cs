@@ -66,12 +66,7 @@ internal class AETVCurrent(AttributeRegistry registry, ColumnFamilies columnFami
             if (tx <= asOf)
             {
                 yield return EntityId.From(keyRead.Entity);
-                continue;
             }
-
-            throw new NotImplementedException();
-
-
         }
 
     }
