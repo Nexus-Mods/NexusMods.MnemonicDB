@@ -37,7 +37,6 @@ public class EntitiesWithAttributeTests(IServiceProvider provider) : AStorageTes
             .Should()
             .Contain(tx1.Remaps[tmpId1])
             .And.Contain(tx2.Remaps[tmpId2]);
-
     }
 
 
