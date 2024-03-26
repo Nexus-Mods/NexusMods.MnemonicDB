@@ -17,5 +17,7 @@ public interface IAttributeRegistry
     /// <summary>
     /// Sets the attribute id and value in the given datom based on the given attribute and value
     /// </summary>
-    void Explode<TAttribute, TValueType>(ref StackDatom datom, TValueType valueType, IBufferWriter<byte> writer) where TAttribute : IAttribute<TValueType>;
+    void Explode<TAttribute, TValueType, TBufferWriter>(out AttributeId attrId, TValueType valueType, TBufferWriter writer)
+        where TBufferWriter : IBufferWriter<byte>
+        where TAttribute : IAttribute<TValueType>;
 }

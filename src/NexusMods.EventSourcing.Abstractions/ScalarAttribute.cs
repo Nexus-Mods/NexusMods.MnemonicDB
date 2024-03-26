@@ -135,21 +135,22 @@ where TAttribute : IAttribute<TValueType>
             return $"({E.Value:x}, {typeof(TAttribute).Name}, {V})";
         }
 
-        public void Explode<TWriter>(IAttributeRegistry registry, Func<EntityId, EntityId> remapFn, ref StackDatom datom, TWriter writer)
+        public void Explode<TWriter>(IAttributeRegistry registry, Func<EntityId, EntityId> remapFn,
+            out EntityId e, out AttributeId a, TWriter vWriter, out bool isAssert)
             where TWriter : IBufferWriter<byte>
         {
-            datom.E = Ids.IsPartition(E.Value, Ids.Partition.Tmp) ? remapFn(E).Value : E.Value;
+            isAssert = true;
+            e = EntityId.From(Ids.IsPartition(E.Value, Ids.Partition.Tmp) ? remapFn(E).Value : E.Value);
 
             if (V is EntityId id)
             {
                 var newId = remapFn(id);
                 if (newId is TValueType recasted)
                 {
-                    registry.Explode<TAttribute, TValueType>(ref datom, recasted, writer);
-                    return;
+                    registry.Explode<TAttribute, TValueType, TWriter>(out a, recasted, vWriter);
                 }
             }
-            registry.Explode<TAttribute, TValueType>(ref datom, V, writer);
+            registry.Explode<TAttribute, TValueType, TWriter>(out a, V, vWriter);
         }
     }
 

@@ -2,9 +2,11 @@
 
 namespace NexusMods.EventSourcing.Storage.Abstractions;
 
-public interface IWriteBatch<in TIndexStore> where TIndexStore : IIndexStore
+public interface IWriteBatch : IDisposable
 {
-    public void Add(TIndexStore store, ReadOnlySpan<byte> key);
-    public void Delete(TIndexStore store, ReadOnlySpan<byte> key);
     public void Commit();
+
+    public void Add(IIndexStore store, ReadOnlySpan<byte> key);
+    public void Delete(IIndexStore store, ReadOnlySpan<byte> key);
+
 }

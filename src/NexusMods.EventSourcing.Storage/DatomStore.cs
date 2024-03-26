@@ -9,6 +9,8 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Abstractions;
+using NexusMods.EventSourcing.Storage.Abstractions.ElementComparers;
 using NexusMods.EventSourcing.Storage.DatomStorageStructures;
 using NexusMods.EventSourcing.Storage.Indexes;
 using Reloaded.Memory.Extensions;
@@ -25,19 +27,9 @@ public class DatomStore : IDatomStore
     private EntityId _nextEntityId;
     private readonly Subject<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)> _updatesSubject;
     private readonly DatomStoreSettings _settings;
-    private readonly RocksDb _db;
+
 
     #region Indexes
-    private readonly TxLog _txLog;
-
-    private readonly EATVCurrent _eatvCurrent;
-    private readonly EATVHistory _eatvHistory;
-    private readonly AETVCurrent _aetvCurrent;
-    private readonly BackrefHistory _backrefHistory;
-
-
-
-
 
 
 
@@ -46,30 +38,14 @@ public class DatomStore : IDatomStore
 
     private TxId _asOfTxId = TxId.MinValue;
     private readonly PooledMemoryBufferWriter _writer;
+    private readonly IStoreBackend _backend;
+    private readonly IIndex _eavtHistory;
 
 
-    public DatomStore(ILogger<DatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings)
+    public DatomStore(ILogger<DatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings, IStoreBackend backend)
     {
-        var options = new DbOptions()
-            .SetCreateIfMissing()
-            .SetCreateMissingColumnFamilies()
-            .SetCompression(Compression.Zstd);
+        _backend = backend;
 
-        var columnFamilies = new ColumnFamilies();
-
-        _txLog = new TxLog(registry, columnFamilies);
-        _eatvCurrent = new EATVCurrent(registry, columnFamilies);
-        _eatvHistory = new EATVHistory(registry, columnFamilies);
-        _aetvCurrent = new AETVCurrent(registry, columnFamilies);
-        _backrefHistory = new BackrefHistory(registry, columnFamilies);
-
-        _db = RocksDb.Open(options, settings.Path.ToString(), columnFamilies);
-
-        _txLog.Init(_db);
-        _eatvCurrent.Init(_db);
-        _eatvHistory.Init(_db);
-        _aetvCurrent.Init(_db);
-        _backrefHistory.Init(_db);
 
         _writer = new PooledMemoryBufferWriter();
 
@@ -78,6 +54,12 @@ public class DatomStore : IDatomStore
         _settings = settings;
         _registry = registry;
         _nextEntityId = EntityId.From(Ids.MinId(Ids.Partition.Entity) + 1);
+
+        _backend.DeclareEAVT(IndexType.EAVTHistory, true);
+
+        _backend.Init(settings.Path);
+
+        _eavtHistory = _backend.GetIndex(IndexType.EAVTHistory);
 
         _updatesSubject = new Subject<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)>();
 
@@ -125,7 +107,8 @@ public class DatomStore : IDatomStore
     {
         try
         {
-            var lastTx = GetMostRecentTxId();
+            //var lastTx = GetMostRecentTxId();
+            var lastTx = TxId.MinValue;
             if (lastTx == TxId.MinValue)
             {
                 _logger.LogInformation("Bootstrapping the datom store no existing state found");
@@ -150,13 +133,15 @@ public class DatomStore : IDatomStore
 
     public void Dispose()
     {
-        _txChannel.Writer.Complete();
+        /*_txChannel.Writer.Complete();
+
         _db.Dispose();
         _txLog.Dispose();
         _eatvCurrent.Dispose();
         _eatvHistory.Dispose();
         _aetvCurrent.Dispose();
-        _backrefHistory.Dispose();
+        _backrefHistory.Dispose();*/
+        throw new NotImplementedException();
     }
 
     public async Task<TxId> Sync()
@@ -177,18 +162,6 @@ public class DatomStore : IDatomStore
     }
 
     public IObservable<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)> TxLog => _updatesSubject;
-
-
-    public IEnumerable<Datom> Where<TAttr>(TxId txId) where TAttr : IAttribute
-    {
-        throw new NotImplementedException();
-    }
-
-
-    public IEnumerable<Datom> Where(TxId txId, EntityId id)
-    {
-        throw new NotImplementedException();
-    }
 
     public IEnumerable<IReadDatom> Resolved(IEnumerable<Datom> datoms)
     {
@@ -219,24 +192,27 @@ public class DatomStore : IDatomStore
     public IEnumerable<EntityId> GetReferencesToEntityThroughAttribute<TAttribute>(EntityId id, TxId txId)
         where TAttribute : IAttribute<EntityId>
     {
-           return _backrefHistory.GetReferencesToEntityThroughAttribute<TAttribute>(id, txId);
+//           return _backrefHistory.GetReferencesToEntityThroughAttribute<TAttribute>(id, txId);
+throw new NotImplementedException();
     }
 
 
     public bool TryGetExact<TAttr, TValue>(EntityId e, TxId tx, out TValue val) where TAttr : IAttribute<TValue>
     {
-        if (_eatvHistory.TryGetExact<TAttr, TValue>(e, tx, out var foundVal))
+        /*if (_eatvHistory.TryGetExact<TAttr, TValue>(e, tx, out var foundVal))
         {
             val = foundVal;
             return true;
         }
         val = default!;
-        return false;
+        return false;*/
+        throw new NotImplementedException();
     }
 
     public bool TryGetLatest<TAttribute, TValue>(EntityId e, TxId tx, out TValue value)
         where TAttribute : IAttribute<TValue>
     {
+        /*
         if (_eatvCurrent.TryGet<TAttribute, TValue>(e, tx, out var foundVal) == LookupResult.Found)
         {
             value = foundVal;
@@ -251,30 +227,22 @@ public class DatomStore : IDatomStore
 
         value = default!;
         return false;
+        */
+        throw new NotImplementedException();
     }
 
     public IEnumerable<EntityId> GetEntitiesWithAttribute<TAttribute>(TxId txId)
         where TAttribute : IAttribute
     {
+        /*
         return _aetvCurrent.GetEntitiesWithAttribute<TAttribute>(txId);
+        */
+        throw new NotImplementedException();
     }
 
-    public IEnumerable<IReadDatom> GetAttributesForEntity(EntityId realId, TxId txId)
+    public IEnumerable<IReadDatom> GetAttributesForEntity(EntityId entityId, TxId txId)
     {
-        foreach (var datom in _eatvCurrent.GetAttributesForEntity(realId))
-        {
-            if (datom.T > txId)
-            {
-                if (_eatvHistory.TryGetLatest(datom.E, _registry.GetAttributeId(datom.AttributeType), txId,
-                        out var val))
-                {
-                    yield return val;
-                }
-            }
-            else {
-                yield return datom;
-            }
-        }
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -282,7 +250,10 @@ public class DatomStore : IDatomStore
     /// </summary>
     public EntityId GetMaxEntityId()
     {
+        /*
         return _eatvCurrent.GetMaxEntityId();
+        */
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -290,7 +261,10 @@ public class DatomStore : IDatomStore
     /// </summary>
     public TxId GetMostRecentTxId()
     {
+        /*
         return _txLog.GetMostRecentTxId();
+        */
+        throw new NotImplementedException();
     }
 
     public Type GetReadDatomType(Type attribute)
@@ -298,6 +272,29 @@ public class DatomStore : IDatomStore
         return _registry.GetReadDatomType(attribute);
     }
 
+    public ISnapshot GetSnapshot()
+    {
+        return _backend.GetSnapshot();
+    }
+
+    public IEnumerable<IReadDatom> SeekIndex(ISnapshot snapshot, IndexType type, EntityId? entityId = default, AttributeId? attributeId = default, TxId? txId = default)
+    {
+        using var iter = snapshot.GetIterator(type);
+        Span<byte> datom = stackalloc byte[KeyPrefix.Size];
+
+        var prefix = datom.CastFast<byte, KeyPrefix>();
+        prefix[0].Set(entityId ?? EntityId.MinValue, attributeId ?? AttributeId.From(0), txId ?? TxId.MinValue, false);
+        iter.Seek(datom);
+
+        while (iter.Valid)
+        {
+            var c = MemoryMarshal.Read<KeyPrefix>(iter.Current.SliceFast(0, KeyPrefix.Size));
+            var resolved = _registry.Resolve(c.E, c.A, iter.Current.SliceFast(KeyPrefix.Size), c.T);
+            yield return resolved;
+            iter.Next();
+        }
+
+    }
 
     #region Internals
 
@@ -334,51 +331,42 @@ public class DatomStore : IDatomStore
 
     private void Log(PendingTransaction pendingTransaction, out IReadOnlyCollection<IReadDatom> resultDatoms)
     {
+
         var output = new List<IReadDatom>();
 
         var thisTx = TxId.From(_asOfTxId.Value + 1);
-
 
         var stackDatom = new StackDatom();
         var previousStackDatom = new StackDatom();
 
         var remapFn = (Func<EntityId, EntityId>)(id => MaybeRemap(id, pendingTransaction, thisTx));
-        using var batch = new WriteBatch();
+        using var batch = _backend.CreateBatch();
 
         var swPrepare = Stopwatch.StartNew();
         foreach (var datom in pendingTransaction.Data)
         {
             _writer.Reset();
-            _writer.Advance(StackDatom.PaddingSize);
-            datom.Explode(_registry, remapFn, ref stackDatom, _writer);
-            stackDatom.T = thisTx.Value;
-            stackDatom.PaddedSpan = _writer.GetWrittenSpanWritable();
-            stackDatom.V = stackDatom.PaddedSpan.SliceFast(StackDatom.PaddingSize);
+            unsafe
+            {
+                _writer.Advance(sizeof(KeyPrefix));
+            }
 
+            datom.Explode(_registry, remapFn, out var e, out var a, _writer, out var isAssert);
+            var keyPrefix = _writer.GetWrittenSpanWritable().CastFast<byte, KeyPrefix>();
+            keyPrefix[0].Set(e, a, thisTx, isAssert);
 
-            using var previousValue = _eatvCurrent.GetScoped(stackDatom.E, stackDatom.A);
-            previousStackDatom.E = stackDatom.E;
-            previousStackDatom.A = stackDatom.A;
-            previousStackDatom.T = previousValue.IsValid ? MemoryMarshal.Read<ulong>(previousValue.Span) : TxId.MinValue.Value;
-            previousStackDatom.V = previousValue.IsValid ? previousValue.Span.SliceFast(sizeof(ulong)) : default;
+            if (isAssert)
+                _eavtHistory.Assert(batch, _writer.GetWrittenSpan());
+            else
+            {
+                throw new NotImplementedException();
+            }
 
-
-            _txLog.Add(batch, ref stackDatom);
-            _eatvHistory.Add(batch, ref stackDatom);
-            _eatvCurrent.Add(batch, ref stackDatom);
-            _aetvCurrent.Add(batch, ref stackDatom);
-
-            if (_registry.IsReference(AttributeId.From(stackDatom.A)))
-                _backrefHistory.Add(batch, ref stackDatom);
-
-            output.Add(_registry.Resolve(EntityId.From(stackDatom.E), AttributeId.From(stackDatom.A), stackDatom.V, TxId.From(stackDatom.T)));
-
-            // Reset the value, so we don't end up with a bad reference
-            previousStackDatom.V = ReadOnlySpan<byte>.Empty;
+            //output.Add(_registry.Resolve(EntityId.From(stackDatom.E), AttributeId.From(stackDatom.A), stackDatom.V, TxId.From(stackDatom.T)));
         }
 
         var swWrite = Stopwatch.StartNew();
-        _db.Write(batch);
+        batch.Commit();
 
         if (_logger.IsEnabled(LogLevel.Debug))
         {

@@ -1,9 +1,10 @@
 ﻿using System;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using RocksDbSharp;
+using IWriteBatch = NexusMods.EventSourcing.Storage.Abstractions.IWriteBatch;
 
 namespace NexusMods.EventSourcing.Storage.RocksDbBackend;
-public class Batch(RocksDbSharp.RocksDb db) : IWriteBatch<IndexStore>
+public class Batch(RocksDb db) : IWriteBatch
 {
     private readonly WriteBatch _batch = new();
 
@@ -12,14 +13,14 @@ public class Batch(RocksDbSharp.RocksDb db) : IWriteBatch<IndexStore>
         _batch.Dispose();
     }
 
-    public void Add(IndexStore store, ReadOnlySpan<byte> key)
+    public void Add(IIndexStore store, ReadOnlySpan<byte> key)
     {
-        _batch.Put(key, ReadOnlySpan<byte>.Empty, store.Handle);
+        _batch.Put(key, ReadOnlySpan<byte>.Empty, ((IndexStore)store).Handle);
     }
 
-    public void Delete(IndexStore store, ReadOnlySpan<byte> key)
+    public void Delete(IIndexStore store, ReadOnlySpan<byte> key)
     {
-        _batch.Delete(key, store.Handle);
+        _batch.Delete(key, ((IndexStore)store).Handle);
     }
 
     public void Commit()

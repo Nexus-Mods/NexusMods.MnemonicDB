@@ -1,14 +1,15 @@
 ﻿using System;
+using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Abstractions;
 
-public abstract class AHistoryIndex<TA, TB, TC, TD, TE, TIndexStore>(AttributeRegistry registry, TIndexStore store) : IIndex<TIndexStore>
+public abstract class AIndex<TA, TB, TC, TD, TE, TIndexStore>(AttributeRegistry registry, TIndexStore store, bool keepHistory) : IIndex
 where TA : IElementComparer
 where TB : IElementComparer
 where TC : IElementComparer
 where TD : IElementComparer
 where TE : IElementComparer
-where TIndexStore : IIndexStore
+where TIndexStore : class, IIndexStore
 {
     public int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
@@ -27,14 +28,20 @@ where TIndexStore : IIndexStore
         return TE.Compare(registry, a, b);
     }
 
-    public void Assert<TWriteBatch>(TWriteBatch batch, ReadOnlySpan<byte> datom) where TWriteBatch : IWriteBatch<TIndexStore>
+    public void Assert(IWriteBatch batch, ReadOnlySpan<byte> datom)
     {
         batch.Add(store, datom);
     }
 
-    public void Retract<TWriteBatch>(TWriteBatch batch, ReadOnlySpan<byte> datom, ReadOnlySpan<byte> previousDatom)
-        where TWriteBatch : IWriteBatch<TIndexStore>
+    public void Retract(IWriteBatch batch, ReadOnlySpan<byte> datom, ReadOnlySpan<byte> previousDatom)
     {
         batch.Add(store, datom);
+        if (!keepHistory)
+            batch.Delete(store, previousDatom);
+    }
+
+    public IDatomIterator GetIterator()
+    {
+        return store.GetIterator();
     }
 }

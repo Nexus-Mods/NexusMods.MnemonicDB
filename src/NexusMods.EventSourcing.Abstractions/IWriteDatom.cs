@@ -14,5 +14,7 @@ public interface IWriteDatom
     /// <summary>
     /// Extracts the entity and attribute from the datom, and writes the value to the buffer
     /// </summary>
-    public void Explode<TWriter>(IAttributeRegistry registry, Func<EntityId, EntityId> remapFn, ref StackDatom datom, TWriter writer) where TWriter : IBufferWriter<byte>;
+    public void Explode<TWriter>(IAttributeRegistry registry, Func<EntityId, EntityId> remapFn,
+        out EntityId e, out AttributeId a, TWriter vWriter, out bool isAssert)
+        where TWriter : IBufferWriter<byte>;
 }

@@ -16,9 +16,11 @@ namespace NexusMods.EventSourcing.Storage.Abstractions;
 /// packed = (e & 0x00FFFFFFFFFFFFFF) >> 8 | (e & 0xFFFFFFFFFFFF) << 8
 ///
 /// </summary>
-[StructLayout(LayoutKind.Explicit, Size = 16)]
+[StructLayout(LayoutKind.Explicit, Size = Size)]
 public struct KeyPrefix
 {
+    public const int Size = 16;
+
     [FieldOffset(0)]
     private ulong _upper;
     [FieldOffset(8)]
@@ -27,14 +29,14 @@ public struct KeyPrefix
     public void Set(EntityId id, AttributeId attributeId, TxId txId, bool isRetract)
     {
         _upper = (ulong)attributeId << 48 | (ulong)txId & 0x0000FFFFFFFFFFFF;
-        _lower = (ulong)id & 0x00FFFFFFFFFFFFFF | (ulong)id & 0xFFFFFFFFFFFF << 8 | (isRetract ? 1UL : 0UL);
+        _lower = (ulong)id & 0xFF00000000000000 | ((ulong)id & 0x0000FFFFFFFFFFFF) << 8 | (isRetract ? 1UL : 0UL);
     }
 
-    public EntityId E => (EntityId)((_lower & 0x00FFFFFFFFFFFFFF) << 8 | (_lower & 0xFFFFFFFFFFFF) >> 8);
+    public EntityId E => (EntityId)((_lower & 0xFF00000000000000) | (_lower >> 8) & 0x0000FFFFFFFFFFFF);
 
     public AttributeId A => (AttributeId)(_upper >> 48);
 
-    public TxId T => (TxId)(_upper & 0x0000FFFFFFFFFFFF);
+    public TxId T => (TxId)Ids.MakeId(Ids.Partition.Tx, _upper & 0x0000FFFFFFFFFFFF);
 
     public bool IsRetract => (_lower & 1) == 1;
 

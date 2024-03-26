@@ -152,13 +152,14 @@ public class AttributeRegistry : IAttributeRegistry
         return type.Compare(a, b);
     }
 
-    public void Explode<TAttribute, TValueType>(ref StackDatom datom, TValueType value, IBufferWriter<byte> writer)
+    public void Explode<TAttribute, TValueType, TBufferWriter>(out AttributeId id, TValueType value, TBufferWriter writer)
         where TAttribute : IAttribute<TValueType>
+        where TBufferWriter : IBufferWriter<byte>
     {
         var attr = _attributesByType[typeof(TAttribute)];
         var dbAttr = _dbAttributesByUniqueId[attr.Id];
         var serializer = (IValueSerializer<TValueType>)_valueSerializersByUniqueId[dbAttr.ValueTypeId];
-        datom.A = (ushort)dbAttr.AttrEntityId.Value;
+        id = dbAttr.AttrEntityId;
         serializer.Serialize(value, writer);
     }
 

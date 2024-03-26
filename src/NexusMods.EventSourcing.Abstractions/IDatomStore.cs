@@ -34,18 +34,6 @@ public interface IDatomStore : IDisposable
     public TxId AsOfTxId { get; }
 
     /// <summary>
-    /// Returns all the most recent datoms (less than or equal to txId) with the given attribute.
-    /// </summary>
-    IEnumerable<Datom> Where<TAttr>(TxId txId) where TAttr : IAttribute;
-
-
-
-    /// <summary>
-    /// Returns all the most recent datoms (less than or equal to txId) with the given attribute.
-    /// </summary>
-    IEnumerable<Datom> Where(TxId txId, EntityId id);
-
-    /// <summary>
     /// Resolves the given datoms to typed datoms.
     /// </summary>
     /// <param name="datoms"></param>
@@ -56,12 +44,6 @@ public interface IDatomStore : IDisposable
     /// </summary>
     /// <param name="newAttrs"></param>
     Task RegisterAttributes(IEnumerable<DbAttribute> newAttrs);
-
-    /// <summary>
-    /// Gets the attributeId for the given attribute. And returns an expression that reads the attribute
-    /// value from the expression valueSpan.
-    /// </summary>
-    Expression GetValueReadExpression(Type attribute, Expression valueSpan, out AttributeId attributeId);
 
     /// <summary>
     /// Gets the entities that have the given attribute that reference the given entity id.
@@ -103,4 +85,15 @@ public interface IDatomStore : IDisposable
     /// Gets the type of the read datom for the given attribute.
     /// </summary>
     Type GetReadDatomType(Type attribute);
+
+    /// <summary>
+    /// Gets the datoms matching the given pattern
+    /// </summary>
+    public IEnumerable<IReadDatom> SeekIndex(ISnapshot snapshot, IndexType type, EntityId? entityId = default,
+        AttributeId? attributeId = default, TxId? txId = default);
+
+    /// <summary>
+    /// Create a snapshot of the current state of the store.
+    /// </summary>
+    ISnapshot GetSnapshot();
 }
