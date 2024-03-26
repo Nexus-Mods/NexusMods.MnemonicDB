@@ -174,6 +174,8 @@ where TAttribute : IAttribute<TValueType>
         /// </summary>
         public required TxId T { get; init; }
 
+        public object ObjectValue => V!;
+
         /// <inheritdoc />
         public override string ToString()
         {

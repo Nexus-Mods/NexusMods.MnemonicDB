@@ -13,7 +13,7 @@ namespace NexusMods.EventSourcing.Storage.Tests;
 
 public abstract class AStorageTest : IAsyncLifetime
 {
-    protected readonly AttributeRegistry _registry;
+    protected readonly AttributeRegistry Registry;
     protected IDatomStore DatomStore;
     protected readonly DatomStoreSettings DatomStoreSettings;
 
@@ -26,13 +26,16 @@ public abstract class AStorageTest : IAsyncLifetime
     protected AStorageTest(IServiceProvider provider, Func<AttributeRegistry, IStoreBackend>? backendFn = null)
     {
         _provider = provider;
-        _registry = new AttributeRegistry(provider.GetRequiredService<IEnumerable<IValueSerializer>>(),
+        Registry = new AttributeRegistry(provider.GetRequiredService<IEnumerable<IValueSerializer>>(),
             provider.GetRequiredService<IEnumerable<IAttribute>>());
-        _registry.Populate([
+        Registry.Populate([
             new DbAttribute(Symbol.Intern<ModAttributes.Name>(), AttributeId.From(10), Symbol.Intern<SizeSerializer>()),
             new DbAttribute(Symbol.Intern<FileAttributes.Path>(), AttributeId.From(20), Symbol.Intern<RelativePathSerializer>()),
             new DbAttribute(Symbol.Intern<FileAttributes.Hash>(), AttributeId.From(21), Symbol.Intern<HashSerializer>()),
             new DbAttribute(Symbol.Intern<FileAttributes.Size>(), AttributeId.From(22), Symbol.Intern<SizeSerializer>()),
+            new DbAttribute(Symbol.Intern<FileAttributes.ModId>(), AttributeId.From(23), Symbol.Intern<EntityIdSerializer>()),
+            new DbAttribute(Symbol.Intern<ModAttributes.Name>(), AttributeId.From(24), Symbol.Intern<StringSerializer>()),
+
         ]);
         _path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("tests_datomstore"+Guid.NewGuid());
 
@@ -45,8 +48,8 @@ public abstract class AStorageTest : IAsyncLifetime
 
 
 
-        DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _registry, DatomStoreSettings,
-            backendFn(_registry));
+        DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), Registry, DatomStoreSettings,
+            backendFn(Registry));
 
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
     }

@@ -23,4 +23,9 @@ public interface IReadDatom
     /// The transaction id of the datom.
     /// </summary>
     public TxId T { get; }
+
+    /// <summary>
+    /// Gets the value as a object (possibly boxed).
+    /// </summary>
+    object ObjectValue { get; }
 }

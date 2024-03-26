@@ -33,4 +33,18 @@ public interface IStoreBackend
     public void DeclareEAVT(IndexType name, bool keepHistory) =>
         DeclareIndex<EComparer, AComparer, ValueComparer, TxComparer, AssertComparer>
             (name, keepHistory);
+
+    /// <summary>
+    /// Create an AEVT index with the history setting
+    /// </summary>
+    public void DeclareAEVT(IndexType name, bool keepHistory) =>
+        DeclareIndex<AComparer, EComparer, ValueComparer, TxComparer, AssertComparer>
+            (name, keepHistory);
+
+    /// <summary>
+    /// Create an AEVT index with the history setting
+    /// </summary>
+    public void DeclareTxLog(IndexType name, bool keepHistory) =>
+        DeclareIndex<TxComparer, EComparer, AComparer, ValueComparer, AssertComparer>
+            (name, keepHistory);
 }

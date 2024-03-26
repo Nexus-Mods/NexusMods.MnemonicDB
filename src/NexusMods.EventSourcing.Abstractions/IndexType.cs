@@ -2,5 +2,8 @@
 
 public enum IndexType
 {
+    TxLog,
     EAVTHistory,
+    EAVTCurrent,
+    AVETHistory,
 }

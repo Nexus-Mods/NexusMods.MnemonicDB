@@ -40,6 +40,9 @@ public class DatomStore : IDatomStore
     private readonly PooledMemoryBufferWriter _writer;
     private readonly IStoreBackend _backend;
     private readonly IIndex _eavtHistory;
+    private readonly IIndex _eavtCurrent;
+    private readonly IIndex _aevtHistory;
+    private readonly IIndex _txLog;
 
 
     public DatomStore(ILogger<DatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings, IStoreBackend backend)
@@ -56,10 +59,17 @@ public class DatomStore : IDatomStore
         _nextEntityId = EntityId.From(Ids.MinId(Ids.Partition.Entity) + 1);
 
         _backend.DeclareEAVT(IndexType.EAVTHistory, true);
+        _backend.DeclareEAVT(IndexType.EAVTCurrent, false);
+        _backend.DeclareAEVT(IndexType.AVETHistory, true);
+        _backend.DeclareTxLog(IndexType.TxLog, true);
 
         _backend.Init(settings.Path);
 
+        _txLog = _backend.GetIndex(IndexType.TxLog);
         _eavtHistory = _backend.GetIndex(IndexType.EAVTHistory);
+        _eavtCurrent = _backend.GetIndex(IndexType.EAVTCurrent);
+        _aevtHistory = _backend.GetIndex(IndexType.AVETHistory);
+
 
         _updatesSubject = new Subject<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)>();
 
@@ -283,7 +293,7 @@ throw new NotImplementedException();
         Span<byte> datom = stackalloc byte[KeyPrefix.Size];
 
         var prefix = datom.CastFast<byte, KeyPrefix>();
-        prefix[0].Set(entityId ?? EntityId.MinValue, attributeId ?? AttributeId.From(0), txId ?? TxId.MinValue, false);
+        prefix[0].Set(entityId ?? EntityId.From(0), attributeId ?? AttributeId.From(0), txId ?? TxId.MinValue, false);
         iter.Seek(datom);
 
         while (iter.Valid)
@@ -356,7 +366,13 @@ throw new NotImplementedException();
             keyPrefix[0].Set(e, a, thisTx, isAssert);
 
             if (isAssert)
-                _eavtHistory.Assert(batch, _writer.GetWrittenSpan());
+            {
+                var span = _writer.GetWrittenSpan();
+                _txLog.Assert(batch, span);
+                _eavtHistory.Assert(batch, span);
+                _eavtCurrent.Assert(batch, span);
+                _aevtHistory.Assert(batch, span);
+            }
             else
             {
                 throw new NotImplementedException();

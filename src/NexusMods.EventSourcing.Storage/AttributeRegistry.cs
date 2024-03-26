@@ -163,6 +163,14 @@ public class AttributeRegistry : IAttributeRegistry
         serializer.Serialize(value, writer);
     }
 
+    public Symbol GetSymbolForAttribute(Type attribute)
+    {
+        if (!_attributesByType.TryGetValue(attribute, out var attr))
+            throw new InvalidOperationException($"No attribute found for type {attribute}");
+
+        return attr.Id;
+    }
+
     public IReadDatom Resolve(Datom datom)
     {
         if (!_dbAttributesByEntityId.TryGetValue(datom.A, out var dbAttr))

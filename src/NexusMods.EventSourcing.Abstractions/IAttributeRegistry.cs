@@ -20,4 +20,17 @@ public interface IAttributeRegistry
     void Explode<TAttribute, TValueType, TBufferWriter>(out AttributeId attrId, TValueType valueType, TBufferWriter writer)
         where TBufferWriter : IBufferWriter<byte>
         where TAttribute : IAttribute<TValueType>;
+
+    /// <summary>
+    /// Gets the unique symbol for the given attribute
+    /// </summary>
+    /// <param name="datomAttributeType"></param>
+    /// <returns></returns>
+    Symbol GetSymbolForAttribute(Type attribute);
+
+    /// <summary>
+    /// Gets the attribute id for the given attribute type
+    /// </summary>
+    public AttributeId GetAttributeId(Type datomAttributeType);
+
 }
