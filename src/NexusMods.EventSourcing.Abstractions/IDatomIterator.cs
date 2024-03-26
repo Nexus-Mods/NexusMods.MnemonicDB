@@ -23,4 +23,9 @@ public interface IDatomIterator : IDisposable
     /// The current datom
     /// </summary>
     public ReadOnlySpan<byte> Current { get; }
+
+    /// <summary>
+    /// Set the iterator to the start of the datoms
+    /// </summary>
+    void SeekStart();
 }

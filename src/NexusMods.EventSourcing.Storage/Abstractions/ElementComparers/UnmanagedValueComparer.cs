@@ -15,6 +15,8 @@ public class UnmanagedValueComparer<T> : IElementComparer
     {
         unsafe
         {
+            if (a.Length < sizeof(KeyPrefix) || b.Length < sizeof(KeyPrefix))
+                return a.Length.CompareTo(b.Length);
             return MemoryMarshal.Read<T>(a.SliceFast(sizeof(KeyPrefix)))
                 .CompareTo(MemoryMarshal.Read<T>(b.SliceFast(sizeof(KeyPrefix))));
         }

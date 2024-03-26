@@ -30,5 +30,11 @@ internal class IteratorWrapper : IDatomIterator
     {
         _iterator.Seek(datom);
     }
+
+    public void SeekStart()
+    {
+        _iterator.SeekToFirst();
+    }
+
     public ReadOnlySpan<byte> Current => _iterator.GetKeySpan();
 }

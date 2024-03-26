@@ -93,6 +93,14 @@ public interface IDatomStore : IDisposable
         AttributeId? attributeId = default, TxId? txId = default);
 
     /// <summary>
+    /// Get all the datoms in a given index, not super useful as this may return a TOOON of datoms.
+    /// </summary>
+    /// <param name="snapshot"></param>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    public IEnumerable<IReadDatom> Datoms(ISnapshot snapshot, IndexType type);
+
+    /// <summary>
     /// Create a snapshot of the current state of the store.
     /// </summary>
     ISnapshot GetSnapshot();

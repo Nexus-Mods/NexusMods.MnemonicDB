@@ -28,23 +28,30 @@ public interface IStoreBackend
     public ISnapshot GetSnapshot();
 
     /// <summary>
-    /// Create an EAVT index with the history setting
+    /// Create an EAVT index
     /// </summary>
     public void DeclareEAVT(IndexType name) =>
         DeclareIndex<EComparer, AComparer, ValueComparer, TxComparer, AssertComparer>
             (name);
 
     /// <summary>
-    /// Create an AEVT index with the history setting
+    /// Create an AEVT index
     /// </summary>
     public void DeclareAEVT(IndexType name) =>
         DeclareIndex<AComparer, EComparer, ValueComparer, TxComparer, AssertComparer>
             (name);
 
     /// <summary>
-    /// Create an AEVT index with the history setting
+    /// Create an AEVT index
     /// </summary>
     public void DeclareTxLog(IndexType name) =>
         DeclareIndex<TxComparer, EComparer, AComparer, ValueComparer, AssertComparer>
             (name);
+
+    /// <summary>
+    /// Create a backref index
+    /// </summary>
+    /// <param name="name"></param>
+    public void DeclareVAET(IndexType name) =>
+        DeclareIndex<UnmanagedValueComparer<ulong>, AComparer, EComparer, TxComparer, AssertComparer>(name);
 }

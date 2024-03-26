@@ -7,4 +7,6 @@ public enum IndexType
     EAVTCurrent,
     AEVTHistory,
     AEVTCurrent,
+    VAETCurrent,
+    VAETHistory,
 }

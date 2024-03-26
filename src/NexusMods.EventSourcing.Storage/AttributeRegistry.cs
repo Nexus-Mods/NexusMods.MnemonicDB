@@ -220,4 +220,11 @@ public class AttributeRegistry : IAttributeRegistry
         return attr.GetReadDatomType();
     }
 
+    public IAttribute GetAttribute(AttributeId attributeId)
+    {
+        if (!_attributesByAttributeId.TryGetValue(attributeId, out var attr))
+            throw new InvalidOperationException($"No attribute found for AttributeId {attributeId}");
+
+        return attr;
+    }
 }
