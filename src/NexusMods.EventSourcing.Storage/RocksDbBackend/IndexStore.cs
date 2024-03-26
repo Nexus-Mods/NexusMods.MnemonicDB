@@ -20,11 +20,15 @@ public class IndexStore : IIndexStore
     private RocksDb _db = null!;
     private readonly AttributeRegistry _registry;
 
-    public IndexStore(string handleName, AttributeRegistry registry)
+    public IndexStore(string handleName, IndexType type, AttributeRegistry registry)
     {
+        Type = type;
         _registry = registry;
         _handleName = handleName;
     }
+
+    public IndexType Type { get; }
+
 
     public void SetupColumnFamily(IIndex index, ColumnFamilies columnFamilies)
     {
@@ -53,6 +57,7 @@ public class IndexStore : IIndexStore
         _db = db;
         _columnHandle = db.GetColumnFamily(_handleName);
     }
+
 
     public IDatomIterator GetIterator()
     {

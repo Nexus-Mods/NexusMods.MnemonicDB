@@ -11,5 +11,6 @@ public static class Initializer
     [ModuleInitializer]
     public static void Init()
         => VerifierSettings
-            .AddExtraSettings(s => s.Converters.Add(new ObjectTupleWriter()));
+            .AddExtraSettings(s =>
+                s.Converters.Add(new ObjectTupleWriter()));
 }

@@ -28,7 +28,7 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
         where TD : IElementComparer
         where TF : IElementComparer
     {
-        var indexStore = new IndexStore(name.ToString(), _registry);
+        var indexStore = new IndexStore(name.ToString(), name, _registry);
         _stores.Add(name, indexStore);
 
         var index = new Index<TA, TB, TC, TD, TF>(_registry, indexStore);

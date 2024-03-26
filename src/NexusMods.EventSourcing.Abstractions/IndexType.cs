@@ -1,6 +1,6 @@
 ﻿namespace NexusMods.EventSourcing.Abstractions;
 
-public enum IndexType
+public enum IndexType : int
 {
     // Transaction log, the final source of truth, used
     // for replaying the database
