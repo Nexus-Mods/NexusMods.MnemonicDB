@@ -76,6 +76,7 @@ public class Connection : IConnection
 
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
+        var db = Db.Datoms<BuiltInAttributes.UniqueId>(IndexType.AEVTCurrent);
         var attrIds = _store.GetEntitiesWithAttribute<BuiltInAttributes.UniqueId>(TxId.MaxValue);
 
         foreach (var attr in attrIds)

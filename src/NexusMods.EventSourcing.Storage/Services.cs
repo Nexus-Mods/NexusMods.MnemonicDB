@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.Serializers;
 
 namespace NexusMods.EventSourcing.Storage;
@@ -18,6 +19,12 @@ public static class Services
         services.AddSingleton<DatomStoreSettings>();
         services.AddSingleton<IDatomStore, DatomStore>();
         services.AddSingleton<AttributeRegistry>();
+        return services;
+    }
+
+    public static IServiceCollection AddRocksDbBackend(this IServiceCollection services)
+    {
+        services.AddSingleton<IStoreBackend, RocksDbBackend.Backend>();
         return services;
     }
 }

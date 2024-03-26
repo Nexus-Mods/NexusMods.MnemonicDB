@@ -47,4 +47,10 @@ public interface IDb : IDisposable
     /// Reloads the active read model with the latest state from the database.
     /// </summary>
     void Reload<TOuter>(TOuter aActiveReadModel) where TOuter : IActiveReadModel;
+
+    public IEnumerable<IReadDatom> Datoms(IndexType type,
+        EntityId? entityId = null,
+        AttributeId? attributeId = null);
+
+    public IEnumerable<IReadDatom> Datoms<TAttribute>(IndexType type);
 }
