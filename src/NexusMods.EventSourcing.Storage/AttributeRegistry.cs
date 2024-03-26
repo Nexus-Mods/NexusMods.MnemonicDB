@@ -182,12 +182,12 @@ public class AttributeRegistry : IAttributeRegistry
         return attr.Resolve(datom);
     }
 
-    public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx)
+    public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx, bool isRetract = false)
     {
         if (!_attributesByAttributeId.TryGetValue(attributeId, out var attr))
             throw new InvalidOperationException($"No attribute found for AttributeId {attributeId}");
 
-        return attr.Resolve(entityId, attributeId, value, tx);
+        return attr.Resolve(entityId, attributeId, value, tx, isRetract);
     }
 
     public bool IsReference(AttributeId attributeId)

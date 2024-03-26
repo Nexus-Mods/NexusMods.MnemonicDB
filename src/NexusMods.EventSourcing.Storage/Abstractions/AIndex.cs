@@ -3,7 +3,7 @@ using NexusMods.EventSourcing.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.Abstractions;
 
-public abstract class AIndex<TA, TB, TC, TD, TE, TIndexStore>(AttributeRegistry registry, TIndexStore store, bool keepHistory) : IIndex
+public abstract class AIndex<TA, TB, TC, TD, TE, TIndexStore>(AttributeRegistry registry, TIndexStore store) : IIndex
 where TA : IElementComparer
 where TB : IElementComparer
 where TC : IElementComparer
@@ -28,16 +28,14 @@ where TIndexStore : class, IIndexStore
         return TE.Compare(registry, a, b);
     }
 
-    public void Assert(IWriteBatch batch, ReadOnlySpan<byte> datom)
+    public void Put(IWriteBatch batch, ReadOnlySpan<byte> datom)
     {
         batch.Add(store, datom);
     }
 
-    public void Retract(IWriteBatch batch, ReadOnlySpan<byte> datom, ReadOnlySpan<byte> previousDatom)
+    public void Delete(IWriteBatch batch, ReadOnlySpan<byte> datom)
     {
-        batch.Add(store, datom);
-        if (!keepHistory)
-            batch.Delete(store, previousDatom);
+        batch.Delete(store, datom);
     }
 
     public IDatomIterator GetIterator()

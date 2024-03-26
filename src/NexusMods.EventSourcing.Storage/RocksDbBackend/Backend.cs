@@ -21,7 +21,7 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
         return new Batch(_db);
     }
 
-    public void DeclareIndex<TA, TB, TC, TD, TF>(IndexType name, bool keepHistory)
+    public void DeclareIndex<TA, TB, TC, TD, TF>(IndexType name)
         where TA : IElementComparer
         where TB : IElementComparer
         where TC : IElementComparer
@@ -31,7 +31,7 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
         var indexStore = new IndexStore(name.ToString(), _registry);
         _stores.Add(name, indexStore);
 
-        var index = new Index<TA, TB, TC, TD, TF>(_registry, indexStore, keepHistory);
+        var index = new Index<TA, TB, TC, TD, TF>(_registry, indexStore);
         _indexes.Add(name, index);
     }
 

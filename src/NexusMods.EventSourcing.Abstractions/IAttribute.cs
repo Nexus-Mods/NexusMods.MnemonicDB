@@ -44,7 +44,7 @@ public interface IAttribute
     /// <summary>
     /// Converts the given values into a typed datom
     /// </summary>
-    IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx);
+    IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx, bool isRetract);
 
     /// <summary>
     /// Gets the type of the read datom for the given attribute.

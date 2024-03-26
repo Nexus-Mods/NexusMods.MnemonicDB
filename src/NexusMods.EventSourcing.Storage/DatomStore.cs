@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -41,8 +42,10 @@ public class DatomStore : IDatomStore
     private readonly IStoreBackend _backend;
     private readonly IIndex _eavtHistory;
     private readonly IIndex _eavtCurrent;
+    private readonly IIndex _aevtCurrent;
     private readonly IIndex _aevtHistory;
     private readonly IIndex _txLog;
+    private readonly PooledMemoryBufferWriter _prevWriter;
 
 
     public DatomStore(ILogger<DatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings, IStoreBackend backend)
@@ -51,6 +54,7 @@ public class DatomStore : IDatomStore
 
 
         _writer = new PooledMemoryBufferWriter();
+        _prevWriter = new PooledMemoryBufferWriter();
 
 
         _logger = logger;
@@ -58,17 +62,19 @@ public class DatomStore : IDatomStore
         _registry = registry;
         _nextEntityId = EntityId.From(Ids.MinId(Ids.Partition.Entity) + 1);
 
-        _backend.DeclareEAVT(IndexType.EAVTHistory, true);
-        _backend.DeclareEAVT(IndexType.EAVTCurrent, false);
-        _backend.DeclareAEVT(IndexType.AVETHistory, true);
-        _backend.DeclareTxLog(IndexType.TxLog, true);
+        _backend.DeclareEAVT(IndexType.EAVTCurrent);
+        _backend.DeclareEAVT(IndexType.EAVTHistory);
+        _backend.DeclareAEVT(IndexType.AEVTCurrent);
+        _backend.DeclareAEVT(IndexType.AEVTHistory);
+        _backend.DeclareTxLog(IndexType.TxLog);
 
         _backend.Init(settings.Path);
 
         _txLog = _backend.GetIndex(IndexType.TxLog);
-        _eavtHistory = _backend.GetIndex(IndexType.EAVTHistory);
         _eavtCurrent = _backend.GetIndex(IndexType.EAVTCurrent);
-        _aevtHistory = _backend.GetIndex(IndexType.AVETHistory);
+        _eavtHistory = _backend.GetIndex(IndexType.EAVTHistory);
+        _aevtCurrent = _backend.GetIndex(IndexType.AEVTCurrent);
+        _aevtHistory = _backend.GetIndex(IndexType.AEVTHistory);
 
 
         _updatesSubject = new Subject<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)>();
@@ -299,7 +305,7 @@ throw new NotImplementedException();
         while (iter.Valid)
         {
             var c = MemoryMarshal.Read<KeyPrefix>(iter.Current.SliceFast(0, KeyPrefix.Size));
-            var resolved = _registry.Resolve(c.E, c.A, iter.Current.SliceFast(KeyPrefix.Size), c.T);
+            var resolved = _registry.Resolve(c.E, c.A, iter.Current.SliceFast(KeyPrefix.Size), c.T, c.IsRetract);
             yield return resolved;
             iter.Next();
         }
@@ -346,8 +352,6 @@ throw new NotImplementedException();
 
         var thisTx = TxId.From(_asOfTxId.Value + 1);
 
-        var stackDatom = new StackDatom();
-        var previousStackDatom = new StackDatom();
 
         var remapFn = (Func<EntityId, EntityId>)(id => MaybeRemap(id, pendingTransaction, thisTx));
         using var batch = _backend.CreateBatch();
@@ -361,22 +365,34 @@ throw new NotImplementedException();
                 _writer.Advance(sizeof(KeyPrefix));
             }
 
+            var isRemapped = Ids.IsPartition(datom.E.Value, Ids.Partition.Tmp);
+
             datom.Explode(_registry, remapFn, out var e, out var a, _writer, out var isAssert);
             var keyPrefix = _writer.GetWrittenSpanWritable().CastFast<byte, KeyPrefix>();
             keyPrefix[0].Set(e, a, thisTx, isAssert);
 
-            if (isAssert)
+
+            var havePrevious = false;
+            if (!isRemapped)
+                havePrevious = GetPrevious(keyPrefix[0]);
+
+
+            if (havePrevious)
             {
-                var span = _writer.GetWrittenSpan();
-                _txLog.Assert(batch, span);
-                _eavtHistory.Assert(batch, span);
-                _eavtCurrent.Assert(batch, span);
-                _aevtHistory.Assert(batch, span);
+                // Move the previous to the history index
+                var span = _prevWriter.GetWrittenSpan();
+                _eavtCurrent.Delete(batch, span);
+                _eavtHistory.Put(batch, span);
+
+                _aevtCurrent.Delete(batch, span);
+                _aevtHistory.Put(batch, span);
             }
-            else
-            {
-                throw new NotImplementedException();
-            }
+
+            var newSpan = _writer.GetWrittenSpan();
+            _eavtCurrent.Put(batch, newSpan);
+            _aevtCurrent.Put(batch, newSpan);
+            _txLog.Put(batch, newSpan);
+
 
             //output.Add(_registry.Resolve(EntityId.From(stackDatom.E), AttributeId.From(stackDatom.A), stackDatom.V, TxId.From(stackDatom.T)));
         }
@@ -397,6 +413,27 @@ throw new NotImplementedException();
         _asOfTxId = thisTx;
         pendingTransaction.AssignedTxId = thisTx;
         resultDatoms = output;
+    }
+
+    private bool GetPrevious(KeyPrefix d)
+    {
+        var prefix = new KeyPrefix();
+        prefix.Set(d.E, d.A, TxId.MinValue, false);
+        var iter = _eavtCurrent.GetIterator();
+        iter.Seek(MemoryMarshal.CreateSpan(ref prefix, 1).Cast<KeyPrefix, byte>());
+        if (iter.Valid)
+        {
+            var found = MemoryMarshal.Read<KeyPrefix>(iter.Current);
+            if (found.E == d.E && found.A == d.A)
+            {
+                _prevWriter.Reset();
+                _prevWriter.Write(iter.Current);
+                return true;
+            }
+
+        }
+
+        return false;
     }
 
     #endregion

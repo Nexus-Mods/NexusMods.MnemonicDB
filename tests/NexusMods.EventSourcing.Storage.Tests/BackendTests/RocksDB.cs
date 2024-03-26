@@ -14,7 +14,8 @@ public class RocksDB(IServiceProvider provider) : ABackendTest<Backend>(provider
     [InlineData(IndexType.TxLog)]
     [InlineData(IndexType.EAVTHistory)]
     [InlineData(IndexType.EAVTCurrent)]
-    [InlineData(IndexType.AVETHistory)]
+    [InlineData(IndexType.AEVTCurrent)]
+    [InlineData(IndexType.AEVTHistory)]
     public async Task InsertedDatomsShowUpInTheIndex(IndexType type)
     {
         var id1 = NextTempId();

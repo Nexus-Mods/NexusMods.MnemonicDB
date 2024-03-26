@@ -69,24 +69,26 @@ where TAttribute : IAttribute<TValueType>
     /// <inheritdoc />
     public IReadDatom Resolve(Datom datom)
     {
+        throw new NotImplementedException();
         _serializer.Read(datom.V.Span, out var read);
         return new ReadDatom
         {
             E = datom.E,
             V = read,
-            T = datom.T
+            T = datom.T,
         };
     }
 
 
     /// <inheritdoc />
-    public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx)
+    public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx, bool isRetract)
     {
         return new ReadDatom
         {
             E = entityId,
             V = Read(value),
-            T = tx
+            T = tx,
+            IsRetract = isRetract
         };
     }
 
@@ -136,10 +138,10 @@ where TAttribute : IAttribute<TValueType>
         }
 
         public void Explode<TWriter>(IAttributeRegistry registry, Func<EntityId, EntityId> remapFn,
-            out EntityId e, out AttributeId a, TWriter vWriter, out bool isAssert)
+            out EntityId e, out AttributeId a, TWriter vWriter, out bool isRetract)
             where TWriter : IBufferWriter<byte>
         {
-            isAssert = true;
+            isRetract = false;
             e = EntityId.From(Ids.IsPartition(E.Value, Ids.Partition.Tmp) ? remapFn(E).Value : E.Value);
 
             if (V is EntityId id)
@@ -152,6 +154,7 @@ where TAttribute : IAttribute<TValueType>
             }
             registry.Explode<TAttribute, TValueType, TWriter>(out a, V, vWriter);
         }
+
     }
 
     /// <summary>
@@ -159,6 +162,8 @@ where TAttribute : IAttribute<TValueType>
     /// </summary>
     public readonly record struct ReadDatom : IReadDatom
     {
+        private readonly ulong _tx;
+
         /// <summary>
         /// The entity id for this datom
         /// </summary>
@@ -172,7 +177,18 @@ where TAttribute : IAttribute<TValueType>
         /// <summary>
         /// The transaction id for this datom
         /// </summary>
-        public required TxId T { get; init; }
+        public TxId T
+        {
+            get => TxId.From(_tx >> 1);
+            init => _tx = (_tx & 1) | (value.Value << 1);
+        }
+
+        /// <inheritdoc />
+        public bool IsRetract
+        {
+            get => (_tx & 1) == 1;
+            init => _tx = (_tx & ~1UL) | (value ? 1UL : 0);
+        }
 
         public object ObjectValue => V!;
 

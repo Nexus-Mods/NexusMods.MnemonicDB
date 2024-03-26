@@ -5,8 +5,8 @@ namespace NexusMods.EventSourcing.Storage.Abstractions;
 
 public interface IIndex {
     int Compare(ReadOnlySpan<byte> readOnlySpan, ReadOnlySpan<byte> readOnlySpan1);
-    void Assert(IWriteBatch store, ReadOnlySpan<byte> datom);
-    void Retract(IWriteBatch store, ReadOnlySpan<byte> datom, ReadOnlySpan<byte> previousDatom);
     IDatomIterator GetIterator();
+    void Delete(IWriteBatch batch, ReadOnlySpan<byte> span);
+    void Put(IWriteBatch batch, ReadOnlySpan<byte> span);
 }
 

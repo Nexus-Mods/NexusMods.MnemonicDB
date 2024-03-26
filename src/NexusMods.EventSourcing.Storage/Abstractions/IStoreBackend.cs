@@ -11,7 +11,7 @@ public interface IStoreBackend
 
     public void Init(AbsolutePath location);
 
-    public void DeclareIndex<TA, TB, TC, TD, TF>(IndexType name, bool keepHistory)
+    public void DeclareIndex<TA, TB, TC, TD, TF>(IndexType name)
         where TA : IElementComparer
         where TB : IElementComparer
         where TC : IElementComparer
@@ -30,21 +30,21 @@ public interface IStoreBackend
     /// <summary>
     /// Create an EAVT index with the history setting
     /// </summary>
-    public void DeclareEAVT(IndexType name, bool keepHistory) =>
+    public void DeclareEAVT(IndexType name) =>
         DeclareIndex<EComparer, AComparer, ValueComparer, TxComparer, AssertComparer>
-            (name, keepHistory);
+            (name);
 
     /// <summary>
     /// Create an AEVT index with the history setting
     /// </summary>
-    public void DeclareAEVT(IndexType name, bool keepHistory) =>
+    public void DeclareAEVT(IndexType name) =>
         DeclareIndex<AComparer, EComparer, ValueComparer, TxComparer, AssertComparer>
-            (name, keepHistory);
+            (name);
 
     /// <summary>
     /// Create an AEVT index with the history setting
     /// </summary>
-    public void DeclareTxLog(IndexType name, bool keepHistory) =>
+    public void DeclareTxLog(IndexType name) =>
         DeclareIndex<TxComparer, EComparer, AComparer, ValueComparer, AssertComparer>
-            (name, keepHistory);
+            (name);
 }
