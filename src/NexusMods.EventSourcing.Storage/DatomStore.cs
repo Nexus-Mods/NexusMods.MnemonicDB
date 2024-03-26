@@ -5,18 +5,14 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reactive.Subjects;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
-using NexusMods.EventSourcing.Storage.Abstractions.ElementComparers;
 using NexusMods.EventSourcing.Storage.DatomStorageStructures;
-using NexusMods.EventSourcing.Storage.Indexes;
 using Reloaded.Memory.Extensions;
-using RocksDbSharp;
 
 namespace NexusMods.EventSourcing.Storage;
 
