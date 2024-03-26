@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions.Models;
 
 namespace NexusMods.EventSourcing.Abstractions;
@@ -6,7 +7,7 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// <summary>
 /// Represents an immutable database fixed to a specific TxId.
 /// </summary>
-public interface IDb
+public interface IDb : IDisposable
 {
     /// <summary>
     /// Gets the basis TxId of the database.

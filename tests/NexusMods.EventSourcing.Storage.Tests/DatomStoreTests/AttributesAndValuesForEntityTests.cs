@@ -14,6 +14,7 @@ public class AttributesAndValuesForEntityTests(IServiceProvider provider) : ASto
 
         var realId = tx.Remaps[tmpId];
 
+        var db = tx.Db;
         var attributes = DatomStore.GetAttributesForEntity(realId, TxId.MaxValue).ToList();
 
         attributes.OfType<ModAttributes.Name.ReadDatom>()

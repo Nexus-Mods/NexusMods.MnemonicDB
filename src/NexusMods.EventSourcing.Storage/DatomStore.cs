@@ -262,9 +262,7 @@ throw new NotImplementedException();
     public IEnumerable<EntityId> GetEntitiesWithAttribute<TAttribute>(TxId txId)
         where TAttribute : IAttribute
     {
-        /*
-        return _aetvCurrent.GetEntitiesWithAttribute<TAttribute>(txId);
-        */
+
         throw new NotImplementedException();
     }
 

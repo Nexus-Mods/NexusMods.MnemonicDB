@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage;
+using NexusMods.EventSourcing.Storage.InMemoryBackend;
 using NexusMods.Paths;
 
 namespace NexusMods.EventSourcing.Tests;
@@ -33,7 +34,7 @@ public class AEventSourcingTest : IAsyncLifetime
                 .Combine("tests_eventsourcing" + Guid.NewGuid())
         };
 
-        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config);
+        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, new Backend(_registry));
 
         Logger = provider.GetRequiredService<ILogger<AEventSourcingTest>>();
 
@@ -46,7 +47,7 @@ public class AEventSourcingTest : IAsyncLifetime
         _store.Dispose();
 
 
-        _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config);
+        _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, new Backend(_registry));
         await _store.Sync();
 
         Connection = await Connection.Start(_store, _valueSerializers, _attributes);
