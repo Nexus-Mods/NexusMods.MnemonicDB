@@ -8,7 +8,7 @@ public class FileAttributes
     /// <summary>
     /// The path of the file
     /// </summary>
-    public class Path : ScalarAttribute<Path, RelativePath>;
+    public class Path() : ScalarAttribute<Path, RelativePath>(isIndexed: true);
 
     /// <summary>
     /// The size of the file
@@ -18,7 +18,7 @@ public class FileAttributes
     /// <summary>
     /// The hashcode of the file
     /// </summary>
-    public class Hash : ScalarAttribute<Hash, NexusMods.Hashing.xxHash64.Hash>;
+    public class Hash() : ScalarAttribute<Hash, NexusMods.Hashing.xxHash64.Hash>(isIndexed: true);
 
     /// <summary>
     /// The mod this file belongs to

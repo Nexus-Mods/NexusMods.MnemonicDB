@@ -34,6 +34,8 @@ public interface IAttribute
     /// </summary>
     public Symbol Id { get; }
 
+    bool IsIndexed { get; }
+
     /// <summary>
     /// Converts the datom to a typed datom
     /// </summary>

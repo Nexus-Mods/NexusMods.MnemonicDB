@@ -48,6 +48,8 @@ public class DatomStore : IDatomStore
     private readonly PooledMemoryBufferWriter _prevWriter;
     private readonly IIndex _vaetCurrent;
     private readonly IIndex _vaetHistory;
+    private readonly IIndex _avetCurrent;
+    private readonly IIndex _avetHistory;
 
 
     public DatomStore(ILogger<DatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings, IStoreBackend backend)
@@ -70,6 +72,8 @@ public class DatomStore : IDatomStore
         _backend.DeclareAEVT(IndexType.AEVTHistory);
         _backend.DeclareVAET(IndexType.VAETCurrent);
         _backend.DeclareVAET(IndexType.VAETHistory);
+        _backend.DeclareAVET(IndexType.AVETCurrent);
+        _backend.DeclareAVET(IndexType.AVETHistory);
         _backend.DeclareTxLog(IndexType.TxLog);
 
         _backend.Init(settings.Path);
@@ -81,6 +85,8 @@ public class DatomStore : IDatomStore
         _aevtHistory = _backend.GetIndex(IndexType.AEVTHistory);
         _vaetCurrent = _backend.GetIndex(IndexType.VAETCurrent);
         _vaetHistory = _backend.GetIndex(IndexType.VAETHistory);
+        _avetCurrent = _backend.GetIndex(IndexType.AVETCurrent);
+        _avetHistory = _backend.GetIndex(IndexType.AVETHistory);
 
 
         _updatesSubject = new Subject<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)>();
@@ -392,6 +398,7 @@ throw new NotImplementedException();
 
             var attr = _registry.GetAttribute(a);
             var isReference = attr.IsReference;
+            var isIndexed = attr.IsIndexed;
 
             var havePrevious = false;
             if (!isRemapped)
@@ -412,6 +419,12 @@ throw new NotImplementedException();
                     _vaetCurrent.Delete(batch, span);
                     _vaetHistory.Put(batch, span);
                 }
+
+                if (isIndexed)
+                {
+                    _avetCurrent.Delete(batch, span);
+                    _avetHistory.Put(batch, span);
+                }
             }
 
             var newSpan = _writer.GetWrittenSpan();
@@ -421,6 +434,9 @@ throw new NotImplementedException();
 
             if (isReference)
                 _vaetCurrent.Put(batch, newSpan);
+
+            if (isIndexed)
+                _avetCurrent.Put(batch, newSpan);
 
 
             //output.Add(_registry.Resolve(EntityId.From(stackDatom.E), AttributeId.From(stackDatom.A), stackDatom.V, TxId.From(stackDatom.T)));

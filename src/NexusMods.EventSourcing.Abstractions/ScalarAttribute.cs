@@ -16,12 +16,16 @@ where TAttribute : IAttribute<TValueType>
     /// <summary>
     /// Create a new attribute
     /// </summary>
-    protected ScalarAttribute(string uniqueName = "")
+    protected ScalarAttribute(string uniqueName = "", bool isIndexed = false)
     {
+        IsIndexed = isIndexed;
         Id = uniqueName == "" ?
             Symbol.Intern(typeof(TAttribute).FullName!) :
             Symbol.InternPreSanitized(uniqueName);
     }
+
+    /// <inheritdoc />
+    public bool IsIndexed { get; }
 
     /// <summary>
     /// Create a new attribute from an already parsed guid

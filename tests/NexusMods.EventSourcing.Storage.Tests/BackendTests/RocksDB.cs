@@ -18,6 +18,8 @@ public class RocksDB(IServiceProvider provider) : ABackendTest<Backend>(provider
     [InlineData(IndexType.AEVTHistory)]
     [InlineData(IndexType.VAETCurrent)]
     [InlineData(IndexType.VAETHistory)]
+    [InlineData(IndexType.AVETCurrent)]
+    [InlineData(IndexType.AVETHistory)]
     public async Task InsertedDatomsShowUpInTheIndex(IndexType type)
     {
         var id1 = NextTempId();
@@ -40,6 +42,7 @@ public class RocksDB(IServiceProvider provider) : ABackendTest<Backend>(provider
         ]);
 
         id1 = tx.Remaps[id1];
+        id2 = tx.Remaps[id2];
 
         tx = await DatomStore.Transact([
             // Rename file 1 and move file 1 to mod 2

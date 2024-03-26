@@ -54,4 +54,11 @@ public interface IStoreBackend
     /// <param name="name"></param>
     public void DeclareVAET(IndexType name) =>
         DeclareIndex<UnmanagedValueComparer<ulong>, AComparer, EComparer, TxComparer, AssertComparer>(name);
+
+    /// <summary>
+    /// Create a backref index
+    /// </summary>
+    /// <param name="name"></param>
+    public void DeclareAVET(IndexType name) =>
+        DeclareIndex<AComparer, ValueComparer, EComparer, TxComparer, AssertComparer>(name);
 }
