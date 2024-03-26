@@ -10,14 +10,12 @@ internal class Db : IDb
 {
     private readonly Connection _connection;
     private readonly TxId _txId;
-    private readonly RefCountedDisposable<ISnapshot> _refCount;
     private readonly ISnapshot _snapshot;
 
-    public Db(RefCountedDisposable<ISnapshot> refCounted, Connection connection, TxId txId)
+    public Db(ISnapshot snapshot, Connection connection, TxId txId)
     {
         _connection = connection;
-        _refCount = refCounted;
-        _snapshot = refCounted.Inner;
+        _snapshot = snapshot;
         _txId = txId;
     }
 
@@ -26,42 +24,47 @@ internal class Db : IDb
 
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids) where TModel : IReadModel
     {
+        throw new NotImplementedException();
+
+        /*
         var reader = _connection.ModelReflector.GetReader<TModel>();
         foreach (var id in ids)
         {
             var iterator = store.GetAttributesForEntity(id, _txId).GetEnumerator();
             yield return reader(id, iterator, this);
-        }
+        }*/
     }
 
     public TModel Get<TModel>(EntityId id) where TModel : IReadModel
     {
         var reader = _connection.ModelReflector.GetReader<TModel>();
-        return reader(id, store.GetAttributesForEntity(id, _txId).GetEnumerator(), this);
+        throw new NotImplementedException();
+        /*
+        return reader(id, store.GetAttributesForEntity(id, _txId).GetEnumerator(), this);*/
     }
 
     /// <inheritdoc />
     public IEnumerable<TModel> GetReverse<TAttribute, TModel>(EntityId id) where TAttribute : IAttribute<EntityId> where TModel : IReadModel
     {
         var reader = _connection.ModelReflector.GetReader<TModel>();
+        throw new NotImplementedException();
+        /*
         foreach (var entity in store.GetReferencesToEntityThroughAttribute<TAttribute>(id, _txId))
         {
             using var iterator = store.GetAttributesForEntity(entity, _txId).GetEnumerator();
             yield return reader(entity, iterator, this);
-        }
+        }*/
 
     }
 
     public void Reload<TOuter>(TOuter aActiveReadModel) where TOuter : IActiveReadModel
     {
-        var reader = _connection.ModelReflector.GetActiveReader<TOuter>();
+        var reader = _connection.ModelReflector.GetActiveReader<TOuter>();/*
         var iterator = store.GetAttributesForEntity(aActiveReadModel.Id, _txId).GetEnumerator();
-        reader(aActiveReadModel, iterator);
+        reader(aActiveReadModel, iterator);*/
     }
 
     public void Dispose()
     {
-        // Do not dispose _snapshot, it is managed by the ref count
-        _refCount.Dispose();
     }
 }

@@ -13,6 +13,6 @@ public class GetMostRecentTxTests(IServiceProvider provider) : AStorageTest(prov
 
         var latestTx = DatomStore.GetMostRecentTxId();
 
-        latestTx.Should().Be(tx.TxId);
+        latestTx.Should().Be(tx.AssignedTxId);
     }
 }

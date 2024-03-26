@@ -17,7 +17,7 @@ public class TryGetLatestTests(IServiceProvider provider) : AStorageTest(provide
 
         var realId = tx.Remaps[tmpId];
 
-        DatomStore.TryGetLatest<ModAttributes.Name, string>(realId, tx.TxId, out var modName).Should().BeTrue();
+        DatomStore.TryGetLatest<ModAttributes.Name, string>(realId, tx.AssignedTxId, out var modName).Should().BeTrue();
 
         modName.Should().Be(value);
     }
@@ -49,14 +49,14 @@ public class TryGetLatestTests(IServiceProvider provider) : AStorageTest(provide
 
         var realId = tx.Remaps[tmpId];
 
-        var oldTx = tx.TxId;
+        var oldTx = tx.AssignedTxId;
 
         DatomStore.TryGetLatest<ModAttributes.Name, string>(realId, TxId.MaxValue, out var modName).Should().BeTrue();
         modName.Should().Be(first);
 
         var tx2 = await DatomStore.Transact([ModAttributes.Name.Assert(realId, second)]);
 
-        var newTx = tx2.TxId;
+        var newTx = tx2.AssignedTxId;
 
 
         DatomStore.TryGetLatest<ModAttributes.Name, string>(realId, newTx, out modName).Should().BeTrue();
@@ -81,7 +81,7 @@ public class TryGetLatestTests(IServiceProvider provider) : AStorageTest(provide
 
         var realId = tx.Remaps[tmpId];
 
-        var oldTx = tx.TxId;
+        var oldTx = tx.AssignedTxId;
 
         DatomStore.TryGetLatest<ModAttributes.Name, string>(realId, TxId.MaxValue, out var modName).Should().BeTrue();
         modName.Should().Be(first);
@@ -93,13 +93,13 @@ public class TryGetLatestTests(IServiceProvider provider) : AStorageTest(provide
             {
                 var midResult = await DatomStore.Transact([ModAttributes.Name.Assert(tmpId2, second)]);
                 if (i == 5)
-                    midTx = midResult.TxId;
+                    midTx = midResult.AssignedTxId;
             }
         }
 
         var tx2 = await DatomStore.Transact([ModAttributes.Name.Assert(realId, second)]);
 
-        var newTx = tx2.TxId;
+        var newTx = tx2.AssignedTxId;
 
 
         // We can get newest value by it exact Tx

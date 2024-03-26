@@ -21,7 +21,7 @@ public interface IDatomStore : IDisposable
     /// <summary>
     /// Transacts (adds) the given datoms into the store.
     /// </summary>
-    public Task<DatomStoreTransactResult> Transact(IEnumerable<IWriteDatom> datoms);
+    public Task<StoreResult> Transact(IEnumerable<IWriteDatom> datoms);
 
     /// <summary>
     /// An observable of the transaction log, for getting the latest changes to the store.

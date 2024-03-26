@@ -53,7 +53,7 @@ public abstract class ABackendTest<TStoreType>(IServiceProvider provider, Func<A
             FileAttributes.ModId.Assert(id1, modId2)
         ]);
 
-        using var snapshot = DatomStore.GetSnapshot();
+        var snapshot = DatomStore.GetSnapshot();
         var results = DatomStore.Datoms(snapshot, type).ToList();
 
         await Verify(results.ToTable(Registry))

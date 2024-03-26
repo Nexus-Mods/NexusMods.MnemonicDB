@@ -17,7 +17,7 @@ public class TryGetExactTests(IServiceProvider provider) : AStorageTest(provider
 
         var realId = tx.Remaps[tmpId];
 
-        DatomStore.TryGetExact<ModAttributes.Name, string>(realId, tx.TxId, out var modName).Should().BeTrue();
+        DatomStore.TryGetExact<ModAttributes.Name, string>(realId, tx.AssignedTxId, out var modName).Should().BeTrue();
 
         modName.Should().Be(value);
     }
@@ -33,12 +33,12 @@ public class TryGetExactTests(IServiceProvider provider) : AStorageTest(provider
         var tx = await DatomStore.Transact([ModAttributes.Name.Assert(tmpId, first)]);
         var realId = tx.Remaps[tmpId];
 
-        DatomStore.TryGetExact<ModAttributes.Name, string>(realId, tx.TxId, out var modName).Should().BeTrue();
+        DatomStore.TryGetExact<ModAttributes.Name, string>(realId, tx.AssignedTxId, out var modName).Should().BeTrue();
         modName.Should().Be(first);
 
         var tx2 = await DatomStore.Transact([ModAttributes.Name.Assert(realId, second)]);
 
-        DatomStore.TryGetExact<ModAttributes.Name, string>(realId, tx2.TxId, out var modName2).Should().BeTrue();
+        DatomStore.TryGetExact<ModAttributes.Name, string>(realId, tx2.AssignedTxId, out var modName2).Should().BeTrue();
         modName2.Should().Be(second);
     }
 
@@ -56,10 +56,10 @@ public class TryGetExactTests(IServiceProvider provider) : AStorageTest(provider
         var realId1 = tx.Remaps[tmpId1];
         var realId2 = tx.Remaps[tmpId2];
 
-        DatomStore.TryGetExact<ModAttributes.Name, string>(realId1, tx.TxId, out var modName1).Should().BeTrue();
+        DatomStore.TryGetExact<ModAttributes.Name, string>(realId1, tx.AssignedTxId, out var modName1).Should().BeTrue();
         modName1.Should().Be(a);
 
-        DatomStore.TryGetExact<ModAttributes.Name, string>(realId2, tx.TxId, out var modName2).Should().BeTrue();
+        DatomStore.TryGetExact<ModAttributes.Name, string>(realId2, tx.AssignedTxId, out var modName2).Should().BeTrue();
         modName2.Should().Be(b);
     }
 

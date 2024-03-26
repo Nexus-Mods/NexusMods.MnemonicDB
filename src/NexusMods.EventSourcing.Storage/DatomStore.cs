@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reactive.Subjects;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -109,15 +110,21 @@ public class DatomStore : IDatomStore
                 // Sync transactions have no data, and are used to verify that the store is up to date.
                 if (pendingTransaction.Data.Length == 0)
                 {
-                    pendingTransaction.AssignedTxId = _asOfTxId;
-                    pendingTransaction.CompletionSource.SetResult(_asOfTxId);
+                    var storeResult = new StoreResult()
+                    {
+                        Remaps = new Dictionary<EntityId, EntityId>(),
+                        AssignedTxId = _asOfTxId,
+                        Snapshot = _backend.GetSnapshot(),
+                        Datoms = Array.Empty<IReadDatom>()
+                    };
+                    pendingTransaction.CompletionSource.SetResult(storeResult);
                     continue;
                 }
 
-                Log(pendingTransaction, out var readables);
+                Log(pendingTransaction, out var result);
 
-                _updatesSubject.OnNext((_asOfTxId, readables));
-                pendingTransaction.CompletionSource.SetResult(_asOfTxId);
+                //_updatesSubject.OnNext((_asOfTxId, readables));
+                pendingTransaction.CompletionSource.SetResult(result);
 
                 //_logger.LogDebug("Transaction {TxId} processed in {Elapsed}ms, new in-memory size is {Count} datoms", pendingTransaction.AssignedTxId!.Value, sw.ElapsedMilliseconds, _indexes.InMemorySize);
             }
@@ -178,15 +185,13 @@ public class DatomStore : IDatomStore
         return _asOfTxId;
     }
 
-    public async Task<DatomStoreTransactResult> Transact(IEnumerable<IWriteDatom> datoms)
+    public async Task<StoreResult> Transact(IEnumerable<IWriteDatom> datoms)
     {
         var pending = new PendingTransaction { Data = datoms.ToArray() };
         if (!_txChannel.Writer.TryWrite(pending))
             throw new InvalidOperationException("Failed to write to the transaction channel");
 
-        await pending.CompletionSource.Task;
-
-        return new DatomStoreTransactResult(pending.AssignedTxId!.Value, pending.Remaps);
+        return await pending.CompletionSource.Task;
     }
 
     public IObservable<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)> TxLog => _updatesSubject;
@@ -339,21 +344,21 @@ throw new NotImplementedException();
     #region Internals
 
 
-    EntityId MaybeRemap(EntityId id, PendingTransaction pendingTransaction, TxId thisTx)
+    EntityId MaybeRemap(EntityId id, Dictionary<EntityId, EntityId> remaps, TxId thisTx)
     {
         if (Ids.GetPartition(id) == Ids.Partition.Tmp)
         {
-            if (!pendingTransaction.Remaps.TryGetValue(id, out var newId))
+            if (!remaps.TryGetValue(id, out var newId))
             {
                 if (id.Value == Ids.MinId(Ids.Partition.Tmp))
                 {
                     var remapTo = EntityId.From(thisTx.Value);
-                    pendingTransaction.Remaps.Add(id, remapTo);
+                    remaps.Add(id, remapTo);
                     return remapTo;
                 }
                 else
                 {
-                    pendingTransaction.Remaps.Add(id, _nextEntityId);
+                    remaps.Add(id, _nextEntityId);
                     var remapTo = _nextEntityId;
                     _nextEntityId = EntityId.From(_nextEntityId.Value + 1);
                     return remapTo;
@@ -369,7 +374,7 @@ throw new NotImplementedException();
 
 
 
-    private void Log(PendingTransaction pendingTransaction, out IReadOnlyCollection<IReadDatom> resultDatoms)
+    private void Log(PendingTransaction pendingTransaction, out StoreResult result)
     {
 
         var output = new List<IReadDatom>();
@@ -377,7 +382,8 @@ throw new NotImplementedException();
         var thisTx = TxId.From(_asOfTxId.Value + 1);
 
 
-        var remapFn = (Func<EntityId, EntityId>)(id => MaybeRemap(id, pendingTransaction, thisTx));
+        var remaps = new Dictionary<EntityId, EntityId>();
+        var remapFn = (Func<EntityId, EntityId>)(id => MaybeRemap(id, remaps, thisTx));
         using var batch = _backend.CreateBatch();
 
         var swPrepare = Stopwatch.StartNew();
@@ -453,9 +459,16 @@ throw new NotImplementedException();
         }
 
 
+        result = new StoreResult
+        {
+            AssignedTxId = thisTx,
+            Remaps = remaps,
+            Datoms = output,
+            Snapshot = _backend.GetSnapshot()
+        };
+
+
         _asOfTxId = thisTx;
-        pendingTransaction.AssignedTxId = thisTx;
-        resultDatoms = output;
     }
 
     private bool GetPrevious(KeyPrefix d)

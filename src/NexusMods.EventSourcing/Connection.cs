@@ -103,7 +103,7 @@ public class Connection : IConnection
 
 
     /// <inheritdoc />
-    public IDb Db => new Db(_store, this, TxId);
+    public IDb Db => new Db(_store.GetSnapshot(), this, TxId);
 
 
     /// <inheritdoc />
@@ -114,7 +114,7 @@ public class Connection : IConnection
     public async Task<ICommitResult> Transact(IEnumerable<IWriteDatom> datoms)
     {
         var newTx = await _store.Transact(datoms);
-        var result = new CommitResult(newTx.TxId, newTx.Remaps);
+        var result = new CommitResult(newTx.AssignedTxId, newTx.Remaps);
         return result;
     }
 

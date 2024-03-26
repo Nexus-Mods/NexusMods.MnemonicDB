@@ -29,11 +29,11 @@ public class EntitiesWithAttributeTests(IServiceProvider provider) : AStorageTes
         var tx2 = await DatomStore.Transact([ModAttributes.Name.Assert(tmpId2, "Mod 2")]);
 
 
-        DatomStore.GetEntitiesWithAttribute<ModAttributes.Name>(tx1.TxId)
+        DatomStore.GetEntitiesWithAttribute<ModAttributes.Name>(tx1.AssignedTxId)
             .Should().Contain(tx1.Remaps[tmpId1])
             .And.NotContain(tx2.Remaps[tmpId2]);
 
-        DatomStore.GetEntitiesWithAttribute<ModAttributes.Name>(tx2.TxId)
+        DatomStore.GetEntitiesWithAttribute<ModAttributes.Name>(tx2.AssignedTxId)
             .Should()
             .Contain(tx1.Remaps[tmpId1])
             .And.Contain(tx2.Remaps[tmpId2]);

@@ -13,20 +13,10 @@ internal class PendingTransaction
     /// A completion source for the transaction, resolves when the transaction is commited to the
     /// transaction log and available to readers.
     /// </summary>
-    public TaskCompletionSource<TxId> CompletionSource { get; } = new();
-
-    /// <summary>
-    /// Entity IDs that are remapped in the transaction
-    /// </summary>
-    public Dictionary<EntityId, EntityId> Remaps { get; } = new();
+    public TaskCompletionSource<StoreResult> CompletionSource { get; } = new();
 
     /// <summary>
     /// The data to be commited
     /// </summary>
     public required IWriteDatom[] Data { get; init; }
-
-    /// <summary>
-    /// The transaction ID that was assigned to the transaction when it was commited
-    /// </summary>
-    public TxId? AssignedTxId { get; set; }
 }
