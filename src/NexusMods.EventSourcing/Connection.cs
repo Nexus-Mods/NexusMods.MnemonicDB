@@ -45,7 +45,9 @@ public class Connection : IConnection
     {
         var db = provider.GetRequiredService<IDatomStore>();
         await db.Sync();
-        return await Start(provider.GetRequiredService<IDatomStore>(), provider.GetRequiredService<IEnumerable<IValueSerializer>>(), provider.GetRequiredService<IEnumerable<IAttribute>>());
+        return await Start(provider.GetRequiredService<IDatomStore>(),
+            provider.GetRequiredService<IEnumerable<IValueSerializer>>(),
+            provider.GetRequiredService<IEnumerable<IAttribute>>());
     }
 
 
@@ -76,15 +78,16 @@ public class Connection : IConnection
 
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
-        var db = Db.Datoms<BuiltInAttributes.UniqueId>(IndexType.AEVTCurrent);
-        var attrIds = _store.GetEntitiesWithAttribute<BuiltInAttributes.UniqueId>(TxId.MaxValue);
+        var db = Db;
+        var attrIds = db.Datoms<BuiltInAttributes.UniqueId>(IndexType.AEVTCurrent)
+            .Select(d => d.E);
 
-        foreach (var attr in attrIds)
+        foreach (var attrId in attrIds)
         {
             var serializerId = Symbol.Unknown;
             var uniqueId = Symbol.Unknown;
 
-            foreach (var datom in _store.GetAttributesForEntity(attr, TxId.MaxValue))
+            foreach (var datom in db.Datoms(attrId))
             {
                 switch (datom)
                 {
@@ -96,7 +99,7 @@ public class Connection : IConnection
                         break;
                 }
             }
-            yield return new DbAttribute(uniqueId, AttributeId.From(attr.Value), serializerId);
+            yield return new DbAttribute(uniqueId, AttributeId.From(attrId.Value), serializerId);
         }
     }
 
@@ -104,7 +107,7 @@ public class Connection : IConnection
 
 
     /// <inheritdoc />
-    public IDb Db => new Db(_store.GetSnapshot(), this, TxId);
+    public IDb Db => new Db(_store.GetSnapshot(), this, TxId, (AttributeRegistry)_store.Registry);
 
 
     /// <inheritdoc />

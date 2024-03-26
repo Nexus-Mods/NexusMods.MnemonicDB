@@ -70,29 +70,33 @@ internal class Db : IDb
         reader(aActiveReadModel, iterator);*/
     }
 
-    public IEnumerable<IReadDatom> Datoms(IndexType type, EntityId? entityId, AttributeId? attributeId)
+    public IEnumerable<IReadDatom> Datoms(EntityId entityId)
     {
-        throw new NotImplementedException();
+        using var iterator = _snapshot.GetIterator(IndexType.EAVTCurrent);
+        iterator.Seek(entityId, AttributeId.From(0), TxId.From(0));
 
+        while (iterator.Valid)
+        {
+            var c = iterator.CurrentPrefix();
+            if (c.E != entityId) break;
+            yield return iterator.Resolve(_registry);
+            iterator.Next();
+        }
     }
 
     public IEnumerable<IReadDatom> Datoms<TAttribute>(IndexType type)
     where TAttribute : IAttribute
     {
         using var iterator = _snapshot.GetIterator(type);
-        var key = new KeyPrefix();
         var attrId = _registry.GetAttributeId<TAttribute>();
-
-        key.Set(EntityId.From(0), attrId, TxId.From(0), false);
-        iterator.Seek(MemoryMarshal.CreateSpan(ref key, 1).CastFast<KeyPrefix, byte>());
+        iterator.Seek(EntityId.From(0), attrId, TxId.From(0));
 
         while (iterator.Valid)
         {
-            var c = MemoryMarshal.Read<KeyPrefix>(iterator.Current);
+            var c = iterator.CurrentPrefix();
             if (c.A != attrId) break;
 
-            var datom = _registry.Resolve(c.E, c.A, iterator.Current, c.T, c.IsRetract);
-            yield return datom;
+            yield return iterator.Resolve(_registry);
             iterator.Next();
         }
     }

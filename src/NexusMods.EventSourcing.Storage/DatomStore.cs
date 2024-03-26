@@ -161,6 +161,7 @@ public class DatomStore : IDatomStore
     }
 
     public TxId AsOfTxId => _asOfTxId;
+    public IAttributeRegistry Registry => _registry;
 
     public void Dispose()
     {

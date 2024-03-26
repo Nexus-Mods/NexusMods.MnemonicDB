@@ -48,9 +48,8 @@ public interface IDb : IDisposable
     /// </summary>
     void Reload<TOuter>(TOuter aActiveReadModel) where TOuter : IActiveReadModel;
 
-    public IEnumerable<IReadDatom> Datoms(IndexType type,
-        EntityId? entityId = null,
-        AttributeId? attributeId = null);
+    public IEnumerable<IReadDatom> Datoms(EntityId id);
 
-    public IEnumerable<IReadDatom> Datoms<TAttribute>(IndexType type);
+    public IEnumerable<IReadDatom> Datoms<TAttribute>(IndexType type)
+        where TAttribute : IAttribute;
 }

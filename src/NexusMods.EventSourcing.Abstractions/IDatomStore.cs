@@ -33,6 +33,8 @@ public interface IDatomStore : IDisposable
     /// </summary>
     public TxId AsOfTxId { get; }
 
+    IAttributeRegistry Registry { get; }
+
     /// <summary>
     /// Resolves the given datoms to typed datoms.
     /// </summary>

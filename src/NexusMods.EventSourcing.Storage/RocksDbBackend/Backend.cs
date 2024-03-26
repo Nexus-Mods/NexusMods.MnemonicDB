@@ -14,7 +14,6 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
     private readonly Dictionary<IndexType, IndexStore> _stores = new();
     private RocksDb _db = null!;
     private readonly ColumnFamilies _columnFamilies = new();
-    private readonly AttributeRegistry _registry = registry;
 
     public IWriteBatch CreateBatch()
     {
@@ -28,10 +27,10 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
         where TD : IElementComparer
         where TF : IElementComparer
     {
-        var indexStore = new IndexStore(name.ToString(), name, _registry);
+        var indexStore = new IndexStore(name.ToString(), name, registry);
         _stores.Add(name, indexStore);
 
-        var index = new Index<TA, TB, TC, TD, TF>(_registry, indexStore);
+        var index = new Index<TA, TB, TC, TD, TF>(registry, indexStore);
         _indexes.Add(name, index);
     }
 
