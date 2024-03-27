@@ -15,12 +15,13 @@ var benchmark = new ReadTests
 
 var sw = Stopwatch.StartNew();
 await benchmark.Setup();
-ulong result = 0;
-for (var i = 0; i < 1000000; i++)
+long result = 0;
+for (var i = 0; i < 10000; i++)
 {
-    result = benchmark.ReadFiles();
+    result = benchmark.ReadAll();
 }
 Console.WriteLine("Elapsed: " + sw.Elapsed + " Result: " + result);
+
 
 
 /*
@@ -30,3 +31,4 @@ BenchmarkRunner.Run<ReadTests>();
 
 #endif
 */
+

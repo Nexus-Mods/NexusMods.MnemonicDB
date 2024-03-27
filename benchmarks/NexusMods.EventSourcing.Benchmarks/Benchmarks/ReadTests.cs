@@ -17,6 +17,7 @@ public class ReadTests : ABenchmark
 {
     private EntityId _readId;
     private IDb _db = null!;
+    private EntityId[] _entityIds = null!;
 
 
     private const int MaxCount = 10000;
@@ -27,7 +28,7 @@ public class ReadTests : ABenchmark
         await InitializeAsync();
         var tx = Connection.BeginTransaction();
         var entityIds = new List<EntityId>();
-        for (var i = 0; i < MaxCount; i++)
+        for (var i = 0; i < Count; i++)
         {
             var file = new File(tx)
             {
@@ -39,11 +40,9 @@ public class ReadTests : ABenchmark
         }
         var result = await tx.Commit();
 
-        entityIds = entityIds.Select(e => result[e]).ToList();
+        _entityIds = entityIds.Select(e => result[e]).ToArray();
 
-        var idArray = entityIds.ToArray();
-
-        _readId = idArray.Take(Count).Skip(Count / 2).First();
+        _readId = _entityIds[_entityIds.Length / 2];
 
         _db = Connection.Db;
     }
@@ -57,5 +56,12 @@ public class ReadTests : ABenchmark
         ulong sum = 0;
         sum += _db.Get<File>(_readId).Index;
         return sum;
+    }
+
+    [Benchmark]
+    public long ReadAll()
+    {
+        return _db.Get<File>(_entityIds)
+            .Sum(e => (long)e.Index);
     }
 }

@@ -32,15 +32,20 @@ internal class Db : IDb
 
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids) where TModel : IReadModel
     {
-        throw new NotImplementedException();
-
-        /*
         var reader = _connection.ModelReflector.GetReader<TModel>();
-        foreach (var id in ids)
+        using var readerSource = _snapshot.GetIterator(IndexType.EAVTCurrent);
+
+        foreach (var e in ids)
         {
-            var iterator = store.GetAttributesForEntity(id, _txId).GetEnumerator();
-            yield return reader(id, iterator, this);
-        }*/
+            // Inlining this code so that we can re-use the iterator means roughly a 25% speedup
+            // in loading a large number of entities.
+            using var enumerator = readerSource
+                .SeekTo(e)
+                .While(e)
+                .Resolve()
+                .GetEnumerator();
+            yield return reader(e, enumerator, this);
+        }
     }
 
     public TModel Get<TModel>(EntityId id) where TModel : IReadModel
