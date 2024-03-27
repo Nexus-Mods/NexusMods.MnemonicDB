@@ -66,9 +66,19 @@ internal class Db : IDb
             .While(attrId)
             .Select(c => c.CurrentKeyPrefix().E);
 
+        var reader = _connection.ModelReflector.GetReader<TModel>();
+        using var readerSource = _snapshot.GetIterator(IndexType.EAVTCurrent);
+
         foreach (var e in eIds)
         {
-            yield return Get<TModel>(e);
+            // Inlining this code so that we can re-use the iterator means roughly a 25% speedup
+            // in loading a large number of entities.
+            using var enumerator = readerSource
+                .SeekTo(e)
+                .While(e)
+                .Resolve()
+                .GetEnumerator();
+            yield return reader(e, enumerator, this);
         }
     }
 
