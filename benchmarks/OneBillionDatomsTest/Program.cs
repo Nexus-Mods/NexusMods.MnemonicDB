@@ -16,6 +16,7 @@ var host = Host.CreateDefaultBuilder()
     {
         s.AddEventSourcingStorage()
             .AddEventSourcing()
+            .AddRocksDbBackend()
             .AddTestModel()
             .AddSingleton<DatomStoreSettings>(_ => new DatomStoreSettings
             {

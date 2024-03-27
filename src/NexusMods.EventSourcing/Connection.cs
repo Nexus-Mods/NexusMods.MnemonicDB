@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
@@ -45,7 +46,9 @@ public class Connection : IConnection
     {
         var db = provider.GetRequiredService<IDatomStore>();
         await db.Sync();
-        return await Start(provider.GetRequiredService<IDatomStore>(), provider.GetRequiredService<IEnumerable<IValueSerializer>>(), provider.GetRequiredService<IEnumerable<IAttribute>>());
+        return await Start(provider.GetRequiredService<IDatomStore>(),
+            provider.GetRequiredService<IEnumerable<IValueSerializer>>(),
+            provider.GetRequiredService<IEnumerable<IAttribute>>());
     }
 
 
@@ -76,14 +79,16 @@ public class Connection : IConnection
 
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
-        var attrIds = _store.GetEntitiesWithAttribute<BuiltInAttributes.UniqueId>(TxId.MaxValue);
+        var db = Db;
+        var attrIds = db.Datoms<BuiltInAttributes.UniqueId>(IndexType.AEVTCurrent)
+            .Select(d => d.E);
 
-        foreach (var attr in attrIds)
+        foreach (var attrId in attrIds)
         {
             var serializerId = Symbol.Unknown;
             var uniqueId = Symbol.Unknown;
 
-            foreach (var datom in _store.GetAttributesForEntity(attr, TxId.MaxValue))
+            foreach (var datom in db.Datoms(attrId))
             {
                 switch (datom)
                 {
@@ -95,7 +100,7 @@ public class Connection : IConnection
                         break;
                 }
             }
-            yield return new DbAttribute(uniqueId, AttributeId.From(attr.Value), serializerId);
+            yield return new DbAttribute(uniqueId, AttributeId.From(attrId.Value), serializerId);
         }
     }
 
@@ -103,7 +108,7 @@ public class Connection : IConnection
 
 
     /// <inheritdoc />
-    public IDb Db => new Db(_store, this, TxId);
+    public IDb Db => new Db(_store.GetSnapshot(), this, TxId, (AttributeRegistry)_store.Registry);
 
 
     /// <inheritdoc />
@@ -114,7 +119,7 @@ public class Connection : IConnection
     public async Task<ICommitResult> Transact(IEnumerable<IWriteDatom> datoms)
     {
         var newTx = await _store.Transact(datoms);
-        var result = new CommitResult(newTx.TxId, newTx.Remaps);
+        var result = new CommitResult(newTx.AssignedTxId, newTx.Remaps);
         return result;
     }
 
@@ -125,14 +130,6 @@ public class Connection : IConnection
     }
 
     /// <inheritdoc />
-    public IObservable<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)> Commits => _store.TxLog;
-
-    /// <inheritdoc />
-    public T GetActive<T>(EntityId id) where T : IActiveReadModel
-    {
-        var db = Db;
-        var ctor = ModelReflector.GetActiveModelConstructor<T>();
-        var activeModel = (T)ctor(db, id);
-        return activeModel;
-    }
+    public IObservable<IDb> Revisions => _store.TxLog
+        .Select(log => new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry));
 }

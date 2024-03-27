@@ -11,6 +11,7 @@ namespace NexusMods.EventSourcing.Benchmarks.Benchmarks;
 
 public class WriteTests
 {
+    /*
     private readonly IConnection _connection;
 
     public WriteTests()
@@ -51,5 +52,6 @@ public class WriteTests
             loaded.Should().NotBeNull("the entity should be in the database");
         }
     }
+    */
 
 }

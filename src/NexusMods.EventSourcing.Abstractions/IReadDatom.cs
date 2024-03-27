@@ -23,4 +23,14 @@ public interface IReadDatom
     /// The transaction id of the datom.
     /// </summary>
     public TxId T { get; }
+
+    /// <summary>
+    /// Gets the value as a object (possibly boxed).
+    /// </summary>
+    object ObjectValue { get; }
+
+    /// <summary>
+    /// True if this is a retraction of a previous datom.
+    /// </summary>
+    public bool IsRetract { get; }
 }

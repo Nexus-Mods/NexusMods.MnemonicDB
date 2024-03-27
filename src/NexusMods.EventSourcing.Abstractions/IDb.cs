@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions.Models;
 
 namespace NexusMods.EventSourcing.Abstractions;
@@ -6,7 +7,7 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// <summary>
 /// Represents an immutable database fixed to a specific TxId.
 /// </summary>
-public interface IDb
+public interface IDb : IDisposable
 {
     /// <summary>
     /// Gets the basis TxId of the database.
@@ -42,8 +43,13 @@ public interface IDb
         where TModel : IReadModel
         where TAttribute : IAttribute<EntityId>;
 
+    public IEnumerable<IReadDatom> Datoms(EntityId id);
+
     /// <summary>
-    /// Reloads the active read model with the latest state from the database.
+    /// Gets the datoms for the given transaction id.
     /// </summary>
-    void Reload<TOuter>(TOuter aActiveReadModel) where TOuter : IActiveReadModel;
+    public IEnumerable<IReadDatom> Datoms(TxId txId);
+
+    public IEnumerable<IReadDatom> Datoms<TAttribute>(IndexType type)
+        where TAttribute : IAttribute;
 }

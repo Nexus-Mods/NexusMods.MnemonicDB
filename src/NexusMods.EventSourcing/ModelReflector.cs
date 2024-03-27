@@ -27,8 +27,6 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
     internal delegate TReadModel ReaderFn<out TReadModel>(EntityId id, IEnumerator<IReadDatom> iterator, IDb db)
         where TReadModel : IReadModel;
 
-    internal delegate void ActiveReaderFn<TModel>(TModel model, IEnumerator<IReadDatom> datom);
-
     public void Add(TTransaction tx, IReadModel model)
     {
         EmitterFn<IReadModel> emitterFn;
@@ -114,21 +112,6 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
         return readerFn;
     }
 
-    public ActiveReaderFn<TModel> GetActiveReader<TModel>() where TModel : IActiveReadModel
-    {
-        var modelType = typeof(TModel);
-        if (_activeReaders.TryGetValue(modelType, out var found))
-            return (ActiveReaderFn<TModel>)found;
-
-        var readerFn = MakeActiveReader<TModel>();
-        _activeReaders.TryAdd(modelType, readerFn);
-        return readerFn;
-    }
-
-    public Func<IDb, EntityId, object> GetActiveModelConstructor<TModel>() where TModel : IActiveReadModel
-    {
-        return GetConstructor(typeof(TModel));
-    }
 
     private ReaderFn<TModel> MakeReader<TModel>() where TModel : IReadModel
     {
@@ -179,46 +162,6 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
         var block = Expression.Block(new[] {newModelExpr}, exprs);
 
         var lambda = Expression.Lambda<ReaderFn<TModel>>(block, entityIdParameter, iteratorParameter, dbParameter);
-        return lambda.Compile();
-    }
-
-    private ActiveReaderFn<TModel> MakeActiveReader<TModel>()
-    {
-        var tmodel = typeof(TModel);
-        var properties = GetModelProperties(tmodel);
-
-        var exprs = new List<Expression>();
-
-        var whileTopLabel = Expression.Label("whileTop");
-        var exitLabel = Expression.Label("exit");
-
-        var modelParameter = Expression.Parameter(tmodel, "model");
-        var iteratorParameter = Expression.Parameter(typeof(IEnumerator<IReadDatom>), "iterator");
-
-        exprs.Add(Expression.Label(whileTopLabel));
-        exprs.Add(Expression.IfThen(
-            Expression.Not(Expression.Call(iteratorParameter, typeof(IEnumerator).GetMethod("MoveNext")!)),
-            Expression.Break(exitLabel)));
-
-        foreach (var (attribute, property) in properties)
-        {
-            var readDatomType = store.GetReadDatomType(attribute);
-
-            var ifExpr = Expression.IfThen(
-                Expression.TypeIs(Expression.Property(iteratorParameter, "Current"), readDatomType),
-                Expression.Assign(Expression.Property(modelParameter, property), Expression.Property(Expression.Convert(Expression.Property(iteratorParameter, "Current"), readDatomType), "V")));
-
-            exprs.Add(ifExpr);
-
-        }
-
-        exprs.Add(Expression.Goto(whileTopLabel));
-        exprs.Add(Expression.Label(exitLabel));
-        exprs.Add(modelParameter);
-
-        var block = Expression.Block(exprs);
-
-        var lambda = Expression.Lambda<ActiveReaderFn<TModel>>(block, modelParameter, iteratorParameter);
         return lambda.Compile();
     }
 }

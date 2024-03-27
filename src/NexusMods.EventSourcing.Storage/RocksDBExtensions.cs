@@ -12,7 +12,7 @@ public static class RocksDBExtensions
 {
     private static readonly ReadOptions DefaultReadOptions = new();
 
-    public ref struct ValueRef
+    public struct ValueRef : IDisposable
     {
         private IntPtr _ptr;
         private int _length;

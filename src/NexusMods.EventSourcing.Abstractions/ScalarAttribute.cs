@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using NexusMods.EventSourcing.Abstractions.Internals;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -16,12 +17,25 @@ where TAttribute : IAttribute<TValueType>
     /// <summary>
     /// Create a new attribute
     /// </summary>
-    protected ScalarAttribute(string uniqueName = "")
+    protected ScalarAttribute(string uniqueName = "",
+        bool isIndexed = false,
+        bool keepHistory = true,
+        bool multiArity = false)
     {
+        IsIndexed = isIndexed;
+        KeepHistory = keepHistory;
+        MultiArity = multiArity;
         Id = uniqueName == "" ?
             Symbol.Intern(typeof(TAttribute).FullName!) :
             Symbol.InternPreSanitized(uniqueName);
     }
+
+    public bool MultiArity { get; }
+
+    public bool KeepHistory { get; }
+
+    /// <inheritdoc />
+    public bool IsIndexed { get; }
 
     /// <summary>
     /// Create a new attribute from an already parsed guid
@@ -67,26 +81,14 @@ where TAttribute : IAttribute<TValueType>
     public Symbol Id { get; }
 
     /// <inheritdoc />
-    public IReadDatom Resolve(Datom datom)
-    {
-        _serializer.Read(datom.V.Span, out var read);
-        return new ReadDatom
-        {
-            E = datom.E,
-            V = read,
-            T = datom.T
-        };
-    }
-
-
-    /// <inheritdoc />
-    public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx)
+    public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx, bool isRetract)
     {
         return new ReadDatom
         {
             E = entityId,
             V = Read(value),
-            T = tx
+            T = tx,
+            IsRetract = isRetract
         };
     }
 
@@ -135,22 +137,25 @@ where TAttribute : IAttribute<TValueType>
             return $"({E.Value:x}, {typeof(TAttribute).Name}, {V})";
         }
 
-        public void Explode<TWriter>(IAttributeRegistry registry, Func<EntityId, EntityId> remapFn, ref StackDatom datom, TWriter writer)
+        public void Explode<TWriter>(IAttributeRegistry registry, Func<EntityId, EntityId> remapFn,
+            out EntityId e, out AttributeId a, TWriter vWriter, out bool isRetract)
             where TWriter : IBufferWriter<byte>
         {
-            datom.E = Ids.IsPartition(E.Value, Ids.Partition.Tmp) ? remapFn(E).Value : E.Value;
+            isRetract = false;
+            e = EntityId.From(Ids.IsPartition(E.Value, Ids.Partition.Tmp) ? remapFn(E).Value : E.Value);
 
             if (V is EntityId id)
             {
                 var newId = remapFn(id);
                 if (newId is TValueType recasted)
                 {
-                    registry.Explode<TAttribute, TValueType>(ref datom, recasted, writer);
+                    registry.Explode<TAttribute, TValueType, TWriter>(out a, recasted, vWriter);
                     return;
                 }
             }
-            registry.Explode<TAttribute, TValueType>(ref datom, V, writer);
+            registry.Explode<TAttribute, TValueType, TWriter>(out a, V, vWriter);
         }
+
     }
 
     /// <summary>
@@ -158,6 +163,8 @@ where TAttribute : IAttribute<TValueType>
     /// </summary>
     public readonly record struct ReadDatom : IReadDatom
     {
+        private readonly ulong _tx;
+
         /// <summary>
         /// The entity id for this datom
         /// </summary>
@@ -171,7 +178,20 @@ where TAttribute : IAttribute<TValueType>
         /// <summary>
         /// The transaction id for this datom
         /// </summary>
-        public required TxId T { get; init; }
+        public TxId T
+        {
+            get => TxId.From(_tx >> 1);
+            init => _tx = (_tx & 1) | (value.Value << 1);
+        }
+
+        /// <inheritdoc />
+        public bool IsRetract
+        {
+            get => (_tx & 1) == 1;
+            init => _tx = (_tx & ~1UL) | (value ? 1UL : 0);
+        }
+
+        public object ObjectValue => V!;
 
         /// <inheritdoc />
         public override string ToString()

@@ -13,4 +13,9 @@ public readonly partial struct AttributeId
     /// </summary>
     /// <returns></returns>
     public EntityId ToEntityId() => EntityId.From(Value);
+
+    /// <summary>
+    /// Minimum value for an AttributeId.
+    /// </summary>
+    public static AttributeId Min => new(ulong.MinValue);
 }

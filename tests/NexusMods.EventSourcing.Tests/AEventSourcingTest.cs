@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage;
+using NexusMods.EventSourcing.Storage.RocksDbBackend;
 using NexusMods.Paths;
 
 namespace NexusMods.EventSourcing.Tests;
@@ -17,6 +18,7 @@ public class AEventSourcingTest : IAsyncLifetime
     private readonly IAttribute[] _attributes;
     private readonly IServiceProvider _provider;
     private readonly AttributeRegistry _registry;
+    private Backend _backend;
 
 
     protected AEventSourcingTest(IServiceProvider provider)
@@ -32,8 +34,9 @@ public class AEventSourcingTest : IAsyncLifetime
             Path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory)
                 .Combine("tests_eventsourcing" + Guid.NewGuid())
         };
+        _backend = new Backend(_registry);
 
-        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config);
+        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
 
         Logger = provider.GetRequiredService<ILogger<AEventSourcingTest>>();
 
@@ -44,9 +47,11 @@ public class AEventSourcingTest : IAsyncLifetime
     {
 
         _store.Dispose();
+        _backend.Dispose();
 
 
-        _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config);
+        _backend = new Backend(_registry);
+        _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
         await _store.Sync();
 
         Connection = await Connection.Start(_store, _valueSerializers, _attributes);

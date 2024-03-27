@@ -3,7 +3,10 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Internals;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage;
 
@@ -64,14 +67,6 @@ public class AttributeRegistry : IAttributeRegistry
             _attributesByAttributeId[id] = attr;
         }
     }
-    public void WriteValue<TWriter, TVal>(TVal val, in TWriter writer)
-        where TWriter : IBufferWriter<byte>
-    {
-        if (!_valueSerializersByNativeType.TryGetValue(typeof(TVal), out var serializer))
-            throw new InvalidOperationException($"No serializer found for type {typeof(TVal)}");
-
-        ((IValueSerializer<TVal>)serializer).Serialize(val, writer);
-    }
 
     public AttributeId GetAttributeId<TAttr>()
         where TAttr : IAttribute
@@ -96,14 +91,17 @@ public class AttributeRegistry : IAttributeRegistry
         return dbAttribute.AttrEntityId;
     }
 
-
-    public int CompareValues(in Datom a, in Datom b)
+    public IReadDatom Resolve(ReadOnlySpan<byte> datom)
     {
-        var attr = _dbAttributesByEntityId[a.A];
-        var type = _valueSerializersByUniqueId[attr.ValueTypeId];
-        return type.Compare(a.V.Span, b.V.Span);
-    }
+        var c = MemoryMarshal.Read<KeyPrefix>(datom);
+        if (!_attributesByAttributeId.TryGetValue(c.A, out var attribute))
+            throw new InvalidOperationException($"No attribute found for attribute ID {c.A}");
 
+        unsafe
+        {
+            return attribute.Resolve(c.E, c.A, datom.SliceFast(sizeof(KeyPrefix)), c.T, c.IsRetract);
+        }
+    }
 
     public Expression GetReadExpression(Type attributeType, Expression valueSpan, out AttributeId attributeId)
     {
@@ -123,17 +121,6 @@ public class AttributeRegistry : IAttributeRegistry
     }
 
     private CompareCache _compareCache = new();
-    public int CompareValues<T>(T datomsValues, AttributeId attributeId, int a, int b) where T : IBlobColumn
-    {
-        var cache = _compareCache;
-        if (cache.AttributeId == attributeId)
-            return cache.Serializer.Compare(datomsValues[a].Span, datomsValues[b].Span);
-
-        var attr = _dbAttributesByEntityId[attributeId];
-        var type = _valueSerializersByUniqueId[attr.ValueTypeId];
-        _compareCache = new CompareCache {AttributeId = attributeId, Serializer = type};
-        return type.Compare(datomsValues[a].Span, datomsValues[b].Span);
-    }
 
     public int CompareValues(AttributeId id, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
@@ -152,57 +139,23 @@ public class AttributeRegistry : IAttributeRegistry
         return type.Compare(a, b);
     }
 
-    public void Explode<TAttribute, TValueType>(ref StackDatom datom, TValueType value, IBufferWriter<byte> writer)
+    public void Explode<TAttribute, TValueType, TBufferWriter>(out AttributeId id, TValueType value, TBufferWriter writer)
         where TAttribute : IAttribute<TValueType>
+        where TBufferWriter : IBufferWriter<byte>
     {
         var attr = _attributesByType[typeof(TAttribute)];
         var dbAttr = _dbAttributesByUniqueId[attr.Id];
         var serializer = (IValueSerializer<TValueType>)_valueSerializersByUniqueId[dbAttr.ValueTypeId];
-        datom.A = (ushort)dbAttr.AttrEntityId.Value;
+        id = dbAttr.AttrEntityId;
         serializer.Serialize(value, writer);
     }
 
-    public IReadDatom Resolve(Datom datom)
+    public Symbol GetSymbolForAttribute(Type attribute)
     {
-        if (!_dbAttributesByEntityId.TryGetValue(datom.A, out var dbAttr))
-            throw new InvalidOperationException($"No attribute found for entity ID {datom.A}");
+        if (!_attributesByType.TryGetValue(attribute, out var attr))
+            throw new InvalidOperationException($"No attribute found for type {attribute}");
 
-        if (!_attributesById.TryGetValue(dbAttr.UniqueId, out var attr))
-            throw new InvalidOperationException($"No attribute found for unique ID {dbAttr.UniqueId}");
-
-        return attr.Resolve(datom);
-    }
-
-    public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx)
-    {
-        if (!_attributesByAttributeId.TryGetValue(attributeId, out var attr))
-            throw new InvalidOperationException($"No attribute found for AttributeId {attributeId}");
-
-        return attr.Resolve(entityId, attributeId, value, tx);
-    }
-
-    public bool IsReference(AttributeId attributeId)
-    {
-        var dbAttr = _dbAttributesByEntityId[attributeId];
-        var attrobj = _attributesById[dbAttr.UniqueId];
-        return attrobj.IsReference;
-    }
-
-    public IValueSerializer<TValueType> GetSerializer<TValueType>()
-    {
-        if (!_valueSerializersByNativeType.TryGetValue(typeof(TValueType), out var serializer))
-            throw new InvalidOperationException($"No serializer found for type {typeof(TValueType)}");
-
-        return (IValueSerializer<TValueType>)serializer;
-    }
-
-    public TValue Read<TAttr, TValue>(ReadOnlySpan<byte> tValueSpan) where TAttr : IAttribute<TValue>
-    {
-        var attr = _attributesByType[typeof(TAttr)];
-        var dbAttr = _dbAttributesByUniqueId[attr.Id];
-        var serializer = (IValueSerializer<TValue>)_valueSerializersByUniqueId[dbAttr.ValueTypeId];
-        serializer.Read(tValueSpan, out var val);
-        return val;
+        return attr.Id;
     }
 
     public Type GetReadDatomType(Type attribute)
@@ -211,4 +164,11 @@ public class AttributeRegistry : IAttributeRegistry
         return attr.GetReadDatomType();
     }
 
+    public IAttribute GetAttribute(AttributeId attributeId)
+    {
+        if (!_attributesByAttributeId.TryGetValue(attributeId, out var attr))
+            throw new InvalidOperationException($"No attribute found for AttributeId {attributeId}");
+
+        return attr;
+    }
 }
