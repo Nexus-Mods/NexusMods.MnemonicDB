@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using Cathei.LinqGen;
 using RocksDbSharp;
 
-namespace NexusMods.EventSourcing.Storage;
+namespace NexusMods.EventSourcing.Storage.RocksDbBackend;
 
 public static class RocksDBExtensions
 {
