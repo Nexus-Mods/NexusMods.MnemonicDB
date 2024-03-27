@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Internals;
 
 namespace NexusMods.EventSourcing.TestModel.Helpers;
 

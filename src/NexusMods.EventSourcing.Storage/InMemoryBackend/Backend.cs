@@ -38,7 +38,7 @@ public class Backend : IStoreBackend
         where TD : IElementComparer
         where TF : IElementComparer
     {
-        var store = new IndexStore(name);
+        var store = new IndexStore(name, _registry);
         _stores[(int)name] = store;
         var index = new Index<TA, TB, TC, TD, TF>(_registry, store);
         store.Init(index);
@@ -53,6 +53,11 @@ public class Backend : IStoreBackend
     public ISnapshot GetSnapshot()
     {
         return new Snapshot(_indexes
-            .Select(i => ((IInMemoryIndex)i).Set).ToArray());
+            .Select(i => ((IInMemoryIndex)i).Set).ToArray(),
+            _registry);
+    }
+
+    public void Dispose()
+    {
     }
 }

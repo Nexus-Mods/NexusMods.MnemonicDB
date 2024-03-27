@@ -1,17 +1,21 @@
 ﻿using System;
 using System.Collections.Immutable;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.DatomIterators;
+using NexusMods.EventSourcing.Abstractions.Internals;
 
 namespace NexusMods.EventSourcing.Storage.InMemoryBackend;
 
-public class SortedSetIterator : IDatomIterator
+public class SortedSetIterator : IDatomSource, IIterator
 {
-    public int Offset { get; set; }
+    private readonly AttributeRegistry _registry;
+    private int _offset;
 
-    public SortedSetIterator(ImmutableSortedSet<byte[]> set)
+    public SortedSetIterator(ImmutableSortedSet<byte[]> set, AttributeRegistry registry)
     {
+        _registry = registry;
         Set = set;
-        Offset = -1;
+        _offset = -1;
     }
 
 
@@ -20,27 +24,42 @@ public class SortedSetIterator : IDatomIterator
     public void Dispose()
     {
         Set = ImmutableSortedSet<byte[]>.Empty;
-        Offset = -1;
+        _offset = -1;
     }
 
-    public bool Valid => Offset >= 0 && Offset < Set.Count;
+    public bool Valid => _offset >= 0 && _offset < Set.Count;
     public void Next()
     {
-        Offset++;
+        _offset++;
     }
 
-    public void Seek(ReadOnlySpan<byte> datom)
+    public void Prev()
+    {
+        _offset--;
+    }
+
+    public IIterator SeekLast()
+    {
+        _offset = Set.Count - 1;
+        return this;
+    }
+
+    IIterator ISeekableIterator.Seek(ReadOnlySpan<byte> datom)
     {
         var result = Set.IndexOf(datom.ToArray());
         if (result < 0)
-            Offset = ~result;
+            _offset = ~result;
         else
-            Offset = result;
+            _offset = result;
+        return this;
     }
 
-    public ReadOnlySpan<byte> Current => Set[Offset];
-    public void SeekStart()
+    public IIterator SeekStart()
     {
-        Offset = 0;
+        _offset = 0;
+        return this;
     }
+
+    public ReadOnlySpan<byte> Current => Set[_offset];
+    public IAttributeRegistry Registry => _registry;
 }

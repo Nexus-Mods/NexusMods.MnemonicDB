@@ -1,17 +1,20 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.DatomIterators;
 using NexusMods.EventSourcing.Storage.Abstractions;
 
 namespace NexusMods.EventSourcing.Storage.InMemoryBackend;
 
 public class IndexStore : IIndexStore
 {
+    private readonly AttributeRegistry _registry;
     public IndexType Type { get; }
     public ImmutableSortedSet<byte[]> Set { get; private set; }
 
-    public IndexStore(IndexType type)
+    public IndexStore(IndexType type, AttributeRegistry registry)
     {
+        _registry = registry;
         Type = type;
         Set = ImmutableSortedSet<byte[]>.Empty;
     }
@@ -21,9 +24,9 @@ public class IndexStore : IIndexStore
         Set = ImmutableSortedSet<byte[]>.Empty.WithComparer(sorter);
     }
 
-    public IDatomIterator GetIterator()
+    public IDatomSource GetIterator()
     {
-        return new SortedSetIterator(Set);
+        return new SortedSetIterator(Set, _registry);
     }
 
 

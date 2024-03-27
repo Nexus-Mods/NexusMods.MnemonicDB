@@ -16,9 +16,14 @@ public static class Services
         services.AddValueSerializer<EntityIdSerializer>();
         services.AddAttribute<BuiltInAttributes.UniqueId>();
         services.AddAttribute<BuiltInAttributes.ValueSerializerId>();
-        services.AddSingleton<DatomStoreSettings>();
         services.AddSingleton<IDatomStore, DatomStore>();
         services.AddSingleton<AttributeRegistry>();
+        return services;
+    }
+
+    public static IServiceCollection AddDatomStoreSettings(this IServiceCollection services, DatomStoreSettings settings)
+    {
+        services.AddSingleton(settings);
         return services;
     }
 

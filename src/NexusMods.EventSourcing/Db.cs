@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.DatomIterators;
 using NexusMods.EventSourcing.Abstractions.Models;
 using NexusMods.EventSourcing.Storage;
 using NexusMods.EventSourcing.Storage.Abstractions;
@@ -44,23 +46,30 @@ internal class Db : IDb
     public TModel Get<TModel>(EntityId id) where TModel : IReadModel
     {
         var reader = _connection.ModelReflector.GetReader<TModel>();
-        throw new NotImplementedException();
-        /*
-        return reader(id, store.GetAttributesForEntity(id, _txId).GetEnumerator(), this);*/
+
+        using var source = _snapshot.GetIterator(IndexType.EAVTCurrent);
+        using var enumerator = source.SeekTo(id)
+            .While(id)
+            .Resolve()
+            .GetEnumerator();
+        return reader(id, enumerator, this);
     }
 
     /// <inheritdoc />
     public IEnumerable<TModel> GetReverse<TAttribute, TModel>(EntityId id) where TAttribute : IAttribute<EntityId> where TModel : IReadModel
     {
-        var reader = _connection.ModelReflector.GetReader<TModel>();
-        throw new NotImplementedException();
-        /*
-        foreach (var entity in store.GetReferencesToEntityThroughAttribute<TAttribute>(id, _txId))
-        {
-            using var iterator = store.GetAttributesForEntity(entity, _txId).GetEnumerator();
-            yield return reader(entity, iterator, this);
-        }*/
+        using var attrSource = _snapshot.GetIterator(IndexType.VAETCurrent);
+        var attrId = _registry.GetAttributeId<TAttribute>();
+        var eIds = attrSource
+            .SeekTo(attrId, id)
+            .WhileUnmanagedV(id)
+            .While(attrId)
+            .Select(c => c.CurrentKeyPrefix().E);
 
+        foreach (var e in eIds)
+        {
+            yield return Get<TModel>(e);
+        }
     }
 
     public void Reload<TOuter>(TOuter aActiveReadModel) where TOuter : IActiveReadModel
@@ -73,32 +82,23 @@ internal class Db : IDb
     public IEnumerable<IReadDatom> Datoms(EntityId entityId)
     {
         using var iterator = _snapshot.GetIterator(IndexType.EAVTCurrent);
-        iterator.Seek(entityId, AttributeId.From(0), TxId.From(0));
+        foreach (var datom in iterator.SeekTo(entityId)
+                     .While(entityId)
+                     .Resolve())
+            yield return datom;
 
-        while (iterator.Valid)
-        {
-            var c = iterator.CurrentPrefix();
-            if (c.E != entityId) break;
-            yield return iterator.Resolve(_registry);
-            iterator.Next();
-        }
     }
 
     public IEnumerable<IReadDatom> Datoms<TAttribute>(IndexType type)
     where TAttribute : IAttribute
     {
+        var a = _registry.GetAttributeId<TAttribute>();
         using var iterator = _snapshot.GetIterator(type);
-        var attrId = _registry.GetAttributeId<TAttribute>();
-        iterator.Seek(EntityId.From(0), attrId, TxId.From(0));
-
-        while (iterator.Valid)
-        {
-            var c = iterator.CurrentPrefix();
-            if (c.A != attrId) break;
-
-            yield return iterator.Resolve(_registry);
-            iterator.Next();
-        }
+        foreach (var datom in iterator
+                     .SeekStart()
+                     .While(a)
+                     .Resolve())
+            yield return datom;
     }
 
     public void Dispose()

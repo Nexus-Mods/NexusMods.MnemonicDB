@@ -1,11 +1,12 @@
 ﻿
+using System;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions.ElementComparers;
 using NexusMods.Paths;
 
 namespace NexusMods.EventSourcing.Storage.Abstractions;
 
-public interface IStoreBackend
+public interface IStoreBackend : IDisposable
 {
     public IWriteBatch CreateBatch();
 

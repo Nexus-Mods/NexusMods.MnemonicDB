@@ -1,4 +1,5 @@
 ﻿using System;
+using NexusMods.EventSourcing.Abstractions.DatomIterators;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -15,5 +16,5 @@ public interface ISnapshot
     /// </summary>
     /// <param name="type"></param>
     /// <returns></returns>
-    IDatomIterator GetIterator(IndexType type);
+    IDatomSource GetIterator(IndexType type);
 }

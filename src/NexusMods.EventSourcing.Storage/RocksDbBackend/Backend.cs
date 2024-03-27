@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.DatomIterators;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.Paths;
 using RocksDbSharp;
@@ -39,7 +40,7 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
         return (IIndex)_indexes[name];
     }
 
-    private class Snapshot(Backend backend) : ISnapshot
+    private class Snapshot(Backend backend, AttributeRegistry registry) : ISnapshot
     {
         private readonly RocksDbSharp.Snapshot _snapshot = backend._db.CreateSnapshot();
 
@@ -48,20 +49,20 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
             _snapshot.Dispose();
         }
 
-        public IDatomIterator GetIterator(IndexType type)
+        public IDatomSource GetIterator(IndexType type)
         {
             var options = new ReadOptions()
                 .SetSnapshot(_snapshot);
 
             var iterator = backend._db.NewIterator(backend._stores[type].Handle, options);
 
-            return new IteratorWrapper(iterator);
+            return new IteratorWrapper(iterator, registry);
         }
     }
 
     public ISnapshot GetSnapshot()
     {
-        return new Snapshot(this);
+        return new Snapshot(this, registry);
     }
 
     public void Init(AbsolutePath location)
@@ -83,5 +84,10 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
         {
             store.PostOpenSetup(_db);
         }
+    }
+
+    public void Dispose()
+    {
+        _db.Dispose();
     }
 }

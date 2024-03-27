@@ -3,7 +3,10 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.Internals;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage;
 
@@ -94,6 +97,18 @@ public class AttributeRegistry : IAttributeRegistry
             throw new InvalidOperationException($"No DB attribute found for attribute {attribute}");
 
         return dbAttribute.AttrEntityId;
+    }
+
+    public IReadDatom Resolve(ReadOnlySpan<byte> datom)
+    {
+        var c = MemoryMarshal.Read<KeyPrefix>(datom);
+        if (!_attributesByAttributeId.TryGetValue(c.A, out var attribute))
+            throw new InvalidOperationException($"No attribute found for attribute ID {c.A}");
+
+        unsafe
+        {
+            return attribute.Resolve(c.E, c.A, datom.SliceFast(sizeof(KeyPrefix)), c.T, c.IsRetract);
+        }
     }
 
 

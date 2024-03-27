@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.DatomIterators;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using Reloaded.Memory.Extensions;
 using RocksDbSharp;
@@ -59,9 +60,9 @@ public class IndexStore : IIndexStore
     }
 
 
-    public IDatomIterator GetIterator()
+    public IDatomSource GetIterator()
     {
-        return new IteratorWrapper(_db.NewIterator(_columnHandle));
+        return new IteratorWrapper(_db.NewIterator(_columnHandle), _registry);
 
     }
 }

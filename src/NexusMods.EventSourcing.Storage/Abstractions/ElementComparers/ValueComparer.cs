@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using NexusMods.EventSourcing.Abstractions.Internals;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage.Abstractions.ElementComparers;

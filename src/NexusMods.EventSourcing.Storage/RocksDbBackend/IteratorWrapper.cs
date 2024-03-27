@@ -1,23 +1,25 @@
 ﻿using System;
-using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Storage.Abstractions;
-using Reloaded.Memory.Extensions;
+using NexusMods.EventSourcing.Abstractions.DatomIterators;
+using NexusMods.EventSourcing.Abstractions.Internals;
 using RocksDbSharp;
 
 namespace NexusMods.EventSourcing.Storage.RocksDbBackend;
 
-internal class IteratorWrapper : IDatomIterator
+internal class IteratorWrapper : IDatomSource, IIterator
 {
-    private readonly Iterator _iterator;
+    private Iterator _iterator;
+    private readonly AttributeRegistry _registry;
 
-    public IteratorWrapper(Iterator iterator)
+    public IteratorWrapper(Iterator iterator, AttributeRegistry registry)
     {
+        _registry = registry;
         _iterator = iterator;
     }
 
     public void Dispose()
     {
         _iterator.Dispose();
+        _iterator = null!;
     }
 
     public bool Valid => _iterator.Valid();
@@ -26,15 +28,30 @@ internal class IteratorWrapper : IDatomIterator
         _iterator.Next();
     }
 
-    public void Seek(ReadOnlySpan<byte> datom)
+    public void Prev()
     {
-        _iterator.Seek(datom);
+        _iterator.Prev();
     }
 
-    public void SeekStart()
-    {
-        _iterator.SeekToFirst();
-    }
 
     public ReadOnlySpan<byte> Current => _iterator.GetKeySpan();
+    public IAttributeRegistry Registry => _registry;
+
+    public IIterator SeekLast()
+    {
+        _iterator.SeekToLast();
+        return this;
+    }
+
+    public IIterator Seek(ReadOnlySpan<byte> datom)
+    {
+        _iterator.Seek(datom);
+        return this;
+    }
+
+    public IIterator SeekStart()
+    {
+        _iterator.SeekToFirst();
+        return this;
+    }
 }

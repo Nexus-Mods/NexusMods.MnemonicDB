@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using NexusMods.EventSourcing.Abstractions.Internals;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -16,13 +17,22 @@ where TAttribute : IAttribute<TValueType>
     /// <summary>
     /// Create a new attribute
     /// </summary>
-    protected ScalarAttribute(string uniqueName = "", bool isIndexed = false)
+    protected ScalarAttribute(string uniqueName = "",
+        bool isIndexed = false,
+        bool keepHistory = true,
+        bool multiArity = false)
     {
         IsIndexed = isIndexed;
+        KeepHistory = keepHistory;
+        MultiArity = multiArity;
         Id = uniqueName == "" ?
             Symbol.Intern(typeof(TAttribute).FullName!) :
             Symbol.InternPreSanitized(uniqueName);
     }
+
+    public bool MultiArity { get; }
+
+    public bool KeepHistory { get; }
 
     /// <inheritdoc />
     public bool IsIndexed { get; }
@@ -154,6 +164,7 @@ where TAttribute : IAttribute<TValueType>
                 if (newId is TValueType recasted)
                 {
                     registry.Explode<TAttribute, TValueType, TWriter>(out a, recasted, vWriter);
+                    return;
                 }
             }
             registry.Explode<TAttribute, TValueType, TWriter>(out a, V, vWriter);

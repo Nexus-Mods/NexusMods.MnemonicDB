@@ -10,6 +10,8 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.DatomIterators;
+using NexusMods.EventSourcing.Abstractions.Internals;
 using NexusMods.EventSourcing.Storage.Abstractions;
 using NexusMods.EventSourcing.Storage.DatomStorageStructures;
 using Reloaded.Memory.Extensions;
@@ -25,14 +27,6 @@ public class DatomStore : IDatomStore
     private EntityId _nextEntityId;
     private readonly Subject<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)> _updatesSubject;
     private readonly DatomStoreSettings _settings;
-
-
-    #region Indexes
-
-
-
-    #endregion
-
 
     private TxId _asOfTxId = TxId.MinValue;
     private readonly PooledMemoryBufferWriter _writer;
@@ -138,8 +132,14 @@ public class DatomStore : IDatomStore
     {
         try
         {
-            //var lastTx = GetMostRecentTxId();
-            var lastTx = TxId.MinValue;
+            var snapshot = _backend.GetSnapshot();
+            using var txIterator = snapshot.GetIterator(IndexType.TxLog);
+            var lastTx = txIterator
+                .SeekLast()
+                .Reverse()
+                .Resolve()
+                .FirstOrDefault()?.T ?? TxId.MinValue;
+
             if (lastTx == TxId.MinValue)
             {
                 _logger.LogInformation("Bootstrapping the datom store no existing state found");
@@ -163,18 +163,7 @@ public class DatomStore : IDatomStore
     public TxId AsOfTxId => _asOfTxId;
     public IAttributeRegistry Registry => _registry;
 
-    public void Dispose()
-    {
-        /*_txChannel.Writer.Complete();
 
-        _db.Dispose();
-        _txLog.Dispose();
-        _eatvCurrent.Dispose();
-        _eatvHistory.Dispose();
-        _aetvCurrent.Dispose();
-        _backrefHistory.Dispose();*/
-        throw new NotImplementedException();
-    }
 
     public async Task<TxId> Sync()
     {
@@ -284,17 +273,6 @@ throw new NotImplementedException();
         throw new NotImplementedException();
     }
 
-    /// <summary>
-    /// Gets the most recent transaction id.
-    /// </summary>
-    public TxId GetMostRecentTxId()
-    {
-        /*
-        return _txLog.GetMostRecentTxId();
-        */
-        throw new NotImplementedException();
-    }
-
     public Type GetReadDatomType(Type attribute)
     {
         return _registry.GetReadDatomType(attribute);
@@ -305,37 +283,13 @@ throw new NotImplementedException();
         return _backend.GetSnapshot();
     }
 
-    public IEnumerable<IReadDatom> SeekIndex(ISnapshot snapshot, IndexType type, EntityId? entityId = default, AttributeId? attributeId = default, TxId? txId = default)
-    {
-        using var iter = snapshot.GetIterator(type);
-        Span<byte> datom = stackalloc byte[KeyPrefix.Size];
-
-        var prefix = datom.CastFast<byte, KeyPrefix>();
-        prefix[0].Set(entityId ?? EntityId.From(0), attributeId ?? AttributeId.From(0), txId ?? TxId.MinValue, false);
-        iter.Seek(datom);
-
-        while (iter.Valid)
-        {
-            var c = MemoryMarshal.Read<KeyPrefix>(iter.Current.SliceFast(0, KeyPrefix.Size));
-            var resolved = _registry.Resolve(c.E, c.A, iter.Current.SliceFast(KeyPrefix.Size), c.T, c.IsRetract);
-            yield return resolved;
-            iter.Next();
-        }
-
-    }
 
     public IEnumerable<IReadDatom> Datoms(ISnapshot snapshot, IndexType type)
     {
-        using var iter = snapshot.GetIterator(type);
-        iter.SeekStart();
-        while (iter.Valid)
-        {
-            var c = MemoryMarshal.Read<KeyPrefix>(iter.Current.SliceFast(0, KeyPrefix.Size));
-            var resolved = _registry.Resolve(c.E, c.A, iter.Current.SliceFast(KeyPrefix.Size), c.T, c.IsRetract);
-            yield return resolved;
-            iter.Next();
-
-        }
+        using var source = snapshot.GetIterator(type);
+        var iter = source.SeekStart();
+        foreach (var datom in iter.Resolve())
+            yield return datom;
     }
 
     #region Internals
@@ -438,8 +392,6 @@ throw new NotImplementedException();
 
             if (isIndexed)
                 _avetCurrent.Put(batch, newSpan);
-
-
             //output.Add(_registry.Resolve(EntityId.From(stackDatom.E), AttributeId.From(stackDatom.A), stackDatom.V, TxId.From(stackDatom.T)));
         }
 
@@ -472,22 +424,24 @@ throw new NotImplementedException();
     {
         var prefix = new KeyPrefix();
         prefix.Set(d.E, d.A, TxId.MinValue, false);
-        var iter = _eavtCurrent.GetIterator();
-        iter.Seek(MemoryMarshal.CreateSpan(ref prefix, 1).Cast<KeyPrefix, byte>());
-        if (iter.Valid)
-        {
-            var found = MemoryMarshal.Read<KeyPrefix>(iter.Current);
-            if (found.E == d.E && found.A == d.A)
-            {
-                _prevWriter.Reset();
-                _prevWriter.Write(iter.Current);
-                return true;
-            }
+        using var source = _eavtCurrent.GetIterator();
+        var iter = source.Seek(MemoryMarshal.CreateSpan(ref prefix, 1).Cast<KeyPrefix, byte>());
+        if (!iter.Valid) return false;
 
-        }
+        var found = MemoryMarshal.Read<KeyPrefix>(iter.Current);
+        if (found.E != d.E || found.A != d.A) return false;
 
-        return false;
+        _prevWriter.Reset();
+        _prevWriter.Write(iter.Current);
+        return true;
     }
 
     #endregion
+
+    public void Dispose()
+    {
+        _updatesSubject.Dispose();
+        _writer.Dispose();
+        _prevWriter.Dispose();
+    }
 }

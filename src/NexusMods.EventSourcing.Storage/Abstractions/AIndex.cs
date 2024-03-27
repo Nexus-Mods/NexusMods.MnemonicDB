@@ -1,5 +1,6 @@
 ﻿using System;
 using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.DatomIterators;
 
 namespace NexusMods.EventSourcing.Storage.Abstractions;
 
@@ -38,7 +39,7 @@ where TIndexStore : class, IIndexStore
         batch.Delete(store, datom);
     }
 
-    public IDatomIterator GetIterator()
+    public IDatomSource GetIterator()
     {
         return store.GetIterator();
     }

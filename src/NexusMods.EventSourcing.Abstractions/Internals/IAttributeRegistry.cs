@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Buffers;
 
-namespace NexusMods.EventSourcing.Abstractions;
+namespace NexusMods.EventSourcing.Abstractions.Internals;
 
 /// <summary>
 /// A registry of attributes and serializers that supports operations that requires converting
@@ -24,13 +24,18 @@ public interface IAttributeRegistry
     /// <summary>
     /// Gets the unique symbol for the given attribute
     /// </summary>
-    /// <param name="datomAttributeType"></param>
-    /// <returns></returns>
     Symbol GetSymbolForAttribute(Type attribute);
 
     /// <summary>
     /// Gets the attribute id for the given attribute type
     /// </summary>
     public AttributeId GetAttributeId(Type datomAttributeType);
+
+    /// <summary>
+    /// Resolve the given KeyPrefix + Value into a datom
+    /// </summary>
+    /// <param name="datom"></param>
+    /// <returns></returns>
+    public IReadDatom Resolve(ReadOnlySpan<byte> datom);
 
 }

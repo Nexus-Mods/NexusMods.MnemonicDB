@@ -6,7 +6,7 @@ using BenchmarkDotNet.Running;
 using NexusMods.EventSourcing.Benchmarks.Benchmarks;
 
 
-#if DEBUG
+//#if DEBUG
 
 var benchmark = new ReadTests
 {
@@ -21,8 +21,12 @@ for (var i = 0; i < 1000000; i++)
     result = benchmark.ReadFiles();
 }
 Console.WriteLine("Elapsed: " + sw.Elapsed + " Result: " + result);
+
+
+/*
 #else
 
 BenchmarkRunner.Run<ReadTests>();
 
 #endif
+*/

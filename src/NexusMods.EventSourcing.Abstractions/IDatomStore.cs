@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using NexusMods.EventSourcing.Abstractions.Internals;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -79,20 +80,10 @@ public interface IDatomStore : IDisposable
     EntityId GetMaxEntityId();
 
     /// <summary>
-    /// Gets the most recent transaction id for the given entity id.
-    /// </summary>
-    TxId GetMostRecentTxId();
-
-    /// <summary>
     /// Gets the type of the read datom for the given attribute.
     /// </summary>
     Type GetReadDatomType(Type attribute);
 
-    /// <summary>
-    /// Gets the datoms matching the given pattern
-    /// </summary>
-    public IEnumerable<IReadDatom> SeekIndex(ISnapshot snapshot, IndexType type, EntityId? entityId = default,
-        AttributeId? attributeId = default, TxId? txId = default);
 
     /// <summary>
     /// Get all the datoms in a given index, not super useful as this may return a TOOON of datoms.
