@@ -150,7 +150,14 @@ public class DatomStore : IDatomStore
                 _asOfTxId = lastTx;
             }
 
-            _nextEntityId = EntityId.From(GetMaxEntityId().Value + 1);
+            using var entIterator = snapshot.GetIterator(IndexType.EAVTCurrent);
+            var lastEnt = entIterator
+                .SeekLast()
+                .Reverse()
+                .Resolve()
+                .FirstOrDefault()?.E ?? EntityId.MinValue;
+
+            _nextEntityId = EntityId.From(lastEnt.Value + 1);
         }
         catch (Exception ex)
         {
