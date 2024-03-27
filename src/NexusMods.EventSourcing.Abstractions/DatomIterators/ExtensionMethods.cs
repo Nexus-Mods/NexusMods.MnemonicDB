@@ -24,6 +24,17 @@ public static class ExtensionMethods
     }
 
     /// <summary>
+    /// Seeks to the given tx id in the iterator, assumes other values are 0
+    /// </summary>
+    public static IIterator SeekTo<TParent>(this TParent parent, TxId txId)
+        where TParent : ISeekableIterator
+    {
+        var key = new KeyPrefix();
+        key.Set(EntityId.MinValue, AttributeId.Min, txId, false);
+        return parent.SeekTo(ref key);
+    }
+
+    /// <summary>
     /// Seeks to the given entity id in the iterator, assumes other values are 0
     /// </summary>
     public static IIterator SeekTo<TParent>(this TParent parent, AttributeId aid)
@@ -138,6 +149,15 @@ public static class ExtensionMethods
         where TParent : IIterator
     {
         return new WhileA<TParent>(a, parent);
+    }
+
+    /// <summary>
+    /// Keeps the iterator valid while the attribute is equal to the given attribute
+    /// </summary>
+    public static WhileTx<TParent> While<TParent>(this TParent parent, TxId txId)
+        where TParent : IIterator
+    {
+        return new WhileTx<TParent>(txId, parent);
     }
 
     /// <summary>

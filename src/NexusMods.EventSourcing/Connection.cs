@@ -132,13 +132,4 @@ public class Connection : IConnection
     /// <inheritdoc />
     public IObservable<IDb> Revisions => _store.TxLog
         .Select(log => new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry));
-
-    /// <inheritdoc />
-    public T GetActive<T>(EntityId id) where T : IActiveReadModel
-    {
-        var db = Db;
-        var ctor = ModelReflector.GetActiveModelConstructor<T>();
-        var activeModel = (T)ctor(db, id);
-        return activeModel;
-    }
 }

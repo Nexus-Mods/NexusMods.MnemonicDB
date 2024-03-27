@@ -43,11 +43,6 @@ public interface IDb : IDisposable
         where TModel : IReadModel
         where TAttribute : IAttribute<EntityId>;
 
-    /// <summary>
-    /// Reloads the active read model with the latest state from the database.
-    /// </summary>
-    void Reload<TOuter>(TOuter aActiveReadModel) where TOuter : IActiveReadModel;
-
     public IEnumerable<IReadDatom> Datoms(EntityId id);
 
     /// <summary>

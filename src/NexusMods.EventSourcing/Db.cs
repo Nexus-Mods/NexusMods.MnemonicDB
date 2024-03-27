@@ -1,14 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+﻿using System.Collections.Generic;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.DatomIterators;
 using NexusMods.EventSourcing.Abstractions.Models;
 using NexusMods.EventSourcing.Storage;
-using NexusMods.EventSourcing.Storage.Abstractions;
-using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing;
 
@@ -87,13 +81,6 @@ internal class Db : IDb
         }
     }
 
-    public void Reload<TOuter>(TOuter aActiveReadModel) where TOuter : IActiveReadModel
-    {
-        var reader = _connection.ModelReflector.GetActiveReader<TOuter>();/*
-        var iterator = store.GetAttributesForEntity(aActiveReadModel.Id, _txId).GetEnumerator();
-        reader(aActiveReadModel, iterator);*/
-    }
-
     public IEnumerable<IReadDatom> Datoms(EntityId entityId)
     {
         using var iterator = _snapshot.GetIterator(IndexType.EAVTCurrent);
@@ -107,7 +94,8 @@ internal class Db : IDb
     public IEnumerable<IReadDatom> Datoms(TxId txId)
     {
         using var iterator = _snapshot.GetIterator(IndexType.TxLog);
-        foreach (var datom in iterator.SeekTo(txId)
+        foreach (var datom in iterator
+                     .SeekTo(txId)
                      .While(txId)
                      .Resolve())
             yield return datom;
