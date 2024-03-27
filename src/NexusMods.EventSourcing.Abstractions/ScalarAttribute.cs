@@ -81,20 +81,6 @@ where TAttribute : IAttribute<TValueType>
     public Symbol Id { get; }
 
     /// <inheritdoc />
-    public IReadDatom Resolve(Datom datom)
-    {
-        throw new NotImplementedException();
-        _serializer.Read(datom.V.Span, out var read);
-        return new ReadDatom
-        {
-            E = datom.E,
-            V = read,
-            T = datom.T,
-        };
-    }
-
-
-    /// <inheritdoc />
     public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx, bool isRetract)
     {
         return new ReadDatom

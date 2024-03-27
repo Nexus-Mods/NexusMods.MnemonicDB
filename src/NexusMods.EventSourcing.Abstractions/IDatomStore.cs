@@ -37,12 +37,6 @@ public interface IDatomStore : IDisposable
     IAttributeRegistry Registry { get; }
 
     /// <summary>
-    /// Resolves the given datoms to typed datoms.
-    /// </summary>
-    /// <param name="datoms"></param>
-    IEnumerable<IReadDatom> Resolved(IEnumerable<Datom> datoms);
-
-    /// <summary>
     /// Registers new attributes with the store. These should already have been transacted into the store.
     /// </summary>
     /// <param name="newAttrs"></param>

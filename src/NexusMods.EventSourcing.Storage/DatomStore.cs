@@ -187,11 +187,6 @@ public class DatomStore : IDatomStore
 
     public IObservable<(TxId TxId, ISnapshot Snapshot)> TxLog => _updatesSubject;
 
-    public IEnumerable<IReadDatom> Resolved(IEnumerable<Datom> datoms)
-    {
-        return datoms.Select(datom => _registry.Resolve(datom));
-    }
-
     public async Task RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
     {
         var datoms = new List<IWriteDatom>();

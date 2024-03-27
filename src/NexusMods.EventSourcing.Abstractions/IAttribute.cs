@@ -37,13 +37,6 @@ public interface IAttribute
     bool IsIndexed { get; }
 
     /// <summary>
-    /// Converts the datom to a typed datom
-    /// </summary>
-    /// <param name="datom"></param>
-    /// <returns></returns>
-    IReadDatom Resolve(Datom datom);
-
-    /// <summary>
     /// Converts the given values into a typed datom
     /// </summary>
     IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx, bool isRetract);
