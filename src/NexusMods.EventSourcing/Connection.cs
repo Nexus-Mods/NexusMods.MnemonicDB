@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
@@ -129,7 +130,8 @@ public class Connection : IConnection
     }
 
     /// <inheritdoc />
-    public IObservable<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)> Commits => _store.TxLog;
+    public IObservable<IDb> Revisions => _store.TxLog
+        .Select(log => new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry));
 
     /// <inheritdoc />
     public T GetActive<T>(EntityId id) where T : IActiveReadModel

@@ -50,6 +50,11 @@ public interface IDb : IDisposable
 
     public IEnumerable<IReadDatom> Datoms(EntityId id);
 
+    /// <summary>
+    /// Gets the datoms for the given transaction id.
+    /// </summary>
+    public IEnumerable<IReadDatom> Datoms(TxId txId);
+
     public IEnumerable<IReadDatom> Datoms<TAttribute>(IndexType type)
         where TAttribute : IAttribute;
 }

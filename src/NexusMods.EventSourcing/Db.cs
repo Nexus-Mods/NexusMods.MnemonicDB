@@ -104,6 +104,15 @@ internal class Db : IDb
 
     }
 
+    public IEnumerable<IReadDatom> Datoms(TxId txId)
+    {
+        using var iterator = _snapshot.GetIterator(IndexType.TxLog);
+        foreach (var datom in iterator.SeekTo(txId)
+                     .While(txId)
+                     .Resolve())
+            yield return datom;
+    }
+
     public IEnumerable<IReadDatom> Datoms<TAttribute>(IndexType type)
     where TAttribute : IAttribute
     {

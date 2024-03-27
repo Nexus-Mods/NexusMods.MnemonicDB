@@ -27,9 +27,9 @@ public interface IConnection
     public ITransaction BeginTransaction();
 
     /// <summary>
-    /// A sequential stream of commits to the database.
+    /// A sequential stream of database revisions.
     /// </summary>
-    public IObservable<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)> Commits { get; }
+    public IObservable<IDb> Revisions { get; }
 
     /// <summary>
     /// Gets the active read model for the given entity id, this entity will

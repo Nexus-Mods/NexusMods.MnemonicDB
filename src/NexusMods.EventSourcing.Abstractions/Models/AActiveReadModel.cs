@@ -43,8 +43,10 @@ where TOuter : AActiveReadModel<TOuter>, IActiveReadModel
         var weakRef = new WeakReference<TOuter>(model);
         var box = new Box<IDisposable>();
 
-        box.Value = connection.Commits.Subscribe(changes =>
+        box.Value = connection.Revisions.Subscribe(changes =>
         {
+            throw new NotImplementedException();
+            /*
             if (weakRef.TryGetTarget(out var target))
             {
                 target._basisDb = connection.Db;
@@ -55,6 +57,7 @@ where TOuter : AActiveReadModel<TOuter>, IActiveReadModel
             {
                 box.Value?.Dispose();
             }
+            */
         });
 
     }

@@ -148,7 +148,7 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
 
         var realId = result[file.Id];
 
-        Connection.Commits.Subscribe(update =>
+        Connection.Revisions.Subscribe(update =>
         {
             // Only Txes we care about
             if (update.Datoms.Any(d => d.E == realId))

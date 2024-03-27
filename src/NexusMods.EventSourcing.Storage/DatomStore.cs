@@ -25,7 +25,7 @@ public class DatomStore : IDatomStore
     private readonly ILogger<DatomStore> _logger;
     private readonly Channel<PendingTransaction> _txChannel;
     private EntityId _nextEntityId;
-    private readonly Subject<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)> _updatesSubject;
+    private readonly Subject<(TxId TxId, ISnapshot snapshot)> _updatesSubject;
     private readonly DatomStoreSettings _settings;
 
     private TxId _asOfTxId = TxId.MinValue;
@@ -80,7 +80,7 @@ public class DatomStore : IDatomStore
         _avetHistory = _backend.GetIndex(IndexType.AVETHistory);
 
 
-        _updatesSubject = new Subject<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)>();
+        _updatesSubject = new Subject<(TxId TxId, ISnapshot Snapshot)>();
 
         registry.Populate(BuiltInAttributes.Initial);
 
@@ -113,10 +113,8 @@ public class DatomStore : IDatomStore
 
                 Log(pendingTransaction, out var result);
 
-                //_updatesSubject.OnNext((_asOfTxId, readables));
+                _updatesSubject.OnNext((result.AssignedTxId, result.Snapshot));
                 pendingTransaction.CompletionSource.SetResult(result);
-
-                //_logger.LogDebug("Transaction {TxId} processed in {Elapsed}ms, new in-memory size is {Count} datoms", pendingTransaction.AssignedTxId!.Value, sw.ElapsedMilliseconds, _indexes.InMemorySize);
             }
             catch (Exception ex)
             {
@@ -180,7 +178,7 @@ public class DatomStore : IDatomStore
         return await pending.CompletionSource.Task;
     }
 
-    public IObservable<(TxId TxId, IReadOnlyCollection<IReadDatom> Datoms)> TxLog => _updatesSubject;
+    public IObservable<(TxId TxId, ISnapshot Snapshot)> TxLog => _updatesSubject;
 
     public IEnumerable<IReadDatom> Resolved(IEnumerable<Datom> datoms)
     {
@@ -392,7 +390,6 @@ throw new NotImplementedException();
 
             if (isIndexed)
                 _avetCurrent.Put(batch, newSpan);
-            //output.Add(_registry.Resolve(EntityId.From(stackDatom.E), AttributeId.From(stackDatom.A), stackDatom.V, TxId.From(stackDatom.T)));
         }
 
         var swWrite = Stopwatch.StartNew();
@@ -415,8 +412,6 @@ throw new NotImplementedException();
             Datoms = output,
             Snapshot = _backend.GetSnapshot()
         };
-
-
         _asOfTxId = thisTx;
     }
 
