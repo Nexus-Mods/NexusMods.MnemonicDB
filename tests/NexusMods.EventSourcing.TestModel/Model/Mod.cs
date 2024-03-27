@@ -6,16 +6,13 @@ namespace NexusMods.EventSourcing.TestModel.Model;
 
 public class Mod(ITransaction? tx) : AReadModel<Mod>(tx)
 {
-
-    [From<ModAttributes.Name>]
-    public required string Name { get; init; }
+    [From<ModAttributes.Name>] public required string Name { get; init; }
 
 
-    [From<ModAttributes.LoadoutId>]
-    public required EntityId LoadoutId { get; init; }
+    [From<ModAttributes.LoadoutId>] public required EntityId LoadoutId { get; init; }
 
     /// <summary>
-    /// The loadout for this mod.
+    ///     The loadout for this mod.
     /// </summary>
     public Loadout Loadout => Get<Loadout>(LoadoutId);
 

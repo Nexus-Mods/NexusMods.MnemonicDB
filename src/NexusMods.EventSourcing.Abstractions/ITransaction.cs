@@ -4,26 +4,31 @@ using NexusMods.EventSourcing.Abstractions.Models;
 namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
-/// Represents a transaction, which is a set of proposed changes to the datom store
+///     Represents a transaction, which is a set of proposed changes to the datom store
 /// </summary>
 public interface ITransaction
 {
     /// <summary>
-    /// Gets a temporary id for a new entity
+    ///     Gets the temporary id for the transaction
+    /// </summary>
+    public TxId ThisTxId { get; }
+
+    /// <summary>
+    ///     Gets a temporary id for a new entity
     /// </summary>
     /// <returns></returns>
     EntityId TempId();
 
     /// <summary>
-    /// Adds a new read model to the transaction, the datoms are extracted from the read model
-    /// as asserts for each property with the FromAttribute
+    ///     Adds a new read model to the transaction, the datoms are extracted from the read model
+    ///     as asserts for each property with the FromAttribute
     /// </summary>
     /// <param name="model"></param>
     void Add<TReadModel>(TReadModel model)
         where TReadModel : IReadModel;
 
     /// <summary>
-    /// Adds a new datom to the transaction
+    ///     Adds a new datom to the transaction
     /// </summary>
     /// <param name="entityId"></param>
     /// <param name="val"></param>
@@ -33,12 +38,7 @@ public interface ITransaction
         where TAttribute : IAttribute<TVal>;
 
     /// <summary>
-    /// Commits the transaction
+    ///     Commits the transaction
     /// </summary>
     Task<ICommitResult> Commit();
-
-    /// <summary>
-    /// Gets the temporary id for the transaction
-    /// </summary>
-    public TxId ThisTxId { get; }
 }

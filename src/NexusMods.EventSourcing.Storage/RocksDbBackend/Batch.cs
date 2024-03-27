@@ -4,6 +4,7 @@ using RocksDbSharp;
 using IWriteBatch = NexusMods.EventSourcing.Storage.Abstractions.IWriteBatch;
 
 namespace NexusMods.EventSourcing.Storage.RocksDbBackend;
+
 public class Batch(RocksDb db) : IWriteBatch
 {
     private readonly WriteBatch _batch = new();

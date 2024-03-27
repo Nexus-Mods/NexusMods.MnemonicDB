@@ -13,15 +13,15 @@ namespace NexusMods.EventSourcing.Storage.Tests;
 
 public abstract class AStorageTest : IAsyncLifetime
 {
-    protected readonly AttributeRegistry Registry;
-    protected IDatomStore DatomStore;
+    private readonly AbsolutePath _path;
+    private readonly IServiceProvider _provider;
     protected readonly DatomStoreSettings DatomStoreSettings;
 
     protected readonly ILogger Logger;
-    private readonly IServiceProvider _provider;
-    private readonly AbsolutePath _path;
+    protected readonly AttributeRegistry Registry;
 
     private ulong _tempId = 1;
+    protected IDatomStore DatomStore;
 
     protected AStorageTest(IServiceProvider provider, Func<AttributeRegistry, IStoreBackend>? backendFn = null)
     {
@@ -30,34 +30,31 @@ public abstract class AStorageTest : IAsyncLifetime
             provider.GetRequiredService<IEnumerable<IAttribute>>());
         Registry.Populate([
             new DbAttribute(Symbol.Intern<ModAttributes.Name>(), AttributeId.From(10), Symbol.Intern<SizeSerializer>()),
-            new DbAttribute(Symbol.Intern<FileAttributes.Path>(), AttributeId.From(20), Symbol.Intern<RelativePathSerializer>()),
-            new DbAttribute(Symbol.Intern<FileAttributes.Hash>(), AttributeId.From(21), Symbol.Intern<HashSerializer>()),
-            new DbAttribute(Symbol.Intern<FileAttributes.Size>(), AttributeId.From(22), Symbol.Intern<SizeSerializer>()),
-            new DbAttribute(Symbol.Intern<FileAttributes.ModId>(), AttributeId.From(23), Symbol.Intern<EntityIdSerializer>()),
-            new DbAttribute(Symbol.Intern<ModAttributes.Name>(), AttributeId.From(24), Symbol.Intern<StringSerializer>()),
-
+            new DbAttribute(Symbol.Intern<FileAttributes.Path>(), AttributeId.From(20),
+                Symbol.Intern<RelativePathSerializer>()),
+            new DbAttribute(Symbol.Intern<FileAttributes.Hash>(), AttributeId.From(21),
+                Symbol.Intern<HashSerializer>()),
+            new DbAttribute(Symbol.Intern<FileAttributes.Size>(), AttributeId.From(22),
+                Symbol.Intern<SizeSerializer>()),
+            new DbAttribute(Symbol.Intern<FileAttributes.ModId>(), AttributeId.From(23),
+                Symbol.Intern<EntityIdSerializer>()),
+            new DbAttribute(Symbol.Intern<ModAttributes.Name>(), AttributeId.From(24),
+                Symbol.Intern<StringSerializer>())
         ]);
-        _path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("tests_datomstore"+Guid.NewGuid());
+        _path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("tests_datomstore" + Guid.NewGuid());
 
-        DatomStoreSettings = new()
+        DatomStoreSettings = new DatomStoreSettings
         {
-            Path = _path,
+            Path = _path
         };
 
-        backendFn ??= (registry) => new Backend(registry);
-
+        backendFn ??= registry => new Backend(registry);
 
 
         DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), Registry, DatomStoreSettings,
             backendFn(Registry));
 
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
-    }
-
-    public EntityId NextTempId()
-    {
-        var id = Interlocked.Increment(ref _tempId);
-        return EntityId.From(Ids.MakeId(Ids.Partition.Tmp, id));
     }
 
     public async Task InitializeAsync()
@@ -68,5 +65,11 @@ public abstract class AStorageTest : IAsyncLifetime
     public Task DisposeAsync()
     {
         return Task.CompletedTask;
+    }
+
+    public EntityId NextTempId()
+    {
+        var id = Interlocked.Increment(ref _tempId);
+        return EntityId.From(Ids.MakeId(Ids.Partition.Tmp, id));
     }
 }

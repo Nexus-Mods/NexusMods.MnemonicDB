@@ -5,11 +5,12 @@ using NexusMods.EventSourcing.Abstractions.Internals;
 namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
-/// Reverses the order of the iterator so that a .Next will move backwards
+///     Reverses the order of the iterator so that a .Next will move backwards
 /// </summary>
 public class ReverseIterator<TParent> : IIterator where TParent : IIterator
 {
     private readonly TParent _parent;
+
     internal ReverseIterator(TParent parent)
     {
         _parent = parent;

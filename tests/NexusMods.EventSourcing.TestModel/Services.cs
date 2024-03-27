@@ -2,7 +2,6 @@
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.TestModel.Model.Attributes;
 using NexusMods.EventSourcing.TestModel.ValueSerializers;
-using NexusMods.Paths;
 using FileAttributes = NexusMods.EventSourcing.TestModel.ComplexModel.Attributes.FileAttributes;
 
 namespace NexusMods.EventSourcing.TestModel;
@@ -22,7 +21,7 @@ public static class Services
             .AddAttribute<ModAttributes.UpdatedTx>()
             .AddAttribute<ModAttributes.LoadoutId>();
 
-        services.AddAttributeCollection<ComplexModel.Attributes.FileAttributes>()
+        services.AddAttributeCollection<FileAttributes>()
             .AddAttributeCollection<ComplexModel.Attributes.LoadoutAttributes>()
             .AddAttributeCollection<ComplexModel.Attributes.ModAttributes>();
 

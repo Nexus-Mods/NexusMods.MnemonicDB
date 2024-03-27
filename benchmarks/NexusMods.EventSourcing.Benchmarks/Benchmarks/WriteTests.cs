@@ -1,13 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using BenchmarkDotNet.Attributes;
-using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
-using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.TestModel.Model;
-
-namespace NexusMods.EventSourcing.Benchmarks.Benchmarks;
+﻿namespace NexusMods.EventSourcing.Benchmarks.Benchmarks;
 
 public class WriteTests
 {
@@ -53,5 +44,4 @@ public class WriteTests
         }
     }
     */
-
 }

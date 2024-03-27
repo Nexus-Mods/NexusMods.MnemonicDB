@@ -7,9 +7,11 @@ using NexusMods.Paths;
 
 namespace NexusMods.EventSourcing.TestModel.ValueSerializers;
 
-public class HashSerializer : IValueSerializer<Hash> {
+public class HashSerializer : IValueSerializer<Hash>
+{
     public Type NativeType => typeof(Hash);
     public Symbol UniqueId => Symbol.Intern<HashSerializer>();
+
     public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
     {
         return MemoryMarshal.Read<Size>(a).CompareTo(MemoryMarshal.Read<Size>(b));

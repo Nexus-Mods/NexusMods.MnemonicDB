@@ -5,23 +5,22 @@ using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Abstractions.Models;
 using NexusMods.EventSourcing.Storage;
 
 namespace NexusMods.EventSourcing;
 
 /// <summary>
-/// Main connection class, co-ordinates writes and immutable reads
+///     Main connection class, co-ordinates writes and immutable reads
 /// </summary>
 public class Connection : IConnection
 {
     private readonly object _lock = new();
-    private ulong _nextEntityId = Ids.MinId(Ids.Partition.Entity);
     private readonly IDatomStore _store;
     internal readonly ModelReflector<Transaction> ModelReflector;
+    private ulong _nextEntityId = Ids.MinId(Ids.Partition.Entity);
 
     /// <summary>
-    /// Main connection class, co-ordinates writes and immutable reads
+    ///     Main connection class, co-ordinates writes and immutable reads
     /// </summary>
     private Connection(IDatomStore store)
     {
@@ -29,10 +28,29 @@ public class Connection : IConnection
         ModelReflector = new ModelReflector<Transaction>(store);
     }
 
+
+    /// <inheritdoc />
+    public IDb Db => new Db(_store.GetSnapshot(), this, TxId, (AttributeRegistry)_store.Registry);
+
+
+    /// <inheritdoc />
+    public TxId TxId => _store.AsOfTxId;
+
+    /// <inheritdoc />
+    public ITransaction BeginTransaction()
+    {
+        return new Transaction(this);
+    }
+
+    /// <inheritdoc />
+    public IObservable<IDb> Revisions => _store.TxLog
+        .Select(log => new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry));
+
     /// <summary>
-    /// Creates and starts a new connection, some setup and reflection is done here so it is async
+    ///     Creates and starts a new connection, some setup and reflection is done here so it is async
     /// </summary>
-    public static async Task<Connection> Start(IDatomStore store, IEnumerable<IValueSerializer> serializers, IEnumerable<IAttribute> declaredAttributes)
+    public static async Task<Connection> Start(IDatomStore store, IEnumerable<IValueSerializer> serializers,
+        IEnumerable<IAttribute> declaredAttributes)
     {
         var conn = new Connection(store);
         await conn.AddMissingAttributes(serializers, declaredAttributes);
@@ -40,7 +58,7 @@ public class Connection : IConnection
     }
 
     /// <summary>
-    /// Creates and starts a new connection, some setup and reflection is done here so it is async
+    ///     Creates and starts a new connection, some setup and reflection is done here so it is async
     /// </summary>
     public static async Task<Connection> Start(IServiceProvider provider)
     {
@@ -52,7 +70,8 @@ public class Connection : IConnection
     }
 
 
-    private async Task AddMissingAttributes(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> declaredAttributes)
+    private async Task AddMissingAttributes(IEnumerable<IValueSerializer> valueSerializers,
+        IEnumerable<IAttribute> declaredAttributes)
     {
         var serializerByType = valueSerializers.ToDictionary(s => s.NativeType);
 
@@ -89,30 +108,19 @@ public class Connection : IConnection
             var uniqueId = Symbol.Unknown;
 
             foreach (var datom in db.Datoms(attrId))
-            {
                 switch (datom)
                 {
-                    case BuiltInAttributes.ValueSerializerId.ReadDatom serializerIdDatom:
+                    case ScalarAttribute<BuiltInAttributes.ValueSerializerId, Symbol>.ReadDatom serializerIdDatom:
                         serializerId = serializerIdDatom.V;
                         break;
-                    case BuiltInAttributes.UniqueId.ReadDatom uniqueIdDatom:
+                    case ScalarAttribute<BuiltInAttributes.UniqueId, Symbol>.ReadDatom uniqueIdDatom:
                         uniqueId = uniqueIdDatom.V;
                         break;
                 }
-            }
+
             yield return new DbAttribute(uniqueId, AttributeId.From(attrId.Value), serializerId);
         }
     }
-
-
-
-
-    /// <inheritdoc />
-    public IDb Db => new Db(_store.GetSnapshot(), this, TxId, (AttributeRegistry)_store.Registry);
-
-
-    /// <inheritdoc />
-    public TxId TxId => _store.AsOfTxId;
 
 
     /// <inheritdoc />
@@ -122,14 +130,4 @@ public class Connection : IConnection
         var result = new CommitResult(newTx.AssignedTxId, newTx.Remaps);
         return result;
     }
-
-    /// <inheritdoc />
-    public ITransaction BeginTransaction()
-    {
-        return new Transaction(this);
-    }
-
-    /// <inheritdoc />
-    public IObservable<IDb> Revisions => _store.TxLog
-        .Select(log => new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry));
 }

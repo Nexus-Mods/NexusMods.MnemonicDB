@@ -1,8 +1,6 @@
-﻿using System.Runtime.InteropServices;
-using NexusMods.EventSourcing.Abstractions;
+﻿using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.TestModel.Model;
 using NexusMods.EventSourcing.TestModel.Model.Attributes;
-using Xunit.Sdk;
 using File = NexusMods.EventSourcing.TestModel.Model.File;
 
 namespace NexusMods.EventSourcing.Tests;
@@ -84,7 +82,8 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
 
             // Validate the data
             var newDb = Connection.Db;
-            newDb.BasisTxId.Value.Should().Be(originalDb.BasisTxId.Value + 1UL + (ulong)i, "transaction id should be incremented by 1 for each mutation at iteration " + i);
+            newDb.BasisTxId.Value.Should().Be(originalDb.BasisTxId.Value + 1UL + (ulong)i,
+                "transaction id should be incremented by 1 for each mutation at iteration " + i);
 
             var newFound = newDb.Get<File>([realId]).First();
             newFound.Path.Should().Be($"C:\\test_{i}.txt_mutate");
@@ -132,9 +131,7 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
     [Fact]
     public async Task CanGetCommitUpdates()
     {
-
         List<IReadDatom[]> updates = new();
-
 
 
         var tx = Connection.BeginTransaction();
@@ -168,7 +165,7 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
             var updateDatom = updates[idx]
                 .First();
 
-            var value = ((ModFileAttributes.Index.ReadDatom)updateDatom).V;
+            var value = ((ScalarAttribute<ModFileAttributes.Index, ulong>.ReadDatom)updateDatom).V;
             value.Should().Be((ulong)idx);
         }
     }

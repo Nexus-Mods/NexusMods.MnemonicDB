@@ -9,16 +9,15 @@ namespace NexusMods.EventSourcing.Tests;
 
 public class AEventSourcingTest : IAsyncLifetime
 {
-    protected Connection Connection = null!;
-    protected DatomStoreSettings Config { get; set; }
-    protected ILogger Logger;
-
-    private DatomStore _store;
-    private readonly IValueSerializer[] _valueSerializers;
     private readonly IAttribute[] _attributes;
     private readonly IServiceProvider _provider;
     private readonly AttributeRegistry _registry;
+    private readonly IValueSerializer[] _valueSerializers;
     private Backend _backend;
+
+    private DatomStore _store;
+    protected Connection Connection = null!;
+    protected ILogger Logger;
 
 
     protected AEventSourcingTest(IServiceProvider provider)
@@ -39,23 +38,9 @@ public class AEventSourcingTest : IAsyncLifetime
         _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
 
         Logger = provider.GetRequiredService<ILogger<AEventSourcingTest>>();
-
     }
 
-
-    protected async Task RestartDatomStore()
-    {
-
-        _store.Dispose();
-        _backend.Dispose();
-
-
-        _backend = new Backend(_registry);
-        _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
-        await _store.Sync();
-
-        Connection = await Connection.Start(_store, _valueSerializers, _attributes);
-    }
+    protected DatomStoreSettings Config { get; set; }
 
     public async Task InitializeAsync()
     {
@@ -68,5 +53,19 @@ public class AEventSourcingTest : IAsyncLifetime
     {
         _store.Dispose();
         return Task.CompletedTask;
+    }
+
+
+    protected async Task RestartDatomStore()
+    {
+        _store.Dispose();
+        _backend.Dispose();
+
+
+        _backend = new Backend(_registry);
+        _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
+        await _store.Sync();
+
+        Connection = await Connection.Start(_store, _valueSerializers, _attributes);
     }
 }

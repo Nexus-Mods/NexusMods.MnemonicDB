@@ -7,8 +7,8 @@ namespace NexusMods.EventSourcing.Storage.RocksDbBackend;
 
 internal class IteratorWrapper : IDatomSource, IIterator
 {
-    private Iterator _iterator;
     private readonly AttributeRegistry _registry;
+    private Iterator _iterator;
 
     public IteratorWrapper(Iterator iterator, AttributeRegistry registry)
     {
@@ -21,21 +21,6 @@ internal class IteratorWrapper : IDatomSource, IIterator
         _iterator.Dispose();
         _iterator = null!;
     }
-
-    public bool Valid => _iterator.Valid();
-    public void Next()
-    {
-        _iterator.Next();
-    }
-
-    public void Prev()
-    {
-        _iterator.Prev();
-    }
-
-
-    public ReadOnlySpan<byte> Current => _iterator.GetKeySpan();
-    public IAttributeRegistry Registry => _registry;
 
     public IIterator SeekLast()
     {
@@ -54,4 +39,20 @@ internal class IteratorWrapper : IDatomSource, IIterator
         _iterator.SeekToFirst();
         return this;
     }
+
+    public bool Valid => _iterator.Valid();
+
+    public void Next()
+    {
+        _iterator.Next();
+    }
+
+    public void Prev()
+    {
+        _iterator.Prev();
+    }
+
+
+    public ReadOnlySpan<byte> Current => _iterator.GetKeySpan();
+    public IAttributeRegistry Registry => _registry;
 }

@@ -6,9 +6,10 @@ namespace NexusMods.EventSourcing.TestModel.ValueSerializers;
 
 public class UriSerializer : IValueSerializer<Uri>
 {
-    private static Encoding _encoding = Encoding.UTF8;
+    private static readonly Encoding _encoding = Encoding.UTF8;
     public Type NativeType => typeof(Uri);
     public Symbol UniqueId => Symbol.Intern<UriSerializer>();
+
     public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
     {
         return a.SequenceCompareTo(b);
@@ -23,7 +24,6 @@ public class UriSerializer : IValueSerializer<Uri>
     {
         val = new Uri(_encoding.GetString(buffer));
         return buffer.Length;
-
     }
 
     public void Serialize<TWriter>(Uri value, TWriter buffer) where TWriter : IBufferWriter<byte>

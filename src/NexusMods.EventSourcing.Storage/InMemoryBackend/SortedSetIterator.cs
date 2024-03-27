@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Immutable;
-using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.DatomIterators;
 using NexusMods.EventSourcing.Abstractions.Internals;
 
@@ -27,17 +26,6 @@ public class SortedSetIterator : IDatomSource, IIterator
         _offset = -1;
     }
 
-    public bool Valid => _offset >= 0 && _offset < Set.Count;
-    public void Next()
-    {
-        _offset++;
-    }
-
-    public void Prev()
-    {
-        _offset--;
-    }
-
     public IIterator SeekLast()
     {
         _offset = Set.Count - 1;
@@ -58,6 +46,18 @@ public class SortedSetIterator : IDatomSource, IIterator
     {
         _offset = 0;
         return this;
+    }
+
+    public bool Valid => _offset >= 0 && _offset < Set.Count;
+
+    public void Next()
+    {
+        _offset++;
+    }
+
+    public void Prev()
+    {
+        _offset--;
     }
 
     public ReadOnlySpan<byte> Current => Set[_offset];

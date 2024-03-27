@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Buffers;
-using System.Buffers.Binary;
 using System.Text;
 using NexusMods.EventSourcing.Abstractions;
 
@@ -9,10 +8,10 @@ namespace NexusMods.EventSourcing.Storage.Serializers;
 public class SymbolSerializer : IValueSerializer<Symbol>
 {
     private static readonly Encoding _encoding = Encoding.UTF8;
-    public Type NativeType => typeof(Symbol);
-    public Symbol UniqueId => Id;
 
     public static Symbol Id { get; } = Symbol.Intern<SymbolSerializer>();
+    public Type NativeType => typeof(Symbol);
+    public Symbol UniqueId => Id;
 
     public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
     {

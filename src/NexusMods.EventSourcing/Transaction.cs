@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.EventSourcing.Abstractions;
@@ -10,9 +9,9 @@ namespace NexusMods.EventSourcing;
 /// <inheritdoc />
 internal class Transaction(Connection connection) : ITransaction
 {
-    private ulong _tempId = Ids.MinId(Ids.Partition.Tmp) + 1;
     private readonly ConcurrentBag<IWriteDatom> _datoms = new();
     private readonly ConcurrentBag<IReadModel> _models = new();
+    private ulong _tempId = Ids.MinId(Ids.Partition.Tmp) + 1;
 
     /// <inhertdoc />
     public EntityId TempId()
@@ -22,7 +21,7 @@ internal class Transaction(Connection connection) : ITransaction
 
     /// <inheritdoc />
     public void Add<TReadModel>(TReadModel model)
-    where TReadModel : IReadModel
+        where TReadModel : IReadModel
     {
         _models.Add(model);
     }
@@ -34,10 +33,7 @@ internal class Transaction(Connection connection) : ITransaction
 
     public async Task<ICommitResult> Commit()
     {
-        foreach (var model in _models)
-        {
-            connection.ModelReflector.Add(this, model);
-        }
+        foreach (var model in _models) connection.ModelReflector.Add(this, model);
         return await connection.Transact(_datoms);
     }
 

@@ -4,8 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage;
-using NexusMods.EventSourcing.Storage.Abstractions;
-using NexusMods.EventSourcing.Storage.InMemoryBackend;
 using NexusMods.EventSourcing.TestModel;
 using NexusMods.Paths;
 using Xunit;
@@ -35,7 +33,7 @@ public class ABenchmark : IAsyncLifetime
             });
 
         _host = builder.Build();
-        Connection = await NexusMods.EventSourcing.Connection.Start(Services);
+        Connection = await EventSourcing.Connection.Start(Services);
     }
 
     public async Task DisposeAsync()

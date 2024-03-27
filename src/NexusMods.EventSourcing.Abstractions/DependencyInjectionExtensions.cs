@@ -4,12 +4,12 @@ using Microsoft.Extensions.DependencyInjection;
 namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
-/// Extension methods for adding attributes and other types to the service collection.
+///     Extension methods for adding attributes and other types to the service collection.
 /// </summary>
 public static class DependencyInjectionExtensions
 {
     /// <summary>
-    /// Registers the specified attribute type with the service collection.
+    ///     Registers the specified attribute type with the service collection.
     /// </summary>
     /// <param name="services"></param>
     /// <typeparam name="TAttribute"></typeparam>
@@ -22,8 +22,8 @@ public static class DependencyInjectionExtensions
     }
 
     /// <summary>
-    /// Assumes that the specified type is a static class with nested attribute classes, it registers all the nested
-    /// classes with the service collection.
+    ///     Assumes that the specified type is a static class with nested attribute classes, it registers all the nested
+    ///     classes with the service collection.
     /// </summary>
     /// <param name="services"></param>
     /// <typeparam name="TAttributeCollection"></typeparam>
@@ -40,19 +40,15 @@ public static class DependencyInjectionExtensions
         var attributes = type.GetNestedTypes();
 
         foreach (var attribute in attributes)
-        {
             if (attribute.IsAssignableTo(typeof(IAttribute)))
-            {
                 services.AddSingleton(typeof(IAttribute), attribute);
-            }
-        }
 
         return services;
     }
 
 
     /// <summary>
-    /// Adds the value serializer to the service collection.
+    ///     Adds the value serializer to the service collection.
     /// </summary>
     /// <param name="services"></param>
     /// <typeparam name="TValueSerializer"></typeparam>

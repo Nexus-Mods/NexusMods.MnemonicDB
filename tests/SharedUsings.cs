@@ -1,4 +1,5 @@
 // ReSharper disable RedundantUsingDirective.Global
+
 global using Xunit;
 global using FluentAssertions;
 global using AutoFixture;
@@ -10,7 +11,9 @@ public static class Initializer
 {
     [ModuleInitializer]
     public static void Init()
-        => VerifierSettings
+    {
+        VerifierSettings
             .AddExtraSettings(s =>
                 s.Converters.Add(new ObjectTupleWriter()));
+    }
 }

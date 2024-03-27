@@ -2,7 +2,6 @@
 
 using System;
 using System.Diagnostics;
-using BenchmarkDotNet.Running;
 using NexusMods.EventSourcing.Benchmarks.Benchmarks;
 
 
@@ -16,12 +15,8 @@ var benchmark = new ReadTests
 var sw = Stopwatch.StartNew();
 await benchmark.Setup();
 long result = 0;
-for (var i = 0; i < 10000; i++)
-{
-    result = benchmark.ReadAll();
-}
+for (var i = 0; i < 10000; i++) result = benchmark.ReadAll();
 Console.WriteLine("Elapsed: " + sw.Elapsed + " Result: " + result);
-
 
 
 /*
@@ -31,4 +26,3 @@ BenchmarkRunner.Run<ReadTests>();
 
 #endif
 */
-

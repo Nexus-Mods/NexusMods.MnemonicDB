@@ -3,7 +3,7 @@
 namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
-/// Settings for the datom store
+///     Settings for the datom store
 /// </summary>
 public class DatomStoreSettings
 {

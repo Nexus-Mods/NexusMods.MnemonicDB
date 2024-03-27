@@ -3,13 +3,15 @@
 namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
-/// A string that is interned behind a class so we can do reference equality
-/// instead of value equality
+///     A string that is interned behind a class so we can do reference equality
+///     instead of value equality
 /// </summary>
 public class Symbol
 {
+    private static readonly ConcurrentDictionary<(string Namespace, string Name), Symbol> InternedSymbols = new();
+
     /// <summary>
-    /// The constructor, which is private to ensure that all symbols are interned
+    ///     The constructor, which is private to ensure that all symbols are interned
     /// </summary>
     /// <param name="nsAndName"></param>
     private Symbol((string Namespace, string Name) nsAndName)
@@ -20,14 +22,27 @@ public class Symbol
     }
 
     /// <summary>
-    /// Placeholder for unknown symbols
+    ///     Placeholder for unknown symbols
     /// </summary>
     public static Symbol Unknown => Intern("<unknown>");
 
-    private static readonly ConcurrentDictionary<(string Namespace, string Name), Symbol> InternedSymbols = new();
+    /// <summary>
+    ///     The namespace of the symbol, the part before the name
+    /// </summary>
+    public string Namespace { get; }
 
     /// <summary>
-    /// Construct a new symbol, or return an existing one that matches the given name
+    ///     The name of the symbol
+    /// </summary>
+    public string Name { get; }
+
+    /// <summary>
+    ///     The full string name of the symbol, in the format of "Namespace/Name"
+    /// </summary>
+    public string Id { get; }
+
+    /// <summary>
+    ///     Construct a new symbol, or return an existing one that matches the given name
     /// </summary>
     public static Symbol Intern(string fullName)
     {
@@ -40,7 +55,7 @@ public class Symbol
     }
 
     /// <summary>
-    /// Construct a new symbol, or return an existing one that matches the given name
+    ///     Construct a new symbol, or return an existing one that matches the given name
     /// </summary>
     public static Symbol InternPreSanitized(string fullName)
     {
@@ -63,7 +78,7 @@ public class Symbol
     }
 
     /// <summary>
-    /// Construct a new symbol, based on the name of the given type
+    ///     Construct a new symbol, based on the name of the given type
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <returns></returns>
@@ -71,21 +86,6 @@ public class Symbol
     {
         return Intern(typeof(T).FullName!.Replace("+", "."));
     }
-
-    /// <summary>
-    /// The namespace of the symbol, the part before the name
-    /// </summary>
-    public string Namespace { get; }
-
-    /// <summary>
-    /// The name of the symbol
-    /// </summary>
-    public string Name { get; }
-
-    /// <summary>
-    /// The full string name of the symbol, in the format of "Namespace/Name"
-    /// </summary>
-    public string Id { get; }
 
     /// <inheritdoc />
     public override string ToString()

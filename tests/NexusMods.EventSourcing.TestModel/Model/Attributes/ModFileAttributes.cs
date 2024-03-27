@@ -9,5 +9,4 @@ public static class ModFileAttributes
     public class Path : ScalarAttribute<Path, string>;
 
     public class Index : ScalarAttribute<Index, ulong>;
-
 }

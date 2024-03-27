@@ -9,8 +9,6 @@ namespace NexusMods.EventSourcing.Storage.InMemoryBackend;
 public class IndexStore : IIndexStore
 {
     private readonly AttributeRegistry _registry;
-    public IndexType Type { get; }
-    public ImmutableSortedSet<byte[]> Set { get; private set; }
 
     public IndexStore(IndexType type, AttributeRegistry registry)
     {
@@ -19,14 +17,17 @@ public class IndexStore : IIndexStore
         Set = ImmutableSortedSet<byte[]>.Empty;
     }
 
-    public void Init(IComparer<byte[]> sorter)
-    {
-        Set = ImmutableSortedSet<byte[]>.Empty.WithComparer(sorter);
-    }
+    public ImmutableSortedSet<byte[]> Set { get; private set; }
+    public IndexType Type { get; }
 
     public IDatomSource GetIterator()
     {
         return new SortedSetIterator(Set, _registry);
+    }
+
+    public void Init(IComparer<byte[]> sorter)
+    {
+        Set = ImmutableSortedSet<byte[]>.Empty.WithComparer(sorter);
     }
 
 
@@ -34,12 +35,10 @@ public class IndexStore : IIndexStore
     {
         var builder = Set.ToBuilder();
         foreach (var (isRetract, datom) in datoms)
-        {
             if (isRetract)
                 builder.Remove(datom);
             else
                 builder.Add(datom);
-        }
         Set = builder.ToImmutable();
     }
 }

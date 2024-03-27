@@ -6,10 +6,11 @@ using NexusMods.Paths;
 
 namespace NexusMods.EventSourcing.TestModel.ValueSerializers;
 
-public class SizeSerializer : IValueSerializer<NexusMods.Paths.Size>
+public class SizeSerializer : IValueSerializer<Size>
 {
-    public Type NativeType => typeof(NexusMods.Paths.Size);
+    public Type NativeType => typeof(Size);
     public Symbol UniqueId => Symbol.Intern<SizeSerializer>();
+
     public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
     {
         return MemoryMarshal.Read<Size>(a).CompareTo(MemoryMarshal.Read<Size>(b));

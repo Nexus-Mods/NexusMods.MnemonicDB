@@ -1,6 +1,5 @@
 ﻿using System.Diagnostics;
 using Microsoft.Extensions.Logging;
-using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.TestModel.ComplexModel.ReadModels;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.Paths;
@@ -10,7 +9,6 @@ namespace NexusMods.EventSourcing.Tests;
 
 public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(provider)
 {
-
     [Theory]
     [InlineData(1, 1)]
     [InlineData(1, 16)]
@@ -48,22 +46,21 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
 
         var db = Connection.Db;
 
-        loadout =  db.Get<Loadout>(result[loadout.Id]);
+        loadout = db.Get<Loadout>(result[loadout.Id]);
 
         var totalSize = Size.Zero;
 
         loadout.Mods.Count().Should().Be(modCount, "all mods should be loaded");
         sw.Restart();
         foreach (var mod in loadout.Mods)
-        {
             //totalSize += mod.Files.Sum(f => f.Size);
             mod.Files.Count().Should().Be(filesPerMod, "every mod should have the same amount of files");
-        }
 
 
         //totalSize.Should().BeGreaterThan(Size.FromLong(modCount * filesPerMod * "File ".Length), "total size should be the sum of all file sizes");
 
-        Logger.LogInformation($"Loadout: {loadout.Name} ({modCount * filesPerMod} entities) loaded in {sw.ElapsedMilliseconds}ms");
+        Logger.LogInformation(
+            $"Loadout: {loadout.Name} ({modCount * filesPerMod} entities) loaded in {sw.ElapsedMilliseconds}ms");
     }
 
     [Theory]
@@ -103,10 +100,11 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
 
         var db = Connection.Db;
         var firstMod = db.Get<Mod>(result[mods[0].Id]);
-        for (int idx = 0; idx < extraFiles; idx++)
+        for (var idx = 0; idx < extraFiles; idx++)
         {
             var name = $"Extra File {idx}";
-            var file = File.Create(extraTx, name, firstMod, Size.FromLong(name.Length), Hash.FromLong(name.XxHash64AsUtf8()));
+            var file = File.Create(extraTx, name, firstMod, Size.FromLong(name.Length),
+                Hash.FromLong(name.XxHash64AsUtf8()));
             files.Add(file);
         }
 
@@ -118,7 +116,7 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
 
         db = Connection.Db;
 
-        loadout =  db.Get<Loadout>(result[loadout.Id]);
+        loadout = db.Get<Loadout>(result[loadout.Id]);
 
         var totalSize = Size.Zero;
 
@@ -128,13 +126,9 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
             totalSize += mod.Files.Sum(f => f.Size);
 
             if (mod.Id == firstMod.Id)
-            {
                 mod.Files.Count().Should().Be(filesPerMod + extraFiles, "first mod should have the extra files");
-            }
             else
-            {
                 mod.Files.Count().Should().Be(filesPerMod, "every mod should have the same amount of files");
-            }
         }
 
         tx = Connection.BeginTransaction();
@@ -142,7 +136,7 @@ public class ComplexModelTests(IServiceProvider provider) : AEventSourcingTest(p
         var result2 = await tx.Commit();
         newLoadOut = db.Get<Loadout>(result2[newLoadOut.Id]);
 
-        newLoadOut.Id.Should().NotBe(loadout.Id, "new loadout should have a different id because the connection re-detected the max EntityId");
+        newLoadOut.Id.Should().NotBe(loadout.Id,
+            "new loadout should have a different id because the connection re-detected the max EntityId");
     }
-
 }

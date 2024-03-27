@@ -8,15 +8,15 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="BenchmarkDotNet" Version="0.13.12" />
-      <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
-      <PackageReference Update="JetBrains.Annotations" Version="2023.3.0" />
+        <PackageReference Include="BenchmarkDotNet" Version="0.13.12"/>
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0"/>
+        <PackageReference Update="JetBrains.Annotations" Version="2023.3.0"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\NexusMods.EventSourcing.Abstractions\NexusMods.EventSourcing.Abstractions.csproj" />
-      <ProjectReference Include="..\..\src\NexusMods.EventSourcing\NexusMods.EventSourcing.csproj" />
-      <ProjectReference Include="..\..\tests\NexusMods.EventSourcing.TestModel\NexusMods.EventSourcing.TestModel.csproj" />
+        <ProjectReference Include="..\..\src\NexusMods.EventSourcing.Abstractions\NexusMods.EventSourcing.Abstractions.csproj"/>
+        <ProjectReference Include="..\..\src\NexusMods.EventSourcing\NexusMods.EventSourcing.csproj"/>
+        <ProjectReference Include="..\..\tests\NexusMods.EventSourcing.TestModel\NexusMods.EventSourcing.TestModel.csproj"/>
     </ItemGroup>
 
 </Project>

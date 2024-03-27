@@ -9,19 +9,19 @@ namespace NexusMods.EventSourcing;
 internal class Db : IDb
 {
     private readonly Connection _connection;
-    private readonly TxId _txId;
-    private readonly ISnapshot _snapshot;
     private readonly AttributeRegistry _registry;
+    private readonly ISnapshot _snapshot;
 
     public Db(ISnapshot snapshot, Connection connection, TxId txId, AttributeRegistry registry)
     {
         _registry = registry;
         _connection = connection;
         _snapshot = snapshot;
-        _txId = txId;
+        BasisTxId = txId;
     }
 
-    public TxId BasisTxId => _txId;
+    public TxId BasisTxId { get; }
+
     public IConnection Connection => _connection;
 
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids) where TModel : IReadModel
@@ -55,7 +55,8 @@ internal class Db : IDb
     }
 
     /// <inheritdoc />
-    public IEnumerable<TModel> GetReverse<TAttribute, TModel>(EntityId id) where TAttribute : IAttribute<EntityId> where TModel : IReadModel
+    public IEnumerable<TModel> GetReverse<TAttribute, TModel>(EntityId id) where TAttribute : IAttribute<EntityId>
+        where TModel : IReadModel
     {
         using var attrSource = _snapshot.GetIterator(IndexType.VAETCurrent);
         var attrId = _registry.GetAttributeId<TAttribute>();
@@ -88,7 +89,6 @@ internal class Db : IDb
                      .While(entityId)
                      .Resolve())
             yield return datom;
-
     }
 
     public IEnumerable<IReadDatom> Datoms(TxId txId)
@@ -102,7 +102,7 @@ internal class Db : IDb
     }
 
     public IEnumerable<IReadDatom> Datoms<TAttribute>(IndexType type)
-    where TAttribute : IAttribute
+        where TAttribute : IAttribute
     {
         var a = _registry.GetAttributeId<TAttribute>();
         using var iterator = _snapshot.GetIterator(type);
@@ -113,7 +113,5 @@ internal class Db : IDb
             yield return datom;
     }
 
-    public void Dispose()
-    {
-    }
+    public void Dispose() { }
 }

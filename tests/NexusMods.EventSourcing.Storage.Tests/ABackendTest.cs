@@ -1,18 +1,20 @@
 ﻿using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
-using NexusMods.EventSourcing.TestModel.Helpers;
 using NexusMods.EventSourcing.TestModel.ComplexModel.Attributes;
+using NexusMods.EventSourcing.TestModel.Helpers;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.Paths;
 using FileAttributes = NexusMods.EventSourcing.TestModel.ComplexModel.Attributes.FileAttributes;
 
 
 namespace NexusMods.EventSourcing.Storage.Tests;
 
-public abstract class ABackendTest<TStoreType>(IServiceProvider provider, Func<AttributeRegistry, IStoreBackend> backendFn)
+public abstract class ABackendTest<TStoreType>(
+    IServiceProvider provider,
+    Func<AttributeRegistry, IStoreBackend> backendFn)
     : AStorageTest(provider, backendFn)
     where TStoreType : IStoreBackend
 {
-
     [Theory]
     [InlineData(IndexType.TxLog)]
     [InlineData(IndexType.EAVTHistory)]
@@ -34,10 +36,10 @@ public abstract class ABackendTest<TStoreType>(IServiceProvider provider, Func<A
         var tx = await DatomStore.Transact([
             FileAttributes.Path.Assert(id1, "/foo/bar"),
             FileAttributes.Hash.Assert(id1, Hash.From(0xDEADBEEF)),
-            FileAttributes.Size.Assert(id1, Paths.Size.From(42)),
+            FileAttributes.Size.Assert(id1, Size.From(42)),
             FileAttributes.Path.Assert(id2, "/qix/bar"),
             FileAttributes.Hash.Assert(id2, Hash.From(0xDEADBEAF)),
-            FileAttributes.Size.Assert(id2, Paths.Size.From(77)),
+            FileAttributes.Size.Assert(id2, Size.From(77)),
             FileAttributes.ModId.Assert(id1, modId1),
             FileAttributes.ModId.Assert(id2, modId1),
             ModAttributes.Name.Assert(modId1, "Test Mod 1"),

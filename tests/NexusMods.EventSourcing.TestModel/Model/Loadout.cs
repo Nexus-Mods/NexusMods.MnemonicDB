@@ -7,25 +7,25 @@ namespace NexusMods.EventSourcing.TestModel.Model;
 public class Loadout(ITransaction? tx) : AReadModel<Loadout>(tx)
 {
     /// <summary>
-    /// The name of the loadout.
+    ///     The name of the loadout.
     /// </summary>
     [From<LoadoutAttributes.Name>]
     public required string Name { get; init; }
 
     /// <summary>
-    /// The last tx that updated the loadout.
+    ///     The last tx that updated the loadout.
     /// </summary>
     [From<LoadoutAttributes.UpdatedTx>]
     public required TxId Invalidator { get; init; }
 
     /// <summary>
-    /// The mods in the loadout.
+    ///     The mods in the loadout.
     /// </summary>
     public IEnumerable<Mod> Mods => GetReverse<ModAttributes.LoadoutId, Mod>();
 
 
     /// <summary>
-    /// Create a new loadout with the given name.
+    ///     Create a new loadout with the given name.
     /// </summary>
     /// <param name="tx"></param>
     /// <param name="name"></param>
@@ -40,7 +40,7 @@ public class Loadout(ITransaction? tx) : AReadModel<Loadout>(tx)
     }
 
     /// <summary>
-    /// Updates this loadout marking it as touched by the given transaction.
+    ///     Updates this loadout marking it as touched by the given transaction.
     /// </summary>
     /// <param name="tx"></param>
     public void Touch(ITransaction tx)

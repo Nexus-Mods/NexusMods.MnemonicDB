@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions.ElementComparers;
 using NexusMods.Paths;
@@ -23,43 +22,53 @@ public interface IStoreBackend : IDisposable
     public IIndex GetIndex(IndexType name);
 
     /// <summary>
-    /// Gets a snapshot of the current state of the store that will not change
-    /// during calls to GetIterator
+    ///     Gets a snapshot of the current state of the store that will not change
+    ///     during calls to GetIterator
     /// </summary>
     public ISnapshot GetSnapshot();
 
     /// <summary>
-    /// Create an EAVT index
+    ///     Create an EAVT index
     /// </summary>
-    public void DeclareEAVT(IndexType name) =>
+    public void DeclareEAVT(IndexType name)
+    {
         DeclareIndex<EComparer, AComparer, ValueComparer, TxComparer, AssertComparer>
             (name);
+    }
 
     /// <summary>
-    /// Create an AEVT index
+    ///     Create an AEVT index
     /// </summary>
-    public void DeclareAEVT(IndexType name) =>
+    public void DeclareAEVT(IndexType name)
+    {
         DeclareIndex<AComparer, EComparer, ValueComparer, TxComparer, AssertComparer>
             (name);
+    }
 
     /// <summary>
-    /// Create an AEVT index
+    ///     Create an AEVT index
     /// </summary>
-    public void DeclareTxLog(IndexType name) =>
+    public void DeclareTxLog(IndexType name)
+    {
         DeclareIndex<TxComparer, EComparer, AComparer, ValueComparer, AssertComparer>
             (name);
+    }
 
     /// <summary>
-    /// Create a backref index
+    ///     Create a backref index
     /// </summary>
     /// <param name="name"></param>
-    public void DeclareVAET(IndexType name) =>
+    public void DeclareVAET(IndexType name)
+    {
         DeclareIndex<UnmanagedValueComparer<ulong>, AComparer, EComparer, TxComparer, AssertComparer>(name);
+    }
 
     /// <summary>
-    /// Create a backref index
+    ///     Create a backref index
     /// </summary>
     /// <param name="name"></param>
-    public void DeclareAVET(IndexType name) =>
+    public void DeclareAVET(IndexType name)
+    {
         DeclareIndex<AComparer, ValueComparer, EComparer, TxComparer, AssertComparer>(name);
+    }
 }
