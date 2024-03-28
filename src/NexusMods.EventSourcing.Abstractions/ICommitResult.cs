@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using NexusMods.EventSourcing.Abstractions.Models;
 
 namespace NexusMods.EventSourcing.Abstractions;
 
@@ -13,6 +14,12 @@ public interface ICommitResult
     /// </summary>
     /// <param name="id"></param>
     public EntityId this[EntityId id] { get; }
+
+
+    /// <summary>
+    ///   Remaps a ReadModel to a new instance with the new ids
+    /// </summary>
+    public T Remap<T>(T model) where T : IReadModel;
 
     /// <summary>
     ///     Gets the new TxId after the commit

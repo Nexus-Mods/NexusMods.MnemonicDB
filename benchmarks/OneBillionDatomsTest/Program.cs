@@ -7,7 +7,7 @@ using NexusMods.EventSourcing;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage;
 using NexusMods.EventSourcing.TestModel;
-using NexusMods.EventSourcing.TestModel.Model;
+using NexusMods.EventSourcing.TestModel.ComplexModel.ReadModels;
 using NexusMods.Paths;
 
 var host = Host.CreateDefaultBuilder()

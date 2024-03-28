@@ -30,7 +30,7 @@ public static class ExtensionMethods
         where TParent : ISeekableIterator
     {
         var key = new KeyPrefix();
-        key.Set(EntityId.MinValue, AttributeId.Min, txId, false);
+        key.Set(EntityId.MinValueNoPartition, AttributeId.Min, txId, false);
         return parent.SeekTo(ref key);
     }
 
@@ -41,7 +41,7 @@ public static class ExtensionMethods
         where TParent : ISeekableIterator
     {
         var key = new KeyPrefix();
-        key.Set(EntityId.MinValue, aid, TxId.MinValue, false);
+        key.Set(EntityId.MinValueNoPartition, aid, TxId.MinValue, false);
         return parent.SeekTo(ref key);
     }
 

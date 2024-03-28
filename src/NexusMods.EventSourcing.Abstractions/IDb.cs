@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using NexusMods.EventSourcing.Abstractions.DatomIterators;
 using NexusMods.EventSourcing.Abstractions.Models;
 
 namespace NexusMods.EventSourcing.Abstractions;
@@ -50,6 +51,11 @@ public interface IDb : IDisposable
     /// </summary>
     public IEnumerable<IReadDatom> Datoms(TxId txId);
 
-    public IEnumerable<IReadDatom> Datoms<TAttribute>(IndexType type)
+    public IEnumerable<IReadDatom> Datoms<TAttribute>()
         where TAttribute : IAttribute;
+
+    /// <summary>
+    /// Create a new iterator for the given index type.
+    /// </summary>
+    IDatomSource Iterate(IndexType index);
 }

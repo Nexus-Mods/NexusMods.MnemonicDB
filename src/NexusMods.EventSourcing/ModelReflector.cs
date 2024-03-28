@@ -67,24 +67,6 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
         return lambda.Compile();
     }
 
-    private Func<IDb, EntityId, object> GetConstructor(Type readModel)
-    {
-        if (_constructors.TryGetValue(readModel, out var found))
-            return (Func<IDb, EntityId, object>)found;
-
-        var ctor = readModel.GetConstructor(new[] { typeof(IDb), typeof(EntityId) })!;
-        var dbParameter = Expression.Parameter(typeof(IDb), "db");
-        var idParameter = Expression.Parameter(typeof(EntityId), "id");
-        var model = Expression.New(ctor, dbParameter, idParameter);
-        var casted = Expression.Convert(model, typeof(object));
-
-        var lambda = Expression.Lambda<Func<IDb, EntityId, object>>(casted, dbParameter, idParameter);
-        var compiled = lambda.Compile();
-
-        _constructors.TryAdd(readModel, compiled);
-        return compiled;
-    }
-
     private static IEnumerable<(Type Attribute, PropertyInfo Property)> GetModelProperties(Type readModel)
     {
         var properties = readModel

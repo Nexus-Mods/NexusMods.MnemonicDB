@@ -6,8 +6,12 @@ using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.Models;
 using NexusMods.EventSourcing.Storage;
 using NexusMods.EventSourcing.Storage.RocksDbBackend;
+using NexusMods.EventSourcing.TestModel.ComplexModel.Attributes;
+using NexusMods.EventSourcing.TestModel.ComplexModel.ReadModels;
 using NexusMods.EventSourcing.TestModel.Helpers;
+using NexusMods.Hashing.xxHash64;
 using NexusMods.Paths;
+using File = NexusMods.EventSourcing.TestModel.ComplexModel.ReadModels.File;
 
 namespace NexusMods.EventSourcing.Tests;
 
@@ -86,6 +90,40 @@ public class AEventSourcingTest : IAsyncLifetime
     protected SettingsTask VerifyTable(IEnumerable<IReadDatom> datoms)
     {
         return Verify(datoms.ToTable(_registry));
+    }
+
+    protected async Task<Loadout> InsertExampleData()
+    {
+        var tx = Connection.BeginTransaction();
+        var loadout = Loadout.Create(tx, "Test Loadout");
+        List<Mod> mods = new();
+
+        foreach (var modName in new[] { "Mod1", "Mod2", "Mod3" })
+        {
+            var mod = Mod.Create(tx, modName, new Uri("http://somesite.com/" + modName), loadout);
+            var idx = 0;
+            foreach (var file in new[] { "File1", "File2", "File3" })
+            {
+                File.Create(tx, file, mod, Size.From((ulong)idx), Hash.From((ulong)(0xDEADBEEF + idx)));
+                idx += 1;
+            }
+            mods.Add(mod);
+        }
+
+        var txResult = await tx.Commit();
+
+        loadout = txResult.Remap(loadout);
+
+        var tx2 = Connection.BeginTransaction();
+        foreach (var mod in loadout.Mods)
+        {
+            ModAttributes.Name.Add(tx2, mod.Id, mod.Name + " - Updated");
+        }
+        await tx2.Commit();
+
+        return Connection.Db.Get<Loadout>(loadout.Id);
+
+
     }
 
     public Task DisposeAsync()

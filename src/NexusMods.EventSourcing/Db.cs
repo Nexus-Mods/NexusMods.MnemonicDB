@@ -101,16 +101,21 @@ internal class Db : IDb
             yield return datom;
     }
 
-    public IEnumerable<IReadDatom> Datoms<TAttribute>(IndexType type)
+    public IEnumerable<IReadDatom> Datoms<TAttribute>()
         where TAttribute : IAttribute
     {
         var a = _registry.GetAttributeId<TAttribute>();
-        using var iterator = _snapshot.GetIterator(type);
+        using var iterator = _snapshot.GetIterator(IndexType.AEVTCurrent);
         foreach (var datom in iterator
-                     .SeekStart()
+                     .SeekTo(a)
                      .While(a)
                      .Resolve())
             yield return datom;
+    }
+
+    public IDatomSource Iterate(IndexType index)
+    {
+        return _snapshot.GetIterator(index);
     }
 
     public void Dispose() { }

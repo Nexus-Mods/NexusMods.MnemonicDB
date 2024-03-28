@@ -99,7 +99,7 @@ public class Connection : IConnection
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
         var db = Db;
-        var attrIds = db.Datoms<BuiltInAttributes.UniqueId>(IndexType.AEVTCurrent)
+        var attrIds = db.Datoms<BuiltInAttributes.UniqueId>()
             .Select(d => d.E);
 
         foreach (var attrId in attrIds)
@@ -127,7 +127,8 @@ public class Connection : IConnection
     public async Task<ICommitResult> Transact(IEnumerable<IWriteDatom> datoms)
     {
         var newTx = await _store.Transact(datoms);
-        var result = new CommitResult(newTx.AssignedTxId, newTx.Remaps);
+        var result = new CommitResult(new Db(newTx.Snapshot, this, newTx.AssignedTxId, (AttributeRegistry)_store.Registry)
+            , newTx.Remaps);
         return result;
     }
 }

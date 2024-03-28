@@ -1,0 +1,73 @@
+﻿+ | 0000000000000001 | (0001) UniqueId                 | NexusMods.EventSourcing.DatomStore/UniqueId      | 0100000000000001
++ | 0000000000000001 | (0002) ValueSerializerId        | NexusMods.EventSourcin...izers/SymbolSerializer  | 0100000000000001
++ | 0000000000000002 | (0001) UniqueId                 | NexusMods.EventSourcin...tore/ValueSerializerId  | 0100000000000001
++ | 0000000000000002 | (0002) ValueSerializerId        | NexusMods.EventSourcin...izers/SymbolSerializer  | 0100000000000001
++ | 0000000000000003 | (0001) UniqueId                 | NexusMods.EventSourcin...es.FileAttributes/Path  | 0100000000000002
++ | 0000000000000003 | (0002) ValueSerializerId        | NexusMods.EventSourcin...RelativePathSerializer  | 0100000000000002
++ | 0000000000000004 | (0001) UniqueId                 | NexusMods.EventSourcin...es.FileAttributes/Size  | 0100000000000002
++ | 0000000000000004 | (0002) ValueSerializerId        | NexusMods.EventSourcin...alizers/SizeSerializer  | 0100000000000002
++ | 0000000000000005 | (0001) UniqueId                 | NexusMods.EventSourcin...es.FileAttributes/Hash  | 0100000000000002
++ | 0000000000000005 | (0002) ValueSerializerId        | NexusMods.EventSourcin...alizers/HashSerializer  | 0100000000000002
++ | 0000000000000006 | (0001) UniqueId                 | NexusMods.EventSourcin...s.FileAttributes/ModId  | 0100000000000002
++ | 0000000000000006 | (0002) ValueSerializerId        | NexusMods.EventSourcin...ers/EntityIdSerializer  | 0100000000000002
++ | 0000000000000007 | (0001) UniqueId                 | NexusMods.EventSourcin...iveFileAttributes/Path  | 0100000000000002
++ | 0000000000000007 | (0002) ValueSerializerId        | NexusMods.EventSourcin...RelativePathSerializer  | 0100000000000002
++ | 0000000000000008 | (0001) UniqueId                 | NexusMods.EventSourcin...iveFileAttributes/Hash  | 0100000000000002
++ | 0000000000000008 | (0002) ValueSerializerId        | NexusMods.EventSourcin...alizers/HashSerializer  | 0100000000000002
++ | 0000000000000009 | (0001) UniqueId                 | NexusMods.EventSourcin...LoadoutAttributes/Name  | 0100000000000002
++ | 0000000000000009 | (0002) ValueSerializerId        | NexusMods.EventSourcin...izers/StringSerializer  | 0100000000000002
++ | 000000000000000A | (0001) UniqueId                 | NexusMods.EventSourcin...utAttributes/UpdatedAt  | 0100000000000002
++ | 000000000000000A | (0002) ValueSerializerId        | NexusMods.EventSourcin...alizers/TxIdSerializer  | 0100000000000002
++ | 000000000000000B | (0001) UniqueId                 | NexusMods.EventSourcin...tes.ModAttributes/Name  | 0100000000000002
++ | 000000000000000B | (0002) ValueSerializerId        | NexusMods.EventSourcin...izers/StringSerializer  | 0100000000000002
++ | 000000000000000C | (0001) UniqueId                 | NexusMods.EventSourcin...s.ModAttributes/Source  | 0100000000000002
++ | 000000000000000C | (0002) ValueSerializerId        | NexusMods.EventSourcin...ializers/UriSerializer  | 0100000000000002
++ | 000000000000000D | (0001) UniqueId                 | NexusMods.EventSourcin...odAttributes/LoadoutId  | 0100000000000002
++ | 000000000000000D | (0002) ValueSerializerId        | NexusMods.EventSourcin...ers/EntityIdSerializer  | 0100000000000002
++ | 0200000000000001 | (0009) Name                     | Test Loadout                                     | 0100000000000003
++ | 0200000000000001 | (000A) UpdatedAt                | 216172782113783808                               | 0100000000000003
++ | 0200000000000002 | (000B) Name                     | Mod1 - Updated                                   | 0100000000000004
++ | 0200000000000002 | (000C) Source                   | http://somesite.com/Mod1                         | 0100000000000003
++ | 0200000000000002 | (000D) LoadoutId                | 0200000000000001                                 | 0100000000000003
++ | 0200000000000003 | (0003) Path                     | File1                                            | 0100000000000003
++ | 0200000000000003 | (0004) Size                     | 0 B                                              | 0100000000000003
++ | 0200000000000003 | (0005) Hash                     | 0x00000000DEADBEEF                               | 0100000000000003
++ | 0200000000000003 | (0006) ModId                    | 0200000000000002                                 | 0100000000000003
++ | 0200000000000004 | (0003) Path                     | File2                                            | 0100000000000003
++ | 0200000000000004 | (0004) Size                     | 1 B                                              | 0100000000000003
++ | 0200000000000004 | (0005) Hash                     | 0x00000000DEADBEF0                               | 0100000000000003
++ | 0200000000000004 | (0006) ModId                    | 0200000000000002                                 | 0100000000000003
++ | 0200000000000005 | (0003) Path                     | File3                                            | 0100000000000003
++ | 0200000000000005 | (0004) Size                     | 2 B                                              | 0100000000000003
++ | 0200000000000005 | (0005) Hash                     | 0x00000000DEADBEF1                               | 0100000000000003
++ | 0200000000000005 | (0006) ModId                    | 0200000000000002                                 | 0100000000000003
++ | 0200000000000006 | (000B) Name                     | Mod2 - Updated                                   | 0100000000000004
++ | 0200000000000006 | (000C) Source                   | http://somesite.com/Mod2                         | 0100000000000003
++ | 0200000000000006 | (000D) LoadoutId                | 0200000000000001                                 | 0100000000000003
++ | 0200000000000007 | (0003) Path                     | File1                                            | 0100000000000003
++ | 0200000000000007 | (0004) Size                     | 0 B                                              | 0100000000000003
++ | 0200000000000007 | (0005) Hash                     | 0x00000000DEADBEEF                               | 0100000000000003
++ | 0200000000000007 | (0006) ModId                    | 0200000000000006                                 | 0100000000000003
++ | 0200000000000008 | (0003) Path                     | File2                                            | 0100000000000003
++ | 0200000000000008 | (0004) Size                     | 1 B                                              | 0100000000000003
++ | 0200000000000008 | (0005) Hash                     | 0x00000000DEADBEF0                               | 0100000000000003
++ | 0200000000000008 | (0006) ModId                    | 0200000000000006                                 | 0100000000000003
++ | 0200000000000009 | (0003) Path                     | File3                                            | 0100000000000003
++ | 0200000000000009 | (0004) Size                     | 2 B                                              | 0100000000000003
++ | 0200000000000009 | (0005) Hash                     | 0x00000000DEADBEF1                               | 0100000000000003
++ | 0200000000000009 | (0006) ModId                    | 0200000000000006                                 | 0100000000000003
++ | 020000000000000A | (000B) Name                     | Mod3 - Updated                                   | 0100000000000004
++ | 020000000000000A | (000C) Source                   | http://somesite.com/Mod3                         | 0100000000000003
++ | 020000000000000A | (000D) LoadoutId                | 0200000000000001                                 | 0100000000000003
++ | 020000000000000B | (0003) Path                     | File1                                            | 0100000000000003
++ | 020000000000000B | (0004) Size                     | 0 B                                              | 0100000000000003
++ | 020000000000000B | (0005) Hash                     | 0x00000000DEADBEEF                               | 0100000000000003
++ | 020000000000000B | (0006) ModId                    | 020000000000000A                                 | 0100000000000003
++ | 020000000000000C | (0003) Path                     | File2                                            | 0100000000000003
++ | 020000000000000C | (0004) Size                     | 1 B                                              | 0100000000000003
++ | 020000000000000C | (0005) Hash                     | 0x00000000DEADBEF0                               | 0100000000000003
++ | 020000000000000C | (0006) ModId                    | 020000000000000A                                 | 0100000000000003
++ | 020000000000000D | (0003) Path                     | File3                                            | 0100000000000003
++ | 020000000000000D | (0004) Size                     | 2 B                                              | 0100000000000003
++ | 020000000000000D | (0005) Hash                     | 0x00000000DEADBEF1                               | 0100000000000003
++ | 020000000000000D | (0006) ModId                    | 020000000000000A                                 | 0100000000000003

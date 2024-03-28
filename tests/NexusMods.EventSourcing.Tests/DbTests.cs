@@ -1,6 +1,8 @@
 ﻿using NexusMods.EventSourcing.Abstractions;
+using NexusMods.EventSourcing.Abstractions.DatomIterators;
 using NexusMods.EventSourcing.TestModel.ComplexModel.Attributes;
 using NexusMods.EventSourcing.TestModel.ComplexModel.ReadModels;
+using NexusMods.EventSourcing.TestModel.Helpers;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.Paths;
 using File = NexusMods.EventSourcing.TestModel.ComplexModel.ReadModels.File;
@@ -192,5 +194,37 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
         firstMod.Db.Should().Be(newDb);
         loadout.Name.Should().Be("Test Loadout");
         firstMod.Loadout.Name.Should().Be("Test Loadout");
+    }
+
+    [Fact]
+    public async Task CanGetDatomsByAttr()
+    {
+        await InsertExampleData();
+        await VerifyTable(Connection.Db.Datoms<ModAttributes.Name>());
+    }
+
+    [Theory]
+    [InlineData(IndexType.EAVTCurrent, false)]
+    [InlineData(IndexType.EAVTCurrent, true)]
+    [InlineData(IndexType.AEVTCurrent, false)]
+    [InlineData(IndexType.AEVTCurrent, true)]
+    [InlineData(IndexType.AVETCurrent, false)]
+    [InlineData(IndexType.AVETCurrent, true)]
+    [InlineData(IndexType.VAETCurrent, false)]
+    [InlineData(IndexType.VAETCurrent, true)]
+    [InlineData(IndexType.TxLog, true)]
+    [InlineData(IndexType.TxLog, false)]
+    public async Task CanGetDatomIterator(IndexType index, bool reverse)
+    {
+        await InsertExampleData();
+
+        var db = Connection.Db;
+        using var iterator = db.Iterate(index);
+        var datoms = iterator.SeekStart();
+
+        if (reverse)
+            datoms = iterator.SeekLast().Reverse();
+
+        await VerifyTable(datoms.Resolve()).UseTextForParameters($"{index}_{reverse}");
     }
 }
