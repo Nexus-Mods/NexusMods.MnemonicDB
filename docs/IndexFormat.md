@@ -53,6 +53,10 @@ reclaimed, future queries for that specific TxId will need to use the historical
 like a serious tradeoff, chances are that an application will dereference the database, use a snapshot, then go back and
 get an updated copy of the database, releasing the old snapshot. Going backwards in time is a rare operation, but supported.
 
+Attributes can be labeled as `noHistory`, in which case, when they are evicted from the `current` index, they are simply
+discarded. This is useful for attributes that are not important to keep a history of, but have a high rate of change, such
+as a "last seen" timestamp.
+
 ### Why is history slower?
 
 The historical indexes are slower because they contain stale data. When queried, the historical indexes must scan over all
@@ -61,7 +65,20 @@ operations are O(n) where n is the number of values for a given entity or attrib
 only need to look up the value in the index. In practice, loading datoms is extremely fast, and the overhead of scanning the
 historical indexes is low, but it is a consideration when designing an application.
 
+### Making changes to the schema
 
+New attributes can be added to the database at any time, and the database will automatically start indexing them. In addition,
+old attributes need not remain in the C# codebase, MneumonicDB will simply skip over them when loading values. So as much
+as possible, try to make additive changes to the schema, and avoid changing attributes. Attributes are named after the classes
+by convention, but this is not a requirement, and the database will work just fine if you change the class name of an attribute,
+as long as the attribute's unique ID remains the same. Thus deprecated attributes can be moved to a `Deprecated` namespace, and
+left to sit.
+
+### Migrations
+
+Migrations are not yet implemented, but the idea is fairly simple, a new database is created, and the TxLog of the source
+is replayed into the target with some sort of transformation process happening on the way. This is a future feature, and
+planned to be implemented soon.
 
 
 
