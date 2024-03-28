@@ -233,7 +233,6 @@ public class DatomStore : IDatomStore
                         Remaps = new Dictionary<EntityId, EntityId>(),
                         AssignedTxId = _asOfTxId,
                         Snapshot = _backend.GetSnapshot(),
-                        Datoms = Array.Empty<IReadDatom>()
                     };
                     pendingTransaction.CompletionSource.SetResult(storeResult);
                     continue;
@@ -329,8 +328,6 @@ public class DatomStore : IDatomStore
 
     private void Log(PendingTransaction pendingTransaction, out StoreResult result)
     {
-        var output = new List<IReadDatom>();
-
         var thisTx = TxId.From(_asOfTxId.Value + 1);
 
 
@@ -410,7 +407,6 @@ public class DatomStore : IDatomStore
         {
             AssignedTxId = thisTx,
             Remaps = remaps,
-            Datoms = output,
             Snapshot = _backend.GetSnapshot()
         };
         _asOfTxId = thisTx;

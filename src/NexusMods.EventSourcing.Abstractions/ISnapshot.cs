@@ -13,7 +13,5 @@ public interface ISnapshot
     /// <summary>
     ///     Gets an iterator for the given index type.
     /// </summary>
-    /// <param name="type"></param>
-    /// <returns></returns>
     IDatomSource GetIterator(IndexType type);
 }

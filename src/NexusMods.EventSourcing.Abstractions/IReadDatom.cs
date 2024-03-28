@@ -7,6 +7,9 @@ namespace NexusMods.EventSourcing.Abstractions;
 /// </summary>
 public interface IReadDatom
 {
+    /// <summary>
+    /// Entity id of the datom.
+    /// </summary>
     public EntityId E { get; }
 
     /// <summary>

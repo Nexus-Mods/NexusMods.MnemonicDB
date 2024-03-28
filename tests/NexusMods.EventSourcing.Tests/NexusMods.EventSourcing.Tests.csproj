@@ -43,4 +43,10 @@
         <ProjectReference Include="..\NexusMods.EventSourcing.TestModel\NexusMods.EventSourcing.TestModel.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="DbTests.CanGetCommitUpdates.verified.txt">
+        <DependentUpon>DbTests.cs</DependentUpon>
+      </None>
+    </ItemGroup>
+
 </Project>
