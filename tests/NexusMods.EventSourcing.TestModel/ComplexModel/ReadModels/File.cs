@@ -9,7 +9,7 @@ namespace NexusMods.EventSourcing.TestModel.ComplexModel.ReadModels;
 public class File(ITransaction? tx) : AReadModel<File>(tx)
 {
     [From<FileAttributes.Path>]
-    public required RelativePath Name { get; set; }
+    public required RelativePath Path { get; set; }
 
     [From<FileAttributes.Size>]
     public required Size Size { get; set; }
@@ -24,7 +24,7 @@ public class File(ITransaction? tx) : AReadModel<File>(tx)
     {
         return new File(tx)
         {
-            Name = s,
+            Path = s,
             Size = fromLong,
             Hash = hash,
             ModId = mod.Id

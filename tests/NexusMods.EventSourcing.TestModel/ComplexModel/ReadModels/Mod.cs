@@ -1,4 +1,5 @@
-﻿using NexusMods.EventSourcing.Abstractions;
+﻿using System.Text.Json.Serialization;
+using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.Models;
 using NexusMods.EventSourcing.TestModel.ComplexModel.Attributes;
 using FileAttributes = NexusMods.EventSourcing.TestModel.ComplexModel.Attributes.FileAttributes;
@@ -15,6 +16,16 @@ public class Mod(ITransaction? tx) : AReadModel<Mod>(tx)
 
 
     public IEnumerable<File> Files => GetReverse<FileAttributes.ModId, File>();
+
+
+    #region References
+
+    public Loadout Loadout => Get<Loadout>(LoadoutId);
+
+    public IEnumerable<Mod> Mods => GetReverse<ModAttributes.LoadoutId, Mod>();
+
+
+    #endregion
 
     /// <summary>
     ///     Creates a new mod with the given name, source and loadout

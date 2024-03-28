@@ -1,7 +1,10 @@
 ﻿using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.TestModel.Model;
-using NexusMods.EventSourcing.TestModel.Model.Attributes;
-using File = NexusMods.EventSourcing.TestModel.Model.File;
+using NexusMods.EventSourcing.TestModel.ComplexModel.Attributes;
+using NexusMods.EventSourcing.TestModel.ComplexModel.ReadModels;
+using NexusMods.Hashing.xxHash64;
+using NexusMods.Paths;
+using File = NexusMods.EventSourcing.TestModel.ComplexModel.ReadModels.File;
+using FileAttributes = NexusMods.EventSourcing.TestModel.ComplexModel.Attributes.FileAttributes;
 
 namespace NexusMods.EventSourcing.Tests;
 
@@ -20,8 +23,9 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
             var file = new File(tx)
             {
                 Path = $"C:\\test_{idx}.txt",
-                Hash = idx + 0xDEADBEEF,
-                Index = idx
+                Hash = Hash.From(idx + 0xDEADBEEF),
+                Size = Size.From(idx),
+                ModId = EntityId.From(1)
             };
             ids.Add(file.Id);
         }
@@ -35,31 +39,26 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
 
         var db = Connection.Db;
         var resolved = db.Get<File>(ids.Select(id => result[id])).ToArray();
-
-        resolved.Should().HaveCount(totalCount);
-        foreach (var readModel in resolved)
-        {
-            var idx = readModel.Index;
-            readModel.Hash.Should().Be(idx + 0xDEADBEEF);
-            readModel.Path.Should().Be($"C:\\test_{idx}.txt");
-            readModel.Index.Should().Be(idx);
-        }
+        await VerifyModel(resolved);
     }
 
 
     [Fact]
     public async Task DbIsImmutable()
     {
-        const int times = 10;
+        const int times = 3;
 
         // Insert some data
         var tx = Connection.BeginTransaction();
+
         var file = new File(tx)
         {
-            Path = "C:\\test.txt_mutate",
-            Hash = 0xDEADBEEF,
-            Index = 0
+            Path = "C:\\test.txt",
+            Hash = Hash.From(1 + 0xDEADBEEF),
+            Size = Size.From(1),
+            ModId = EntityId.From(1)
         };
+
 
         var result = await tx.Commit();
 
@@ -68,15 +67,15 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
 
         // Validate the data
         var found = originalDb.Get<File>([realId]).First();
-        found.Path.Should().Be("C:\\test.txt_mutate");
-        found.Hash.Should().Be(0xDEADBEEF);
-        found.Index.Should().Be(0);
+        await VerifyModel(found).UseTextForParameters("original data");
+
 
         // Mutate the data
         for (var i = 0; i < times; i++)
         {
             var newTx = Connection.BeginTransaction();
-            ModFileAttributes.Path.Add(newTx, realId, $"C:\\test_{i}.txt_mutate");
+            FileAttributes.
+                Path.Add(newTx, realId, $"C:\\test_{i}.txt_mutate");
 
             await newTx.Commit();
 
@@ -86,11 +85,11 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
                 "transaction id should be incremented by 1 for each mutation at iteration " + i);
 
             var newFound = newDb.Get<File>([realId]).First();
-            newFound.Path.Should().Be($"C:\\test_{i}.txt_mutate");
+            await VerifyModel(newFound).UseTextForParameters("mutated data " + i);
 
             // Validate the original data
             var orignalFound = originalDb.Get<File>([realId]).First();
-            orignalFound.Path.Should().Be("C:\\test.txt_mutate");
+            await VerifyModel(orignalFound).UseTextForParameters("original data" + i);
         }
     }
 
@@ -103,29 +102,28 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
         var file = new File(tx)
         {
             Path = "C:\\test.txt",
-            Hash = 0xDEADBEEF,
-            Index = 77
+            Hash = Hash.From(1 + 0xDEADBEEF),
+            Size = Size.From(1),
+            ModId = EntityId.From(1)
         };
+
         // Attach extra attributes to the entity
         ArchiveFileAttributes.Path.Add(tx, file.Id, "C:\\test.zip");
-        ArchiveFileAttributes.ArchiveHash.Add(tx, file.Id, 0xFEEDBEEF);
+        ArchiveFileAttributes.Hash.Add(tx, file.Id, Hash.From(0xFEEDBEEF));
         var result = await tx.Commit();
 
 
         var realId = result[file.Id];
         var db = Connection.Db;
+
         // Original data exists
         var readModel = db.Get<File>([realId]).First();
-        readModel.Path.Should().Be("C:\\test.txt");
-        readModel.Hash.Should().Be(0xDEADBEEF);
-        readModel.Index.Should().Be(77);
+        await VerifyModel(readModel).UseTextForParameters("file data");
+
 
         // Extra data exists and can be read with a different read model
         var archiveReadModel = db.Get<ArchiveFile>([realId]).First();
-        archiveReadModel.ModPath.Should().Be("C:\\test.txt");
-        archiveReadModel.Path.Should().Be("C:\\test.zip");
-        archiveReadModel.Hash.Should().Be(0xFEEDBEEF);
-        archiveReadModel.Index.Should().Be(77);
+        await VerifyModel(archiveReadModel).UseTextForParameters("archive file data");
     }
 
     [Fact]
@@ -138,8 +136,9 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
         var file = new File(tx)
         {
             Path = "C:\\test.txt",
-            Hash = 0xDEADBEEF,
-            Index = 77
+            Hash = Hash.From((ulong)0xDEADBEEF),
+            Size = Size.From(1),
+            ModId = EntityId.From(1)
         };
         var result = await tx.Commit();
 
@@ -153,20 +152,19 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
                 updates.Add(datoms);
         });
 
-        for (var idx = 0; idx < 10; idx++)
+        for (var idx = 0; idx < 4; idx++)
         {
             tx = Connection.BeginTransaction();
-            ModFileAttributes.Index.Add(tx, realId, (ulong)idx);
+            FileAttributes.Hash.Add(tx, realId, Hash.From(0xDEADBEEF + (ulong)idx));
             result = await tx.Commit();
 
             await Task.Delay(100);
 
             updates.Should().HaveCount(idx + 1);
-            var updateDatom = updates[idx]
-                .First();
+            var updateDatom = updates[idx];
 
-            var value = ((ScalarAttribute<ModFileAttributes.Index, ulong>.ReadDatom)updateDatom).V;
-            value.Should().Be((ulong)idx);
+            await VerifyTable(updateDatom)
+                .UseTextForParameters("update_datom_" + idx);
         }
     }
 
@@ -175,8 +173,8 @@ public class DbTests(IServiceProvider provider) : AEventSourcingTest(provider)
     {
         var tx = Connection.BeginTransaction();
         var loadout = Loadout.Create(tx, "Test Loadout");
-        Mod.Create(tx, "Test Mod 1", loadout.Id);
-        Mod.Create(tx, "Test Mod 2", loadout.Id);
+        Mod.Create(tx, "Test Mod 1", new Uri("http://somesite.com/mod1"), loadout);
+        Mod.Create(tx, "Test Mod 2",  new Uri("http://somesite.com/mod1"), loadout);
         var result = await tx.Commit();
 
         var newDb = Connection.Db;

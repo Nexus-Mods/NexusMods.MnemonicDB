@@ -1,9 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.TestModel.Model;
+using NexusMods.EventSourcing.TestModel.ComplexModel.ReadModels;
+using NexusMods.Hashing.xxHash64;
+using NexusMods.Paths;
 
 // ReSharper disable MemberCanBePrivate.Global
 
@@ -25,13 +28,22 @@ public class ReadTests : ABenchmark
         await InitializeAsync();
         var tx = Connection.BeginTransaction();
         var entityIds = new List<EntityId>();
+
+        var modId = new Mod(tx)
+        {
+            Name = "TestMod",
+            Source = new Uri("https://www.nexusmods.com"),
+            LoadoutId = EntityId.From(1)
+        };
+
         for (var i = 0; i < Count; i++)
         {
             var file = new File(tx)
             {
-                Hash = (ulong)i,
+                Hash = Hash.From((ulong)i),
                 Path = $"C:\\test_{i}.txt",
-                Index = (ulong)i
+                Size = Size.From((ulong)i),
+                ModId = modId.Id,
             };
             entityIds.Add(file.Id);
         }
@@ -49,7 +61,7 @@ public class ReadTests : ABenchmark
     public ulong ReadFiles()
     {
         ulong sum = 0;
-        sum += _db.Get<File>(_readId).Index;
+        sum += _db.Get<File>(_readId).Size.Value;
         return sum;
     }
 
@@ -57,6 +69,6 @@ public class ReadTests : ABenchmark
     public long ReadAll()
     {
         return _db.Get<File>(_entityIds)
-            .Sum(e => (long)e.Index);
+            .Sum(e => (long)e.Size.Value);
     }
 }
