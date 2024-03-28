@@ -12,7 +12,7 @@ namespace NexusMods.EventSourcing.Abstractions.Internals;
 ///         This KeyPrefix then contains the other parts of the Datom: EntityId, AttributeId, TxId, and Flags.
 ///         Encodes and decodes the prefix of a key, the format is:
 ///         [AttributeId: 2bytes]
-///         [TxId: 8bytes - 1 bit for the assert/retract flag]
+///         [TxId: 6bytes]
 ///         [EntityID + PartitionID: 7bytes]
 ///         [IsRetract: 1bit]
 ///         The Entity Id is created by taking the last 6 bytes of the id and combining it with
