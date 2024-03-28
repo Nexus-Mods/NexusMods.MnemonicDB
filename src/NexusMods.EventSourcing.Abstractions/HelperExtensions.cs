@@ -4,12 +4,12 @@ using System.Buffers.Binary;
 namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
-/// Helper extensions for the event sourcing library
+///     Helper extensions for the event sourcing library
 /// </summary>
 public static class HelperExtensions
 {
     /// <summary>
-    /// Assumes the string is a valid GUID and converts it to a UInt128
+    ///     Assumes the string is a valid GUID and converts it to a UInt128
     /// </summary>
     /// <param name="guid"></param>
     /// <returns></returns>
@@ -24,7 +24,7 @@ public static class HelperExtensions
     }
 
     /// <summary>
-    /// Converts a GUID to a UInt128
+    ///     Converts a GUID to a UInt128
     /// </summary>
     public static UInt128 ToUInt128Guid(this Guid guid)
     {
@@ -32,5 +32,4 @@ public static class HelperExtensions
         guid.TryWriteBytes(bytes);
         return BinaryPrimitives.ReadUInt128LittleEndian(bytes);
     }
-
 }

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -40,9 +39,8 @@ var connection = await Connection.Start(services);
 
 ulong batchSize = 1024;
 ulong datomCount = 1_000_000_000;
-ulong entityCount = datomCount / 3; // 3 attributes per entity
+var entityCount = datomCount / 3; // 3 attributes per entity
 var batches = entityCount / batchSize;
-
 
 
 Console.WriteLine($"Inserting {entityCount} entities in {batches} batches of {batchSize} datoms each");
@@ -64,18 +62,20 @@ for (ulong i = 0; i < batches; i++)
             Index = entityCount - fileNumber
         };
     }
+
     await tx.Commit();
 
-    var perSecond = (int)((batchSize * i * 3) / globalSw.Elapsed.TotalSeconds);
+    var perSecond = (int)(batchSize * i * 3 / globalSw.Elapsed.TotalSeconds);
 
     if (DateTime.UtcNow - lastPrint > TimeSpan.FromSeconds(1))
     {
         var estimatedRemaining = (batches - i) * (globalSw.Elapsed.TotalSeconds / i);
-        Console.WriteLine($"({i}/{batches}) Elapsed: {globalSw.Elapsed} - Datoms per second: {perSecond} - ETA: {TimeSpan.FromSeconds(estimatedRemaining)}");
+        Console.WriteLine(
+            $"({i}/{batches}) Elapsed: {globalSw.Elapsed} - Datoms per second: {perSecond} - ETA: {TimeSpan.FromSeconds(estimatedRemaining)}");
         lastPrint = DateTime.UtcNow;
     }
 }
 
 
-Console.WriteLine($"Elapsed: {globalSw.ElapsedMilliseconds}ms - Datoms per second: {datomCount / globalSw.Elapsed.TotalSeconds}");
-
+Console.WriteLine(
+    $"Elapsed: {globalSw.ElapsedMilliseconds}ms - Datoms per second: {datomCount / globalSw.Elapsed.TotalSeconds}");

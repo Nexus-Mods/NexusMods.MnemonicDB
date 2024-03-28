@@ -9,6 +9,7 @@ public class TxIdSerializer : IValueSerializer<TxId>
 {
     public Type NativeType => typeof(TxId);
     public Symbol UniqueId { get; } = Symbol.Intern<TxIdSerializer>();
+
     public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
     {
         return MemoryMarshal.Read<TxId>(a).CompareTo(MemoryMarshal.Read<TxId>(b));

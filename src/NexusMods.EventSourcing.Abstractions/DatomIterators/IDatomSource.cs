@@ -3,10 +3,7 @@
 namespace NexusMods.EventSourcing.Abstractions.DatomIterators;
 
 /// <summary>
-/// The base interface for a datom iterator, also implements
-/// IDisposable to allow for cleanup
+///     The base interface for a datom iterator, also implements
+///     IDisposable to allow for cleanup
 /// </summary>
-public interface IDatomSource : ISeekableIterator, IDisposable
-{
-
-}
+public interface IDatomSource : ISeekableIterator, IDisposable { }

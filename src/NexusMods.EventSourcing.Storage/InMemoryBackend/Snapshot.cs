@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.DatomIterators;
 
@@ -16,13 +15,10 @@ public class Snapshot : ISnapshot
         _indexes = indexes;
     }
 
-    public void Dispose()
-    {
-
-    }
-
     public IDatomSource GetIterator(IndexType type)
     {
         return new SortedSetIterator(_indexes[(int)type], _registry);
     }
+
+    public void Dispose() { }
 }

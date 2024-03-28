@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.Buffers;
 using System.Runtime.InteropServices;
 using NexusMods.EventSourcing.Abstractions;
@@ -8,12 +7,6 @@ namespace NexusMods.EventSourcing.Storage.Serializers;
 
 public class UInt64Serializer : IValueSerializer<ulong>
 {
-    public uint Serialize<TWriter>(in TWriter writer, in ulong value, out ulong inlineValue)
-    {
-        inlineValue = value;
-        return sizeof(ulong);
-    }
-
     public Type NativeType => typeof(ulong);
     public Symbol UniqueId { get; } = Symbol.Intern<UInt64Serializer>();
 
@@ -38,5 +31,11 @@ public class UInt64Serializer : IValueSerializer<ulong>
         var span = buffer.GetSpan(sizeof(ulong));
         MemoryMarshal.Write(span, value);
         buffer.Advance(sizeof(ulong));
+    }
+
+    public uint Serialize<TWriter>(in TWriter writer, in ulong value, out ulong inlineValue)
+    {
+        inlineValue = value;
+        return sizeof(ulong);
     }
 }

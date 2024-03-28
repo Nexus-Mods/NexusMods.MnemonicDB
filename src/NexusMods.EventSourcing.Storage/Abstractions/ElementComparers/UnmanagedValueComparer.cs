@@ -6,7 +6,7 @@ using Reloaded.Memory.Extensions;
 namespace NexusMods.EventSourcing.Storage.Abstractions.ElementComparers;
 
 /// <summary>
-/// Unmanaged value comparer, assumes that the values will be of the same attribute and of type T.
+///     Unmanaged value comparer, assumes that the values will be of the same attribute and of type T.
 /// </summary>
 /// <typeparam name="T"></typeparam>
 public class UnmanagedValueComparer<T> : IElementComparer

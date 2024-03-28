@@ -1,16 +1,15 @@
 ﻿using System;
-using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.DatomIterators;
 
 namespace NexusMods.EventSourcing.Storage.Abstractions;
 
 public abstract class AIndex<TA, TB, TC, TD, TE, TIndexStore>(AttributeRegistry registry, TIndexStore store) : IIndex
-where TA : IElementComparer
-where TB : IElementComparer
-where TC : IElementComparer
-where TD : IElementComparer
-where TE : IElementComparer
-where TIndexStore : class, IIndexStore
+    where TA : IElementComparer
+    where TB : IElementComparer
+    where TC : IElementComparer
+    where TD : IElementComparer
+    where TE : IElementComparer
+    where TIndexStore : class, IIndexStore
 {
     public int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {

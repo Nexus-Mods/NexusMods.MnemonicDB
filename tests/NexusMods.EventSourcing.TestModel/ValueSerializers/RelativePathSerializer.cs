@@ -7,10 +7,11 @@ namespace NexusMods.EventSourcing.TestModel.ValueSerializers;
 
 public class RelativePathSerializer : IValueSerializer<RelativePath>
 {
-    private static Encoding _encoding = Encoding.UTF8;
+    private static readonly Encoding _encoding = Encoding.UTF8;
 
     public Type NativeType => typeof(RelativePath);
     public Symbol UniqueId => Symbol.Intern<RelativePathSerializer>();
+
     public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
     {
         return a.SequenceCompareTo(b);

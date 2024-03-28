@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Buffers;
-using System.Buffers.Binary;
 using System.Text;
 using NexusMods.EventSourcing.Abstractions;
 
@@ -8,7 +7,7 @@ namespace NexusMods.EventSourcing.Storage.Serializers;
 
 public class StringSerializer : IValueSerializer<string>
 {
-    private static Encoding _encoding = Encoding.UTF8;
+    private static readonly Encoding _encoding = Encoding.UTF8;
     public Type NativeType => typeof(string);
     public Symbol UniqueId { get; } = Symbol.Intern<StringSerializer>();
 

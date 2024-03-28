@@ -1,6 +1,3 @@
 ﻿namespace NexusMods.EventSourcing.Storage.RocksDbBackend;
 
-public interface IRocksDbIndex
-{
-    
-}
+public interface IRocksDbIndex { }

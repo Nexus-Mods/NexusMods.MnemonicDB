@@ -1,6 +1,3 @@
 ﻿namespace NexusMods.EventSourcing.Storage.RocksDbBackend;
 
-public class Snapshot(Backend backend)
-{
-
-}
+public class Snapshot(Backend backend) { }

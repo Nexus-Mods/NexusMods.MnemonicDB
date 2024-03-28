@@ -8,7 +8,4 @@ public class Index<TA, TB, TC, TD, TF>(AttributeRegistry registry, IndexStore st
     where TB : IElementComparer
     where TC : IElementComparer
     where TD : IElementComparer
-    where TF : IElementComparer
-{
-
-}
+    where TF : IElementComparer { }

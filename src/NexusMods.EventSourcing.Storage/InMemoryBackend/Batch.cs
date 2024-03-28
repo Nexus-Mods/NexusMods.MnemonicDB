@@ -8,12 +8,9 @@ namespace NexusMods.EventSourcing.Storage.InMemoryBackend;
 
 public class Batch(IndexStore[] stores) : IWriteBatch
 {
-    private Dictionary<IndexType, List<(bool IsDelete, byte[] Data)>> _datoms = new();
+    private readonly Dictionary<IndexType, List<(bool IsDelete, byte[] Data)>> _datoms = new();
 
-    public void Dispose()
-    {
-
-    }
+    public void Dispose() { }
 
     public void Commit()
     {

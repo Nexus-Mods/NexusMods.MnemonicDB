@@ -8,5 +8,4 @@ public interface IWriteBatch : IDisposable
 
     public void Add(IIndexStore store, ReadOnlySpan<byte> key);
     public void Delete(IIndexStore store, ReadOnlySpan<byte> key);
-
 }

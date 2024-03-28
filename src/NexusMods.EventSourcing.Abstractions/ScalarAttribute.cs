@@ -5,17 +5,17 @@ using NexusMods.EventSourcing.Abstractions.Internals;
 namespace NexusMods.EventSourcing.Abstractions;
 
 /// <summary>
-/// Interface for a specific attribute
+///     Interface for a specific attribute
 /// </summary>
 /// <typeparam name="TValueType"></typeparam>
 /// <typeparam name="TAttribute"></typeparam>
 public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
-where TAttribute : IAttribute<TValueType>
+    where TAttribute : IAttribute<TValueType>
 {
     private IValueSerializer<TValueType> _serializer = null!;
 
     /// <summary>
-    /// Create a new attribute
+    ///     Create a new attribute
     /// </summary>
     protected ScalarAttribute(string uniqueName = "",
         bool isIndexed = false,
@@ -25,9 +25,15 @@ where TAttribute : IAttribute<TValueType>
         IsIndexed = isIndexed;
         KeepHistory = keepHistory;
         MultiArity = multiArity;
-        Id = uniqueName == "" ?
-            Symbol.Intern(typeof(TAttribute).FullName!) :
-            Symbol.InternPreSanitized(uniqueName);
+        Id = uniqueName == "" ? Symbol.Intern(typeof(TAttribute).FullName!) : Symbol.InternPreSanitized(uniqueName);
+    }
+
+    /// <summary>
+    ///     Create a new attribute from an already parsed guid
+    /// </summary>
+    protected ScalarAttribute(Symbol symbol)
+    {
+        Id = symbol;
     }
 
     public bool MultiArity { get; }
@@ -36,21 +42,6 @@ where TAttribute : IAttribute<TValueType>
 
     /// <inheritdoc />
     public bool IsIndexed { get; }
-
-    /// <summary>
-    /// Create a new attribute from an already parsed guid
-    /// </summary>
-    protected ScalarAttribute(Symbol symbol)
-    {
-        Id = symbol;
-    }
-
-    /// <inheritdoc />
-    public TValueType Read(ReadOnlySpan<byte> buffer)
-    {
-        _serializer.Read(buffer, out var val);
-        return val;
-    }
 
 
     /// <inheritdoc />
@@ -63,7 +54,8 @@ where TAttribute : IAttribute<TValueType>
     public void SetSerializer(IValueSerializer serializer)
     {
         if (serializer is not IValueSerializer<TValueType> valueSerializer)
-            throw new InvalidOperationException($"Serializer {serializer.GetType()} is not compatible with {typeof(TValueType)}");
+            throw new InvalidOperationException(
+                $"Serializer {serializer.GetType()} is not compatible with {typeof(TValueType)}");
         _serializer = valueSerializer;
     }
 
@@ -81,7 +73,8 @@ where TAttribute : IAttribute<TValueType>
     public Symbol Id { get; }
 
     /// <inheritdoc />
-    public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx, bool isRetract)
+    public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx,
+        bool isRetract)
     {
         return new ReadDatom
         {
@@ -100,7 +93,7 @@ where TAttribute : IAttribute<TValueType>
 
 
     /// <summary>
-    /// Create a new datom for an assert on this attribute, and return it
+    ///     Create a new datom for an assert on this attribute, and return it
     /// </summary>
     /// <param name="e"></param>
     /// <param name="v"></param>
@@ -110,32 +103,32 @@ where TAttribute : IAttribute<TValueType>
         return new WriteDatom
         {
             E = e,
-            V = v,
+            V = v
         };
+    }
+
+    /// <inheritdoc />
+    public TValueType Read(ReadOnlySpan<byte> buffer)
+    {
+        _serializer.Read(buffer, out var val);
+        return val;
     }
 
 
     /// <summary>
-    /// Typed datom for this attribute
+    ///     Typed datom for this attribute
     /// </summary>
     public readonly record struct WriteDatom : IWriteDatom
     {
         /// <summary>
-        /// The entity id for this datom
-        /// </summary>
-        public required EntityId E { get; init; }
-
-        /// <summary>
-        /// The value for this datom
+        ///     The value for this datom
         /// </summary>
         public required TValueType V { get; init; }
 
-
-        /// <inheritdoc />
-        public override string ToString()
-        {
-            return $"({E.Value:x}, {typeof(TAttribute).Name}, {V})";
-        }
+        /// <summary>
+        ///     The entity id for this datom
+        /// </summary>
+        public required EntityId E { get; init; }
 
         public void Explode<TWriter>(IAttributeRegistry registry, Func<EntityId, EntityId> remapFn,
             out EntityId e, out AttributeId a, TWriter vWriter, out bool isRetract)
@@ -153,30 +146,37 @@ where TAttribute : IAttribute<TValueType>
                     return;
                 }
             }
+
             registry.Explode<TAttribute, TValueType, TWriter>(out a, V, vWriter);
         }
 
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return $"({E.Value:x}, {typeof(TAttribute).Name}, {V})";
+        }
     }
 
     /// <summary>
-    /// Typed datom for this attribute
+    ///     Typed datom for this attribute
     /// </summary>
     public readonly record struct ReadDatom : IReadDatom
     {
         private readonly ulong _tx;
 
         /// <summary>
-        /// The entity id for this datom
-        /// </summary>
-        public required EntityId E { get; init; }
-
-        /// <summary>
-        /// The value for this datom
+        ///     The value for this datom
         /// </summary>
         public required TValueType V { get; init; }
 
         /// <summary>
-        /// The transaction id for this datom
+        ///     The entity id for this datom
+        /// </summary>
+        public required EntityId E { get; init; }
+
+        /// <summary>
+        ///     The transaction id for this datom
         /// </summary>
         public TxId T
         {
@@ -194,16 +194,15 @@ where TAttribute : IAttribute<TValueType>
         public object ObjectValue => V!;
 
         /// <inheritdoc />
-        public override string ToString()
-        {
-            return $"({E}, {typeof(TAttribute).Name}, {V}, {T})";
-        }
-
-        /// <inheritdoc />
         public Type AttributeType => typeof(TAttribute);
 
         /// <inheritdoc />
         public Type ValueType => typeof(TValueType);
-    }
 
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return $"({E}, {typeof(TAttribute).Name}, {V}, {T})";
+        }
+    }
 }

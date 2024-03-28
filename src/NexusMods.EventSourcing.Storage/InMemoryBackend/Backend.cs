@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.Abstractions;
@@ -11,9 +10,9 @@ namespace NexusMods.EventSourcing.Storage.InMemoryBackend;
 public class Backend : IStoreBackend
 {
     private readonly IIndex[] _indexes;
-    private IndexStore[] _stores;
 
     private readonly AttributeRegistry _registry;
+    private readonly IndexStore[] _stores;
 
     public Backend(AttributeRegistry registry)
     {
@@ -27,9 +26,7 @@ public class Backend : IStoreBackend
         return new Batch(_stores);
     }
 
-    public void Init(AbsolutePath location)
-    {
-    }
+    public void Init(AbsolutePath location) { }
 
     public void DeclareIndex<TA, TB, TC, TD, TF>(IndexType name)
         where TA : IElementComparer
@@ -53,11 +50,9 @@ public class Backend : IStoreBackend
     public ISnapshot GetSnapshot()
     {
         return new Snapshot(_indexes
-            .Select(i => ((IInMemoryIndex)i).Set).ToArray(),
+                .Select(i => ((IInMemoryIndex)i).Set).ToArray(),
             _registry);
     }
 
-    public void Dispose()
-    {
-    }
+    public void Dispose() { }
 }

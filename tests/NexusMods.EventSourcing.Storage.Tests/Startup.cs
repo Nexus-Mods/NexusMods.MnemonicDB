@@ -2,8 +2,6 @@
 using Microsoft.Extensions.Logging;
 using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Storage.RocksDbBackend;
-using NexusMods.EventSourcing.Storage.Serializers;
-using NexusMods.EventSourcing.TestModel;
 using NexusMods.EventSourcing.TestModel.ComplexModel.Attributes;
 using NexusMods.EventSourcing.TestModel.ValueSerializers;
 using Xunit.DependencyInjection.Logging;

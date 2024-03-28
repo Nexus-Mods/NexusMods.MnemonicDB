@@ -8,12 +8,12 @@ using Reloaded.Memory.Extensions;
 namespace NexusMods.EventSourcing.Abstractions.DatomIterators;
 
 /// <summary>
-/// Extension methods for the IIterator interface
+///     Extension methods for the IIterator interface
 /// </summary>
 public static class ExtensionMethods
 {
     /// <summary>
-    /// Seeks to the given entity id in the iterator, assumes other values are 0
+    ///     Seeks to the given entity id in the iterator, assumes other values are 0
     /// </summary>
     public static IIterator SeekTo<TParent>(this TParent parent, EntityId eid)
         where TParent : ISeekableIterator
@@ -24,7 +24,7 @@ public static class ExtensionMethods
     }
 
     /// <summary>
-    /// Seeks to the given tx id in the iterator, assumes other values are 0
+    ///     Seeks to the given tx id in the iterator, assumes other values are 0
     /// </summary>
     public static IIterator SeekTo<TParent>(this TParent parent, TxId txId)
         where TParent : ISeekableIterator
@@ -35,7 +35,7 @@ public static class ExtensionMethods
     }
 
     /// <summary>
-    /// Seeks to the given entity id in the iterator, assumes other values are 0
+    ///     Seeks to the given entity id in the iterator, assumes other values are 0
     /// </summary>
     public static IIterator SeekTo<TParent>(this TParent parent, AttributeId aid)
         where TParent : ISeekableIterator
@@ -47,8 +47,8 @@ public static class ExtensionMethods
 
 
     /// <summary>
-    /// Seeks to the given attribute and value in the iterator, assumes that the other values are 0
-    /// and that the value is unmanaged
+    ///     Seeks to the given attribute and value in the iterator, assumes that the other values are 0
+    ///     and that the value is unmanaged
     /// </summary>
     public static IIterator SeekTo<TParent, TVal>(this TParent parent, AttributeId aid, TVal val)
         where TParent : ISeekableIterator
@@ -62,11 +62,10 @@ public static class ExtensionMethods
             MemoryMarshal.Write(span.SliceFast(sizeof(KeyPrefix)), val);
             return parent.Seek(span);
         }
-
     }
 
     /// <summary>
-    /// Seeks to the given key prefix in the iterator, the value is null;
+    ///     Seeks to the given key prefix in the iterator, the value is null;
     /// </summary>
     public static IIterator SeekTo<TParent>(this TParent parent, ref KeyPrefix prefix)
         where TParent : ISeekableIterator
@@ -75,7 +74,7 @@ public static class ExtensionMethods
     }
 
     /// <summary>
-    /// Reverses the order of the iterator so that a .Next will move backwards
+    ///     Reverses the order of the iterator so that a .Next will move backwards
     /// </summary>
     public static ReverseIterator<TParent> Reverse<TParent>(this TParent parent)
         where TParent : IIterator
@@ -84,10 +83,10 @@ public static class ExtensionMethods
     }
 
     /// <summary>
-    /// Converts the iterator to an IEnumerable of IReadDatom
+    ///     Converts the iterator to an IEnumerable of IReadDatom
     /// </summary>
     public static IEnumerable<IReadDatom> Resolve<TParent>(this TParent parent)
-    where TParent : IIterator
+        where TParent : IIterator
     {
         var registry = parent.Registry;
         while (parent.Valid)
@@ -98,7 +97,7 @@ public static class ExtensionMethods
     }
 
     /// <summary>
-    /// Gets the current key prefix of the iterator
+    ///     Gets the current key prefix of the iterator
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static KeyPrefix CurrentKeyPrefix(this IIterator iterator)
@@ -107,12 +106,12 @@ public static class ExtensionMethods
     }
 
     /// <summary>
-    /// Gets the current key prefix of the iterator as a value, assuming the value is unmanaged
+    ///     Gets the current key prefix of the iterator as a value, assuming the value is unmanaged
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static TValue CurrentValue<TIterator, TValue>(this TIterator iterator)
-    where TIterator : IIterator
-    where TValue : unmanaged
+        where TIterator : IIterator
+        where TValue : unmanaged
     {
         unsafe
         {
@@ -121,8 +120,8 @@ public static class ExtensionMethods
     }
 
     /// <summary>
-    /// Keeps the iterator valid while the attribute is equal to the given attribute
-    /// type
+    ///     Keeps the iterator valid while the attribute is equal to the given attribute
+    ///     type
     /// </summary>
     public static WhileA<TParent> While<TParent>(this TParent parent, Type a)
         where TParent : IIterator
@@ -132,8 +131,8 @@ public static class ExtensionMethods
     }
 
     /// <summary>
-    /// Keeps the iterator valid while the attribute is equal to the given attribute
-    /// type
+    ///     Keeps the iterator valid while the attribute is equal to the given attribute
+    ///     type
     /// </summary>
     public static WhileUnmanagedV<TParent, TVal> WhileUnmanagedV<TParent, TVal>(this TParent parent, TVal tval)
         where TParent : IIterator
@@ -143,7 +142,7 @@ public static class ExtensionMethods
     }
 
     /// <summary>
-    /// Keeps the iterator valid while the attribute is equal to the given attribute
+    ///     Keeps the iterator valid while the attribute is equal to the given attribute
     /// </summary>
     public static WhileA<TParent> While<TParent>(this TParent parent, AttributeId a)
         where TParent : IIterator
@@ -152,7 +151,7 @@ public static class ExtensionMethods
     }
 
     /// <summary>
-    /// Keeps the iterator valid while the attribute is equal to the given attribute
+    ///     Keeps the iterator valid while the attribute is equal to the given attribute
     /// </summary>
     public static WhileTx<TParent> While<TParent>(this TParent parent, TxId txId)
         where TParent : IIterator
@@ -161,7 +160,7 @@ public static class ExtensionMethods
     }
 
     /// <summary>
-    /// Keeps the iterator valid while the attribute is equal to the given attribute
+    ///     Keeps the iterator valid while the attribute is equal to the given attribute
     /// </summary>
     public static IEnumerable<TOut> Select<TParent, TOut>(this TParent parent, Func<TParent, TOut> f)
         where TParent : IIterator
@@ -174,12 +173,11 @@ public static class ExtensionMethods
     }
 
     /// <summary>
-    /// Keeps the iterator valid while the attribute is equal to the given attribute
+    ///     Keeps the iterator valid while the attribute is equal to the given attribute
     /// </summary>
     public static WhileE<TParent> While<TParent>(this TParent parent, EntityId e)
         where TParent : IIterator
     {
         return new WhileE<TParent>(e, parent);
     }
-
 }

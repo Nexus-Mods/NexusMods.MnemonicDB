@@ -10,11 +10,11 @@ namespace NexusMods.EventSourcing.Storage.RocksDbBackend;
 
 public class Backend(AttributeRegistry registry) : IStoreBackend
 {
-    private string _location = string.Empty;
+    private readonly ColumnFamilies _columnFamilies = new();
     private readonly Dictionary<IndexType, IRocksDbIndex> _indexes = new();
     private readonly Dictionary<IndexType, IndexStore> _stores = new();
     private RocksDb _db = null!;
-    private readonly ColumnFamilies _columnFamilies = new();
+    private string _location = string.Empty;
 
     public IWriteBatch CreateBatch()
     {
@@ -40,26 +40,6 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
         return (IIndex)_indexes[name];
     }
 
-    private class Snapshot(Backend backend, AttributeRegistry registry) : ISnapshot
-    {
-        private readonly RocksDbSharp.Snapshot _snapshot = backend._db.CreateSnapshot();
-
-        public void Dispose()
-        {
-            _snapshot.Dispose();
-        }
-
-        public IDatomSource GetIterator(IndexType type)
-        {
-            var options = new ReadOptions()
-                .SetSnapshot(_snapshot);
-
-            var iterator = backend._db.NewIterator(backend._stores[type].Handle, options);
-
-            return new IteratorWrapper(iterator, registry);
-        }
-    }
-
     public ISnapshot GetSnapshot()
     {
         return new Snapshot(this, registry);
@@ -80,14 +60,31 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
 
         _db = RocksDb.Open(options, location.ToString(), _columnFamilies);
 
-        foreach (var (name, store) in _stores)
-        {
-            store.PostOpenSetup(_db);
-        }
+        foreach (var (name, store) in _stores) store.PostOpenSetup(_db);
     }
 
     public void Dispose()
     {
         _db.Dispose();
+    }
+
+    private class Snapshot(Backend backend, AttributeRegistry registry) : ISnapshot
+    {
+        private readonly RocksDbSharp.Snapshot _snapshot = backend._db.CreateSnapshot();
+
+        public IDatomSource GetIterator(IndexType type)
+        {
+            var options = new ReadOptions()
+                .SetSnapshot(_snapshot);
+
+            var iterator = backend._db.NewIterator(backend._stores[type].Handle, options);
+
+            return new IteratorWrapper(iterator, registry);
+        }
+
+        public void Dispose()
+        {
+            _snapshot.Dispose();
+        }
     }
 }

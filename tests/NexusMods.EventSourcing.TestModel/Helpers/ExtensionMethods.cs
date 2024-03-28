@@ -6,7 +6,8 @@ namespace NexusMods.EventSourcing.TestModel.Helpers;
 
 public static class ExtensionMethods
 {
-    public static IEnumerable<ObjectTuple> ToObjectDatoms(this IEnumerable<IReadDatom> datoms, IAttributeRegistry registry)
+    public static IEnumerable<ObjectTuple> ToObjectDatoms(this IEnumerable<IReadDatom> datoms,
+        IAttributeRegistry registry)
     {
         foreach (var datom in datoms)
         {
@@ -16,7 +17,7 @@ public static class ExtensionMethods
                 E = datom.E,
                 A = aSym.Name,
                 V = datom.ObjectValue,
-                T = datom.T,
+                T = datom.T
             };
         }
     }
@@ -66,8 +67,8 @@ public static class ExtensionMethods
             sb.Append(datom.T.Value.ToString("X16"));
 
             sb.AppendLine();
-
         }
+
         return sb.ToString();
     }
 }

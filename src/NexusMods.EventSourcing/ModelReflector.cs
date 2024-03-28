@@ -11,21 +11,15 @@ using NexusMods.EventSourcing.Abstractions.Models;
 namespace NexusMods.EventSourcing;
 
 /// <summary>
-/// Reflects over models and creates reader/writer functions for them.
+///     Reflects over models and creates reader/writer functions for them.
 /// </summary>
 internal class ModelReflector<TTransaction>(IDatomStore store)
     where TTransaction : ITransaction
 {
-    private readonly ConcurrentDictionary<Type,object> _emitters = new();
-    private readonly ConcurrentDictionary<Type, object> _readers = new();
-    private readonly ConcurrentDictionary<Type, object> _constructors = new();
     private readonly ConcurrentDictionary<Type, object> _activeReaders = new();
-
-    private delegate void EmitterFn<in TReadModel>(TTransaction tx, TReadModel model)
-        where TReadModel : IReadModel;
-
-    internal delegate TReadModel ReaderFn<out TReadModel>(EntityId id, IEnumerator<IReadDatom> iterator, IDb db)
-        where TReadModel : IReadModel;
+    private readonly ConcurrentDictionary<Type, object> _constructors = new();
+    private readonly ConcurrentDictionary<Type, object> _emitters = new();
+    private readonly ConcurrentDictionary<Type, object> _readers = new();
 
     public void Add(TTransaction tx, IReadModel model)
     {
@@ -40,11 +34,12 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
         {
             emitterFn = (EmitterFn<IReadModel>)found;
         }
+
         emitterFn(tx, model);
     }
 
     /// <summary>
-    /// Reflects over
+    ///     Reflects over
     /// </summary>
     private EmitterFn<IReadModel> CreateEmitter(Type readModel)
     {
@@ -61,11 +56,12 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
         exprs.Add(Expression.Assign(idVariable, Expression.Property(entityParameter, "Id")));
 
         exprs.AddRange(from property in properties
-            let method = property.Attribute.GetMethod("Add", BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)!
+            let method = property.Attribute.GetMethod("Add",
+                BindingFlags.Public | BindingFlags.Static | BindingFlags.FlattenHierarchy)!
             let value = Expression.Property(castedVariable, property.Property)
             select Expression.Call(null, method, txParameter, idVariable, value));
 
-        var blockExpr = Expression.Block(new[] { idVariable, castedVariable}, exprs);
+        var blockExpr = Expression.Block(new[] { idVariable, castedVariable }, exprs);
 
         var lambda = Expression.Lambda<EmitterFn<IReadModel>>(blockExpr, txParameter, entityParameter);
         return lambda.Compile();
@@ -76,14 +72,14 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
         if (_constructors.TryGetValue(readModel, out var found))
             return (Func<IDb, EntityId, object>)found;
 
-        var ctor = readModel.GetConstructor(new[] {typeof(IDb), typeof(EntityId)})!;
+        var ctor = readModel.GetConstructor(new[] { typeof(IDb), typeof(EntityId) })!;
         var dbParameter = Expression.Parameter(typeof(IDb), "db");
         var idParameter = Expression.Parameter(typeof(EntityId), "id");
         var model = Expression.New(ctor, dbParameter, idParameter);
         var casted = Expression.Convert(model, typeof(object));
 
         var lambda = Expression.Lambda<Func<IDb, EntityId, object>>(casted, dbParameter, idParameter);
-        var compiled =  lambda.Compile();
+        var compiled = lambda.Compile();
 
         _constructors.TryAdd(readModel, compiled);
         return compiled;
@@ -123,8 +119,6 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
         var exitLabel = Expression.Label("exit");
 
 
-
-
         var entityIdParameter = Expression.Parameter(typeof(EntityId), "entityId");
         var iteratorParameter = Expression.Parameter(typeof(IEnumerator<IReadDatom>), "iterator");
         var dbParameter = Expression.Parameter(typeof(IDb), "db");
@@ -134,7 +128,8 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
         var ctor = typeof(TModel).GetConstructor([typeof(ITransaction)])!;
 
 
-        exprs.Add(Expression.Assign(newModelExpr, Expression.New(ctor, Expression.Constant(null, typeof(ITransaction)))));
+        exprs.Add(
+            Expression.Assign(newModelExpr, Expression.New(ctor, Expression.Constant(null, typeof(ITransaction)))));
         exprs.Add(Expression.Assign(Expression.Property(newModelExpr, "Id"), entityIdParameter));
         exprs.Add(Expression.Assign(Expression.Property(newModelExpr, "Db"), dbParameter));
 
@@ -150,7 +145,9 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
 
             var ifExpr = Expression.IfThen(
                 Expression.TypeIs(Expression.Property(iteratorParameter, "Current"), readDatomType),
-                Expression.Assign(Expression.Property(newModelExpr, property), Expression.Property(Expression.Convert(Expression.Property(iteratorParameter, "Current"), readDatomType), "V")));
+                Expression.Assign(Expression.Property(newModelExpr, property),
+                    Expression.Property(
+                        Expression.Convert(Expression.Property(iteratorParameter, "Current"), readDatomType), "V")));
 
             exprs.Add(ifExpr);
         }
@@ -159,9 +156,15 @@ internal class ModelReflector<TTransaction>(IDatomStore store)
         exprs.Add(Expression.Label(exitLabel));
         exprs.Add(newModelExpr);
 
-        var block = Expression.Block(new[] {newModelExpr}, exprs);
+        var block = Expression.Block(new[] { newModelExpr }, exprs);
 
         var lambda = Expression.Lambda<ReaderFn<TModel>>(block, entityIdParameter, iteratorParameter, dbParameter);
         return lambda.Compile();
     }
+
+    private delegate void EmitterFn<in TReadModel>(TTransaction tx, TReadModel model)
+        where TReadModel : IReadModel;
+
+    internal delegate TReadModel ReaderFn<out TReadModel>(EntityId id, IEnumerator<IReadDatom> iterator, IDb db)
+        where TReadModel : IReadModel;
 }

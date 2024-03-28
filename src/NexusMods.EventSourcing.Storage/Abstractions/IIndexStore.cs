@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using NexusMods.EventSourcing.Abstractions;
+﻿using NexusMods.EventSourcing.Abstractions;
 using NexusMods.EventSourcing.Abstractions.DatomIterators;
 
 namespace NexusMods.EventSourcing.Storage.Abstractions;

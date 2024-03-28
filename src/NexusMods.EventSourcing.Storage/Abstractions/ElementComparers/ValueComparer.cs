@@ -6,7 +6,7 @@ using Reloaded.Memory.Extensions;
 namespace NexusMods.EventSourcing.Storage.Abstractions.ElementComparers;
 
 /// <summary>
-/// Compares values and assumes that some previous comparator will guarantee that the values are of the same attribute.
+///     Compares values and assumes that some previous comparator will guarantee that the values are of the same attribute.
 /// </summary>
 public class ValueComparer : IElementComparer
 {

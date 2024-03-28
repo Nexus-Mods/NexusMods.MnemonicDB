@@ -13,7 +13,6 @@ public class ObjectTuple
     public bool IsAssert { get; init; }
 }
 
-
 public class ObjectTupleWriter : JsonConverter<ObjectTuple>
 {
     public override void WriteJson(JsonWriter writer, ObjectTuple value, JsonSerializer serializer)
@@ -24,7 +23,7 @@ public class ObjectTupleWriter : JsonConverter<ObjectTuple>
 
         writer.WriteValue(value.E.Value.ToString("x"));
 
-        writer.WriteValue(" "+value.A);
+        writer.WriteValue(" " + value.A);
 
         switch (value.V)
         {
@@ -38,13 +37,13 @@ public class ObjectTupleWriter : JsonConverter<ObjectTuple>
                 writer.WriteValue(value.V.ToString());
                 break;
         }
+
         writer.WriteValue(value.T.Value.ToString("x"));
 
         writer.WriteValue(value.IsAssert ? "assert" : "retract");
 
         writer.WriteEndArray();
         writer.Formatting = oldFormatting;
-
     }
 
     public override ObjectTuple ReadJson(JsonReader reader, Type type, ObjectTuple? existingValue, bool hasExisting,

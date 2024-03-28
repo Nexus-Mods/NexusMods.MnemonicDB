@@ -18,32 +18,32 @@ using Reloaded.Memory.Extensions;
 
 namespace NexusMods.EventSourcing.Storage;
 
-
 public class DatomStore : IDatomStore
 {
-    private readonly AttributeRegistry _registry;
-    private readonly ILogger<DatomStore> _logger;
-    private readonly Channel<PendingTransaction> _txChannel;
-    private EntityId _nextEntityId;
-    private readonly Subject<(TxId TxId, ISnapshot snapshot)> _updatesSubject;
-    private readonly DatomStoreSettings _settings;
-
-    private TxId _asOfTxId = TxId.MinValue;
-    private readonly PooledMemoryBufferWriter _writer;
-    private readonly IStoreBackend _backend;
-    private readonly IIndex _eavtHistory;
-    private readonly IIndex _eavtCurrent;
     private readonly IIndex _aevtCurrent;
     private readonly IIndex _aevtHistory;
-    private readonly IIndex _txLog;
-    private readonly PooledMemoryBufferWriter _prevWriter;
-    private readonly IIndex _vaetCurrent;
-    private readonly IIndex _vaetHistory;
     private readonly IIndex _avetCurrent;
     private readonly IIndex _avetHistory;
+    private readonly IStoreBackend _backend;
+    private readonly IIndex _eavtCurrent;
+    private readonly IIndex _eavtHistory;
+    private readonly ILogger<DatomStore> _logger;
+    private readonly PooledMemoryBufferWriter _prevWriter;
+    private readonly AttributeRegistry _registry;
+    private readonly DatomStoreSettings _settings;
+    private readonly Channel<PendingTransaction> _txChannel;
+    private readonly IIndex _txLog;
+    private readonly Subject<(TxId TxId, ISnapshot snapshot)> _updatesSubject;
+    private readonly IIndex _vaetCurrent;
+    private readonly IIndex _vaetHistory;
+    private readonly PooledMemoryBufferWriter _writer;
+
+    private TxId _asOfTxId = TxId.MinValue;
+    private EntityId _nextEntityId;
 
 
-    public DatomStore(ILogger<DatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings, IStoreBackend backend)
+    public DatomStore(ILogger<DatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings,
+        IStoreBackend backend)
     {
         _backend = backend;
 
@@ -89,85 +89,8 @@ public class DatomStore : IDatomStore
         Task.Run(ConsumeTransactions);
     }
 
-    private async Task ConsumeTransactions()
-    {
-        var sw = Stopwatch.StartNew();
-        while (await _txChannel.Reader.WaitToReadAsync())
-        {
-            var pendingTransaction = await _txChannel.Reader.ReadAsync();
-            try
-            {
-                // Sync transactions have no data, and are used to verify that the store is up to date.
-                if (pendingTransaction.Data.Length == 0)
-                {
-                    var storeResult = new StoreResult()
-                    {
-                        Remaps = new Dictionary<EntityId, EntityId>(),
-                        AssignedTxId = _asOfTxId,
-                        Snapshot = _backend.GetSnapshot(),
-                        Datoms = Array.Empty<IReadDatom>()
-                    };
-                    pendingTransaction.CompletionSource.SetResult(storeResult);
-                    continue;
-                }
-
-                Log(pendingTransaction, out var result);
-
-                _updatesSubject.OnNext((result.AssignedTxId, result.Snapshot));
-                pendingTransaction.CompletionSource.SetResult(result);
-            }
-            catch (Exception ex)
-            {
-                pendingTransaction.CompletionSource.TrySetException(ex);
-            }
-        }
-    }
-
-    /// <summary>
-    /// Sets up the initial state of the store.
-    /// </summary>
-    private async Task Bootstrap()
-    {
-        try
-        {
-            var snapshot = _backend.GetSnapshot();
-            using var txIterator = snapshot.GetIterator(IndexType.TxLog);
-            var lastTx = txIterator
-                .SeekLast()
-                .Reverse()
-                .Resolve()
-                .FirstOrDefault()?.T ?? TxId.MinValue;
-
-            if (lastTx == TxId.MinValue)
-            {
-                _logger.LogInformation("Bootstrapping the datom store no existing state found");
-                var _ = await Transact(BuiltInAttributes.InitialDatoms);
-                return;
-            }
-            else
-            {
-                _logger.LogInformation("Bootstrapping the datom store, existing state found, last tx: {LastTx}", lastTx.Value.ToString("x"));
-                _asOfTxId = lastTx;
-            }
-
-            using var entIterator = snapshot.GetIterator(IndexType.EAVTCurrent);
-            var lastEnt = entIterator
-                .SeekLast()
-                .Reverse()
-                .Resolve()
-                .FirstOrDefault()?.E ?? EntityId.MinValue;
-
-            _nextEntityId = EntityId.From(lastEnt.Value + 1);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to bootstrap the datom store");
-        }
-    }
-
     public TxId AsOfTxId => _asOfTxId;
     public IAttributeRegistry Registry => _registry;
-
 
 
     public async Task<TxId> Sync()
@@ -195,7 +118,8 @@ public class DatomStore : IDatomStore
         foreach (var attr in newAttrsArray)
         {
             datoms.Add(BuiltInAttributes.UniqueId.Assert(EntityId.From(attr.AttrEntityId.Value), attr.UniqueId));
-            datoms.Add(BuiltInAttributes.ValueSerializerId.Assert(EntityId.From(attr.AttrEntityId.Value), attr.ValueTypeId));
+            datoms.Add(BuiltInAttributes.ValueSerializerId.Assert(EntityId.From(attr.AttrEntityId.Value),
+                attr.ValueTypeId));
         }
 
         await Transact(datoms);
@@ -203,16 +127,11 @@ public class DatomStore : IDatomStore
         _registry.Populate(newAttrsArray);
     }
 
-    public Expression GetValueReadExpression(Type attribute, Expression valueSpan, out AttributeId attributeId)
-    {
-        return _registry.GetReadExpression(attribute, valueSpan, out attributeId);
-    }
-
     public IEnumerable<EntityId> GetReferencesToEntityThroughAttribute<TAttribute>(EntityId id, TxId txId)
         where TAttribute : IAttribute<EntityId>
     {
-//           return _backrefHistory.GetReferencesToEntityThroughAttribute<TAttribute>(id, txId);
-throw new NotImplementedException();
+        //           return _backrefHistory.GetReferencesToEntityThroughAttribute<TAttribute>(id, txId);
+        throw new NotImplementedException();
     }
 
 
@@ -253,7 +172,6 @@ throw new NotImplementedException();
     public IEnumerable<EntityId> GetEntitiesWithAttribute<TAttribute>(TxId txId)
         where TAttribute : IAttribute
     {
-
         throw new NotImplementedException();
     }
 
@@ -263,7 +181,7 @@ throw new NotImplementedException();
     }
 
     /// <summary>
-    /// Gets the maximum entity id in the store.
+    ///     Gets the maximum entity id in the store.
     /// </summary>
     public EntityId GetMaxEntityId()
     {
@@ -292,10 +210,96 @@ throw new NotImplementedException();
             yield return datom;
     }
 
+    public void Dispose()
+    {
+        _updatesSubject.Dispose();
+        _writer.Dispose();
+        _prevWriter.Dispose();
+    }
+
+    private async Task ConsumeTransactions()
+    {
+        var sw = Stopwatch.StartNew();
+        while (await _txChannel.Reader.WaitToReadAsync())
+        {
+            var pendingTransaction = await _txChannel.Reader.ReadAsync();
+            try
+            {
+                // Sync transactions have no data, and are used to verify that the store is up to date.
+                if (pendingTransaction.Data.Length == 0)
+                {
+                    var storeResult = new StoreResult
+                    {
+                        Remaps = new Dictionary<EntityId, EntityId>(),
+                        AssignedTxId = _asOfTxId,
+                        Snapshot = _backend.GetSnapshot(),
+                        Datoms = Array.Empty<IReadDatom>()
+                    };
+                    pendingTransaction.CompletionSource.SetResult(storeResult);
+                    continue;
+                }
+
+                Log(pendingTransaction, out var result);
+
+                _updatesSubject.OnNext((result.AssignedTxId, result.Snapshot));
+                pendingTransaction.CompletionSource.SetResult(result);
+            }
+            catch (Exception ex)
+            {
+                pendingTransaction.CompletionSource.TrySetException(ex);
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Sets up the initial state of the store.
+    /// </summary>
+    private async Task Bootstrap()
+    {
+        try
+        {
+            var snapshot = _backend.GetSnapshot();
+            using var txIterator = snapshot.GetIterator(IndexType.TxLog);
+            var lastTx = txIterator
+                .SeekLast()
+                .Reverse()
+                .Resolve()
+                .FirstOrDefault()?.T ?? TxId.MinValue;
+
+            if (lastTx == TxId.MinValue)
+            {
+                _logger.LogInformation("Bootstrapping the datom store no existing state found");
+                var _ = await Transact(BuiltInAttributes.InitialDatoms);
+                return;
+            }
+
+            _logger.LogInformation("Bootstrapping the datom store, existing state found, last tx: {LastTx}",
+                lastTx.Value.ToString("x"));
+            _asOfTxId = lastTx;
+
+            using var entIterator = snapshot.GetIterator(IndexType.EAVTCurrent);
+            var lastEnt = entIterator
+                .SeekLast()
+                .Reverse()
+                .Resolve()
+                .FirstOrDefault()?.E ?? EntityId.MinValue;
+
+            _nextEntityId = EntityId.From(lastEnt.Value + 1);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to bootstrap the datom store");
+        }
+    }
+
+    public Expression GetValueReadExpression(Type attribute, Expression valueSpan, out AttributeId attributeId)
+    {
+        return _registry.GetReadExpression(attribute, valueSpan, out attributeId);
+    }
+
     #region Internals
 
-
-    EntityId MaybeRemap(EntityId id, Dictionary<EntityId, EntityId> remaps, TxId thisTx)
+    private EntityId MaybeRemap(EntityId id, Dictionary<EntityId, EntityId> remaps, TxId thisTx)
     {
         if (Ids.GetPartition(id) == Ids.Partition.Tmp)
         {
@@ -315,19 +319,16 @@ throw new NotImplementedException();
                     return remapTo;
                 }
             }
-            else
-            {
-                return newId;
-            }
+
+            return newId;
         }
+
         return id;
     }
 
 
-
     private void Log(PendingTransaction pendingTransaction, out StoreResult result)
     {
-
         var output = new List<IReadDatom>();
 
         var thisTx = TxId.From(_asOfTxId.Value + 1);
@@ -398,13 +399,11 @@ throw new NotImplementedException();
         batch.Commit();
 
         if (_logger.IsEnabled(LogLevel.Debug))
-        {
             _logger.LogDebug("Transaction {TxId} ({Count} datoms) prepared in {Elapsed}ms, written in {WriteElapsed}ms",
                 thisTx.Value,
                 pendingTransaction.Data.Length,
                 swPrepare.ElapsedMilliseconds - swWrite.ElapsedMilliseconds,
                 swWrite.ElapsedMilliseconds);
-        }
 
 
         result = new StoreResult
@@ -434,11 +433,4 @@ throw new NotImplementedException();
     }
 
     #endregion
-
-    public void Dispose()
-    {
-        _updatesSubject.Dispose();
-        _writer.Dispose();
-        _prevWriter.Dispose();
-    }
 }
