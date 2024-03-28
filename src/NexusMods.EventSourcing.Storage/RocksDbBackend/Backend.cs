@@ -50,7 +50,7 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
         var options = new DbOptions()
             .SetCreateIfMissing()
             .SetCreateMissingColumnFamilies()
-            .SetCompression(Compression.Zstd);
+            .SetCompression(Compression.Lz4);
 
         foreach (var (name, store) in _stores)
         {

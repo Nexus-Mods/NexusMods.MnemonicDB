@@ -1,4 +1,6 @@
 ﻿using System;
+using Microsoft.Win32;
+using NexusMods.EventSourcing.Abstractions.Internals;
 
 namespace NexusMods.EventSourcing.Abstractions.DatomIterators;
 
@@ -24,4 +26,9 @@ public interface ISeekableIterator
     ///     to an IIterator
     /// </summary>
     public IIterator SeekStart();
+
+    /// <summary>
+    /// The registry for the attributes.
+    /// </summary>
+    public IAttributeRegistry Registry { get; }
 }

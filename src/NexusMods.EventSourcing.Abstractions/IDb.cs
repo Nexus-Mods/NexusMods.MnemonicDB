@@ -35,7 +35,7 @@ public interface IDb : IDisposable
     /// <returns></returns>
     public TModel Get<TModel>(EntityId id)
         where TModel : IReadModel;
-
+    
     /// <summary>
     ///     Gets a read model for every enitity that references the given entity id
     ///     with the given attribute.

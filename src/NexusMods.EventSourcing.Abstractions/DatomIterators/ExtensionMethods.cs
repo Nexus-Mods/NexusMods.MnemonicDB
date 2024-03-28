@@ -65,6 +65,26 @@ public static class ExtensionMethods
     }
 
     /// <summary>
+    ///     Seeks to the given attribute and value in the iterator, assumes that the other values are 0
+    ///     and that the value is unmanaged
+    /// </summary>
+    public static IIterator SeekTo<TParent, TAttribute, TVal>(this TParent parent, TVal val)
+        where TParent : ISeekableIterator
+        where TAttribute : IAttribute<TVal>
+        where TVal : unmanaged
+    {
+        unsafe
+        {
+            var aid = parent.Registry.GetAttributeId(typeof(TAttribute));
+            Span<byte> span = stackalloc byte[sizeof(TVal) + sizeof(KeyPrefix)];
+            var key = MemoryMarshal.Cast<byte, KeyPrefix>(span);
+            key[0].Set(EntityId.MinValue, aid, TxId.MinValue, false);
+            MemoryMarshal.Write(span.SliceFast(sizeof(KeyPrefix)), val);
+            return parent.Seek(span);
+        }
+    }
+
+    /// <summary>
     ///     Seeks to the given key prefix in the iterator, the value is null;
     /// </summary>
     public static IIterator SeekTo<TParent>(this TParent parent, ref KeyPrefix prefix)
