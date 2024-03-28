@@ -6,21 +6,21 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using NexusMods.EventSourcing;
-using NexusMods.EventSourcing.Abstractions;
-using NexusMods.EventSourcing.Abstractions.DatomIterators;
-using NexusMods.EventSourcing.Storage;
-using NexusMods.EventSourcing.TestModel;
-using NexusMods.EventSourcing.TestModel.ComplexModel.Attributes;
-using NexusMods.EventSourcing.TestModel.ComplexModel.ReadModels;
+using NexusMods.MneumonicDB;
+using NexusMods.MneumonicDB.Abstractions;
+using NexusMods.MneumonicDB.Abstractions.DatomIterators;
+using NexusMods.MneumonicDB.Storage;
+using NexusMods.MneumonicDB.TestModel;
+using NexusMods.MneumonicDB.TestModel.ComplexModel.Attributes;
+using NexusMods.MneumonicDB.TestModel.ComplexModel.ReadModels;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.Paths;
 
 var host = Host.CreateDefaultBuilder()
     .ConfigureServices(s =>
     {
-        s.AddEventSourcingStorage()
-            .AddEventSourcing()
+        s.AddMneumonicDBStorage()
+            .AddMneumonicDB()
             .AddRocksDbBackend()
             .AddTestModel()
             .AddSingleton<DatomStoreSettings>(_ => new DatomStoreSettings
