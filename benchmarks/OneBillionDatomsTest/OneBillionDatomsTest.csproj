@@ -13,10 +13,10 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\NexusMods.EventSourcing.Storage\NexusMods.EventSourcing.Storage.csproj"/>
-        <ProjectReference Include="..\..\src\NexusMods.EventSourcing\NexusMods.EventSourcing.csproj"/>
-        <ProjectReference Include="..\..\tests\NexusMods.EventSourcing.Storage.Tests\NexusMods.EventSourcing.Storage.Tests.csproj"/>
-        <ProjectReference Include="..\..\tests\NexusMods.EventSourcing.TestModel\NexusMods.EventSourcing.TestModel.csproj"/>
+        <ProjectReference Include="..\..\src\NexusMods.MneumonicDB.Storage\NexusMods.MneumonicDB.Storage.csproj"/>
+        <ProjectReference Include="..\..\src\NexusMods.MneumonicDB\NexusMods.MneumonicDB.csproj"/>
+        <ProjectReference Include="..\..\tests\NexusMods.MneumonicDB.Storage.Tests\NexusMods.MneumonicDB.Storage.Tests.csproj"/>
+        <ProjectReference Include="..\..\tests\NexusMods.MneumonicDB.TestModel\NexusMods.MneumonicDB.TestModel.csproj"/>
     </ItemGroup>
 
 </Project>

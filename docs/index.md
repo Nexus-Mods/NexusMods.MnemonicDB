@@ -4,89 +4,162 @@ hide:
 ---
 
 <div align="center">
-	<h1>The Nexus Event Sourcing Framework</h1>
+	<h1>MneumonicDB a in-process temporal database for .NET</h1>
 	<img src="./Nexus/Images/Nexus-Icon.png" width="150" align="center" />
 	<br/> <br/>
-    Event Sourcing for single process desktop applications.
     <br/>
-    <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/Nexus-Mods/NexusMods.EventSourcing/BuildAndTest.yml">
+    <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/Nexus-Mods/NexusMods.MneumonicDB/BuildAndTest.yml">
 </div>
 
 ## About
 
-Event Sourcing, and more commonly CQRS, are patterns that are becoming more and more popular in the software industry especially
-for large scale distributed systems. They are also patterns that fit well into a immutable state systems, or systems that wish
-to track modifications to data and provide ways of auditing or undoing changes.
+Built for the NexusMods.App project, MneumonicDB is a tuple oriented, typesafe, in-process temporal database for .NET
+applications. It supports a pluggable storage and value model leverages [RocksDB](https://rocksdb.org/) by default.
+Many similarities can be seen in this project to [Datomic](https://www.datomic.com/), [Datahike](https://github.com/replikativ/datahike),
+and [XTDB](https://xtdb.com/)
 
-The term "Event Sourcing" was coined by [Martin Fowler in 2005](https://martinfowler.com/eaaDev/EventSourcing.html), and is described as:
+by default, but has a pluggable storage layer.
 
-!!! info "Event Sourcing ensures that all changes to application state are stored as a sequence of events. Not just can we
-query these events, we can also use the event log to reconstruct past states, and as a foundation to automatically adjust the state to cope with retroactive changes."
+### Definitions
+The above description is a bit of a mouthful, so let's break it down a bit.
 
-These features solve several problems we experience in the Nexus Mods App, namely:
+* **Tuple Oriented**: Data is stored in the database in the format of `[Entity, Attribute, Value, Transaction, Assert/Retract]` tuples.
+thus it is not a traditional table based database like SQL, but more like a RDF or graph database. To create what is
+traditionally thought of as a table, you would query for all tuples with the same entity.
+* **Typesafe**: The database is designed to be used with C# and is strongly typed. As much as possible, allocations are
+removed from the inner parts of the application, and the database is designed to be used with value types. These values
+are processed and sorted via C# code, so the database supports arbitrary types, as long as they can be compared.
+* **In-process**: The database is designed to be used in the same process as the application, and is not a separate service,
+and does not support multiple processes accessing the same database at the same time. Multiple threads within the same
+process can access the database concurrently without issue.
+* **Temporal**: The database supports the concept of time, and can be queried as of a specific time, or for all values
+for a given entity, or attribute over type. In many ways this provides an audit log of all changes to the database. In
+spite of this feature, an index is maintained for the "Current" view of the database so that most queries are fast, and
+yet the full history is available.
+* **Pluggable Storage**: The database is designed to support multiple storage backends, and the default storage backend is
+RocksDB. However, the storage layer is abstracted, and any system that supports a sorted set of keys, iteration (forward
+and backward), and atomic updates across multiple keys can be used. Currently, the only other storage backend is a in-memory
+backed based on Microsoft's `System.Collections.Immutable` library which contains the `ImmutableSortedSet` class.
 
-* A strongly typed data model that can be quickly loaded from disk
-* A way to track changes to the data model
-* A way to undo changes to the data model
-* A way to adapt the data model to changes in the data model, if a property changes from a string to a number, how do
-  we adapt the data model to this change?
+## Datamodel
+At the core of the application is a set of attribute definitions. These are defined in C# as implementations of the `IAttribute`
+class. Most often these are defined as classes inside a containing class to better group them by name. Here is an example
+of a simple set of attributes:
 
-!!! tip "The concept of event sourcing is simple, given a set of events, the state of the system is then `aggregate({}, events) -> state`. All the state is the result of applying all the events in order"
+```csharp
+public class FileAttributes
+{
+    /// <summary>
+    ///     The path of the file
+    /// </summary>
+    public class Path() : ScalarAttribute<Path, RelativePath>(isIndexed: true);
 
-What is interesting to note is that this pattern is very abstract, leaving a lot of room for optimization and customization. One such
-customization is the idea of CQRS, or Command Query Responsibility Segregation. This is the idea that the system should be split into
-two parts, the command side and the query side. The command side is responsible for handling commands, or actions that change the state
-of the system. The query side is responsible for handling queries, or actions that read the state of the system. This pattern further
-aligns with the idea of immutability, as the command side is the only side that can change the state of the system, and the query side
-can be optimized for reading.
+    /// <summary>
+    ///     The size of the file
+    /// </summary>
+    public class Size : ScalarAttribute<Size, Paths.Size>;
 
-The overall architecture of a CQRS system is something like this:
+    /// <summary>
+    ///     The hashcode of the file
+    /// </summary>
+    public class Hash() : ScalarAttribute<Hash, Hashing.xxHash64.Hash>(isIndexed: true);
 
-```mermaid
-flowchart TD
-    B(Event Log) --> C[Event Processor]
-    C --> D[Read Data Model]
-    D --> E[Application]
-    E --> | Command/Event |B
+    /// <summary>
+    ///     The mod this file belongs to
+    /// </summary>
+    public class ModId : ScalarAttribute<ModId, EntityId>;
+}
 ```
 
-* Events are sent into the Event Log, this storage is considered the "source of truth" for the system
-* An event processor takes these events and uses them to manipulate the read data model
-* The application then reads from the read data model
-* The application can also send commands to the event log to modify the model
+A few interesting features of the above code:
 
-!!! tip "The event log is the source of truth for the system, and the read data model is a projection of the event log. The read data model can be rebuilt at any time by replaying the events in the event log"
+* Each attribute is defined as a class, this is so the class can later be used in C# attributes such as `[From<Path>]`
+for defining read models (more on this below).
+* Attributes can be indexed, this is a hint to the database that this attribute will be queried on often, and it should
+be included in the secondary or reverse index. In the above example all the entities where `Hash` is `X` can be found
+very quickly, via a single lookup and scan of an index.
+* Attributes define a value type. Also in the app, should be a `IValueSerializer<T>` for each of these value types. But
+this system is open-ended. The serializer is used to convert the value to and from a byte array for storage in the database,
+and to perform comparisons on the values, so longs need not be stored in BigEndian order as they are not compared as byte
+arrays, but as longs. In addition, arbitrary types can be stored in the database, so long as they can be compared in their
+C# form.
 
-## Nexus Event Sourcing Framework
 
-A major issue in event sourcing systems is allowing for the system to adapt to changes in the model over time, while the concept of events mutating a state is simple,
-the actual implementation can be quite complex. This framework reworks many aspects of the Event Sourcing model in order to present an interface that
-is easier to maintain, adapt and extend in extension code.
+Once the attributes are defined, they must be registered with the DI container.
 
-This framework takes heavy inspiration from [Datomic](https://docs.datomic.com/pro/index.html), an immutable, tuple oriented, single writer, parallel reader database system. Unfortunately,
-Datomic is not open source, is written in Java, and not designed for a single process desktop application. However the information available about
-the database is very insightful and we are leveraging many aspects of its design in our framework.
+```csharp
+services.AddAttributeCollection<FileAttributes>();
+```
 
-!!!info
-    While the Nexus Event Sourcing framework takes inspiration from Datomic, and although one of the authors (halgari) used to work for Cognitect (the company behind Datomic at the time),
-this project is a 100% clean room implementation and does not contain any code from Datomic, nor have any of its authors ever seen the source code of Datomic. The main distinctions between
-the two is that Datomic is primarilly focused on a distributed system, and the Nexus Event Sourcing framework is only designed for a single process application.
+While attributes can be registered individually, it is recommended to group them into classes as shown above, and register
+them at once via the `AddAttributeCollection` method.
 
-### Data format
-Data is stored as a series of tuples, in the format of `[entity, attribute, value, transaction, op]` where each of these has a specific meaning:
+## Read Models
 
-* `entity` - 64bit long - The entity id the tuple is associated with
-* `attribute` - 64bit long - The attribute id the tuple is associated with
-* `value` - The value of the tuple, a binary blob who's format is defined by the attribute's `NativeType` in the schema
-* `transaction` - 64bit long - The transaction id the tuple is associated with
-* `op` - 1bit flag - The operation that was performed on the tuple, either `Assert` or `Retract`
+For ease of use, MnemonicDB supports the concept of read models. These are classes that define a set of attributes that
+are commonly queried together. There is nothing that requires these attributes to always be grouped in the same way, and
+users are encouraged to define read models that make sense for their application.
 
-It is interesting to note that the `transaction` id is a 64bit long, and is used to order the tuples in the event log, transactions are monotonic and always increasing.
-This is a key feature of the system, as it allows us to order the events in the event log, and also allows us to replay the events in the event log in order to rebuild the read data model.
+```csharp
+public class File(ITransaction? tx) : AReadModel<File>(tx)
+{
+    [From<FileAttributes.Path>]
+    public required RelativePath Name { get; set; }
 
-Attributes and transactions are also entities, and are put into a separate `partition` via a prefix on their ids. The top byte of an ID is the partition, the actual value of these partition
-prefixes don't matter much, but it should be noted that the first partition is the partition for attributes, so at any time a quick check of the first byte in an entity id can tell us if it's an attribute id or not.
+    [From<FileAttributes.Size>]
+    public required Size Size { get; set; }
 
-Data is stored in several indexes which can be queried to find a specific datom (or datom that is closest to a specific datom), from there the data is stored in a sorted
-set so iterators can move forward and backwards through the data. By varying the order in which the parts of the datoms are sorted, we can efficently navigate through a model.
+    [From<FileAttributes.Hash>]
+    public required Hash Hash { get; set; }
+
+    [From<FileAttributes.ModId>]
+    public required EntityId ModId { get; init; }
+
+    public static File Create(ITransaction tx, string name, Mod mod, Size size, Hash hash)
+    {
+        return new File(tx)
+        {
+            Name = name,
+            Size = size,
+            Hash = hash,
+            ModId = mod.Id
+        };
+    }
+}
+```
+
+The above class defines a read model for a file. It is a simple class with properties that are decorated with the `[From<Attribute>]`
+attribute. This attribute is used to tell the database that when this read model is queried, it should include the values
+for the given DB attributes. The `ITransaction` parameter is used during writes to the database, and can be ignored for now.
+
+Now that the read model is defined, it can be used to query the database.
+
+```csharp
+    var file = db.Get<File>(eId);
+
+    Console.WriteLine($"File: {file.Name} Size: {file.Size} Hash: {file.Hash}");
+```
+
+## Writing data
+Datoms (tuples of data) are written to the database via transactions. Since MnemonicDB is a single-writer database, transactions
+are not applied directly and do not lock the database. Instead, transactions are created, and then shipped off to the
+writer task which serializes writes to the backing store.
+
+Read models can be used to create new entities in the database. Here is an example of creating a new file entity using
+the above constructor method.
+
+```csharp
+    var tx = db.BeginTransaction();
+    var file = File.Create(tx, "file.txt", mod, 1024, hash);
+    var txResult = await tx.Commit();
+```
+
+A key thing to note in this code is that each entity when it is created fresh, is given a temporary ID. These ids are
+not unique, but are unique to the given transaction. Once `txResult` is returned, the tempId assigned to the entity
+can be resolved to a real ID:
+
+```csharp
+    file = db.Get<File>(txResult[file.Id]);
+```
+
 
