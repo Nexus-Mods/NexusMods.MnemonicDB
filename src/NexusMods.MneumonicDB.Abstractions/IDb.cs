@@ -26,6 +26,12 @@ public interface IDb : IDisposable
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids)
         where TModel : IReadModel;
 
+    /// <summary>
+    /// Gets a single attribute value for the given entity id.
+    /// </summary>
+    public TValue Get<TAttribute, TValue>(EntityId id)
+        where TAttribute : IAttribute<TValue>;
+
 
     /// <summary>
     ///     Gets a read model for the given entity id.

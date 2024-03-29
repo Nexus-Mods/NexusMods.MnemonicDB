@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers;
 using NexusMods.MneumonicDB.Abstractions.Internals;
+using NexusMods.MneumonicDB.Abstractions.Models;
 
 namespace NexusMods.MneumonicDB.Abstractions;
 
@@ -76,10 +77,11 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
     public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx,
         bool isRetract)
     {
+        _serializer.Read(value, out var val);
         return new ReadDatom
         {
             E = entityId,
-            V = Read(value),
+            V = val,
             T = tx,
             IsRetract = isRetract
         };
@@ -105,6 +107,19 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
             E = e,
             V = v
         };
+    }
+
+    public static TValueType Get<TReadModel>(in TReadModel model)
+        where TReadModel : AReadModel<TReadModel>, IReadModel
+    {
+        return model.Db.Get<TAttribute, TValueType>(model.Id);
+    }
+
+    /// <inheritdoc />
+    public static void Add<TReadModel>(in TReadModel model, TValueType value)
+        where TReadModel : AReadModel<TReadModel>, IReadModel
+    {
+        tx.Add<TAttribute, TValueType>(model.Id, value);
     }
 
     /// <inheritdoc />

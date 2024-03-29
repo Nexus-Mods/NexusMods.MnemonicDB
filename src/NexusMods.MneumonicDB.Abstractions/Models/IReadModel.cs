@@ -16,4 +16,9 @@ public interface IReadModel
     ///     The attached db instance of the read model.
     /// </summary>
     public IDb Db { get; }
+
+    /// <summary>
+    ///  The current active transaction for the read model, if any
+    /// </summary>
+    public ITransaction Tx { get; internal set; }
 }

@@ -39,13 +39,10 @@ public abstract class AReadModel<TOuter> : IReadModel
         return Db.Get<TReadModel>(entityId);
     }
 
+
     /// <summary>
     ///     Retrieves the matching read models from the database via the specified reverse lookup attribute
     /// </summary>
-    /// <typeparam name="TAttribute"></typeparam>
-    /// <typeparam name="TReadModel"></typeparam>
-    /// <returns></returns>
-    /// <exception cref="NotImplementedException"></exception>
     protected IEnumerable<TReadModel> GetReverse<TAttribute, TReadModel>()
         where TReadModel : AReadModel<TReadModel>, IReadModel
         where TAttribute : ScalarAttribute<TAttribute, EntityId>

@@ -42,6 +42,11 @@ internal class Db : IDb
         }
     }
 
+    public TValue Get<TAttribute, TValue>(EntityId id) where TAttribute : IAttribute<TValue>
+    {
+        throw new System.NotImplementedException();
+    }
+
     public TModel Get<TModel>(EntityId id) where TModel : IReadModel
     {
         var reader = _connection.ModelReflector.GetReader<TModel>();

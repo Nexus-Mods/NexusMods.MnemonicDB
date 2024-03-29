@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
+using NexusMods.MneumonicDB.Abstractions.Models;
 
 namespace NexusMods.MneumonicDB.Abstractions;
 
@@ -45,6 +47,7 @@ public interface IAttribute
     ///     Gets the type of the read datom for the given attribute.
     /// </summary>
     Type GetReadDatomType();
+
 }
 
 /// <summary>
@@ -65,4 +68,16 @@ public interface IAttribute<TVal> : IAttribute
     /// <param name="v"></param>
     /// <returns></returns>
     public static abstract IWriteDatom Assert(EntityId e, TVal v);
+
+    /// <summary>
+    /// Gets the value of the attribute for the given read model.
+    /// </summary>
+    public static abstract TVal Get<TReadModel>(in TReadModel model)
+        where TReadModel : AReadModel<TReadModel>, IReadModel;
+
+    /// <summary>
+    /// Adds a datom to the transaction for the given read model/value
+    /// </summary>
+    public static abstract void Set<TReadModel>(in TReadModel model, TVal value, ITransaction tx)
+        where TReadModel : AReadModel<TReadModel>, IReadModel;
 }
