@@ -73,11 +73,11 @@ public interface IAttribute<TVal> : IAttribute
     /// Gets the value of the attribute for the given read model.
     /// </summary>
     public static abstract TVal Get<TReadModel>(in TReadModel model)
-        where TReadModel : AReadModel<TReadModel>, IReadModel;
+        where TReadModel : IEntity;
 
     /// <summary>
     /// Adds a datom to the transaction for the given read model/value
     /// </summary>
     public static abstract void Set<TReadModel>(in TReadModel model, TVal value, ITransaction tx)
-        where TReadModel : AReadModel<TReadModel>, IReadModel;
+        where TReadModel : IEntity;
 }
