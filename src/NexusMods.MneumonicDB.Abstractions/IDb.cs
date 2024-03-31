@@ -40,14 +40,14 @@ public interface IDb : IDisposable
     /// <typeparam name="TModel"></typeparam>
     /// <returns></returns>
     public TModel Get<TModel>(EntityId id)
-        where TModel : IReadModel;
+        where TModel : IEntity;
 
     /// <summary>
     ///     Gets a read model for every enitity that references the given entity id
     ///     with the given attribute.
     /// </summary>
-    public IEnumerable<TModel> GetReverse<TAttribute, TModel>(EntityId id)
-        where TModel : IReadModel
+    public TModel[] GetReverse<TAttribute, TModel>(EntityId id)
+        where TModel : IEntity
         where TAttribute : IAttribute<EntityId>;
 
     public IEnumerable<IReadDatom> Datoms(EntityId id);

@@ -95,16 +95,28 @@ public class AMneumonicDBTest : IAsyncLifetime
     protected async Task<Loadout> InsertExampleData()
     {
         var tx = Connection.BeginTransaction();
-        var loadout = Loadout.Create(tx, "Test Loadout");
+        var loadout = new Loadout(tx);
         List<Mod> mods = new();
 
         foreach (var modName in new[] { "Mod1", "Mod2", "Mod3" })
         {
-            var mod = Mod.Create(tx, modName, new Uri("http://somesite.com/" + modName), loadout);
+            var mod = new Mod(tx)
+            {
+                Name = modName,
+                Source = new Uri("http://somesite.com/" + modName),
+                Loadout = loadout
+            };
+
             var idx = 0;
             foreach (var file in new[] { "File1", "File2", "File3" })
             {
-                File.Create(tx, file, mod, Size.From((ulong)idx), Hash.From((ulong)(0xDEADBEEF + idx)));
+                _ = new File(tx)
+                {
+                    Path = file,
+                    Mod = mod,
+                    Size = Size.From((ulong)idx),
+                    Hash = Hash.From((ulong)(0xDEADBEEF + idx))
+                };
                 idx += 1;
             }
             mods.Add(mod);

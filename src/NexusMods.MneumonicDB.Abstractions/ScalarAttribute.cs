@@ -109,15 +109,13 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
         };
     }
 
-    public static TValueType Get<TReadModel>(in TReadModel model)
-        where TReadModel : IEntity
+    public static TValueType Get(ref ModelHeader model)
     {
         return model.Db.Get<TAttribute, TValueType>(model.Id);
     }
 
     /// <inheritdoc />
-    public static void Add<TReadModel>(in TReadModel model, TValueType value)
-        where TReadModel : IEntity
+    public static void Add(ref ModelHeader model, TValueType value)
     {
         tx.Add<TAttribute, TValueType>(model.Id, value);
     }
