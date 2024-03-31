@@ -24,22 +24,16 @@ internal class Db : IDb
 
     public IConnection Connection => _connection;
 
-    public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids) where TModel : IReadModel
+    public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids)
+        where TModel : IEntity, struct
     {
-        var reader = _connection.ModelReflector.GetReader<TModel>();
-        using var readerSource = _snapshot.GetIterator(IndexType.EAVTCurrent);
+        foreach (var id in ids)
+            yield return new TModel().Header = new ModelHeader()
+            {
+                Id = id,
+                Db = this
+            };
 
-        foreach (var e in ids)
-        {
-            // Inlining this code so that we can re-use the iterator means roughly a 25% speedup
-            // in loading a large number of entities.
-            using var enumerator = readerSource
-                .SeekTo(e)
-                .While(e)
-                .Resolve()
-                .GetEnumerator();
-            yield return reader(e, enumerator, this);
-        }
     }
 
     public TValue Get<TAttribute, TValue>(EntityId id) where TAttribute : IAttribute<TValue>
@@ -47,8 +41,16 @@ internal class Db : IDb
         throw new System.NotImplementedException();
     }
 
-    public TModel Get<TModel>(EntityId id) where TModel : IReadModel
+    public TModel Get<TModel>(EntityId id) where TModel : IEntity
     {
+        ModelHeader header = new()
+        {
+            Id = id,
+            Db = this
+        };
+
+        return header
+
         var reader = _connection.ModelReflector.GetReader<TModel>();
 
         using var source = _snapshot.GetIterator(IndexType.EAVTCurrent);

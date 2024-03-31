@@ -4,5 +4,5 @@ namespace NexusMods.MneumonicDB.Abstractions.Models;
 
 public interface IEntity
 {
-    public EntityId Id { get; }
+    public ModelHeader Header { get; }
 }

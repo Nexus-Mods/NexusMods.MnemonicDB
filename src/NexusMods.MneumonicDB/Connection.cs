@@ -16,8 +16,6 @@ public class Connection : IConnection
 {
     private readonly object _lock = new();
     private readonly IDatomStore _store;
-    internal readonly ModelReflector<Transaction> ModelReflector;
-    private ulong _nextEntityId = Ids.MinId(Ids.Partition.Entity);
 
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
@@ -25,7 +23,6 @@ public class Connection : IConnection
     private Connection(IDatomStore store)
     {
         _store = store;
-        ModelReflector = new ModelReflector<Transaction>(store);
     }
 
 

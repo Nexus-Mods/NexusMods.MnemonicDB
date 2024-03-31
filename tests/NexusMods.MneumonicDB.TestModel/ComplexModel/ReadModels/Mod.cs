@@ -10,7 +10,7 @@ public struct Mod(ModelHeader header) : IEntity
 {
     public Mod(ITransaction tx) : this(tx.New()) { }
 
-    public EntityId Id => header.Id;
+    public ModelHeader Header { get => header; set => header = value; }
 
 
     public string Name

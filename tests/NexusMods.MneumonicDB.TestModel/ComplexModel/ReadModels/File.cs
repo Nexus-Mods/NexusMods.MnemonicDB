@@ -53,6 +53,6 @@ public struct File(ModelHeader header) : IEntity
     public Mod Mod
     {
         get => header.Db.Get<Mod>(ModId);
-        init => FileAttributes.ModId.Add(ref header, value.Id);
+        init => FileAttributes.ModId.Add(ref header, value.Header.Id);
     }
 }

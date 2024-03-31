@@ -24,7 +24,7 @@ public interface IDb : IDisposable
     ///     Returns a read model for each of the given entity ids.
     /// </summary>
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids)
-        where TModel : IReadModel;
+        where TModel : IEntity;
 
     /// <summary>
     /// Gets a single attribute value for the given entity id.

@@ -11,9 +11,9 @@ public class CommitResult(IDb db, IDictionary<EntityId, EntityId> remaps) : ICom
     public EntityId this[EntityId id] =>
         remaps.TryGetValue(id, out var found) ? found : id;
 
-    public T Remap<T>(T model) where T : IReadModel
+    public T Remap<T>(T model) where T : IEntity
     {
-        return db.Get<T>(remaps[model.Id]);
+        return db.Get<T>(remaps[model.Header.Id]);
     }
 
     /// <inheritdoc />

@@ -19,7 +19,7 @@ public interface ICommitResult
     /// <summary>
     ///   Remaps a ReadModel to a new instance with the new ids
     /// </summary>
-    public T Remap<T>(T model) where T : IReadModel;
+    public T Remap<T>(T model) where T : IEntity;
 
     /// <summary>
     ///     Gets the new TxId after the commit

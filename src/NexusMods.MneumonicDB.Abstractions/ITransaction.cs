@@ -20,14 +20,6 @@ public interface ITransaction
     EntityId TempId();
 
     /// <summary>
-    ///     Adds a new read model to the transaction, the datoms are extracted from the read model
-    ///     as asserts for each property with the FromAttribute
-    /// </summary>
-    /// <param name="model"></param>
-    void Add<TReadModel>(TReadModel model)
-        where TReadModel : IReadModel;
-
-    /// <summary>
     ///     Adds a new datom to the transaction
     /// </summary>
     /// <param name="entityId"></param>

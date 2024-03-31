@@ -51,15 +51,16 @@ public class AMneumonicDBTest : IAsyncLifetime
     protected DatomStoreSettings Config { get; set; }
 
     protected SettingsTask VerifyModel<TReadModel>(TReadModel model)
-        where TReadModel : IReadModel
+        where TReadModel : IEntity
     {
         var datoms = DatomsFor(model).ToTable(_registry);
         return Verify(datoms);
     }
 
-    protected SettingsTask VerifyModel(IEnumerable<IReadModel> model)
+    protected SettingsTask VerifyModel<T>(IEnumerable<T> models)
+    where T : IEntity
     {
-        var datoms = model.SelectMany(DatomsFor)
+        var datoms = models.SelectMany(s => DatomsFor(s))
             .ToTable(_registry);
         return Verify(datoms);
     }
@@ -71,7 +72,7 @@ public class AMneumonicDBTest : IAsyncLifetime
         Connection = await Connection.Start(_store, _valueSerializers, _attributes);
     }
 
-    protected IReadDatom[] DatomsFor(IReadModel model)
+    protected IReadDatom[] DatomsFor(IEntity model)
     {
         var fromAttributes = model.GetType()
             .GetProperties()
@@ -81,7 +82,7 @@ public class AMneumonicDBTest : IAsyncLifetime
             .Select(f => f.GenericTypeArguments.First())
             .ToArray();
 
-        var datoms = model.Db.Datoms(model.Id)
+        var datoms = model.Header.Db.Datoms(model.Header.Id)
             .Where(d => fromAttributes.Contains(d.AttributeType))
             .ToArray();
         return datoms;
@@ -129,7 +130,7 @@ public class AMneumonicDBTest : IAsyncLifetime
         var tx2 = Connection.BeginTransaction();
         foreach (var mod in loadout.Mods)
         {
-            ModAttributes.Name.Add(tx2, mod.Id, mod.Name + " - Updated");
+            ModAttributes.Name.Add(tx2, mod.Header.Id, mod.Name + " - Updated");
         }
         await tx2.Commit();
 
