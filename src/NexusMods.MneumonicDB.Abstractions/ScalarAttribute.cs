@@ -21,11 +21,11 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
     /// </summary>
     protected ScalarAttribute(string uniqueName = "",
         bool isIndexed = false,
-        bool keepHistory = true,
+        bool noHistory = false,
         bool multiValued = false)
     {
         IsIndexed = isIndexed;
-        KeepHistory = keepHistory;
+        NoHistory = noHistory;
         Multivalued = multiValued;
         Id = uniqueName == "" ? Symbol.Intern(typeof(TAttribute).FullName!) : Symbol.InternPreSanitized(uniqueName);
     }
@@ -40,10 +40,11 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
 
     public bool Multivalued { get; }
 
-    public bool KeepHistory { get; }
-
     /// <inheritdoc />
     public bool IsIndexed { get; }
+
+    public bool NoHistory { get; }
+    IValueSerializer IAttribute.Serializer => _serializer;
 
 
     /// <inheritdoc />

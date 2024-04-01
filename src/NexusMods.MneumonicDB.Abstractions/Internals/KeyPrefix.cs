@@ -63,6 +63,17 @@ public struct KeyPrefix
         return $"E: {E}, A: {A}, T: {T}, Retract: {IsRetract}";
     }
 
+    /// <summary>
+    ///    Deconstructs the key into its parts
+    /// </summary>
+    public void Deconstruct(out EntityId entityId, out AttributeId attributeId, out TxId txId, out bool isRetract)
+    {
+        entityId = E;
+        attributeId = A;
+        txId = T;
+        isRetract = IsRetract;
+    }
+
 
     /// <summary>
     ///     Gets the KeyPrefix from the given bytes

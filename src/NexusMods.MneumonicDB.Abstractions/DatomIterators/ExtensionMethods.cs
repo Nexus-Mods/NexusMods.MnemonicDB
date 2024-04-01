@@ -68,6 +68,18 @@ public static class ExtensionMethods
     ///     Seeks to the given attribute and value in the iterator, assumes that the other values are 0
     ///     and that the value is unmanaged
     /// </summary>
+    public static IIterator SeekTo<TParent>(this TParent parent, EntityId eid, AttributeId aid)
+        where TParent : ISeekableIterator
+    {
+        var key = new KeyPrefix();
+        key.Set(eid, aid, TxId.MinValue, false);
+        return parent.SeekTo(ref key);
+    }
+
+    /// <summary>
+    ///     Seeks to the given attribute and value in the iterator, assumes that the other values are 0
+    ///     and that the value is unmanaged
+    /// </summary>
     public static IIterator SeekTo<TParent, TAttribute, TVal>(this TParent parent, TVal val)
         where TParent : ISeekableIterator
         where TAttribute : IAttribute<TVal>

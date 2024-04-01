@@ -157,7 +157,7 @@ public class DbTests(IServiceProvider provider) : AMneumonicDBTest(provider)
         for (var idx = 0; idx < 4; idx++)
         {
             tx = Connection.BeginTransaction();
-            FileAttributes.Hash.Add(tx, realId, Hash.From(0xDEADBEEF + (ulong)idx));
+            FileAttributes.Hash.Add(tx, realId, Hash.From(0xDEADBEEF + (ulong)idx + 0xEE));
             result = await tx.Commit();
 
             await Task.Delay(100);

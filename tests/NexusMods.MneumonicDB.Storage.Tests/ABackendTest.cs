@@ -58,6 +58,7 @@ public abstract class ABackendTest<TStoreType>(
 
         id1 = tx.Remaps[id1];
         id2 = tx.Remaps[id2];
+        modId2 = tx.Remaps[modId2];
         collectionId = tx.Remaps[collectionId];
 
         tx = await DatomStore.Transact([
