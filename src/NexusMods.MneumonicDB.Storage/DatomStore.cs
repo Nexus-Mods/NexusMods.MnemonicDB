@@ -356,6 +356,70 @@ public class DatomStore : IDatomStore
         _asOfTxId = thisTx;
     }
 
+    private void ProcessRetract(IWriteBatch batch, IAttribute attribute, ReadOnlySpan<byte> datom)
+    {
+        _eavtCurrent.Delete(batch, datom);
+        _aevtCurrent.Delete(batch, datom);
+        if (attribute.IsReference)
+            _vaetCurrent.Delete(batch, datom);
+        if (attribute.IsIndexed)
+            _avetCurrent.Delete(batch, datom);
+
+        if (attribute.NoHistory) return;
+
+        _eavtHistory.Put(batch, datom);
+        _aevtHistory.Put(batch, datom);
+
+        if (attribute.IsReference)
+            _vaetHistory.Delete(batch, datom);
+        if (attribute.IsIndexed)
+            _avetHistory.Delete(batch, datom);
+    }
+
+    private void ProcessAssert(IWriteBatch batch, IAttribute attribute, ReadOnlySpan<byte> datom)
+    {
+        _eavtCurrent.Put(batch, datom);
+        _aevtCurrent.Put(batch, datom);
+        if (attribute.IsReference)
+            _vaetCurrent.Put(batch, datom);
+        if (attribute.IsIndexed)
+            _avetCurrent.Put(batch, datom);
+    }
+
+    enum PrevState
+    {
+        Exists,
+        NotExists,
+        Duplicate
+    }
+
+    private unsafe PrevState GetPreviousState(IAttribute attribute, IValueSerializer serializer, ISeekableIterator iterator, ReadOnlySpan<byte> span)
+    {
+        var keyPrefix = MemoryMarshal.Read<KeyPrefix>(span);
+
+        if (attribute.IsMultiCardinality)
+        {
+            var iter = iterator.Seek(span);
+            if (!iter.Valid) return PrevState.NotExists;
+            var iterKey = iter.CurrentKeyPrefix();
+            if (iterKey.E != keyPrefix.E || iterKey.A != keyPrefix.A)
+                return PrevState.NotExists;
+
+            if (serializer.Compare(iter.Current.SliceFast(sizeof(KeyPrefix)),
+                    span.SliceFast(sizeof(KeyPrefix))) == 0)
+                return PrevState.Duplicate;
+
+            return PrevState.NotExists;
+        }
+        else
+        {
+            var iter = iterator.SeekTo(keyPrefix.E, keyPrefix.A);
+            if (!iter.Valid) return PrevState.NotExists;
+
+        }
+
+    }
+
     private bool GetPrevious(KeyPrefix d)
     {
         var prefix = new KeyPrefix();
