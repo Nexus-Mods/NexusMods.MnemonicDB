@@ -2,10 +2,13 @@
 
 using System;
 using System.Diagnostics;
+using BenchmarkDotNet.Diagnosers;
+using BenchmarkDotNet.Running;
+using JetBrains.Profiler.Api;
 using NexusMods.MneumonicDB.Benchmarks.Benchmarks;
 
 
-//#if DEBUG
+#if DEBUG
 
 var benchmark = new ReadTests
 {
@@ -14,15 +17,26 @@ var benchmark = new ReadTests
 
 var sw = Stopwatch.StartNew();
 await benchmark.Setup();
+
 long result = 0;
-for (var i = 0; i < 10000; i++) result = benchmark.ReadAll();
+
+//MeasureProfiler.StartCollectingData();
+MemoryProfiler.CollectAllocations(true);
+for (var i = 0; i < 100000; i++)
+    result = benchmark.ReadAllPreloaded();
+MemoryProfiler.CollectAllocations(false);
+
+//MeasureProfiler.SaveData();
 Console.WriteLine("Elapsed: " + sw.Elapsed + " Result: " + result);
 
 
-/*
+
+
+
 #else
 
 BenchmarkRunner.Run<ReadTests>();
 
 #endif
-*/
+
+

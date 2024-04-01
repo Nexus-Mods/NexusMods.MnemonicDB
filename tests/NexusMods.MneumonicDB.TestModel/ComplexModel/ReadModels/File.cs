@@ -6,28 +6,53 @@ using FileAttributes = NexusMods.MneumonicDB.TestModel.ComplexModel.Attributes.F
 
 namespace NexusMods.MneumonicDB.TestModel.ComplexModel.ReadModels;
 
-public class File(ITransaction? tx) : AReadModel<File>(tx)
+public struct File(ModelHeader header) : IEntity
 {
-    [From<FileAttributes.Path>]
-    public required RelativePath Path { get; set; }
+    public File(ITransaction tx) : this(tx.New()) { }
+    public ModelHeader Header { get => header; set => header = value; }
 
-    [From<FileAttributes.Size>]
-    public required Size Size { get; set; }
-
-    [From<FileAttributes.Hash>]
-    public required Hash Hash { get; set; }
-
-    [From<FileAttributes.ModId>]
-    public required EntityId ModId { get; init; }
-
-    public static File Create(ITransaction tx, string s, Mod mod, Size fromLong, Hash hash)
+    /// <summary>
+    /// The path of the file
+    /// </summary>
+    public RelativePath Path
     {
-        return new File(tx)
-        {
-            Path = s,
-            Size = fromLong,
-            Hash = hash,
-            ModId = mod.Id
-        };
+        get => FileAttributes.Path.Get(ref header);
+        init => FileAttributes.Path.Add(ref header, value);
+    }
+
+    /// <summary>
+    /// The xxHash64 hash of the file
+    /// </summary>
+    public Hash Hash
+    {
+        get => FileAttributes.Hash.Get(ref header);
+        init => FileAttributes.Hash.Add(ref header, value);
+    }
+
+    /// <summary>
+    /// The size of the file
+    /// </summary>
+    public Size Size
+    {
+        get => FileAttributes.Size.Get(ref header);
+        init => FileAttributes.Size.Add(ref header, value);
+    }
+
+    /// <summary>
+    /// The id of the mod this file belongs to
+    /// </summary>
+    public EntityId ModId
+    {
+        get => FileAttributes.ModId.Get(ref header);
+        init => FileAttributes.ModId.Add(ref header, value);
+    }
+
+    /// <summary>
+    /// The mod this file belongs to
+    /// </summary>
+    public Mod Mod
+    {
+        get => header.Db.Get<Mod>(ModId);
+        init => FileAttributes.ModId.Add(ref header, value.Header.Id);
     }
 }

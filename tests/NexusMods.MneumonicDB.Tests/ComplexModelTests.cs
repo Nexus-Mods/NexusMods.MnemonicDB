@@ -22,19 +22,36 @@ public class ComplexModelTests(IServiceProvider provider) : AMneumonicDBTest(pro
     {
         var tx = Connection.BeginTransaction();
 
-        var loadout = Loadout.Create(tx, "My Loadout");
+        var loadout = new Loadout(tx)
+        {
+            Name = "My Loadout"
+        };
 
         var mods = new List<Mod>();
         var files = new List<File>();
 
         for (var i = 0; i < modCount; i++)
         {
-            var mod = Mod.Create(tx, $"Mod {i}", new Uri($"http://mod{i}.com"), loadout);
+            var mod = new Mod(tx)
+            {
+                Name = $"Mod {i}",
+                Source = new Uri($"http://mod{i}.com"),
+                Loadout = loadout
+            };
+
             mods.Add(mod);
             for (var j = 0; j < filesPerMod; j++)
             {
                 var name = $"File {j}";
-                var file = File.Create(tx, name, mod, Size.FromLong(name.Length), Hash.FromLong(name.XxHash64AsUtf8()));
+
+                var file = new File(tx)
+                {
+                    Path = name,
+                    Mod = mod,
+                    Size = Size.FromLong(name.Length),
+                    Hash = Hash.FromLong(name.XxHash64AsUtf8())
+                };
+
                 files.Add(file);
             }
         }
@@ -77,19 +94,36 @@ public class ComplexModelTests(IServiceProvider provider) : AMneumonicDBTest(pro
     {
         var tx = Connection.BeginTransaction();
 
-        var loadout = Loadout.Create(tx, "My Loadout");
+        var loadout = new Loadout(tx)
+        {
+            Name = "My Loadout"
+        };
 
         var mods = new List<Mod>();
         var files = new List<File>();
 
         for (var i = 0; i < modCount; i++)
         {
-            var mod = Mod.Create(tx, $"Mod {i}", new Uri($"http://mod{i}.com"), loadout);
+            var mod = new Mod(tx)
+            {
+                Name = $"Mod {i}",
+                Source = new Uri($"http://mod{i}.com"),
+                Loadout = loadout
+            };
+
             mods.Add(mod);
             for (var j = 0; j < filesPerMod; j++)
             {
                 var name = $"File {j}";
-                var file = File.Create(tx, name, mod, Size.FromLong(name.Length), Hash.FromLong(name.XxHash64AsUtf8()));
+
+                var file = new File(tx)
+                {
+                    Path = name,
+                    Mod = mod,
+                    Size = Size.FromLong(name.Length),
+                    Hash = Hash.FromLong(name.XxHash64AsUtf8())
+                };
+
                 files.Add(file);
             }
         }
@@ -99,12 +133,19 @@ public class ComplexModelTests(IServiceProvider provider) : AMneumonicDBTest(pro
         var extraTx = Connection.BeginTransaction();
 
         var db = Connection.Db;
-        var firstMod = db.Get<Mod>(result[mods[0].Id]);
+        var firstMod = db.Get<Mod>(result.Remap(mods[0]).Header.Id);
         for (var idx = 0; idx < extraFiles; idx++)
         {
             var name = $"Extra File {idx}";
-            var file = File.Create(extraTx, name, firstMod, Size.FromLong(name.Length),
-                Hash.FromLong(name.XxHash64AsUtf8()));
+
+            var file = new File(extraTx)
+            {
+                Path = name,
+                Mod = firstMod,
+                Size = Size.FromLong(name.Length),
+                Hash = Hash.FromLong(name.XxHash64AsUtf8())
+            };
+
             files.Add(file);
         }
 
@@ -125,14 +166,18 @@ public class ComplexModelTests(IServiceProvider provider) : AMneumonicDBTest(pro
         {
             totalSize += mod.Files.Sum(f => f.Size);
 
-            if (mod.Id == firstMod.Id)
+            if (mod.Header.Id == firstMod.Header.Id)
                 mod.Files.Count().Should().Be(filesPerMod + extraFiles, "first mod should have the extra files");
             else
                 mod.Files.Count().Should().Be(filesPerMod, "every mod should have the same amount of files");
         }
 
         tx = Connection.BeginTransaction();
-        var newLoadOut = Loadout.Create(tx, "My Loadout 2");
+        var newLoadOut = new Loadout(tx)
+        {
+            Name = "My Loadout 2"
+        };
+
         var result2 = await tx.Commit();
         newLoadOut = db.Get<Loadout>(result2[newLoadOut.Id]);
 

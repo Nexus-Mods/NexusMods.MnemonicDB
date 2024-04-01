@@ -24,7 +24,13 @@ public interface IDb : IDisposable
     ///     Returns a read model for each of the given entity ids.
     /// </summary>
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids)
-        where TModel : IReadModel;
+        where TModel : struct, IEntity;
+
+    /// <summary>
+    /// Gets a single attribute value for the given entity id.
+    /// </summary>
+    public TValue Get<TAttribute, TValue>(ref ModelHeader header, EntityId id)
+        where TAttribute : IAttribute<TValue>;
 
 
     /// <summary>
@@ -34,14 +40,14 @@ public interface IDb : IDisposable
     /// <typeparam name="TModel"></typeparam>
     /// <returns></returns>
     public TModel Get<TModel>(EntityId id)
-        where TModel : IReadModel;
+        where TModel : struct, IEntity;
 
     /// <summary>
     ///     Gets a read model for every enitity that references the given entity id
     ///     with the given attribute.
     /// </summary>
-    public IEnumerable<TModel> GetReverse<TAttribute, TModel>(EntityId id)
-        where TModel : IReadModel
+    public TModel[] GetReverse<TAttribute, TModel>(EntityId id)
+        where TModel : struct, IEntity
         where TAttribute : IAttribute<EntityId>;
 
     public IEnumerable<IReadDatom> Datoms(EntityId id);

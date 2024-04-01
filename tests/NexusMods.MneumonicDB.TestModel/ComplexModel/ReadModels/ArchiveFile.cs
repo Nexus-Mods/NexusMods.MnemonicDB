@@ -11,17 +11,35 @@ namespace NexusMods.MneumonicDB.TestModel.ComplexModel.ReadModels;
 /// Read model the demonstrates the use of multiple attributes with the same short name (but unique full name).
 /// Also demonstrates the use of a read model containing attributes from different attribute classes.
 /// </summary>
-public class ArchiveFile(ITransaction? tx) : AReadModel<File>(tx)
+public struct ArchiveFile : IEntity
 {
-    [From<FileAttributes.Path>]
-    public required RelativePath Path { get; set; }
+    private ModelHeader _header;
 
-    [From<FileAttributes.Size>]
-    public required Size Size { get; set; }
+    public ModelHeader Header { get => _header; set => _header = value; }
 
-    [From<ArchiveFileAttributes.Path>]
-    public required RelativePath ArchivePath { get; set; }
+    public RelativePath Path
+    {
+        get => FileAttributes.Path.Get(ref _header);
+        init => FileAttributes.Path.Add(ref _header, value);
+    }
 
-    [From<ArchiveFileAttributes.Hash>]
-    public required Hash Hash { get; set; }
+    public Size Size
+    {
+        get => FileAttributes.Size.Get(ref _header);
+        init => FileAttributes.Size.Add(ref _header, value);
+    }
+
+
+    public RelativePath ArchivePath
+    {
+        get => ArchiveFileAttributes.Path.Get(ref _header);
+        init => ArchiveFileAttributes.Path.Add(ref _header, value);
+    }
+
+
+    public Hash ArchiveHash
+    {
+        get => ArchiveFileAttributes.Hash.Get(ref _header);
+        init => ArchiveFileAttributes.Hash.Add(ref _header, value);
+    }
 }

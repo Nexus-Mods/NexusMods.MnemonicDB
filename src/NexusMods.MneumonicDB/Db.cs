@@ -1,8 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using NexusMods.MneumonicDB.Abstractions;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
 using NexusMods.MneumonicDB.Abstractions.Models;
 using NexusMods.MneumonicDB.Storage;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MneumonicDB;
 
@@ -10,13 +15,16 @@ internal class Db : IDb
 {
     private readonly Connection _connection;
     private readonly AttributeRegistry _registry;
-    private readonly ISnapshot _snapshot;
+    private readonly EntityCache _cache;
+    private readonly ConcurrentDictionary<EntityId, EntityId[]> _reverseCache = new();
+    internal readonly ISnapshot Snapshot;
 
     public Db(ISnapshot snapshot, Connection connection, TxId txId, AttributeRegistry registry)
     {
         _registry = registry;
         _connection = connection;
-        _snapshot = snapshot;
+        _cache = new EntityCache(this, registry);
+        Snapshot = snapshot;
         BasisTxId = txId;
     }
 
@@ -24,67 +32,62 @@ internal class Db : IDb
 
     public IConnection Connection => _connection;
 
-    public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids) where TModel : IReadModel
+    public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids)
+        where TModel : struct, IEntity
     {
-        var reader = _connection.ModelReflector.GetReader<TModel>();
-        using var readerSource = _snapshot.GetIterator(IndexType.EAVTCurrent);
-
-        foreach (var e in ids)
+        foreach (var id in ids)
         {
-            // Inlining this code so that we can re-use the iterator means roughly a 25% speedup
-            // in loading a large number of entities.
-            using var enumerator = readerSource
-                .SeekTo(e)
-                .While(e)
-                .Resolve()
-                .GetEnumerator();
-            yield return reader(e, enumerator, this);
+            yield return Get<TModel>(id);
         }
+
     }
 
-    public TModel Get<TModel>(EntityId id) where TModel : IReadModel
+    public TValue Get<TAttribute, TValue>(ref ModelHeader header, EntityId id)
+        where TAttribute : IAttribute<TValue>
     {
-        var reader = _connection.ModelReflector.GetReader<TModel>();
-
-        using var source = _snapshot.GetIterator(IndexType.EAVTCurrent);
-        using var enumerator = source.SeekTo(id)
-            .While(id)
-            .Resolve()
-            .GetEnumerator();
-        return reader(id, enumerator, this);
+        return _cache.Get<TAttribute, TValue>(ref header);
     }
 
-    /// <inheritdoc />
-    public IEnumerable<TModel> GetReverse<TAttribute, TModel>(EntityId id) where TAttribute : IAttribute<EntityId>
-        where TModel : IReadModel
+    public TModel Get<TModel>(EntityId id)
+        where TModel : struct, IEntity
     {
-        using var attrSource = _snapshot.GetIterator(IndexType.VAETCurrent);
-        var attrId = _registry.GetAttributeId<TAttribute>();
-        var eIds = attrSource
-            .SeekTo(attrId, id)
-            .WhileUnmanagedV(id)
-            .While(attrId)
-            .Select(c => c.CurrentKeyPrefix().E);
-
-        var reader = _connection.ModelReflector.GetReader<TModel>();
-        using var readerSource = _snapshot.GetIterator(IndexType.EAVTCurrent);
-
-        foreach (var e in eIds)
+        ModelHeader header = new()
         {
-            // Inlining this code so that we can re-use the iterator means roughly a 25% speedup
-            // in loading a large number of entities.
-            using var enumerator = readerSource
-                .SeekTo(e)
-                .While(e)
-                .Resolve()
-                .GetEnumerator();
-            yield return reader(e, enumerator, this);
+            Id = id,
+            Db = this
+        };
+
+        return MemoryMarshal.CreateReadOnlySpan(ref header, 1)
+            .CastFast<ModelHeader, TModel>()[0];
+    }
+
+    public TModel[] GetReverse<TAttribute, TModel>(EntityId id)
+        where TAttribute : IAttribute<EntityId>
+        where TModel : struct, IEntity
+    {
+        if (!_reverseCache.TryGetValue(id, out var eIds))
+        {
+            using var attrSource = Snapshot.GetIterator(IndexType.VAETCurrent);
+            var attrId = _registry.GetAttributeId<TAttribute>();
+            eIds = attrSource
+                .SeekTo(attrId, id)
+                .WhileUnmanagedV(id)
+                .While(attrId)
+                .Select(c => c.CurrentKeyPrefix().E)
+                .ToArray();
+
+            _reverseCache[id] = eIds;
         }
+
+        var results = GC.AllocateUninitializedArray<TModel>(eIds.Length);
+        for (var i = 0; i < eIds.Length; i++)
+            results[i] = Get<TModel>(eIds[i]);
+        return results;
     }
 
     public IEnumerable<IReadDatom> Datoms(EntityId entityId)
     {
-        using var iterator = _snapshot.GetIterator(IndexType.EAVTCurrent);
+        using var iterator = Snapshot.GetIterator(IndexType.EAVTCurrent);
         foreach (var datom in iterator.SeekTo(entityId)
                      .While(entityId)
                      .Resolve())
@@ -93,7 +96,7 @@ internal class Db : IDb
 
     public IEnumerable<IReadDatom> Datoms(TxId txId)
     {
-        using var iterator = _snapshot.GetIterator(IndexType.TxLog);
+        using var iterator = Snapshot.GetIterator(IndexType.TxLog);
         foreach (var datom in iterator
                      .SeekTo(txId)
                      .While(txId)
@@ -105,7 +108,7 @@ internal class Db : IDb
         where TAttribute : IAttribute
     {
         var a = _registry.GetAttributeId<TAttribute>();
-        using var iterator = _snapshot.GetIterator(IndexType.AEVTCurrent);
+        using var iterator = Snapshot.GetIterator(IndexType.AEVTCurrent);
         foreach (var datom in iterator
                      .SeekTo(a)
                      .While(a)
@@ -115,7 +118,7 @@ internal class Db : IDb
 
     public IDatomSource Iterate(IndexType index)
     {
-        return _snapshot.GetIterator(index);
+        return Snapshot.GetIterator(index);
     }
 
     public void Dispose() { }

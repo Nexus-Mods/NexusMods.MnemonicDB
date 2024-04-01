@@ -29,7 +29,7 @@ public class DbTests(IServiceProvider provider) : AMneumonicDBTest(provider)
                 Size = Size.From(idx),
                 ModId = EntityId.From(1)
             };
-            ids.Add(file.Id);
+            ids.Add(file.Header.Id);
         }
 
         var oldTx = Connection.TxId;
@@ -64,7 +64,7 @@ public class DbTests(IServiceProvider provider) : AMneumonicDBTest(provider)
 
         var result = await tx.Commit();
 
-        var realId = result[file.Id];
+        var realId = result[file.Header.Id];
         var originalDb = Connection.Db;
 
         // Validate the data
@@ -110,12 +110,12 @@ public class DbTests(IServiceProvider provider) : AMneumonicDBTest(provider)
         };
 
         // Attach extra attributes to the entity
-        ArchiveFileAttributes.Path.Add(tx, file.Id, "C:\\test.zip");
-        ArchiveFileAttributes.Hash.Add(tx, file.Id, Hash.From(0xFEEDBEEF));
+        ArchiveFileAttributes.Path.Add(tx, file.Header.Id, "C:\\test.zip");
+        ArchiveFileAttributes.Hash.Add(tx, file.Header.Id, Hash.From(0xFEEDBEEF));
         var result = await tx.Commit();
 
 
-        var realId = result[file.Id];
+        var realId = result[file.Header.Id];
         var db = Connection.Db;
 
         // Original data exists
@@ -144,7 +144,7 @@ public class DbTests(IServiceProvider provider) : AMneumonicDBTest(provider)
         };
         var result = await tx.Commit();
 
-        var realId = result[file.Id];
+        var realId = result[file.Header.Id];
 
         Connection.Revisions.Subscribe(update =>
         {
@@ -174,9 +174,26 @@ public class DbTests(IServiceProvider provider) : AMneumonicDBTest(provider)
     public async Task CanGetChildEntities()
     {
         var tx = Connection.BeginTransaction();
-        var loadout = Loadout.Create(tx, "Test Loadout");
-        Mod.Create(tx, "Test Mod 1", new Uri("http://somesite.com/mod1"), loadout);
-        Mod.Create(tx, "Test Mod 2",  new Uri("http://somesite.com/mod1"), loadout);
+
+        var loadout = new Loadout(tx)
+        {
+            Name = "Test Loadout"
+        };
+
+        _ = new Mod(tx)
+        {
+            Name = "Test Mod 1",
+            Source = new Uri("http://mod1.com"),
+            Loadout = loadout
+        };
+
+        _ = new Mod(tx)
+        {
+            Name = "Test Mod 2",
+            Source = new Uri("http://mod2.com"),
+            Loadout = loadout
+        };
+
         var result = await tx.Commit();
 
         var newDb = Connection.Db;
@@ -191,7 +208,7 @@ public class DbTests(IServiceProvider provider) : AMneumonicDBTest(provider)
             .Should()
             .Be(true, "the temp id should be replaced with a real id");
         firstMod.Loadout.Id.Should().Be(loadout.Id);
-        firstMod.Db.Should().Be(newDb);
+        firstMod.Header.Db.Should().Be(newDb);
         loadout.Name.Should().Be("Test Loadout");
         firstMod.Loadout.Name.Should().Be("Test Loadout");
     }

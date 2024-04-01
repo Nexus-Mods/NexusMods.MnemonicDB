@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
+using NexusMods.MneumonicDB.Abstractions.Models;
 
 namespace NexusMods.MneumonicDB.Abstractions;
 
@@ -45,6 +47,7 @@ public interface IAttribute
     ///     Gets the type of the read datom for the given attribute.
     /// </summary>
     Type GetReadDatomType();
+
 }
 
 /// <summary>
@@ -65,4 +68,9 @@ public interface IAttribute<TVal> : IAttribute
     /// <param name="v"></param>
     /// <returns></returns>
     public static abstract IWriteDatom Assert(EntityId e, TVal v);
+
+    /// <summary>
+    /// Gets the serializer for the attribute
+    /// </summary>
+    public IValueSerializer<TVal> Serializer { get; }
 }
