@@ -105,7 +105,18 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
         return new WriteDatom
         {
             E = e,
-            V = v
+            V = v,
+            IsRetract = false
+        };
+    }
+
+    public static IWriteDatom Retract(EntityId e, TValueType v)
+    {
+        return new WriteDatom
+        {
+            E = e,
+            V = v,
+            IsRetract = true
         };
     }
 
@@ -146,11 +157,16 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
         /// </summary>
         public required EntityId E { get; init; }
 
+        /// <summary>
+        ///     True if this is a retraction
+        /// </summary>
+        public required bool IsRetract { get; init; }
+
         public void Explode<TWriter>(IAttributeRegistry registry, Func<EntityId, EntityId> remapFn,
             out EntityId e, out AttributeId a, TWriter vWriter, out bool isRetract)
             where TWriter : IBufferWriter<byte>
         {
-            isRetract = false;
+            isRetract = IsRetract;
             e = EntityId.From(Ids.IsPartition(E.Value, Ids.Partition.Tmp) ? remapFn(E).Value : E.Value);
 
             if (V is EntityId id)

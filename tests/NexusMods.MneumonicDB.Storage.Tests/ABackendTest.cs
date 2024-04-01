@@ -3,6 +3,7 @@ using NexusMods.MneumonicDB.Storage.Abstractions;
 using NexusMods.MneumonicDB.TestModel.ComplexModel.Attributes;
 using NexusMods.MneumonicDB.TestModel.Helpers;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MneumonicDB.Abstractions.DatomIterators;
 using NexusMods.Paths;
 using FileAttributes = NexusMods.MneumonicDB.TestModel.ComplexModel.Attributes.FileAttributes;
 
@@ -55,10 +56,47 @@ public abstract class ABackendTest<TStoreType>(
             FileAttributes.ModId.Assert(id1, modId2)
         ]);
 
-        var snapshot = DatomStore.GetSnapshot();
-        var results = DatomStore.Datoms(snapshot, type).ToList();
+        using var iterator = tx.Snapshot.GetIterator(type);
+        await Verify(iterator.SeekStart().Resolve().ToTable(Registry))
+            .UseDirectory("BackendTestVerifyData")
+            .UseParameters(type);
+    }
 
-        await Verify(results.ToTable(Registry))
+    [Theory]
+    [InlineData(IndexType.TxLog)]
+    [InlineData(IndexType.EAVTHistory)]
+    [InlineData(IndexType.EAVTCurrent)]
+    [InlineData(IndexType.AEVTCurrent)]
+    [InlineData(IndexType.AEVTHistory)]
+    [InlineData(IndexType.VAETCurrent)]
+    [InlineData(IndexType.VAETHistory)]
+    [InlineData(IndexType.AVETCurrent)]
+    [InlineData(IndexType.AVETHistory)]
+    public async Task RetractedValuesAreSupported(IndexType type)
+    {
+        var id = NextTempId();
+        var modId = NextTempId();
+
+        var tx1 = await DatomStore.Transact([
+            FileAttributes.Path.Assert(id, "/foo/bar"),
+            FileAttributes.Hash.Assert(id, Hash.From(0xDEADBEEF)),
+            FileAttributes.Size.Assert(id, Size.From(42)),
+            FileAttributes.ModId.Assert(id, modId),
+        ]);
+
+        id = tx1.Remaps[id];
+        modId = tx1.Remaps[modId];
+
+        var tx2 = await DatomStore.Transact([
+            FileAttributes.Path.Retract(id, "/foo/bar"),
+            FileAttributes.Hash.Retract(id, Hash.From(0xDEADBEEF)),
+            FileAttributes.Size.Retract(id, Size.From(42)),
+            FileAttributes.ModId.Retract(id, modId)
+        ]);
+
+
+        using var iterator = tx2.Snapshot.GetIterator(type);
+        await Verify(iterator.SeekStart().Resolve().ToTable(Registry))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }

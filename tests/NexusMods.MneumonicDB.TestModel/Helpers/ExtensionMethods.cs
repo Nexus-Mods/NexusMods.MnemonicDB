@@ -38,12 +38,12 @@ public static class ExtensionMethods
         var sb = new StringBuilder();
         foreach (var datom in datoms)
         {
-            var isAssert = true;
+            var isRetract = datom.IsRetract;
 
             var symColumn = TruncateOrPad(registry.GetSymbolForAttribute(datom.AttributeType).Name, 24);
             var attrId = registry.GetAttributeId(datom.AttributeType).Value.ToString("X4");
 
-            sb.Append(isAssert ? "+" : "-");
+            sb.Append(isRetract ? "-" : "+");
             sb.Append(" | ");
             sb.Append(datom.E.Value.ToString("X16"));
             sb.Append(" | ");

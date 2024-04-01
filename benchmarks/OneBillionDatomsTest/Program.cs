@@ -60,7 +60,7 @@ async Task<(TimeSpan Time, int loaded)> ReadCheckpoint(IDb db)
     var tasks = new List<Task<(TimeSpan Time, int loaded)>>();
 
 
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < 1; i++)
     {
         var task = Task.Run(() =>
         {
