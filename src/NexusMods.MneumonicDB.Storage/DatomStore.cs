@@ -201,15 +201,6 @@ public class DatomStore : IDatomStore
         return _backend.GetSnapshot();
     }
 
-
-    public IEnumerable<IReadDatom> Datoms(ISnapshot snapshot, IndexType type)
-    {
-        using var source = snapshot.GetIterator(type);
-        var iter = source.SeekStart();
-        foreach (var datom in iter.Resolve())
-            yield return datom;
-    }
-
     public void Dispose()
     {
         _updatesSubject.Dispose();
@@ -326,7 +317,7 @@ public class DatomStore : IDatomStore
     }
 
 
-    private void Log(PendingTransaction pendingTransaction, out StoreResult result)
+    private unsafe void Log(PendingTransaction pendingTransaction, out StoreResult result)
     {
         var thisTx = TxId.From(_asOfTxId.Value + 1);
 
@@ -345,9 +336,9 @@ public class DatomStore : IDatomStore
             }
 
             var isRemapped = Ids.IsPartition(datom.E.Value, Ids.Partition.Tmp);
-            datom.Explode(_registry, remapFn, out var e, out var a, _writer, out var isAssert);
+            datom.Explode(_registry, remapFn, out var e, out var a, _writer, out var isRetract);
             var keyPrefix = _writer.GetWrittenSpanWritable().CastFast<byte, KeyPrefix>();
-            keyPrefix[0].Set(e, a, thisTx, isAssert);
+            keyPrefix[0].Set(e, a, thisTx, isRetract);
 
             var attr = _registry.GetAttribute(a);
             var isReference = attr.IsReference;
@@ -357,8 +348,19 @@ public class DatomStore : IDatomStore
             if (!isRemapped)
                 havePrevious = GetPrevious(keyPrefix[0]);
 
+            // Put it in the tx log first
+            var newSpan = _writer.GetWrittenSpan();
+            _txLog.Put(batch, newSpan);
+
+            // Remove the previous if it exists
             if (havePrevious)
             {
+                var prevValSpan = _prevWriter.GetWrittenSpan().SliceFast(sizeof(KeyPrefix));
+                var currValSpan = _writer.GetWrittenSpan().SliceFast(sizeof(KeyPrefix));
+
+                if (!isRetract && prevValSpan.SequenceEqual(currValSpan))
+                    continue;
+
                 // Move the previous to the history index
                 var span = _prevWriter.GetWrittenSpan();
                 _eavtCurrent.Delete(batch, span);
@@ -380,16 +382,30 @@ public class DatomStore : IDatomStore
                 }
             }
 
-            var newSpan = _writer.GetWrittenSpan();
-            _eavtCurrent.Put(batch, newSpan);
-            _aevtCurrent.Put(batch, newSpan);
-            _txLog.Put(batch, newSpan);
 
-            if (isReference)
-                _vaetCurrent.Put(batch, newSpan);
+            // Add new state
+            if (!isRetract)
+            {
+                _eavtCurrent.Put(batch, newSpan);
+                _aevtCurrent.Put(batch, newSpan);
 
-            if (isIndexed)
-                _avetCurrent.Put(batch, newSpan);
+                if (isReference)
+                    _vaetCurrent.Put(batch, newSpan);
+
+                if (isIndexed)
+                    _avetCurrent.Put(batch, newSpan);
+            }
+            else
+            {
+                _eavtHistory.Put(batch, newSpan);
+                _aevtHistory.Put(batch, newSpan);
+
+                if (isReference)
+                    _vaetHistory.Put(batch, newSpan);
+
+                if (isIndexed)
+                    _aevtHistory.Put(batch, newSpan);
+            }
         }
 
         var swWrite = Stopwatch.StartNew();

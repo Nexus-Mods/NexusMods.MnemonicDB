@@ -41,53 +41,6 @@ public interface IDatomStore : IDisposable
     Task RegisterAttributes(IEnumerable<DbAttribute> newAttrs);
 
     /// <summary>
-    ///     Gets the entities that have the given attribute that reference the given entity id.
-    /// </summary>
-    IEnumerable<EntityId> GetReferencesToEntityThroughAttribute<TAttribute>(EntityId id, TxId txId)
-        where TAttribute : IAttribute<EntityId>;
-
-    /// <summary>
-    ///     Gets the value of the given attribute for the given entity id where the transaction id exactly matches the given
-    ///     txId.
-    /// </summary>
-    bool TryGetExact<TAttr, TValue>(EntityId e, TxId tx, out TValue val) where TAttr : IAttribute<TValue>;
-
-    /// <summary>
-    ///     Gets the latest value of the given attribute for the given entity id where the transaction id is less than or equal
-    ///     to the given txId.
-    /// </summary>
-    bool TryGetLatest<TAttribute, TValue>(EntityId e, TxId tx, out TValue value) where TAttribute : IAttribute<TValue>;
-
-    /// <summary>
-    ///     Gets all the entities that have the given attribute.
-    /// </summary>
-    IEnumerable<EntityId> GetEntitiesWithAttribute<TAttribute>(TxId tx) where TAttribute : IAttribute;
-
-    /// <summary>
-    ///     Gets all the attributes for the given entity id where the transaction id is less than or equal to the given txId.
-    /// </summary>
-    IEnumerable<IReadDatom> GetAttributesForEntity(EntityId realId, TxId txId);
-
-    /// <summary>
-    ///     Gets the maximum entity id in the store.
-    /// </summary>
-    EntityId GetMaxEntityId();
-
-    /// <summary>
-    ///     Gets the type of the read datom for the given attribute.
-    /// </summary>
-    Type GetReadDatomType(Type attribute);
-
-
-    /// <summary>
-    ///     Get all the datoms in a given index, not super useful as this may return a TOOON of datoms.
-    /// </summary>
-    /// <param name="snapshot"></param>
-    /// <param name="type"></param>
-    /// <returns></returns>
-    public IEnumerable<IReadDatom> Datoms(ISnapshot snapshot, IndexType type);
-
-    /// <summary>
     ///     Create a snapshot of the current state of the store.
     /// </summary>
     ISnapshot GetSnapshot();

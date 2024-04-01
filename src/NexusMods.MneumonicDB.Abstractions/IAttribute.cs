@@ -70,6 +70,14 @@ public interface IAttribute<TVal> : IAttribute
     public static abstract IWriteDatom Assert(EntityId e, TVal v);
 
     /// <summary>
+    ///     Construct a new write Datom for the retraction of the given entity and value
+    /// </summary>
+    /// <param name="e"></param>
+    /// <param name="v"></param>
+    /// <returns></returns>
+    public static abstract IWriteDatom Retract(EntityId e, TVal v);
+
+    /// <summary>
     /// Gets the serializer for the attribute
     /// </summary>
     public IValueSerializer<TVal> Serializer { get; }
