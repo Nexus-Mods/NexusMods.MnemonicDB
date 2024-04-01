@@ -114,4 +114,44 @@ internal class EntityCache(Db db, AttributeRegistry registry)
         public ushort[] Offsets = null!;
         public byte[] Data = null!;
     }
+
+    public IEnumerable<TValue> GetAll<TAttribute, TValue>(ref ModelHeader header)
+        where TAttribute : IAttribute<TValue>
+    {
+        Entry entry;
+        if (header.InlineCache is Entry inline)
+            entry = inline;
+        else if (!cache.TryGetValue(header.Id, out entry!))
+            entry = Cache(header.Id);
+
+        header.InlineCache = entry;
+
+        return GetAllInner<TAttribute, TValue>(entry);
+    }
+
+    private IEnumerable<TValue> GetAllInner<TAttribute, TValue>(Entry entry) where TAttribute : IAttribute<TValue>
+    {
+        var localCache = InlineCache<TAttribute, TValue>.Instance;
+        if (localCache.Registry != registry)
+        {
+            localCache = Recache<TAttribute, TValue>();
+        }
+
+        var attributeIndex = Array.IndexOf(entry.Attributes, localCache.Id);
+        if (attributeIndex == -1)
+            yield break;
+
+        while (attributeIndex < entry.Attributes.Length)
+        {
+            if (entry.Attributes[attributeIndex] != localCache.Id)
+                break;
+
+            var offset = entry.Offsets[attributeIndex];
+            var length = entry.Offsets[attributeIndex + 1] - offset;
+
+            localCache.Serializer.Read(entry.Data.AsSpan().SliceFast(offset, length), out var value);
+            yield return value;
+            attributeIndex++;
+        }
+    }
 }

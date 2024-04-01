@@ -64,4 +64,11 @@ public interface IDb : IDisposable
     /// Create a new iterator for the given index type.
     /// </summary>
     IDatomSource Iterate(IndexType index);
+
+    /// <summary>
+    /// Gets all values for the given attribute on the given entity. There's no reason to use this
+    /// on attributes that are not multi-valued.
+    /// </summary>
+    IEnumerable<TValueType> GetAll<TAttribute, TValueType>(ref ModelHeader model, EntityId modelId)
+        where TAttribute : IAttribute<TValueType>;
 }

@@ -330,10 +330,7 @@ public class DatomStore : IDatomStore
         foreach (var datom in pendingTransaction.Data)
         {
             _writer.Reset();
-            unsafe
-            {
-                _writer.Advance(sizeof(KeyPrefix));
-            }
+            _writer.Advance(sizeof(KeyPrefix));
 
             var isRemapped = Ids.IsPartition(datom.E.Value, Ids.Partition.Tmp);
             datom.Explode(_registry, remapFn, out var e, out var a, _writer, out var isRetract);

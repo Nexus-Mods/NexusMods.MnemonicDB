@@ -27,6 +27,18 @@ public class ComplexModelTests(IServiceProvider provider) : AMneumonicDBTest(pro
             Name = "My Loadout"
         };
 
+        var oddCollection = new Collection(tx)
+        {
+            Name = "Odd Mods",
+            Loadout = loadout
+        };
+
+        var evenCollection = new Collection(tx)
+        {
+            Name = "Even Mods",
+            Loadout = loadout
+        };
+
         var mods = new List<Mod>();
         var files = new List<File>();
 
@@ -38,6 +50,11 @@ public class ComplexModelTests(IServiceProvider provider) : AMneumonicDBTest(pro
                 Source = new Uri($"http://mod{i}.com"),
                 Loadout = loadout
             };
+
+            if (i % 2 == 0)
+                evenCollection.Attach(mod);
+            else
+                oddCollection.Attach(mod);
 
             mods.Add(mod);
             for (var j = 0; j < filesPerMod; j++)
@@ -68,6 +85,12 @@ public class ComplexModelTests(IServiceProvider provider) : AMneumonicDBTest(pro
         var totalSize = Size.Zero;
 
         loadout.Mods.Count().Should().Be(modCount, "all mods should be loaded");
+
+        loadout.Collections.Count().Should().Be(2, "all collections should be loaded");
+
+        loadout.Collections.SelectMany(c => c.Mods)
+            .Count().Should().Be(loadout.Mods.Count(), "all mods should be in a collection");
+
         sw.Restart();
         foreach (var mod in loadout.Mods)
             //totalSize += mod.Files.Sum(f => f.Size);
