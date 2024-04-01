@@ -16,7 +16,7 @@ internal class Db : IDb
     private readonly Connection _connection;
     private readonly AttributeRegistry _registry;
     private readonly EntityCache _cache;
-    private readonly ConcurrentDictionary<EntityId, EntityId[]> _reverseCache = new();
+    private readonly ConcurrentDictionary<(EntityId, Type), EntityId[]> _reverseCache = new();
     internal readonly ISnapshot Snapshot;
 
     public Db(ISnapshot snapshot, Connection connection, TxId txId, AttributeRegistry registry)
@@ -39,7 +39,6 @@ internal class Db : IDb
         {
             yield return Get<TModel>(id);
         }
-
     }
 
     public TValue Get<TAttribute, TValue>(ref ModelHeader header, EntityId id)
@@ -65,7 +64,7 @@ internal class Db : IDb
         where TAttribute : IAttribute<EntityId>
         where TModel : struct, IEntity
     {
-        if (!_reverseCache.TryGetValue(id, out var eIds))
+        if (!_reverseCache.TryGetValue((id, typeof(TAttribute)), out var eIds))
         {
             using var attrSource = Snapshot.GetIterator(IndexType.VAETCurrent);
             var attrId = _registry.GetAttributeId<TAttribute>();
@@ -76,7 +75,7 @@ internal class Db : IDb
                 .Select(c => c.CurrentKeyPrefix().E)
                 .ToArray();
 
-            _reverseCache[id] = eIds;
+            _reverseCache[(id, typeof(TAttribute))] = eIds;
         }
 
         var results = GC.AllocateUninitializedArray<TModel>(eIds.Length);
@@ -119,6 +118,12 @@ internal class Db : IDb
     public IDatomSource Iterate(IndexType index)
     {
         return Snapshot.GetIterator(index);
+    }
+
+    public IEnumerable<TValueType> GetAll<TAttribute, TValueType>(ref ModelHeader model, EntityId modelId)
+        where TAttribute : IAttribute<TValueType>
+    {
+        return _cache.GetAll<TAttribute, TValueType>(ref model);
     }
 
     public void Dispose() { }

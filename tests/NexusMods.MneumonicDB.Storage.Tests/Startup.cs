@@ -21,6 +21,8 @@ public class Startup
             .AddValueSerializer<SizeSerializer>()
             .AddValueSerializer<UriSerializer>()
             .AddAttributeCollection<FileAttributes>()
-            .AddAttributeCollection<ModAttributes>();
+            .AddAttributeCollection<ModAttributes>()
+            .AddAttributeCollection<CollectionAttributes>()
+            .AddAttributeCollection<LoadoutAttributes>();
     }
 }

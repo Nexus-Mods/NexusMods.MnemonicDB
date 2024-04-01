@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Generic;
 using NexusMods.MneumonicDB.Abstractions.Internals;
 using NexusMods.MneumonicDB.Abstractions.Models;
 
@@ -21,11 +22,11 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
     protected ScalarAttribute(string uniqueName = "",
         bool isIndexed = false,
         bool keepHistory = true,
-        bool multiArity = false)
+        bool multiValued = false)
     {
         IsIndexed = isIndexed;
         KeepHistory = keepHistory;
-        MultiArity = multiArity;
+        Multivalued = multiValued;
         Id = uniqueName == "" ? Symbol.Intern(typeof(TAttribute).FullName!) : Symbol.InternPreSanitized(uniqueName);
     }
 
@@ -37,7 +38,7 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
         Id = symbol;
     }
 
-    public bool MultiArity { get; }
+    public bool Multivalued { get; }
 
     public bool KeepHistory { get; }
 
@@ -126,6 +127,11 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
     public static TValueType Get(ref ModelHeader model)
     {
         return model.Db.Get<TAttribute, TValueType>(ref model, model.Id);
+    }
+
+    public static IEnumerable<TValueType> GetAll(ref ModelHeader model)
+    {
+        return model.Db.GetAll<TAttribute, TValueType>(ref model, model.Id);
     }
 
     /// <inheritdoc />

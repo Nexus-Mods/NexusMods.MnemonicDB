@@ -47,6 +47,12 @@
 + | 0200000000000001 | (0005) Hash                     | 0x00000000DEADBEF1                               | 0100000000000003
 + | 0200000000000001 | (0004) Size                     | 2 B                                              | 0100000000000003
 + | 0200000000000001 | (0003) Path                     | File3                                            | 0100000000000003
++ | 0000000000000010 | (0002) ValueSerializerId        | NexusMods.MneumonicDB....ers/EntityIdSerializer  | 0100000000000002
++ | 0000000000000010 | (0001) UniqueId                 | NexusMods.MneumonicDB....onAttributes/LoadoutId  | 0100000000000002
++ | 000000000000000F | (0002) ValueSerializerId        | NexusMods.MneumonicDB....ers/EntityIdSerializer  | 0100000000000002
++ | 000000000000000F | (0001) UniqueId                 | NexusMods.MneumonicDB....lectionAttributes/Mods  | 0100000000000002
++ | 000000000000000E | (0002) ValueSerializerId        | NexusMods.MneumonicDB....izers/StringSerializer  | 0100000000000002
++ | 000000000000000E | (0001) UniqueId                 | NexusMods.MneumonicDB....lectionAttributes/Name  | 0100000000000002
 + | 000000000000000D | (0002) ValueSerializerId        | NexusMods.MneumonicDB....ers/EntityIdSerializer  | 0100000000000002
 + | 000000000000000D | (0001) UniqueId                 | NexusMods.MneumonicDB....odAttributes/LoadoutId  | 0100000000000002
 + | 000000000000000C | (0002) ValueSerializerId        | NexusMods.MneumonicDB....ializers/UriSerializer  | 0100000000000002

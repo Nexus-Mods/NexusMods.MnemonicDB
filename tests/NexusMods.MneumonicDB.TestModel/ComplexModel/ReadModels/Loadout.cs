@@ -19,4 +19,6 @@ public struct Loadout(ModelHeader header) : IEntity
     }
 
     public IEnumerable<Mod> Mods => header.GetReverse<ModAttributes.LoadoutId, Mod>();
+
+    public IEnumerable<Collection> Collections => header.GetReverse<CollectionAttributes.LoadoutId, Collection>();
 }

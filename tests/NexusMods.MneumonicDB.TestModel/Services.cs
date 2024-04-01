@@ -13,7 +13,8 @@ public static class Services
         services.AddAttributeCollection<FileAttributes>()
             .AddAttributeCollection<ArchiveFileAttributes>()
             .AddAttributeCollection<LoadoutAttributes>()
-            .AddAttributeCollection<ModAttributes>();
+            .AddAttributeCollection<ModAttributes>()
+            .AddAttributeCollection<CollectionAttributes>();
 
         services.AddValueSerializer<RelativePathSerializer>()
             .AddValueSerializer<SizeSerializer>()

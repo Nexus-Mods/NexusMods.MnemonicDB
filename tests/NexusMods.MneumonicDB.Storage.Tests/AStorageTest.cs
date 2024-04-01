@@ -39,7 +39,17 @@ public abstract class AStorageTest : IAsyncLifetime
             new DbAttribute(Symbol.Intern<FileAttributes.ModId>(), AttributeId.From(23),
                 Symbol.Intern<EntityIdSerializer>()),
             new DbAttribute(Symbol.Intern<ModAttributes.Name>(), AttributeId.From(24),
-                Symbol.Intern<StringSerializer>())
+                Symbol.Intern<StringSerializer>()),
+            new DbAttribute(Symbol.Intern<ModAttributes.LoadoutId>(), AttributeId.From(25),
+                Symbol.Intern<EntityIdSerializer>()),
+            new DbAttribute(Symbol.Intern<LoadoutAttributes.Name>(), AttributeId.From(26),
+                Symbol.Intern<StringSerializer>()),
+            new DbAttribute(Symbol.Intern<CollectionAttributes.Name>(), AttributeId.From(27),
+                Symbol.Intern<StringSerializer>()),
+            new DbAttribute(Symbol.Intern<CollectionAttributes.LoadoutId>(), AttributeId.From(28),
+                Symbol.Intern<EntityIdSerializer>()),
+            new DbAttribute(Symbol.Intern<CollectionAttributes.Mods>(), AttributeId.From(29),
+                Symbol.Intern<EntityIdSerializer>())
         ]);
         _path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("tests_datomstore" + Guid.NewGuid());
 

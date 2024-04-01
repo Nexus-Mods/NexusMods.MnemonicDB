@@ -33,6 +33,8 @@ public abstract class ABackendTest<TStoreType>(
 
         var modId1 = NextTempId();
         var modId2 = NextTempId();
+        var loadoutId = NextTempId();
+        var collectionId = NextTempId();
 
         var tx = await DatomStore.Transact([
             FileAttributes.Path.Assert(id1, "/foo/bar"),
@@ -44,16 +46,26 @@ public abstract class ABackendTest<TStoreType>(
             FileAttributes.ModId.Assert(id1, modId1),
             FileAttributes.ModId.Assert(id2, modId1),
             ModAttributes.Name.Assert(modId1, "Test Mod 1"),
-            ModAttributes.Name.Assert(modId2, "Test Mod 2")
+            ModAttributes.LoadoutId.Assert(modId1, loadoutId),
+            ModAttributes.Name.Assert(modId2, "Test Mod 2"),
+            ModAttributes.LoadoutId.Assert(modId2, loadoutId),
+            LoadoutAttributes.Name.Assert(loadoutId, "Test Loadout 1"),
+            CollectionAttributes.Name.Assert(collectionId, "Test Collection 1"),
+            CollectionAttributes.LoadoutId.Assert(collectionId, loadoutId),
+            CollectionAttributes.Mods.Assert(collectionId, modId1),
+            CollectionAttributes.Mods.Assert(collectionId, modId2)
         ]);
 
         id1 = tx.Remaps[id1];
         id2 = tx.Remaps[id2];
+        collectionId = tx.Remaps[collectionId];
 
         tx = await DatomStore.Transact([
             // Rename file 1 and move file 1 to mod 2
             FileAttributes.Path.Assert(id2, "/foo/qux"),
-            FileAttributes.ModId.Assert(id1, modId2)
+            FileAttributes.ModId.Assert(id1, modId2),
+            // Remove mod2 from collection
+            CollectionAttributes.Mods.Retract(collectionId, modId2),
         ]);
 
         using var iterator = tx.Snapshot.GetIterator(type);
