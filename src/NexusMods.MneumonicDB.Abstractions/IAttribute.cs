@@ -70,14 +70,7 @@ public interface IAttribute<TVal> : IAttribute
     public static abstract IWriteDatom Assert(EntityId e, TVal v);
 
     /// <summary>
-    /// Gets the value of the attribute for the given read model.
+    /// Gets the serializer for the attribute
     /// </summary>
-    public static abstract TVal Get<TReadModel>(in TReadModel model)
-        where TReadModel : IEntity;
-
-    /// <summary>
-    /// Adds a datom to the transaction for the given read model/value
-    /// </summary>
-    public static abstract void Set<TReadModel>(in TReadModel model, TVal value, ITransaction tx)
-        where TReadModel : IEntity;
+    public IValueSerializer<TVal> Serializer { get; }
 }

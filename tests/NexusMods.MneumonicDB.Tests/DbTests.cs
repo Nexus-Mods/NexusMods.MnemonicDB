@@ -177,19 +177,19 @@ public class DbTests(IServiceProvider provider) : AMneumonicDBTest(provider)
 
         var loadout = new Loadout(tx)
         {
-            Name = "My Loadout"
+            Name = "Test Loadout"
         };
 
         _ = new Mod(tx)
         {
-            Name = "Mod 1",
+            Name = "Test Mod 1",
             Source = new Uri("http://mod1.com"),
             Loadout = loadout
         };
 
         _ = new Mod(tx)
         {
-            Name = "Mod 2",
+            Name = "Test Mod 2",
             Source = new Uri("http://mod2.com"),
             Loadout = loadout
         };

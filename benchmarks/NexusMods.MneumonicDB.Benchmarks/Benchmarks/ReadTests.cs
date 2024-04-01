@@ -19,6 +19,7 @@ public class ReadTests : ABenchmark
     private IDb _db = null!;
     private EntityId[] _entityIds = null!;
     private EntityId _readId;
+    private File[] _preLoaded = null!;
 
     [Params(1, 1000, MaxCount)] public int Count { get; set; } = MaxCount;
 
@@ -29,7 +30,7 @@ public class ReadTests : ABenchmark
         var tx = Connection.BeginTransaction();
         var entityIds = new List<EntityId>();
 
-        var modId = new Mod(tx)
+        var tmpMod = new Mod(tx)
         {
             Name = "TestMod",
             Source = new Uri("https://www.nexusmods.com"),
@@ -43,9 +44,9 @@ public class ReadTests : ABenchmark
                 Hash = Hash.From((ulong)i),
                 Path = $"C:\\test_{i}.txt",
                 Size = Size.From((ulong)i),
-                ModId = modId.Id,
+                ModId = tmpMod.Header.Id,
             };
-            entityIds.Add(file.Id);
+            entityIds.Add(file.Header.Id);
         }
 
         var result = await tx.Commit();
@@ -55,6 +56,8 @@ public class ReadTests : ABenchmark
         _readId = _entityIds[_entityIds.Length / 2];
 
         _db = Connection.Db;
+
+        _preLoaded = _db.Get<File>(_entityIds).ToArray();
     }
 
     [Benchmark]
@@ -69,6 +72,13 @@ public class ReadTests : ABenchmark
     public long ReadAll()
     {
         return _db.Get<File>(_entityIds)
+            .Sum(e => (long)e.Size.Value);
+    }
+
+    [Benchmark]
+    public long ReadAllPreloaded()
+    {
+        return _preLoaded
             .Sum(e => (long)e.Size.Value);
     }
 }

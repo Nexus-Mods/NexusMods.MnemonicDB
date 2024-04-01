@@ -109,15 +109,18 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
         };
     }
 
+    /// <inheritdoc />
+    public IValueSerializer<TValueType> Serializer => _serializer;
+
     public static TValueType Get(ref ModelHeader model)
     {
-        return model.Db.Get<TAttribute, TValueType>(model.Id);
+        return model.Db.Get<TAttribute, TValueType>(ref model, model.Id);
     }
 
     /// <inheritdoc />
     public static void Add(ref ModelHeader model, TValueType value)
     {
-        tx.Add<TAttribute, TValueType>(model.Id, value);
+        model.Tx!.Add<TAttribute, TValueType>(model.Id, value);
     }
 
     /// <inheritdoc />

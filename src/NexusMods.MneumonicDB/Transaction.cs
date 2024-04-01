@@ -30,7 +30,11 @@ internal class Transaction(Connection connection) : ITransaction
 
     public ModelHeader New()
     {
-        throw new System.NotImplementedException();
+        return new ModelHeader
+        {
+            Id = TempId(),
+            Tx = this
+        };
     }
 
     /// <inheritdoc />
