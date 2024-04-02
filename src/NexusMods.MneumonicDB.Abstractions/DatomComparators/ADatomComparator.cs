@@ -1,9 +1,13 @@
 ﻿using System;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
+using NexusMods.MneumonicDB.Abstractions.ElementComparers;
 using NexusMods.MneumonicDB.Abstractions.Internals;
 
-namespace NexusMods.MneumonicDB.Storage.Abstractions.DatomComparators;
+namespace NexusMods.MneumonicDB.Abstractions.DatomComparators;
 
+/// <summary>
+/// Abstract datom comparator, compares the A, B, C, D and E parts of the datom, in that order
+/// </summary>
 public abstract class ADatomComparator<TA, TB, TC, TD, TE, TRegistry> : IDatomComparator<TRegistry>
     where TA : IElementComparer<TRegistry>
     where TB : IElementComparer<TRegistry>

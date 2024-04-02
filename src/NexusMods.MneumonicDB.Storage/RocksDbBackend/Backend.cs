@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using NexusMods.MneumonicDB.Abstractions;
+using NexusMods.MneumonicDB.Abstractions.DatomComparators;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
 using NexusMods.MneumonicDB.Storage.Abstractions;
 using NexusMods.Paths;
@@ -68,14 +70,43 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
     {
         private readonly RocksDbSharp.Snapshot _snapshot = backend._db.CreateSnapshot();
 
-        public IDatomSource GetIterator(IndexType type)
+        private Iterator GetIteratorInner(IndexType type)
         {
             var options = new ReadOptions()
                 .SetSnapshot(_snapshot);
 
-            var iterator = backend._db.NewIterator(backend._stores[type].Handle, options);
+            return backend._db.NewIterator(backend._stores[type].Handle, options);
+        }
+        public IDatomSource GetIterator(IndexType type, bool historical)
+        {
+            if (!historical)
+            {
+                return new IteratorWrapper(GetIteratorInner(type), registry);
+            }
+            else
+            {
+                if (!historical) return GetIterator(type, false);
 
-            return new IteratorWrapper(iterator, registry);
+                switch (type)
+                {
+                    case IndexType.EAVTCurrent:
+                    case IndexType.EAVTHistory:
+                        return new TemporalIteratorWrapper<EAVTComparator<AttributeRegistry>>(GetIteratorInner(IndexType.EAVTCurrent), GetIteratorInner(IndexType.EAVTHistory), registry);
+                    case IndexType.AEVTCurrent:
+                    case IndexType.AEVTHistory:
+                        return new TemporalIteratorWrapper<AEVTComparator<AttributeRegistry>>(GetIteratorInner(IndexType.AEVTCurrent), GetIteratorInner(IndexType.AEVTHistory), registry);
+                    case IndexType.VAETCurrent:
+                    case IndexType.VAETHistory:
+                        return new TemporalIteratorWrapper<VAETComparator<AttributeRegistry>>(GetIteratorInner(IndexType.VAETCurrent), GetIteratorInner(IndexType.VAETHistory), registry);
+                    case IndexType.AVETCurrent:
+                    case IndexType.AVETHistory:
+                        return new TemporalIteratorWrapper<AVETComparator<AttributeRegistry>>(GetIteratorInner(IndexType.AVETCurrent), GetIteratorInner(IndexType.AVETHistory), registry);
+                    case IndexType.TxLog:
+                        return new IteratorWrapper(GetIteratorInner(IndexType.TxLog), registry);
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown index type");
+                }
+            }
         }
 
         public void Dispose()

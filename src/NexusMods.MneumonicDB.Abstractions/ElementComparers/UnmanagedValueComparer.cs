@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using NexusMods.MneumonicDB.Abstractions.ElementComparers;
 using NexusMods.MneumonicDB.Abstractions.Internals;
 using Reloaded.Memory.Extensions;
 
@@ -8,11 +9,11 @@ namespace NexusMods.MneumonicDB.Storage.Abstractions.ElementComparers;
 /// <summary>
 ///     Unmanaged value comparer, assumes that the values will be of the same attribute and of type T.
 /// </summary>
-/// <typeparam name="T"></typeparam>
 public class UnmanagedValueComparer<T, TRegistry> : IElementComparer<TRegistry>
     where T : unmanaged, IComparable<T>
     where TRegistry : IAttributeRegistry
 {
+    /// <inheritdoc />
     public static int Compare(TRegistry registry, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         unsafe

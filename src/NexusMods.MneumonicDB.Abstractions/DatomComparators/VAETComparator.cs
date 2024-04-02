@@ -1,9 +1,13 @@
-﻿using NexusMods.MneumonicDB.Abstractions;
+﻿using NexusMods.MneumonicDB.Abstractions.ElementComparers;
 using NexusMods.MneumonicDB.Abstractions.Internals;
 using NexusMods.MneumonicDB.Storage.Abstractions.ElementComparers;
 
-namespace NexusMods.MneumonicDB.Storage.Abstractions.DatomComparators;
+namespace NexusMods.MneumonicDB.Abstractions.DatomComparators;
 
+/// <summary>
+/// The VAET Comparator.
+/// </summary>
+/// <typeparam name="TRegistry"></typeparam>
 public class VAETComparator<TRegistry> : ADatomComparator<
     UnmanagedValueComparer<EntityId, TRegistry>,
     AComparer<TRegistry>,

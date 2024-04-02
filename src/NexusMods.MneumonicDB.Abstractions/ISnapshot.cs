@@ -1,4 +1,7 @@
-﻿using NexusMods.MneumonicDB.Abstractions.DatomIterators;
+﻿using System;
+using NexusMods.MneumonicDB.Abstractions.DatomComparators;
+using NexusMods.MneumonicDB.Abstractions.DatomIterators;
+using NexusMods.MneumonicDB.Abstractions.Internals;
 
 namespace NexusMods.MneumonicDB.Abstractions;
 
@@ -11,7 +14,8 @@ namespace NexusMods.MneumonicDB.Abstractions;
 public interface ISnapshot
 {
     /// <summary>
-    ///     Gets an iterator for the given index type.
+    ///     Gets an iterator for the given index type, if historical is true, the current and history
+    /// indexes are merged into a single iterator.
     /// </summary>
-    IDatomSource GetIterator(IndexType type);
+    IDatomSource GetIterator(IndexType type, bool historical = false);
 }

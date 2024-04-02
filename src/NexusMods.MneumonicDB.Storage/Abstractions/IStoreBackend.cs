@@ -1,7 +1,7 @@
 ﻿using System;
 using NexusMods.MneumonicDB.Abstractions;
+using NexusMods.MneumonicDB.Abstractions.DatomComparators;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
-using NexusMods.MneumonicDB.Storage.Abstractions.DatomComparators;
 using NexusMods.MneumonicDB.Storage.Abstractions.ElementComparers;
 using NexusMods.Paths;
 

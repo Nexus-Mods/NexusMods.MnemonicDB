@@ -1,9 +1,12 @@
-﻿using NexusMods.MneumonicDB.Abstractions;
+﻿using System.Collections.Immutable;
+using NexusMods.MneumonicDB.Abstractions;
 using NexusMods.MneumonicDB.Storage.Abstractions;
 using NexusMods.MneumonicDB.TestModel.ComplexModel.Attributes;
 using NexusMods.MneumonicDB.TestModel.Helpers;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MneumonicDB.Abstractions.DatomComparators;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
+using NexusMods.MneumonicDB.Abstractions.Internals;
 using NexusMods.Paths;
 using FileAttributes = NexusMods.MneumonicDB.TestModel.ComplexModel.Attributes.FileAttributes;
 
@@ -27,6 +30,36 @@ public abstract class ABackendTest<TStoreType>(
     [InlineData(IndexType.AVETCurrent)]
     [InlineData(IndexType.AVETHistory)]
     public async Task InsertedDatomsShowUpInTheIndex(IndexType type)
+    {
+        var tx = await GenerateData();
+        using var iterator = tx.Snapshot.GetIterator(type);
+        await Verify(iterator.SeekStart().Resolve().ToTable(Registry))
+            .UseDirectory("BackendTestVerifyData")
+            .UseParameters(type);
+    }
+
+    [Theory]
+    [InlineData(IndexType.TxLog)]
+    [InlineData(IndexType.EAVTHistory)]
+    [InlineData(IndexType.EAVTCurrent)]
+    [InlineData(IndexType.AEVTCurrent)]
+    [InlineData(IndexType.AEVTHistory)]
+    [InlineData(IndexType.VAETCurrent)]
+    [InlineData(IndexType.VAETHistory)]
+    [InlineData(IndexType.AVETCurrent)]
+    [InlineData(IndexType.AVETHistory)]
+    public async Task HistoricalQueriesReturnAllDataSorted(IndexType type)
+    {
+        var tx = await GenerateData();
+        using var iterator = tx.Snapshot.GetIterator(type, true);
+
+        await Verify(iterator.SeekStart().Resolve().ToTable(Registry))
+            .UseDirectory("BackendTestVerifyData")
+            .UseParameters(type);
+    }
+
+
+    private async Task<StoreResult> GenerateData()
     {
         var id1 = NextTempId();
         var id2 = NextTempId();
@@ -68,11 +101,7 @@ public abstract class ABackendTest<TStoreType>(
             // Remove mod2 from collection
             CollectionAttributes.Mods.Retract(collectionId, modId2),
         ]);
-
-        using var iterator = tx.Snapshot.GetIterator(type);
-        await Verify(iterator.SeekStart().Resolve().ToTable(Registry))
-            .UseDirectory("BackendTestVerifyData")
-            .UseParameters(type);
+        return tx;
     }
 
     [Theory]
