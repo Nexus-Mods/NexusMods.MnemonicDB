@@ -8,9 +8,10 @@ namespace NexusMods.MneumonicDB.Storage.Abstractions.ElementComparers;
 /// <summary>
 ///     Compares values and assumes that some previous comparator will guarantee that the values are of the same attribute.
 /// </summary>
-public class ValueComparer : IElementComparer
+public class ValueComparer<TRegistry> : IElementComparer<TRegistry>
+    where TRegistry : IAttributeRegistry
 {
-    public static int Compare(AttributeRegistry registry, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    public static int Compare(TRegistry registry, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         var attrA = MemoryMarshal.Read<KeyPrefix>(a).A;
 

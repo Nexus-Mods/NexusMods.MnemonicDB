@@ -21,17 +21,13 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
         return new Batch(_db);
     }
 
-    public void DeclareIndex<TA, TB, TC, TD, TF>(IndexType name)
-        where TA : IElementComparer
-        where TB : IElementComparer
-        where TC : IElementComparer
-        where TD : IElementComparer
-        where TF : IElementComparer
+    public void DeclareIndex<TComparator>(IndexType name)
+        where TComparator : IDatomComparator<AttributeRegistry>
     {
         var indexStore = new IndexStore(name.ToString(), name, registry);
         _stores.Add(name, indexStore);
 
-        var index = new Index<TA, TB, TC, TD, TF>(registry, indexStore);
+        var index = new Index<TComparator>(registry, indexStore);
         _indexes.Add(name, index);
     }
 

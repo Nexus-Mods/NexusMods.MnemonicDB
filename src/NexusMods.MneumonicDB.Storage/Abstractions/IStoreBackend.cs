@@ -1,5 +1,7 @@
 ﻿using System;
 using NexusMods.MneumonicDB.Abstractions;
+using NexusMods.MneumonicDB.Abstractions.DatomIterators;
+using NexusMods.MneumonicDB.Storage.Abstractions.DatomComparators;
 using NexusMods.MneumonicDB.Storage.Abstractions.ElementComparers;
 using NexusMods.Paths;
 
@@ -11,12 +13,8 @@ public interface IStoreBackend : IDisposable
 
     public void Init(AbsolutePath location);
 
-    public void DeclareIndex<TA, TB, TC, TD, TF>(IndexType name)
-        where TA : IElementComparer
-        where TB : IElementComparer
-        where TC : IElementComparer
-        where TD : IElementComparer
-        where TF : IElementComparer;
+    public void DeclareIndex<TComparator>(IndexType name)
+        where TComparator : IDatomComparator<AttributeRegistry>;
 
 
     public IIndex GetIndex(IndexType name);
@@ -30,45 +28,27 @@ public interface IStoreBackend : IDisposable
     /// <summary>
     ///     Create an EAVT index
     /// </summary>
-    public void DeclareEAVT(IndexType name)
-    {
-        DeclareIndex<EComparer, AComparer, ValueComparer, TxComparer, AssertComparer>
-            (name);
-    }
+    public void DeclareEAVT(IndexType name) => DeclareIndex<EAVTComparator<AttributeRegistry>>(name);
 
     /// <summary>
     ///     Create an AEVT index
     /// </summary>
-    public void DeclareAEVT(IndexType name)
-    {
-        DeclareIndex<AComparer, EComparer, ValueComparer, TxComparer, AssertComparer>
-            (name);
-    }
+    public void DeclareAEVT(IndexType name) => DeclareIndex<AEVTComparator<AttributeRegistry>>(name);
 
     /// <summary>
     ///     Create an AEVT index
     /// </summary>
-    public void DeclareTxLog(IndexType name)
-    {
-        DeclareIndex<TxComparer, EComparer, AComparer, ValueComparer, AssertComparer>
-            (name);
-    }
+    public void DeclareTxLog(IndexType name) => DeclareIndex<TxLogComparator<AttributeRegistry>>(name);
 
     /// <summary>
     ///     Create a backref index
     /// </summary>
     /// <param name="name"></param>
-    public void DeclareVAET(IndexType name)
-    {
-        DeclareIndex<UnmanagedValueComparer<ulong>, AComparer, EComparer, TxComparer, AssertComparer>(name);
-    }
+    public void DeclareVAET(IndexType name) => DeclareIndex<VAETComparator<AttributeRegistry>>(name);
 
     /// <summary>
     ///     Create a backref index
     /// </summary>
     /// <param name="name"></param>
-    public void DeclareAVET(IndexType name)
-    {
-        DeclareIndex<AComparer, ValueComparer, EComparer, TxComparer, AssertComparer>(name);
-    }
+    public void DeclareAVET(IndexType name) => DeclareIndex<AVETComparator<AttributeRegistry>>(name);
 }

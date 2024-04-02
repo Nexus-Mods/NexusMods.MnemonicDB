@@ -67,7 +67,7 @@ internal class Db : IDb
         var attrId = _registry.GetAttributeId<TAttribute>();
         var attr = _registry.GetAttribute(attrId);
         var iterator = _entityCache.Get(this, header.Id)
-            .GetIterator<EntityCacheComparator>(_registry)
+            .GetIterator<EntityCacheComparator<AttributeRegistry>, AttributeRegistry>(_registry)
             .SeekTo(attrId)
             .While(attrId);
 
@@ -82,14 +82,13 @@ internal class Db : IDb
         }
     }
 
-
     public IEnumerable<TValue> GetAll<TAttribute, TValue>(ref ModelHeader model, EntityId modelId)
         where TAttribute : IAttribute<TValue>
     {
         var attrId = _registry.GetAttributeId<TAttribute>();
         var attr = _registry.GetAttribute(attrId);
         var iterator = _entityCache.Get(this, model.Id)
-            .GetIterator<EntityCacheComparator>(_registry)
+            .GetIterator<EntityCacheComparator<AttributeRegistry>, AttributeRegistry>(_registry)
             .SeekTo(attrId)
             .While(attrId);
 
@@ -125,7 +124,7 @@ internal class Db : IDb
         where TModel : struct, IEntity
     {
         return _reverseCache.Get(this, (id, typeof(TAttribute)))
-            .GetIterator<EntityCacheComparator>(_registry)
+            .GetIterator<EntityCacheComparator<AttributeRegistry>, AttributeRegistry>(_registry)
             .Select(c => c.CurrentKeyPrefix().E)
             .Select(Get<TModel>)
             .ToArray();

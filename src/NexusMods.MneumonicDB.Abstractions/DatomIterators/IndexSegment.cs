@@ -44,18 +44,20 @@ public class IndexSegment
     /// <summary>
     /// Get an iterator for the index segment
     /// </summary>
-    public IndexedDatomSource<TComparator> GetIterator<TComparator>(IAttributeRegistry registry)
-        where TComparator : IDatomComparator
+    public IndexedDatomSource<TComparator, TRegistry> GetIterator<TComparator, TRegistry>(TRegistry registry)
+        where TComparator : IDatomComparator<TRegistry>
+        where TRegistry : IAttributeRegistry
     {
-        return new IndexedDatomSource<TComparator>(this, registry);
+        return new IndexedDatomSource<TComparator, TRegistry>(this, registry);
     }
 
     /// <summary>
     /// An iterator for the index segment
-    /// </summary>
-    public struct IndexedDatomSource<TComparator>(IndexSegment segment, IAttributeRegistry registry)
+    /// </summary>t
+    public struct IndexedDatomSource<TComparator, TRegistry>(IndexSegment segment, TRegistry registry)
         : IDatomSource, IIterator
-    where TComparator : IDatomComparator
+    where TComparator : IDatomComparator<TRegistry>
+    where TRegistry : IAttributeRegistry
     {
         private int _offset = 0;
 

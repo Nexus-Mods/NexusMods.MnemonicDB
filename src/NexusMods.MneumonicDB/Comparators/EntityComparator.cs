@@ -5,9 +5,10 @@ using NexusMods.MneumonicDB.Abstractions.Internals;
 
 namespace NexusMods.MneumonicDB.Comparators;
 
-public class EntityCacheComparator : IDatomComparator
+public class EntityCacheComparator<TRegistry> : IDatomComparator<TRegistry>
+     where TRegistry : IAttributeRegistry
 {
-    public static int Compare(IAttributeRegistry registry, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    public static int Compare(TRegistry registry, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         var keyA = MemoryMarshal.Read<KeyPrefix>(a);
         var keyB = MemoryMarshal.Read<KeyPrefix>(b);

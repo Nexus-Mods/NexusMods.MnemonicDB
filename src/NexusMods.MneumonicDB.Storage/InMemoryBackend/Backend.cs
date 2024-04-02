@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using NexusMods.MneumonicDB.Abstractions;
+using NexusMods.MneumonicDB.Abstractions.DatomIterators;
 using NexusMods.MneumonicDB.Storage.Abstractions;
 using NexusMods.Paths;
 using IWriteBatch = NexusMods.MneumonicDB.Storage.Abstractions.IWriteBatch;
@@ -28,16 +29,12 @@ public class Backend : IStoreBackend
 
     public void Init(AbsolutePath location) { }
 
-    public void DeclareIndex<TA, TB, TC, TD, TF>(IndexType name)
-        where TA : IElementComparer
-        where TB : IElementComparer
-        where TC : IElementComparer
-        where TD : IElementComparer
-        where TF : IElementComparer
+    public void DeclareIndex<TComparator>(IndexType name)
+        where TComparator : IDatomComparator<AttributeRegistry>
     {
         var store = new IndexStore(name, _registry);
         _stores[(int)name] = store;
-        var index = new Index<TA, TB, TC, TD, TF>(_registry, store);
+        var index = new Index<TComparator>(_registry, store);
         store.Init(index);
         _indexes[(int)name] = index;
     }
