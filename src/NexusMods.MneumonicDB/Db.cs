@@ -5,7 +5,9 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using NexusMods.MneumonicDB.Abstractions;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
+using NexusMods.MneumonicDB.Abstractions.Internals;
 using NexusMods.MneumonicDB.Abstractions.Models;
+using NexusMods.MneumonicDB.Comparators;
 using NexusMods.MneumonicDB.Storage;
 using Reloaded.Memory.Extensions;
 
@@ -15,17 +17,35 @@ internal class Db : IDb
 {
     private readonly Connection _connection;
     private readonly AttributeRegistry _registry;
-    private readonly EntityCache _cache;
-    private readonly ConcurrentDictionary<(EntityId, Type), EntityId[]> _reverseCache = new();
+
+    private readonly IndexSegmentCache<EntityId> _entityCache;
+    private readonly IndexSegmentCache<(EntityId, Type)> _reverseCache;
+
     internal readonly ISnapshot Snapshot;
 
     public Db(ISnapshot snapshot, Connection connection, TxId txId, AttributeRegistry registry)
     {
         _registry = registry;
         _connection = connection;
-        _cache = new EntityCache(this, registry);
+        _entityCache = new IndexSegmentCache<EntityId>(EntityIterator);
+        _reverseCache = new IndexSegmentCache<(EntityId, Type)>(ReverseIterator);
         Snapshot = snapshot;
         BasisTxId = txId;
+    }
+
+    private static IIterator EntityIterator(Db db, EntityId id)
+    {
+        return db.Iterate(IndexType.EAVTCurrent).SeekTo(id).While(id);
+    }
+
+    private static IIterator ReverseIterator(Db db, (EntityId, Type) key)
+    {
+        var (entityId, type) = key;
+        var attrId = db._registry.GetAttributeId(type);
+        return db.Iterate(IndexType.VAETCurrent)
+            .SeekTo(attrId, entityId)
+            .WhileUnmanagedV(entityId)
+            .While(attrId);
     }
 
     public TxId BasisTxId { get; }
@@ -44,8 +64,48 @@ internal class Db : IDb
     public TValue Get<TAttribute, TValue>(ref ModelHeader header, EntityId id)
         where TAttribute : IAttribute<TValue>
     {
-        return _cache.Get<TAttribute, TValue>(ref header);
+        var attrId = _registry.GetAttributeId<TAttribute>();
+        var attr = _registry.GetAttribute(attrId);
+        var iterator = _entityCache.Get(this, header.Id)
+            .GetIterator<EntityCacheComparator>(_registry)
+            .SeekTo(attrId)
+            .While(attrId);
+
+        if (!iterator.Valid)
+            throw new KeyNotFoundException();
+
+        unsafe
+        {
+            ((IValueSerializer<TValue>)attr.Serializer).Read(iterator.Current.SliceFast(sizeof(KeyPrefix)),
+                out var value);
+            return value;
+        }
     }
+
+
+    public IEnumerable<TValue> GetAll<TAttribute, TValue>(ref ModelHeader model, EntityId modelId)
+        where TAttribute : IAttribute<TValue>
+    {
+        var attrId = _registry.GetAttributeId<TAttribute>();
+        var attr = _registry.GetAttribute(attrId);
+        var iterator = _entityCache.Get(this, model.Id)
+            .GetIterator<EntityCacheComparator>(_registry)
+            .SeekTo(attrId)
+            .While(attrId);
+
+        return GetAllInner<TValue>(iterator, attr);
+    }
+
+    private static IEnumerable<TValue> GetAllInner<TValue>(WhileA<IIterator> iterator, IAttribute attr)
+    {
+        while (iterator.Valid)
+        {
+            ((IValueSerializer<TValue>)attr.Serializer).Read(iterator.Current, out var value);
+            yield return value;
+            iterator.Next();
+        }
+    }
+
 
     public TModel Get<TModel>(EntityId id)
         where TModel : struct, IEntity
@@ -64,24 +124,11 @@ internal class Db : IDb
         where TAttribute : IAttribute<EntityId>
         where TModel : struct, IEntity
     {
-        if (!_reverseCache.TryGetValue((id, typeof(TAttribute)), out var eIds))
-        {
-            using var attrSource = Snapshot.GetIterator(IndexType.VAETCurrent);
-            var attrId = _registry.GetAttributeId<TAttribute>();
-            eIds = attrSource
-                .SeekTo(attrId, id)
-                .WhileUnmanagedV(id)
-                .While(attrId)
-                .Select(c => c.CurrentKeyPrefix().E)
-                .ToArray();
-
-            _reverseCache[(id, typeof(TAttribute))] = eIds;
-        }
-
-        var results = GC.AllocateUninitializedArray<TModel>(eIds.Length);
-        for (var i = 0; i < eIds.Length; i++)
-            results[i] = Get<TModel>(eIds[i]);
-        return results;
+        return _reverseCache.Get(this, (id, typeof(TAttribute)))
+            .GetIterator<EntityCacheComparator>(_registry)
+            .Select(c => c.CurrentKeyPrefix().E)
+            .Select(Get<TModel>)
+            .ToArray();
     }
 
     public IEnumerable<IReadDatom> Datoms(EntityId entityId)
@@ -118,12 +165,6 @@ internal class Db : IDb
     public IDatomSource Iterate(IndexType index)
     {
         return Snapshot.GetIterator(index);
-    }
-
-    public IEnumerable<TValueType> GetAll<TAttribute, TValueType>(ref ModelHeader model, EntityId modelId)
-        where TAttribute : IAttribute<TValueType>
-    {
-        return _cache.GetAll<TAttribute, TValueType>(ref model);
     }
 
     public void Dispose() { }
