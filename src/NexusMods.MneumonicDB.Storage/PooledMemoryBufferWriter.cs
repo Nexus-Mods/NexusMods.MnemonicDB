@@ -118,4 +118,9 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
         _data = newData;
         _size = newSize;
     }
+
+    public void Rewind(int length)
+    {
+        Length -= length;
+    }
 }

@@ -2,6 +2,8 @@
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.InteropServices;
 using NexusMods.MneumonicDB.Abstractions;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
 using NexusMods.MneumonicDB.Abstractions.Internals;
@@ -26,8 +28,6 @@ internal class EntityCache(Db db, AttributeRegistry registry)
         public static InlineCache<TAttribute, TValue> Instance = new();
     }
 
-
-
     public TValue Get<TAttribute, TValue>(ref ModelHeader header)
     where TAttribute : IAttribute<TValue>
     {
@@ -45,14 +45,16 @@ internal class EntityCache(Db db, AttributeRegistry registry)
             localCache = Recache<TAttribute, TValue>();
         }
 
-        var attributeIndex = Array.IndexOf(entry.Attributes, localCache.Id);
+        var attrs = entry.Attributes;
+        var attributeIndex = attrs.IndexOf(localCache.Id);
         if (attributeIndex == -1)
             throw new KeyNotFoundException();
 
-        var offset = entry.Offsets[attributeIndex];
-        var length = entry.Offsets[attributeIndex + 1] - offset;
+        var offsets = entry.Offsets;
+        var offset = offsets[attributeIndex];
+        var length = offsets[attributeIndex + 1] - offset;
 
-        localCache.Serializer.Read(entry.Data.AsSpan().SliceFast(offset, length), out var value);
+        localCache.Serializer.Read(entry.Data.SliceFast((int)offset, (int)length), out var value);
         return value;
     }
 
@@ -74,45 +76,76 @@ internal class EntityCache(Db db, AttributeRegistry registry)
 
     private Entry Cache(EntityId id)
     {
-        List<ushort> attributes = new();
-        List<ushort> offsets = new();
-
-        PooledMemoryBufferWriter writer = new();
-
         using var iterator = db.Snapshot.GetIterator(IndexType.EAVTCurrent);
         var section = iterator.SeekTo(id).While(id);
 
-        unsafe
-        {
-            while (section.Valid)
-            {
-                var keySpan = section.CurrentKeyPrefix();
-                attributes.Add((ushort)keySpan.A.Value);
-                offsets.Add((ushort)writer.Length);
+        var builder = new CacheBuilder();
 
-                writer.Write(section.Current.SliceFast(sizeof(KeyPrefix)));
-                section.Next();
-            }
+        while (section.Valid)
+        {
+            builder.Add(section.Current);
+            section.Next();
         }
-        offsets.Add((ushort)writer.Length);
-
-        var entry = new Entry
-        {
-            Attributes = attributes.ToArray(),
-            Offsets = offsets.ToArray(),
-            Data = writer.WrittenSpanWritable.ToArray()
-        };
-
+        var entry = builder.Build();
         cache[id] = entry;
 
         return entry;
     }
 
-    private class Entry
+    private struct CacheBuilder()
     {
-        public ushort[] Attributes = null!;
-        public ushort[] Offsets = null!;
-        public byte[] Data = null!;
+        private readonly List<ushort> _attrs = new();
+        private readonly List<uint> _offsets = new();
+        private readonly PooledMemoryBufferWriter _writer = new();
+
+        public unsafe void Add(ReadOnlySpan<byte> datom)
+        {
+            var prefix = KeyPrefix.Read(datom);
+            if (prefix.IsRetract)
+            {
+                _writer.Rewind(datom.Length -sizeof(KeyPrefix));
+                _attrs.RemoveAt(_attrs.Count - 1);
+                _offsets.RemoveAt(_offsets.Count - 1);
+            }
+            else
+            {
+                _attrs.Add((ushort)prefix.A.Value);
+                _offsets.Add((uint)_writer.Length);
+                _writer.Write(datom.SliceFast(sizeof(KeyPrefix)));
+            }
+        }
+
+        public Entry Build()
+        {
+            _offsets.Add((uint)_writer.Length);
+            return Entry.Create(CollectionsMarshal.AsSpan(_attrs),
+                CollectionsMarshal.AsSpan(_offsets), _writer.GetWrittenSpan());
+        }
+    }
+
+    private class Entry(Memory<byte> data, int count)
+    {
+
+        public ReadOnlySpan<ushort> Attributes => MemoryMarshal.Cast<byte, ushort>(data.Span.SliceFast(0, count * sizeof(ushort)));
+
+        public ReadOnlySpan<uint> Offsets => MemoryMarshal.Cast<byte, uint>(data.Span.SliceFast(count * sizeof(ushort), (count + 1) * sizeof(uint)));
+
+        public ReadOnlySpan<byte> Data => data.Span.SliceFast(count * sizeof(ushort) + (count + 1) * sizeof(uint));
+
+        public static Entry Create(ReadOnlySpan<ushort> attributes, ReadOnlySpan<uint> offsets, ReadOnlySpan<byte> data)
+        {
+            var totalSize = attributes.Length * sizeof(ushort) + offsets.Length * sizeof(uint) + data.Length;
+
+            var memory = new Memory<byte>(new byte[totalSize]);
+            var memorySpan = memory.Span;
+
+            attributes.CastFast<ushort, byte>().CopyTo(memorySpan);
+            offsets.CastFast<uint, byte>()
+                .CopyTo(memorySpan.SliceFast(attributes.Length * sizeof(ushort)));
+            data.CopyTo(memorySpan.SliceFast(attributes.Length * sizeof(ushort) + offsets.Length * sizeof(uint)));
+
+            return new Entry(memory, attributes.Length);
+        }
     }
 
     public IEnumerable<TValue> GetAll<TAttribute, TValue>(ref ModelHeader header)
@@ -137,7 +170,7 @@ internal class EntityCache(Db db, AttributeRegistry registry)
             localCache = Recache<TAttribute, TValue>();
         }
 
-        var attributeIndex = Array.IndexOf(entry.Attributes, localCache.Id);
+        var attributeIndex = entry.Attributes.IndexOf(localCache.Id);
         if (attributeIndex == -1)
             yield break;
 
@@ -146,10 +179,11 @@ internal class EntityCache(Db db, AttributeRegistry registry)
             if (entry.Attributes[attributeIndex] != localCache.Id)
                 break;
 
-            var offset = entry.Offsets[attributeIndex];
-            var length = entry.Offsets[attributeIndex + 1] - offset;
+            var offsets = entry.Offsets;
+            var offset = offsets[attributeIndex];
+            var length = offsets[attributeIndex + 1] - offset;
 
-            localCache.Serializer.Read(entry.Data.AsSpan().SliceFast(offset, length), out var value);
+            localCache.Serializer.Read(entry.Data.SliceFast((int)offset, (int)length), out var value);
             yield return value;
             attributeIndex++;
         }
