@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using NexusMods.MneumonicDB.Abstractions;
 using NexusMods.MneumonicDB.Abstractions.DatomComparators;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
@@ -48,5 +50,49 @@ public class Snapshot : ISnapshot
     private SortedSetIterator GetIteratorInner(IndexType type)
     {
         return new SortedSetIterator(_indexes[(int)type], _registry);
+    }
+
+    public IEnumerable<Datom> Datoms(IndexType type, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        var idxLower = _indexes[(int)type].IndexOf(a.ToArray());
+        var idxUpper = _indexes[(int)type].IndexOf(b.ToArray());
+
+        if (idxLower < 0)
+            idxLower = ~idxLower;
+
+        if (idxUpper < 0)
+            idxUpper = ~idxUpper;
+
+        var lower = idxLower;
+        var upper = idxUpper;
+        var reverse = false;
+
+        if (idxLower > idxUpper)
+        {
+            lower = idxUpper;
+            upper = idxLower;
+            reverse = true;
+        }
+
+        return DatomsInner(type, reverse, lower, upper);
+
+    }
+
+    private IEnumerable<Datom> DatomsInner(IndexType type, bool reverse, int lower, int upper)
+    {
+        if (!reverse)
+        {
+            for (var i = lower; i < upper; i++)
+            {
+                yield return new Datom(_indexes[(int)type].ElementAt(i), _registry);
+            }
+        }
+        else
+        {
+            for (var i = upper; i > lower; i--)
+            {
+                yield return new Datom(_indexes[(int)type].ElementAt(i), _registry);
+            }
+        }
     }
 }

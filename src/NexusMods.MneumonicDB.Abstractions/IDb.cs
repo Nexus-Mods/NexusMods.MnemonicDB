@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
+using NexusMods.MneumonicDB.Abstractions.Internals;
 using NexusMods.MneumonicDB.Abstractions.Models;
 
 namespace NexusMods.MneumonicDB.Abstractions;
@@ -19,6 +20,16 @@ public interface IDb : IDisposable
     ///     The connection that this database is using for its state.
     /// </summary>
     IConnection Connection { get; }
+
+    /// <summary>
+    /// The snapshot that this database is based on.
+    /// </summary>
+    ISnapshot Snapshot { get; }
+
+    /// <summary>
+    /// The registry that this database is based on.
+    /// </summary>
+    IAttributeRegistry Registry { get; }
 
     /// <summary>
     ///     Returns a read model for each of the given entity ids.
@@ -59,11 +70,6 @@ public interface IDb : IDisposable
 
     public IEnumerable<IReadDatom> Datoms<TAttribute>()
         where TAttribute : IAttribute;
-
-    /// <summary>
-    /// Create a new iterator for the given index type.
-    /// </summary>
-    IDatomSource Iterate(IndexType index);
 
     /// <summary>
     /// Gets all values for the given attribute on the given entity. There's no reason to use this

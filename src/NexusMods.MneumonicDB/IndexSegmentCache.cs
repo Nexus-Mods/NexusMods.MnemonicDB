@@ -9,12 +9,12 @@ namespace NexusMods.MneumonicDB;
 /// A cache for index segments, given a key type and a iterator factory, caches the results
 /// of the factory in a segment for fast access.
 /// </summary>
-internal readonly struct IndexSegmentCache<TKey>(Func<Db, TKey, IIterator> iteratorFactory)
+internal readonly struct IndexSegmentCache<TKey>(Func<IDb, TKey, IIterator> iteratorFactory)
     where TKey : notnull
 {
     private readonly ConcurrentDictionary<TKey, IndexSegment> _cache = new();
 
-    public IndexSegment Get(Db snapshot, TKey key)
+    public IndexSegment Get(IDb snapshot, TKey key)
     {
         if (_cache.TryGetValue(key, out var segment))
             return segment;

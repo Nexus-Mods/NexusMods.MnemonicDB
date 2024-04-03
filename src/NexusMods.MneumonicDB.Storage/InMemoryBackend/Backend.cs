@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.Linq;
 using NexusMods.MneumonicDB.Abstractions;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
@@ -18,8 +19,8 @@ public class Backend : IStoreBackend
     public Backend(AttributeRegistry registry)
     {
         _registry = registry;
-        _stores = new IndexStore[Enum.GetValues(typeof(IndexType)).Length];
-        _indexes = new IIndex[Enum.GetValues(typeof(IndexType)).Length];
+        _stores = new IndexStore[Enum.GetValues<IndexType>().Select(i => (int)i).Max() + 1];
+        _indexes = new IIndex[Enum.GetValues<IndexType>().Select(i => (int)i).Max() + 1];
     }
 
     public IWriteBatch CreateBatch()
@@ -47,7 +48,7 @@ public class Backend : IStoreBackend
     public ISnapshot GetSnapshot()
     {
         return new Snapshot(_indexes
-                .Select(i => ((IInMemoryIndex)i).Set).ToArray(),
+                .Select(i => i == null ? ImmutableSortedSet<byte[]>.Empty : ((IInMemoryIndex)i).Set).ToArray(),
             _registry);
     }
 

@@ -212,4 +212,5 @@ public static class ExtensionMethods
     {
         return new WhileE<TParent>(e, parent);
     }
+
 }

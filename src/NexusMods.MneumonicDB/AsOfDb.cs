@@ -12,7 +12,16 @@ using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MneumonicDB;
 
-internal class Db : IDb
+/// <summary>
+/// Represents a database that performs temporal queries. Unlike the standard Db interface, which queries only
+/// the latest state of the database, this interface allows querying the database as of a specific transaction, which
+/// invlolves joining the historical indexes and filtering the results based on the transaction id.
+/// </summary>
+/// <param name="snapshot"></param>
+/// <param name="connection"></param>
+/// <param name="txId"></param>
+/// <param name="registry"></param>
+public class AsOfDb : IDb
 {
     private readonly Connection _connection;
     private readonly AttributeRegistry _registry;
@@ -22,7 +31,7 @@ internal class Db : IDb
 
     internal readonly ISnapshot Snapshot;
 
-    public Db(ISnapshot snapshot, Connection connection, TxId txId, AttributeRegistry registry)
+    public AsOfDb(ISnapshot snapshot, Connection connection, TxId txId, AttributeRegistry registry)
     {
         _registry = registry;
         _connection = connection;
@@ -34,14 +43,16 @@ internal class Db : IDb
 
     private static IIterator EntityIterator(IDb db, EntityId id)
     {
-        return db.Snapshot.GetIterator(IndexType.EAVTCurrent).SeekTo(id).While(id);
+        return db.Snapshot.GetIterator(IndexType.EAVTCurrent, true)
+            .SeekTo(id)
+            .While(id);
     }
 
     private static IIterator ReverseIterator(IDb db, (EntityId, Type) key)
     {
         var (entityId, type) = key;
         var attrId = db.Registry.GetAttributeId(type);
-        return db.Iterate(IndexType.VAETCurrent)
+        return db.Snapshot.GetIterator(IndexType.VAETCurrent, true)
             .SeekTo(attrId, entityId)
             .WhileUnmanagedV(entityId)
             .While(attrId);
@@ -131,7 +142,7 @@ internal class Db : IDb
 
     public IEnumerable<IReadDatom> Datoms(EntityId entityId)
     {
-        using var iterator = Snapshot.GetIterator(IndexType.EAVTCurrent);
+        using var iterator = Snapshot.GetIterator(IndexType.EAVTCurrent, true);
         foreach (var datom in iterator.SeekTo(entityId)
                      .While(entityId)
                      .Resolve())
@@ -152,17 +163,12 @@ internal class Db : IDb
         where TAttribute : IAttribute
     {
         var a = _registry.GetAttributeId<TAttribute>();
-        using var iterator = Snapshot.GetIterator(IndexType.AEVTCurrent);
+        using var iterator = Snapshot.GetIterator(IndexType.AEVTCurrent, true);
         foreach (var datom in iterator
                      .SeekTo(a)
                      .While(a)
                      .Resolve())
             yield return datom;
-    }
-
-    public IDatomSource Iterate(IndexType index)
-    {
-        return Snapshot.GetIterator(index);
     }
 
     public void Dispose() { }

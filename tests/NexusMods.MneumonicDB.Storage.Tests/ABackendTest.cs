@@ -32,14 +32,17 @@ public abstract class ABackendTest<TStoreType>(
     public async Task InsertedDatomsShowUpInTheIndex(IndexType type)
     {
         var tx = await GenerateData();
-        using var iterator = tx.Snapshot.GetIterator(type);
-        await Verify(iterator.SeekStart().Resolve().ToTable(Registry))
+        var datoms = tx.Snapshot
+            .Datoms(type)
+            .Select(d => d.Resolved)
+            .ToArray();
+
+        await Verify(datoms.ToTable(Registry))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }
 
     [Theory]
-    [InlineData(IndexType.TxLog)]
     [InlineData(IndexType.EAVTHistory)]
     [InlineData(IndexType.EAVTCurrent)]
     [InlineData(IndexType.AEVTCurrent)]
@@ -51,9 +54,15 @@ public abstract class ABackendTest<TStoreType>(
     public async Task HistoricalQueriesReturnAllDataSorted(IndexType type)
     {
         var tx = await GenerateData();
-        using var iterator = tx.Snapshot.GetIterator(type, true);
+        var current = tx.Snapshot.Datoms(type.CurrentVariant());
+        var history = tx.Snapshot.Datoms(type.HistoryVariant());
+        var comparer = type.GetComparator(Registry);
+        var merged = current
+            .Merge(history, (a, b) => comparer.Compare(a.RawSpan, b.RawSpan))
+            .Select(d => d.Resolved)
+            .ToArray();
 
-        await Verify(iterator.SeekStart().Resolve().ToTable(Registry))
+        await Verify(merged.ToTable(Registry))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }
@@ -137,8 +146,11 @@ public abstract class ABackendTest<TStoreType>(
         ]);
 
 
-        using var iterator = tx2.Snapshot.GetIterator(type);
-        await Verify(iterator.SeekStart().Resolve().ToTable(Registry))
+        var datoms = tx2.Snapshot
+            .Datoms(type)
+            .Select(d => d.Resolved)
+            .ToArray();
+        await Verify(datoms.ToTable(Registry))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }

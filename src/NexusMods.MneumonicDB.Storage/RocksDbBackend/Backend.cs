@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using NexusMods.MneumonicDB.Abstractions;
 using NexusMods.MneumonicDB.Abstractions.DatomComparators;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
@@ -70,48 +72,49 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
     {
         private readonly RocksDbSharp.Snapshot _snapshot = backend._db.CreateSnapshot();
 
-        private Iterator GetIteratorInner(IndexType type)
+        public IEnumerable<Datom> Datoms(IndexType type, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
         {
+            var comparator = type.GetComparator(registry);
+            var reverse = false;
+
+            var lower = a;
+            var upper = b;
+            if (comparator.Compare(a, b) > 0)
+            {
+                reverse = true;
+                lower = b;
+                upper = a;
+            }
+
             var options = new ReadOptions()
-                .SetSnapshot(_snapshot);
+                .SetSnapshot(_snapshot)
+                .SetIterateLowerBound(lower.ToArray())
+                .SetIterateUpperBound(upper.ToArray());
 
-            return backend._db.NewIterator(backend._stores[type].Handle, options);
+            return DatomsInner(type, options, reverse);
         }
-        public IDatomSource GetIterator(IndexType type, bool historical)
+
+        private IEnumerable<Datom> DatomsInner(IndexType type, ReadOptions options, bool reverse)
         {
-            if (!historical)
-            {
-                return new IteratorWrapper(GetIteratorInner(type), registry);
-            }
+            using var iterator = backend._db.NewIterator(backend._stores[type].Handle, options);
+            if (reverse)
+                iterator.SeekToLast();
             else
+                iterator.SeekToFirst();
+
+            using var writer = new PooledMemoryBufferWriter(128);
+
+            while (iterator.Valid())
             {
-                if (!historical) return GetIterator(type, false);
+                writer.Reset();
+                writer.Write(iterator.GetKeySpan());
+                yield return new Datom(writer.WrittenMemory, registry);
 
-                switch (type)
-                {
-                    case IndexType.EAVTCurrent:
-                    case IndexType.EAVTHistory:
-                        return new TemporalIteratorWrapper<EAVTComparator<AttributeRegistry>>(GetIteratorInner(IndexType.EAVTCurrent), GetIteratorInner(IndexType.EAVTHistory), registry);
-                    case IndexType.AEVTCurrent:
-                    case IndexType.AEVTHistory:
-                        return new TemporalIteratorWrapper<AEVTComparator<AttributeRegistry>>(GetIteratorInner(IndexType.AEVTCurrent), GetIteratorInner(IndexType.AEVTHistory), registry);
-                    case IndexType.VAETCurrent:
-                    case IndexType.VAETHistory:
-                        return new TemporalIteratorWrapper<VAETComparator<AttributeRegistry>>(GetIteratorInner(IndexType.VAETCurrent), GetIteratorInner(IndexType.VAETHistory), registry);
-                    case IndexType.AVETCurrent:
-                    case IndexType.AVETHistory:
-                        return new TemporalIteratorWrapper<AVETComparator<AttributeRegistry>>(GetIteratorInner(IndexType.AVETCurrent), GetIteratorInner(IndexType.AVETHistory), registry);
-                    case IndexType.TxLog:
-                        return new IteratorWrapper(GetIteratorInner(IndexType.TxLog), registry);
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown index type");
-                }
+                if (reverse)
+                    iterator.Prev();
+                else
+                    iterator.Next();
             }
-        }
-
-        public void Dispose()
-        {
-            _snapshot.Dispose();
         }
     }
 }

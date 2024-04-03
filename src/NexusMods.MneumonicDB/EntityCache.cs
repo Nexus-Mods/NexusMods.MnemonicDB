@@ -2,10 +2,8 @@
 using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 using NexusMods.MneumonicDB.Abstractions;
-using NexusMods.MneumonicDB.Abstractions.DatomIterators;
 using NexusMods.MneumonicDB.Abstractions.Internals;
 using NexusMods.MneumonicDB.Abstractions.Models;
 using NexusMods.MneumonicDB.Storage;

@@ -8,11 +8,11 @@ namespace NexusMods.MneumonicDB.Abstractions.DatomComparators;
 /// The AVET Comparator.
 /// </summary>
 /// <typeparam name="TRegistry"></typeparam>
-public class AVETComparator<TRegistry> : ADatomComparator<
+public class AVETComparator<TRegistry>(TRegistry registry) : ADatomComparator<
     AComparer<TRegistry>,
     ValueComparer<TRegistry>,
     EComparer<TRegistry>,
     TxComparer<TRegistry>,
     AssertComparer<TRegistry>,
-    TRegistry>
+    TRegistry>(registry)
     where TRegistry : IAttributeRegistry;

@@ -13,4 +13,9 @@ public interface IDatomComparator<in TRegistry>
     /// Compare two datoms
     /// </summary>
     public static abstract int Compare(TRegistry registry, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
+
+    /// <summary>
+    /// Compare two datoms
+    /// </summary>
+    public int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
 }

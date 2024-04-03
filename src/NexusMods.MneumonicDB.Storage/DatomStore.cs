@@ -182,12 +182,9 @@ public class DatomStore : IDatomStore
         try
         {
             var snapshot = _backend.GetSnapshot();
-            using var txIterator = snapshot.GetIterator(IndexType.TxLog);
-            var lastTx = txIterator
-                .SeekLast()
-                .Reverse()
-                .Resolve()
-                .FirstOrDefault()?.T ?? TxId.MinValue;
+            var lastTx = snapshot.Datoms(IndexType.TxLog, TxId.MaxValue, TxId.MinValue)
+                .Select(d => d.T)
+                .FirstOrDefault(TxId.MinValue);
 
             if (lastTx == TxId.MinValue)
             {
@@ -200,12 +197,9 @@ public class DatomStore : IDatomStore
                 lastTx.Value.ToString("x"));
             _asOfTxId = lastTx;
 
-            using var entIterator = snapshot.GetIterator(IndexType.EAVTCurrent);
-            var lastEnt = entIterator
-                .SeekLast()
-                .Reverse()
-                .Resolve()
-                .FirstOrDefault()?.E ?? EntityId.MinValue;
+            var lastEnt = snapshot.Datoms(IndexType.EAVTCurrent, EntityId.MaxValueNoPartition, EntityId.MinValueNoPartition)
+                .Select(e => e.E)
+                .FirstOrDefault(EntityId.MinValue);
 
             _nextEntityId = EntityId.From(lastEnt.Value + 1);
         }

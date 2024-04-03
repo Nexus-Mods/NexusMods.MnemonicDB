@@ -8,7 +8,8 @@ namespace NexusMods.MneumonicDB.Abstractions.DatomComparators;
 /// <summary>
 /// Abstract datom comparator, compares the A, B, C, D and E parts of the datom, in that order
 /// </summary>
-public abstract class ADatomComparator<TA, TB, TC, TD, TE, TRegistry> : IDatomComparator<TRegistry>
+public abstract class ADatomComparator<TA, TB, TC, TD, TE, TRegistry>(TRegistry registry)
+    : IDatomComparator<TRegistry>
     where TA : IElementComparer<TRegistry>
     where TB : IElementComparer<TRegistry>
     where TC : IElementComparer<TRegistry>
@@ -31,5 +32,11 @@ public abstract class ADatomComparator<TA, TB, TC, TD, TE, TRegistry> : IDatomCo
         if (cmp != 0) return cmp;
 
         return TE.Compare(registry, a, b);
+    }
+
+    /// <inheritdoc />
+    public int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        return Compare(registry, a, b);
     }
 }

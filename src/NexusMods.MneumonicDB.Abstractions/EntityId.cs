@@ -1,4 +1,5 @@
-﻿using TransparentValueObjects;
+﻿using System;
+using TransparentValueObjects;
 
 namespace NexusMods.MneumonicDB.Abstractions;
 
@@ -17,4 +18,6 @@ public readonly partial struct EntityId
     /// Min value for an entity id with no partition
     /// </summary>
     public static EntityId MinValueNoPartition => From(0);
+
+    public static EntityId MaxValueNoPartition => From(ulong.MaxValue);
 }

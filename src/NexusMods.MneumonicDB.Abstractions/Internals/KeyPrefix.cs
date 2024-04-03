@@ -83,4 +83,45 @@ public struct KeyPrefix
     {
         return MemoryMarshal.Read<KeyPrefix>(bytes);
     }
+
+    #region Constants
+
+    public static KeyPrefix Min => new KeyPrefix
+    {
+        _upper = 0,
+        _lower = 0
+    };
+
+    public static KeyPrefix Max => new KeyPrefix
+    {
+        _upper = ulong.MaxValue,
+        _lower = ulong.MaxValue
+    };
+    #endregion
+
+    #region Constructors
+
+    /// <summary>
+    /// Creates a new KeyPrefix with the given values, and everything else set to the minimum value
+    /// </summary>
+    public static implicit operator KeyPrefix(TxId id)
+    {
+        var prefix = new KeyPrefix();
+        prefix.Set(EntityId.MinValueNoPartition, AttributeId.Min, id, false);
+        return prefix;
+    }
+
+    public static implicit operator KeyPrefix(EntityId id)
+    {
+        var prefix = new KeyPrefix();
+        prefix.Set(id, AttributeId.Min, TxId.MinValue, false);
+        return prefix;
+    }
+
+
+
+
+
+
+    #endregion
 }
