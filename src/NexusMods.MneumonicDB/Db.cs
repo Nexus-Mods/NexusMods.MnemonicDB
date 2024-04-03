@@ -27,29 +27,29 @@ internal class Db : IDb
     {
         _registry = registry;
         _connection = connection;
-        _entityCache = new IndexSegmentCache<EntityId>(EntityIterator, registry);
-        _reverseCache = new IndexSegmentCache<(EntityId, Type)>(ReverseIterator, registry);
+        _entityCache = new IndexSegmentCache<EntityId>(EntityDatoms, registry);
+        _reverseCache = new IndexSegmentCache<(EntityId, Type)>(ReverseDatoms, registry);
         Snapshot = snapshot;
         BasisTxId = txId;
     }
 
-    private static IEnumerable<Datom> EntityIterator(IDb db, EntityId id)
+    private static IEnumerable<Datom> EntityDatoms(IDb db, EntityId id)
     {
         return db.Snapshot.Datoms(IndexType.EAVTCurrent, id, EntityId.From(id.Value + 1));
     }
 
-    private static IEnumerable<Datom> ReverseIterator(IDb db, (EntityId, Type) key)
+    private static IEnumerable<Datom> ReverseDatoms(IDb db, (EntityId, Type) key)
     {
         var (id, type) = key;
         var attrId = db.Registry.GetAttributeId(type);
 
         Span<byte> startKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
         Span<byte> endKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
-        MemoryMarshal.Write(startKey,  new KeyPrefix().Set(EntityId.MaxValueNoPartition, attrId, TxId.MinValue, false));
-        MemoryMarshal.Write(endKey,  new KeyPrefix().Set(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false));
+        MemoryMarshal.Write(startKey,  new KeyPrefix().Set(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false));
+        MemoryMarshal.Write(endKey,  new KeyPrefix().Set(EntityId.MaxValueNoPartition, attrId, TxId.MaxValue, false));
 
         MemoryMarshal.Write(startKey.SliceFast(KeyPrefix.Size), id);
-        MemoryMarshal.Write(endKey.SliceFast(KeyPrefix.Size), id.Value + 1);
+        MemoryMarshal.Write(endKey.SliceFast(KeyPrefix.Size), id.Value);
 
 
         return db.Snapshot.Datoms(IndexType.VAETCurrent, startKey, endKey);
@@ -108,9 +108,7 @@ internal class Db : IDb
         where TAttribute : IAttribute<EntityId>
         where TModel : struct, IEntity
     {
-        var attrId = _registry.GetAttributeId<TAttribute>();
         return _reverseCache.Get(this, (id, typeof(TAttribute)))
-            .Where(d => d.A == attrId)
             .Select(d => d.E)
             .Select(Get<TModel>)
             .ToArray();
