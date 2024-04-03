@@ -28,6 +28,11 @@ public readonly struct IndexSegment : IEnumerable<Datom>
     }
 
     /// <summary>
+    /// The number of datoms in this segment
+    /// </summary>
+    public int Count => _offsets.Length - 1;
+
+    /// <summary>
     /// Get the datom of the given index
     /// </summary>
     public Datom this[int idx]

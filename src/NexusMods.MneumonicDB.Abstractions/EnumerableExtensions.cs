@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using NexusMods.MneumonicDB.Abstractions.DatomIterators;
 
 namespace NexusMods.MneumonicDB.Abstractions;
 
@@ -43,6 +44,5 @@ public static class EnumerableExtensions
                 yield return finalEnumerator.Current;
             }
         }
-
     }
 }

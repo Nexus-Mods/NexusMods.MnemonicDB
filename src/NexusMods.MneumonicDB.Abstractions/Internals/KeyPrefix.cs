@@ -30,6 +30,16 @@ public struct KeyPrefix
     [FieldOffset(0)] private ulong _upper;
     [FieldOffset(8)] private ulong _lower;
 
+    /// <summary>
+    /// The upper 8 bytes of the key
+    /// </summary>
+    public ulong Upper => _upper;
+
+    /// <summary>
+    /// The lower 8 bytes of the key
+    /// </summary>
+    public ulong Lower => _lower;
+
     public KeyPrefix Set(EntityId id, AttributeId attributeId, TxId txId, bool isRetract)
     {
         _upper = ((ulong)attributeId << 48) | ((ulong)txId & 0x0000FFFFFFFFFFFF);

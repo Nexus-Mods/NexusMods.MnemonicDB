@@ -44,6 +44,43 @@ public class DbTests(IServiceProvider provider) : AMneumonicDBTest(provider)
         await VerifyModel(resolved);
     }
 
+    [Fact]
+    public async Task ReadDatomsOverTime()
+    {
+        var times = 3;
+        var txEs = new List<TxId>();
+
+        var tx = Connection.BeginTransaction();
+        var file = new Mod(tx)
+        {
+            Name = "Test Mod",
+            Source = new Uri("http://test.com"),
+            Loadout = new Loadout(tx)
+            {
+                Name = "Test Loadout"
+            }
+        };
+        var result = await tx.Commit();
+
+        var modId = result[file.Header.Id];
+        txEs.Add(result.NewTx);
+
+        for (var i = 0; i < times; i++)
+        {
+            var newTx = Connection.BeginTransaction();
+            ModAttributes.Name.Add(newTx, modId, $"Test Mod {i}");
+            result = await newTx.Commit();
+            txEs.Add(result.NewTx);
+        }
+
+        foreach (var txId in txEs)
+        {
+            var db = Connection.AsOf(txId);
+            var resolved = db.Datoms(modId);
+            await VerifyTable(resolved).UseTextForParameters("mod data_" + txId.Value);
+        }
+    }
+
 
     [Fact]
     public async Task DbIsImmutable()

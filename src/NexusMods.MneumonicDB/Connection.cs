@@ -34,6 +34,13 @@ public class Connection : IConnection
     public TxId TxId => _store.AsOfTxId;
 
     /// <inheritdoc />
+    public IDb AsOf(TxId txId)
+    {
+        var snapshot = new AsOfSnapshot(_store.GetSnapshot(), txId, (AttributeRegistry)_store.Registry);
+        return new Db(snapshot, this, txId, (AttributeRegistry)_store.Registry);
+    }
+
+    /// <inheritdoc />
     public ITransaction BeginTransaction()
     {
         return new Transaction(this);

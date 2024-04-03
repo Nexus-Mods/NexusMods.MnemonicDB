@@ -72,12 +72,17 @@ internal class Db : IDb
         where TAttribute : IAttribute<TValue>
     {
         var attrId = _registry.GetAttributeId<TAttribute>();
-        var value = _entityCache.Get(this, header.Id)
-            .Where(d => d.A == attrId)
-            .Select(d => d.Resolve<TValue>())
-            .First();
+        var entry = _entityCache.Get(this, header.Id);
+        for (var i = 0; i < entry.Count; i++)
+        {
+            var datom = entry[i];
+            if (datom.A == attrId)
+            {
+                return datom.Resolve<TValue>();
+            }
+        }
 
-        return value;
+        throw new KeyNotFoundException();
     }
 
     public IEnumerable<TValue> GetAll<TAttribute, TValue>(ref ModelHeader model, EntityId modelId)
