@@ -28,7 +28,7 @@ public class DatomStore : IDatomStore
     private readonly IIndex _eavtCurrent;
     private readonly IIndex _eavtHistory;
     private readonly ILogger<DatomStore> _logger;
-    private readonly PooledMemoryBufferWriter _prevWriter;
+    private readonly PooledMemoryBufferWriter _retractWriter;
     private readonly AttributeRegistry _registry;
     private readonly DatomStoreSettings _settings;
     private readonly Channel<PendingTransaction> _txChannel;
@@ -37,6 +37,7 @@ public class DatomStore : IDatomStore
     private readonly IIndex _vaetCurrent;
     private readonly IIndex _vaetHistory;
     private readonly PooledMemoryBufferWriter _writer;
+    private readonly PooledMemoryBufferWriter _prevWriter;
 
     private TxId _asOfTxId = TxId.MinValue;
     private EntityId _nextEntityId;
@@ -49,6 +50,7 @@ public class DatomStore : IDatomStore
 
 
         _writer = new PooledMemoryBufferWriter();
+        _retractWriter = new PooledMemoryBufferWriter();
         _prevWriter = new PooledMemoryBufferWriter();
 
 
@@ -127,75 +129,6 @@ public class DatomStore : IDatomStore
         _registry.Populate(newAttrsArray);
     }
 
-    public IEnumerable<EntityId> GetReferencesToEntityThroughAttribute<TAttribute>(EntityId id, TxId txId)
-        where TAttribute : IAttribute<EntityId>
-    {
-        //           return _backrefHistory.GetReferencesToEntityThroughAttribute<TAttribute>(id, txId);
-        throw new NotImplementedException();
-    }
-
-
-    public bool TryGetExact<TAttr, TValue>(EntityId e, TxId tx, out TValue val) where TAttr : IAttribute<TValue>
-    {
-        /*if (_eatvHistory.TryGetExact<TAttr, TValue>(e, tx, out var foundVal))
-        {
-            val = foundVal;
-            return true;
-        }
-        val = default!;
-        return false;*/
-        throw new NotImplementedException();
-    }
-
-    public bool TryGetLatest<TAttribute, TValue>(EntityId e, TxId tx, out TValue value)
-        where TAttribute : IAttribute<TValue>
-    {
-        /*
-        if (_eatvCurrent.TryGet<TAttribute, TValue>(e, tx, out var foundVal) == LookupResult.Found)
-        {
-            value = foundVal;
-            return true;
-        }
-
-        if (_eatvHistory.TryGetLatest<TAttribute, TValue>(e, tx, out foundVal))
-        {
-            value = foundVal;
-            return true;
-        }
-
-        value = default!;
-        return false;
-        */
-        throw new NotImplementedException();
-    }
-
-    public IEnumerable<EntityId> GetEntitiesWithAttribute<TAttribute>(TxId txId)
-        where TAttribute : IAttribute
-    {
-        throw new NotImplementedException();
-    }
-
-    public IEnumerable<IReadDatom> GetAttributesForEntity(EntityId entityId, TxId txId)
-    {
-        throw new NotImplementedException();
-    }
-
-    /// <summary>
-    ///     Gets the maximum entity id in the store.
-    /// </summary>
-    public EntityId GetMaxEntityId()
-    {
-        /*
-        return _eatvCurrent.GetMaxEntityId();
-        */
-        throw new NotImplementedException();
-    }
-
-    public Type GetReadDatomType(Type attribute)
-    {
-        return _registry.GetReadDatomType(attribute);
-    }
-
     public ISnapshot GetSnapshot()
     {
         return _backend.GetSnapshot();
@@ -205,7 +138,7 @@ public class DatomStore : IDatomStore
     {
         _updatesSubject.Dispose();
         _writer.Dispose();
-        _prevWriter.Dispose();
+        _retractWriter.Dispose();
     }
 
     private async Task ConsumeTransactions()
@@ -249,12 +182,9 @@ public class DatomStore : IDatomStore
         try
         {
             var snapshot = _backend.GetSnapshot();
-            using var txIterator = snapshot.GetIterator(IndexType.TxLog);
-            var lastTx = txIterator
-                .SeekLast()
-                .Reverse()
-                .Resolve()
-                .FirstOrDefault()?.T ?? TxId.MinValue;
+            var lastTx = snapshot.Datoms(IndexType.TxLog, TxId.MaxValue, TxId.MinValue)
+                .Select(d => d.T)
+                .FirstOrDefault(TxId.MinValue);
 
             if (lastTx == TxId.MinValue)
             {
@@ -267,12 +197,9 @@ public class DatomStore : IDatomStore
                 lastTx.Value.ToString("x"));
             _asOfTxId = lastTx;
 
-            using var entIterator = snapshot.GetIterator(IndexType.EAVTCurrent);
-            var lastEnt = entIterator
-                .SeekLast()
-                .Reverse()
-                .Resolve()
-                .FirstOrDefault()?.E ?? EntityId.MinValue;
+            var lastEnt = snapshot.Datoms(IndexType.EAVTCurrent, EntityId.MaxValueNoPartition, EntityId.MinValueNoPartition)
+                .Select(e => e.E)
+                .FirstOrDefault(EntityId.MinValue);
 
             _nextEntityId = EntityId.From(lastEnt.Value + 1);
         }
@@ -280,11 +207,6 @@ public class DatomStore : IDatomStore
         {
             _logger.LogError(ex, "Failed to bootstrap the datom store");
         }
-    }
-
-    public Expression GetValueReadExpression(Type attribute, Expression valueSpan, out AttributeId attributeId)
-    {
-        return _registry.GetReadExpression(attribute, valueSpan, out attributeId);
     }
 
     #region Internals
@@ -321,12 +243,14 @@ public class DatomStore : IDatomStore
     {
         var thisTx = TxId.From(_asOfTxId.Value + 1);
 
-
         var remaps = new Dictionary<EntityId, EntityId>();
         var remapFn = (Func<EntityId, EntityId>)(id => MaybeRemap(id, remaps, thisTx));
         using var batch = _backend.CreateBatch();
 
         var swPrepare = Stopwatch.StartNew();
+
+        var currentSnapshot = _backend.GetSnapshot();
+
         foreach (var datom in pendingTransaction.Data)
         {
             _writer.Reset();
@@ -336,73 +260,30 @@ public class DatomStore : IDatomStore
             datom.Explode(_registry, remapFn, out var e, out var a, _writer, out var isRetract);
             var keyPrefix = _writer.GetWrittenSpanWritable().CastFast<byte, KeyPrefix>();
             keyPrefix[0].Set(e, a, thisTx, isRetract);
+            var newSpan = _writer.GetWrittenSpan();
 
             var attr = _registry.GetAttribute(a);
-            var isReference = attr.IsReference;
-            var isIndexed = attr.IsIndexed;
 
-            var havePrevious = false;
-            if (!isRemapped)
-                havePrevious = GetPrevious(keyPrefix[0]);
-
-            // Put it in the tx log first
-            var newSpan = _writer.GetWrittenSpan();
-            _txLog.Put(batch, newSpan);
-
-            // Remove the previous if it exists
-            if (havePrevious)
+            if (isRetract)
             {
-                var prevValSpan = _prevWriter.GetWrittenSpan().SliceFast(sizeof(KeyPrefix));
-                var currValSpan = _writer.GetWrittenSpan().SliceFast(sizeof(KeyPrefix));
+                ProcessRetract(batch, attr, newSpan, currentSnapshot);
+                continue;
+            }
 
-                if (!isRetract && prevValSpan.SequenceEqual(currValSpan))
+            switch (GetPreviousState(isRemapped, attr, currentSnapshot, newSpan))
+            {
+                case PrevState.Duplicate:
                     continue;
-
-                // Move the previous to the history index
-                var span = _prevWriter.GetWrittenSpan();
-                _eavtCurrent.Delete(batch, span);
-                _eavtHistory.Put(batch, span);
-
-                _aevtCurrent.Delete(batch, span);
-                _aevtHistory.Put(batch, span);
-
-                if (isReference)
-                {
-                    _vaetCurrent.Delete(batch, span);
-                    _vaetHistory.Put(batch, span);
-                }
-
-                if (isIndexed)
-                {
-                    _avetCurrent.Delete(batch, span);
-                    _avetHistory.Put(batch, span);
-                }
+                case PrevState.NotExists:
+                    ProcessAssert(batch, attr, newSpan);
+                    break;
+                case PrevState.Exists:
+                    SwitchPrevToRetraction(thisTx);
+                    ProcessRetract(batch, attr, _retractWriter.GetWrittenSpan(), currentSnapshot);
+                    ProcessAssert(batch, attr, newSpan);
+                    break;
             }
 
-
-            // Add new state
-            if (!isRetract)
-            {
-                _eavtCurrent.Put(batch, newSpan);
-                _aevtCurrent.Put(batch, newSpan);
-
-                if (isReference)
-                    _vaetCurrent.Put(batch, newSpan);
-
-                if (isIndexed)
-                    _avetCurrent.Put(batch, newSpan);
-            }
-            else
-            {
-                _eavtHistory.Put(batch, newSpan);
-                _aevtHistory.Put(batch, newSpan);
-
-                if (isReference)
-                    _vaetHistory.Put(batch, newSpan);
-
-                if (isIndexed)
-                    _aevtHistory.Put(batch, newSpan);
-            }
         }
 
         var swWrite = Stopwatch.StartNew();
@@ -425,21 +306,141 @@ public class DatomStore : IDatomStore
         _asOfTxId = thisTx;
     }
 
-    private bool GetPrevious(KeyPrefix d)
+    /// <summary>
+    /// Updates the data in _prevWriter to be a retraction of the data in that write.
+    /// </summary>
+    /// <param name="thisTx"></param>
+    /// <exception cref="NotImplementedException"></exception>
+    private void SwitchPrevToRetraction(TxId thisTx)
     {
-        var prefix = new KeyPrefix();
-        prefix.Set(d.E, d.A, TxId.MinValue, false);
-        using var source = _eavtCurrent.GetIterator();
-        var iter = source.Seek(MemoryMarshal.CreateSpan(ref prefix, 1).Cast<KeyPrefix, byte>());
-        if (!iter.Valid) return false;
-
-        var found = MemoryMarshal.Read<KeyPrefix>(iter.Current);
-        if (found.E != d.E || found.A != d.A) return false;
-
-        _prevWriter.Reset();
-        _prevWriter.Write(iter.Current);
-        return true;
+        var prevKey = MemoryMarshal.Read<KeyPrefix>(_retractWriter.GetWrittenSpan());
+        var (e, a, _, _) = prevKey;
+        prevKey.Set(e, a, thisTx, true);
+        MemoryMarshal.Write(_retractWriter.GetWrittenSpanWritable(), prevKey);
     }
+
+    private void ProcessRetract(IWriteBatch batch, IAttribute attribute, ReadOnlySpan<byte> datom, ISnapshot iterator)
+    {
+        _prevWriter.Reset();
+        _prevWriter.Write(datom);
+        var prevKey = MemoryMarshal.Read<KeyPrefix>(_prevWriter.GetWrittenSpan());
+        var (e, a, _, _) = prevKey;
+        prevKey.Set(e, a, TxId.MinValue, false);
+        MemoryMarshal.Write(_prevWriter.GetWrittenSpanWritable(), prevKey);
+
+        var prevDatom = iterator.Datoms(IndexType.EAVTCurrent, _prevWriter.GetWrittenSpan())
+            .Select(d => d.Clone())
+            .FirstOrDefault();
+
+        #if DEBUG
+        unsafe
+        {
+            Debug.Assert(prevDatom.Valid, "Previous datom should exist");
+            var debugKey = prevDatom.Prefix;
+            Debug.Assert(debugKey.E == MemoryMarshal.Read<KeyPrefix>(datom).E, "Entity should match");
+            Debug.Assert(debugKey.A == MemoryMarshal.Read<KeyPrefix>(datom).A, "Attribute should match");
+            Debug.Assert(
+                attribute.Serializer.Compare(prevDatom.ValueSpan,
+                    datom.SliceFast(sizeof(KeyPrefix))) == 0, "Values should match");
+        }
+        #endif
+
+        _eavtCurrent.Delete(batch, prevDatom.RawSpan);
+        _aevtCurrent.Delete(batch, prevDatom.RawSpan);
+        if (attribute.IsReference)
+            _vaetCurrent.Delete(batch, prevDatom.RawSpan);
+        if (attribute.IsIndexed)
+            _avetCurrent.Delete(batch, prevDatom.RawSpan);
+
+        _txLog.Put(batch, datom);
+        if (attribute.NoHistory) return;
+
+        // Move the datom to the history index and also record the retraction
+        _eavtHistory.Put(batch, prevDatom.RawSpan);
+        _eavtHistory.Put(batch, datom);
+
+        // Move the datom to the history index and also record the retraction
+        _aevtHistory.Put(batch, prevDatom.RawSpan);
+        _aevtHistory.Put(batch, datom);
+
+        if (attribute.IsReference)
+        {
+            _vaetHistory.Put(batch, prevDatom.RawSpan);
+            _vaetHistory.Put(batch, datom);
+        }
+
+        if (attribute.IsIndexed)
+        {
+            _avetHistory.Put(batch, prevDatom.RawSpan);
+            _avetHistory.Put(batch, datom);
+        }
+    }
+
+    private void ProcessAssert(IWriteBatch batch, IAttribute attribute, ReadOnlySpan<byte> datom)
+    {
+        _txLog.Put(batch, datom);
+        _eavtCurrent.Put(batch, datom);
+        _aevtCurrent.Put(batch, datom);
+        if (attribute.IsReference)
+            _vaetCurrent.Put(batch, datom);
+        if (attribute.IsIndexed)
+            _avetCurrent.Put(batch, datom);
+    }
+
+    enum PrevState
+    {
+        Exists,
+        NotExists,
+        Duplicate
+    }
+
+    private unsafe PrevState GetPreviousState(bool isRemapped, IAttribute attribute, ISnapshot snapshot, ReadOnlySpan<byte> span)
+    {
+        if (isRemapped) return PrevState.NotExists;
+
+        var keyPrefix = MemoryMarshal.Read<KeyPrefix>(span);
+
+        if (attribute.IsMultiCardinality)
+        {
+            var found = snapshot.Datoms(IndexType.EAVTCurrent, span)
+                .Select(d => d.Clone())
+                .FirstOrDefault();
+            if (!found.Valid) return PrevState.NotExists;
+            if (found.E != keyPrefix.E || found.A != keyPrefix.A)
+                return PrevState.NotExists;
+
+            if (attribute.Serializer.Compare(found.ValueSpan,
+                    span.SliceFast(sizeof(KeyPrefix))) == 0)
+                return PrevState.Duplicate;
+
+            return PrevState.NotExists;
+        }
+        else
+        {
+            KeyPrefix start = default;
+            start.Set(keyPrefix.E, keyPrefix.A, TxId.MinValue, false);
+
+            var datom = snapshot.Datoms(IndexType.EAVTCurrent, start)
+                .Select(d => d.Clone())
+                .FirstOrDefault();
+            if (!datom.Valid) return PrevState.NotExists;
+
+            var currKey = datom.Prefix;
+            if (currKey.E != keyPrefix.E || currKey.A != keyPrefix.A)
+                return PrevState.NotExists;
+
+            if (attribute.Serializer.Compare(datom.ValueSpan,
+                    span.SliceFast(sizeof(KeyPrefix))) == 0)
+                return PrevState.Duplicate;
+
+            _retractWriter.Reset();
+            _retractWriter.Write(datom.RawSpan);
+
+            return PrevState.Exists;
+        }
+
+    }
+
 
     #endregion
 }

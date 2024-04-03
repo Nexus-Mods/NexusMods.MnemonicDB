@@ -1,11 +1,12 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using NexusMods.MneumonicDB.Abstractions;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
+using NexusMods.MneumonicDB.Abstractions.Internals;
 using NexusMods.MneumonicDB.Abstractions.Models;
+using NexusMods.MneumonicDB.Comparators;
 using NexusMods.MneumonicDB.Storage;
 using Reloaded.Memory.Extensions;
 
@@ -15,17 +16,43 @@ internal class Db : IDb
 {
     private readonly Connection _connection;
     private readonly AttributeRegistry _registry;
-    private readonly EntityCache _cache;
-    private readonly ConcurrentDictionary<(EntityId, Type), EntityId[]> _reverseCache = new();
-    internal readonly ISnapshot Snapshot;
+
+    private readonly IndexSegmentCache<EntityId> _entityCache;
+    private readonly IndexSegmentCache<(EntityId, Type)> _reverseCache;
+
+    public ISnapshot Snapshot { get; }
+    public IAttributeRegistry Registry => _registry;
 
     public Db(ISnapshot snapshot, Connection connection, TxId txId, AttributeRegistry registry)
     {
         _registry = registry;
         _connection = connection;
-        _cache = new EntityCache(this, registry);
+        _entityCache = new IndexSegmentCache<EntityId>(EntityDatoms, registry);
+        _reverseCache = new IndexSegmentCache<(EntityId, Type)>(ReverseDatoms, registry);
         Snapshot = snapshot;
         BasisTxId = txId;
+    }
+
+    private static IEnumerable<Datom> EntityDatoms(IDb db, EntityId id)
+    {
+        return db.Snapshot.Datoms(IndexType.EAVTCurrent, id, EntityId.From(id.Value + 1));
+    }
+
+    private static IEnumerable<Datom> ReverseDatoms(IDb db, (EntityId, Type) key)
+    {
+        var (id, type) = key;
+        var attrId = db.Registry.GetAttributeId(type);
+
+        Span<byte> startKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
+        Span<byte> endKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
+        MemoryMarshal.Write(startKey,  new KeyPrefix().Set(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false));
+        MemoryMarshal.Write(endKey,  new KeyPrefix().Set(EntityId.MaxValueNoPartition, attrId, TxId.MaxValue, false));
+
+        MemoryMarshal.Write(startKey.SliceFast(KeyPrefix.Size), id);
+        MemoryMarshal.Write(endKey.SliceFast(KeyPrefix.Size), id.Value);
+
+
+        return db.Snapshot.Datoms(IndexType.VAETCurrent, startKey, endKey);
     }
 
     public TxId BasisTxId { get; }
@@ -44,7 +71,29 @@ internal class Db : IDb
     public TValue Get<TAttribute, TValue>(ref ModelHeader header, EntityId id)
         where TAttribute : IAttribute<TValue>
     {
-        return _cache.Get<TAttribute, TValue>(ref header);
+        var attrId = _registry.GetAttributeId<TAttribute>();
+        var entry = _entityCache.Get(this, header.Id);
+        for (var i = 0; i < entry.Count; i++)
+        {
+            var datom = entry[i];
+            if (datom.A == attrId)
+            {
+                return datom.Resolve<TValue>();
+            }
+        }
+
+        throw new KeyNotFoundException();
+    }
+
+    public IEnumerable<TValue> GetAll<TAttribute, TValue>(ref ModelHeader model, EntityId modelId)
+        where TAttribute : IAttribute<TValue>
+    {
+        var attrId = _registry.GetAttributeId<TAttribute>();
+        var results = _entityCache.Get(this, model.Id)
+            .Where(d => d.A == attrId)
+            .Select(d => d.Resolve<TValue>());
+
+        return results;
     }
 
     public TModel Get<TModel>(EntityId id)
@@ -64,66 +113,22 @@ internal class Db : IDb
         where TAttribute : IAttribute<EntityId>
         where TModel : struct, IEntity
     {
-        if (!_reverseCache.TryGetValue((id, typeof(TAttribute)), out var eIds))
-        {
-            using var attrSource = Snapshot.GetIterator(IndexType.VAETCurrent);
-            var attrId = _registry.GetAttributeId<TAttribute>();
-            eIds = attrSource
-                .SeekTo(attrId, id)
-                .WhileUnmanagedV(id)
-                .While(attrId)
-                .Select(c => c.CurrentKeyPrefix().E)
-                .ToArray();
-
-            _reverseCache[(id, typeof(TAttribute))] = eIds;
-        }
-
-        var results = GC.AllocateUninitializedArray<TModel>(eIds.Length);
-        for (var i = 0; i < eIds.Length; i++)
-            results[i] = Get<TModel>(eIds[i]);
-        return results;
+        return _reverseCache.Get(this, (id, typeof(TAttribute)))
+            .Select(d => d.E)
+            .Select(Get<TModel>)
+            .ToArray();
     }
 
     public IEnumerable<IReadDatom> Datoms(EntityId entityId)
     {
-        using var iterator = Snapshot.GetIterator(IndexType.EAVTCurrent);
-        foreach (var datom in iterator.SeekTo(entityId)
-                     .While(entityId)
-                     .Resolve())
-            yield return datom;
+        return _entityCache.Get(this, entityId)
+            .Select(d => d.Resolved);
     }
 
     public IEnumerable<IReadDatom> Datoms(TxId txId)
     {
-        using var iterator = Snapshot.GetIterator(IndexType.TxLog);
-        foreach (var datom in iterator
-                     .SeekTo(txId)
-                     .While(txId)
-                     .Resolve())
-            yield return datom;
-    }
-
-    public IEnumerable<IReadDatom> Datoms<TAttribute>()
-        where TAttribute : IAttribute
-    {
-        var a = _registry.GetAttributeId<TAttribute>();
-        using var iterator = Snapshot.GetIterator(IndexType.AEVTCurrent);
-        foreach (var datom in iterator
-                     .SeekTo(a)
-                     .While(a)
-                     .Resolve())
-            yield return datom;
-    }
-
-    public IDatomSource Iterate(IndexType index)
-    {
-        return Snapshot.GetIterator(index);
-    }
-
-    public IEnumerable<TValueType> GetAll<TAttribute, TValueType>(ref ModelHeader model, EntityId modelId)
-        where TAttribute : IAttribute<TValueType>
-    {
-        return _cache.GetAll<TAttribute, TValueType>(ref model);
+        return Snapshot.Datoms(IndexType.TxLog, txId, TxId.From(txId.Value + 1))
+            .Select(d => d.Resolved);
     }
 
     public void Dispose() { }

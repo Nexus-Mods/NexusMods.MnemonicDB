@@ -1,17 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using NexusMods.MneumonicDB.Abstractions.DatomIterators;
 using NexusMods.MneumonicDB.Storage.Abstractions;
 
 namespace NexusMods.MneumonicDB.Storage.InMemoryBackend;
 
-public class Index<TA, TB, TC, TD, TF>(AttributeRegistry registry, IndexStore store) :
-    AIndex<TA, TB, TC, TD, TF, IndexStore>(registry, store), IInMemoryIndex, IComparer<byte[]>
-    where TA : IElementComparer
-    where TB : IElementComparer
-    where TC : IElementComparer
-    where TD : IElementComparer
-    where TF : IElementComparer
+public class Index<TDatomComparator>(AttributeRegistry registry, IndexStore store) :
+    AIndex<TDatomComparator, IndexStore>(registry, store), IInMemoryIndex, IComparer<byte[]>
+    where TDatomComparator : IDatomComparator<AttributeRegistry>
 {
     public int Compare(byte[]? x, byte[]? y)
     {

@@ -34,6 +34,13 @@ public class Connection : IConnection
     public TxId TxId => _store.AsOfTxId;
 
     /// <inheritdoc />
+    public IDb AsOf(TxId txId)
+    {
+        var snapshot = new AsOfSnapshot(_store.GetSnapshot(), txId, (AttributeRegistry)_store.Registry);
+        return new Db(snapshot, this, txId, (AttributeRegistry)_store.Registry);
+    }
+
+    /// <inheritdoc />
     public ITransaction BeginTransaction()
     {
         return new Transaction(this);
@@ -96,7 +103,8 @@ public class Connection : IConnection
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
         var db = Db;
-        var attrIds = db.Datoms<BuiltInAttributes.UniqueId>()
+        var start = BuiltInAttributes.UniqueIdEntityId;
+        var attrIds = db.Snapshot.Datoms(IndexType.AEVTCurrent, start, AttributeId.From(start.Value + 1))
             .Select(d => d.E);
 
         foreach (var attrId in attrIds)
@@ -107,10 +115,10 @@ public class Connection : IConnection
             foreach (var datom in db.Datoms(attrId))
                 switch (datom)
                 {
-                    case ScalarAttribute<BuiltInAttributes.ValueSerializerId, Symbol>.ReadDatom serializerIdDatom:
+                    case Attribute<BuiltInAttributes.ValueSerializerId, Symbol>.ReadDatom serializerIdDatom:
                         serializerId = serializerIdDatom.V;
                         break;
-                    case ScalarAttribute<BuiltInAttributes.UniqueId, Symbol>.ReadDatom uniqueIdDatom:
+                    case Attribute<BuiltInAttributes.UniqueId, Symbol>.ReadDatom uniqueIdDatom:
                         uniqueId = uniqueIdDatom.V;
                         break;
                 }

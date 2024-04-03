@@ -76,6 +76,19 @@ public class AttributeRegistry : IAttributeRegistry
         }
     }
 
+    public TVal Resolve<TVal>(ReadOnlySpan<byte> datom)
+    {
+        var c = MemoryMarshal.Read<KeyPrefix>(datom);
+        if (!_attributesByAttributeId.TryGetValue(c.A, out var attribute))
+            throw new InvalidOperationException($"No attribute found for attribute ID {c.A}");
+
+        unsafe
+        {
+            ((IValueSerializer<TVal>)attribute.Serializer).Read(datom.SliceFast(sizeof(KeyPrefix)), out var val);
+            return val;
+        }
+    }
+
     public int CompareValues(AttributeId id, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         if (a.Length == 0 || b.Length == 0) return a.Length < b.Length ? -1 : a.Length > b.Length ? 1 : 0;
@@ -137,23 +150,6 @@ public class AttributeRegistry : IAttributeRegistry
             throw new InvalidOperationException($"No DB attribute found for attribute {attribute}");
 
         return dbAttribute.AttrEntityId;
-    }
-
-    public Expression GetReadExpression(Type attributeType, Expression valueSpan, out AttributeId attributeId)
-    {
-        var attr = _attributesByType[attributeType];
-        attributeId = _dbAttributesByUniqueId[attr.Id].AttrEntityId;
-        var serializer = _valueSerializersByNativeType[attr.ValueType];
-        var readMethod = serializer.GetType().GetMethod("Read")!;
-        var valueExpr = Expression.Parameter(attr.ValueType, "retVal");
-        var readExpression = Expression.Call(Expression.Constant(serializer), readMethod, valueSpan, valueExpr);
-        return Expression.Block([valueExpr], readExpression, valueExpr);
-    }
-
-    public Type GetReadDatomType(Type attribute)
-    {
-        var attr = _attributesByType[attribute];
-        return attr.GetReadDatomType();
     }
 
     public IAttribute GetAttribute(AttributeId attributeId)

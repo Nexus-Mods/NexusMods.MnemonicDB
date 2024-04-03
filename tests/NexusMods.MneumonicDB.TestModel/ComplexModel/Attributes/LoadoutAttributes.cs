@@ -7,10 +7,10 @@ public class LoadoutAttributes
     /// <summary>
     ///     Name of the loadout
     /// </summary>
-    public class Name : ScalarAttribute<Name, string>;
+    public class Name : Attribute<Name, string>;
 
     /// <summary>
     ///     Incremented updated whenever any aspect of the loadout is changed
     /// </summary>
-    public class UpdatedAt : ScalarAttribute<UpdatedAt, TxId>;
+    public class UpdatedAt : Attribute<UpdatedAt, TxId>;
 }

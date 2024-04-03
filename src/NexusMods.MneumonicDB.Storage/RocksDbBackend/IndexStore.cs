@@ -31,12 +31,6 @@ public class IndexStore : IIndexStore
     public IndexType Type { get; }
 
 
-    public IDatomSource GetIterator()
-    {
-        return new IteratorWrapper(_db.NewIterator(Handle), _registry);
-    }
-
-
     public void SetupColumnFamily(IIndex index, ColumnFamilies columnFamilies)
     {
         _options = new ColumnFamilyOptions();

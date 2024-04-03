@@ -23,6 +23,11 @@ public interface IConnection
     public IObservable<IDb> Revisions { get; }
 
     /// <summary>
+    /// Returns a snapshot of the database as of the given transaction id.
+    /// </summary>
+    public IDb AsOf(TxId txId);
+
+    /// <summary>
     ///     Starts a new transaction.
     /// </summary>
     /// <returns></returns>

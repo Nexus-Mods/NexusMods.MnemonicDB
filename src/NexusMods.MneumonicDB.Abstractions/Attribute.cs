@@ -11,7 +11,7 @@ namespace NexusMods.MneumonicDB.Abstractions;
 /// </summary>
 /// <typeparam name="TValueType"></typeparam>
 /// <typeparam name="TAttribute"></typeparam>
-public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
+public class Attribute<TAttribute, TValueType> : IAttribute<TValueType>
     where TAttribute : IAttribute<TValueType>
 {
     private IValueSerializer<TValueType> _serializer = null!;
@@ -19,13 +19,13 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
     /// <summary>
     ///     Create a new attribute
     /// </summary>
-    protected ScalarAttribute(string uniqueName = "",
+    protected Attribute(string uniqueName = "",
         bool isIndexed = false,
-        bool keepHistory = true,
+        bool noHistory = false,
         bool multiValued = false)
     {
         IsIndexed = isIndexed;
-        KeepHistory = keepHistory;
+        NoHistory = noHistory;
         Multivalued = multiValued;
         Id = uniqueName == "" ? Symbol.Intern(typeof(TAttribute).FullName!) : Symbol.InternPreSanitized(uniqueName);
     }
@@ -33,17 +33,18 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
     /// <summary>
     ///     Create a new attribute from an already parsed guid
     /// </summary>
-    protected ScalarAttribute(Symbol symbol)
+    protected Attribute(Symbol symbol)
     {
         Id = symbol;
     }
 
     public bool Multivalued { get; }
 
-    public bool KeepHistory { get; }
-
     /// <inheritdoc />
     public bool IsIndexed { get; }
+
+    public bool NoHistory { get; }
+    IValueSerializer IAttribute.Serializer => _serializer;
 
 
     /// <inheritdoc />
@@ -140,14 +141,6 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
         model.Tx!.Add<TAttribute, TValueType>(model.Id, value);
     }
 
-    /// <inheritdoc />
-    public TValueType Read(ReadOnlySpan<byte> buffer)
-    {
-        _serializer.Read(buffer, out var val);
-        return val;
-    }
-
-
     /// <summary>
     ///     Typed datom for this attribute
     /// </summary>
@@ -240,7 +233,7 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
         /// <inheritdoc />
         public override string ToString()
         {
-            return $"({E}, {typeof(TAttribute).Name}, {V}, {T})";
+            return $"({E.Value:x}, {typeof(TAttribute).Name}, {V}, {T.Value:x})";
         }
     }
 }

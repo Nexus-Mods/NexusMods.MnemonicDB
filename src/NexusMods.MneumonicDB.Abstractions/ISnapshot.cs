@@ -1,4 +1,9 @@
-﻿using NexusMods.MneumonicDB.Abstractions.DatomIterators;
+﻿using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using NexusMods.MneumonicDB.Abstractions.DatomIterators;
+using NexusMods.MneumonicDB.Abstractions.Internals;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MneumonicDB.Abstractions;
 
@@ -11,7 +16,65 @@ namespace NexusMods.MneumonicDB.Abstractions;
 public interface ISnapshot
 {
     /// <summary>
-    ///     Gets an iterator for the given index type.
+    /// Get an enumerable of all the datoms between the given keys, if the keys are in reverse order,
+    /// the datoms will be returned in reverse order.
     /// </summary>
-    IDatomSource GetIterator(IndexType type);
+    IEnumerable<Datom> Datoms(IndexType type, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
+
+    /// <summary>
+    /// Get an enumerable of all the datoms between the given key and the end of the index
+    ///
+    /// </summary>
+    IEnumerable<Datom> Datoms(IndexType type, ReadOnlySpan<byte> a)
+    {
+        Span<byte> b = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
+        b.Fill(0xFF);
+        return Datoms(type, a, b);
+    }
+
+    /// <summary>
+    /// Get an enumerable of all the datoms between the given key and the end of the index
+    ///
+    /// </summary>
+    IEnumerable<Datom> Datoms(IndexType type, KeyPrefix a)
+    {
+        Span<byte> b = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
+        b.Fill(0xFF);
+        return Datoms(type, MemoryMarshal.CreateSpan(ref a, 1).CastFast<KeyPrefix, byte>(), b);
+    }
+
+    /// <summary>
+    /// Get an enumerable of all the datoms between the given keys.
+    /// </summary>
+    IEnumerable<Datom> Datoms(IndexType type, KeyPrefix a, KeyPrefix b)
+    {
+        return Datoms(type, MemoryMarshal.CreateSpan(ref a, 1).CastFast<KeyPrefix, byte>(),
+            MemoryMarshal.CreateSpan(ref b, 1).CastFast<KeyPrefix, byte>());
+    }
+
+    /// <summary>
+    /// Get an enumerable of all the datoms in the given index.
+    /// </summary>
+    IEnumerable<Datom> Datoms(IndexType type)
+    {
+        if (type == IndexType.VAETCurrent || type == IndexType.VAETHistory)
+        {
+            unsafe
+            {
+                // We need to pad the key in case this is used in a VAET index that sorts by value first,
+                // which would always be a EntityId (ulong)
+                Span<byte> a = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
+                a.Clear();
+                MemoryMarshal.Write(a, KeyPrefix.Min);
+
+                Span<byte> b = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
+                b.Fill(0xFF);
+                MemoryMarshal.Write(b, KeyPrefix.Max);
+
+                return Datoms(type, a, b);
+            }
+        }
+
+        return Datoms(type, KeyPrefix.Min, KeyPrefix.Max);
+    }
 }

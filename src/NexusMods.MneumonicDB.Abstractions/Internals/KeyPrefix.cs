@@ -30,10 +30,21 @@ public struct KeyPrefix
     [FieldOffset(0)] private ulong _upper;
     [FieldOffset(8)] private ulong _lower;
 
-    public void Set(EntityId id, AttributeId attributeId, TxId txId, bool isRetract)
+    /// <summary>
+    /// The upper 8 bytes of the key
+    /// </summary>
+    public ulong Upper => _upper;
+
+    /// <summary>
+    /// The lower 8 bytes of the key
+    /// </summary>
+    public ulong Lower => _lower;
+
+    public KeyPrefix Set(EntityId id, AttributeId attributeId, TxId txId, bool isRetract)
     {
         _upper = ((ulong)attributeId << 48) | ((ulong)txId & 0x0000FFFFFFFFFFFF);
         _lower = ((ulong)id & 0xFF00000000000000) | (((ulong)id & 0x0000FFFFFFFFFFFF) << 8) | (isRetract ? 1UL : 0UL);
+        return this;
     }
 
     /// <summary>
@@ -63,6 +74,17 @@ public struct KeyPrefix
         return $"E: {E}, A: {A}, T: {T}, Retract: {IsRetract}";
     }
 
+    /// <summary>
+    ///    Deconstructs the key into its parts
+    /// </summary>
+    public void Deconstruct(out EntityId entityId, out AttributeId attributeId, out TxId txId, out bool isRetract)
+    {
+        entityId = E;
+        attributeId = A;
+        txId = T;
+        isRetract = IsRetract;
+    }
+
 
     /// <summary>
     ///     Gets the KeyPrefix from the given bytes
@@ -72,4 +94,53 @@ public struct KeyPrefix
     {
         return MemoryMarshal.Read<KeyPrefix>(bytes);
     }
+
+    #region Constants
+
+    public static KeyPrefix Min => new KeyPrefix
+    {
+        _upper = 0,
+        _lower = 0
+    };
+
+    public static KeyPrefix Max => new KeyPrefix
+    {
+        _upper = ulong.MaxValue,
+        _lower = ulong.MaxValue
+    };
+    #endregion
+
+    #region Constructors
+
+    /// <summary>
+    /// Creates a new KeyPrefix with the given values, and everything else set to the minimum value
+    /// </summary>
+    public static implicit operator KeyPrefix(TxId id)
+    {
+        var prefix = new KeyPrefix();
+        prefix.Set(EntityId.MinValueNoPartition, AttributeId.Min, id, false);
+        return prefix;
+    }
+
+    public static implicit operator KeyPrefix(EntityId id)
+    {
+        var prefix = new KeyPrefix();
+        prefix.Set(id, AttributeId.Min, TxId.MinValue, false);
+        return prefix;
+    }
+
+
+    public static implicit operator KeyPrefix(AttributeId id)
+    {
+        var prefix = new KeyPrefix();
+        prefix.Set(EntityId.MinValueNoPartition, id, TxId.MinValue, false);
+        return prefix;
+    }
+
+
+
+
+
+
+    #endregion
 }

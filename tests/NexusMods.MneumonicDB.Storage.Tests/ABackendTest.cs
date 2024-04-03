@@ -1,9 +1,12 @@
-﻿using NexusMods.MneumonicDB.Abstractions;
+﻿using System.Collections.Immutable;
+using NexusMods.MneumonicDB.Abstractions;
 using NexusMods.MneumonicDB.Storage.Abstractions;
 using NexusMods.MneumonicDB.TestModel.ComplexModel.Attributes;
 using NexusMods.MneumonicDB.TestModel.Helpers;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MneumonicDB.Abstractions.DatomComparators;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
+using NexusMods.MneumonicDB.Abstractions.Internals;
 using NexusMods.Paths;
 using FileAttributes = NexusMods.MneumonicDB.TestModel.ComplexModel.Attributes.FileAttributes;
 
@@ -27,6 +30,45 @@ public abstract class ABackendTest<TStoreType>(
     [InlineData(IndexType.AVETCurrent)]
     [InlineData(IndexType.AVETHistory)]
     public async Task InsertedDatomsShowUpInTheIndex(IndexType type)
+    {
+        var tx = await GenerateData();
+        var datoms = tx.Snapshot
+            .Datoms(type)
+            .Select(d => d.Resolved)
+            .ToArray();
+
+        await Verify(datoms.ToTable(Registry))
+            .UseDirectory("BackendTestVerifyData")
+            .UseParameters(type);
+    }
+
+    [Theory]
+    [InlineData(IndexType.EAVTHistory)]
+    [InlineData(IndexType.EAVTCurrent)]
+    [InlineData(IndexType.AEVTCurrent)]
+    [InlineData(IndexType.AEVTHistory)]
+    [InlineData(IndexType.VAETCurrent)]
+    [InlineData(IndexType.VAETHistory)]
+    [InlineData(IndexType.AVETCurrent)]
+    [InlineData(IndexType.AVETHistory)]
+    public async Task HistoricalQueriesReturnAllDataSorted(IndexType type)
+    {
+        var tx = await GenerateData();
+        var current = tx.Snapshot.Datoms(type.CurrentVariant());
+        var history = tx.Snapshot.Datoms(type.HistoryVariant());
+        var comparer = type.GetComparator(Registry);
+        var merged = current
+            .Merge(history, (a, b) => comparer.Compare(a.RawSpan, b.RawSpan))
+            .Select(d => d.Resolved)
+            .ToArray();
+
+        await Verify(merged.ToTable(Registry))
+            .UseDirectory("BackendTestVerifyData")
+            .UseParameters(type);
+    }
+
+
+    private async Task<StoreResult> GenerateData()
     {
         var id1 = NextTempId();
         var id2 = NextTempId();
@@ -58,6 +100,7 @@ public abstract class ABackendTest<TStoreType>(
 
         id1 = tx.Remaps[id1];
         id2 = tx.Remaps[id2];
+        modId2 = tx.Remaps[modId2];
         collectionId = tx.Remaps[collectionId];
 
         tx = await DatomStore.Transact([
@@ -67,11 +110,7 @@ public abstract class ABackendTest<TStoreType>(
             // Remove mod2 from collection
             CollectionAttributes.Mods.Retract(collectionId, modId2),
         ]);
-
-        using var iterator = tx.Snapshot.GetIterator(type);
-        await Verify(iterator.SeekStart().Resolve().ToTable(Registry))
-            .UseDirectory("BackendTestVerifyData")
-            .UseParameters(type);
+        return tx;
     }
 
     [Theory]
@@ -107,8 +146,11 @@ public abstract class ABackendTest<TStoreType>(
         ]);
 
 
-        using var iterator = tx2.Snapshot.GetIterator(type);
-        await Verify(iterator.SeekStart().Resolve().ToTable(Registry))
+        var datoms = tx2.Snapshot
+            .Datoms(type)
+            .Select(d => d.Resolved)
+            .ToArray();
+        await Verify(datoms.ToTable(Registry))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }

@@ -38,4 +38,9 @@ public interface IAttributeRegistry
     /// <param name="datom"></param>
     /// <returns></returns>
     public IReadDatom Resolve(ReadOnlySpan<byte> datom);
+
+    /// <summary>
+    /// Assumes the given datom is a value of the given type and deserializes it
+    /// </summary>
+    public TVal Resolve<TVal>(ReadOnlySpan<byte> datom);
 }

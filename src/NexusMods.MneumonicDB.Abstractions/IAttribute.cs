@@ -31,6 +31,9 @@ public interface IAttribute
     public Symbol Id { get; }
 
     bool IsIndexed { get; }
+    bool NoHistory { get; }
+
+    IValueSerializer Serializer { get; }
 
     /// <summary>
     ///     Sets the serializer for the attribute, this is used to read and write the value from the buffer

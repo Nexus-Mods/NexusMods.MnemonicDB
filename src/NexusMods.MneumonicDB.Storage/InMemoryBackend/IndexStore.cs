@@ -20,11 +20,6 @@ public class IndexStore : IIndexStore
     public ImmutableSortedSet<byte[]> Set { get; private set; }
     public IndexType Type { get; }
 
-    public IDatomSource GetIterator()
-    {
-        return new SortedSetIterator(Set, _registry);
-    }
-
     public void Init(IComparer<byte[]> sorter)
     {
         Set = ImmutableSortedSet<byte[]>.Empty.WithComparer(sorter);

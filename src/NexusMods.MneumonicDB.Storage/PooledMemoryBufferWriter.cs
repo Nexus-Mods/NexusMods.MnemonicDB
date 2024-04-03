@@ -90,6 +90,15 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
     }
 
     /// <summary>
+    ///     Resets the buffer writer, allowing it to be reused.
+    /// </summary>
+    public void Write(ReadOnlySpan<byte> span)
+    {
+        span.CopyTo(GetSpan(span.Length));
+        Advance(span.Length);
+    }
+
+    /// <summary>
     ///     Gets the written span.
     /// </summary>
     /// <returns></returns>

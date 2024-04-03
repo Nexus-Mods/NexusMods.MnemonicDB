@@ -14,7 +14,7 @@ public static class BuiltInAttributes
     /// <summary>
     ///     The database entity id of the UniqueId attribute
     /// </summary>
-    private static readonly AttributeId UniqueIdEntityId = AttributeId.From(1);
+    public static readonly AttributeId UniqueIdEntityId = AttributeId.From(1);
 
     /// <summary>
     ///     Static unique id of the UniqueId attribute
@@ -49,11 +49,11 @@ public static class BuiltInAttributes
     /// <summary>
     ///     The unique identifier of the entity, used to link attributes across application restarts and model changes.
     /// </summary>
-    public class UniqueId() : ScalarAttribute<UniqueId, Symbol>(UniqueIdStaticId);
+    public class UniqueId() : Attribute<UniqueId, Symbol>(UniqueIdStaticId);
 
     /// <summary>
     ///     The unique id if the IValueSerializer used to serialize the value of the attribute.
     /// </summary>
     public class ValueSerializerId()
-        : ScalarAttribute<ValueSerializerId, Symbol>("NexusMods.MneumonicDB.DatomStore/ValueSerializerId");
+        : Attribute<ValueSerializerId, Symbol>("NexusMods.MneumonicDB.DatomStore/ValueSerializerId");
 }

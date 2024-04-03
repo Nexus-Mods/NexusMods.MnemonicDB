@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Immutable;
 using System.Linq;
 using NexusMods.MneumonicDB.Abstractions;
+using NexusMods.MneumonicDB.Abstractions.DatomIterators;
 using NexusMods.MneumonicDB.Storage.Abstractions;
 using NexusMods.Paths;
 using IWriteBatch = NexusMods.MneumonicDB.Storage.Abstractions.IWriteBatch;
@@ -17,8 +19,8 @@ public class Backend : IStoreBackend
     public Backend(AttributeRegistry registry)
     {
         _registry = registry;
-        _stores = new IndexStore[Enum.GetValues(typeof(IndexType)).Length];
-        _indexes = new IIndex[Enum.GetValues(typeof(IndexType)).Length];
+        _stores = new IndexStore[Enum.GetValues<IndexType>().Select(i => (int)i).Max() + 1];
+        _indexes = new IIndex[Enum.GetValues<IndexType>().Select(i => (int)i).Max() + 1];
     }
 
     public IWriteBatch CreateBatch()
@@ -28,16 +30,12 @@ public class Backend : IStoreBackend
 
     public void Init(AbsolutePath location) { }
 
-    public void DeclareIndex<TA, TB, TC, TD, TF>(IndexType name)
-        where TA : IElementComparer
-        where TB : IElementComparer
-        where TC : IElementComparer
-        where TD : IElementComparer
-        where TF : IElementComparer
+    public void DeclareIndex<TComparator>(IndexType name)
+        where TComparator : IDatomComparator<AttributeRegistry>
     {
         var store = new IndexStore(name, _registry);
         _stores[(int)name] = store;
-        var index = new Index<TA, TB, TC, TD, TF>(_registry, store);
+        var index = new Index<TComparator>(_registry, store);
         store.Init(index);
         _indexes[(int)name] = index;
     }
@@ -50,7 +48,7 @@ public class Backend : IStoreBackend
     public ISnapshot GetSnapshot()
     {
         return new Snapshot(_indexes
-                .Select(i => ((IInMemoryIndex)i).Set).ToArray(),
+                .Select(i => i == null ? ImmutableSortedSet<byte[]>.Empty : ((IInMemoryIndex)i).Set).ToArray(),
             _registry);
     }
 

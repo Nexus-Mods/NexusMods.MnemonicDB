@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using NexusMods.MneumonicDB.Abstractions;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
 using NexusMods.MneumonicDB.Storage.Abstractions;
@@ -14,24 +15,19 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
     private readonly Dictionary<IndexType, IRocksDbIndex> _indexes = new();
     private readonly Dictionary<IndexType, IndexStore> _stores = new();
     private RocksDb _db = null!;
-    private string _location = string.Empty;
 
     public IWriteBatch CreateBatch()
     {
         return new Batch(_db);
     }
 
-    public void DeclareIndex<TA, TB, TC, TD, TF>(IndexType name)
-        where TA : IElementComparer
-        where TB : IElementComparer
-        where TC : IElementComparer
-        where TD : IElementComparer
-        where TF : IElementComparer
+    public void DeclareIndex<TComparator>(IndexType name)
+        where TComparator : IDatomComparator<AttributeRegistry>
     {
         var indexStore = new IndexStore(name.ToString(), name, registry);
         _stores.Add(name, indexStore);
 
-        var index = new Index<TA, TB, TC, TD, TF>(registry, indexStore);
+        var index = new Index<TComparator>(registry, indexStore);
         _indexes.Add(name, index);
     }
 
@@ -72,19 +68,49 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
     {
         private readonly RocksDbSharp.Snapshot _snapshot = backend._db.CreateSnapshot();
 
-        public IDatomSource GetIterator(IndexType type)
+        public IEnumerable<Datom> Datoms(IndexType type, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
         {
+            var comparator = type.GetComparator(registry);
+            var reverse = false;
+
+            var lower = a;
+            var upper = b;
+            if (comparator.Compare(a, b) > 0)
+            {
+                reverse = true;
+                lower = b;
+                upper = a;
+            }
+
             var options = new ReadOptions()
-                .SetSnapshot(_snapshot);
+                .SetSnapshot(_snapshot)
+                .SetIterateLowerBound(lower.ToArray())
+                .SetIterateUpperBound(upper.ToArray());
 
-            var iterator = backend._db.NewIterator(backend._stores[type].Handle, options);
-
-            return new IteratorWrapper(iterator, registry);
+            return DatomsInner(type, options, reverse);
         }
 
-        public void Dispose()
+        private IEnumerable<Datom> DatomsInner(IndexType type, ReadOptions options, bool reverse)
         {
-            _snapshot.Dispose();
+            using var iterator = backend._db.NewIterator(backend._stores[type].Handle, options);
+            if (reverse)
+                iterator.SeekToLast();
+            else
+                iterator.SeekToFirst();
+
+            using var writer = new PooledMemoryBufferWriter(128);
+
+            while (iterator.Valid())
+            {
+                writer.Reset();
+                writer.Write(iterator.GetKeySpan());
+                yield return new Datom(writer.WrittenMemory, registry);
+
+                if (reverse)
+                    iterator.Prev();
+                else
+                    iterator.Next();
+            }
         }
     }
 }
