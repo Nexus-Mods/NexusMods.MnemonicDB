@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <RootNamespace>NexusMods.MnemonicDB</RootNamespace>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="DynamicData" Version="8.4.1"/>
+        <PackageReference Include="MemoryPack" Version="1.20.5"/>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1"/>
+        <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.3"/>
+        <PackageReference Include="Reloaded.Memory" Version="9.4.1"/>
+        <PackageReference Include="System.Reactive" Version="6.0.0"/>
+        <PackageReference Include="TransparentValueObjects" Version="1.0.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
+        <PackageReference Update="JetBrains.Annotations" Version="2023.3.0"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\NexusMods.MnemonicDB.Abstractions\NexusMods.MnemonicDB.Abstractions.csproj"/>
+        <ProjectReference Include="..\NexusMods.MnemonicDB.Storage\NexusMods.MnemonicDB.Storage.csproj"/>
+    </ItemGroup>
+    <ItemGroup>
+        <Compile Remove="SourceGenerationContext.cs"/>
+    </ItemGroup>
+    <Import Project="$([MSBuild]::GetPathOfFileAbove('NuGet.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
+</Project>

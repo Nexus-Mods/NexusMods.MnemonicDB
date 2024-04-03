@@ -6,21 +6,21 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using NexusMods.MneumonicDB;
-using NexusMods.MneumonicDB.Abstractions;
-using NexusMods.MneumonicDB.Abstractions.DatomIterators;
-using NexusMods.MneumonicDB.Storage;
-using NexusMods.MneumonicDB.TestModel;
-using NexusMods.MneumonicDB.TestModel.ComplexModel.Attributes;
-using NexusMods.MneumonicDB.TestModel.ComplexModel.ReadModels;
+using NexusMods.MnemonicDB;
+using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Storage;
+using NexusMods.MnemonicDB.TestModel;
+using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
+using NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.Paths;
 
 var host = Host.CreateDefaultBuilder()
     .ConfigureServices(s =>
     {
-        s.AddMneumonicDBStorage()
-            .AddMneumonicDB()
+        s.AddMnemonicDBStorage()
+            .AddMnemonicDB()
             .AddRocksDbBackend()
             .AddTestModel()
             .AddSingleton<DatomStoreSettings>(_ => new DatomStoreSettings

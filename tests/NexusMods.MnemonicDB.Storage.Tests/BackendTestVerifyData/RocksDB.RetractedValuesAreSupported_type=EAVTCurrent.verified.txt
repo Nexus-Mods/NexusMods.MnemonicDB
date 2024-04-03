@@ -1,0 +1,4 @@
+﻿+ | 0000000000000001 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/UniqueId         | 0100000000000001
++ | 0000000000000001 | (0002) ValueSerializerId        | NexusMods.MnemonicDB.S...izers/SymbolSerializer  | 0100000000000001
++ | 0000000000000002 | (0001) UniqueId                 | NexusMods.MnemonicDB.D...tore/ValueSerializerId  | 0100000000000001
++ | 0000000000000002 | (0002) ValueSerializerId        | NexusMods.MnemonicDB.S...izers/SymbolSerializer  | 0100000000000001

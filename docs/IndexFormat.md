@@ -6,7 +6,7 @@ hide:
 ## Index Format
 
 The index format of the framework will look familiar to those who have used similar databases like Datomic or Datahike.
-Since MneumonicDB is based on RocksDB, most of the complexity of handling the index is abstracted away. Values are stored
+Since MnemonicDB is based on RocksDB, most of the complexity of handling the index is abstracted away. Values are stored
 in several "Column Families" which are RocksDB's way of storing data in separate files or partitions. The tuples are stored
 exclusively in the key of the store, and the value is always empty. All the indexes store exactly the same format of key
 layouts, and only the sorting logic of each index is different.
@@ -68,7 +68,7 @@ historical indexes is low, but it is a consideration when designing an applicati
 ### Making changes to the schema
 
 New attributes can be added to the database at any time, and the database will automatically start indexing them. In addition,
-old attributes need not remain in the C# codebase, MneumonicDB will simply skip over them when loading values. So as much
+old attributes need not remain in the C# codebase, MnemonicDB will simply skip over them when loading values. So as much
 as possible, try to make additive changes to the schema, and avoid changing attributes. Attributes are named after the classes
 by convention, but this is not a requirement, and the database will work just fine if you change the class name of an attribute,
 as long as the attribute's unique ID remains the same. Thus deprecated attributes can be moved to a `Deprecated` namespace, and
