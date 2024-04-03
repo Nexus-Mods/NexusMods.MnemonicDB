@@ -12,10 +12,10 @@ public class ArchiveFileAttributes
     /// <summary>
     ///     The path of the file in the archive
     /// </summary>
-    public class Path() : ScalarAttribute<Path, RelativePath>(isIndexed: true);
+    public class Path() : Attribute<Path, RelativePath>(isIndexed: true);
 
     /// <summary>
     ///     The hashcode of the file
     /// </summary>
-    public class Hash() : ScalarAttribute<Hash, Hashing.xxHash64.Hash>(isIndexed: true);
+    public class Hash() : Attribute<Hash, Hashing.xxHash64.Hash>(isIndexed: true);
 }

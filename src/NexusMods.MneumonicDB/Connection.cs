@@ -115,10 +115,10 @@ public class Connection : IConnection
             foreach (var datom in db.Datoms(attrId))
                 switch (datom)
                 {
-                    case ScalarAttribute<BuiltInAttributes.ValueSerializerId, Symbol>.ReadDatom serializerIdDatom:
+                    case Attribute<BuiltInAttributes.ValueSerializerId, Symbol>.ReadDatom serializerIdDatom:
                         serializerId = serializerIdDatom.V;
                         break;
-                    case ScalarAttribute<BuiltInAttributes.UniqueId, Symbol>.ReadDatom uniqueIdDatom:
+                    case Attribute<BuiltInAttributes.UniqueId, Symbol>.ReadDatom uniqueIdDatom:
                         uniqueId = uniqueIdDatom.V;
                         break;
                 }

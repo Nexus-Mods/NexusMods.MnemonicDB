@@ -7,15 +7,15 @@ public class ModAttributes
     /// <summary>
     ///     The Name of the mod
     /// </summary>
-    public class Name : ScalarAttribute<Name, string>;
+    public class Name : Attribute<Name, string>;
 
     /// <summary>
     ///     The download source of the mod
     /// </summary>
-    public class Source : ScalarAttribute<Source, Uri>;
+    public class Source : Attribute<Source, Uri>;
 
     /// <summary>
     ///     The loadout that the mod is part of
     /// </summary>
-    public class LoadoutId : ScalarAttribute<LoadoutId, EntityId>;
+    public class LoadoutId : Attribute<LoadoutId, EntityId>;
 }

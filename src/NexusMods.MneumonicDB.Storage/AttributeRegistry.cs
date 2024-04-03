@@ -152,23 +152,6 @@ public class AttributeRegistry : IAttributeRegistry
         return dbAttribute.AttrEntityId;
     }
 
-    public Expression GetReadExpression(Type attributeType, Expression valueSpan, out AttributeId attributeId)
-    {
-        var attr = _attributesByType[attributeType];
-        attributeId = _dbAttributesByUniqueId[attr.Id].AttrEntityId;
-        var serializer = _valueSerializersByNativeType[attr.ValueType];
-        var readMethod = serializer.GetType().GetMethod("Read")!;
-        var valueExpr = Expression.Parameter(attr.ValueType, "retVal");
-        var readExpression = Expression.Call(Expression.Constant(serializer), readMethod, valueSpan, valueExpr);
-        return Expression.Block([valueExpr], readExpression, valueExpr);
-    }
-
-    public Type GetReadDatomType(Type attribute)
-    {
-        var attr = _attributesByType[attribute];
-        return attr.GetReadDatomType();
-    }
-
     public IAttribute GetAttribute(AttributeId attributeId)
     {
         if (!_attributesByAttributeId.TryGetValue(attributeId, out var attr))

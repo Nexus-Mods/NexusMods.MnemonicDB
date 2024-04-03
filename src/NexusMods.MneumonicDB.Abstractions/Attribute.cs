@@ -11,7 +11,7 @@ namespace NexusMods.MneumonicDB.Abstractions;
 /// </summary>
 /// <typeparam name="TValueType"></typeparam>
 /// <typeparam name="TAttribute"></typeparam>
-public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
+public class Attribute<TAttribute, TValueType> : IAttribute<TValueType>
     where TAttribute : IAttribute<TValueType>
 {
     private IValueSerializer<TValueType> _serializer = null!;
@@ -19,7 +19,7 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
     /// <summary>
     ///     Create a new attribute
     /// </summary>
-    protected ScalarAttribute(string uniqueName = "",
+    protected Attribute(string uniqueName = "",
         bool isIndexed = false,
         bool noHistory = false,
         bool multiValued = false)
@@ -33,7 +33,7 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
     /// <summary>
     ///     Create a new attribute from an already parsed guid
     /// </summary>
-    protected ScalarAttribute(Symbol symbol)
+    protected Attribute(Symbol symbol)
     {
         Id = symbol;
     }
@@ -140,14 +140,6 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
     {
         model.Tx!.Add<TAttribute, TValueType>(model.Id, value);
     }
-
-    /// <inheritdoc />
-    public TValueType Read(ReadOnlySpan<byte> buffer)
-    {
-        _serializer.Read(buffer, out var val);
-        return val;
-    }
-
 
     /// <summary>
     ///     Typed datom for this attribute
