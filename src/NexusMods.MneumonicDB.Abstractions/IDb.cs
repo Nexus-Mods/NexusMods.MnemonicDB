@@ -68,9 +68,6 @@ public interface IDb : IDisposable
     /// </summary>
     public IEnumerable<IReadDatom> Datoms(TxId txId);
 
-    public IEnumerable<IReadDatom> Datoms<TAttribute>()
-        where TAttribute : IAttribute;
-
     /// <summary>
     /// Gets all values for the given attribute on the given entity. There's no reason to use this
     /// on attributes that are not multi-valued.

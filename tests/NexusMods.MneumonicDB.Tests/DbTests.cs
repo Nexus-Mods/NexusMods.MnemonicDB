@@ -213,35 +213,4 @@ public class DbTests(IServiceProvider provider) : AMneumonicDBTest(provider)
         firstMod.Loadout.Name.Should().Be("Test Loadout");
     }
 
-    [Fact]
-    public async Task CanGetDatomsByAttr()
-    {
-        await InsertExampleData();
-        await VerifyTable(Connection.Db.Datoms<ModAttributes.Name>());
-    }
-
-    [Theory]
-    [InlineData(IndexType.EAVTCurrent, false)]
-    [InlineData(IndexType.EAVTCurrent, true)]
-    [InlineData(IndexType.AEVTCurrent, false)]
-    [InlineData(IndexType.AEVTCurrent, true)]
-    [InlineData(IndexType.AVETCurrent, false)]
-    [InlineData(IndexType.AVETCurrent, true)]
-    [InlineData(IndexType.VAETCurrent, false)]
-    [InlineData(IndexType.VAETCurrent, true)]
-    [InlineData(IndexType.TxLog, true)]
-    [InlineData(IndexType.TxLog, false)]
-    public async Task CanGetDatomIterator(IndexType index, bool reverse)
-    {
-        await InsertExampleData();
-
-        var db = Connection.Db;
-        using var iterator = db.Iterate(index);
-        var datoms = iterator.SeekStart();
-
-        if (reverse)
-            datoms = iterator.SeekLast().Reverse();
-
-        await VerifyTable(datoms.Resolve()).UseTextForParameters($"{index}_{reverse}");
-    }
 }

@@ -241,7 +241,7 @@ public class ScalarAttribute<TAttribute, TValueType> : IAttribute<TValueType>
         /// <inheritdoc />
         public override string ToString()
         {
-            return $"({E}, {typeof(TAttribute).Name}, {V}, {T})";
+            return $"({E.Value:x}, {typeof(TAttribute).Name}, {V}, {T.Value:x})";
         }
     }
 }

@@ -21,9 +21,4 @@ public abstract class AIndex<TComparator, TIndexStore>(AttributeRegistry registr
     {
         batch.Delete(store, datom);
     }
-
-    public IDatomSource GetIterator()
-    {
-        return store.GetIterator();
-    }
 }

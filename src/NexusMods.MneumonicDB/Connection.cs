@@ -96,7 +96,8 @@ public class Connection : IConnection
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
         var db = Db;
-        var attrIds = db.Datoms<BuiltInAttributes.UniqueId>()
+        var start = BuiltInAttributes.UniqueIdEntityId;
+        var attrIds = db.Snapshot.Datoms(IndexType.AEVTCurrent, start, AttributeId.From(start.Value + 1))
             .Select(d => d.E);
 
         foreach (var attrId in attrIds)

@@ -76,6 +76,19 @@ public class AttributeRegistry : IAttributeRegistry
         }
     }
 
+    public TVal Resolve<TVal>(ReadOnlySpan<byte> datom)
+    {
+        var c = MemoryMarshal.Read<KeyPrefix>(datom);
+        if (!_attributesByAttributeId.TryGetValue(c.A, out var attribute))
+            throw new InvalidOperationException($"No attribute found for attribute ID {c.A}");
+
+        unsafe
+        {
+            ((IValueSerializer<TVal>)attribute.Serializer).Read(datom.SliceFast(sizeof(KeyPrefix)), out var val);
+            return val;
+        }
+    }
+
     public int CompareValues(AttributeId id, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         if (a.Length == 0 || b.Length == 0) return a.Length < b.Length ? -1 : a.Length > b.Length ? 1 : 0;

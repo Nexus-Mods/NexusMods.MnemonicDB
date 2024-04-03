@@ -30,10 +30,11 @@ public struct KeyPrefix
     [FieldOffset(0)] private ulong _upper;
     [FieldOffset(8)] private ulong _lower;
 
-    public void Set(EntityId id, AttributeId attributeId, TxId txId, bool isRetract)
+    public KeyPrefix Set(EntityId id, AttributeId attributeId, TxId txId, bool isRetract)
     {
         _upper = ((ulong)attributeId << 48) | ((ulong)txId & 0x0000FFFFFFFFFFFF);
         _lower = ((ulong)id & 0xFF00000000000000) | (((ulong)id & 0x0000FFFFFFFFFFFF) << 8) | (isRetract ? 1UL : 0UL);
+        return this;
     }
 
     /// <summary>
@@ -115,6 +116,14 @@ public struct KeyPrefix
     {
         var prefix = new KeyPrefix();
         prefix.Set(id, AttributeId.Min, TxId.MinValue, false);
+        return prefix;
+    }
+
+
+    public static implicit operator KeyPrefix(AttributeId id)
+    {
+        var prefix = new KeyPrefix();
+        prefix.Set(EntityId.MinValueNoPartition, id, TxId.MinValue, false);
         return prefix;
     }
 

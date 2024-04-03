@@ -22,6 +22,28 @@ public interface ISnapshot
     IEnumerable<Datom> Datoms(IndexType type, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
 
     /// <summary>
+    /// Get an enumerable of all the datoms between the given key and the end of the index
+    ///
+    /// </summary>
+    IEnumerable<Datom> Datoms(IndexType type, ReadOnlySpan<byte> a)
+    {
+        Span<byte> b = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
+        b.Fill(0xFF);
+        return Datoms(type, a, b);
+    }
+
+    /// <summary>
+    /// Get an enumerable of all the datoms between the given key and the end of the index
+    ///
+    /// </summary>
+    IEnumerable<Datom> Datoms(IndexType type, KeyPrefix a)
+    {
+        Span<byte> b = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
+        b.Fill(0xFF);
+        return Datoms(type, MemoryMarshal.CreateSpan(ref a, 1).CastFast<KeyPrefix, byte>(), b);
+    }
+
+    /// <summary>
     /// Get an enumerable of all the datoms between the given keys.
     /// </summary>
     IEnumerable<Datom> Datoms(IndexType type, KeyPrefix a, KeyPrefix b)

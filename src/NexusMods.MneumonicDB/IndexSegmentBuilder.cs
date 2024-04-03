@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
+using NexusMods.MneumonicDB.Abstractions.Internals;
 using NexusMods.MneumonicDB.Storage;
 
 namespace NexusMods.MneumonicDB;
@@ -26,18 +27,21 @@ public struct IndexSegmentBuilder
     /// <summary>
     /// Add a datom to the segment
     /// </summary>
-    public void Add(ReadOnlySpan<byte> datom)
+    public void Add(IEnumerable<Datom> datoms)
     {
-        _offsets.Add(_data.Length);
-        _data.Write(datom);
+        foreach (var datom in datoms)
+        {
+            _offsets.Add(_data.Length);
+            _data.Write(datom.RawSpan);
+        }
     }
 
     /// <summary>
     /// Construct the index segment
     /// </summary>
-    public IndexSegment Build()
+    public IndexSegment Build(IAttributeRegistry registry)
     {
         _offsets.Add(_data.Length);
-        return new IndexSegment(_data.GetWrittenSpan(), _offsets.ToArray());
+        return new IndexSegment(_data.GetWrittenSpan(), _offsets.ToArray(), registry);
     }
 }

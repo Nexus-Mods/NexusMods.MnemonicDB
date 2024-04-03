@@ -37,6 +37,11 @@ public struct Datom(ReadOnlyMemory<byte> memory, IAttributeRegistry registry)
     public IReadDatom Resolved => registry.Resolve(RawSpan);
 
     /// <summary>
+    /// Resolves the value of the datom into the given type
+    /// </summary>
+    public TVal Resolve<TVal>() => registry.Resolve<TVal>(RawSpan);
+
+    /// <summary>
     /// EntityId of the datom
     /// </summary>
     public EntityId E => Prefix.E;
@@ -50,4 +55,25 @@ public struct Datom(ReadOnlyMemory<byte> memory, IAttributeRegistry registry)
     /// TxId of the datom
     /// </summary>
     public TxId T => Prefix.T;
+
+    /// <summary>
+    /// Copies the data of this datom onto the heap so it's detached from the current iteration.
+    /// </summary>
+    public Datom Clone()
+    {
+        var copy = new byte[memory.Length];
+        memory.Span.CopyTo(copy);
+        return new Datom(copy, registry);
+    }
+
+    /// <summary>
+    /// Returns true if the datom is valid
+    /// </summary>
+    public bool Valid => memory.Length > 0;
+
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return Resolved.ToString()!;
+    }
 }

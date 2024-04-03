@@ -55,44 +55,8 @@ var globalSw = Stopwatch.StartNew();
 ulong fileNumber = 0;
 var lastPrint = DateTime.UtcNow;
 
-async Task<(TimeSpan Time, int loaded)> ReadCheckpoint(IDb db)
-{
-    var tasks = new List<Task<(TimeSpan Time, int loaded)>>();
 
 
-    for (int i = 0; i < 1; i++)
-    {
-        var task = Task.Run(() =>
-        {
-            var sw = Stopwatch.StartNew();
-            using var iterator = db.Iterate(IndexType.TxLog);
-
-            var count = 0;
-            var scanned = 0;
-            foreach (var itm in iterator.SeekLast().Reverse().Resolve())
-            {
-                if (count == 1024 * 128) break;
-                if (itm is FileAttributes.Hash.ReadDatom hashDatom)
-                {
-                    var file = db.Get<File>(hashDatom.E);
-                    count++;
-                }
-
-                scanned++;
-            }
-
-            return (sw.Elapsed, (count * 4) + scanned);
-        });
-        tasks.Add(task);
-    }
-
-    var results = await Task.WhenAll(tasks);
-
-    return (results.Max(r => r.Time), results.Sum(r => r.loaded));
-
-}
-
-var checkPointTask = ReadCheckpoint(connection.Db);
 for (ulong i = 0; i < batches; i++)
 {
     var tx = connection.BeginTransaction();
@@ -115,14 +79,10 @@ for (ulong i = 0; i < batches; i++)
 
     if (DateTime.UtcNow - lastPrint > TimeSpan.FromSeconds(1))
     {
-        var checkpointStatus = await checkPointTask;
         var estimatedRemaining = (batches - i) * (globalSw.Elapsed.TotalSeconds / i);
         Console.WriteLine(
             $"({i}/{batches}) Elapsed: {globalSw.Elapsed} - Datoms per second: {perSecond} - ETA: {TimeSpan.FromSeconds(estimatedRemaining)}");
-        Console.WriteLine(" - Read Checkpoint: " + checkpointStatus.loaded + " datoms in " + checkpointStatus.Time.Milliseconds + "ms");
         lastPrint = DateTime.UtcNow;
-
-        checkPointTask = ReadCheckpoint(connection.Db);
     }
 }
 

@@ -14,7 +14,7 @@ public static class BuiltInAttributes
     /// <summary>
     ///     The database entity id of the UniqueId attribute
     /// </summary>
-    private static readonly AttributeId UniqueIdEntityId = AttributeId.From(1);
+    public static readonly AttributeId UniqueIdEntityId = AttributeId.From(1);
 
     /// <summary>
     ///     Static unique id of the UniqueId attribute

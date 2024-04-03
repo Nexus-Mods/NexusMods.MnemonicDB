@@ -20,31 +20,39 @@ internal class Db : IDb
     private readonly IndexSegmentCache<EntityId> _entityCache;
     private readonly IndexSegmentCache<(EntityId, Type)> _reverseCache;
 
-    internal readonly ISnapshot Snapshot;
+    public ISnapshot Snapshot { get; }
+    public IAttributeRegistry Registry => _registry;
 
     public Db(ISnapshot snapshot, Connection connection, TxId txId, AttributeRegistry registry)
     {
         _registry = registry;
         _connection = connection;
-        _entityCache = new IndexSegmentCache<EntityId>(EntityIterator);
-        _reverseCache = new IndexSegmentCache<(EntityId, Type)>(ReverseIterator);
+        _entityCache = new IndexSegmentCache<EntityId>(EntityIterator, registry);
+        _reverseCache = new IndexSegmentCache<(EntityId, Type)>(ReverseIterator, registry);
         Snapshot = snapshot;
         BasisTxId = txId;
     }
 
-    private static IIterator EntityIterator(IDb db, EntityId id)
+    private static IEnumerable<Datom> EntityIterator(IDb db, EntityId id)
     {
-        return db.Snapshot.GetIterator(IndexType.EAVTCurrent).SeekTo(id).While(id);
+        return db.Snapshot.Datoms(IndexType.EAVTCurrent, id, EntityId.From(id.Value + 1));
     }
 
-    private static IIterator ReverseIterator(IDb db, (EntityId, Type) key)
+    private static IEnumerable<Datom> ReverseIterator(IDb db, (EntityId, Type) key)
     {
-        var (entityId, type) = key;
+        var (id, type) = key;
         var attrId = db.Registry.GetAttributeId(type);
-        return db.Iterate(IndexType.VAETCurrent)
-            .SeekTo(attrId, entityId)
-            .WhileUnmanagedV(entityId)
-            .While(attrId);
+
+        Span<byte> startKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
+        Span<byte> endKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
+        MemoryMarshal.Write(startKey,  new KeyPrefix().Set(EntityId.MaxValueNoPartition, attrId, TxId.MinValue, false));
+        MemoryMarshal.Write(endKey,  new KeyPrefix().Set(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false));
+
+        MemoryMarshal.Write(startKey.SliceFast(KeyPrefix.Size), id);
+        MemoryMarshal.Write(endKey.SliceFast(KeyPrefix.Size), id.Value + 1);
+
+
+        return db.Snapshot.Datoms(IndexType.VAETCurrent, startKey, endKey);
     }
 
     public TxId BasisTxId { get; }
@@ -64,46 +72,24 @@ internal class Db : IDb
         where TAttribute : IAttribute<TValue>
     {
         var attrId = _registry.GetAttributeId<TAttribute>();
-        var attr = _registry.GetAttribute(attrId);
-        var iterator = _entityCache.Get(this, header.Id)
-            .GetIterator<EntityCacheComparator<AttributeRegistry>, AttributeRegistry>(_registry)
-            .SeekTo(attrId)
-            .While(attrId);
+        var value = _entityCache.Get(this, header.Id)
+            .Where(d => d.A == attrId)
+            .Select(d => d.Resolve<TValue>())
+            .First();
 
-        if (!iterator.Valid)
-            throw new KeyNotFoundException();
-
-        unsafe
-        {
-            ((IValueSerializer<TValue>)attr.Serializer).Read(iterator.Current.SliceFast(sizeof(KeyPrefix)),
-                out var value);
-            return value;
-        }
+        return value;
     }
 
     public IEnumerable<TValue> GetAll<TAttribute, TValue>(ref ModelHeader model, EntityId modelId)
         where TAttribute : IAttribute<TValue>
     {
         var attrId = _registry.GetAttributeId<TAttribute>();
-        var attr = _registry.GetAttribute(attrId);
-        var iterator = _entityCache.Get(this, model.Id)
-            .GetIterator<EntityCacheComparator<AttributeRegistry>, AttributeRegistry>(_registry)
-            .SeekTo(attrId)
-            .While(attrId);
+        var results = _entityCache.Get(this, model.Id)
+            .Where(d => d.A == attrId)
+            .Select(d => d.Resolve<TValue>());
 
-        return GetAllInner<TValue>(iterator, attr);
+        return results;
     }
-
-    private static IEnumerable<TValue> GetAllInner<TValue>(WhileA<IIterator> iterator, IAttribute attr)
-    {
-        while (iterator.Valid)
-        {
-            ((IValueSerializer<TValue>)attr.Serializer).Read(iterator.Current, out var value);
-            yield return value;
-            iterator.Next();
-        }
-    }
-
 
     public TModel Get<TModel>(EntityId id)
         where TModel : struct, IEntity
@@ -122,47 +108,24 @@ internal class Db : IDb
         where TAttribute : IAttribute<EntityId>
         where TModel : struct, IEntity
     {
+        var attrId = _registry.GetAttributeId<TAttribute>();
         return _reverseCache.Get(this, (id, typeof(TAttribute)))
-            .GetIterator<EntityCacheComparator<AttributeRegistry>, AttributeRegistry>(_registry)
-            .Select(c => c.CurrentKeyPrefix().E)
+            .Where(d => d.A == attrId)
+            .Select(d => d.E)
             .Select(Get<TModel>)
             .ToArray();
     }
 
     public IEnumerable<IReadDatom> Datoms(EntityId entityId)
     {
-        using var iterator = Snapshot.GetIterator(IndexType.EAVTCurrent);
-        foreach (var datom in iterator.SeekTo(entityId)
-                     .While(entityId)
-                     .Resolve())
-            yield return datom;
+        return _entityCache.Get(this, entityId)
+            .Select(d => d.Resolved);
     }
 
     public IEnumerable<IReadDatom> Datoms(TxId txId)
     {
-        using var iterator = Snapshot.GetIterator(IndexType.TxLog);
-        foreach (var datom in iterator
-                     .SeekTo(txId)
-                     .While(txId)
-                     .Resolve())
-            yield return datom;
-    }
-
-    public IEnumerable<IReadDatom> Datoms<TAttribute>()
-        where TAttribute : IAttribute
-    {
-        var a = _registry.GetAttributeId<TAttribute>();
-        using var iterator = Snapshot.GetIterator(IndexType.AEVTCurrent);
-        foreach (var datom in iterator
-                     .SeekTo(a)
-                     .While(a)
-                     .Resolve())
-            yield return datom;
-    }
-
-    public IDatomSource Iterate(IndexType index)
-    {
-        return Snapshot.GetIterator(index);
+        return Snapshot.Datoms(IndexType.TxLog, txId, TxId.From(txId.Value + 1))
+            .Select(d => d.Resolved);
     }
 
     public void Dispose() { }
