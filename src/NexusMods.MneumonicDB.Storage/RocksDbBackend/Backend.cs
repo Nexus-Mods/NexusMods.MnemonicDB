@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using NexusMods.MneumonicDB.Abstractions;
-using NexusMods.MneumonicDB.Abstractions.DatomComparators;
 using NexusMods.MneumonicDB.Abstractions.DatomIterators;
 using NexusMods.MneumonicDB.Storage.Abstractions;
 using NexusMods.Paths;
@@ -18,7 +15,6 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
     private readonly Dictionary<IndexType, IRocksDbIndex> _indexes = new();
     private readonly Dictionary<IndexType, IndexStore> _stores = new();
     private RocksDb _db = null!;
-    private string _location = string.Empty;
 
     public IWriteBatch CreateBatch()
     {

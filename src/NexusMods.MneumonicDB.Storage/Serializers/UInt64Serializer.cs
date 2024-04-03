@@ -32,10 +32,4 @@ public class UInt64Serializer : IValueSerializer<ulong>
         MemoryMarshal.Write(span, value);
         buffer.Advance(sizeof(ulong));
     }
-
-    public uint Serialize<TWriter>(in TWriter writer, in ulong value, out ulong inlineValue)
-    {
-        inlineValue = value;
-        return sizeof(ulong);
-    }
 }
