@@ -1,5 +1,4 @@
-﻿using System.Text.Json.Serialization;
-using NexusMods.MnemonicDB.Abstractions;
+﻿using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
 using FileAttributes = NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes.FileAttributes;

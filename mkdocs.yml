@@ -48,5 +48,6 @@ theme:
 
 nav:
   - Home: index.md
-  - IndexFormat: IndexFormat.md
+  - Index Format: IndexFormat.md
+  - Schema Changes: SchemaChanges.md
 

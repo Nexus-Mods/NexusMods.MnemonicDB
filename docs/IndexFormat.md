@@ -65,29 +65,197 @@ operations are O(n) where n is the number of values for a given entity or attrib
 only need to look up the value in the index. In practice, loading datoms is extremely fast, and the overhead of scanning the
 historical indexes is low, but it is a consideration when designing an application.
 
-### Making changes to the schema
+### Indexing Strategy
 
-New attributes can be added to the database at any time, and the database will automatically start indexing them. In addition,
-old attributes need not remain in the C# codebase, MnemonicDB will simply skip over them when loading values. So as much
-as possible, try to make additive changes to the schema, and avoid changing attributes. Attributes are named after the classes
-by convention, but this is not a requirement, and the database will work just fine if you change the class name of an attribute,
-as long as the attribute's unique ID remains the same. Thus deprecated attributes can be moved to a `Deprecated` namespace, and
-left to sit.
+As mentioned the 4 main indexs are partitioned into two column families the `Current` and the `History`, indexes. These
+sub-indexes share the same sorting (and comparator) logic, but are stored in separate files. In addition the `Current` index
+never contains any `Retraction = true` datoms. This is because a retraction is a logical deletion of a value, and any deleted
+values are evicted from the `Current` index and added to the `History` index. This allows for fast queries for the most recent
+data, and slower queries for historical data (as they must replay the history).
 
-### Migrations
+A interesting design choice made in the original Datomic implementations was to sort the indexes by `T` after other values,
+this is a subtle choice that was lost on the initial implementor of MnemonicDB. This is best illustrated with an example:
 
-Migrations are not yet implemented, but the idea is fairly simple, a new database is created, and the TxLog of the source
-is replayed into the target with some sort of transformation process happening on the way. This is a future feature, and
-planned to be implemented soon.
+Let's look at a subsegment of the EAVT indexes for a single entity:
 
-
-
-
-
-
-
-
-
+R  | E                | A            | V                  | T                |
+-- |------------------|--------------|--------------------|------------------|
++ | 0200000000000001 | (0014) Path  | /foo/bar           | 0100000000000002 |
++ | 0200000000000001 | (0015) Hash  | 0x00000000DEADBEEF | 0100000000000002 |
++ | 0200000000000001 | (0016) Size  | 42 B               | 0100000000000002
++ | 0200000000000001 | (0017) ModId | 0200000000000003   | 0100000000000002
+- | 0200000000000001 | (0017) ModId | 0200000000000003   | 0100000000000003
++ | 0200000000000001 | (0017) ModId | 0200000000000005   | 0100000000000003
 
 
+!!! info "Printing IDs in hex format is helpful as it clearly shows the partition value of the IDs. Without this we would
+    see arbitrary base 10 numbers that would be hard to interpret."
 
+We can see that these datoms are sorted by `E`, `A`, `V`, and then `T`. The `+` and `-` symbols indicate if the datom is
+an assertion (`+`) or a retraction (`-`). The `T` value is the transaction id, and we can see that the `ModId` attribute
+was changed in transaction `0100000000000003` to point to a different entity.
+
+If we wanted to read this entity into a C# object like a hashmap, we could read each datom in order. If an attribute is
+a `+` we would add it to the map, and a `-` would delete it from the map. But we have a very clear optimization available
+to us because all the tuples are sorted by `E` and then `T`. We can simply read the datoms in order, and if we see a `+`
+we wait to add it to the map until we read the next datom. If the next datom is a `-` we skip both datoms. Otherwise we add
+the previous datom to the map, and save the current datom as the "current" value. This means that with a very small amount
+of scratch space we can easily replay the entire entity state from the database.
+
+The second thing that the author of MnemonicDB missed (that was included in Datomic) was that this optimization *only*
+works if scalar attributes (attributes with a single value, not sets of values) must record an implicit retraction when
+they are updated. This terminates the previous value and asserts a new value. Performing this optimization means more
+data must be recorded to disk, but allows the read logic to be *extremely* simple. Infact this logic can be implemented
+inside an iterator in just a few lines of code.
+
+### Historical Queries
+
+While querying the Current index is fast, occasionally users will want to query the database as of an arbitrary `T`value.
+This is known as a `Historical`, or `Temporal` query. When this operation needs to be performed the general algorithm is
+rather simple:
+
+* Given a `Start` and `End` datom that mark the range of the query
+* Get the iterator for the `Current` index for the given range, and the `History` index for the given range
+* Merge the iterators together via a `Sorted Merge`
+* Filter the merged iterator remove any datoms that are newer than the `AsOfTx`
+* Apply the above datom filtering to the iterator.
+
+The relative simplicity of this operation can be seen in the following C# code:
+
+```csharp
+    public IEnumerable<Datom> Datoms(IndexType type, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        var current = inner.Datoms(type.CurrentVariant(), a, b);
+        var history = inner.Datoms(type.HistoryVariant(), a, b);
+        var comparatorFn = type.GetComparator(registry);
+        var merged = current.Merge(history,
+            (dCurrent, dHistory) => comparatorFn.Compare(dCurrent.RawSpan, dHistory.RawSpan));
+        var filtered = merged.Where(d => d.T <= asOfTxId);
+
+        var withoutRetracts = ApplyRetracts(filtered);
+        return withoutRetracts;
+    }
+```
+
+!!! info "A sorted merge is a common operation in many database systems. It involves walking two datasets (iterators in
+         our case) and comparing the current value of each iterator. The smaller value is emitted, and that iterator is
+         advanced. This is repeated until both iterators are exhausted. Since both inputs are sorted by the same comparator,
+         no complex sort is required and the complexity of this operation is `O(n + m)` where `n` and `m` are the number
+         of items in the two iterators."
+
+### Multi cardinality attributes
+When an attribute is marked as being multi-valued (or known as cardinality many) the database will store multiple values
+for the same attribute. The logic for this behavior is rather simple, we simply don't create a retraction for datoms when
+we write a new one. This means that datoms continue to live until they are explicitly retracted. Multi-valued attributes
+are useful for operations like tags or many-to-many relationships where the values are more than a simple link to some
+other entity.
+
+## Long Example
+
+Let's put this all together into an example. Let's say the state of our two indexes is as follows:
+
+#### EAVT Current
+ R  | E                | A                             | V                                                | T
+----|------------------|-------------------------------|--------------------------------------------------|-------------------
+ +  | 0000000000000001 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/UniqueId         | 0100000000000001
+ +  | 0000000000000001 | (0002) ValueSerializerId        | NexusMods.MnemonicDB.S...izers/SymbolSerializer  | 0100000000000001
+ +  | 0000000000000002 | (0001) UniqueId                 | NexusMods.MnemonicDB.D...tore/ValueSerializerId  | 0100000000000001
+ +  | 0000000000000002 | (0002) ValueSerializerId        | NexusMods.MnemonicDB.S...izers/SymbolSerializer  | 0100000000000001
+ +  | 0200000000000001 | (0014) Path                     | /foo/bar                                         | 0100000000000002
+ +  | 0200000000000001 | (0015) Hash                     | 0x00000000DEADBEEF                               | 0100000000000002
+ +  | 0200000000000001 | (0016) Size                     | 42 B                                             | 0100000000000002
+ +  | 0200000000000001 | (0017) ModId                    | 0200000000000005                                 | 0100000000000003
+ +  | 0200000000000002 | (0014) Path                     | /foo/qux                                         | 0100000000000003
+ +  | 0200000000000002 | (0015) Hash                     | 0x00000000DEADBEAF                               | 0100000000000002
+ +  | 0200000000000002 | (0016) Size                     | 77 B                                             | 0100000000000002
+ +  | 0200000000000002 | (0017) ModId                    | 0200000000000003                                 | 0100000000000002
+ +  | 0200000000000003 | (0018) Name                     | Test Mod 1                                       | 0100000000000002
+ +  | 0200000000000003 | (0019) LoadoutId                | 0200000000000004                                 | 0100000000000002
+ +  | 0200000000000004 | (001A) Name                     | Test Loadout 1                                   | 0100000000000002
+ +  | 0200000000000005 | (0018) Name                     | Test Mod 2                                       | 0100000000000002
+ +  | 0200000000000005 | (0019) LoadoutId                | 0200000000000004                                 | 0100000000000002
+ +  | 0200000000000006 | (001B) Name                     | Test Collection 1                                | 0100000000000002
+ +  | 0200000000000006 | (001C) LoadoutId                | 0200000000000004                                 | 0100000000000002
+ +  | 0200000000000006 | (001D) Mods                     | 0200000000000003                                 | 0100000000000002
+
+#### EAVT History
+ R  | E                | A                             | V                                                | T
+----|------------------|-------------------------------|--------------------------------------------------|-------------------
++ | 0200000000000001 | (0017) ModId                    | 0200000000000003                                 | 0100000000000002
+- | 0200000000000001 | (0017) ModId                    | 0200000000000003                                 | 0100000000000003
++ | 0200000000000002 | (0014) Path                     | /qix/bar                                         | 0100000000000002
+- | 0200000000000002 | (0014) Path                     | /qix/bar                                         | 0100000000000003
++ | 0200000000000006 | (001D) Mods                     | 0200000000000005                                 | 0100000000000002
+- | 0200000000000006 | (001D) Mods                     | 0200000000000005                                 | 0100000000000003
+
+### Step 1 - Range Queries
+Now let's query the datoms for entity `0200000000000002` as of transaction `0100000000000002`. First we get the datoms
+for the `Current` and `History` indexes for the given entity:
+
+#### EAVT Current
+ R  | E                | A                             | V                                                | T
+----|------------------|-------------------------------|--------------------------------------------------|-------------------
+ +  | 0200000000000002 | (0014) Path                     | /foo/qux                                         | 0100000000000003
+ +  | 0200000000000002 | (0015) Hash                     | 0x00000000DEADBEAF                               | 0100000000000002
+ +  | 0200000000000002 | (0016) Size                     | 77 B                                             | 0100000000000002
+ +  | 0200000000000002 | (0017) ModId                    | 0200000000000003                                 | 0100000000000002
+
+#### EAVT History
+ R  | E                | A                             | V                                                | T
+----|------------------|-------------------------------|--------------------------------------------------|-------------------
++ | 0200000000000002 | (0014) Path                     | /qix/bar                                         | 0100000000000002
+- | 0200000000000002 | (0014) Path                     | /qix/bar                                         | 0100000000000003
+
+### Step 2 - Sorted Merge
+
+Now we merge the two iterators together:
+
+ R  | E                | A                             | V                                                | T
+----|------------------|-------------------------------|--------------------------------------------------|-------------------
+ +  | 0200000000000002 | (0014) Path                     | /foo/qux                                         | 0100000000000003
++   | 0200000000000002 | (0014) Path                     | /qix/bar                                         | 0100000000000002
+-   | 0200000000000002 | (0014) Path                     | /qix/bar                                         | 0100000000000003
+ +  | 0200000000000002 | (0015) Hash                     | 0x00000000DEADBEAF                               | 0100000000000002
+ +  | 0200000000000002 | (0016) Size                     | 77 B                                             | 0100000000000002
+ +  | 0200000000000002 | (0017) ModId                    | 0200000000000003                                 | 0100000000000002
+
+### Step 4 - Filter by `AsOfTx >= 0100000000000002`
+
+ R  | E                | A                             | V                                                | T
+----|------------------|-------------------------------|--------------------------------------------------|-------------------
+ +   | 0200000000000002 | (0014) Path                     | /qix/bar                                         | 0100000000000002
+ +  | 0200000000000002 | (0015) Hash                     | 0x00000000DEADBEAF                               | 0100000000000002
+ +  | 0200000000000002 | (0016) Size                     | 77 B                                             | 0100000000000002
+ +  | 0200000000000002 | (0017) ModId                    | 0200000000000003                                 | 0100000000000002
+
+### Step 5 - Apply Retracts
+
+In this case, we don't have any retractions to apply, so our result is the same as the filtered iterator.
+
+ R  | E                | A                             | V                                                | T
+----|------------------|-------------------------------|--------------------------------------------------|-------------------
+ +   | 0200000000000002 | (0014) Path                     | /qix/bar                                         | 0100000000000002
+ +  | 0200000000000002 | (0015) Hash                     | 0x00000000DEADBEAF                               | 0100000000000002
+ +  | 0200000000000002 | (0016) Size                     | 77 B                                             | 0100000000000002
+ +  | 0200000000000002 | (0017) ModId                    | 0200000000000003                                 | 0100000000000002
+
+But let's say that we were filtering by `AsOfTx >= 0100000000000003` then we would have a retraction to apply:
+
+ R  | E                | A                             | V                                                | T
+----|------------------|-------------------------------|--------------------------------------------------|-------------------
+ +  | 0200000000000002 | (0014) Path                     | /foo/qux                                         | 0100000000000003
++   | 0200000000000002 | (0014) Path                     | /qix/bar                                         | 0100000000000002
+-   | 0200000000000002 | (0014) Path                     | /qix/bar                                         | 0100000000000003
+ +  | 0200000000000002 | (0015) Hash                     | 0x00000000DEADBEAF                               | 0100000000000002
+ +  | 0200000000000002 | (0016) Size                     | 77 B                                             | 0100000000000002
+ +  | 0200000000000002 | (0017) ModId                    | 0200000000000003                                 | 0100000000000002
+
+Which when we apply filtering, would notice that the `/qix/bar` path was retracted in transaction `0100000000000003`, so
+we wouldn't emit that pair of datoms, so our final set of datoms would be:
+
+ R  | E                | A                             | V                                                | T
+----|------------------|-------------------------------|--------------------------------------------------|-------------------
+ +  | 0200000000000002 | (0014) Path                     | /foo/qux                                         | 0100000000000003
+ +  | 0200000000000002 | (0015) Hash                     | 0x00000000DEADBEAF                               | 0100000000000002
+ +  | 0200000000000002 | (0016) Size                     | 77 B                                             | 0100000000000002
+ +  | 0200000000000002 | (0017) ModId                    | 0200000000000003                                 | 0100000000000002

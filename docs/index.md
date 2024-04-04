@@ -8,7 +8,7 @@ hide:
 	<img src="./Nexus/Images/Nexus-Icon.png" width="150" align="center" />
 	<br/> <br/>
     <br/>
-    <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/Nexus-Mods/NexusMods.MnemonicDB/BuildAndTest.yml">
+    <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/Nexus-Mods/NexusMods.MnemonicDB/dotnet-build-and-test.yaml">
 </div>
 
 ## About
@@ -52,22 +52,22 @@ public class FileAttributes
     /// <summary>
     ///     The path of the file
     /// </summary>
-    public class Path() : ScalarAttribute<Path, RelativePath>(isIndexed: true);
+    public class Path() : Attribute<Path, RelativePath>(isIndexed: true);
 
     /// <summary>
     ///     The size of the file
     /// </summary>
-    public class Size : ScalarAttribute<Size, Paths.Size>;
+    public class Size : Attribute<Size, Paths.Size>;
 
     /// <summary>
     ///     The hashcode of the file
     /// </summary>
-    public class Hash() : ScalarAttribute<Hash, Hashing.xxHash64.Hash>(isIndexed: true);
+    public class Hash() : Attribute<Hash, Hashing.xxHash64.Hash>(isIndexed: true);
 
     /// <summary>
     ///     The mod this file belongs to
     /// </summary>
-    public class ModId : ScalarAttribute<ModId, EntityId>;
+    public class ModId : Attribute<ModId, EntityId>;
 }
 ```
 
