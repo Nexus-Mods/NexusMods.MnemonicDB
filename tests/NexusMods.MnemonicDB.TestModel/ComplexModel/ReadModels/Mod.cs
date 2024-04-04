@@ -1,20 +1,13 @@
 ﻿using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
 using FileAttributes = NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes.FileAttributes;
 
 namespace NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 
-public class Mod : AEntity
+public class Mod(ITransaction tx) : AEntity(tx)
 {
-
-    public Mod(ITransaction tx) : base(tx) { }
-
-    public Mod(EntityId id, IDb db) : base(id, db) { }
-
-    public static IEntity Create(EntityId id, IDb db) => new Mod(id, db);
-
-
     public string Name
     {
         get => ModAttributes.Name.Get(this);
@@ -39,7 +32,7 @@ public class Mod : AEntity
         init => ModAttributes.LoadoutId.Add(this, value.Id);
     }
 
-    public IEnumerable<File> Files => GetReverse<FileAttributes.ModId, File>();
+    public Entities<EntityIds, File> Files => GetReverse<FileAttributes.ModId, File>();
 
 
 }

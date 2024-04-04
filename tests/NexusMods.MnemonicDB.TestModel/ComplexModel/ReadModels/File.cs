@@ -6,12 +6,8 @@ using FileAttributes = NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes.Fi
 
 namespace NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 
-public class File : AEntity
+public class File(ITransaction tx) : AEntity(tx)
 {
-    public File(ITransaction tx) : base(tx) { }
-
-    public File(EntityId id, IDb db) : base(id, db) { }
-
     /// <summary>
     /// The path of the file
     /// </summary>

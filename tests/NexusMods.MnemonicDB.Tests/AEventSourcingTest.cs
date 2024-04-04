@@ -60,7 +60,7 @@ public class AMnemonicDBTest : IAsyncLifetime
     private Dictionary<string, string> EntityToDictionary<TReadModel>(TReadModel model) where TReadModel : IEntity
     {
         return new Dictionary<string, string>(from prop in model.GetType().GetProperties()
-            where prop.PropertyType != typeof(ModelHeader)
+            where prop.Name != "Id" && prop.Name != "Tx" && prop.Name != "Db"
             let value = Stringify(prop.GetValue(model)!)
             where value != null
             select new KeyValuePair<string, string>(prop.Name, value));
@@ -82,7 +82,7 @@ public class AMnemonicDBTest : IAsyncLifetime
     private string Stringify(object value)
     {
         if (value is IEntity entity)
-            return entity.Header.Id.Value.ToString("x");
+            return entity.Id.Value.ToString("x");
         return value!.ToString() ?? "";
     }
 
@@ -131,7 +131,7 @@ public class AMnemonicDBTest : IAsyncLifetime
         var tx2 = Connection.BeginTransaction();
         foreach (var mod in loadout.Mods)
         {
-            ModAttributes.Name.Add(tx2, mod.Header.Id, mod.Name + " - Updated");
+            ModAttributes.Name.Add(tx2, mod.Id, mod.Name + " - Updated");
         }
         await tx2.Commit();
 

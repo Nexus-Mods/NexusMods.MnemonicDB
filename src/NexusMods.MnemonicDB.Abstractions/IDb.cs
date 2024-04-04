@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
@@ -35,7 +36,7 @@ public interface IDb : IDisposable
     ///     Returns a read model for each of the given entity ids.
     /// </summary>
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids)
-        where TModel : class, IEntity;
+        where TModel : IEntity;
 
     /// <summary>
     /// Gets a single attribute value for the given entity id.
@@ -57,8 +58,8 @@ public interface IDb : IDisposable
     ///     Gets a read model for every enitity that references the given entity id
     ///     with the given attribute.
     /// </summary>
-    public TModel[] GetReverse<TAttribute, TModel>(EntityId id)
-        where TModel : struct, IEntity
+    public Entities<EntityIds, TModel> GetReverse<TAttribute, TModel>(EntityId id)
+        where TModel : IEntity
         where TAttribute : IAttribute<EntityId>;
 
     public IEnumerable<IReadDatom> Datoms(EntityId id);
@@ -74,4 +75,9 @@ public interface IDb : IDisposable
     /// </summary>
     IEnumerable<TValueType> GetAll<TAttribute, TValueType>(EntityId modelId)
         where TAttribute : IAttribute<TValueType>;
+
+    /// <summary>
+    /// Gets the index segment for the given entity id.
+    /// </summary>
+    IndexSegment GetSegment(EntityId id);
 }

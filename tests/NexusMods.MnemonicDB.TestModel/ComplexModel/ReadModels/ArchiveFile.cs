@@ -11,15 +11,8 @@ namespace NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 /// Read model the demonstrates the use of multiple attributes with the same short name (but unique full name).
 /// Also demonstrates the use of a read model containing attributes from different attribute classes.
 /// </summary>
-public class ArchiveFile : AEntity
+public class ArchiveFile(ITransaction tx) : AEntity(tx)
 {
-     public ArchiveFile(ITransaction tx) : base(tx) { }
-
-     public ArchiveFile(EntityId id, IDb db) : base(id, db) { }
-
-     public static IEntity Create(EntityId id, IDb db) => new ArchiveFile(id, db);
-
-
     public RelativePath Path
     {
         get => FileAttributes.Path.Get(this);

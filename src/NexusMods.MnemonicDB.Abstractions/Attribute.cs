@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
@@ -125,14 +127,93 @@ public class Attribute<TAttribute, TValueType> : IAttribute<TValueType>
     /// <inheritdoc />
     public IValueSerializer<TValueType> Serializer => _serializer;
 
-    public static TValueType Get(IEntity ent)
+    private class InlineCache
     {
-        return ent.Db.Get<TAttribute, TValueType>(ent.Id);
+        public required IAttributeRegistry Registry = null!;
+        public required AttributeId Id;
+        public required IValueSerializer<TValueType> Serializer = null!;
+        public required TAttribute Attribute = default!;
     }
 
-    public static IEnumerable<TValueType> GetAll(IEntity ent)
+    private static InlineCache _cache = new ()
     {
-        return ent.Db.GetAll<TAttribute, TValueType>(ent.Id);
+        Registry = null!,
+        Id = default!,
+        Serializer = null!,
+        Attribute = default!
+    };
+
+    /// <summary>
+    /// Gets the value for this attribute on the given entity
+    /// </summary>
+    public static TValueType Get(IEntity entity)
+    {
+        var segment = entity.Db.GetSegment(entity.Id);
+        var cache = GetInlinedCache(entity);
+        for (var i = 0; i < segment.Count; i++)
+        {
+            var datom = segment[i];
+            if (datom.A == cache.Id)
+            {
+                return datom.Resolve<TValueType>();
+            }
+        }
+        ThrowKeyNotFoundException(entity.Id);
+        return default!;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static InlineCache GetInlinedCache(IEntity entity)
+    {
+        var cache = _cache;
+        if (!ReferenceEquals(cache.Registry, entity.Db.Registry))
+        {
+            cache = FillInlineCache(entity);
+        }
+        return cache;
+    }
+
+    private static InlineCache FillInlineCache(IEntity entity)
+    {
+        InlineCache cache;
+        var attribute = entity.Db.Registry.GetAttribute<TAttribute>();
+        var attrId = entity.Db.Registry.GetAttributeId(typeof(TAttribute));
+        cache = new InlineCache
+        {
+            Registry = entity.Db.Registry,
+            Id = attrId,
+            Serializer = attribute.Serializer,
+            Attribute = attribute
+        };
+        _cache = cache;
+        return cache;
+    }
+
+    private static void ThrowKeyNotFoundException(EntityId id)
+    {
+        throw new KeyNotFoundException($"Attribute {typeof(TAttribute).Name} not found on entity {id}");
+    }
+
+    /// <summary>
+    /// Gets all values for this attribute on the given entity
+    /// </summary>
+    public static Values<TValueType> GetAll(IEntity ent)
+    {
+        var segment = ent.Db.GetSegment(ent.Id);
+        var cache = GetInlinedCache(ent);
+        for (var i = 0; i < segment.Count; i++)
+        {
+            var datom = segment[i];
+            if (datom.A != cache.Id) continue;
+
+            var start = i;
+            while (i < segment.Count && segment[i].A == cache.Id)
+            {
+                i++;
+            }
+            return new Values<TValueType>(segment, start, i, cache.Serializer);
+        }
+        return new Values<TValueType>(segment, 0, 0, cache.Serializer);
     }
 
     /// <inheritdoc />
