@@ -1,0 +1,157 @@
+﻿using System.Collections.Immutable;
+using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Storage.Abstractions;
+using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
+using NexusMods.MnemonicDB.TestModel.Helpers;
+using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.Abstractions.DatomComparators;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.Paths;
+using FileAttributes = NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes.FileAttributes;
+
+
+namespace NexusMods.MnemonicDB.Storage.Tests;
+
+public abstract class ABackendTest<TStoreType>(
+    IServiceProvider provider,
+    Func<AttributeRegistry, IStoreBackend> backendFn)
+    : AStorageTest(provider, backendFn)
+    where TStoreType : IStoreBackend
+{
+    [Theory]
+    [InlineData(IndexType.TxLog)]
+    [InlineData(IndexType.EAVTHistory)]
+    [InlineData(IndexType.EAVTCurrent)]
+    [InlineData(IndexType.AEVTCurrent)]
+    [InlineData(IndexType.AEVTHistory)]
+    [InlineData(IndexType.VAETCurrent)]
+    [InlineData(IndexType.VAETHistory)]
+    [InlineData(IndexType.AVETCurrent)]
+    [InlineData(IndexType.AVETHistory)]
+    public async Task InsertedDatomsShowUpInTheIndex(IndexType type)
+    {
+        var tx = await GenerateData();
+        var datoms = tx.Snapshot
+            .Datoms(type)
+            .Select(d => d.Resolved)
+            .ToArray();
+
+        await Verify(datoms.ToTable(Registry))
+            .UseDirectory("BackendTestVerifyData")
+            .UseParameters(type);
+    }
+
+    [Theory]
+    [InlineData(IndexType.EAVTHistory)]
+    [InlineData(IndexType.EAVTCurrent)]
+    [InlineData(IndexType.AEVTCurrent)]
+    [InlineData(IndexType.AEVTHistory)]
+    [InlineData(IndexType.VAETCurrent)]
+    [InlineData(IndexType.VAETHistory)]
+    [InlineData(IndexType.AVETCurrent)]
+    [InlineData(IndexType.AVETHistory)]
+    public async Task HistoricalQueriesReturnAllDataSorted(IndexType type)
+    {
+        var tx = await GenerateData();
+        var current = tx.Snapshot.Datoms(type.CurrentVariant());
+        var history = tx.Snapshot.Datoms(type.HistoryVariant());
+        var comparer = type.GetComparator(Registry);
+        var merged = current
+            .Merge(history, (a, b) => comparer.Compare(a.RawSpan, b.RawSpan))
+            .Select(d => d.Resolved)
+            .ToArray();
+
+        await Verify(merged.ToTable(Registry))
+            .UseDirectory("BackendTestVerifyData")
+            .UseParameters(type);
+    }
+
+
+    private async Task<StoreResult> GenerateData()
+    {
+        var id1 = NextTempId();
+        var id2 = NextTempId();
+
+        var modId1 = NextTempId();
+        var modId2 = NextTempId();
+        var loadoutId = NextTempId();
+        var collectionId = NextTempId();
+
+        var tx = await DatomStore.Transact([
+            FileAttributes.Path.Assert(id1, "/foo/bar"),
+            FileAttributes.Hash.Assert(id1, Hash.From(0xDEADBEEF)),
+            FileAttributes.Size.Assert(id1, Size.From(42)),
+            FileAttributes.Path.Assert(id2, "/qix/bar"),
+            FileAttributes.Hash.Assert(id2, Hash.From(0xDEADBEAF)),
+            FileAttributes.Size.Assert(id2, Size.From(77)),
+            FileAttributes.ModId.Assert(id1, modId1),
+            FileAttributes.ModId.Assert(id2, modId1),
+            ModAttributes.Name.Assert(modId1, "Test Mod 1"),
+            ModAttributes.LoadoutId.Assert(modId1, loadoutId),
+            ModAttributes.Name.Assert(modId2, "Test Mod 2"),
+            ModAttributes.LoadoutId.Assert(modId2, loadoutId),
+            LoadoutAttributes.Name.Assert(loadoutId, "Test Loadout 1"),
+            CollectionAttributes.Name.Assert(collectionId, "Test Collection 1"),
+            CollectionAttributes.LoadoutId.Assert(collectionId, loadoutId),
+            CollectionAttributes.Mods.Assert(collectionId, modId1),
+            CollectionAttributes.Mods.Assert(collectionId, modId2)
+        ]);
+
+        id1 = tx.Remaps[id1];
+        id2 = tx.Remaps[id2];
+        modId2 = tx.Remaps[modId2];
+        collectionId = tx.Remaps[collectionId];
+
+        tx = await DatomStore.Transact([
+            // Rename file 1 and move file 1 to mod 2
+            FileAttributes.Path.Assert(id2, "/foo/qux"),
+            FileAttributes.ModId.Assert(id1, modId2),
+            // Remove mod2 from collection
+            CollectionAttributes.Mods.Retract(collectionId, modId2),
+        ]);
+        return tx;
+    }
+
+    [Theory]
+    [InlineData(IndexType.TxLog)]
+    [InlineData(IndexType.EAVTHistory)]
+    [InlineData(IndexType.EAVTCurrent)]
+    [InlineData(IndexType.AEVTCurrent)]
+    [InlineData(IndexType.AEVTHistory)]
+    [InlineData(IndexType.VAETCurrent)]
+    [InlineData(IndexType.VAETHistory)]
+    [InlineData(IndexType.AVETCurrent)]
+    [InlineData(IndexType.AVETHistory)]
+    public async Task RetractedValuesAreSupported(IndexType type)
+    {
+        var id = NextTempId();
+        var modId = NextTempId();
+
+        var tx1 = await DatomStore.Transact([
+            FileAttributes.Path.Assert(id, "/foo/bar"),
+            FileAttributes.Hash.Assert(id, Hash.From(0xDEADBEEF)),
+            FileAttributes.Size.Assert(id, Size.From(42)),
+            FileAttributes.ModId.Assert(id, modId),
+        ]);
+
+        id = tx1.Remaps[id];
+        modId = tx1.Remaps[modId];
+
+        var tx2 = await DatomStore.Transact([
+            FileAttributes.Path.Retract(id, "/foo/bar"),
+            FileAttributes.Hash.Retract(id, Hash.From(0xDEADBEEF)),
+            FileAttributes.Size.Retract(id, Size.From(42)),
+            FileAttributes.ModId.Retract(id, modId)
+        ]);
+
+
+        var datoms = tx2.Snapshot
+            .Datoms(type)
+            .Select(d => d.Resolved)
+            .ToArray();
+        await Verify(datoms.ToTable(Registry))
+            .UseDirectory("BackendTestVerifyData")
+            .UseParameters(type);
+    }
+}

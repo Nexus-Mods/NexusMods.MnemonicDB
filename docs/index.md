@@ -4,16 +4,16 @@ hide:
 ---
 
 <div align="center">
-	<h1>MneumonicDB a in-process temporal database for .NET</h1>
+	<h1>MnemonicDB a in-process temporal database for .NET</h1>
 	<img src="./Nexus/Images/Nexus-Icon.png" width="150" align="center" />
 	<br/> <br/>
     <br/>
-    <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/Nexus-Mods/NexusMods.MneumonicDB/BuildAndTest.yml">
+    <img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/Nexus-Mods/NexusMods.MnemonicDB/BuildAndTest.yml">
 </div>
 
 ## About
 
-Built for the NexusMods.App project, MneumonicDB is a tuple oriented, typesafe, in-process temporal database for .NET
+Built for the NexusMods.App project, MnemonicDB is a tuple oriented, typesafe, in-process temporal database for .NET
 applications. It supports a pluggable storage and value model leverages [RocksDB](https://rocksdb.org/) by default.
 Many similarities can be seen in this project to [Datomic](https://www.datomic.com/), [Datahike](https://github.com/replikativ/datahike),
 and [XTDB](https://xtdb.com/)

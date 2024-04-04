@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <!-- https://github.com/pengweiqhca/Xunit.DependencyInjection#how-to-disable-xunitdependencyinjection -->
+        <EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>true</EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>
+        <RootNamespace>NexusMods.MnemonicDB.Tests</RootNamespace>
+    </PropertyGroup>
+
+
+    <ItemGroup>
+        <PackageReference Update="FluentAssertions" Version="6.12.0"/>
+        <PackageReference Update="FluentAssertions.Analyzers" Version="0.31.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Update="xunit" Version="2.7.0"/>
+        <PackageReference Update="xunit.runner.visualstudio" Version="2.5.7">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Update="JetBrains.Annotations" Version="2023.3.0"/>
+        <PackageReference Update="Moq" Version="4.20.70"/>
+        <PackageReference Update="AutoFixture" Version="4.18.1"/>
+        <PackageReference Update="AutoFixture.AutoMoq" Version="4.18.1"/>
+        <PackageReference Update="AutoFixture.Xunit2" Version="4.18.1"/>
+        <PackageReference Update="Xunit.SkippableFact" Version="1.4.13"/>
+        <PackageReference Update="Xunit.DependencyInjection" Version="9.0.1"/>
+        <PackageReference Update="Xunit.DependencyInjection.Logging" Version="9.0.0"/>
+        <PackageReference Update="Xunit.DependencyInjection.SkippableFact" Version="9.0.0"/>
+        <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.9.0"/>
+        <PackageReference Update="coverlet.collector" Version="6.0.2">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Update="GitHubActionsTestLogger" Version="2.3.3">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Verify.Xunit" Version="23.5.2"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\NexusMods.MnemonicDB\NexusMods.MnemonicDB.csproj"/>
+        <ProjectReference Include="..\NexusMods.MnemonicDB.TestModel\NexusMods.MnemonicDB.TestModel.csproj"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="DbTests.CanGetCommitUpdates.verified.txt">
+        <DependentUpon>DbTests.cs</DependentUpon>
+      </None>
+    </ItemGroup>
+
+</Project>

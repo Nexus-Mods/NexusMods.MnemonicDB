@@ -5,7 +5,7 @@ global using FluentAssertions;
 global using AutoFixture;
 global using AutoFixture.Xunit2;
 using System.Runtime.CompilerServices;
-using NexusMods.MneumonicDB.TestModel.Helpers;
+using NexusMods.MnemonicDB.TestModel.Helpers;
 
 public static class Initializer
 {
