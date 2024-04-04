@@ -4,12 +4,8 @@ using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
 
 namespace NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 
-public class Collection : AEntity
+public class Collection(ITransaction tx) : AEntity(tx)
 {
-    public Collection(EntityId id, IDb db) : base(id, db) { }
-
-    public Collection(ITransaction tx) : base(tx) { }
-
     public string Name
     {
         get => CollectionAttributes.Name.Get(this);

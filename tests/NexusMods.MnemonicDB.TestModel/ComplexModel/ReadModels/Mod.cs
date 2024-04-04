@@ -5,16 +5,8 @@ using FileAttributes = NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes.Fi
 
 namespace NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 
-public class Mod : AEntity
+public class Mod(ITransaction tx) : AEntity(tx)
 {
-
-    public Mod(ITransaction tx) : base(tx) { }
-
-    public Mod(EntityId id, IDb db) : base(id, db) { }
-
-    public static IEntity Create(EntityId id, IDb db) => new Mod(id, db);
-
-
     public string Name
     {
         get => ModAttributes.Name.Get(this);

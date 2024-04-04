@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
@@ -60,7 +61,7 @@ internal class Db : IDb
     public IConnection Connection => _connection;
 
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids)
-        where TModel : struct, IEntity
+        where TModel : IEntity
     {
         foreach (var id in ids)
         {
@@ -99,12 +100,15 @@ internal class Db : IDb
     public TModel Get<TModel>(EntityId id)
         where TModel : IEntity
     {
-        return (TModel)TModel.Create(id, this);
+        return EntityConstructors<TModel>.Constructor(id, this);
     }
+
+
+
 
     public TModel[] GetReverse<TAttribute, TModel>(EntityId id)
         where TAttribute : IAttribute<EntityId>
-        where TModel : struct, IEntity
+        where TModel : IEntity
     {
         return _reverseCache.Get(this, (id, typeof(TAttribute)))
             .Select(d => d.E)

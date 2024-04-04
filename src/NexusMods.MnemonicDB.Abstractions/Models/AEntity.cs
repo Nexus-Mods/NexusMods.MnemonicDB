@@ -5,17 +5,23 @@ namespace NexusMods.MnemonicDB.Abstractions.Models;
 
 public abstract class AEntity : IEntity
 {
-    protected AEntity(EntityId id, IDb db)
-    {
-        Id = id;
-        Db = db;
-    }
-
     protected AEntity(ITransaction tx)
     {
-        Tx = tx;
-        Id = tx.TempId();
-        Db = null!;
+        // This looks like it's never null, but the framework will force-inject a null here when constructing
+        // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+        if (tx != null)
+        {
+            Tx = tx;
+            Id = tx.TempId();
+            Db = null!;
+        }
+        else
+        {
+            Id = EntityId.MinValue;
+            Tx = null;
+            Db = null!;
+        }
+
     }
 
     /// <summary>
@@ -23,23 +29,20 @@ public abstract class AEntity : IEntity
     /// </summary>
     public ITransaction? Tx { get; }
 
-    public static IEntity Create(EntityId id, IDb db)
-    {
-        throw new NotSupportedException();
-    }
-
     protected IEnumerable<TModel> GetReverse<TAttr, TModel>()
+        where TAttr : IAttribute<EntityId>
+        where TModel : IEntity
     {
-        throw new NotImplementedException();
+        return Db.GetReverse<TAttr, TModel>(Id);
     }
 
     /// <summary>
     /// The id of the entity.
     /// </summary>
-    public EntityId Id { get; }
+    public EntityId Id { get; internal set; }
 
     /// <summary>
     /// The database the entity is stored in.
     /// </summary>
-    public IDb Db { get; }
+    public IDb Db { get; internal set; }
 }

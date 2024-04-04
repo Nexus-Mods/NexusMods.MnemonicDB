@@ -44,9 +44,9 @@ public class ReadTests : ABenchmark
                 Hash = Hash.From((ulong)i),
                 Path = $"C:\\test_{i}.txt",
                 Size = Size.From((ulong)i),
-                ModId = tmpMod.Header.Id,
+                ModId = tmpMod.Id,
             };
-            entityIds.Add(file.Header.Id);
+            entityIds.Add(file.Id);
         }
 
         var result = await tx.Commit();

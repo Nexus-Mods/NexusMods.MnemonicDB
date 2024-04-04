@@ -35,7 +35,7 @@ public interface IDb : IDisposable
     ///     Returns a read model for each of the given entity ids.
     /// </summary>
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids)
-        where TModel : class, IEntity;
+        where TModel : IEntity;
 
     /// <summary>
     /// Gets a single attribute value for the given entity id.
@@ -58,7 +58,7 @@ public interface IDb : IDisposable
     ///     with the given attribute.
     /// </summary>
     public TModel[] GetReverse<TAttribute, TModel>(EntityId id)
-        where TModel : struct, IEntity
+        where TModel : IEntity
         where TAttribute : IAttribute<EntityId>;
 
     public IEnumerable<IReadDatom> Datoms(EntityId id);

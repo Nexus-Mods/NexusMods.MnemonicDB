@@ -156,7 +156,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         var extraTx = Connection.BeginTransaction();
 
         var db = Connection.Db;
-        var firstMod = db.Get<Mod>(result.Remap(mods[0]).Header.Id);
+        var firstMod = db.Get<Mod>(result.Remap(mods[0]).Id);
         for (var idx = 0; idx < extraFiles; idx++)
         {
             var name = $"Extra File {idx}";
