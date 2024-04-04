@@ -125,20 +125,20 @@ public class Attribute<TAttribute, TValueType> : IAttribute<TValueType>
     /// <inheritdoc />
     public IValueSerializer<TValueType> Serializer => _serializer;
 
-    public static TValueType Get(ref ModelHeader model)
+    public static TValueType Get(IEntity ent)
     {
-        return model.Db.Get<TAttribute, TValueType>(ref model, model.Id);
+        return ent.Db.Get<TAttribute, TValueType>(ent.Id);
     }
 
-    public static IEnumerable<TValueType> GetAll(ref ModelHeader model)
+    public static IEnumerable<TValueType> GetAll(IEntity ent)
     {
-        return model.Db.GetAll<TAttribute, TValueType>(ref model, model.Id);
+        return ent.Db.GetAll<TAttribute, TValueType>(ent.Id);
     }
 
     /// <inheritdoc />
-    public static void Add(ref ModelHeader model, TValueType value)
+    public static void Add(IEntity entity, TValueType value)
     {
-        model.Tx!.Add<TAttribute, TValueType>(model.Id, value);
+        entity.Tx!.Add<TAttribute, TValueType>(entity.Id, value);
     }
 
     /// <summary>

@@ -6,18 +6,19 @@ using FileAttributes = NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes.Fi
 
 namespace NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 
-public struct File(ModelHeader header) : IEntity
+public class File : AEntity
 {
-    public File(ITransaction tx) : this(tx.New()) { }
-    public ModelHeader Header { get => header; set => header = value; }
+    public File(ITransaction tx) : base(tx) { }
+
+    public File(EntityId id, IDb db) : base(id, db) { }
 
     /// <summary>
     /// The path of the file
     /// </summary>
     public RelativePath Path
     {
-        get => FileAttributes.Path.Get(ref header);
-        init => FileAttributes.Path.Add(ref header, value);
+        get => FileAttributes.Path.Get(this);
+        init => FileAttributes.Path.Add(this, value);
     }
 
     /// <summary>
@@ -25,8 +26,8 @@ public struct File(ModelHeader header) : IEntity
     /// </summary>
     public Hash Hash
     {
-        get => FileAttributes.Hash.Get(ref header);
-        init => FileAttributes.Hash.Add(ref header, value);
+        get => FileAttributes.Hash.Get(this);
+        init => FileAttributes.Hash.Add(this, value);
     }
 
     /// <summary>
@@ -34,8 +35,8 @@ public struct File(ModelHeader header) : IEntity
     /// </summary>
     public Size Size
     {
-        get => FileAttributes.Size.Get(ref header);
-        init => FileAttributes.Size.Add(ref header, value);
+        get => FileAttributes.Size.Get(this);
+        init => FileAttributes.Size.Add(this, value);
     }
 
     /// <summary>
@@ -43,8 +44,8 @@ public struct File(ModelHeader header) : IEntity
     /// </summary>
     public EntityId ModId
     {
-        get => FileAttributes.ModId.Get(ref header);
-        init => FileAttributes.ModId.Add(ref header, value);
+        get => FileAttributes.ModId.Get(this);
+        init => FileAttributes.ModId.Add(this, value);
     }
 
     /// <summary>
@@ -52,7 +53,7 @@ public struct File(ModelHeader header) : IEntity
     /// </summary>
     public Mod Mod
     {
-        get => header.Db.Get<Mod>(ModId);
-        init => FileAttributes.ModId.Add(ref header, value.Header.Id);
+        get => Db.Get<Mod>(ModId);
+        init => FileAttributes.ModId.Add(this, value.Id);
     }
 }

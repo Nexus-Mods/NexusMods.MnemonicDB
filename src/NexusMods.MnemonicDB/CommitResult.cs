@@ -13,7 +13,7 @@ public class CommitResult(IDb db, IDictionary<EntityId, EntityId> remaps) : ICom
 
     public T Remap<T>(T model) where T : struct, IEntity
     {
-        return db.Get<T>(remaps[model.Header.Id]);
+        return db.Get<T>(remaps[model.Id]);
     }
 
     /// <inheritdoc />

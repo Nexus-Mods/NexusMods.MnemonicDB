@@ -28,15 +28,6 @@ internal class Transaction(Connection connection) : ITransaction
         return await connection.Transact(_datoms);
     }
 
-    public ModelHeader New()
-    {
-        return new ModelHeader
-        {
-            Id = TempId(),
-            Tx = this
-        };
-    }
-
     /// <inheritdoc />
     public TxId ThisTxId => TxId.From(Ids.MinId(Ids.Partition.Tmp));
 }

@@ -29,7 +29,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 Size = Size.From(idx),
                 ModId = EntityId.From(1)
             };
-            ids.Add(file.Header.Id);
+            ids.Add(file.Id);
         }
 
         var oldTx = Connection.TxId;
@@ -62,7 +62,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         };
         var result = await tx.Commit();
 
-        var modId = result[file.Header.Id];
+        var modId = result[file.Id];
         txEs.Add(result.NewTx);
 
         for (var i = 0; i < times; i++)
@@ -101,7 +101,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var result = await tx.Commit();
 
-        var realId = result[file.Header.Id];
+        var realId = result[file.Id];
         var originalDb = Connection.Db;
 
         // Validate the data
@@ -147,12 +147,12 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         };
 
         // Attach extra attributes to the entity
-        ArchiveFileAttributes.Path.Add(tx, file.Header.Id, "C:\\test.zip");
-        ArchiveFileAttributes.Hash.Add(tx, file.Header.Id, Hash.From(0xFEEDBEEF));
+        ArchiveFileAttributes.Path.Add(tx, file.Id, "C:\\test.zip");
+        ArchiveFileAttributes.Hash.Add(tx, file.Id, Hash.From(0xFEEDBEEF));
         var result = await tx.Commit();
 
 
-        var realId = result[file.Header.Id];
+        var realId = result[file.Id];
         var db = Connection.Db;
 
         // Original data exists
@@ -181,7 +181,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         };
         var result = await tx.Commit();
 
-        var realId = result[file.Header.Id];
+        var realId = result[file.Id];
 
         Connection.Revisions.Subscribe(update =>
         {
@@ -245,7 +245,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             .Should()
             .Be(true, "the temp id should be replaced with a real id");
         firstMod.Loadout.Id.Should().Be(loadout.Id);
-        firstMod.Header.Db.Should().Be(newDb);
+        firstMod.Db.Should().Be(newDb);
         loadout.Name.Should().Be("Test Loadout");
         firstMod.Loadout.Name.Should().Be("Test Loadout");
     }

@@ -13,9 +13,5 @@
         <PackageReference Update="JetBrains.Annotations" Version="2023.3.0"/>
     </ItemGroup>
 
-    <ItemGroup>
-      <Folder Include="DatomIterators\" />
-    </ItemGroup>
-
     <Import Project="$([MSBuild]::GetPathOfFileAbove('NuGet.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
 </Project>

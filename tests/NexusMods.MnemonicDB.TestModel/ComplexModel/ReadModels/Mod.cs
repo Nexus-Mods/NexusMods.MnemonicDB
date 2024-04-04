@@ -5,38 +5,41 @@ using FileAttributes = NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes.Fi
 
 namespace NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 
-public struct Mod(ModelHeader header) : IEntity
+public class Mod : AEntity
 {
-    public Mod(ITransaction tx) : this(tx.New()) { }
 
-    public ModelHeader Header { get => header; set => header = value; }
+    public Mod(ITransaction tx) : base(tx) { }
+
+    public Mod(EntityId id, IDb db) : base(id, db) { }
+
+    public static IEntity Create(EntityId id, IDb db) => new Mod(id, db);
 
 
     public string Name
     {
-        get => ModAttributes.Name.Get(ref header);
-        init => ModAttributes.Name.Add(ref header, value);
+        get => ModAttributes.Name.Get(this);
+        init => ModAttributes.Name.Add(this, value);
     }
 
     public Uri Source
     {
-        get => ModAttributes.Source.Get(ref header);
-        init => ModAttributes.Source.Add(ref header, value);
+        get => ModAttributes.Source.Get(this);
+        init => ModAttributes.Source.Add(this, value);
     }
 
     public EntityId LoadoutId
     {
-        get => ModAttributes.LoadoutId.Get(ref header);
-        init => ModAttributes.LoadoutId.Add(ref header, value);
+        get => ModAttributes.LoadoutId.Get(this);
+        init => ModAttributes.LoadoutId.Add(this, value);
     }
 
     public Loadout Loadout
     {
-        get => header.Db.Get<Loadout>(LoadoutId);
-        init => ModAttributes.LoadoutId.Add(ref header, value.Id);
+        get => Db.Get<Loadout>(LoadoutId);
+        init => ModAttributes.LoadoutId.Add(this, value.Id);
     }
 
-    public IEnumerable<File> Files => header.GetReverse<FileAttributes.ModId, File>();
+    public IEnumerable<File> Files => GetReverse<FileAttributes.ModId, File>();
 
 
 }

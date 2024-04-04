@@ -11,35 +11,38 @@ namespace NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 /// Read model the demonstrates the use of multiple attributes with the same short name (but unique full name).
 /// Also demonstrates the use of a read model containing attributes from different attribute classes.
 /// </summary>
-public struct ArchiveFile : IEntity
+public class ArchiveFile : AEntity
 {
-    private ModelHeader _header;
+     public ArchiveFile(ITransaction tx) : base(tx) { }
 
-    public ModelHeader Header { get => _header; set => _header = value; }
+     public ArchiveFile(EntityId id, IDb db) : base(id, db) { }
+
+     public static IEntity Create(EntityId id, IDb db) => new ArchiveFile(id, db);
+
 
     public RelativePath Path
     {
-        get => FileAttributes.Path.Get(ref _header);
-        init => FileAttributes.Path.Add(ref _header, value);
+        get => FileAttributes.Path.Get(this);
+        init => FileAttributes.Path.Add(this, value);
     }
 
     public Size Size
     {
-        get => FileAttributes.Size.Get(ref _header);
-        init => FileAttributes.Size.Add(ref _header, value);
+        get => FileAttributes.Size.Get(this);
+        init => FileAttributes.Size.Add(this, value);
     }
 
 
     public RelativePath ArchivePath
     {
-        get => ArchiveFileAttributes.Path.Get(ref _header);
-        init => ArchiveFileAttributes.Path.Add(ref _header, value);
+        get => ArchiveFileAttributes.Path.Get(this);
+        init => ArchiveFileAttributes.Path.Add(this, value);
     }
 
 
     public Hash ArchiveHash
     {
-        get => ArchiveFileAttributes.Hash.Get(ref _header);
-        init => ArchiveFileAttributes.Hash.Add(ref _header, value);
+        get => ArchiveFileAttributes.Hash.Get(this);
+        init => ArchiveFileAttributes.Hash.Add(this, value);
     }
 }

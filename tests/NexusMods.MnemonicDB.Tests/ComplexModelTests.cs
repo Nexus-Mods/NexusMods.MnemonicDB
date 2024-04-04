@@ -189,7 +189,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         {
             totalSize += mod.Files.Sum(f => f.Size);
 
-            if (mod.Header.Id == firstMod.Header.Id)
+            if (mod.Id == firstMod.Id)
                 mod.Files.Count().Should().Be(filesPerMod + extraFiles, "first mod should have the extra files");
             else
                 mod.Files.Count().Should().Be(filesPerMod, "every mod should have the same amount of files");

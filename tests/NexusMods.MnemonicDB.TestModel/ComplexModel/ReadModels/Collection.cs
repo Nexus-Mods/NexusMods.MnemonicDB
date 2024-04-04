@@ -4,37 +4,38 @@ using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
 
 namespace NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 
-public struct Collection(ModelHeader header) : IEntity
+public class Collection : AEntity
 {
-    public Collection(ITransaction tx) : this(tx.New()) { }
-    public ModelHeader Header { get => header; set => header = value; }
+    public Collection(EntityId id, IDb db) : base(id, db) { }
+
+    public Collection(ITransaction tx) : base(tx) { }
 
     public string Name
     {
-        get => CollectionAttributes.Name.Get(ref header);
-        init => CollectionAttributes.Name.Add(ref header, value);
+        get => CollectionAttributes.Name.Get(this);
+        init => CollectionAttributes.Name.Add(this, value);
     }
 
-    public IEnumerable<EntityId> ModIds => CollectionAttributes.Mods.GetAll(ref header);
+    public IEnumerable<EntityId> ModIds => CollectionAttributes.Mods.GetAll(this);
 
     public Collection Attach(Mod mod)
     {
-        CollectionAttributes.Mods.Add(ref header, mod.Header.Id);
+        CollectionAttributes.Mods.Add(this, mod.Id);
         return this;
     }
 
-    public IEnumerable<Mod> Mods => header.Db.Get<Mod>(CollectionAttributes.Mods.GetAll(ref header));
+    public IEnumerable<Mod> Mods => Db.Get<Mod>(CollectionAttributes.Mods.GetAll(this));
 
     public EntityId LoadoutId
     {
-        get => CollectionAttributes.LoadoutId.Get(ref header);
-        init => CollectionAttributes.LoadoutId.Add(ref header, value);
+        get => CollectionAttributes.LoadoutId.Get(this);
+        init => CollectionAttributes.LoadoutId.Add(this, value);
     }
 
     public Loadout Loadout
     {
-        get => header.Db.Get<Loadout>(LoadoutId);
-        init => CollectionAttributes.LoadoutId.Add(ref header, value.Id);
+        get => Db.Get<Loadout>(LoadoutId);
+        init => CollectionAttributes.LoadoutId.Add(this, value.Id);
     }
 
 

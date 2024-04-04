@@ -68,11 +68,11 @@ internal class Db : IDb
         }
     }
 
-    public TValue Get<TAttribute, TValue>(ref ModelHeader header, EntityId id)
+    public TValue Get<TAttribute, TValue>(EntityId id)
         where TAttribute : IAttribute<TValue>
     {
         var attrId = _registry.GetAttributeId<TAttribute>();
-        var entry = _entityCache.Get(this, header.Id);
+        var entry = _entityCache.Get(this, id);
         for (var i = 0; i < entry.Count; i++)
         {
             var datom = entry[i];
@@ -85,11 +85,11 @@ internal class Db : IDb
         throw new KeyNotFoundException();
     }
 
-    public IEnumerable<TValue> GetAll<TAttribute, TValue>(ref ModelHeader model, EntityId modelId)
+    public IEnumerable<TValue> GetAll<TAttribute, TValue>(EntityId id)
         where TAttribute : IAttribute<TValue>
     {
         var attrId = _registry.GetAttributeId<TAttribute>();
-        var results = _entityCache.Get(this, model.Id)
+        var results = _entityCache.Get(this, id)
             .Where(d => d.A == attrId)
             .Select(d => d.Resolve<TValue>());
 
@@ -97,16 +97,9 @@ internal class Db : IDb
     }
 
     public TModel Get<TModel>(EntityId id)
-        where TModel : struct, IEntity
+        where TModel : IEntity
     {
-        ModelHeader header = new()
-        {
-            Id = id,
-            Db = this
-        };
-
-        return MemoryMarshal.CreateReadOnlySpan(ref header, 1)
-            .CastFast<ModelHeader, TModel>()[0];
+        return (TModel)TModel.Create(id, this);
     }
 
     public TModel[] GetReverse<TAttribute, TModel>(EntityId id)

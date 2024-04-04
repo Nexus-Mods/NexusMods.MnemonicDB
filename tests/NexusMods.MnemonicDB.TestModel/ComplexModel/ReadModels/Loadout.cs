@@ -4,21 +4,22 @@ using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
 
 namespace NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 
-public struct Loadout(ModelHeader header) : IEntity
+public class Loadout : AEntity
 {
-    public EntityId Id => header.Id;
+    public Loadout(ITransaction tx) : base(tx) { }
 
-    public Loadout(ITransaction tx) : this(tx.New()) { }
-    public ModelHeader Header { get => header; set => header = value; }
+    public Loadout(EntityId id, IDb db) : base(id, db) { }
+
+    public static IEntity Create(EntityId id, IDb db) => new Loadout(id, db);
 
 
     public string Name
     {
-        get => LoadoutAttributes.Name.Get(ref header);
-        init => LoadoutAttributes.Name.Add(ref header, value);
+        get => LoadoutAttributes.Name.Get(this);
+        init => LoadoutAttributes.Name.Add(this, value);
     }
 
-    public IEnumerable<Mod> Mods => header.GetReverse<ModAttributes.LoadoutId, Mod>();
+    public IEnumerable<Mod> Mods => GetReverse<ModAttributes.LoadoutId, Mod>();
 
-    public IEnumerable<Collection> Collections => header.GetReverse<CollectionAttributes.LoadoutId, Collection>();
+    public IEnumerable<Collection> Collections => GetReverse<CollectionAttributes.LoadoutId, Collection>();
 }

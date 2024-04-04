@@ -33,6 +33,4 @@ public interface ITransaction
     ///     Commits the transaction
     /// </summary>
     Task<ICommitResult> Commit();
-
-    ModelHeader New();
 }
