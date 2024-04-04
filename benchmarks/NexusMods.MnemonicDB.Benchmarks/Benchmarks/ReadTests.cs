@@ -20,6 +20,7 @@ public class ReadTests : ABenchmark
     private EntityId[] _entityIds = null!;
     private EntityId _readId;
     private File[] _preLoaded = null!;
+    private EntityId _modId;
 
     [Params(1, 1000, MaxCount)] public int Count { get; set; } = MaxCount;
 
@@ -50,6 +51,8 @@ public class ReadTests : ABenchmark
         }
 
         var result = await tx.Commit();
+
+        _modId = result[tmpMod.Id];
 
         _entityIds = entityIds.Select(e => result[e]).ToArray();
 
@@ -86,5 +89,19 @@ public class ReadTests : ABenchmark
     {
         return _preLoaded
             .Sum(e => (long)e.Size.Value);
+    }
+
+    [Benchmark]
+    public ulong ReadAllFromMod()
+    {
+        var mod = _db.Get<Mod>(_modId);
+        ulong sum = 0;
+        for (var i = 0; i < mod.Files.Count; i++)
+        {
+            var file = mod.Files[i];
+            sum += file.Size.Value;
+        }
+
+        return sum;
     }
 }

@@ -8,7 +8,7 @@ using JetBrains.Profiler.Api;
 using NexusMods.MnemonicDB.Benchmarks.Benchmarks;
 
 
-#if DEBUG
+//#if DEBUG
 
 var benchmark = new ReadTests
 {
@@ -22,18 +22,19 @@ ulong result = 0;
 
 MeasureProfiler.StartCollectingData();
 //MemoryProfiler.CollectAllocations(true);
-for (var i = 0; i < 10000000; i++)
-    result = benchmark.ReadProperty();
+for (var i = 0; i < 10000; i++)
+    result = benchmark.ReadAllFromMod();
 //MemoryProfiler.CollectAllocations(false);
 
 MeasureProfiler.SaveData();
 Console.WriteLine("Elapsed: " + sw.Elapsed + " Result: " + result);
 
+/*
 #else
 
 BenchmarkRunner.Run<ReadTests>();
 
 #endif
 
-
+*/
 

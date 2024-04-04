@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
@@ -57,7 +58,7 @@ public interface IDb : IDisposable
     ///     Gets a read model for every enitity that references the given entity id
     ///     with the given attribute.
     /// </summary>
-    public TModel[] GetReverse<TAttribute, TModel>(EntityId id)
+    public Entities<EntityIds, TModel> GetReverse<TAttribute, TModel>(EntityId id)
         where TModel : IEntity
         where TAttribute : IAttribute<EntityId>;
 

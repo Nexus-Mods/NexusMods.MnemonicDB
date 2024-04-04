@@ -43,4 +43,9 @@ public interface IAttributeRegistry
     /// Assumes the given datom is a value of the given type and deserializes it
     /// </summary>
     public TVal Resolve<TVal>(ReadOnlySpan<byte> datom);
+
+    /// <summary>
+    /// Gets the registered instance of the given attribute
+    /// </summary>
+    TAttribute GetAttribute<TAttribute>() where TAttribute : IAttribute;
 }

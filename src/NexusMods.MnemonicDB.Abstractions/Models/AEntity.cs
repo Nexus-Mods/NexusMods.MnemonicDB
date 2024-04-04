@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
 namespace NexusMods.MnemonicDB.Abstractions.Models;
 
@@ -33,7 +34,7 @@ public abstract class AEntity : IEntity
     /// <summary>
     /// Get the reverse of a relationship.
     /// </summary>
-    protected IEnumerable<TModel> GetReverse<TAttr, TModel>()
+    protected Entities<EntityIds, TModel> GetReverse<TAttr, TModel>()
         where TAttr : IAttribute<EntityId>
         where TModel : IEntity
     {

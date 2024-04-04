@@ -1,4 +1,5 @@
 ﻿using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
 using FileAttributes = NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes.FileAttributes;
@@ -31,7 +32,7 @@ public class Mod(ITransaction tx) : AEntity(tx)
         init => ModAttributes.LoadoutId.Add(this, value.Id);
     }
 
-    public IEnumerable<File> Files => GetReverse<FileAttributes.ModId, File>();
+    public Entities<EntityIds, File> Files => GetReverse<FileAttributes.ModId, File>();
 
 
 }

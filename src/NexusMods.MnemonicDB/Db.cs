@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Comparators;
@@ -108,17 +109,13 @@ internal class Db : IDb
         return EntityConstructors<TModel>.Constructor(id, this);
     }
 
-
-
-
-    public TModel[] GetReverse<TAttribute, TModel>(EntityId id)
+    public Entities<EntityIds, TModel> GetReverse<TAttribute, TModel>(EntityId id)
         where TAttribute : IAttribute<EntityId>
         where TModel : IEntity
     {
-        return _reverseCache.Get(this, (id, typeof(TAttribute)))
-            .Select(d => d.E)
-            .Select(Get<TModel>)
-            .ToArray();
+        var segment = _reverseCache.Get(this, (id, typeof(TAttribute)));
+        var ids = new EntityIds(segment, 0, segment.Count);
+        return new Entities<EntityIds, TModel>(ids, this);
     }
 
     public IEnumerable<IReadDatom> Datoms(EntityId entityId)

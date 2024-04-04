@@ -89,6 +89,14 @@ public class AttributeRegistry : IAttributeRegistry
         }
     }
 
+    public TAttribute GetAttribute<TAttribute>() where TAttribute : IAttribute
+    {
+        if (!_attributesByType.TryGetValue(typeof(TAttribute), out var attribute))
+            throw new InvalidOperationException($"No attribute found for type {typeof(TAttribute)}");
+
+        return (TAttribute)attribute;
+    }
+
     public int CompareValues(AttributeId id, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         if (a.Length == 0 || b.Length == 0) return a.Length < b.Length ? -1 : a.Length > b.Length ? 1 : 0;

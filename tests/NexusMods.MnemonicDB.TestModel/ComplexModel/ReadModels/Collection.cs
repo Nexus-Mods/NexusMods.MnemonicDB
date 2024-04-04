@@ -1,4 +1,5 @@
 ﻿using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
 
@@ -12,7 +13,7 @@ public class Collection(ITransaction tx) : AEntity(tx)
         init => CollectionAttributes.Name.Add(this, value);
     }
 
-    public IEnumerable<EntityId> ModIds => CollectionAttributes.Mods.GetAll(this);
+    public Values<EntityId> ModIds => CollectionAttributes.Mods.GetAll(this);
 
     public Collection Attach(Mod mod)
     {
@@ -20,7 +21,7 @@ public class Collection(ITransaction tx) : AEntity(tx)
         return this;
     }
 
-    public IEnumerable<Mod> Mods => Db.Get<Mod>(CollectionAttributes.Mods.GetAll(this));
+    public Entities<Values<EntityId>, Mod> Mods => CollectionAttributes.Mods.GetAll(this).As<Mod>(Db);
 
     public EntityId LoadoutId
     {

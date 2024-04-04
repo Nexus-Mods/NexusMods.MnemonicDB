@@ -1,11 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using Microsoft.Win32;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
-using Reloaded.Memory.Extensions;
 
-namespace NexusMods.MnemonicDB.Abstractions.DatomIterators;
+namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
 /// <summary>
 ///  A segment of an index, used most often as a cache. For example when an entity is read from the database,
