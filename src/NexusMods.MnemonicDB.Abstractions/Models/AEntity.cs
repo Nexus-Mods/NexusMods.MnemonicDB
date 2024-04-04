@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 
 namespace NexusMods.MnemonicDB.Abstractions.Models;
 
@@ -29,11 +30,28 @@ public abstract class AEntity : IEntity
     /// </summary>
     public ITransaction? Tx { get; }
 
+    /// <summary>
+    /// Get the reverse of a relationship.
+    /// </summary>
     protected IEnumerable<TModel> GetReverse<TAttr, TModel>()
         where TAttr : IAttribute<EntityId>
         where TModel : IEntity
     {
         return Db.GetReverse<TAttr, TModel>(Id);
+    }
+
+    private IndexSegment _indexSegment = default;
+
+    /// <summary>
+    /// Get the segment of the entity, if not loaded, attempts to load it.
+    /// </summary>
+    public ref IndexSegment GetSegment()
+    {
+        if (_indexSegment.Valid)
+            return ref _indexSegment;
+
+        _indexSegment = Db.GetSegment(Id);
+        return ref _indexSegment;
     }
 
     /// <summary>

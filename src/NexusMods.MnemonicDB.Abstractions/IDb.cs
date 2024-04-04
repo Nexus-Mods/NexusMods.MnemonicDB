@@ -74,4 +74,9 @@ public interface IDb : IDisposable
     /// </summary>
     IEnumerable<TValueType> GetAll<TAttribute, TValueType>(EntityId modelId)
         where TAttribute : IAttribute<TValueType>;
+
+    /// <summary>
+    /// Gets the index segment for the given entity id.
+    /// </summary>
+    IndexSegment GetSegment(EntityId id);
 }

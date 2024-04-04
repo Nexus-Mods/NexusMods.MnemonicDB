@@ -18,25 +18,22 @@ var benchmark = new ReadTests
 var sw = Stopwatch.StartNew();
 await benchmark.Setup();
 
-long result = 0;
+ulong result = 0;
 
-//MeasureProfiler.StartCollectingData();
-MemoryProfiler.CollectAllocations(true);
-for (var i = 0; i < 100000; i++)
-    result = benchmark.ReadAllPreloaded();
-MemoryProfiler.CollectAllocations(false);
+MeasureProfiler.StartCollectingData();
+//MemoryProfiler.CollectAllocations(true);
+for (var i = 0; i < 10000000; i++)
+    result = benchmark.ReadProperty();
+//MemoryProfiler.CollectAllocations(false);
 
-//MeasureProfiler.SaveData();
+MeasureProfiler.SaveData();
 Console.WriteLine("Elapsed: " + sw.Elapsed + " Result: " + result);
-
-
-
-
 
 #else
 
 BenchmarkRunner.Run<ReadTests>();
 
 #endif
+
 
 

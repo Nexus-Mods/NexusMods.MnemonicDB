@@ -28,6 +28,11 @@ public readonly struct IndexSegment : IEnumerable<Datom>
     }
 
     /// <summary>
+    /// Returns true if this segment is valid (contains data)
+    /// </summary>
+    public bool Valid => !_data.IsEmpty;
+
+    /// <summary>
     /// The number of datoms in this segment
     /// </summary>
     public int Count => _offsets.Length - 1;

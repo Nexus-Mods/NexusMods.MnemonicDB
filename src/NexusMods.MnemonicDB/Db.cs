@@ -86,6 +86,11 @@ internal class Db : IDb
         throw new KeyNotFoundException();
     }
 
+    public IndexSegment GetSegment(EntityId id)
+    {
+        return _entityCache.Get(this, id);
+    }
+
     public IEnumerable<TValue> GetAll<TAttribute, TValue>(EntityId id)
         where TAttribute : IAttribute<TValue>
     {

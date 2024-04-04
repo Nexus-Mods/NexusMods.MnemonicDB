@@ -125,14 +125,62 @@ public class Attribute<TAttribute, TValueType> : IAttribute<TValueType>
     /// <inheritdoc />
     public IValueSerializer<TValueType> Serializer => _serializer;
 
-    public static TValueType Get(IEntity ent)
+    private class InlineCache
     {
-        return ent.Db.Get<TAttribute, TValueType>(ent.Id);
+        public required IAttributeRegistry Registry = null!;
+        public required AttributeId Id;
     }
 
+    private static InlineCache _cache = new () { Registry = null!, Id = default! };
+
+    /// <summary>
+    /// Gets the value for this attribute on the given entity
+    /// </summary>
+    public static TValueType Get(IEntity entity)
+    {
+        var segment = entity.Db.GetSegment(entity.Id);
+        var cache = _cache;
+        if (cache.Registry != entity.Db.Registry)
+        {
+            cache = new InlineCache
+            {
+                Registry = entity.Db.Registry,
+                Id = entity.Db.Registry.GetAttributeId(typeof(TAttribute))
+            };
+            _cache = cache;
+        }
+        for (var i = 0; i < segment.Count; i++)
+        {
+            var datom = segment[i];
+            if (datom.A == cache.Id)
+            {
+                return datom.Resolve<TValueType>();
+            }
+        }
+        ThrowKeyNotFoundException(entity.Id);
+        return default!;
+    }
+
+    private static void ThrowKeyNotFoundException(EntityId id)
+    {
+        throw new KeyNotFoundException($"Attribute {typeof(TAttribute).Name} not found on entity {id}");
+    }
+
+    /// <summary>
+    /// Gets all values for this attribute on the given entity
+    /// </summary>
     public static IEnumerable<TValueType> GetAll(IEntity ent)
     {
-        return ent.Db.GetAll<TAttribute, TValueType>(ent.Id);
+        var segment = ent.Db.GetSegment(ent.Id);
+        var attrId = ent.Db.Registry.GetAttributeId(typeof(TAttribute));
+        for (var i = 0; i < segment.Count; i++)
+        {
+            var datom = segment[i];
+            if (datom.A == attrId)
+            {
+                yield return datom.Resolve<TValueType>();
+            }
+        }
     }
 
     /// <inheritdoc />

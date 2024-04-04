@@ -69,6 +69,12 @@ public class ReadTests : ABenchmark
     }
 
     [Benchmark]
+    public ulong ReadProperty()
+    {
+        return _preLoaded[0].Size.Value;
+    }
+
+    [Benchmark]
     public long ReadAll()
     {
         return _db.Get<File>(_entityIds)
