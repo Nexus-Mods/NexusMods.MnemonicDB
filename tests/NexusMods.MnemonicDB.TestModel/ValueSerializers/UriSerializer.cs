@@ -15,15 +15,9 @@ public class UriSerializer : IValueSerializer<Uri>
         return a.SequenceCompareTo(b);
     }
 
-    public void Write<TWriter>(Uri value, TWriter buffer) where TWriter : IBufferWriter<byte>
+    public Uri Read(ReadOnlySpan<byte> buffer)
     {
-        throw new NotImplementedException();
-    }
-
-    public int Read(ReadOnlySpan<byte> buffer, out Uri val)
-    {
-        val = new Uri(_encoding.GetString(buffer));
-        return buffer.Length;
+        return new Uri(_encoding.GetString(buffer));
     }
 
     public void Serialize<TWriter>(Uri value, TWriter buffer) where TWriter : IBufferWriter<byte>

@@ -5,27 +5,28 @@ using NexusMods.MnemonicDB.Abstractions;
 
 namespace NexusMods.MnemonicDB.Storage.Serializers;
 
+/// <inheritdoc />
 public class EntityIdSerializer : IValueSerializer<EntityId>
 {
+    /// <inheritdoc />
     public Type NativeType => typeof(EntityId);
+
+    /// <inheritdoc />
     public Symbol UniqueId => Symbol.Intern<EntityIdSerializer>();
 
+    /// <inheritdoc />
     public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
     {
         return MemoryMarshal.Read<EntityId>(a).CompareTo(MemoryMarshal.Read<EntityId>(b));
     }
 
-    public void Write<TWriter>(EntityId value, TWriter buffer) where TWriter : IBufferWriter<byte>
+    /// <inheritdoc />
+    public EntityId Read(ReadOnlySpan<byte> buffer)
     {
-        throw new NotImplementedException();
+        return MemoryMarshal.Read<EntityId>(buffer);
     }
 
-    public int Read(ReadOnlySpan<byte> buffer, out EntityId val)
-    {
-        val = MemoryMarshal.Read<EntityId>(buffer);
-        return sizeof(ulong);
-    }
-
+    /// <inheritdoc />
     public void Serialize<TWriter>(EntityId value, TWriter buffer) where TWriter : IBufferWriter<byte>
     {
         var span = buffer.GetSpan(sizeof(ulong));

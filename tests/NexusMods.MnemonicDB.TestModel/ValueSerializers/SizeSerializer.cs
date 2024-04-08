@@ -16,15 +16,9 @@ public class SizeSerializer : IValueSerializer<Size>
         return MemoryMarshal.Read<Size>(a).CompareTo(MemoryMarshal.Read<Size>(b));
     }
 
-    public void Write<TWriter>(Size value, TWriter buffer) where TWriter : IBufferWriter<byte>
+    public Size Read(ReadOnlySpan<byte> buffer)
     {
-        throw new NotImplementedException();
-    }
-
-    public int Read(ReadOnlySpan<byte> buffer, out Size val)
-    {
-        val = MemoryMarshal.Read<Size>(buffer);
-        return Unsafe.SizeOf<Size>();
+        return MemoryMarshal.Read<Size>(buffer);
     }
 
     public void Serialize<TWriter>(Size value, TWriter buffer) where TWriter : IBufferWriter<byte>

@@ -81,11 +81,10 @@ public class Attribute<TAttribute, TValueType> : IAttribute<TValueType>
     public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx,
         bool isRetract)
     {
-        _serializer.Read(value, out var val);
         return new ReadDatom
         {
             E = entityId,
-            V = val,
+            V = _serializer.Read(value),
             T = tx,
             IsRetract = isRetract
         };

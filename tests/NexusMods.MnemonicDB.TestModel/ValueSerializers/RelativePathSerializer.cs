@@ -17,15 +17,9 @@ public class RelativePathSerializer : IValueSerializer<RelativePath>
         return a.SequenceCompareTo(b);
     }
 
-    public void Write<TWriter>(RelativePath value, TWriter buffer) where TWriter : IBufferWriter<byte>
+    public RelativePath Read(ReadOnlySpan<byte> buffer)
     {
-        throw new NotImplementedException();
-    }
-
-    public int Read(ReadOnlySpan<byte> buffer, out RelativePath val)
-    {
-        val = _encoding.GetString(buffer);
-        return buffer.Length;
+        return _encoding.GetString(buffer);
     }
 
     public void Serialize<TWriter>(RelativePath value, TWriter buffer) where TWriter : IBufferWriter<byte>

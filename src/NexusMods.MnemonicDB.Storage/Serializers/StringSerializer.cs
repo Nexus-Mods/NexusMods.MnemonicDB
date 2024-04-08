@@ -5,28 +5,30 @@ using NexusMods.MnemonicDB.Abstractions;
 
 namespace NexusMods.MnemonicDB.Storage.Serializers;
 
+/// <inheritdoc />
 public class StringSerializer : IValueSerializer<string>
 {
     private static readonly Encoding _encoding = Encoding.UTF8;
+
+    /// <inheritdoc />
     public Type NativeType => typeof(string);
+
+    /// <inheritdoc />
     public Symbol UniqueId { get; } = Symbol.Intern<StringSerializer>();
 
+    /// <inheritdoc />
     public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
     {
         return a.SequenceCompareTo(b);
     }
 
-    public void Write<TWriter>(string value, TWriter buffer) where TWriter : IBufferWriter<byte>
+    /// <inheritdoc />
+    public string Read(ReadOnlySpan<byte> buffer)
     {
-        throw new NotImplementedException();
+        return _encoding.GetString(buffer);
     }
 
-    public int Read(ReadOnlySpan<byte> buffer, out string val)
-    {
-        val = _encoding.GetString(buffer);
-        return buffer.Length;
-    }
-
+    /// <inheritdoc />
     public void Serialize<TWriter>(string value, TWriter buffer) where TWriter : IBufferWriter<byte>
     {
         // TODO: No reason to walk the string twice, we should do this in one pass

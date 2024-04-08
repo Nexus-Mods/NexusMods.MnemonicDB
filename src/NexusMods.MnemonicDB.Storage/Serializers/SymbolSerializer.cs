@@ -5,12 +5,14 @@ using NexusMods.MnemonicDB.Abstractions;
 
 namespace NexusMods.MnemonicDB.Storage.Serializers;
 
-public class SymbolSerializer : IValueSerializer<Symbol>
+internal class SymbolSerializer : IValueSerializer<Symbol>
 {
     private static readonly Encoding _encoding = Encoding.UTF8;
 
     public static Symbol Id { get; } = Symbol.Intern<SymbolSerializer>();
+
     public Type NativeType => typeof(Symbol);
+
     public Symbol UniqueId => Id;
 
     public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
@@ -18,15 +20,9 @@ public class SymbolSerializer : IValueSerializer<Symbol>
         return a.SequenceCompareTo(b);
     }
 
-    public void Write<TWriter>(Symbol value, TWriter buffer) where TWriter : IBufferWriter<byte>
+    public Symbol Read(ReadOnlySpan<byte> buffer)
     {
-        throw new NotImplementedException();
-    }
-
-    public int Read(ReadOnlySpan<byte> buffer, out Symbol val)
-    {
-        val = Symbol.InternPreSanitized(_encoding.GetString(buffer));
-        return _encoding.GetByteCount(val.Id);
+        return Symbol.InternPreSanitized(_encoding.GetString(buffer));
     }
 
     public void Serialize<TWriter>(Symbol value, TWriter buffer) where TWriter : IBufferWriter<byte>

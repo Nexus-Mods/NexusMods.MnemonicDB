@@ -84,8 +84,7 @@ public class AttributeRegistry : IAttributeRegistry
 
         unsafe
         {
-            ((IValueSerializer<TVal>)attribute.Serializer).Read(datom.SliceFast(sizeof(KeyPrefix)), out var val);
-            return val;
+            return ((IValueSerializer<TVal>)attribute.Serializer).Read(datom.SliceFast(sizeof(KeyPrefix)));
         }
     }
 
