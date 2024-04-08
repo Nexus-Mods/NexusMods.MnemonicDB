@@ -47,6 +47,9 @@
       <None Update="DbTests.CanGetCommitUpdates.verified.txt">
         <DependentUpon>DbTests.cs</DependentUpon>
       </None>
+      <None Update="DbTests.CanFindEntitiesByAttribute.verified.txt">
+        <DependentUpon>DbTests.cs</DependentUpon>
+      </None>
     </ItemGroup>
 
 </Project>

@@ -250,4 +250,19 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         firstMod.Loadout.Name.Should().Be("Test Loadout");
     }
 
+    [Fact]
+    public async Task CanFindEntitiesByAttribute()
+    {
+        await InsertExampleData();
+
+        var db = Connection.Db;
+
+        var ids = from id in db.Find<ModAttributes.Name>()
+            let thisName = db.Get<ModAttributes.Name, string>(id)
+            from byFind in db.FindIndexed<ModAttributes.Name, string>(thisName)
+            select (id.Value.ToString("x"), thisName, byFind.Value.ToString("x"));
+
+        await Verify(ids);
+    }
+
 }

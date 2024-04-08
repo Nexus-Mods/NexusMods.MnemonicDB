@@ -7,7 +7,7 @@ public class ModAttributes
     /// <summary>
     ///     The Name of the mod
     /// </summary>
-    public class Name : Attribute<Name, string>;
+    public class Name() : Attribute<Name, string>(isIndexed: true);
 
     /// <summary>
     ///     The download source of the mod

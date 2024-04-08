@@ -76,6 +76,20 @@ public interface IDb : IDisposable
     IEnumerable<TValueType> GetAll<TAttribute, TValueType>(EntityId modelId)
         where TAttribute : IAttribute<TValueType>;
 
+
+    /// <summary>
+    /// Finds all the entity ids that have the given attribute with the given value.
+    /// </summary>
+    IEnumerable<EntityId> FindIndexed<TAttribute, TValue>(TValue value)
+        where TAttribute : IAttribute<TValue>;
+
+    /// <summary>
+    /// Finds all the entity ids that have the given attribute.
+    /// </summary>
+    IEnumerable<EntityId> Find<TAttribute>()
+        where TAttribute : IAttribute;
+
+
     /// <summary>
     /// Gets the index segment for the given entity id.
     /// </summary>
