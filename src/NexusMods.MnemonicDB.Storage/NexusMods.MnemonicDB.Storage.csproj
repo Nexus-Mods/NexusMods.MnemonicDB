@@ -8,7 +8,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="K4os.Compression.LZ4" Version="1.3.8"/>
         <PackageReference Include="LinqGen" Version="0.3.1"/>
         <PackageReference Include="LinqGen.Generator" Version="0.3.1"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1"/>
@@ -23,4 +22,5 @@
         <ProjectReference Include="..\NexusMods.MnemonicDB.Abstractions\NexusMods.MnemonicDB.Abstractions.csproj"/>
     </ItemGroup>
 
+    <Import Project="$([MSBuild]::GetPathOfFileAbove('NuGet.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
 </Project>
