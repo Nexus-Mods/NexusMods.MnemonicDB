@@ -5,7 +5,7 @@ using NexusMods.MnemonicDB.Abstractions;
 
 namespace NexusMods.MnemonicDB.Storage.Serializers;
 
-public class TxIdSerializer : IValueSerializer<TxId>
+internal class TxIdSerializer : IValueSerializer<TxId>
 {
     public Type NativeType => typeof(TxId);
     public Symbol UniqueId { get; } = Symbol.Intern<TxIdSerializer>();
@@ -20,10 +20,9 @@ public class TxIdSerializer : IValueSerializer<TxId>
         throw new NotImplementedException();
     }
 
-    public int Read(ReadOnlySpan<byte> buffer, out TxId val)
+    public TxId Read(ReadOnlySpan<byte> buffer)
     {
-        val = MemoryMarshal.Read<TxId>(buffer);
-        return sizeof(ulong);
+        return MemoryMarshal.Read<TxId>(buffer);
     }
 
     public void Serialize<TWriter>(TxId value, TWriter buffer) where TWriter : IBufferWriter<byte>

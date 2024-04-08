@@ -34,21 +34,9 @@ public interface IValueSerializer
 public interface IValueSerializer<T> : IValueSerializer
 {
     /// <summary>
-    ///     Write to a IBufferWriter
-    /// </summary>
-    /// <param name="value"></param>
-    /// <param name="buffer"></param>
-    /// <typeparam name="TWriter"></typeparam>
-    public void Write<TWriter>(T value, TWriter buffer)
-        where TWriter : IBufferWriter<byte>;
-
-    /// <summary>
     ///     Reads from the Buffer returning the number of bytes consumed
     /// </summary>
-    /// <param name="buffer"></param>
-    /// <param name="val"></param>
-    /// <returns></returns>
-    public int Read(ReadOnlySpan<byte> buffer, out T val);
+    public T Read(ReadOnlySpan<byte> buffer);
 
     /// <summary>
     ///     Returns true if the value is inlined, otherwise false and the inlined

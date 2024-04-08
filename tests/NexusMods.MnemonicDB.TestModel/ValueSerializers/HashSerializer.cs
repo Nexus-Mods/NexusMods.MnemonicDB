@@ -22,10 +22,9 @@ public class HashSerializer : IValueSerializer<Hash>
         throw new NotImplementedException();
     }
 
-    public int Read(ReadOnlySpan<byte> buffer, out Hash val)
+    public Hash Read(ReadOnlySpan<byte> buffer)
     {
-        val = MemoryMarshal.Read<Hash>(buffer);
-        return Unsafe.SizeOf<Hash>();
+        return MemoryMarshal.Read<Hash>(buffer);
     }
 
     public void Serialize<TWriter>(Hash value, TWriter buffer) where TWriter : IBufferWriter<byte>
