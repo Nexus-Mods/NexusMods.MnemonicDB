@@ -48,4 +48,11 @@ public interface IAttributeRegistry
     /// Gets the registered instance of the given attribute
     /// </summary>
     TAttribute GetAttribute<TAttribute>() where TAttribute : IAttribute;
+
+    /// <summary>
+    /// Populates the registry with the given attributes, mostly used for
+    /// internal registration of attributes
+    /// </summary>
+    /// <param name="attributes"></param>
+    public void Populate(DbAttribute[] attributes);
 }

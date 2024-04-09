@@ -19,7 +19,7 @@ public class AMnemonicDBTest : IDisposable
 {
     private readonly IAttribute[] _attributes;
     private readonly IServiceProvider _provider;
-    private readonly AttributeRegistry _registry;
+    private AttributeRegistry _registry;
     private readonly IValueSerializer[] _valueSerializers;
     private Backend _backend;
 
@@ -147,6 +147,7 @@ public class AMnemonicDBTest : IDisposable
 
 
         _backend = new Backend(_registry);
+        _registry = new AttributeRegistry(_valueSerializers, _attributes);
         _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
         await _store.Sync();
 

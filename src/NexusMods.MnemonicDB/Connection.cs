@@ -86,7 +86,10 @@ public class Connection : IConnection
 
         var missing = declaredAttributes.Where(a => !existing.ContainsKey(a.Id)).ToArray();
         if (missing.Length == 0)
+        {
+            _store.Registry.Populate(existing.Values.ToArray());
             return;
+        }
 
         var newAttrs = new List<DbAttribute>();
 
