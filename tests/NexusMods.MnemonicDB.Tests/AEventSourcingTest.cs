@@ -15,7 +15,7 @@ using File = NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels.File;
 
 namespace NexusMods.MnemonicDB.Tests;
 
-public class AMnemonicDBTest : IAsyncLifetime
+public class AMnemonicDBTest : IDisposable
 {
     private readonly IAttribute[] _attributes;
     private readonly IServiceProvider _provider;
@@ -24,7 +24,7 @@ public class AMnemonicDBTest : IAsyncLifetime
     private Backend _backend;
 
     private DatomStore _store;
-    protected Connection Connection = null!;
+    protected IConnection Connection;
     protected ILogger Logger;
 
 
@@ -44,6 +44,7 @@ public class AMnemonicDBTest : IAsyncLifetime
         _backend = new Backend(_registry);
 
         _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
+        Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, _valueSerializers, _attributes);
 
         Logger = provider.GetRequiredService<ILogger<AMnemonicDBTest>>();
     }
@@ -70,13 +71,6 @@ public class AMnemonicDBTest : IAsyncLifetime
     where T : IEntity
     {
         return Verify(models.Select(EntityToDictionary).ToArray());
-    }
-
-    public async Task InitializeAsync()
-    {
-        await _store.Sync();
-
-        Connection = await Connection.Start(_store, _valueSerializers, _attributes);
     }
 
     private string Stringify(object value)
@@ -140,10 +134,9 @@ public class AMnemonicDBTest : IAsyncLifetime
 
     }
 
-    public Task DisposeAsync()
+    public void Dispose()
     {
         _store.Dispose();
-        return Task.CompletedTask;
     }
 
 
@@ -157,6 +150,6 @@ public class AMnemonicDBTest : IAsyncLifetime
         _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
         await _store.Sync();
 
-        Connection = await Connection.Start(_store, _valueSerializers, _attributes);
+        Connection = new Connection(_provider.GetRequiredService<ILogger<Connection>>(), _store, _valueSerializers, _attributes);
     }
 }

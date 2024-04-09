@@ -41,6 +41,7 @@ public class DatomStore : IDatomStore
 
     private TxId _asOfTxId = TxId.MinValue;
     private EntityId _nextEntityId;
+    private readonly Task _startupTask;
 
 
     public DatomStore(ILogger<DatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings,
@@ -87,7 +88,7 @@ public class DatomStore : IDatomStore
         registry.Populate(BuiltInAttributes.Initial);
 
         _txChannel = Channel.CreateUnbounded<PendingTransaction>();
-        var _ = Bootstrap();
+        _startupTask = Bootstrap();
         Task.Run(ConsumeTransactions);
     }
 
@@ -95,12 +96,14 @@ public class DatomStore : IDatomStore
     public IAttributeRegistry Registry => _registry;
 
 
+    /// <inheritdoc />
     public async Task<TxId> Sync()
     {
         await Transact(Enumerable.Empty<IWriteDatom>());
         return _asOfTxId;
     }
 
+    /// <inheritdoc />
     public async Task<StoreResult> Transact(IEnumerable<IWriteDatom> datoms)
     {
         var pending = new PendingTransaction { Data = datoms.ToArray() };
@@ -112,6 +115,7 @@ public class DatomStore : IDatomStore
 
     public IObservable<(TxId TxId, ISnapshot Snapshot)> TxLog => _updatesSubject;
 
+    /// <inheritdoc />
     public async Task RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
     {
         var datoms = new List<IWriteDatom>();
@@ -129,11 +133,15 @@ public class DatomStore : IDatomStore
         _registry.Populate(newAttrsArray);
     }
 
+    /// <inheritdoc />
     public ISnapshot GetSnapshot()
     {
+        if (!_startupTask.IsCompleted)
+            _startupTask.Wait();
         return _backend.GetSnapshot();
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         _updatesSubject.Dispose();
@@ -143,7 +151,6 @@ public class DatomStore : IDatomStore
 
     private async Task ConsumeTransactions()
     {
-        var sw = Stopwatch.StartNew();
         while (await _txChannel.Reader.WaitToReadAsync())
         {
             var pendingTransaction = await _txChannel.Reader.ReadAsync();

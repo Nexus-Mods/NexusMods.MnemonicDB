@@ -4,7 +4,9 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Storage;
 
 namespace NexusMods.MnemonicDB;
@@ -14,20 +16,40 @@ namespace NexusMods.MnemonicDB;
 /// </summary>
 public class Connection : IConnection
 {
-    private readonly object _lock = new();
     private readonly IDatomStore _store;
+    private readonly Task _startupTask;
 
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    private Connection(IDatomStore store)
+    public Connection(ILogger<Connection> logger, IDatomStore store, IEnumerable<IValueSerializer> serializers, IEnumerable<IAttribute> declaredAttributes)
     {
         _store = store;
+        // Async startup routines, we'll deref this task when we interact with the store
+        _startupTask = Task.Run(async () =>
+        {
+            try
+            {
+                await AddMissingAttributes(serializers, declaredAttributes);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to add missing attributes");
+            }
+        });
     }
 
 
     /// <inheritdoc />
-    public IDb Db => new Db(_store.GetSnapshot(), this, TxId, (AttributeRegistry)_store.Registry);
+    public IDb Db
+    {
+        get
+        {
+            if (!_startupTask.IsCompleted)
+                _startupTask.Wait();
+            return new Db(_store.GetSnapshot(), this, TxId, (AttributeRegistry)_store.Registry);
+        }
+    }
 
 
     /// <inheritdoc />
@@ -36,6 +58,8 @@ public class Connection : IConnection
     /// <inheritdoc />
     public IDb AsOf(TxId txId)
     {
+        if (!_startupTask.IsCompleted)
+            _startupTask.Wait();
         var snapshot = new AsOfSnapshot(_store.GetSnapshot(), txId, (AttributeRegistry)_store.Registry);
         return new Db(snapshot, this, txId, (AttributeRegistry)_store.Registry);
     }
@@ -43,35 +67,14 @@ public class Connection : IConnection
     /// <inheritdoc />
     public ITransaction BeginTransaction()
     {
+        if (!_startupTask.IsCompleted)
+            _startupTask.Wait();
         return new Transaction(this);
     }
 
     /// <inheritdoc />
     public IObservable<IDb> Revisions => _store.TxLog
         .Select(log => new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry));
-
-    /// <summary>
-    ///     Creates and starts a new connection, some setup and reflection is done here so it is async
-    /// </summary>
-    public static async Task<Connection> Start(IDatomStore store, IEnumerable<IValueSerializer> serializers,
-        IEnumerable<IAttribute> declaredAttributes)
-    {
-        var conn = new Connection(store);
-        await conn.AddMissingAttributes(serializers, declaredAttributes);
-        return conn;
-    }
-
-    /// <summary>
-    ///     Creates and starts a new connection, some setup and reflection is done here so it is async
-    /// </summary>
-    public static async Task<Connection> Start(IServiceProvider provider)
-    {
-        var db = provider.GetRequiredService<IDatomStore>();
-        await db.Sync();
-        return await Start(provider.GetRequiredService<IDatomStore>(),
-            provider.GetRequiredService<IEnumerable<IValueSerializer>>(),
-            provider.GetRequiredService<IEnumerable<IAttribute>>());
-    }
 
 
     private async Task AddMissingAttributes(IEnumerable<IValueSerializer> valueSerializers,
@@ -102,9 +105,9 @@ public class Connection : IConnection
 
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
-        var db = Db;
+        var snapshot = _store.GetSnapshot();
         var start = BuiltInAttributes.UniqueIdEntityId;
-        var attrIds = db.Snapshot.Datoms(IndexType.AEVTCurrent, start, AttributeId.From(start.Value + 1))
+        var attrIds = snapshot.Datoms(IndexType.AEVTCurrent, start, AttributeId.From(start.Value + 1))
             .Select(d => d.E);
 
         foreach (var attrId in attrIds)
@@ -112,7 +115,11 @@ public class Connection : IConnection
             var serializerId = Symbol.Unknown;
             var uniqueId = Symbol.Unknown;
 
-            foreach (var datom in db.Datoms(attrId))
+            var from = new KeyPrefix().Set(attrId, AttributeId.Min, TxId.MinValue, false);
+            var to = new KeyPrefix().Set(attrId, AttributeId.Max, TxId.MaxValue, false);
+
+            foreach (var datom in snapshot.Datoms(IndexType.EAVTCurrent, from, to)
+                         .Select(d => d.Resolved))
                 switch (datom)
                 {
                     case Attribute<BuiltInAttributes.ValueSerializerId, Symbol>.ReadDatom serializerIdDatom:
@@ -127,10 +134,10 @@ public class Connection : IConnection
         }
     }
 
-
-    /// <inheritdoc />
-    public async Task<ICommitResult> Transact(IEnumerable<IWriteDatom> datoms)
+    internal async Task<ICommitResult> Transact(IEnumerable<IWriteDatom> datoms)
     {
+        if (!_startupTask.IsCompleted)
+            await _startupTask;
         var newTx = await _store.Transact(datoms);
         var result = new CommitResult(new Db(newTx.Snapshot, this, newTx.AssignedTxId, (AttributeRegistry)_store.Registry)
             , newTx.Remaps);

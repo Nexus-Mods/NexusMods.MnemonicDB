@@ -41,7 +41,7 @@ var services = host.Services;
 var store = services.GetRequiredService<IDatomStore>();
 await store.Sync();
 
-var connection = await Connection.Start(services);
+var connection = services.GetRequiredService<IConnection>();
 
 ulong batchSize = 1024;
 ulong datomCount = 1_000_000_000;

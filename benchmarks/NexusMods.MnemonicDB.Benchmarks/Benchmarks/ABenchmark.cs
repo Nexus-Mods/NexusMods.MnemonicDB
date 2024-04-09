@@ -33,7 +33,7 @@ public class ABenchmark : IAsyncLifetime
             });
 
         _host = builder.Build();
-        Connection = await MnemonicDB.Connection.Start(Services);
+        Connection = Services.GetRequiredService<IConnection>();
     }
 
     public async Task DisposeAsync()

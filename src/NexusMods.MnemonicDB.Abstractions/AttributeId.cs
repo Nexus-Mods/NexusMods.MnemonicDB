@@ -21,4 +21,9 @@ public readonly partial struct AttributeId
     ///     Minimum value for an AttributeId.
     /// </summary>
     public static AttributeId Min => new(ulong.MinValue);
+
+    /// <summary>
+    ///     Maximum value for an AttributeId.
+    /// </summary>
+    public static AttributeId Max => new(ushort.MaxValue);
 }
