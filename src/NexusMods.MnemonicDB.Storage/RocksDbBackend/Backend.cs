@@ -14,11 +14,11 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
     private readonly ColumnFamilies _columnFamilies = new();
     private readonly Dictionary<IndexType, IRocksDbIndex> _indexes = new();
     private readonly Dictionary<IndexType, IndexStore> _stores = new();
-    private RocksDb _db = null!;
+    private RocksDb? _db = null!;
 
     public IWriteBatch CreateBatch()
     {
-        return new Batch(_db);
+        return new Batch(_db!);
     }
 
     public void DeclareIndex<TComparator>(IndexType name)
@@ -61,12 +61,12 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
 
     public void Dispose()
     {
-        _db.Dispose();
+        _db?.Dispose();
     }
 
     private class Snapshot(Backend backend, AttributeRegistry registry) : ISnapshot
     {
-        private readonly RocksDbSharp.Snapshot _snapshot = backend._db.CreateSnapshot();
+        private readonly RocksDbSharp.Snapshot _snapshot = backend._db!.CreateSnapshot();
 
         public IEnumerable<Datom> Datoms(IndexType type, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
         {
@@ -92,7 +92,7 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
 
         private IEnumerable<Datom> DatomsInner(IndexType type, ReadOptions options, bool reverse)
         {
-            using var iterator = backend._db.NewIterator(backend._stores[type].Handle, options);
+            using var iterator = backend._db!.NewIterator(backend._stores[type].Handle, options);
             if (reverse)
                 iterator.SeekToLast();
             else
