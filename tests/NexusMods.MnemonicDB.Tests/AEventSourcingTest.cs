@@ -133,12 +133,14 @@ public class AMnemonicDBTest : IDisposable
 
     public void Dispose()
     {
+        _registry.Dispose();
         _store.Dispose();
     }
 
 
     protected async Task RestartDatomStore()
     {
+        _registry.Dispose();
         _store.Dispose();
         _backend.Dispose();
 

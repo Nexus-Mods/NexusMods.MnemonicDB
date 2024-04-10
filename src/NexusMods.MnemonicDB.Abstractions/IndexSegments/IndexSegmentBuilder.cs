@@ -68,7 +68,7 @@ public struct IndexSegmentBuilder : IDisposable
     /// <summary>
     /// Construct the index segment
     /// </summary>
-    public IndexSegment Build()
+    public readonly IndexSegment Build()
     {
         _offsets.Add(_data.Length);
         return new IndexSegment(_data.GetWrittenSpan(), _offsets.ToArray(), _registry);

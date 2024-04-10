@@ -24,12 +24,12 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
 
     public void Add<TVal>(EntityId entityId, Attribute<TVal> attribute, TVal val)
     {
-        _datoms.Add(entityId, attribute, val, ThisTxId, true);
+        _datoms.Add(entityId, attribute, val, ThisTxId, false);
     }
 
     public void Retract<TVal>(EntityId entityId, Attribute<TVal> attribute, TVal val)
     {
-        _datoms.Add(entityId, attribute, val, ThisTxId, false);
+        _datoms.Add(entityId, attribute, val, ThisTxId, true);
     }
 
     public async Task<ICommitResult> Commit()
