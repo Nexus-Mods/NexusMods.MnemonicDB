@@ -34,11 +34,10 @@ public abstract class AEntity : IEntity
     /// <summary>
     /// Get the reverse of a relationship.
     /// </summary>
-    protected Entities<EntityIds, TModel> GetReverse<TAttr, TModel>()
-        where TAttr : IAttribute<EntityId>
+    protected Entities<EntityIds, TModel> GetReverse<TModel>(Attribute<EntityId> attribute)
         where TModel : IEntity
     {
-        return Db.GetReverse<TAttr, TModel>(Id);
+        return Db.GetReverse<TModel>(attribute, Id);
     }
 
     private IndexSegment _indexSegment = default;

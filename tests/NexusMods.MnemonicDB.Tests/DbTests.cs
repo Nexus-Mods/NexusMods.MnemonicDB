@@ -1,9 +1,10 @@
 ﻿using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
-using NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 using NexusMods.MnemonicDB.TestModel.Helpers;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.TestModel;
+using NexusMods.MnemonicDB.TestModel.ComplexModel;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels.File;
 using FileAttributes = NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes.FileAttributes;
@@ -55,7 +56,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         {
             Name = "Test Mod",
             Source = new Uri("http://test.com"),
-            Loadout = new Loadout(tx)
+            LoadoutId = new Loadout(tx)
             {
                 Name = "Test Loadout"
             }
@@ -221,14 +222,14 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         {
             Name = "Test Mod 1",
             Source = new Uri("http://mod1.com"),
-            Loadout = loadout
+            LoadoutId = loadout
         };
 
         _ = new Mod(tx)
         {
             Name = "Test Mod 2",
             Source = new Uri("http://mod2.com"),
-            Loadout = loadout
+            LoadoutId = loadout
         };
 
         var result = await tx.Commit();

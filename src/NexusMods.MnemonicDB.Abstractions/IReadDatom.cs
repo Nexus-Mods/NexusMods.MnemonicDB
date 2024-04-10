@@ -13,14 +13,11 @@ public interface IReadDatom
     public EntityId E { get; }
 
     /// <summary>
-    ///     The C# type of the attribute.
-    /// </summary>
-    public Type AttributeType { get; }
-
-    /// <summary>
     ///     The value type of the datom, this is used to find the correct serializer.
     /// </summary>
     public Type ValueType { get; }
+
+    public Attribute<ValueType> A { get; }
 
     /// <summary>
     ///     The transaction id of the datom.

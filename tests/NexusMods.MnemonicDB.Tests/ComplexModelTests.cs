@@ -1,9 +1,9 @@
 ﻿using System.Diagnostics;
 using Microsoft.Extensions.Logging;
-using NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
-using File = NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels.File;
+using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
 
@@ -48,7 +48,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
             {
                 Name = $"Mod {i}",
                 Source = new Uri($"http://mod{i}.com"),
-                Loadout = loadout
+                LoadoutId = loadout
             };
 
             if (i % 2 == 0)
@@ -64,7 +64,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
                 var file = new File(tx)
                 {
                     Path = name,
-                    Mod = mod,
+                    ModId = mod,
                     Size = Size.FromLong(name.Length),
                     Hash = Hash.FromLong(name.XxHash64AsUtf8())
                 };
@@ -131,7 +131,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
             {
                 Name = $"Mod {i}",
                 Source = new Uri($"http://mod{i}.com"),
-                Loadout = loadout
+                LoadoutId = loadout
             };
 
             mods.Add(mod);
@@ -142,7 +142,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
                 var file = new File(tx)
                 {
                     Path = name,
-                    Mod = mod,
+                    ModId = mod,
                     Size = Size.FromLong(name.Length),
                     Hash = Hash.FromLong(name.XxHash64AsUtf8())
                 };
@@ -164,7 +164,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
             var file = new File(extraTx)
             {
                 Path = name,
-                Mod = firstMod,
+                ModId = firstMod,
                 Size = Size.FromLong(name.Length),
                 Hash = Hash.FromLong(name.XxHash64AsUtf8())
             };

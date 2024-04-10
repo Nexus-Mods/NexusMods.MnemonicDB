@@ -15,6 +15,7 @@ public readonly struct IndexSegment : IEnumerable<Datom>
     private readonly Memory<byte> _data;
     private readonly Memory<int> _offsets;
     private readonly IAttributeRegistry _registry;
+    private readonly RegistryId _registryId;
 
     /// <summary>
     /// Construct a new index segment from the given data and offsets
@@ -22,6 +23,7 @@ public readonly struct IndexSegment : IEnumerable<Datom>
     public IndexSegment(ReadOnlySpan<byte> data, ReadOnlySpan<int> offsets, IAttributeRegistry registry)
     {
         _registry = registry;
+        _registryId = registry.Id;
         _data = data.ToArray();
         _offsets = offsets.ToArray();
     }
@@ -35,6 +37,11 @@ public readonly struct IndexSegment : IEnumerable<Datom>
     /// The number of datoms in this segment
     /// </summary>
     public int Count => _offsets.Length - 1;
+
+    /// <summary>
+    /// The assigned registry id
+    /// </summary>
+    public RegistryId RegistryId => _registryId;
 
     /// <summary>
     /// Get the datom of the given index

@@ -407,7 +407,7 @@ public class DatomStore : IDatomStore
 
         var keyPrefix = MemoryMarshal.Read<KeyPrefix>(span);
 
-        if (attribute.IsMultiCardinality)
+        if (attribute.Cardinalty == Cardinality.Many)
         {
             var found = snapshot.Datoms(IndexType.EAVTCurrent, span)
                 .Select(d => d.Clone())

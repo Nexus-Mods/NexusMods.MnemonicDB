@@ -55,4 +55,10 @@ public interface IAttributeRegistry
     /// </summary>
     /// <param name="attributes"></param>
     public void Populate(DbAttribute[] attributes);
+
+    /// <summary>
+    /// The registry id of the registry, this can be used to link attributes to attribute ids.
+    /// A separate registry id is used for each registry instance and backing datom store.
+    /// </summary>
+    public RegistryId Id { get; }
 }

@@ -11,11 +11,10 @@ public static class ExtensionMethods
     {
         foreach (var datom in datoms)
         {
-            var aSym = registry.GetSymbolForAttribute(datom.AttributeType);
             yield return new ObjectTuple
             {
                 E = datom.E,
-                A = aSym.Name,
+                A = datom.A.Id.Name,
                 V = datom.ObjectValue,
                 T = datom.T
             };
@@ -40,8 +39,8 @@ public static class ExtensionMethods
         {
             var isRetract = datom.IsRetract;
 
-            var symColumn = TruncateOrPad(registry.GetSymbolForAttribute(datom.AttributeType).Name, 24);
-            var attrId = registry.GetAttributeId(datom.AttributeType).Value.ToString("X4");
+            var symColumn = TruncateOrPad(datom.A.Id.Name, 24);
+            var attrId = registry.GetAttributeId(datom.A).Value.ToString("X4");
 
             sb.Append(isRetract ? "-" : "+");
             sb.Append(" | ");

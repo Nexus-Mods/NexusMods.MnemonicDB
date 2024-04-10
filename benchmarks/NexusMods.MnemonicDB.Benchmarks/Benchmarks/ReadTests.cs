@@ -4,8 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 
 // ReSharper disable MemberCanBePrivate.Global

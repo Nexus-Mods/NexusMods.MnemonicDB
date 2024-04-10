@@ -7,9 +7,9 @@ using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
-using NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 using NexusMods.MnemonicDB.TestModel.Helpers;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels.File;
 
@@ -100,7 +100,7 @@ public class AMnemonicDBTest : IDisposable
             {
                 Name = modName,
                 Source = new Uri("http://somesite.com/" + modName),
-                Loadout = loadout
+                LoadoutId = loadout
             };
 
             var idx = 0;

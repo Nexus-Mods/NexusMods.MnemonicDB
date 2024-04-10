@@ -12,7 +12,6 @@ using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
-using NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.Paths;
 

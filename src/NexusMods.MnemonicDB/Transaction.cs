@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
@@ -18,9 +19,9 @@ internal class Transaction(Connection connection) : ITransaction
         return EntityId.From(Interlocked.Increment(ref _tempId));
     }
 
-    public void Add<TAttribute, TVal>(EntityId entityId, TVal val) where TAttribute : IAttribute<TVal>
+    public void Add<TAttribute, TVal>(EntityId entityId, IAttribute<TVal> attribute, TVal val) where TAttribute : IAttribute<TVal>
     {
-        _datoms.Add(TAttribute.Assert(entityId, val));
+        throw new NotImplementedException();
     }
 
     public async Task<ICommitResult> Commit()

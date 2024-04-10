@@ -55,6 +55,14 @@ public class Symbol
     }
 
     /// <summary>
+    /// Construct a new symbol, or return an existing one that matches the given namespace and name
+    /// </summary>
+    public static Symbol Intern(string nsStr, string nameStr)
+    {
+        return new Symbol((nsStr, nameStr));
+    }
+
+    /// <summary>
     ///     Construct a new symbol, or return an existing one that matches the given name
     /// </summary>
     public static Symbol InternPreSanitized(string fullName)

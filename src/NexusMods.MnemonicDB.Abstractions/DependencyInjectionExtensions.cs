@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -37,11 +39,16 @@ public static class DependencyInjectionExtensions
         if (!type.IsClass)
             throw new ArgumentException("The type must be a class.", nameof(TAttributeCollection));
 
-        var attributes = type.GetNestedTypes();
+        var attributes = type.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly)
+            .Where(f => f.FieldType.IsAssignableTo(typeof(IAttribute)));
 
         foreach (var attribute in attributes)
-            if (attribute.IsAssignableTo(typeof(IAttribute)))
-                services.AddSingleton(typeof(IAttribute), attribute);
+        {
+            var field = attribute.GetValue(null);
+            if (field is not IAttribute casted)
+                throw new ArgumentException("The field must be of type IAttribute.", nameof(TAttributeCollection));
+            services.AddSingleton(typeof(IAttribute), casted);
+        }
 
         return services;
     }

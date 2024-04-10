@@ -4,10 +4,10 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.MnemonicDB.Storage.Serializers;
-using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
+using NexusMods.MnemonicDB.TestModel;
 using NexusMods.MnemonicDB.TestModel.ValueSerializers;
 using NexusMods.Paths;
-using FileAttributes = NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes.FileAttributes;
+using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Storage.Tests;
 
@@ -29,26 +29,25 @@ public abstract class AStorageTest : IAsyncLifetime
         Registry = new AttributeRegistry(provider.GetRequiredService<IEnumerable<IValueSerializer>>(),
             provider.GetRequiredService<IEnumerable<IAttribute>>());
         Registry.Populate([
-            new DbAttribute(Symbol.Intern<ModAttributes.Name>(), AttributeId.From(10), Symbol.Intern<SizeSerializer>()),
-            new DbAttribute(Symbol.Intern<FileAttributes.Path>(), AttributeId.From(20),
+            new DbAttribute(File.Path.Id, AttributeId.From(20),
                 Symbol.Intern<RelativePathSerializer>()),
-            new DbAttribute(Symbol.Intern<FileAttributes.Hash>(), AttributeId.From(21),
+            new DbAttribute(File.Hash.Id, AttributeId.From(21),
                 Symbol.Intern<HashSerializer>()),
-            new DbAttribute(Symbol.Intern<FileAttributes.Size>(), AttributeId.From(22),
+            new DbAttribute(File.Size.Id, AttributeId.From(22),
                 Symbol.Intern<SizeSerializer>()),
-            new DbAttribute(Symbol.Intern<FileAttributes.ModId>(), AttributeId.From(23),
+            new DbAttribute(File.ModId.Id, AttributeId.From(23),
                 Symbol.Intern<EntityIdSerializer>()),
-            new DbAttribute(Symbol.Intern<ModAttributes.Name>(), AttributeId.From(24),
+            new DbAttribute(Mod.Name.Id, AttributeId.From(24),
                 Symbol.Intern<StringSerializer>()),
-            new DbAttribute(Symbol.Intern<ModAttributes.LoadoutId>(), AttributeId.From(25),
+            new DbAttribute(Mod.LoadoutId.Id, AttributeId.From(25),
                 Symbol.Intern<EntityIdSerializer>()),
-            new DbAttribute(Symbol.Intern<LoadoutAttributes.Name>(), AttributeId.From(26),
+            new DbAttribute(Loadout.Name.Id, AttributeId.From(26),
                 Symbol.Intern<StringSerializer>()),
-            new DbAttribute(Symbol.Intern<CollectionAttributes.Name>(), AttributeId.From(27),
+            new DbAttribute(Collection.Name.Id, AttributeId.From(27),
                 Symbol.Intern<StringSerializer>()),
-            new DbAttribute(Symbol.Intern<CollectionAttributes.LoadoutId>(), AttributeId.From(28),
+            new DbAttribute(Collection.Loadout.Id, AttributeId.From(28),
                 Symbol.Intern<EntityIdSerializer>()),
-            new DbAttribute(Symbol.Intern<CollectionAttributes.Mods>(), AttributeId.From(29),
+            new DbAttribute(Collection.Mods.Id, AttributeId.From(29),
                 Symbol.Intern<EntityIdSerializer>())
         ]);
         _path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("tests_datomstore" + Guid.NewGuid());

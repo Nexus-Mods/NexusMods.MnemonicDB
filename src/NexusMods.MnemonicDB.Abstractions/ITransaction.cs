@@ -26,8 +26,7 @@ public interface ITransaction
     /// <param name="val"></param>
     /// <typeparam name="TAttribute"></typeparam>
     /// <typeparam name="TVal"></typeparam>
-    void Add<TAttribute, TVal>(EntityId entityId, TVal val)
-        where TAttribute : IAttribute<TVal>;
+    void Add<TVal>(EntityId entityId, IAttribute<TVal> attribute, TVal val);
 
     /// <summary>
     ///     Commits the transaction

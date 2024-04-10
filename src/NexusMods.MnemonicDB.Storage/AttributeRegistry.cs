@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.InteropServices;
+using System.Threading;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using Reloaded.Memory.Extensions;
@@ -26,12 +27,16 @@ public class AttributeRegistry : IAttributeRegistry
 
     private CompareCache _compareCache = new();
 
+    private static int _nextRegistryId = 0;
+
     /// <summary>
     ///     Tracks all attributes and their respective serializers as well as the DB entity IDs for each
     ///     attribute
     /// </summary>
     public AttributeRegistry(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
     {
+        Id = RegistryId.From((byte)Interlocked.Increment(ref _nextRegistryId));
+
         var serializers = valueSerializers.ToArray();
         _valueSerializersByNativeType = serializers.ToDictionary(x => x.NativeType);
         _valueSerializersByUniqueId = serializers.ToDictionary(x => x.UniqueId);
@@ -52,6 +57,9 @@ public class AttributeRegistry : IAttributeRegistry
         _dbAttributesByEntityId = new Dictionary<AttributeId, DbAttribute>();
         _dbAttributesByUniqueId = new Dictionary<Symbol, DbAttribute>();
     }
+
+    /// <inheritdoc />
+    public RegistryId Id { get; }
 
     public AttributeId GetAttributeId(Type datomAttributeType)
     {
