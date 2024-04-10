@@ -148,7 +148,6 @@ public class AMnemonicDBTest : IDisposable
         _backend = new Backend(_registry);
         _registry = new AttributeRegistry(_valueSerializers, _attributes);
         _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
-        await _store.Sync();
 
         Connection = new Connection(_provider.GetRequiredService<ILogger<Connection>>(), _store, _valueSerializers, _attributes);
     }

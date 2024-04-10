@@ -24,13 +24,6 @@ public interface IDatomStore : IDisposable
     IAttributeRegistry Registry { get; }
 
     /// <summary>
-    ///     Writes a no-op transaction and waits for it to be processed. This is useful
-    ///     for making sure that all previous transactions have been processed before continuing.
-    /// </summary>
-    /// <returns></returns>
-    public Task<TxId> Sync();
-
-    /// <summary>
     ///     Transacts (adds) the given datoms into the store.
     /// </summary>
     public Task<StoreResult> Transact(IndexSegment datoms);

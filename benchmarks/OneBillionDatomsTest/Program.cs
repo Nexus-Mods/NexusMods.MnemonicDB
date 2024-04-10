@@ -32,9 +32,6 @@ var host = Host.CreateDefaultBuilder()
 
 var services = host.Services;
 
-var store = services.GetRequiredService<IDatomStore>();
-await store.Sync();
-
 var connection = services.GetRequiredService<IConnection>();
 
 ulong batchSize = 1024;
@@ -53,7 +50,7 @@ var lastPrint = DateTime.UtcNow;
 
 for (ulong i = 0; i < batches; i++)
 {
-    var tx = connection.BeginTransaction();
+    using var tx = connection.BeginTransaction();
 
     for (var j = 0; j < (int)batchSize; j++)
     {

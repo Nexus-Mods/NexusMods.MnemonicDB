@@ -96,16 +96,12 @@ public class DatomStore : IDatomStore
         Task.Run(ConsumeTransactions);
     }
 
+    /// <inheritdoc />
     public TxId AsOfTxId => _asOfTxId;
-    public IAttributeRegistry Registry => _registry;
-
 
     /// <inheritdoc />
-    public async Task<TxId> Sync()
-    {
-        await Transact(new IndexSegment());
-        return _asOfTxId;
-    }
+    public IAttributeRegistry Registry => _registry;
+
 
     /// <inheritdoc />
     public async Task<StoreResult> Transact(IndexSegment datoms)
@@ -154,33 +150,40 @@ public class DatomStore : IDatomStore
 
     private async Task ConsumeTransactions()
     {
-        while (await _txChannel.Reader.WaitToReadAsync())
+        try
         {
-            var pendingTransaction = await _txChannel.Reader.ReadAsync();
-            try
+            while (await _txChannel.Reader.WaitToReadAsync())
             {
-                // Sync transactions have no data, and are used to verify that the store is up to date.
-                if (!pendingTransaction.Data.Valid)
+                var pendingTransaction = await _txChannel.Reader.ReadAsync();
+                try
                 {
-                    var storeResult = new StoreResult
+                    // Sync transactions have no data, and are used to verify that the store is up to date.
+                    if (!pendingTransaction.Data.Valid)
                     {
-                        Remaps = new Dictionary<EntityId, EntityId>(),
-                        AssignedTxId = _asOfTxId,
-                        Snapshot = _backend.GetSnapshot(),
-                    };
-                    pendingTransaction.CompletionSource.SetResult(storeResult);
-                    continue;
+                        var storeResult = new StoreResult
+                        {
+                            Remaps = new Dictionary<EntityId, EntityId>(),
+                            AssignedTxId = _asOfTxId,
+                            Snapshot = null!,
+                        };
+                        pendingTransaction.CompletionSource.TrySetResult(storeResult);
+                        continue;
+                    }
+
+                    Log(pendingTransaction, out var result);
+
+                    _updatesSubject.OnNext((result.AssignedTxId, result.Snapshot));
+                    pendingTransaction.CompletionSource.TrySetResult(result);
                 }
-
-                Log(pendingTransaction, out var result);
-
-                _updatesSubject.OnNext((result.AssignedTxId, result.Snapshot));
-                pendingTransaction.CompletionSource.SetResult(result);
+                catch (Exception ex)
+                {
+                    pendingTransaction.CompletionSource.TrySetException(ex);
+                }
             }
-            catch (Exception ex)
-            {
-                pendingTransaction.CompletionSource.TrySetException(ex);
-            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Transaction consumer crashed");
         }
     }
 

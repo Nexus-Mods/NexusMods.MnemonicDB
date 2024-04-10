@@ -15,6 +15,7 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
 {
     private readonly IndexSegmentBuilder _datoms = new(registry);
     private ulong _tempId = Ids.MinId(Ids.Partition.Tmp) + 1;
+    private bool _committed = false;
 
     /// <inhertdoc />
     public EntityId TempId()
@@ -24,16 +25,21 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
 
     public void Add<TVal>(EntityId entityId, Attribute<TVal> attribute, TVal val)
     {
+        if (_committed)
+            throw new InvalidOperationException("Transaction has already been committed");
         _datoms.Add(entityId, attribute, val, ThisTxId, false);
     }
 
     public void Retract<TVal>(EntityId entityId, Attribute<TVal> attribute, TVal val)
     {
+        if (_committed)
+            throw new InvalidOperationException("Transaction has already been committed");
         _datoms.Add(entityId, attribute, val, ThisTxId, true);
     }
 
     public async Task<ICommitResult> Commit()
     {
+        _committed = true;
         return await connection.Transact(_datoms.Build());
     }
 

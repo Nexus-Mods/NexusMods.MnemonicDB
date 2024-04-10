@@ -68,7 +68,6 @@ public abstract class AStorageTest : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await DatomStore.Sync();
     }
 
     public Task DisposeAsync()
