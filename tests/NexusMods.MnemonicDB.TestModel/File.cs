@@ -5,7 +5,7 @@ using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.TestModel;
 
-public class File
+public static class File
 {
     public static readonly Attribute<RelativePath> Path = new("NexusMods.MnemonicDB.TestModel.File/Path", isIndexed: true);
     public static readonly Attribute<Hash> Hash = new("NexusMods.MnemonicDB.TestModel.File/Hash", isIndexed: true);

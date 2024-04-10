@@ -8,11 +8,11 @@ public static class Services
 {
     public static IServiceCollection AddTestModel(this IServiceCollection services)
     {
-        services.AddAttributeCollection<File>()
-            .AddAttributeCollection<ArchiveFile>()
-            .AddAttributeCollection<Loadout>()
-            .AddAttributeCollection<Mod>()
-            .AddAttributeCollection<Collection>();
+        services.AddAttributeCollection(typeof(File))
+            .AddAttributeCollection(typeof(ArchiveFile))
+            .AddAttributeCollection(typeof(Loadout))
+            .AddAttributeCollection(typeof(Mod))
+            .AddAttributeCollection(typeof(Collection));
 
         services.AddValueSerializer<RelativePathSerializer>()
             .AddValueSerializer<SizeSerializer>()

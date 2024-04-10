@@ -28,9 +28,9 @@ internal readonly struct IndexSegmentCache<TKey>(Func<IDb, TKey, IEnumerable<Dat
 
     private IndexSegment Add(TKey key, IEnumerable<Datom> segment)
     {
-        var builder = new IndexSegmentBuilder(128);
+        var builder = new IndexSegmentBuilder(registry, 128);
         builder.Add(segment);
-        var built = builder.Build(registry);
+        var built = builder.Build();
         _cache.TryAdd(key, built);
         return built;
 

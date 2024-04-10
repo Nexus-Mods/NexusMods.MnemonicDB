@@ -1,4 +1,6 @@
 ﻿using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Storage.Serializers;
 
 namespace NexusMods.MnemonicDB.Storage;
@@ -28,7 +30,7 @@ public class BuiltInAttributes
     /// <summary>
     ///     The database entity id of the UniqueId attribute
     /// </summary>
-    private static readonly AttributeId ValueSerializerIdEntityId = AttributeId.From(2);
+    public static readonly AttributeId ValueSerializerIdEntityId = AttributeId.From(2);
 
 
     /// <summary>
@@ -40,14 +42,20 @@ public class BuiltInAttributes
         new DbAttribute(ValueSerializerId.Id, ValueSerializerIdEntityId, SymbolSerializer.Id)
     ];
 
-    public static readonly IWriteDatom[] InitialDatoms =
-    [
-        UniqueId.Assert(UniqueIdEntityId.ToEntityId(), UniqueId.Id),
-        ValueSerializerId.Assert(UniqueIdEntityId.ToEntityId(), SymbolSerializer.Id),
+    /// <summary>
+    /// Gets the initial set of datoms for the built-in attributes.
+    /// </summary>
+    public static IndexSegment InitialDatoms(IAttributeRegistry registry)
+    {
+        var builder = new IndexSegmentBuilder(registry);
 
-        UniqueId.Assert(ValueSerializerIdEntityId.ToEntityId(), ValueSerializerId.Id),
-        ValueSerializerId.Assert(ValueSerializerIdEntityId.ToEntityId(), SymbolSerializer.Id)
-    ];
+        builder.Add(UniqueIdEntityId.ToEntityId(), UniqueId, UniqueId.Id);
+        builder.Add(ValueSerializerIdEntityId.ToEntityId(), UniqueId, ValueSerializerId.Id);
+
+        builder.Add(UniqueIdEntityId.ToEntityId(), ValueSerializerId, SymbolSerializer.Id);
+        builder.Add(ValueSerializerIdEntityId.ToEntityId(), ValueSerializerId, SymbolSerializer.Id);
+        return builder.Build();
+    }
 
 
 }

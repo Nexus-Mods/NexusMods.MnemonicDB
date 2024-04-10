@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -32,7 +33,7 @@ public interface IDatomStore : IDisposable
     /// <summary>
     ///     Transacts (adds) the given datoms into the store.
     /// </summary>
-    public Task<StoreResult> Transact(IEnumerable<IWriteDatom> datoms);
+    public Task<StoreResult> Transact(IndexSegment datoms);
 
     /// <summary>
     ///     Registers new attributes with the store. These should already have been transacted into the store.

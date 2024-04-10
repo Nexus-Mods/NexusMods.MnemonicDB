@@ -31,13 +31,12 @@ public static class DependencyInjectionExtensions
     /// <typeparam name="TAttributeCollection"></typeparam>
     /// <returns></returns>
     /// <exception cref="ArgumentException"></exception>
-    public static IServiceCollection AddAttributeCollection<TAttributeCollection>(this IServiceCollection services)
-        where TAttributeCollection : class
+    public static IServiceCollection AddAttributeCollection(this IServiceCollection services,
+        Type type)
     {
-        var type = typeof(TAttributeCollection);
-
         if (!type.IsClass)
-            throw new ArgumentException("The type must be a class.", nameof(TAttributeCollection));
+            throw new ArgumentException("The type must be a class.", nameof(type));
+
 
         var attributes = type.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly)
             .Where(f => f.FieldType.IsAssignableTo(typeof(IAttribute)));
@@ -46,7 +45,7 @@ public static class DependencyInjectionExtensions
         {
             var field = attribute.GetValue(null);
             if (field is not IAttribute casted)
-                throw new ArgumentException("The field must be of type IAttribute.", nameof(TAttributeCollection));
+                throw new ArgumentException("The field must be of type IAttribute.", nameof(type));
             services.AddSingleton(typeof(IAttribute), casted);
         }
 

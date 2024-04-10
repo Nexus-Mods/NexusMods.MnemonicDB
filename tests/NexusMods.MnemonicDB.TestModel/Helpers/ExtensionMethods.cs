@@ -40,7 +40,7 @@ public static class ExtensionMethods
             var isRetract = datom.IsRetract;
 
             var symColumn = TruncateOrPad(datom.A.Id.Name, 24);
-            var attrId = registry.GetAttributeId(datom.A).Value.ToString("X4");
+            var attrId = datom.A.GetDbId(registry.Id).Value.ToString("X4");
 
             sb.Append(isRetract ? "-" : "+");
             sb.Append(" | ");

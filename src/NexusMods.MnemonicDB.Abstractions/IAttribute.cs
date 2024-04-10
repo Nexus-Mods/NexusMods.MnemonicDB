@@ -69,31 +69,4 @@ public interface IAttribute
     /// </summary>
     IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx, bool isRetract);
 
-    /// <summary>
-    ///     Gets the type of the read datom for the given attribute.
-    /// </summary>
-    Type GetReadDatomType();
-
-}
-
-/// <summary>
-///     Typed variant of IAttribute
-/// </summary>
-/// <typeparam name="TVal"></typeparam>
-public interface IAttribute<TVal> : IAttribute
-{
-    /// <summary>
-    ///     Construct a new write Datom for the given entity and value
-    /// </summary>
-    public IWriteDatom Assert(EntityId e, TVal v);
-
-    /// <summary>
-    ///     Construct a new write Datom for the retraction of the given entity and value
-    /// </summary>
-    public IWriteDatom Retract(EntityId e, TVal v);
-
-    /// <summary>
-    /// Gets the serializer for the attribute
-    /// </summary>
-    public IValueSerializer<TVal> Serializer { get; }
 }

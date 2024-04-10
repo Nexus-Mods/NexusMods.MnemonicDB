@@ -3,6 +3,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
@@ -13,8 +14,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 ///     Interface for a specific attribute
 /// </summary>
 /// <typeparam name="TValueType"></typeparam>
-public sealed class Attribute<TValueType>
-    : IAttribute<TValueType>
+public sealed class Attribute<TValueType> : IAttribute
 {
     private IValueSerializer<TValueType> _serializer = null!;
     private RegistryId.InlineCache _cache;
@@ -33,8 +33,10 @@ public sealed class Attribute<TValueType>
     /// <inheritdoc />
     public Cardinality Cardinalty { get; }
 
+    /// <inheritdoc />
     public bool IsIndexed { get; }
 
+    /// <inheritdoc />
     public bool NoHistory { get; }
 
     /// <inheritdoc />
@@ -99,32 +101,6 @@ public sealed class Attribute<TValueType>
         return typeof(ReadDatom);
     }
 
-
-    /// <summary>
-    ///     Create a new datom for an assert on this attribute, and return it
-    /// </summary>
-    public IWriteDatom Assert(EntityId e, TValueType v)
-    {
-        return new WriteDatom
-        {
-            E = e,
-            Attribute = this,
-            V = v,
-            IsRetract = false
-        };
-    }
-
-    public IWriteDatom Retract(EntityId e, TValueType v)
-    {
-        return new WriteDatom
-        {
-            E = e,
-            Attribute = this,
-            V = v,
-            IsRetract = true
-        };
-    }
-
     /// <inheritdoc />
     public IValueSerializer<TValueType> Serializer => _serializer;
 
@@ -182,56 +158,16 @@ public sealed class Attribute<TValueType>
     }
 
     /// <summary>
-    ///     Typed datom for this attribute
+    /// Write a datom for this attribute to the given writer
     /// </summary>
-    public readonly record struct WriteDatom : IWriteDatom
+    public void Write<TWriter>(EntityId entityId, RegistryId registryId, TValueType value, TxId txId, bool isRetract, TWriter writer)
+    where TWriter : IBufferWriter<byte>
     {
-        /// <summary>
-        ///     The value for this datom
-        /// </summary>
-        public required TValueType V { get; init; }
-
-        /// <summary>
-        ///     The entity id for this datom
-        /// </summary>
-        public required EntityId E { get; init; }
-
-
-        public required Attribute<TValueType> Attribute { get; init; }
-
-        /// <summary>
-        ///     True if this is a retraction
-        /// </summary>
-        public required bool IsRetract { get; init; }
-
-        public void Explode<TWriter>(IAttributeRegistry registry, Func<EntityId, EntityId> remapFn,
-            out EntityId e, out AttributeId a, TWriter vWriter, out bool isRetract)
-            where TWriter : IBufferWriter<byte>
-        {
-            isRetract = IsRetract;
-            e = EntityId.From(Ids.IsPartition(E.Value, Ids.Partition.Tmp) ? remapFn(E).Value : E.Value);
-
-            if (V is EntityId id)
-            {
-                var newId = remapFn(id);
-                if (newId is TValueType recasted)
-                {
-                    throw new NotImplementedException();
-                    //registry.Explode<TValueType, TWriter>(out a, recasted, vWriter);
-                    return;
-                }
-            }
-
-            throw new NotImplementedException();
-            //registry.Explode<TValueType, TWriter>(out a, V, vWriter);
-        }
-
-
-        /// <inheritdoc />
-        public override string ToString()
-        {
-            return $"({E.Value:x}, {Attribute.Id.Name}, {V})";
-        }
+        var prefix = new KeyPrefix().Set(entityId, GetDbId(registryId), txId, isRetract);
+        var span = writer.GetSpan(KeyPrefix.Size);
+        MemoryMarshal.Write(span, prefix);
+        writer.Advance(KeyPrefix.Size);
+        Serializer.Serialize(value, writer);
     }
 
     /// <summary>
@@ -249,7 +185,7 @@ public sealed class Attribute<TValueType>
         /// <summary>
         ///     The attribute for this datom
         /// </summary>
-        public required Attribute<TValueType> A { get; init; }
+        public required IAttribute A { get; init; }
 
         /// <summary>
         ///     The entity id for this datom
@@ -281,7 +217,8 @@ public sealed class Attribute<TValueType>
         /// <inheritdoc />
         public override string ToString()
         {
-            return $"({E.Value:x}, {A.Id.Name}, {V}, {T.Value:x})";
+            return $"({(IsRetract ? "-" : "+")}, {E.Value:x}, {A.Id.Name}, {V}, {T.Value:x})";
         }
     }
+
 }

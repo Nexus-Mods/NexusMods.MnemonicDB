@@ -4,7 +4,7 @@ using NexusMods.MnemonicDB.Abstractions.Models;
 
 namespace NexusMods.MnemonicDB.TestModel;
 
-public class Collection(ITransaction tx) : AEntity(tx)
+public static class Collection
 {
     public static readonly Attribute<string> Name = new("NexusMods.MnemonicDB.TestModel.Collection/Name");
     public static readonly Attribute<EntityId> Mods = new("NexusMods.MnemonicDB.TestModel.Collection/Mods", cardinality: Cardinality.Many);

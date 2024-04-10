@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
 namespace NexusMods.MnemonicDB.Storage.DatomStorageStructures;
 
@@ -17,5 +18,5 @@ internal class PendingTransaction
     /// <summary>
     ///     The data to be commited
     /// </summary>
-    public required IWriteDatom[] Data { get; init; }
+    public required IndexSegment Data { get; init; }
 }

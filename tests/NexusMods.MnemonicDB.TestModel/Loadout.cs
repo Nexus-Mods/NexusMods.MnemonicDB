@@ -3,7 +3,7 @@ using NexusMods.MnemonicDB.Abstractions.Models;
 
 namespace NexusMods.MnemonicDB.TestModel;
 
-public class Loadout
+public static class Loadout
 {
     public static readonly Attribute<string> Name = new("NexusMods.MnemonicDB.TestModel.Loadout/Name");
 
@@ -18,6 +18,6 @@ public class Loadout
 
         public IEnumerable<Mod.Model> Mods => GetReverse<Mod.Model>(Mod.LoadoutId);
 
-        public IEnumerable<Collection> Collections => GetReverse<Collection>(Collection.Loadout);
+        public IEnumerable<Collection.Model> Collections => GetReverse<Collection.Model>(Collection.Loadout);
     }
 }

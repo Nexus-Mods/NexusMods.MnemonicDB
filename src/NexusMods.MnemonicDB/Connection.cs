@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Storage;
 
@@ -69,7 +70,7 @@ public class Connection : IConnection
     {
         if (!_startupTask.IsCompleted)
             _startupTask.Wait();
-        return new Transaction(this);
+        return new Transaction(this, _store.Registry);
     }
 
     /// <inheritdoc />
@@ -83,6 +84,9 @@ public class Connection : IConnection
         var serializerByType = valueSerializers.ToDictionary(s => s.NativeType);
 
         var existing = ExistingAttributes().ToDictionary(a => a.UniqueId);
+        if (existing.Count == 0)
+            throw new AggregateException(
+                "No attributes found in the database, something went wrong, as it should have been bootstrapped by now");
 
         var missing = declaredAttributes.Where(a => !existing.ContainsKey(a.Id)).ToArray();
         if (missing.Length == 0)
@@ -110,7 +114,7 @@ public class Connection : IConnection
     {
         var snapshot = _store.GetSnapshot();
         var start = BuiltInAttributes.UniqueIdEntityId;
-        var attrIds = snapshot.Datoms(IndexType.AEVTCurrent, start, AttributeId.From(start.Value + 1))
+        var attrIds = snapshot.Datoms(IndexType.AEVTCurrent, start, AttributeId.From((ushort)(start.Value + 1)))
             .Select(d => d.E);
 
         foreach (var attrId in attrIds)
@@ -121,23 +125,21 @@ public class Connection : IConnection
             var from = new KeyPrefix().Set(attrId, AttributeId.Min, TxId.MinValue, false);
             var to = new KeyPrefix().Set(attrId, AttributeId.Max, TxId.MaxValue, false);
 
-            foreach (var datom in snapshot.Datoms(IndexType.EAVTCurrent, from, to)
-                         .Select(d => d.Resolved))
-                switch (datom)
-                {
-                    case Attribute<BuiltInAttributes.ValueSerializerId, Symbol>.ReadDatom serializerIdDatom:
-                        serializerId = serializerIdDatom.V;
-                        break;
-                    case Attribute<BuiltInAttributes.UniqueId, Symbol>.ReadDatom uniqueIdDatom:
-                        uniqueId = uniqueIdDatom.V;
-                        break;
-                }
+            foreach (var rawDatom in snapshot.Datoms(IndexType.EAVTCurrent, from, to))
+            {
+                var datom = rawDatom.Resolved;
 
-            yield return new DbAttribute(uniqueId, AttributeId.From(attrId.Value), serializerId);
+                if (datom.A == BuiltInAttributes.ValueSerializerId && datom is Attribute<Symbol>.ReadDatom serializerIdDatom)
+                    serializerId = serializerIdDatom.V;
+                else if (datom.A == BuiltInAttributes.UniqueId && datom is Attribute<Symbol>.ReadDatom uniqueIdDatom)
+                    uniqueId = uniqueIdDatom.V;
+            }
+
+            yield return new DbAttribute(uniqueId, AttributeId.From((ushort)attrId.Value), serializerId);
         }
     }
 
-    internal async Task<ICommitResult> Transact(IEnumerable<IWriteDatom> datoms)
+    internal async Task<ICommitResult> Transact(IndexSegment datoms)
     {
         if (!_startupTask.IsCompleted)
             await _startupTask;

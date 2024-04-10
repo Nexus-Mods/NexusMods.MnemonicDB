@@ -4,7 +4,7 @@ using NexusMods.MnemonicDB.Abstractions.Models;
 
 namespace NexusMods.MnemonicDB.TestModel;
 
-public class Mod
+public static class Mod
 {
 
     public static readonly Attribute<string> Name = new("NexusMods.MnemonicDB.TestModel.Mod/Name", isIndexed: true);

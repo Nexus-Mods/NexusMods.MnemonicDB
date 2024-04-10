@@ -78,7 +78,7 @@ public class Symbol
 
     private static (string Namespace, string Name) Sanitize(string nsAndName)
     {
-        nsAndName = nsAndName.Replace("+", ".");
+        nsAndName = nsAndName.Replace("+", ".").Replace("/", ".");
         var lastDot = nsAndName.LastIndexOf('.');
         if (lastDot == -1)
             return ("<unknown>", nsAndName);

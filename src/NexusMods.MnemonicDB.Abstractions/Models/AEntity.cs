@@ -37,7 +37,7 @@ public abstract class AEntity : IEntity
     protected Entities<EntityIds, TModel> GetReverse<TModel>(Attribute<EntityId> attribute)
         where TModel : IEntity
     {
-        return Db.GetReverse<TModel>(attribute, Id);
+        return Db.GetReverse<TModel>(Id, attribute);
     }
 
     private IndexSegment _indexSegment = default;

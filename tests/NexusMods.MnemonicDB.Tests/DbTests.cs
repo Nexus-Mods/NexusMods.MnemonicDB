@@ -1,13 +1,9 @@
 ﻿using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
-using NexusMods.MnemonicDB.TestModel.Helpers;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.TestModel;
-using NexusMods.MnemonicDB.TestModel.ComplexModel;
 using NexusMods.Paths;
-using File = NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels.File;
-using FileAttributes = NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes.FileAttributes;
+using File = NexusMods.MnemonicDB.TestModel.File;
+
 
 namespace NexusMods.MnemonicDB.Tests;
 
@@ -23,7 +19,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var ids = new List<EntityId>();
         for (ulong idx = 0; idx < totalCount; idx++)
         {
-            var file = new File(tx)
+            var file = new File.Model(tx)
             {
                 Path = $"C:\\test_{idx}.txt",
                 Hash = Hash.From(idx + 0xDEADBEEF),
@@ -41,7 +37,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         result.NewTx.Value.Should().Be(oldTx.Value + 1, "transaction id should be incremented by 1");
 
         var db = Connection.Db;
-        var resolved = db.Get<File>(ids.Select(id => result[id])).ToArray();
+        var resolved = db.Get<File.Model>(ids.Select(id => result[id])).ToArray();
         await VerifyModel(resolved);
     }
 
@@ -52,11 +48,11 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var txEs = new List<TxId>();
 
         var tx = Connection.BeginTransaction();
-        var file = new Mod(tx)
+        var file = new Mod.Model(tx)
         {
             Name = "Test Mod",
             Source = new Uri("http://test.com"),
-            LoadoutId = new Loadout(tx)
+            Loadout = new Loadout.Model(tx)
             {
                 Name = "Test Loadout"
             }
@@ -69,7 +65,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         for (var i = 0; i < times; i++)
         {
             var newTx = Connection.BeginTransaction();
-            ModAttributes.Name.Add(newTx, modId, $"Test Mod {i}");
+            Mod.Name.Add(newTx, modId, $"Test Mod {i}");
             result = await newTx.Commit();
             txEs.Add(result.NewTx);
         }
@@ -91,7 +87,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         // Insert some data
         var tx = Connection.BeginTransaction();
 
-        var file = new File(tx)
+        var file = new File.Model(tx)
         {
             Path = "C:\\test.txt",
             Hash = Hash.From(1 + 0xDEADBEEF),
@@ -106,7 +102,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var originalDb = Connection.Db;
 
         // Validate the data
-        var found = originalDb.Get<File>([realId]).First();
+        var found = originalDb.Get<File.Model>([realId]).First();
         await VerifyModel(found).UseTextForParameters("original data");
 
 
@@ -114,8 +110,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         for (var i = 0; i < times; i++)
         {
             var newTx = Connection.BeginTransaction();
-            FileAttributes.
-                Path.Add(newTx, realId, $"C:\\test_{i}.txt_mutate");
+            File.Path.Add(newTx, realId, $"C:\\test_{i}.txt_mutate");
 
             await newTx.Commit();
 
@@ -124,11 +119,11 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             newDb.BasisTxId.Value.Should().Be(originalDb.BasisTxId.Value + 1UL + (ulong)i,
                 "transaction id should be incremented by 1 for each mutation at iteration " + i);
 
-            var newFound = newDb.Get<File>([realId]).First();
+            var newFound = newDb.Get<File.Model>([realId]).First();
             await VerifyModel(newFound).UseTextForParameters("mutated data " + i);
 
             // Validate the original data
-            var orignalFound = originalDb.Get<File>([realId]).First();
+            var orignalFound = originalDb.Get<File.Model>([realId]).First();
             await VerifyModel(orignalFound).UseTextForParameters("original data" + i);
         }
     }
@@ -139,7 +134,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     {
         // Insert some data
         var tx = Connection.BeginTransaction();
-        var file = new File(tx)
+        var file = new File.Model(tx)
         {
             Path = "C:\\test.txt",
             Hash = Hash.From(1 + 0xDEADBEEF),
@@ -148,8 +143,8 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         };
 
         // Attach extra attributes to the entity
-        ArchiveFileAttributes.Path.Add(tx, file.Id, "C:\\test.zip");
-        ArchiveFileAttributes.Hash.Add(tx, file.Id, Hash.From(0xFEEDBEEF));
+        ArchiveFile.Path.Add(tx, file.Id, "C:\\test.zip");
+        ArchiveFile.Hash.Add(tx, file.Id, Hash.From(0xFEEDBEEF));
         var result = await tx.Commit();
 
 
@@ -157,12 +152,12 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var db = Connection.Db;
 
         // Original data exists
-        var readModel = db.Get<File>([realId]).First();
+        var readModel = db.Get<File.Model>([realId]).First();
         await VerifyModel(readModel).UseTextForParameters("file data");
 
 
         // Extra data exists and can be read with a different read model
-        var archiveReadModel = db.Get<ArchiveFile>([realId]).First();
+        var archiveReadModel = db.Get<ArchiveFile.Model>([realId]).First();
         await VerifyModel(archiveReadModel).UseTextForParameters("archive file data");
     }
 
@@ -173,7 +168,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
 
         var tx = Connection.BeginTransaction();
-        var file = new File(tx)
+        var file = new File.Model(tx)
         {
             Path = "C:\\test.txt",
             Hash = Hash.From((ulong)0xDEADBEEF),
@@ -195,7 +190,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         for (var idx = 0; idx < 4; idx++)
         {
             tx = Connection.BeginTransaction();
-            FileAttributes.Hash.Add(tx, realId, Hash.From(0xDEADBEEF + (ulong)idx + 0xEE));
+            File.Hash.Add(tx, realId, Hash.From(0xDEADBEEF + (ulong)idx + 0xEE));
             result = await tx.Commit();
 
             await Task.Delay(100);
@@ -213,30 +208,30 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     {
         var tx = Connection.BeginTransaction();
 
-        var loadout = new Loadout(tx)
+        var loadout = new Loadout.Model(tx)
         {
             Name = "Test Loadout"
         };
 
-        _ = new Mod(tx)
+        _ = new Mod.Model(tx)
         {
             Name = "Test Mod 1",
             Source = new Uri("http://mod1.com"),
-            LoadoutId = loadout
+            Loadout = loadout
         };
 
-        _ = new Mod(tx)
+        _ = new Mod.Model(tx)
         {
             Name = "Test Mod 2",
             Source = new Uri("http://mod2.com"),
-            LoadoutId = loadout
+            Loadout = loadout
         };
 
         var result = await tx.Commit();
 
         var newDb = Connection.Db;
 
-        loadout = newDb.Get<Loadout>([result[loadout.Id]]).First();
+        loadout = newDb.Get<Loadout.Model>([result[loadout.Id]]).First();
 
         loadout.Mods.Count().Should().Be(2);
         loadout.Mods.Select(m => m.Name).Should().BeEquivalentTo(["Test Mod 1", "Test Mod 2"]);
@@ -258,9 +253,9 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var db = Connection.Db;
 
-        var ids = from id in db.Find<ModAttributes.Name>()
-            let thisName = db.Get<ModAttributes.Name, string>(id)
-            from byFind in db.FindIndexed<ModAttributes.Name, string>(thisName)
+        var ids = from id in db.Find(Mod.Name)
+            let thisName = db.Get(id, Mod.Name)
+            from byFind in db.FindIndexed(thisName, Mod.Name)
             select (id.Value.ToString("x"), thisName, byFind.Value.ToString("x"));
 
         await Verify(ids);

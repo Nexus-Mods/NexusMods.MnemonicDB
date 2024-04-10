@@ -17,7 +17,10 @@ public interface IReadDatom
     /// </summary>
     public Type ValueType { get; }
 
-    public Attribute<ValueType> A { get; }
+    /// <summary>
+    /// The attribute of the datom.
+    /// </summary>
+    public IAttribute A { get; }
 
     /// <summary>
     ///     The transaction id of the datom.

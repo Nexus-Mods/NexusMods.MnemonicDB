@@ -73,6 +73,7 @@ public abstract class AStorageTest : IAsyncLifetime
 
     public Task DisposeAsync()
     {
+        Registry.Dispose();
         return Task.CompletedTask;
     }
 

@@ -22,33 +22,33 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
     {
         var tx = Connection.BeginTransaction();
 
-        var loadout = new Loadout(tx)
+        var loadout = new Loadout.Model(tx)
         {
             Name = "My Loadout"
         };
 
-        var oddCollection = new Collection(tx)
+        var oddCollection = new Collection.Model(tx)
         {
             Name = "Odd Mods",
             Loadout = loadout
         };
 
-        var evenCollection = new Collection(tx)
+        var evenCollection = new Collection.Model(tx)
         {
             Name = "Even Mods",
             Loadout = loadout
         };
 
-        var mods = new List<Mod>();
-        var files = new List<File>();
+        var mods = new List<Mod.Model>();
+        var files = new List<File.Model>();
 
         for (var i = 0; i < modCount; i++)
         {
-            var mod = new Mod(tx)
+            var mod = new Mod.Model(tx)
             {
                 Name = $"Mod {i}",
                 Source = new Uri($"http://mod{i}.com"),
-                LoadoutId = loadout
+                Loadout = loadout
             };
 
             if (i % 2 == 0)
@@ -61,10 +61,10 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
             {
                 var name = $"File {j}";
 
-                var file = new File(tx)
+                var file = new File.Model(tx)
                 {
                     Path = name,
-                    ModId = mod,
+                    Mod = mod,
                     Size = Size.FromLong(name.Length),
                     Hash = Hash.FromLong(name.XxHash64AsUtf8())
                 };
@@ -80,7 +80,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
 
         var db = Connection.Db;
 
-        loadout = db.Get<Loadout>(result[loadout.Id]);
+        loadout = db.Get<Loadout.Model>(result[loadout.Id]);
 
         var totalSize = Size.Zero;
 
@@ -115,23 +115,23 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
     [InlineData(128, 1024, 128)]
     public async Task CanRestartStorage(int modCount, int filesPerMod, int extraFiles)
     {
-        var tx = Connection.BeginTransaction();
+        using var tx = Connection.BeginTransaction();
 
-        var loadout = new Loadout(tx)
+        var loadout = new Loadout.Model(tx)
         {
             Name = "My Loadout"
         };
 
-        var mods = new List<Mod>();
-        var files = new List<File>();
+        var mods = new List<Mod.Model>();
+        var files = new List<File.Model>();
 
         for (var i = 0; i < modCount; i++)
         {
-            var mod = new Mod(tx)
+            var mod = new Mod.Model(tx)
             {
                 Name = $"Mod {i}",
                 Source = new Uri($"http://mod{i}.com"),
-                LoadoutId = loadout
+                Loadout = loadout
             };
 
             mods.Add(mod);
@@ -139,10 +139,10 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
             {
                 var name = $"File {j}";
 
-                var file = new File(tx)
+                var file = new File.Model(tx)
                 {
                     Path = name,
-                    ModId = mod,
+                    Mod = mod,
                     Size = Size.FromLong(name.Length),
                     Hash = Hash.FromLong(name.XxHash64AsUtf8())
                 };
@@ -156,15 +156,15 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         var extraTx = Connection.BeginTransaction();
 
         var db = Connection.Db;
-        var firstMod = db.Get<Mod>(result.Remap(mods[0]).Id);
+        var firstMod = db.Get<Mod.Model>(result.Remap(mods[0]).Id);
         for (var idx = 0; idx < extraFiles; idx++)
         {
             var name = $"Extra File {idx}";
 
-            var file = new File(extraTx)
+            var file = new File.Model(extraTx)
             {
                 Path = name,
-                ModId = firstMod,
+                Mod = firstMod,
                 Size = Size.FromLong(name.Length),
                 Hash = Hash.FromLong(name.XxHash64AsUtf8())
             };
@@ -180,7 +180,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
 
         db = Connection.Db;
 
-        loadout = db.Get<Loadout>(result[loadout.Id]);
+        loadout = db.Get<Loadout.Model>(result[loadout.Id]);
 
         var totalSize = Size.Zero;
 
@@ -195,14 +195,14 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
                 mod.Files.Count().Should().Be(filesPerMod, "every mod should have the same amount of files");
         }
 
-        tx = Connection.BeginTransaction();
-        var newLoadOut = new Loadout(tx)
+        using var tx2 = Connection.BeginTransaction();
+        var newLoadOut = new Loadout.Model(tx2)
         {
             Name = "My Loadout 2"
         };
 
-        var result2 = await tx.Commit();
-        newLoadOut = db.Get<Loadout>(result2[newLoadOut.Id]);
+        var result2 = await tx2.Commit();
+        newLoadOut = db.Get<Loadout.Model>(result2[newLoadOut.Id]);
 
         newLoadOut.Id.Should().NotBe(loadout.Id,
             "new loadout should have a different id because the connection re-detected the max EntityId");
