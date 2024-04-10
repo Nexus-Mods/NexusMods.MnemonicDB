@@ -6,78 +6,57 @@ hide:
 ## Getting Started
 
 Good examples are often worth a thousand descriptions so let's start with a simple example. First of all we need to define a set
-of attributes that we want to collect into a model. These attributes have a type and are defined in code as a class. These classes
-inherit all their logic from predefined abstract classes so their definitions are simple. Each attribute is backed by a "symbol"
-which is a value type that contains a unique string that is the name of the attribute. This symbol is used to identify the attribute
-uniquely in the database. By default the symbol is detected by the name and namespace of the class. So let's define a set
-attributes for files and mods that will contain these files:
+of attributes that we want to collect into a model. These attributes will be instances of the `Attribute<T>` type, and can be
+annotated with various parameters to describe the attribute. Each attribute must have a unique name in the format of
+`name.space/name`. This name is used inside the database to link the `AttributeId` to a unique name that persists across
+database restarts. These attributes are commonly stored in a static class (being static is recommended so that the class isn't
+accidentally instantiated).
 
 
 ```csharp
-public static class FileAttributes
+public static class File
 {
-    public class Hash : ScalarAttribute<Hash, ulong>;
-    public class Size : ScalarAttribute<Size, ulong>;
-    public class Name : ScalarAttribute<Name, string>;
-    public class ModId : ScalarAttribute<ModId, EntityId>;
-}
+    public static readonly Attribute<ulong> Hash = new("Test.Model.File/Hash", isIndexed: true);
+    public static readonly Attribute<ulong> Size = new("Test.Model.File/Size");
+    public static readonly Attribute<string> Name = new("Test.Model.File/Name", noHistory: true);
+    public static readonly Attribute<EntityId> ModId = new"Test.Model.File/ModId", cardinality: Cardinality.Many);
 
-public static class ModAttributes
-{
-    public class Name : ScalarAttribute<Name, string>;
-    public class Enabled : ScalarAttribute<Enabled, bool>;
+    public class Model(ITransaction tx) : AEntity(tx)
+    {
+        public ulong Hash {
+            get => File.Hash.Get(this);
+            set => File.Hash.Set(this, value);
+
+        }
+
+        public ModId ModId {
+            get => File.ModId.Get(this);
+            set => File.ModId.Set(this, value);
+        }
+
+        public Mod.Model Mod {
+            get => Db.Get<Mod.Model>(ModId);
+            set => ModId = value.Id;
+        }
+    }
 }
 ```
 
-!!!info
-    Putting all attributes as child classes inside a static class is a convention, not a requirement. They are put this way
-in this example so that it's clear that `Name` on a file is different from `Name` on a mod. Although, it's possible to put
-the same attribute on multiple entities, this is not recommended as it removes the ability to quickly query for all files
-based purely on a single attribute. Don't over generalize your attributes, it's better to have a few more attributes than
-to make the model too complex.
+The attributes are defined in the outer class level as they are commonly used throughout the system. The `Model` class is a
+loose collection of attributes grouped into a common projection (or entity). There's no requirement that the attributes
+must be grouped together with themselves, and it's recommended to mix and match attributes from different definitions where
+appropriate. Attribute definition requires a bit of design thought, as additional performance can be gained by having more
+attributes to partition the data being queried, but at the same time, too many attributes can result in queries needing
+to concatenate results from multiple attributes.
 
-So now that we have attributes we have to register them in the DI container. Currently we have to register these one by one,
-but in the future we could easily register all attributes on a given static class.
+Attributes must also be registered in the DI container. This is done by calling `.AddAttributeCollection(typeof(AttrCollection))`.
+This method will scan the class for all static attribute definitions and register them with the DI container.
 
 ```csharp
 public static IServiceCollection AddAttributes(this IServiceCollection services)
 {
-    services.AddAttribute<FileAttributes.Hash>();
-    services.AddAttribute<FileAttributes.Size>();
-    services.AddAttribute<FileAttributes.Name>();
-    services.AddAttribute<FileAttributes.ModId>();
-    services.AddAttribute<ModAttributes.Name>();
-    services.AddAttribute<ModAttributes.Enabled>();
+    services.AddAttributeCollection(typeof(File));
     return services;
-}
-```
-
-While we could go and insert datoms now, the interface is verbose and not very user friendly, instead we will now group
-these attributes together into a "read model". Here is a simple example of a read model:
-
-```csharp
-public class File(ITransaction? tx) : AReadModel<File>(tx)
-{
-    [From<FileAttributes.Hash>]
-    public required ulong Hash { get; init; }
-
-    [From<FileAttributes.Size>]
-    public required ulong Size { get; init; }
-
-    [From<FileAttributes.Name>]
-    public required string Name { get; init; }
-
-    [From<FileAttributes.ModId>]
-    public required EntityId ModId { get; init; }
-}
-
-public class Mod(ITransaction? tx) : AReadModel<Mod>(tx)
-{
-    [From<ModAttributes.Name>]
-    public required string Name { get; set; }
-
-    [From<ModAttributes.Enabled>]
-    public required bool Enabled { get; set; }
 }
 ```
 
@@ -87,11 +66,9 @@ and it's most often injected via the DI framework:
 ```
 IConnection connection = serviceProvider.GetRequiredService<IConnection>();
 
-var tx = connection.BeginTransaction();
+using var tx = connection.BeginTransaction();
 
-var mod = new Mod(tx) { Name = "My Mod", Enabled = true };
-
-var file = new File(tx) { Hash = 123, Size = 456, Name = "My File", ModId = mod.Id };
+var file = new File(tx) { Hash = 123, Size = 456, Name = "My File", Mod = mod };
 
 var result = await tx.Commit();
 ```
@@ -109,10 +86,7 @@ file we just created:
 
 var db = connection.Db;
 
-mod = db.Get<Mod>(result[mod.Id]);
-mod.Name.Should().Be("My Mod");
-
-file = db.Get<File>(result[file.Id]);
+file = db.Get<File.Model>(result[file.Id]);
 file.Name.Should().Be("My File");
 file.ModId.Should().Be(mod.Id);
 ```
