@@ -15,24 +15,6 @@ public interface IAttributeRegistry
     public int CompareValues(AttributeId id, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
 
     /// <summary>
-    ///     Sets the attribute id and value in the given datom based on the given attribute and value
-    /// </summary>
-    void Explode<TAttribute, TValueType, TBufferWriter>(out AttributeId attrId, TValueType valueType,
-        TBufferWriter writer)
-        where TBufferWriter : IBufferWriter<byte>
-        where TAttribute : IAttribute<TValueType>;
-
-    /// <summary>
-    ///     Gets the unique symbol for the given attribute
-    /// </summary>
-    Symbol GetSymbolForAttribute(Type attribute);
-
-    /// <summary>
-    ///     Gets the attribute id for the given attribute type
-    /// </summary>
-    public AttributeId GetAttributeId(Type datomAttributeType);
-
-    /// <summary>
     ///     Resolve the given KeyPrefix + Value into a datom
     /// </summary>
     /// <param name="datom"></param>
@@ -45,14 +27,15 @@ public interface IAttributeRegistry
     public TVal Resolve<TVal>(ReadOnlySpan<byte> datom);
 
     /// <summary>
-    /// Gets the registered instance of the given attribute
-    /// </summary>
-    TAttribute GetAttribute<TAttribute>() where TAttribute : IAttribute;
-
-    /// <summary>
     /// Populates the registry with the given attributes, mostly used for
     /// internal registration of attributes
     /// </summary>
     /// <param name="attributes"></param>
     public void Populate(DbAttribute[] attributes);
+
+    /// <summary>
+    /// The registry id of the registry, this can be used to link attributes to attribute ids.
+    /// A separate registry id is used for each registry instance and backing datom store.
+    /// </summary>
+    public RegistryId Id { get; }
 }

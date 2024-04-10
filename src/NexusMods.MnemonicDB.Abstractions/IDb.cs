@@ -41,9 +41,7 @@ public interface IDb : IDisposable
     /// <summary>
     /// Gets a single attribute value for the given entity id.
     /// </summary>
-    public TValue Get<TAttribute, TValue>(EntityId id)
-        where TAttribute : IAttribute<TValue>;
-
+    public TValue Get<TValue>(EntityId id, Attribute<TValue> attribute);
 
     /// <summary>
     ///     Gets a read model for the given entity id.
@@ -58,9 +56,8 @@ public interface IDb : IDisposable
     ///     Gets a read model for every enitity that references the given entity id
     ///     with the given attribute.
     /// </summary>
-    public Entities<EntityIds, TModel> GetReverse<TAttribute, TModel>(EntityId id)
-        where TModel : IEntity
-        where TAttribute : IAttribute<EntityId>;
+    public Entities<EntityIds, TModel> GetReverse<TModel>(EntityId id, Attribute<EntityId> attribute)
+        where TModel : IEntity;
 
     public IEnumerable<IReadDatom> Datoms(EntityId id);
 
@@ -73,21 +70,18 @@ public interface IDb : IDisposable
     /// Gets all values for the given attribute on the given entity. There's no reason to use this
     /// on attributes that are not multi-valued.
     /// </summary>
-    IEnumerable<TValueType> GetAll<TAttribute, TValueType>(EntityId modelId)
-        where TAttribute : IAttribute<TValueType>;
+    IEnumerable<TValueType> GetAll<TValueType>(EntityId modelId, Attribute<TValueType> attribute);
 
 
     /// <summary>
     /// Finds all the entity ids that have the given attribute with the given value.
     /// </summary>
-    IEnumerable<EntityId> FindIndexed<TAttribute, TValue>(TValue value)
-        where TAttribute : IAttribute<TValue>;
+    IEnumerable<EntityId> FindIndexed<TValue>(TValue value, Attribute<TValue> attribute);
 
     /// <summary>
     /// Finds all the entity ids that have the given attribute.
     /// </summary>
-    IEnumerable<EntityId> Find<TAttribute>()
-        where TAttribute : IAttribute;
+    IEnumerable<EntityId> Find(IAttribute attribute);
 
 
     /// <summary>

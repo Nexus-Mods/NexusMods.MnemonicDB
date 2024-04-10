@@ -4,8 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 
 // ReSharper disable MemberCanBePrivate.Global
@@ -19,7 +19,7 @@ public class ReadTests : ABenchmark
     private IDb _db = null!;
     private EntityId[] _entityIds = null!;
     private EntityId _readId;
-    private File[] _preLoaded = null!;
+    private File.Model[] _preLoaded = null!;
     private EntityId _modId;
 
     [Params(1, 1000, MaxCount)] public int Count { get; set; } = MaxCount;
@@ -31,7 +31,7 @@ public class ReadTests : ABenchmark
         var tx = Connection.BeginTransaction();
         var entityIds = new List<EntityId>();
 
-        var tmpMod = new Mod(tx)
+        var tmpMod = new Mod.Model(tx)
         {
             Name = "TestMod",
             Source = new Uri("https://www.nexusmods.com"),
@@ -40,7 +40,7 @@ public class ReadTests : ABenchmark
 
         for (var i = 0; i < Count; i++)
         {
-            var file = new File(tx)
+            var file = new File.Model(tx)
             {
                 Hash = Hash.From((ulong)i),
                 Path = $"C:\\test_{i}.txt",
@@ -60,14 +60,14 @@ public class ReadTests : ABenchmark
 
         _db = Connection.Db;
 
-        _preLoaded = _db.Get<File>(_entityIds).ToArray();
+        _preLoaded = _db.Get<File.Model>(_entityIds).ToArray();
     }
 
     [Benchmark]
     public ulong ReadFiles()
     {
         ulong sum = 0;
-        sum += _db.Get<File>(_readId).Size.Value;
+        sum += _db.Get<File.Model>(_readId).Size.Value;
         return sum;
     }
 
@@ -80,7 +80,7 @@ public class ReadTests : ABenchmark
     [Benchmark]
     public long ReadAll()
     {
-        return _db.Get<File>(_entityIds)
+        return _db.Get<File.Model>(_entityIds)
             .Sum(e => (long)e.Size.Value);
     }
 
@@ -94,7 +94,7 @@ public class ReadTests : ABenchmark
     [Benchmark]
     public ulong ReadAllFromMod()
     {
-        var mod = _db.Get<Mod>(_modId);
+        var mod = _db.Get<Mod.Model>(_modId);
         ulong sum = 0;
         for (var i = 0; i < mod.Files.Count; i++)
         {

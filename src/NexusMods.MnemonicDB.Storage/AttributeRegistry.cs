@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using Reloaded.Memory.Extensions;
@@ -14,17 +14,40 @@ namespace NexusMods.MnemonicDB.Storage;
 ///     Tracks all attributes and their respective serializers as well as the DB entity IDs for each
 ///     attribute
 /// </summary>
-public class AttributeRegistry : IAttributeRegistry
+public class AttributeRegistry : IAttributeRegistry, IDisposable
 {
-    private readonly Dictionary<AttributeId, IAttribute> _attributesByAttributeId;
-    private readonly Dictionary<Symbol, IAttribute> _attributesById;
-    private readonly Dictionary<Type, IAttribute> _attributesByType;
-    private readonly Dictionary<AttributeId, DbAttribute> _dbAttributesByEntityId;
-    private readonly Dictionary<Symbol, DbAttribute> _dbAttributesByUniqueId;
-    private readonly Dictionary<Type, IValueSerializer> _valueSerializersByNativeType;
-    private readonly Dictionary<Symbol, IValueSerializer> _valueSerializersByUniqueId;
+    private static readonly AttributeRegistry?[] _registries = new AttributeRegistry[8];
 
-    private CompareCache _compareCache = new();
+    private static RegistryId GetRegistryId(AttributeRegistry registry)
+    {
+        lock (_registries)
+        {
+            for (var i = 0; i < _registries.Length; i++)
+            {
+                if (_registries[i] != null) continue;
+
+                _registries[i] = registry;
+                return RegistryId.From((byte)i);
+            }
+        }
+
+        throw new IndexOutOfRangeException("Too many attribute registries created");
+    }
+
+    private readonly Dictionary<Symbol, IAttribute> _attributesBySymbol = new ();
+    private AttributeArray _attributes;
+
+    /// <summary>
+    /// We will likely only ever have one of these per program, we're overallocating this
+    /// to sizeof(ref) * 64K but that's probably fine in exchange for the speedup we get for
+    /// this
+    /// </summary>
+    [InlineArray(ushort.MaxValue)]
+    private struct AttributeArray
+    {
+        private IAttribute _attribute;
+    }
+
 
     /// <summary>
     ///     Tracks all attributes and their respective serializers as well as the DB entity IDs for each
@@ -32,144 +55,76 @@ public class AttributeRegistry : IAttributeRegistry
     /// </summary>
     public AttributeRegistry(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
     {
-        var serializers = valueSerializers.ToArray();
-        _valueSerializersByNativeType = serializers.ToDictionary(x => x.NativeType);
-        _valueSerializersByUniqueId = serializers.ToDictionary(x => x.UniqueId);
+        Id = GetRegistryId(this);
 
-        var attributeArray = attributes.ToArray();
-        _attributesById = attributeArray.ToDictionary(x => x.Id);
-        _attributesByType = attributeArray.ToDictionary(x => x.GetType());
-        _attributesByAttributeId = new Dictionary<AttributeId, IAttribute>();
+        var serializers = valueSerializers.ToDictionary(s => s.NativeType);
 
-        foreach (var attr in attributeArray)
+        BuiltInAttributes.UniqueId.SetDbId(Id, BuiltInAttributes.UniqueIdEntityId);
+        BuiltInAttributes.ValueSerializerId.SetDbId(Id, BuiltInAttributes.ValueSerializerIdEntityId);
+
+        foreach (var attribute in attributes)
         {
-            if (!_valueSerializersByNativeType.TryGetValue(attr.ValueType, out var serializer))
-                throw new InvalidOperationException($"No serializer found for type {attr.ValueType}");
-
-            attr.SetSerializer(serializer);
+            attribute.SetSerializer(serializers[attribute.ValueType]);
+            _attributesBySymbol[attribute.Id] = attribute;
         }
-
-        _dbAttributesByEntityId = new Dictionary<AttributeId, DbAttribute>();
-        _dbAttributesByUniqueId = new Dictionary<Symbol, DbAttribute>();
     }
 
-    public AttributeId GetAttributeId(Type datomAttributeType)
-    {
-        if (!_attributesByType.TryGetValue(datomAttributeType, out var attribute))
-            throw new InvalidOperationException($"No attribute found for type {datomAttributeType}");
-
-        if (!_dbAttributesByUniqueId.TryGetValue(attribute.Id, out var dbAttribute))
-            throw new InvalidOperationException($"No DB attribute found for attribute {attribute}");
-
-        return dbAttribute.AttrEntityId;
-    }
+    /// <inheritdoc />
+    public RegistryId Id { get; }
 
     public IReadDatom Resolve(ReadOnlySpan<byte> datom)
     {
         var c = MemoryMarshal.Read<KeyPrefix>(datom);
-        if (!_attributesByAttributeId.TryGetValue(c.A, out var attribute))
-            throw new InvalidOperationException($"No attribute found for attribute ID {c.A}");
 
+        var attr = _attributes[c.A.Value];
         unsafe
         {
-            return attribute.Resolve(c.E, c.A, datom.SliceFast(sizeof(KeyPrefix)), c.T, c.IsRetract);
+            return attr.Resolve(c.E, c.A, datom.SliceFast(sizeof(KeyPrefix)), c.T, c.IsRetract);
         }
     }
 
     public TVal Resolve<TVal>(ReadOnlySpan<byte> datom)
     {
         var c = MemoryMarshal.Read<KeyPrefix>(datom);
-        if (!_attributesByAttributeId.TryGetValue(c.A, out var attribute))
-            throw new InvalidOperationException($"No attribute found for attribute ID {c.A}");
+        var attr = _attributes[c.A.Value];
 
         unsafe
         {
-            return ((IValueSerializer<TVal>)attribute.Serializer).Read(datom.SliceFast(sizeof(KeyPrefix)));
+            return ((IValueSerializer<TVal>)attr.Serializer).Read(datom.SliceFast(KeyPrefix.Size));
         }
-    }
-
-    public TAttribute GetAttribute<TAttribute>() where TAttribute : IAttribute
-    {
-        if (!_attributesByType.TryGetValue(typeof(TAttribute), out var attribute))
-            throw new InvalidOperationException($"No attribute found for type {typeof(TAttribute)}");
-
-        return (TAttribute)attribute;
     }
 
     public int CompareValues(AttributeId id, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
-        if (a.Length == 0 || b.Length == 0) return a.Length < b.Length ? -1 : a.Length > b.Length ? 1 : 0;
+        if (a.Length == 0 || b.Length == 0)
+            return a.Length < b.Length ? -1 : a.Length > b.Length ? 1 : 0;
 
-        var cache = _compareCache;
-        if (cache.AttributeId == id)
-            return cache.Serializer.Compare(a, b);
+        var attr = _attributes[id.Value];
 
-        var attr = _dbAttributesByEntityId[id];
-        var type = _valueSerializersByUniqueId[attr.ValueTypeId];
-        _compareCache = new CompareCache { AttributeId = id, Serializer = type };
-        return type.Compare(a, b);
-    }
-
-    public void Explode<TAttribute, TValueType, TBufferWriter>(out AttributeId id, TValueType value,
-        TBufferWriter writer)
-        where TAttribute : IAttribute<TValueType>
-        where TBufferWriter : IBufferWriter<byte>
-    {
-        var attr = _attributesByType[typeof(TAttribute)];
-        var dbAttr = _dbAttributesByUniqueId[attr.Id];
-        var serializer = (IValueSerializer<TValueType>)_valueSerializersByUniqueId[dbAttr.ValueTypeId];
-        id = dbAttr.AttrEntityId;
-        serializer.Serialize(value, writer);
-    }
-
-    public Symbol GetSymbolForAttribute(Type attribute)
-    {
-        if (!_attributesByType.TryGetValue(attribute, out var attr))
-            throw new InvalidOperationException($"No attribute found for type {attribute}");
-
-        return attr.Id;
+        return attr.Serializer.Compare(a, b);
     }
 
     public void Populate(DbAttribute[] attributes)
     {
-        foreach (var attr in attributes)
+        foreach (var dbAttribute in attributes)
         {
-            _dbAttributesByEntityId[attr.AttrEntityId] = attr;
-            _dbAttributesByUniqueId[attr.UniqueId] = attr;
-        }
-
-        _attributesByAttributeId.Clear();
-
-        foreach (var (id, dbAttr) in _dbAttributesByEntityId)
-        {
-            var attr = _attributesById[dbAttr.UniqueId];
-            _attributesByAttributeId[id] = attr;
+            var instance = _attributesBySymbol[dbAttribute.UniqueId];
+            instance.SetDbId(Id, dbAttribute.AttrEntityId);
+            _attributes[dbAttribute.AttrEntityId.Value] = instance;
         }
     }
 
-    public AttributeId GetAttributeId<TAttr>()
-        where TAttr : IAttribute
-    {
-        if (!_attributesByType.TryGetValue(typeof(TAttr), out var attribute))
-            throw new InvalidOperationException($"No attribute found for type {typeof(TAttr)}");
-
-        if (!_dbAttributesByUniqueId.TryGetValue(attribute.Id, out var dbAttribute))
-            throw new InvalidOperationException($"No DB attribute found for attribute {attribute}");
-
-        return dbAttribute.AttrEntityId;
-    }
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public IAttribute GetAttribute(AttributeId attributeId)
     {
-        if (!_attributesByAttributeId.TryGetValue(attributeId, out var attr))
-            throw new InvalidOperationException($"No attribute found for AttributeId {attributeId}");
-
+        var attr = _attributes[attributeId.Value];
+        if (attr == null)
+            throw new InvalidOperationException($"No attribute found for attribute ID {attributeId}");
         return attr;
     }
 
-    private sealed class CompareCache
+    public void Dispose()
     {
-        public AttributeId AttributeId;
-        public IValueSerializer Serializer = null!;
+        _registries[Id.Value] = null!;
     }
 }

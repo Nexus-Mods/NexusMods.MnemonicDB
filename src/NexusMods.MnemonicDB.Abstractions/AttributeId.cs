@@ -5,7 +5,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// <summary>
 ///     A unique identifier for an attribute, also an EntityId.
 /// </summary>
-[ValueObject<ulong>]
+[ValueObject<ushort>]
 public readonly partial struct AttributeId
 {
     /// <summary>
@@ -20,7 +20,7 @@ public readonly partial struct AttributeId
     /// <summary>
     ///     Minimum value for an AttributeId.
     /// </summary>
-    public static AttributeId Min => new(ulong.MinValue);
+    public static AttributeId Min => new(ushort.MinValue);
 
     /// <summary>
     ///     Maximum value for an AttributeId.

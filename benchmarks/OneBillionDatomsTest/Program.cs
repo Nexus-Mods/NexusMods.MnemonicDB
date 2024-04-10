@@ -1,18 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.TestModel;
-using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
-using NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.Paths;
 
@@ -38,9 +32,6 @@ var host = Host.CreateDefaultBuilder()
 
 var services = host.Services;
 
-var store = services.GetRequiredService<IDatomStore>();
-await store.Sync();
-
 var connection = services.GetRequiredService<IConnection>();
 
 ulong batchSize = 1024;
@@ -59,12 +50,12 @@ var lastPrint = DateTime.UtcNow;
 
 for (ulong i = 0; i < batches; i++)
 {
-    var tx = connection.BeginTransaction();
+    using var tx = connection.BeginTransaction();
 
     for (var j = 0; j < (int)batchSize; j++)
     {
         fileNumber += 1;
-        var _ = new File(tx)
+        var _ = new File.Model(tx)
         {
             Path = $"c:\\test_{i}_{j}.txt",
             Hash = Hash.From(fileNumber % 0xFFFF),

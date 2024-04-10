@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.Storage.DatomStorageStructures;
@@ -42,14 +43,16 @@ public class DatomStore : IDatomStore
     private TxId _asOfTxId = TxId.MinValue;
     private EntityId _nextEntityId;
     private readonly Task _startupTask;
+    /// <summary>
+    /// Cached version of the registry ID to avoid the overhead of looking it up every time
+    /// </summary>
+    private readonly RegistryId _registryId;
 
 
     public DatomStore(ILogger<DatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings,
         IStoreBackend backend)
     {
         _backend = backend;
-
-
         _writer = new PooledMemoryBufferWriter();
         _retractWriter = new PooledMemoryBufferWriter();
         _prevWriter = new PooledMemoryBufferWriter();
@@ -58,6 +61,7 @@ public class DatomStore : IDatomStore
         _logger = logger;
         _settings = settings;
         _registry = registry;
+        _registryId = registry.Id;
         _nextEntityId = EntityId.From(Ids.MinId(Ids.Partition.Entity) + 1);
 
         _backend.DeclareEAVT(IndexType.EAVTCurrent);
@@ -92,21 +96,17 @@ public class DatomStore : IDatomStore
         Task.Run(ConsumeTransactions);
     }
 
+    /// <inheritdoc />
     public TxId AsOfTxId => _asOfTxId;
+
+    /// <inheritdoc />
     public IAttributeRegistry Registry => _registry;
 
 
     /// <inheritdoc />
-    public async Task<TxId> Sync()
+    public async Task<StoreResult> Transact(IndexSegment datoms)
     {
-        await Transact(Enumerable.Empty<IWriteDatom>());
-        return _asOfTxId;
-    }
-
-    /// <inheritdoc />
-    public async Task<StoreResult> Transact(IEnumerable<IWriteDatom> datoms)
-    {
-        var pending = new PendingTransaction { Data = datoms.ToArray() };
+        var pending = new PendingTransaction { Data = datoms };
         if (!_txChannel.Writer.TryWrite(pending))
             throw new InvalidOperationException("Failed to write to the transaction channel");
 
@@ -118,17 +118,16 @@ public class DatomStore : IDatomStore
     /// <inheritdoc />
     public async Task RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
     {
-        var datoms = new List<IWriteDatom>();
+        var datoms = new IndexSegmentBuilder(_registry);
         var newAttrsArray = newAttrs.ToArray();
 
         foreach (var attr in newAttrsArray)
         {
-            datoms.Add(BuiltInAttributes.UniqueId.Assert(EntityId.From(attr.AttrEntityId.Value), attr.UniqueId));
-            datoms.Add(BuiltInAttributes.ValueSerializerId.Assert(EntityId.From(attr.AttrEntityId.Value),
-                attr.ValueTypeId));
+            datoms.Add(EntityId.From(attr.AttrEntityId.Value), BuiltInAttributes.UniqueId, attr.UniqueId, TxId.Tmp, false);
+            datoms.Add(EntityId.From(attr.AttrEntityId.Value), BuiltInAttributes.ValueSerializerId, attr.ValueTypeId, TxId.Tmp, false);
         }
 
-        await Transact(datoms);
+        await Transact(datoms.Build());
 
         _registry.Populate(newAttrsArray);
     }
@@ -151,33 +150,40 @@ public class DatomStore : IDatomStore
 
     private async Task ConsumeTransactions()
     {
-        while (await _txChannel.Reader.WaitToReadAsync())
+        try
         {
-            var pendingTransaction = await _txChannel.Reader.ReadAsync();
-            try
+            while (await _txChannel.Reader.WaitToReadAsync())
             {
-                // Sync transactions have no data, and are used to verify that the store is up to date.
-                if (pendingTransaction.Data.Length == 0)
+                var pendingTransaction = await _txChannel.Reader.ReadAsync();
+                try
                 {
-                    var storeResult = new StoreResult
+                    // Sync transactions have no data, and are used to verify that the store is up to date.
+                    if (!pendingTransaction.Data.Valid)
                     {
-                        Remaps = new Dictionary<EntityId, EntityId>(),
-                        AssignedTxId = _asOfTxId,
-                        Snapshot = _backend.GetSnapshot(),
-                    };
-                    pendingTransaction.CompletionSource.SetResult(storeResult);
-                    continue;
+                        var storeResult = new StoreResult
+                        {
+                            Remaps = new Dictionary<EntityId, EntityId>(),
+                            AssignedTxId = _asOfTxId,
+                            Snapshot = null!,
+                        };
+                        pendingTransaction.CompletionSource.TrySetResult(storeResult);
+                        continue;
+                    }
+
+                    Log(pendingTransaction, out var result);
+
+                    _updatesSubject.OnNext((result.AssignedTxId, result.Snapshot));
+                    pendingTransaction.CompletionSource.TrySetResult(result);
                 }
-
-                Log(pendingTransaction, out var result);
-
-                _updatesSubject.OnNext((result.AssignedTxId, result.Snapshot));
-                pendingTransaction.CompletionSource.SetResult(result);
+                catch (Exception ex)
+                {
+                    pendingTransaction.CompletionSource.TrySetException(ex);
+                }
             }
-            catch (Exception ex)
-            {
-                pendingTransaction.CompletionSource.TrySetException(ex);
-            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Transaction consumer crashed");
         }
     }
 
@@ -196,7 +202,7 @@ public class DatomStore : IDatomStore
             if (lastTx == TxId.MinValue)
             {
                 _logger.LogInformation("Bootstrapping the datom store no existing state found");
-                var _ = await Transact(BuiltInAttributes.InitialDatoms);
+                var _ = await Transact(BuiltInAttributes.InitialDatoms(_registry));
                 return;
             }
 
@@ -246,7 +252,7 @@ public class DatomStore : IDatomStore
     }
 
 
-    private unsafe void Log(PendingTransaction pendingTransaction, out StoreResult result)
+    private void Log(PendingTransaction pendingTransaction, out StoreResult result)
     {
         var thisTx = TxId.From(_asOfTxId.Value + 1);
 
@@ -261,17 +267,33 @@ public class DatomStore : IDatomStore
         foreach (var datom in pendingTransaction.Data)
         {
             _writer.Reset();
-            _writer.Advance(sizeof(KeyPrefix));
 
             var isRemapped = Ids.IsPartition(datom.E.Value, Ids.Partition.Tmp);
-            datom.Explode(_registry, remapFn, out var e, out var a, _writer, out var isRetract);
-            var keyPrefix = _writer.GetWrittenSpanWritable().CastFast<byte, KeyPrefix>();
-            keyPrefix[0].Set(e, a, thisTx, isRetract);
+            var attr = _registry.GetAttribute(datom.A);
+
+            var currentPrefix = datom.Prefix;
+
+            var newE = isRemapped ? remapFn(currentPrefix.E) : currentPrefix.E;
+            var keyPrefix = new KeyPrefix().Set(newE, currentPrefix.A, thisTx, currentPrefix.IsRetract);
+
+            {
+                if (attr.IsReference)
+                {
+                    var newV = remapFn(MemoryMarshal.Read<EntityId>(datom.ValueSpan));
+                    _writer.WriteMarshal(keyPrefix);
+                    _writer.WriteMarshal(newV);
+                }
+                else
+                {
+                    _writer.WriteMarshal(keyPrefix);
+                    _writer.Write(datom.ValueSpan);
+                }
+
+            }
+
             var newSpan = _writer.GetWrittenSpan();
 
-            var attr = _registry.GetAttribute(a);
-
-            if (isRetract)
+            if (keyPrefix.IsRetract)
             {
                 ProcessRetract(batch, attr, newSpan, currentSnapshot);
                 continue;
@@ -299,7 +321,7 @@ public class DatomStore : IDatomStore
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("Transaction {TxId} ({Count} datoms) prepared in {Elapsed}ms, written in {WriteElapsed}ms",
                 thisTx.Value,
-                pendingTransaction.Data.Length,
+                pendingTransaction.Data.Count,
                 swPrepare.ElapsedMilliseconds - swWrite.ElapsedMilliseconds,
                 swWrite.ElapsedMilliseconds);
 
@@ -407,7 +429,7 @@ public class DatomStore : IDatomStore
 
         var keyPrefix = MemoryMarshal.Read<KeyPrefix>(span);
 
-        if (attribute.IsMultiCardinality)
+        if (attribute.Cardinalty == Cardinality.Many)
         {
             var found = snapshot.Datoms(IndexType.EAVTCurrent, span)
                 .Select(d => d.Clone())

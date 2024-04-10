@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -6,7 +7,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// <summary>
 ///     Represents a transaction, which is a set of proposed changes to the datom store
 /// </summary>
-public interface ITransaction
+public interface ITransaction : IDisposable
 {
     /// <summary>
     ///     Gets the temporary id for the transaction
@@ -22,12 +23,7 @@ public interface ITransaction
     /// <summary>
     ///     Adds a new datom to the transaction
     /// </summary>
-    /// <param name="entityId"></param>
-    /// <param name="val"></param>
-    /// <typeparam name="TAttribute"></typeparam>
-    /// <typeparam name="TVal"></typeparam>
-    void Add<TAttribute, TVal>(EntityId entityId, TVal val)
-        where TAttribute : IAttribute<TVal>;
+    void Add<TVal>(EntityId entityId, Attribute<TVal> attribute, TVal val);
 
     /// <summary>
     ///     Commits the transaction

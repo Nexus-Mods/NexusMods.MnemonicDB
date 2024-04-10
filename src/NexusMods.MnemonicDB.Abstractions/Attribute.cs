@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
@@ -12,47 +14,56 @@ namespace NexusMods.MnemonicDB.Abstractions;
 ///     Interface for a specific attribute
 /// </summary>
 /// <typeparam name="TValueType"></typeparam>
-/// <typeparam name="TAttribute"></typeparam>
-public class Attribute<TAttribute, TValueType> : IAttribute<TValueType>
-    where TAttribute : IAttribute<TValueType>
+public sealed class Attribute<TValueType> : IAttribute
 {
     private IValueSerializer<TValueType> _serializer = null!;
+    private RegistryId.InlineCache _cache;
 
-    /// <summary>
-    ///     Create a new attribute
-    /// </summary>
-    protected Attribute(string uniqueName = "",
-        bool isIndexed = false,
-        bool noHistory = false,
-        bool multiValued = false)
+    public Attribute(string nsAndName, bool isIndexed = false, bool noHistory = false, Cardinality cardinality = Cardinality.One)
     {
+        Id = Symbol.Intern(nsAndName);
+        Cardinalty = cardinality;
         IsIndexed = isIndexed;
         NoHistory = noHistory;
-        Multivalued = multiValued;
-        Id = uniqueName == "" ? Symbol.Intern(typeof(TAttribute).FullName!) : Symbol.InternPreSanitized(uniqueName);
     }
 
-    /// <summary>
-    ///     Create a new attribute from an already parsed guid
-    /// </summary>
-    protected Attribute(Symbol symbol)
-    {
-        Id = symbol;
-    }
+    /// <inheritdoc />
+    public Symbol Id { get; }
 
-    public bool Multivalued { get; }
+    /// <inheritdoc />
+    public Cardinality Cardinalty { get; }
 
     /// <inheritdoc />
     public bool IsIndexed { get; }
 
+    /// <inheritdoc />
     public bool NoHistory { get; }
-    IValueSerializer IAttribute.Serializer => _serializer;
-
 
     /// <inheritdoc />
-    public static void Add(ITransaction tx, EntityId entity, TValueType value)
+    public bool Equals(Attribute<TValueType>? other)
     {
-        tx.Add<TAttribute, TValueType>(entity, value);
+        return other != null && ReferenceEquals(Id, other.Id);
+    }
+
+    IValueSerializer IAttribute.Serializer => Serializer;
+
+    /// <inheritdoc />
+    public void Add(ITransaction tx, EntityId entity, TValueType value)
+    {
+        tx.Add(entity, this, value);
+    }
+
+    /// <inheritdoc />
+    public void SetDbId(RegistryId id, AttributeId attributeId)
+    {
+        _cache[id.Value] = attributeId;
+    }
+
+    /// <inheritdoc />
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public AttributeId GetDbId(RegistryId id)
+    {
+        return _cache[id.Value];
     }
 
     /// <inheritdoc />
@@ -64,18 +75,11 @@ public class Attribute<TAttribute, TValueType> : IAttribute<TValueType>
         _serializer = valueSerializer;
     }
 
-
     /// <inheritdoc />
     public Type ValueType => typeof(TValueType);
 
     /// <inheritdoc />
-    public bool IsMultiCardinality => false;
-
-    /// <inheritdoc />
     public bool IsReference => typeof(TValueType) == typeof(EntityId);
-
-    /// <inheritdoc />
-    public Symbol Id { get; }
 
     /// <inheritdoc />
     public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx,
@@ -84,6 +88,7 @@ public class Attribute<TAttribute, TValueType> : IAttribute<TValueType>
         return new ReadDatom
         {
             E = entityId,
+            A = this,
             V = _serializer.Read(value),
             T = tx,
             IsRetract = isRetract
@@ -96,63 +101,21 @@ public class Attribute<TAttribute, TValueType> : IAttribute<TValueType>
         return typeof(ReadDatom);
     }
 
-
-    /// <summary>
-    ///     Create a new datom for an assert on this attribute, and return it
-    /// </summary>
-    /// <param name="e"></param>
-    /// <param name="v"></param>
-    /// <returns></returns>
-    public static IWriteDatom Assert(EntityId e, TValueType v)
-    {
-        return new WriteDatom
-        {
-            E = e,
-            V = v,
-            IsRetract = false
-        };
-    }
-
-    public static IWriteDatom Retract(EntityId e, TValueType v)
-    {
-        return new WriteDatom
-        {
-            E = e,
-            V = v,
-            IsRetract = true
-        };
-    }
-
     /// <inheritdoc />
     public IValueSerializer<TValueType> Serializer => _serializer;
 
-    private class InlineCache
-    {
-        public required IAttributeRegistry Registry = null!;
-        public required AttributeId Id;
-        public required IValueSerializer<TValueType> Serializer = null!;
-        public required TAttribute Attribute = default!;
-    }
-
-    private static InlineCache _cache = new ()
-    {
-        Registry = null!,
-        Id = default!,
-        Serializer = null!,
-        Attribute = default!
-    };
 
     /// <summary>
     /// Gets the value for this attribute on the given entity
     /// </summary>
-    public static TValueType Get(IEntity entity)
+    public TValueType Get(IEntity entity)
     {
         var segment = entity.Db.GetSegment(entity.Id);
-        var cache = GetInlinedCache(entity);
+        var dbId = _cache[segment.RegistryId.Value];
         for (var i = 0; i < segment.Count; i++)
         {
             var datom = segment[i];
-            if (datom.A == cache.Id)
+            if (datom.A == dbId)
             {
                 return datom.Resolve<TValueType>();
             }
@@ -161,112 +124,50 @@ public class Attribute<TAttribute, TValueType> : IAttribute<TValueType>
         return default!;
     }
 
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static InlineCache GetInlinedCache(IEntity entity)
+    private void ThrowKeyNotFoundException(EntityId id)
     {
-        var cache = _cache;
-        if (!ReferenceEquals(cache.Registry, entity.Db.Registry))
-        {
-            cache = FillInlineCache(entity);
-        }
-        return cache;
-    }
-
-    private static InlineCache FillInlineCache(IEntity entity)
-    {
-        InlineCache cache;
-        var attribute = entity.Db.Registry.GetAttribute<TAttribute>();
-        var attrId = entity.Db.Registry.GetAttributeId(typeof(TAttribute));
-        cache = new InlineCache
-        {
-            Registry = entity.Db.Registry,
-            Id = attrId,
-            Serializer = attribute.Serializer,
-            Attribute = attribute
-        };
-        _cache = cache;
-        return cache;
-    }
-
-    private static void ThrowKeyNotFoundException(EntityId id)
-    {
-        throw new KeyNotFoundException($"Attribute {typeof(TAttribute).Name} not found on entity {id}");
+        throw new KeyNotFoundException($"Attribute {Id} not found on entity {id}");
     }
 
     /// <summary>
     /// Gets all values for this attribute on the given entity
     /// </summary>
-    public static Values<TValueType> GetAll(IEntity ent)
+    public Values<TValueType> GetAll(IEntity ent)
     {
         var segment = ent.Db.GetSegment(ent.Id);
-        var cache = GetInlinedCache(ent);
+        var dbId = _cache[segment.RegistryId.Value];
         for (var i = 0; i < segment.Count; i++)
         {
             var datom = segment[i];
-            if (datom.A != cache.Id) continue;
+            if (datom.A != dbId) continue;
 
             var start = i;
-            while (i < segment.Count && segment[i].A == cache.Id)
+            while (i < segment.Count && segment[i].A == dbId)
             {
                 i++;
             }
-            return new Values<TValueType>(segment, start, i, cache.Serializer);
+            return new Values<TValueType>(segment, start, i, Serializer);
         }
-        return new Values<TValueType>(segment, 0, 0, cache.Serializer);
+        return new Values<TValueType>(segment, 0, 0, Serializer);
     }
 
     /// <inheritdoc />
-    public static void Add(IEntity entity, TValueType value)
+    public void Add(IEntity entity, TValueType value)
     {
-        entity.Tx!.Add<TAttribute, TValueType>(entity.Id, value);
+        entity.Tx!.Add(entity.Id, this, value);
     }
 
     /// <summary>
-    ///     Typed datom for this attribute
+    /// Write a datom for this attribute to the given writer
     /// </summary>
-    public readonly record struct WriteDatom : IWriteDatom
+    public void Write<TWriter>(EntityId entityId, RegistryId registryId, TValueType value, TxId txId, bool isRetract, TWriter writer)
+    where TWriter : IBufferWriter<byte>
     {
-        /// <summary>
-        ///     The value for this datom
-        /// </summary>
-        public required TValueType V { get; init; }
-
-        /// <summary>
-        ///     The entity id for this datom
-        /// </summary>
-        public required EntityId E { get; init; }
-
-        /// <summary>
-        ///     True if this is a retraction
-        /// </summary>
-        public required bool IsRetract { get; init; }
-
-        public void Explode<TWriter>(IAttributeRegistry registry, Func<EntityId, EntityId> remapFn,
-            out EntityId e, out AttributeId a, TWriter vWriter, out bool isRetract)
-            where TWriter : IBufferWriter<byte>
-        {
-            isRetract = IsRetract;
-            e = EntityId.From(Ids.IsPartition(E.Value, Ids.Partition.Tmp) ? remapFn(E).Value : E.Value);
-
-            if (V is EntityId id)
-            {
-                var newId = remapFn(id);
-                if (newId is TValueType recasted)
-                {
-                    registry.Explode<TAttribute, TValueType, TWriter>(out a, recasted, vWriter);
-                    return;
-                }
-            }
-
-            registry.Explode<TAttribute, TValueType, TWriter>(out a, V, vWriter);
-        }
-
-
-        /// <inheritdoc />
-        public override string ToString()
-        {
-            return $"({E.Value:x}, {typeof(TAttribute).Name}, {V})";
-        }
+        var prefix = new KeyPrefix().Set(entityId, GetDbId(registryId), txId, isRetract);
+        var span = writer.GetSpan(KeyPrefix.Size);
+        MemoryMarshal.Write(span, prefix);
+        writer.Advance(KeyPrefix.Size);
+        Serializer.Serialize(value, writer);
     }
 
     /// <summary>
@@ -280,6 +181,11 @@ public class Attribute<TAttribute, TValueType> : IAttribute<TValueType>
         ///     The value for this datom
         /// </summary>
         public required TValueType V { get; init; }
+
+        /// <summary>
+        ///     The attribute for this datom
+        /// </summary>
+        public required IAttribute A { get; init; }
 
         /// <summary>
         ///     The entity id for this datom
@@ -302,10 +208,8 @@ public class Attribute<TAttribute, TValueType> : IAttribute<TValueType>
             init => _tx = (_tx & ~1UL) | (value ? 1UL : 0);
         }
 
-        public object ObjectValue => V!;
-
         /// <inheritdoc />
-        public Type AttributeType => typeof(TAttribute);
+        public object ObjectValue => V!;
 
         /// <inheritdoc />
         public Type ValueType => typeof(TValueType);
@@ -313,7 +217,8 @@ public class Attribute<TAttribute, TValueType> : IAttribute<TValueType>
         /// <inheritdoc />
         public override string ToString()
         {
-            return $"({E.Value:x}, {typeof(TAttribute).Name}, {V}, {T.Value:x})";
+            return $"({(IsRetract ? "-" : "+")}, {E.Value:x}, {A.Id.Name}, {V}, {T.Value:x})";
         }
     }
+
 }

@@ -15,8 +15,7 @@ public static class Services
         services.AddValueSerializer<SymbolSerializer>();
         services.AddValueSerializer<TxIdSerializer>();
         services.AddValueSerializer<EntityIdSerializer>();
-        services.AddAttribute<BuiltInAttributes.UniqueId>();
-        services.AddAttribute<BuiltInAttributes.ValueSerializerId>();
+        services.AddAttributeCollection(typeof(BuiltInAttributes));
         services.AddSingleton<IDatomStore, DatomStore>();
         services.AddSingleton<AttributeRegistry>();
         return services;

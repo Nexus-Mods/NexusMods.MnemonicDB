@@ -2,9 +2,10 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Reloaded.Memory.Extensions;
 
-namespace NexusMods.MnemonicDB.Storage;
+namespace NexusMods.MnemonicDB.Abstractions;
 
 /// <summary>
 ///     A IBufferWriter that uses pooled memory to reduce allocations.
@@ -96,6 +97,16 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
     {
         span.CopyTo(GetSpan(span.Length));
         Advance(span.Length);
+    }
+
+    /// <summary>
+    /// Writes the value to the buffer as-is, via MemoryMarshal.Write.
+    /// </summary>
+    public unsafe void WriteMarshal<T>(T value) where T : unmanaged
+    {
+        var span = GetSpan(sizeof(T));
+        MemoryMarshal.Write(span, value);
+        Advance(sizeof(T));
     }
 
     /// <summary>

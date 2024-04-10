@@ -1,17 +1,14 @@
-﻿using System.Reflection;
-using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
-using NexusMods.MnemonicDB.TestModel.ComplexModel.Attributes;
-using NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels;
 using NexusMods.MnemonicDB.TestModel.Helpers;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
-using File = NexusMods.MnemonicDB.TestModel.ComplexModel.ReadModels.File;
+using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
 
@@ -85,18 +82,18 @@ public class AMnemonicDBTest : IDisposable
         return Verify(datoms.ToTable(_registry));
     }
 
-    protected async Task<Loadout> InsertExampleData()
+    protected async Task<Loadout.Model> InsertExampleData()
     {
         var tx = Connection.BeginTransaction();
-        var loadout = new Loadout(tx)
+        var loadout = new Loadout.Model(tx)
         {
             Name = "Test Loadout"
         };
-        List<Mod> mods = new();
+        List<Mod.Model> mods = new();
 
         foreach (var modName in new[] { "Mod1", "Mod2", "Mod3" })
         {
-            var mod = new Mod(tx)
+            var mod = new Mod.Model(tx)
             {
                 Name = modName,
                 Source = new Uri("http://somesite.com/" + modName),
@@ -106,7 +103,7 @@ public class AMnemonicDBTest : IDisposable
             var idx = 0;
             foreach (var file in new[] { "File1", "File2", "File3" })
             {
-                _ = new File(tx)
+                _ = new File.Model(tx)
                 {
                     Path = file,
                     Mod = mod,
@@ -125,23 +122,25 @@ public class AMnemonicDBTest : IDisposable
         var tx2 = Connection.BeginTransaction();
         foreach (var mod in loadout.Mods)
         {
-            ModAttributes.Name.Add(tx2, mod.Id, mod.Name + " - Updated");
+            Mod.Name.Add(tx2, mod.Id, mod.Name + " - Updated");
         }
         await tx2.Commit();
 
-        return Connection.Db.Get<Loadout>(loadout.Id);
+        return Connection.Db.Get<Loadout.Model>(loadout.Id);
 
 
     }
 
     public void Dispose()
     {
+        _registry.Dispose();
         _store.Dispose();
     }
 
 
     protected async Task RestartDatomStore()
     {
+        _registry.Dispose();
         _store.Dispose();
         _backend.Dispose();
 
@@ -149,7 +148,6 @@ public class AMnemonicDBTest : IDisposable
         _backend = new Backend(_registry);
         _registry = new AttributeRegistry(_valueSerializers, _attributes);
         _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
-        await _store.Sync();
 
         Connection = new Connection(_provider.GetRequiredService<ILogger<Connection>>(), _store, _valueSerializers, _attributes);
     }
