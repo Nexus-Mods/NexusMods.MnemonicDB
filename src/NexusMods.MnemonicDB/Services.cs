@@ -13,6 +13,7 @@ public static class Services
     /// </summary>
     public static IServiceCollection AddMnemonicDB(this IServiceCollection services)
     {
+        services.AddAttributeCollection(typeof(Attributes.Transaction));
         services.AddSingleton<IConnection, Connection>();
         return services;
     }

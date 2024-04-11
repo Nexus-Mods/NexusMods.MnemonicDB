@@ -167,6 +167,11 @@ public sealed class Attribute<TValueType> : IAttribute
         var span = writer.GetSpan(KeyPrefix.Size);
         MemoryMarshal.Write(span, prefix);
         writer.Advance(KeyPrefix.Size);
+
+        var serializer = Serializer;
+        if (serializer == null)
+            throw new NullReferenceException("Serializer is not set for attribute " + Id);
+
         Serializer.Serialize(value, writer);
     }
 

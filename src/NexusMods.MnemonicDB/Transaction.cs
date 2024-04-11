@@ -39,6 +39,7 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
 
     public async Task<ICommitResult> Commit()
     {
+        Add(EntityId.From(TxId.Tmp.Value), Attributes.Transaction.CreatedAt, DateTime.UtcNow);
         _committed = true;
         return await connection.Transact(_datoms.Build());
     }

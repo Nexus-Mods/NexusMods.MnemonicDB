@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.TestModel;
 using Xunit.DependencyInjection.Logging;
@@ -12,6 +13,7 @@ public class Startup
     {
         services.AddTestModel()
             .AddLogging(builder => builder.AddXunitOutput().SetMinimumLevel(LogLevel.Debug))
+            .AddAttributeCollection(typeof(Attributes.Transaction))
             .AddMnemonicDBStorage();
     }
 }
