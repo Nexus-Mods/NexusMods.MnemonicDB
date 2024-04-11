@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Buffers;
+using System.Runtime.InteropServices;
 using System.Text;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Internals;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Storage.Serializers;
 
@@ -13,28 +16,43 @@ public class StringSerializer : IValueSerializer<string>
     /// <inheritdoc />
     public Type NativeType => typeof(string);
 
+    public LowLevelTypes LowLevelType => LowLevelTypes.Utf8;
+
     /// <inheritdoc />
     public Symbol UniqueId { get; } = Symbol.Intern<StringSerializer>();
 
-    /// <inheritdoc />
-    public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
+    public string Read(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan)
     {
-        return a.SequenceCompareTo(b);
+        if (prefix.ValueLength != KeyPrefix.LengthOversized)
+            return _encoding.GetString(valueSpan.SliceFast(0, prefix.ValueLength));
+
+        var length = MemoryMarshal.Read<uint>(valueSpan);
+        return _encoding.GetString(valueSpan.SliceFast(sizeof(uint), (int)length));
     }
 
-    /// <inheritdoc />
-    public string Read(ReadOnlySpan<byte> buffer)
+    public void Serialize<TWriter>(ref KeyPrefix prefix, string value, TWriter buffer) where TWriter : IBufferWriter<byte>
     {
-        return _encoding.GetString(buffer);
-    }
+        var size = _encoding.GetByteCount(value);
+        if (size <= KeyPrefix.MaxLength)
+        {
+            var span = buffer.GetSpan(size + KeyPrefix.Size);
+            _encoding.GetBytes(value, span);
+            buffer.Advance(size);
+            prefix.ValueLength = (byte)size;
+            prefix.LowLevelType = LowLevelTypes.Utf8;
+            buffer.Advance(size + KeyPrefix.Size);
+        }
+        else
+        {
+            var span = buffer.GetSpan(size + sizeof(uint) + KeyPrefix.Size);
+            MemoryMarshal.Write(span, (uint)size);
+            _encoding.GetBytes(value, span.SliceFast(sizeof(uint)));
+            buffer.Advance(size + sizeof(uint));
+            prefix.ValueLength = KeyPrefix.LengthOversized;
+            prefix.LowLevelType = LowLevelTypes.Utf8;
+            buffer.Advance(size + sizeof(uint) + KeyPrefix.Size);
 
-    /// <inheritdoc />
-    public void Serialize<TWriter>(string value, TWriter buffer) where TWriter : IBufferWriter<byte>
-    {
-        // TODO: No reason to walk the string twice, we should do this in one pass
-        var bytes = _encoding.GetByteCount(value);
-        var span = buffer.GetSpan(bytes);
-        _encoding.GetBytes(value, span);
-        buffer.Advance(bytes);
+
+        }
     }
 }

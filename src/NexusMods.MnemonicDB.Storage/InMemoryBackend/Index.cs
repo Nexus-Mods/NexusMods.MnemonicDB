@@ -6,9 +6,9 @@ using NexusMods.MnemonicDB.Storage.Abstractions;
 
 namespace NexusMods.MnemonicDB.Storage.InMemoryBackend;
 
-public class Index<TDatomComparator>(AttributeRegistry registry, IndexStore store) :
-    AIndex<TDatomComparator, IndexStore>(registry, store), IInMemoryIndex, IComparer<byte[]>
-    where TDatomComparator : IDatomComparator<AttributeRegistry>
+public class Index<TDatomComparator>(IndexStore store) :
+    AIndex<TDatomComparator, IndexStore>(store), IInMemoryIndex, IComparer<byte[]>
+    where TDatomComparator : IDatomComparator
 {
     public int Compare(byte[]? x, byte[]? y)
     {

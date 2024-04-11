@@ -1,5 +1,4 @@
 ﻿using System;
-using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
@@ -7,11 +6,10 @@ namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 /// Compares to elements of a datom. We use this and generics to abuse the inlining
 /// of the compiler to generate efficient comparison code.
 /// </summary>
-public interface IElementComparer<in TAttributeRegistry>
-    where TAttributeRegistry : IAttributeRegistry
+public interface IElementComparer
 {
     /// <summary>
     /// Compares two elements of a datom.
     /// </summary>
-    public static abstract int Compare(TAttributeRegistry registry, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
+    public static abstract int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
 }

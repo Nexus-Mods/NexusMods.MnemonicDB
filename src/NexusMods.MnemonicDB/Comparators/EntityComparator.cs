@@ -6,10 +6,9 @@ using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Comparators;
 
-public class EntityCacheComparator<TRegistry>(TRegistry registry) : IDatomComparator<TRegistry>
-     where TRegistry : IAttributeRegistry
+public class EntityCacheComparator : IDatomComparator
 {
-    public static int Compare(TRegistry registry, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         var keyA = MemoryMarshal.Read<KeyPrefix>(a);
         var keyB = MemoryMarshal.Read<KeyPrefix>(b);
@@ -17,8 +16,8 @@ public class EntityCacheComparator<TRegistry>(TRegistry registry) : IDatomCompar
         return keyA.A.CompareTo(keyB.A);
     }
 
-    public int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    public int CompareInstance(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
-        return Compare(registry, a, b);
+        return Compare(a, b);
     }
 }

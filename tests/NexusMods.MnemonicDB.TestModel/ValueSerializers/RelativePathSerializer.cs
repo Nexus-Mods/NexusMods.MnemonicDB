@@ -1,33 +1,19 @@
-﻿using System.Buffers;
-using System.Text;
-using NexusMods.MnemonicDB.Abstractions;
+﻿using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Serializers;
 using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.TestModel.ValueSerializers;
 
-public class RelativePathSerializer : IValueSerializer<RelativePath>
+public class RelativePathSerializer() : AUtf8Serializer<RelativePath>(false)
 {
-    private static readonly Encoding _encoding = Encoding.UTF8;
-
-    public Type NativeType => typeof(RelativePath);
-    public Symbol UniqueId => Symbol.Intern<RelativePathSerializer>();
-
-    public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
+    public override Symbol UniqueId => Symbol.Intern<RelativePathSerializer>();
+    protected override ReadOnlySpan<char> ToSpan(RelativePath value)
     {
-        return a.SequenceCompareTo(b);
+        return value.Path;
     }
 
-    public RelativePath Read(ReadOnlySpan<byte> buffer)
+    protected override RelativePath FromSpan(ReadOnlySpan<char> span)
     {
-        return _encoding.GetString(buffer);
-    }
-
-    public void Serialize<TWriter>(RelativePath value, TWriter buffer) where TWriter : IBufferWriter<byte>
-    {
-        // TODO: No reason to walk the string twice, we should do this in one pass
-        var bytes = _encoding.GetByteCount(value);
-        var span = buffer.GetSpan(bytes);
-        _encoding.GetBytes(value, span);
-        buffer.Advance(bytes);
+        return new RelativePath(span.ToString());
     }
 }

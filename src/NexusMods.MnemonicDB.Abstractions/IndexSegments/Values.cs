@@ -13,7 +13,7 @@ public struct Values<TValueType>(IndexSegment segment, int start, int end, IValu
     /// <summary>
     /// Gets the value at the given location
     /// </summary>
-    public TValueType this[int idx] => serializer.Read(segment[idx + start].ValueSpan);
+    public TValueType this[int idx] => serializer.Read(segment[idx + start].Prefix, segment[idx + start].ValueSpan);
 
     /// <summary>
     /// Returns the number of items in the collection

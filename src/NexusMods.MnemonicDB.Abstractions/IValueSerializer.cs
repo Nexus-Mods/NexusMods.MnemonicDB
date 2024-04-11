@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -15,17 +16,14 @@ public interface IValueSerializer
     public Type NativeType { get; }
 
     /// <summary>
-    ///     The Unique Id for this type
+    /// The type as stored in the datom store
     /// </summary>
-    public Symbol UniqueId { get; }
+    public LowLevelTypes LowLevelType { get; }
 
     /// <summary>
-    ///     Compare two spans of bytes that contain the serialized value
+    ///     The Unique Id for this serializer
     /// </summary>
-    /// <param name="a"></param>
-    /// <param name="b"></param>
-    /// <returns></returns>
-    public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b);
+    public Symbol UniqueId { get; }
 }
 
 /// <summary>
@@ -34,13 +32,13 @@ public interface IValueSerializer
 public interface IValueSerializer<T> : IValueSerializer
 {
     /// <summary>
-    ///     Reads from the Buffer returning the number of bytes consumed
+    ///     Reads the value from the buffer, the prefix is expected to be pre-populated with the values from the span
     /// </summary>
-    public T Read(ReadOnlySpan<byte> buffer);
+    public T Read(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan);
 
     /// <summary>
-    ///     Returns true if the value is inlined, otherwise false and the inlined
-    ///     value contains the length of the blob written to the buffer
+    ///     Serializes the value to the buffer, and sets the prefix values for low level type and length. This method
+    /// is expected to write the prefix & and the value to the buffer.
     /// </summary>
-    public void Serialize<TWriter>(T value, TWriter buffer) where TWriter : IBufferWriter<byte>;
+    public void Serialize<TWriter>(ref KeyPrefix prefix, T value, TWriter buffer) where TWriter : IBufferWriter<byte>;
 }

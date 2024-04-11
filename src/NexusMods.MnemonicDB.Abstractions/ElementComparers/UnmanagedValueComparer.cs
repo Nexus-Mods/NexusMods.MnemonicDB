@@ -9,12 +9,11 @@ namespace NexusMods.MnemonicDB.Storage.Abstractions.ElementComparers;
 /// <summary>
 ///     Unmanaged value comparer, assumes that the values will be of the same attribute and of type T.
 /// </summary>
-public class UnmanagedValueComparer<T, TRegistry> : IElementComparer<TRegistry>
+public class UnmanagedValueComparer<T> : IElementComparer
     where T : unmanaged, IComparable<T>
-    where TRegistry : IAttributeRegistry
 {
     /// <inheritdoc />
-    public static int Compare(TRegistry registry, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         unsafe
         {

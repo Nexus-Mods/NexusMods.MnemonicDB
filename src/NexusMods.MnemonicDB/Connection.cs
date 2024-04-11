@@ -122,8 +122,22 @@ public class Connection : IConnection
             var serializerId = Symbol.Unknown;
             var uniqueId = Symbol.Unknown;
 
-            var from = new KeyPrefix().Set(attrId, AttributeId.Min, TxId.MinValue, false);
-            var to = new KeyPrefix().Set(attrId, AttributeId.Max, TxId.MaxValue, false);
+
+            var from = new KeyPrefix
+            {
+                E = attrId,
+                A = AttributeId.Min,
+                T = TxId.MinValue,
+                IsRetract = false
+            };
+
+            var to = new KeyPrefix
+            {
+                E = attrId,
+                A = AttributeId.Max,
+                T = TxId.MaxValue,
+                IsRetract = false
+            };
 
             foreach (var rawDatom in snapshot.Datoms(IndexType.EAVTCurrent, from, to))
             {

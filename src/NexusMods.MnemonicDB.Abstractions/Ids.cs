@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -33,27 +34,23 @@ public static class Ids
         /// <summary>
         ///     Temporary Ids for entities that have not been committed
         /// </summary>
-        Tmp = 3,
-
-        /// <summary>
-        ///     Blocks of transactions are stored in the TX log prefixed with this partition,
-        ///     the rest of the int matches the transaction id
-        /// </summary>
-        TxLog = 4,
-
-        /// <summary>
-        ///     Blocks of data written to disk for the current index use this partition
-        /// </summary>
-        Index = 5
+        Tmp = 3
     }
 
     /// <summary>
     ///     Tags an id with a partition
     /// </summary>
-    /// <param name="partition"></param>
-    /// <param name="id"></param>
-    /// <returns></returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static ulong MakeId(Partition partition, ulong id)
+    {
+        return ((ulong)partition << 56) | (id & 0x00FFFFFFFFFFFFFF);
+    }
+
+    /// <summary>
+    ///    Tags an id with a partition
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static ulong MakeId(byte partition, ulong id)
     {
         return ((ulong)partition << 56) | (id & 0x00FFFFFFFFFFFFFF);
     }
@@ -81,8 +78,7 @@ public static class Ids
     /// <summary>
     ///     Gets the partition of the id
     /// </summary>
-    /// <param name="id"></param>
-    /// <returns></returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static Partition GetPartition(ulong id)
     {
         return (id >> 56) switch
@@ -91,8 +87,6 @@ public static class Ids
             1 => Partition.Tx,
             2 => Partition.Entity,
             3 => Partition.Tmp,
-            4 => Partition.TxLog,
-            5 => Partition.Index,
             _ => throw new ArgumentOutOfRangeException(nameof(id), "Unknown partition")
         };
     }

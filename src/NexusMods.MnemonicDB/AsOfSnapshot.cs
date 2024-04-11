@@ -24,7 +24,7 @@ internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeRegistry re
         var history = inner.Datoms(type.HistoryVariant(), a, b);
         var comparatorFn = type.GetComparator(registry);
         var merged = current.Merge(history,
-            (dCurrent, dHistory) => comparatorFn.Compare(dCurrent.RawSpan, dHistory.RawSpan));
+            (dCurrent, dHistory) => comparatorFn.CompareInstance(dCurrent.RawSpan, dHistory.RawSpan));
         var filtered = merged.Where(d => d.T <= asOfTxId);
 
         var withoutRetracts = ApplyRetracts(filtered);
@@ -83,29 +83,12 @@ internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeRegistry re
 
     private bool IsRetractionFor(ReadOnlySpan<byte> aSpan, ReadOnlySpan<byte> bSpan)
     {
-        var spanA = MemoryMarshal.Read<KeyPrefix>(aSpan);
-        var spanB = MemoryMarshal.Read<KeyPrefix>(bSpan);
+        var keyA = MemoryMarshal.Read<KeyPrefix>(aSpan);
+        var keyB = MemoryMarshal.Read<KeyPrefix>(bSpan);
 
-        // The lower bit of the lower 8 bytes is the retraction bit, the rest is the Entity ID
-        // so if this XOR returns 1, we know they are the same Entity ID and one of them is a retraction
-        if ((spanA.Lower ^ spanB.Lower) != 1)
-        {
+        if (!keyA.CouldBeRetractFor(keyB))
             return false;
-        }
-
-        // If the attribute is different, then it's not a retraction
-        if (spanA.A != spanB.A)
-        {
-            return false;
-        }
-
-        // Retracts have to come after the asserts
-        if (spanA.IsRetract && spanA.T < spanB.T)
-        {
-            return true;
-        }
 
         return aSpan.SliceFast(KeyPrefix.Size).SequenceEqual(bSpan.SliceFast(KeyPrefix.Size));
-
     }
 }

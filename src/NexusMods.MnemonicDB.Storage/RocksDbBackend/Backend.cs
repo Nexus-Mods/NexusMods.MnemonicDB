@@ -22,12 +22,12 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
     }
 
     public void DeclareIndex<TComparator>(IndexType name)
-        where TComparator : IDatomComparator<AttributeRegistry>
+        where TComparator : IDatomComparator
     {
         var indexStore = new IndexStore(name.ToString(), name, registry);
         _stores.Add(name, indexStore);
 
-        var index = new Index<TComparator>(registry, indexStore);
+        var index = new Index<TComparator>(indexStore);
         _indexes.Add(name, index);
     }
 
@@ -75,7 +75,7 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
 
             var lower = a;
             var upper = b;
-            if (comparator.Compare(a, b) > 0)
+            if (comparator.CompareInstance(a, b) > 0)
             {
                 reverse = true;
                 lower = b;

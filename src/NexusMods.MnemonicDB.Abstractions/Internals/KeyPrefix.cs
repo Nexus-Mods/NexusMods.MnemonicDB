@@ -14,7 +14,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Internals;
 ///         [AttributeId: 2bytes]
 ///         [TxId: 6bytes]
 ///         [EntityID + PartitionID: 7bytes]
-///         [IsRetract: 1bit]
+///         [IsRetract: 1byte]
 ///         The Entity Id is created by taking the last 6 bytes of the id and combining it with
 ///         the partition id. So the encoding logic looks like this:
 ///         packed = (e & 0x00FFFFFFFFFFFFFF) >> 8 | (e & 0xFFFFFFFFFFFF) << 8
@@ -25,48 +25,112 @@ public struct KeyPrefix
     /// <summary>
     ///     Fixed size of the KeyPrefix
     /// </summary>
-    public const int Size = 16;
-
-    [FieldOffset(0)] private ulong _upper;
-    [FieldOffset(8)] private ulong _lower;
+    public const int Size = 12;
 
     /// <summary>
-    /// The upper 8 bytes of the key
+    /// The maximum inlined value length
     /// </summary>
-    public ulong Upper => _upper;
+    public const int MaxLength = 128 - 1;
 
     /// <summary>
-    /// The lower 8 bytes of the key
+    /// The value to mark that the value is oversized
     /// </summary>
-    public ulong Lower => _lower;
+    public const int LengthOversized = 128;
 
-    public KeyPrefix Set(EntityId id, AttributeId attributeId, TxId txId, bool isRetract)
-    {
-        _upper = ((ulong)attributeId << 48) | ((ulong)txId & 0x0000FFFFFFFFFFFF);
-        _lower = ((ulong)id & 0xFF00000000000000) | (((ulong)id & 0x0000FFFFFFFFFFFF) << 8) | (isRetract ? 1UL : 0UL);
-        return this;
-    }
+
+
+
+    [FieldOffset(0)] private ushort _attributeId;
+    /// <summary>
+    /// 4 bits for the partition, 4 bits for the type
+    /// </summary>
+    [FieldOffset(2)] private byte _typeAndPartition;
+
+    /// <summary>
+    /// 1 bit for retract, 7 bits for length
+    /// </summary>
+    [FieldOffset(3)] private byte _retractAndLength;
+
+    /// <summary>
+    /// Entity Id minus the partition
+    /// </summary>
+    [FieldOffset(4)] private uint _entityId;
+
+    /// <summary>
+    /// Transaction Id minus its partition
+    /// </summary>
+    [FieldOffset(8)] private uint _txId;
+
 
     /// <summary>
     ///     The EntityId
     /// </summary>
-    public EntityId E => (EntityId)((_lower & 0xFF00000000000000) | ((_lower >> 8) & 0x0000FFFFFFFFFFFF));
+    public EntityId E
+    {
+        get { return (EntityId)Ids.MakeId(Partition, _entityId); }
+        set
+        {
+            _entityId = (uint)(value.Value & 0x00FFFFFFFFFFFFFF);
+            Partition = (byte)(value.Value >> 56);
+        }
+    }
 
     /// <summary>
     ///     True if this is a retraction
     /// </summary>
-    public bool IsRetract => (_lower & 1) == 1;
+    public bool IsRetract
+    {
+        get => _retractAndLength >> 7 == 1;
+        set => _retractAndLength = (byte)((_retractAndLength & 0x7F) | (value ? 0x80 : 0));
+    }
+
+    /// <summary>
+    /// Max of 128 bytes for the value length inlined. If this value is 128 then the real length is stored in the value
+    /// as a prefix to the value.
+    /// </summary>
+    public byte ValueLength
+    {
+        get => (byte)(_retractAndLength & 0x7F);
+        set => _retractAndLength = (byte)((_retractAndLength & 0x80) | (value & 0x7F));
+    }
 
     /// <summary>
     ///     The attribute id, maximum of 2^16 attributes are supported in the system
     /// </summary>
-    public AttributeId A => (AttributeId)(_upper >> 48);
+    public AttributeId A
+    {
+        get => AttributeId.From(_attributeId);
+        set => _attributeId = value.Value;
+    }
+
+    /// <summary>
+    /// The low level type of the attribute
+    /// </summary>
+    public LowLevelTypes LowLevelType
+    {
+        get => (LowLevelTypes)(_typeAndPartition & 0x0F);
+        set => _typeAndPartition = (byte)((_typeAndPartition & 0xF0) | (byte)value);
+    }
+
+    /// <summary>
+    /// The partition of the entityId
+    /// </summary>
+    public byte Partition
+    {
+        get => (byte)(_typeAndPartition >> 4);
+        set => _typeAndPartition = (byte)((_typeAndPartition & 0x0F) | (value << 4));
+    }
+
 
     /// <summary>
     ///     The transaction id, maximum of 2^63 transactions are supported in the system, but really
     ///     it's 2^56 as the upper 8 bits are used for the partition id.
     /// </summary>
-    public TxId T => (TxId)Ids.MakeId(Ids.Partition.Tx, _upper & 0x0000FFFFFFFFFFFF);
+    public TxId T
+    {
+        get => (TxId)Ids.MakeId(Ids.Partition.Tx, _txId);
+        set => _txId = (uint)value.Value;
+    }
 
     /// <inheritdoc />
     public override string ToString()
@@ -77,14 +141,25 @@ public struct KeyPrefix
     /// <summary>
     ///    Deconstructs the key into its parts
     /// </summary>
-    public void Deconstruct(out EntityId entityId, out AttributeId attributeId, out TxId txId, out bool isRetract)
+    public void Deconstruct(out EntityId entityId, out AttributeId attributeId,
+        out TxId txId, out bool isRetract, out byte valueLength, out LowLevelTypes lowLevelType)
     {
         entityId = E;
         attributeId = A;
         txId = T;
         isRetract = IsRetract;
+        valueLength = ValueLength;
+        lowLevelType = LowLevelType;
     }
 
+    /// <summary>
+    ///    Deconstructs the key into its parts
+    /// </summary>
+    public void Deconstruct(out EntityId entityId, out AttributeId attributeId)
+    {
+        entityId = E;
+        attributeId = A;
+    }
 
     /// <summary>
     ///     Gets the KeyPrefix from the given bytes
@@ -99,14 +174,20 @@ public struct KeyPrefix
 
     public static KeyPrefix Min => new KeyPrefix
     {
-        _upper = 0,
-        _lower = 0
+        _entityId = 0,
+        _txId = 0,
+        _attributeId = 0,
+        _retractAndLength = 0,
+        _typeAndPartition = 0,
     };
 
     public static KeyPrefix Max => new KeyPrefix
     {
-        _upper = ulong.MaxValue,
-        _lower = ulong.MaxValue
+        _entityId = uint.MaxValue,
+        _txId = uint.MaxValue,
+        _attributeId = ushort.MaxValue,
+        _retractAndLength = 0xFF,
+        _typeAndPartition = 0xFF,
     };
     #endregion
 
@@ -117,24 +198,39 @@ public struct KeyPrefix
     /// </summary>
     public static implicit operator KeyPrefix(TxId id)
     {
-        var prefix = new KeyPrefix();
-        prefix.Set(EntityId.MinValueNoPartition, AttributeId.Min, id, false);
-        return prefix;
+        return new KeyPrefix
+        {
+            _entityId = 0,
+            _attributeId = 0,
+            _txId = (uint)id.Value,
+            _retractAndLength = 0,
+            _typeAndPartition = 0,
+        };
     }
 
     public static implicit operator KeyPrefix(EntityId id)
     {
-        var prefix = new KeyPrefix();
-        prefix.Set(id, AttributeId.Min, TxId.MinValue, false);
-        return prefix;
+        return new KeyPrefix
+        {
+            _typeAndPartition = 0,
+            E = id,
+            _attributeId = 0,
+            _txId = 0,
+            _retractAndLength = 0,
+        };
     }
 
 
     public static implicit operator KeyPrefix(AttributeId id)
     {
-        var prefix = new KeyPrefix();
-        prefix.Set(EntityId.MinValueNoPartition, id, TxId.MinValue, false);
-        return prefix;
+        return new KeyPrefix
+        {
+            _entityId = 0,
+            _attributeId = id.Value,
+            _txId = 0,
+            _retractAndLength = 0,
+            _typeAndPartition = 0,
+        };
     }
 
 
@@ -143,4 +239,25 @@ public struct KeyPrefix
 
 
     #endregion
+
+    public bool CouldBeRetractFor(KeyPrefix keyB)
+    {
+        // Only one can be a retract
+        if (!(IsRetract ^ keyB.IsRetract))
+            return false;
+
+        // Can't be a retract if it comes first
+        if (IsRetract && _txId < keyB._txId)
+            return false;
+
+        // Everything else must match
+        if (keyB._entityId != _entityId ||
+            keyB._attributeId != _entityId ||
+            keyB._typeAndPartition != _typeAndPartition ||
+            keyB.ValueLength != ValueLength)
+            return false;
+
+        // Could be a retract if the value is the same
+        return true;
+    }
 }

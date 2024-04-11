@@ -10,11 +10,6 @@ namespace NexusMods.MnemonicDB.Abstractions.Internals;
 public interface IAttributeRegistry
 {
     /// <summary>
-    ///     Compares the given values in the given spans assuming both are tagged with the given attribute
-    /// </summary>
-    public int CompareValues(AttributeId id, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
-
-    /// <summary>
     ///     Resolve the given KeyPrefix + Value into a datom
     /// </summary>
     /// <param name="datom"></param>

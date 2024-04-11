@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using Reloaded.Memory.Extensions;
 
@@ -74,34 +75,21 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
 
     public IReadDatom Resolve(ReadOnlySpan<byte> datom)
     {
-        var c = MemoryMarshal.Read<KeyPrefix>(datom);
+        var prefix = MemoryMarshal.Read<KeyPrefix>(datom);
 
-        var attr = _attributes[c.A.Value];
+        var attr = _attributes[prefix.A.Value];
         unsafe
         {
-            return attr.Resolve(c.E, c.A, datom.SliceFast(sizeof(KeyPrefix)), c.T, c.IsRetract);
+            return attr.Resolve(prefix,datom.SliceFast(sizeof(KeyPrefix)));
         }
     }
 
     public TVal Resolve<TVal>(ReadOnlySpan<byte> datom)
     {
-        var c = MemoryMarshal.Read<KeyPrefix>(datom);
-        var attr = _attributes[c.A.Value];
+        var prefix = MemoryMarshal.Read<KeyPrefix>(datom);
+        var attr = _attributes[prefix.A.Value];
 
-        unsafe
-        {
-            return ((IValueSerializer<TVal>)attr.Serializer).Read(datom.SliceFast(KeyPrefix.Size));
-        }
-    }
-
-    public int CompareValues(AttributeId id, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
-    {
-        if (a.Length == 0 || b.Length == 0)
-            return a.Length < b.Length ? -1 : a.Length > b.Length ? 1 : 0;
-
-        var attr = _attributes[id.Value];
-
-        return attr.Serializer.Compare(a, b);
+        return ((IValueSerializer<TVal>)attr.Serializer).Read(prefix, datom.SliceFast(KeyPrefix.Size));
     }
 
     public void Populate(DbAttribute[] attributes)

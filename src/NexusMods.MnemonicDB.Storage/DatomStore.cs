@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Storage.Abstractions;
@@ -274,7 +275,13 @@ public class DatomStore : IDatomStore
             var currentPrefix = datom.Prefix;
 
             var newE = isRemapped ? remapFn(currentPrefix.E) : currentPrefix.E;
-            var keyPrefix = new KeyPrefix().Set(newE, currentPrefix.A, thisTx, currentPrefix.IsRetract);
+            var keyPrefix = new KeyPrefix
+            {
+                E = newE,
+                A = currentPrefix.A,
+                T = thisTx,
+                IsRetract = currentPrefix.IsRetract
+            };
 
             {
                 if (attr.IsReference)
@@ -343,8 +350,8 @@ public class DatomStore : IDatomStore
     private void SwitchPrevToRetraction(TxId thisTx)
     {
         var prevKey = MemoryMarshal.Read<KeyPrefix>(_retractWriter.GetWrittenSpan());
-        var (e, a, _, _) = prevKey;
-        prevKey.Set(e, a, thisTx, true);
+        prevKey.T = thisTx;
+        prevKey.IsRetract = true;
         MemoryMarshal.Write(_retractWriter.GetWrittenSpanWritable(), prevKey);
     }
 
@@ -353,8 +360,8 @@ public class DatomStore : IDatomStore
         _prevWriter.Reset();
         _prevWriter.Write(datom);
         var prevKey = MemoryMarshal.Read<KeyPrefix>(_prevWriter.GetWrittenSpan());
-        var (e, a, _, _) = prevKey;
-        prevKey.Set(e, a, TxId.MinValue, false);
+        prevKey.T = TxId.MinValue;
+        prevKey.IsRetract = false;
         MemoryMarshal.Write(_prevWriter.GetWrittenSpanWritable(), prevKey);
 
         var prevDatom = iterator.Datoms(IndexType.EAVTCurrent, _prevWriter.GetWrittenSpan())
@@ -438,7 +445,7 @@ public class DatomStore : IDatomStore
             if (found.E != keyPrefix.E || found.A != keyPrefix.A)
                 return PrevState.NotExists;
 
-            if (attribute.Serializer.Compare(found.ValueSpan,
+            if (ValueComparer.Compare(found.ValueSpan,
                     span.SliceFast(sizeof(KeyPrefix))) == 0)
                 return PrevState.Duplicate;
 
@@ -446,8 +453,13 @@ public class DatomStore : IDatomStore
         }
         else
         {
-            KeyPrefix start = default;
-            start.Set(keyPrefix.E, keyPrefix.A, TxId.MinValue, false);
+            var start = new KeyPrefix
+            {
+                E = keyPrefix.E,
+                A = keyPrefix.A,
+                T = TxId.MinValue,
+                IsRetract = false
+            };
 
             var datom = snapshot.Datoms(IndexType.EAVTCurrent, start)
                 .Select(d => d.Clone())
@@ -458,7 +470,7 @@ public class DatomStore : IDatomStore
             if (currKey.E != keyPrefix.E || currKey.A != keyPrefix.A)
                 return PrevState.NotExists;
 
-            if (attribute.Serializer.Compare(datom.ValueSpan,
+            if (ValueComparer.Compare(datom.ValueSpan,
                     span.SliceFast(sizeof(KeyPrefix))) == 0)
                 return PrevState.Duplicate;
 

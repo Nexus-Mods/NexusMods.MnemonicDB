@@ -82,16 +82,15 @@ public sealed class Attribute<TValueType> : IAttribute
     public bool IsReference => typeof(TValueType) == typeof(EntityId);
 
     /// <inheritdoc />
-    public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx,
-        bool isRetract)
+    public IReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> value)
     {
         return new ReadDatom
         {
-            E = entityId,
+            E = prefix.E,
             A = this,
-            V = _serializer.Read(value),
-            T = tx,
-            IsRetract = isRetract
+            V = _serializer.Read(prefix, value),
+            T = prefix.T,
+            IsRetract = prefix.IsRetract
         };
     }
 
@@ -163,11 +162,14 @@ public sealed class Attribute<TValueType> : IAttribute
     public void Write<TWriter>(EntityId entityId, RegistryId registryId, TValueType value, TxId txId, bool isRetract, TWriter writer)
     where TWriter : IBufferWriter<byte>
     {
-        var prefix = new KeyPrefix().Set(entityId, GetDbId(registryId), txId, isRetract);
-        var span = writer.GetSpan(KeyPrefix.Size);
-        MemoryMarshal.Write(span, prefix);
-        writer.Advance(KeyPrefix.Size);
-        Serializer.Serialize(value, writer);
+        var prefix = new KeyPrefix
+        {
+            E = entityId,
+            A = _cache[registryId.Value],
+            T = txId,
+            IsRetract = isRetract,
+        };
+        Serializer.Serialize(ref prefix, value, writer);
     }
 
     /// <summary>

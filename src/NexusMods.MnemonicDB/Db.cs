@@ -44,11 +44,31 @@ internal class Db : IDb
 
         Span<byte> startKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
         Span<byte> endKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
-        MemoryMarshal.Write(startKey,  new KeyPrefix().Set(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false));
-        MemoryMarshal.Write(endKey,  new KeyPrefix().Set(EntityId.MaxValueNoPartition, attrId, TxId.MaxValue, false));
+
+        var prefix1 = new KeyPrefix
+        {
+            E = EntityId.MinValueNoPartition,
+            A = attrId,
+            T = TxId.MinValue,
+            IsRetract = false,
+            LowLevelType = LowLevelTypes.Reference,
+            ValueLength = sizeof(ulong)
+        };
+        MemoryMarshal.Write(startKey,  prefix1);
+
+        var prefix2 = new KeyPrefix
+        {
+            E = EntityId.MaxValueNoPartition,
+            A = attrId,
+            T = TxId.MaxValue,
+            IsRetract = false,
+            LowLevelType = LowLevelTypes.Reference,
+            ValueLength = sizeof(ulong)
+        };
+        MemoryMarshal.Write(endKey,  prefix2);
 
         MemoryMarshal.Write(startKey.SliceFast(KeyPrefix.Size), id);
-        MemoryMarshal.Write(endKey.SliceFast(KeyPrefix.Size), id.Value);
+        MemoryMarshal.Write(endKey.SliceFast(KeyPrefix.Size), id);
 
 
         return db.Snapshot.Datoms(IndexType.VAETCurrent, startKey, endKey);
@@ -86,8 +106,22 @@ internal class Db : IDb
     public IEnumerable<EntityId> Find(IAttribute attribute)
     {
         var attrId = attribute.GetDbId(_registry.Id);
-        var a = new KeyPrefix().Set(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false);
-        var b = new KeyPrefix().Set(EntityId.MaxValueNoPartition, attrId, TxId.MaxValue, false);
+        var a = new KeyPrefix
+            {
+                E = EntityId.MinValueNoPartition,
+                A = attrId,
+                T = TxId.MinValue,
+                IsRetract = false
+            };
+
+        var b = new KeyPrefix
+        {
+            E = EntityId.MaxValueNoPartition,
+            A = attrId,
+            T = TxId.MaxValue,
+            IsRetract = false
+        };
+
         return Snapshot
             .Datoms(IndexType.AEVTCurrent, a, b)
             .Select(d => d.E);
@@ -116,16 +150,25 @@ internal class Db : IDb
         var serializer = attribute.Serializer;
 
         using var start = new PooledMemoryBufferWriter(64);
-        var span = MemoryMarshal.Cast<byte, KeyPrefix>(start.GetSpan(KeyPrefix.Size));
-        span[0].Set(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false);
-        start.Advance(KeyPrefix.Size);
-        serializer.Serialize(value, start);
+        var prefixStart = new KeyPrefix
+        {
+            E = EntityId.MinValueNoPartition,
+            A = attrId,
+            T = TxId.MinValue,
+            IsRetract = false
+        };
+        serializer.Serialize(ref prefixStart, value, start);
 
         using var end = new PooledMemoryBufferWriter(64);
-        span = MemoryMarshal.Cast<byte, KeyPrefix>(end.GetSpan(KeyPrefix.Size));
-        span[0].Set(EntityId.MaxValueNoPartition, attrId, TxId.MinValue, false);
-        end.Advance(KeyPrefix.Size);
-        serializer.Serialize(value, end);
+        var prefixEnd = new KeyPrefix
+        {
+            E = EntityId.MaxValueNoPartition,
+            A = attrId,
+            T = TxId.MaxValue,
+            IsRetract = false
+        };
+
+        serializer.Serialize(ref prefixEnd, value, end);
 
         var results = Snapshot
             .Datoms(IndexType.AVETCurrent, start.GetWrittenSpan(), end.GetWrittenSpan())

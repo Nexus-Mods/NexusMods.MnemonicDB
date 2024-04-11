@@ -31,20 +31,20 @@ public enum IndexType
 
 public static class IndexTypeExtensions
 {
-    public static IDatomComparator<TRegistry> GetComparator<TRegistry>(this IndexType type, TRegistry registry)
+    public static IDatomComparator GetComparator<TRegistry>(this IndexType type, TRegistry registry)
         where TRegistry : IAttributeRegistry
     {
         return type switch
         {
-            IndexType.EAVTCurrent => new EAVTComparator<TRegistry>(registry),
-            IndexType.EAVTHistory => new EAVTComparator<TRegistry>(registry),
-            IndexType.AEVTCurrent => new AEVTComparator<TRegistry>(registry),
-            IndexType.AEVTHistory => new AEVTComparator<TRegistry>(registry),
-            IndexType.VAETCurrent => new VAETComparator<TRegistry>(registry),
-            IndexType.VAETHistory => new VAETComparator<TRegistry>(registry),
-            IndexType.AVETCurrent => new AVETComparator<TRegistry>(registry),
-            IndexType.AVETHistory => new AVETComparator<TRegistry>(registry),
-            IndexType.TxLog => new TxLogComparator<TRegistry>(registry),
+            IndexType.EAVTCurrent => new EAVTComparator(),
+            IndexType.EAVTHistory => new EAVTComparator(),
+            IndexType.AEVTCurrent => new AEVTComparator(),
+            IndexType.AEVTHistory => new AEVTComparator(),
+            IndexType.VAETCurrent => new VAETComparator(),
+            IndexType.VAETHistory => new VAETComparator(),
+            IndexType.AVETCurrent => new AVETComparator(),
+            IndexType.AVETHistory => new AVETComparator(),
+            IndexType.TxLog => new TxLogComparator(),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown index type")
         };
     }

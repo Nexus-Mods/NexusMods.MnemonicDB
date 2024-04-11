@@ -1,34 +1,33 @@
 ﻿using System;
 using System.Buffers;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Internals;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Storage.Serializers;
 
 internal class TxIdSerializer : IValueSerializer<TxId>
 {
     public Type NativeType => typeof(TxId);
+    public LowLevelTypes LowLevelType { get; }
     public Symbol UniqueId { get; } = Symbol.Intern<TxIdSerializer>();
 
-    public int Compare(in ReadOnlySpan<byte> a, in ReadOnlySpan<byte> b)
+
+    public TxId Read(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan)
     {
-        return MemoryMarshal.Read<TxId>(a).CompareTo(MemoryMarshal.Read<TxId>(b));
+        Debug.Assert(prefix is { LowLevelType: LowLevelTypes.UInt, ValueLength: sizeof(ulong) });
+        return TxId.From(MemoryMarshal.Read<ulong>(valueSpan));
     }
 
-    public void Write<TWriter>(TxId value, TWriter buffer) where TWriter : IBufferWriter<byte>
+    public void Serialize<TWriter>(ref KeyPrefix prefix, TxId value, TWriter buffer) where TWriter : IBufferWriter<byte>
     {
-        throw new NotImplementedException();
-    }
-
-    public TxId Read(ReadOnlySpan<byte> buffer)
-    {
-        return MemoryMarshal.Read<TxId>(buffer);
-    }
-
-    public void Serialize<TWriter>(TxId value, TWriter buffer) where TWriter : IBufferWriter<byte>
-    {
-        var span = buffer.GetSpan(sizeof(ulong));
-        MemoryMarshal.Write(span, value.Value);
-        buffer.Advance(sizeof(ulong));
+        prefix.ValueLength = sizeof(ulong);
+        prefix.LowLevelType = LowLevelTypes.UInt;
+        var span = buffer.GetSpan(KeyPrefix.Size + sizeof(ulong));
+        MemoryMarshal.Write(span, prefix);
+        MemoryMarshal.Write(span.SliceFast(KeyPrefix.Size), value);
+        buffer.Advance(KeyPrefix.Size + sizeof(ulong));
     }
 }
