@@ -109,6 +109,6 @@ public static class Ids
     /// <returns></returns>
     public static bool IsPartition(ulong id, Partition partition)
     {
-        return GetPartition(id) == partition;
+        return (byte)(id >> 56) == (byte)partition;
     }
 }

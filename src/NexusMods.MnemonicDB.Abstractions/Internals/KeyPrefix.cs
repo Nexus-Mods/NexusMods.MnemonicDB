@@ -4,21 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace NexusMods.MnemonicDB.Abstractions.Internals;
 
-/// <summary>
-///     The system encodes keys as a 16 byte prefix followed by the actual key data, the format
-///     of the value is defined by the IValueSerializer
-///     <T>
-///         and the length is maintained by the datastore.
-///         This KeyPrefix then contains the other parts of the Datom: EntityId, AttributeId, TxId, and Flags.
-///         Encodes and decodes the prefix of a key, the format is:
-///         [AttributeId: 2bytes]
-///         [TxId: 6bytes]
-///         [EntityID + PartitionID: 7bytes]
-///         [IsRetract: 1byte]
-///         The Entity Id is created by taking the last 6 bytes of the id and combining it with
-///         the partition id. So the encoding logic looks like this:
-///         packed = (e & 0x00FFFFFFFFFFFFFF) >> 8 | (e & 0xFFFFFFFFFFFF) << 8
-/// </summary>
+
 [StructLayout(LayoutKind.Explicit, Size = Size)]
 public struct KeyPrefix
 {
@@ -30,14 +16,12 @@ public struct KeyPrefix
     /// <summary>
     /// The maximum inlined value length
     /// </summary>
-    public const int MaxLength = 128 - 1;
+    public const int MaxLength = LengthOversized - 1;
 
     /// <summary>
     /// The value to mark that the value is oversized
     /// </summary>
-    public const int LengthOversized = 128;
-
-
+    public const int LengthOversized = 127;
 
 
     [FieldOffset(0)] private ushort _attributeId;
@@ -67,10 +51,10 @@ public struct KeyPrefix
     /// </summary>
     public EntityId E
     {
-        get { return (EntityId)Ids.MakeId(Partition, _entityId); }
+        get => (EntityId)Ids.MakeId(Partition, _entityId);
         set
         {
-            _entityId = (uint)(value.Value & 0x00FFFFFFFFFFFFFF);
+            _entityId = (uint)value.Value;
             Partition = (byte)(value.Value >> 56);
         }
     }
@@ -80,8 +64,8 @@ public struct KeyPrefix
     /// </summary>
     public bool IsRetract
     {
-        get => _retractAndLength >> 7 == 1;
-        set => _retractAndLength = (byte)((_retractAndLength & 0x7F) | (value ? 0x80 : 0));
+        get => (_retractAndLength & 0b10000000) != 0;
+        set => _retractAndLength = (byte)((_retractAndLength & 0b01111111) | (value ? 0b10000000 : 0));
     }
 
     /// <summary>
@@ -90,8 +74,8 @@ public struct KeyPrefix
     /// </summary>
     public byte ValueLength
     {
-        get => (byte)(_retractAndLength & 0x7F);
-        set => _retractAndLength = (byte)((_retractAndLength & 0x80) | (value & 0x7F));
+        get => (byte)(_retractAndLength & 0b01111111);
+        set => _retractAndLength = (byte)((_retractAndLength & 0b10000000) | (value & 0b01111111));
     }
 
     /// <summary>
@@ -109,7 +93,7 @@ public struct KeyPrefix
     public LowLevelTypes LowLevelType
     {
         get => (LowLevelTypes)(_typeAndPartition & 0x0F);
-        set => _typeAndPartition = (byte)((_typeAndPartition & 0xF0) | (byte)value);
+        set => _typeAndPartition = (byte)((_typeAndPartition & 0xF0) | ((byte)value & 0x0F));
     }
 
     /// <summary>
@@ -135,7 +119,7 @@ public struct KeyPrefix
     /// <inheritdoc />
     public override string ToString()
     {
-        return $"E: {E}, A: {A}, T: {T}, Retract: {IsRetract}";
+        return $"E: {E.Value:x}, A: {A.Value:x}, T: {T.Value:x}, IsRetract: {IsRetract}, Length: {ValueLength}, Type: {(byte)LowLevelType:X2}";
     }
 
     /// <summary>

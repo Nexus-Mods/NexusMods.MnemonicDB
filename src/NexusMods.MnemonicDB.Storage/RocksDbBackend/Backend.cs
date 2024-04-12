@@ -14,7 +14,7 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
     private readonly ColumnFamilies _columnFamilies = new();
     private readonly Dictionary<IndexType, IRocksDbIndex> _indexes = new();
     private readonly Dictionary<IndexType, IndexStore> _stores = new();
-    private RocksDb? _db = null!;
+    private RocksDb? _db;
 
     public IWriteBatch CreateBatch()
     {

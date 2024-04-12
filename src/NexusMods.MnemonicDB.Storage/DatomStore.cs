@@ -280,7 +280,9 @@ public class DatomStore : IDatomStore
                 E = newE,
                 A = currentPrefix.A,
                 T = thisTx,
-                IsRetract = currentPrefix.IsRetract
+                IsRetract = currentPrefix.IsRetract,
+                ValueLength = currentPrefix.ValueLength,
+                LowLevelType = currentPrefix.LowLevelType
             };
 
             {
@@ -376,8 +378,8 @@ public class DatomStore : IDatomStore
             Debug.Assert(debugKey.E == MemoryMarshal.Read<KeyPrefix>(datom).E, "Entity should match");
             Debug.Assert(debugKey.A == MemoryMarshal.Read<KeyPrefix>(datom).A, "Attribute should match");
             Debug.Assert(
-                attribute.Serializer.Compare(prevDatom.ValueSpan,
-                    datom.SliceFast(sizeof(KeyPrefix))) == 0, "Values should match");
+                ValueComparer.Compare(prevDatom.RawSpan,
+                    datom) == 0, "Values should match");
         }
         #endif
 
@@ -458,20 +460,22 @@ public class DatomStore : IDatomStore
                 E = keyPrefix.E,
                 A = keyPrefix.A,
                 T = TxId.MinValue,
-                IsRetract = false
+                IsRetract = false,
+                LowLevelType = LowLevelTypes.Null,
+                ValueLength = 0
             };
 
             var datom = snapshot.Datoms(IndexType.EAVTCurrent, start)
                 .Select(d => d.Clone())
                 .FirstOrDefault();
+
             if (!datom.Valid) return PrevState.NotExists;
 
             var currKey = datom.Prefix;
             if (currKey.E != keyPrefix.E || currKey.A != keyPrefix.A)
                 return PrevState.NotExists;
 
-            if (ValueComparer.Compare(datom.ValueSpan,
-                    span.SliceFast(sizeof(KeyPrefix))) == 0)
+            if (ValueComparer.Compare(datom.RawSpan, span) == 0)
                 return PrevState.Duplicate;
 
             _retractWriter.Reset();

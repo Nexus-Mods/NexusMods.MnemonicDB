@@ -35,20 +35,22 @@ internal class SymbolSerializer : IValueSerializer<Symbol>
         var size = id.Length;
         if (size <= KeyPrefix.MaxLength)
         {
-            var span = buffer.GetSpan(size);
-            _encoding.GetBytes(id, span);
-            buffer.Advance(size);
+            var span = buffer.GetSpan(KeyPrefix.Size + size);
             prefix.ValueLength = (byte)size;
             prefix.LowLevelType = LowLevelTypes.Ascii;
+            MemoryMarshal.Write(span, prefix);
+            _encoding.GetBytes(id, span.SliceFast(KeyPrefix.Size));
+            buffer.Advance(KeyPrefix.Size + size);
         }
         else
         {
-            var span = buffer.GetSpan(size + sizeof(uint));
-            MemoryMarshal.Write(span, (uint)size);
-            _encoding.GetBytes(id, span.SliceFast(sizeof(uint)));
-            buffer.Advance(size + sizeof(uint));
+            var span = buffer.GetSpan(KeyPrefix.Size + size + sizeof(uint));
             prefix.ValueLength = KeyPrefix.LengthOversized;
             prefix.LowLevelType = LowLevelTypes.Ascii;
+            MemoryMarshal.Write(span, prefix);
+            MemoryMarshal.Write(span.SliceFast(KeyPrefix.Size), (uint)size);
+            _encoding.GetBytes(id, span.SliceFast(KeyPrefix.Size + sizeof(uint)));
+            buffer.Advance(KeyPrefix.Size + size + sizeof(uint));
 
         }
     }

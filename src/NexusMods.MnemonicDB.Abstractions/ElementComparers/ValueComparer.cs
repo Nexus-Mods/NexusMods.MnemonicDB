@@ -21,6 +21,7 @@ public class ValueComparer : IElementComparer
 
         return aPrefix.LowLevelType switch
         {
+            LowLevelTypes.Null => 0,
             LowLevelTypes.UInt => CompareUInt(in aPrefix, a.SliceFast(KeyPrefix.Size), in bPrefix,
                 b.SliceFast(KeyPrefix.Size)),
             LowLevelTypes.Utf8 => a.SliceFast(KeyPrefix.Size).SequenceCompareTo(b.SliceFast(KeyPrefix.Size)),

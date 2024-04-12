@@ -49,20 +49,20 @@ public abstract class AUtf8Serializer<T>(bool caseSensitive = true) : IValueSeri
         if (size <= KeyPrefix.MaxLength)
         {
             var span = buffer.GetSpan(size + KeyPrefix.Size);
-            _encoding.GetBytes(charSpan, span);
-            buffer.Advance(size);
             prefix.ValueLength = (byte)size;
             prefix.LowLevelType = LowLevelTypes.Utf8;
+            MemoryMarshal.Write(span, prefix);
+            _encoding.GetBytes(charSpan, span.SliceFast(KeyPrefix.Size));
             buffer.Advance(size + KeyPrefix.Size);
         }
         else
         {
             var span = buffer.GetSpan(size + sizeof(uint) + KeyPrefix.Size);
-            MemoryMarshal.Write(span, (uint)size);
-            _encoding.GetBytes(charSpan, span.SliceFast(sizeof(uint)));
-            buffer.Advance(size + sizeof(uint));
             prefix.ValueLength = KeyPrefix.LengthOversized;
             prefix.LowLevelType = LowLevelTypes.Utf8;
+            MemoryMarshal.Write(span, prefix);
+            MemoryMarshal.Write(span.SliceFast(KeyPrefix.Size), (uint)size);
+            _encoding.GetBytes(charSpan, span.SliceFast(KeyPrefix.Size + sizeof(uint)));
             buffer.Advance(size + sizeof(uint) + KeyPrefix.Size);
         }
     }

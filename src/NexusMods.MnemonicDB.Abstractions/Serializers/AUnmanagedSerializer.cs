@@ -7,26 +7,36 @@ using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.Serializers;
 
-public abstract class AUnmanagedSerializer<T>(LowLevelTypes lowLevelType, byte fixedSize) : IValueSerializer<T>
-    where T : unmanaged
+public abstract class AUnmanagedSerializer<TSrc, TConverted>(LowLevelTypes lowLevelType, byte fixedSize) : IValueSerializer<TSrc>
+    where TConverted : unmanaged
 {
-    public Type NativeType => typeof(T);
+    /// <summary>
+    /// Convert from the high level type to the low level type.
+    /// </summary>
+    protected abstract TConverted ToLowLevel(TSrc src);
+
+    /// <summary>
+    /// Convert from the low level type to the high level type.
+    /// </summary>
+    protected abstract TSrc FromLowLevel(TConverted src);
+
+    public Type NativeType => typeof(TSrc);
     public LowLevelTypes LowLevelType => lowLevelType;
     public abstract Symbol UniqueId { get; }
-    public T Read(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan)
+    public TSrc Read(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan)
     {
         Debug.Assert(prefix.ValueLength == fixedSize && prefix.LowLevelType == lowLevelType);
-        return MemoryMarshal.Read<T>(valueSpan);
+        return FromLowLevel(MemoryMarshal.Read<TConverted>(valueSpan));
     }
 
-    public void Serialize<TWriter>(ref KeyPrefix prefix, T value, TWriter buffer)
+    public void Serialize<TWriter>(ref KeyPrefix prefix, TSrc value, TWriter buffer)
         where TWriter : IBufferWriter<byte>
     {
         prefix.ValueLength = fixedSize;
         prefix.LowLevelType = lowLevelType;
         var span = buffer.GetSpan(KeyPrefix.Size + fixedSize);
         MemoryMarshal.Write(span, prefix);
-        MemoryMarshal.Write(span.SliceFast(KeyPrefix.Size), value);
+        MemoryMarshal.Write(span.SliceFast(KeyPrefix.Size), ToLowLevel(value));
         buffer.Advance(KeyPrefix.Size + fixedSize);
     }
 }

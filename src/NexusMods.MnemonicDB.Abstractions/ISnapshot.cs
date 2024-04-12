@@ -57,7 +57,7 @@ public interface ISnapshot
     /// </summary>
     IEnumerable<Datom> Datoms(IndexType type)
     {
-        if (type == IndexType.VAETCurrent || type == IndexType.VAETHistory)
+        if (type is IndexType.VAETCurrent or IndexType.VAETHistory)
         {
             unsafe
             {
