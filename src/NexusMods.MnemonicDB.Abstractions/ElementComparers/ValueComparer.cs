@@ -32,6 +32,9 @@ public class ValueComparer : IElementComparer
     /// </summary>
     public static unsafe int CompareValues(byte* a, int alen, byte* b, int blen)
     {
+        if (alen == 0 || blen == 0)
+            return alen.CompareTo(blen);
+
         var typeA = a[0];
         var typeB = b[0];
 
@@ -46,6 +49,7 @@ public class ValueComparer : IElementComparer
 
         return (ValueTags)typeA switch
         {
+            ValueTags.Null => 0,
             ValueTags.UInt8 => CompareInternal<byte>(aVal, bVal),
             ValueTags.UInt16 => CompareInternal<ushort>(aVal, bVal),
             ValueTags.UInt32 => CompareInternal<uint>(aVal, bVal),

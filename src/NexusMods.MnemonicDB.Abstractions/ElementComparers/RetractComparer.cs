@@ -1,8 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using NexusMods.MnemonicDB.Abstractions.Internals;
-
-namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
+﻿namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
 /// <summary>
 /// Compares the assert part of the datom
