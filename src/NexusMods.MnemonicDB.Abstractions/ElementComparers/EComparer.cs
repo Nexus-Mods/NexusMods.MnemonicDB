@@ -7,11 +7,10 @@ namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 /// <summary>
 /// Compares the E part of the key.
 /// </summary>
-public class EComparer<TRegistry> : IElementComparer<TRegistry>
-    where TRegistry : IAttributeRegistry
+public class EComparer : IElementComparer
 {
     /// <inheritdoc />
-    public static int Compare(TRegistry registry, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         return MemoryMarshal.Read<KeyPrefix>(a).E.CompareTo(MemoryMarshal.Read<KeyPrefix>(b).E);
     }
