@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Comparators;
 
-public class EntityCacheComparator<TRegistry>(TRegistry registry) : IDatomComparator<TRegistry>
+public class EntityCacheComparator<TRegistry>(TRegistry registry) : IDatomComparator
      where TRegistry : IAttributeRegistry
 {
-    public static int Compare(TRegistry registry, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         var keyA = MemoryMarshal.Read<KeyPrefix>(a);
         var keyB = MemoryMarshal.Read<KeyPrefix>(b);
@@ -17,8 +18,8 @@ public class EntityCacheComparator<TRegistry>(TRegistry registry) : IDatomCompar
         return keyA.A.CompareTo(keyB.A);
     }
 
-    public int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    public int CompareInstance(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
-        return Compare(registry, a, b);
+        return Compare(a, b);
     }
 }

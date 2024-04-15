@@ -53,9 +53,9 @@ public abstract class ABackendTest<TStoreType>(
         var tx = await GenerateData();
         var current = tx.Snapshot.Datoms(type.CurrentVariant());
         var history = tx.Snapshot.Datoms(type.HistoryVariant());
-        var comparer = type.GetComparator(Registry);
+        var comparer = type.GetComparator();
         var merged = current
-            .Merge(history, (a, b) => comparer.Compare(a.RawSpan, b.RawSpan))
+            .Merge(history, (a, b) => comparer.CompareInstance(a.RawSpan, b.RawSpan))
             .Select(d => d.Resolved)
             .ToArray();
 

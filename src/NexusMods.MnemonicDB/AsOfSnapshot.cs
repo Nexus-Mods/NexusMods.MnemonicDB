@@ -22,9 +22,9 @@ internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeRegistry re
     {
         var current = inner.Datoms(type.CurrentVariant(), a, b);
         var history = inner.Datoms(type.HistoryVariant(), a, b);
-        var comparatorFn = type.GetComparator(registry);
+        var comparatorFn = type.GetComparator();
         var merged = current.Merge(history,
-            (dCurrent, dHistory) => comparatorFn.Compare(dCurrent.RawSpan, dHistory.RawSpan));
+            (dCurrent, dHistory) => comparatorFn.CompareInstance(dCurrent.RawSpan, dHistory.RawSpan));
         var filtered = merged.Where(d => d.T <= asOfTxId);
 
         var withoutRetracts = ApplyRetracts(filtered);
