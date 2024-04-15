@@ -8,7 +8,7 @@ namespace NexusMods.MnemonicDB.Abstractions.DatomComparators;
 /// The VAET Comparator.
 /// </summary>
 public class VAETComparator : ADatomComparator<
-    UnmanagedValueComparer<EntityId>,
+    ValueComparer,
     AComparer,
     EComparer,
     TxComparer,

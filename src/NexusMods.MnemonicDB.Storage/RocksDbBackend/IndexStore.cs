@@ -42,10 +42,10 @@ public class IndexStore : IIndexStore
         {
             unsafe
             {
-                return index.Compare(new ReadOnlySpan<byte>((void*)a, (int)alen),
-                    new ReadOnlySpan<byte>((void*)b, (int)blen));
+                AValueSerializer.CompareValues((byte*)a, alen, (byte*)b, blen);
             }
         };
+
         _comparator =
             Native.Instance.rocksdb_comparator_create(IntPtr.Zero, _destructorDelegate, _comparatorDelegate,
                 _nameDelegate);

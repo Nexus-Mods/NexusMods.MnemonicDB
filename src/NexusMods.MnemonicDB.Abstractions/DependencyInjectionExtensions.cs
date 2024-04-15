@@ -51,18 +51,4 @@ public static class DependencyInjectionExtensions
 
         return services;
     }
-
-
-    /// <summary>
-    ///     Adds the value serializer to the service collection.
-    /// </summary>
-    /// <param name="services"></param>
-    /// <typeparam name="TValueSerializer"></typeparam>
-    /// <returns></returns>
-    public static IServiceCollection AddValueSerializer<TValueSerializer>(this IServiceCollection services)
-        where TValueSerializer : class, IValueSerializer
-    {
-        services.AddSingleton<IValueSerializer, TValueSerializer>();
-        return services;
-    }
 }

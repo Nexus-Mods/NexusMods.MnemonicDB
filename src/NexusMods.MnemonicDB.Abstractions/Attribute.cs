@@ -4,9 +4,11 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -14,19 +16,48 @@ namespace NexusMods.MnemonicDB.Abstractions;
 ///     Interface for a specific attribute
 /// </summary>
 /// <typeparam name="TValueType"></typeparam>
-public sealed class Attribute<TValueType, TLowLevelType> : IAttribute
+public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
 {
-    private IValueSerializer<TValueType, TLowLevelType> _serializer = null!;
     private RegistryId.InlineCache _cache;
 
-    public Attribute(string nsAndName, bool isIndexed = false, bool noHistory = false,
-        Cardinality cardinality = Cardinality.One, ValueTags tags = ValueTags.Null)
+    protected Attribute(
+        ValueTags lowLevelType,
+        string nsAndName,
+        bool isIndexed = false,
+        bool noHistory = false,
+        Cardinality cardinality = Cardinality.One)
     {
+        LowLevelType = lowLevelType;
         Id = Symbol.Intern(nsAndName);
         Cardinalty = cardinality;
         IsIndexed = isIndexed;
         NoHistory = noHistory;
     }
+
+    /// <summary>
+    /// Converts a high-level value to a low-level value
+    /// </summary>
+    protected abstract TLowLevelType ToLowLevel(TValueType value);
+
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(byte lowLevelType, ValueTags tags)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + lowLevelType + " on attribute " + Id);
+    }
+
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(ushort lowLevelType, ValueTags tags)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + lowLevelType + " on attribute " + Id);
+    }
+
+
+    /// <inheritdoc />
+    public ValueTags LowLevelType { get; }
 
     /// <inheritdoc />
     public Symbol Id { get; }
@@ -41,20 +72,6 @@ public sealed class Attribute<TValueType, TLowLevelType> : IAttribute
     public bool NoHistory { get; }
 
     /// <inheritdoc />
-    public bool Equals(Attribute<TValueType>? other)
-    {
-        return other != null && ReferenceEquals(Id, other.Id);
-    }
-
-    IValueSerializer IAttribute.Serializer => Serializer;
-
-    /// <inheritdoc />
-    public void Add(ITransaction tx, EntityId entity, TValueType value)
-    {
-        tx.Add(entity, this, value);
-    }
-
-    /// <inheritdoc />
     public void SetDbId(RegistryId id, AttributeId attributeId)
     {
         _cache[id.Value] = attributeId;
@@ -65,15 +82,6 @@ public sealed class Attribute<TValueType, TLowLevelType> : IAttribute
     public AttributeId GetDbId(RegistryId id)
     {
         return _cache[id.Value];
-    }
-
-    /// <inheritdoc />
-    public void SetSerializer(IValueSerializer serializer)
-    {
-        if (serializer is not IValueSerializer<TValueType> valueSerializer)
-            throw new InvalidOperationException(
-                $"Serializer {serializer.GetType()} is not compatible with {typeof(TValueType)}");
-        _serializer = valueSerializer;
     }
 
     /// <inheritdoc />
@@ -90,39 +98,10 @@ public sealed class Attribute<TValueType, TLowLevelType> : IAttribute
         {
             E = entityId,
             A = this,
-            V = _serializer.Read(value),
+            V = ReadValue(value),
             T = tx,
             IsRetract = isRetract
         };
-    }
-
-    /// <inheritdoc />
-    public Type GetReadDatomType()
-    {
-        return typeof(ReadDatom);
-    }
-
-    /// <inheritdoc />
-    public IValueSerializer<TValueType> Serializer => _serializer;
-
-
-    /// <summary>
-    /// Gets the value for this attribute on the given entity
-    /// </summary>
-    public TValueType Get(IEntity entity)
-    {
-        var segment = entity.Db.GetSegment(entity.Id);
-        var dbId = _cache[segment.RegistryId.Value];
-        for (var i = 0; i < segment.Count; i++)
-        {
-            var datom = segment[i];
-            if (datom.A == dbId)
-            {
-                return datom.Resolve<TValueType>();
-            }
-        }
-        ThrowKeyNotFoundException(entity.Id);
-        return default!;
     }
 
     private void ThrowKeyNotFoundException(EntityId id)
@@ -133,7 +112,7 @@ public sealed class Attribute<TValueType, TLowLevelType> : IAttribute
     /// <summary>
     /// Gets all values for this attribute on the given entity
     /// </summary>
-    public Values<TValueType> GetAll(IEntity ent)
+    public Values<TValueType, TLowLevelType> GetAll(IEntity ent)
     {
         var segment = ent.Db.GetSegment(ent.Id);
         var dbId = _cache[segment.RegistryId.Value];
@@ -147,9 +126,9 @@ public sealed class Attribute<TValueType, TLowLevelType> : IAttribute
             {
                 i++;
             }
-            return new Values<TValueType>(segment, start, i, Serializer);
+            return new Values<TValueType, TLowLevelType>(segment, start, i, this);
         }
-        return new Values<TValueType>(segment, 0, 0, Serializer);
+        return new Values<TValueType, TLowLevelType>(segment, 0, 0, this);
     }
 
     /// <inheritdoc />
@@ -158,17 +137,72 @@ public sealed class Attribute<TValueType, TLowLevelType> : IAttribute
         entity.Tx!.Add(entity.Id, this, value);
     }
 
+
+
+    private void WriteValueLowLevel<TWriter>(TLowLevelType value, TWriter writer)
+        where TWriter : IBufferWriter<byte>
+    {
+        switch (value)
+        {
+            case byte b:
+                WriteUnmanaged(b, writer);
+                break;
+            case short s:
+                WriteUnmanaged(s, writer);
+                break;
+            default:
+                throw new NotSupportedException("Unsupported low-level type" + value);
+        }
+    }
+
+    public TValueType ReadValue(ReadOnlySpan<byte> span)
+    {
+        var tag = (ValueTags)span[0];
+        return LowLevelType switch
+        {
+            ValueTags.UInt8 => FromLowLevel(ReadUnmanaged<byte>(span), tag),
+            ValueTags.UInt16 => FromLowLevel(ReadUnmanaged<ushort>(span), tag),
+            _ => throw new NotSupportedException("Unsupported low-level type" + LowLevelType)
+        };
+    }
+
+    private unsafe void WriteUnmanaged<TWriter, TValue>(TValue value, TWriter writer)
+        where TWriter : IBufferWriter<byte>
+        where TValue : unmanaged
+    {
+        var span = writer.GetSpan(sizeof(TValue) + 1);
+        span[0] = (byte) LowLevelType;
+        MemoryMarshal.Write(span, value);
+        writer.Advance(sizeof(TValue) + 1);
+    }
+
+    private TValue ReadUnmanaged<TValue>(ReadOnlySpan<byte> span)
+        where TValue : unmanaged
+    {
+        return MemoryMarshal.Read<TValue>(span);
+    }
+
     /// <summary>
     /// Write a datom for this attribute to the given writer
     /// </summary>
     public void Write<TWriter>(EntityId entityId, RegistryId registryId, TValueType value, TxId txId, bool isRetract, TWriter writer)
-    where TWriter : IBufferWriter<byte>
+        where TWriter : IBufferWriter<byte>
     {
         var prefix = new KeyPrefix().Set(entityId, GetDbId(registryId), txId, isRetract);
         var span = writer.GetSpan(KeyPrefix.Size);
         MemoryMarshal.Write(span, prefix);
         writer.Advance(KeyPrefix.Size);
-        Serializer.Serialize(value, writer);
+        WriteValueLowLevel(ToLowLevel(value), writer);
+    }
+
+
+    /// <summary>
+    /// Write a datom for this attribute to the given writer
+    /// </summary>
+    public void WriteValue<TWriter>(TValueType value, TWriter writer)
+        where TWriter : IBufferWriter<byte>
+    {
+        WriteValueLowLevel(ToLowLevel(value), writer);
     }
 
     /// <summary>

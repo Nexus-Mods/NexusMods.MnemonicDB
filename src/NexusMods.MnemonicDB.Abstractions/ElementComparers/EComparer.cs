@@ -9,9 +9,8 @@ namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 /// </summary>
 public class EComparer : IElementComparer
 {
-    /// <inheritdoc />
-    public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    public static unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
     {
-        return MemoryMarshal.Read<KeyPrefix>(a).E.CompareTo(MemoryMarshal.Read<KeyPrefix>(b).E);
+        return IElementComparer.KeyPrefix(aPtr)->E.CompareTo(IElementComparer.KeyPrefix(bPtr)->E);
     }
 }

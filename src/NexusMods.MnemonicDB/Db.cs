@@ -67,7 +67,7 @@ internal class Db : IDb
         }
     }
 
-    public TValue Get<TValue>(EntityId id, Attribute<TValue> attribute)
+    public TValue Get<TValue, TLowLevel>(EntityId id, Attribute<TValue, TLowLevel> attribute)
     {
         var attrId = attribute.GetDbId(_registry.Id);
         var entry = _entityCache.Get(this, id);
@@ -76,7 +76,7 @@ internal class Db : IDb
             var datom = entry[i];
             if (datom.A == attrId)
             {
-                return datom.Resolve<TValue>();
+                return datom.Resolve(attribute);
             }
         }
 
@@ -98,34 +98,33 @@ internal class Db : IDb
         return _entityCache.Get(this, id);
     }
 
-    public IEnumerable<TValue> GetAll<TValue>(EntityId id, Attribute<TValue> attribute)
+    public IEnumerable<TValue> GetAll<TValue, TLowLevel>(EntityId id, Attribute<TValue, TLowLevel> attribute)
     {
         var attrId = attribute.GetDbId(_registry.Id);
         var results = _entityCache.Get(this, id)
             .Where(d => d.A == attrId)
-            .Select(d => d.Resolve<TValue>());
+            .Select(d => d.Resolve(attribute));
 
         return results;
     }
 
-    public IEnumerable<EntityId> FindIndexed<TValue>(TValue value, Attribute<TValue> attribute)
+    public IEnumerable<EntityId> FindIndexed<TValue, TLowLevel>(TValue value, Attribute<TValue, TLowLevel> attribute)
     {
         var attrId = attribute.GetDbId(_registry.Id);
         if (!attribute.IsIndexed)
             throw new InvalidOperationException($"Attribute {attribute.Id} is not indexed");
-        var serializer = attribute.Serializer;
 
         using var start = new PooledMemoryBufferWriter(64);
         var span = MemoryMarshal.Cast<byte, KeyPrefix>(start.GetSpan(KeyPrefix.Size));
         span[0].Set(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false);
         start.Advance(KeyPrefix.Size);
-        serializer.Serialize(value, start);
+        attribute.WriteValue(value, start);
 
         using var end = new PooledMemoryBufferWriter(64);
         span = MemoryMarshal.Cast<byte, KeyPrefix>(end.GetSpan(KeyPrefix.Size));
         span[0].Set(EntityId.MaxValueNoPartition, attrId, TxId.MinValue, false);
         end.Advance(KeyPrefix.Size);
-        serializer.Serialize(value, end);
+        attribute.WriteValue(value, end);
 
         var results = Snapshot
             .Datoms(IndexType.AVETCurrent, start.GetWrittenSpan(), end.GetWrittenSpan())
@@ -140,7 +139,7 @@ internal class Db : IDb
         return EntityConstructors<TModel>.Constructor(id, this);
     }
 
-    public Entities<EntityIds, TModel> GetReverse<TModel>(EntityId id, Attribute<EntityId> attribute)
+    public Entities<EntityIds, TModel> GetReverse<TModel>(EntityId id, Attribute<EntityId, ulong> attribute)
         where TModel : IEntity
     {
         var segment = _reverseCache.Get(this, (id, attribute.GetDbId(_registry.Id)));

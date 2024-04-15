@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Runtime.InteropServices;
+using System.Text;
 using NexusMods.MnemonicDB.Abstractions.Internals;
-using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
@@ -11,57 +9,98 @@ namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 /// </summary>
 public class ValueComparer : IElementComparer
 {
+    #region Constants
+    private const int MaxStackAlloc = 128;
+    private static readonly Encoding AsciiEncoding = Encoding.ASCII;
+    private static readonly Encoding Utf8Encoding = Encoding.UTF8;
+    #endregion
+
+
     /// <inheritdoc />
-    public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    public static unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
     {
-        return UnsafeCompare(a, b);
+        var ptrA = aPtr + sizeof(KeyPrefix);
+        var ptrB = bPtr + sizeof(KeyPrefix);
+        var aSize = aLen - sizeof(KeyPrefix);
+        var bSize = bLen - sizeof(KeyPrefix);
+
+        return CompareValues(ptrA, aSize, ptrB, bSize);
     }
 
-
     /// <summary>
-    /// Safe compare that will sort values first by type and then by value.
+    ///     Performs a highly optimized, sort between two value pointers.
     /// </summary>
-    public static int SafeCompare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    private static unsafe int CompareValues(byte* a, int alen, byte* b, int blen)
     {
-        return a[0] != b[0] ? a[0].CompareTo(b[0]) : UnsafeCompare(a, b);
-    }
+        var typeA = a[0];
+        var typeB = b[0];
 
+        if (typeA != typeB)
+            return typeA.CompareTo(typeB);
 
-    /// <summary>
-    /// Compares two values, assuming that they are of the same attribute. This is the "unsafe" part of the name
-    /// as the method will not complain if the values are of different attributes.
-    /// </summary>
-    public static int UnsafeCompare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
-    {
-        var tagA = (ValueTags)a[0];
-        Debug.Assert(tagA == (ValueTags)b[0], "Values are of different types");
+        var aVal = a + 1;
+        var bVal = b + 1;
 
-        return tagA switch
+        return (ValueTags)typeA switch
         {
-            ValueTags.Null => 0,
-            ValueTags.UInt8 => ValueSerializer.GetUInt8(ref a).CompareTo(ValueSerializer.GetUInt8(ref b)),
-            ValueTags.UInt16 => ValueSerializer.GetUInt16(ref a).CompareTo(ValueSerializer.GetUInt16(ref b)),
-            ValueTags.UInt32 => ValueSerializer.GetUInt32(ref a).CompareTo(ValueSerializer.GetUInt32(ref b)),
-            ValueTags.UInt64 => ValueSerializer.GetUInt64(ref a).CompareTo(ValueSerializer.GetUInt64(ref b)),
-            ValueTags.UInt128 => ValueSerializer.GetUInt128(ref a).CompareTo(ValueSerializer.GetUInt128(ref b)),
-            ValueTags.Int16 => ValueSerializer.GetInt16(ref a).CompareTo(ValueSerializer.GetInt16(ref b)),
-            ValueTags.Int32 => ValueSerializer.GetInt32(ref a).CompareTo(ValueSerializer.GetInt32(ref b)),
-            ValueTags.Int64 => ValueSerializer.GetInt64(ref a).CompareTo(ValueSerializer.GetInt64(ref b)),
-            ValueTags.Int128 => ValueSerializer.GetInt128(ref a).CompareTo(ValueSerializer.GetInt128(ref b)),
-            ValueTags.Float32 => ValueSerializer.GetFloat32(ref a).CompareTo(ValueSerializer.GetFloat32(ref b)),
-            ValueTags.Float64 => ValueSerializer.GetFloat64(ref a).CompareTo(ValueSerializer.GetFloat64(ref b)),
-            ValueTags.Ascii => ValueSerializer.GetRaw(ref a).SequenceCompareTo(ValueSerializer.GetRaw(ref b)),
-            ValueTags.Utf8 => ValueSerializer.GetRaw(ref a).SequenceCompareTo(ValueSerializer.GetRaw(ref b)),
-            ValueTags.Utf8Insensitive => string.Compare(ValueSerializer.GetUtf8(ref a), ValueSerializer.GetUtf8(ref b),
-                StringComparison.OrdinalIgnoreCase),
-            ValueTags.Blob => ValueSerializer.GetRaw(ref a).SequenceCompareTo(ValueSerializer.GetRaw(ref b)),
-            _ => InvalidTagException(tagA)
+            ValueTags.UInt8 => CompareInternal<byte>(aVal, bVal),
+            ValueTags.UInt16 => CompareInternal<ushort>(aVal, bVal),
+            ValueTags.UInt32 => CompareInternal<uint>(aVal, bVal),
+            ValueTags.UInt64 => CompareInternal<ulong>(aVal, bVal),
+            ValueTags.UInt128 => CompareInternal<UInt128>(aVal, bVal),
+            ValueTags.Int16 => CompareInternal<short>(aVal, bVal),
+            ValueTags.Int32 => CompareInternal<int>(aVal, bVal),
+            ValueTags.Int64 => CompareInternal<long>(aVal, bVal),
+            ValueTags.Int128 => CompareInternal<Int128>(aVal, bVal),
+            ValueTags.Float32 => CompareInternal<float>(aVal, bVal),
+            ValueTags.Float64 => CompareInternal<double>(aVal, bVal),
+            ValueTags.Ascii => CompareBlobInternal(aVal, bVal),
+            ValueTags.Utf8 => CompareBlobInternal(aVal, bVal),
+            ValueTags.Utf8Insensitive => CompareUtf8Insensitive(aVal, bVal),
+            ValueTags.Blob => CompareBlobInternal(aVal, bVal),
+            _ => alen - blen
         };
     }
 
-    private static int InvalidTagException(ValueTags tag)
+    private static unsafe int CompareBlobInternal(byte* aVal, byte* bVal)
     {
-        throw new ArgumentOutOfRangeException("Invalid tag: " + tag);
-        return 0;
+        var aSize = GetInlineSize(ref aVal);
+        var bSize = GetInlineSize(ref bVal);
+
+        return new Span<byte>(aVal, aSize)
+            .SequenceCompareTo(new Span<byte>(bVal, bSize));
     }
+
+    private static unsafe int CompareUtf8Insensitive(byte* aVal, byte* bVal)
+    {
+        var aSize = GetInlineSize(ref aVal);
+        var bSize = GetInlineSize(ref bVal);
+
+        var strA = Utf8Encoding.GetString(aVal, aSize);
+        var strB = Utf8Encoding.GetString(bVal, bSize);
+
+        return string.Compare(strA, strB, StringComparison.InvariantCultureIgnoreCase);
+    }
+
+    private static unsafe int GetInlineSize(ref byte* aVal)
+    {
+        int aSize = aVal[0];
+        if (aSize == byte.MaxValue)
+        {
+            aVal += 1;
+            aSize = ((ushort*)aVal)[0];
+        }
+
+        return aSize;
+    }
+
+
+    private static unsafe int CompareInternal<T>(byte* aVal, byte* bVal)
+    where T : unmanaged, IComparable<T>
+    {
+        return ((T*)aVal)[0].CompareTo(((T*)bVal)[0]);
+    }
+
+
+
 }

@@ -1,4 +1,4 @@
-﻿namespace NexusMods.MnemonicDB.Abstractions;
+﻿namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
 public enum ValueTags : byte
 {
@@ -66,8 +66,5 @@ public enum ValueTags : byte
     /// Inline binary data
     /// </summary>
     Blob = 15
-
-
-
 
 }

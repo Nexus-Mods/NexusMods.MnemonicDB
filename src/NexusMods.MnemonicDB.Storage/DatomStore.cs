@@ -124,7 +124,7 @@ public class DatomStore : IDatomStore
         foreach (var attr in newAttrsArray)
         {
             datoms.Add(EntityId.From(attr.AttrEntityId.Value), BuiltInAttributes.UniqueId, attr.UniqueId, TxId.Tmp, false);
-            datoms.Add(EntityId.From(attr.AttrEntityId.Value), BuiltInAttributes.ValueSerializerId, attr.ValueTypeId, TxId.Tmp, false);
+            datoms.Add(EntityId.From(attr.AttrEntityId.Value), BuiltInAttributes.ValueSerializerId, attr.LowLevelType, TxId.Tmp, false);
         }
 
         await Transact(datoms.Build());

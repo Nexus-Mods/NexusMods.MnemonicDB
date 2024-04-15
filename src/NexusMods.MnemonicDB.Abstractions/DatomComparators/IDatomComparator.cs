@@ -5,15 +5,15 @@ namespace NexusMods.MnemonicDB.Abstractions.DatomComparators;
 /// <summary>
 /// A comparator for datoms
 /// </summary>
-public interface IDatomComparator
+public unsafe interface IDatomComparator
 {
     /// <summary>
     /// Compare two datoms
     /// </summary>
-    public static abstract int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
+    public static abstract int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen);
 
     /// <summary>
     /// Compare two datoms
     /// </summary>
-    public int CompareInstance(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
+    public int CompareInstance(byte* aPtr, int aLen, byte* bPtr, int bLen);
 }

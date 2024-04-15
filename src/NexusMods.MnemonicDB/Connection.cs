@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Storage;
@@ -23,7 +24,7 @@ public class Connection : IConnection
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    public Connection(ILogger<Connection> logger, IDatomStore store, IEnumerable<IValueSerializer> serializers, IEnumerable<IAttribute> declaredAttributes)
+    public Connection(ILogger<Connection> logger, IDatomStore store, IEnumerable<IAttribute> declaredAttributes)
     {
         _store = store;
         // Async startup routines, we'll deref this task when we interact with the store
@@ -31,7 +32,7 @@ public class Connection : IConnection
         {
             try
             {
-                await AddMissingAttributes(serializers, declaredAttributes);
+                await AddMissingAttributes(declaredAttributes);
             }
             catch (Exception ex)
             {
@@ -78,10 +79,8 @@ public class Connection : IConnection
         .Select(log => new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry));
 
 
-    private async Task AddMissingAttributes(IEnumerable<IValueSerializer> valueSerializers,
-        IEnumerable<IAttribute> declaredAttributes)
+    private async Task AddMissingAttributes(IEnumerable<IAttribute> declaredAttributes)
     {
-        var serializerByType = valueSerializers.ToDictionary(s => s.NativeType);
 
         var existing = ExistingAttributes().ToDictionary(a => a.UniqueId);
         if (existing.Count == 0)
@@ -102,9 +101,8 @@ public class Connection : IConnection
         {
             var id = ++attrId;
 
-            var serializer = serializerByType[attr.ValueType];
             var uniqueId = attr.Id;
-            newAttrs.Add(new DbAttribute(uniqueId, AttributeId.From(id), serializer.UniqueId));
+            newAttrs.Add(new DbAttribute(uniqueId, AttributeId.From(id), attr.LowLevelType));
         }
 
         await _store.RegisterAttributes(newAttrs);
@@ -119,7 +117,7 @@ public class Connection : IConnection
 
         foreach (var attrId in attrIds)
         {
-            var serializerId = Symbol.Unknown;
+            var serializerId = ValueTags.Null;
             var uniqueId = Symbol.Unknown;
 
             var from = new KeyPrefix().Set(attrId, AttributeId.Min, TxId.MinValue, false);
@@ -129,9 +127,9 @@ public class Connection : IConnection
             {
                 var datom = rawDatom.Resolved;
 
-                if (datom.A == BuiltInAttributes.ValueSerializerId && datom is Attribute<Symbol>.ReadDatom serializerIdDatom)
+                if (datom.A == BuiltInAttributes.ValueType && datom is Attribute<ValueTags, byte>.ReadDatom serializerIdDatom)
                     serializerId = serializerIdDatom.V;
-                else if (datom.A == BuiltInAttributes.UniqueId && datom is Attribute<Symbol>.ReadDatom uniqueIdDatom)
+                else if (datom.A == BuiltInAttributes.UniqueId && datom is Attribute<Symbol, string>.ReadDatom uniqueIdDatom)
                     uniqueId = uniqueIdDatom.V;
             }
 

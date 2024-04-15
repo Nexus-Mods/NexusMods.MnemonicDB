@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -11,9 +12,15 @@ namespace NexusMods.MnemonicDB.Abstractions;
 public interface IAttribute
 {
     /// <summary>
-    ///     The native C# type of the value, must have a matching IValueSerializer registered in the DI container.
+    ///     The native C# type of the value.
     /// </summary>
     public Type ValueType { get; }
+
+
+    /// <summary>
+    /// The low-level (MnemonicDB) type of the value.
+    /// </summary>
+    public ValueTags LowLevelType { get; }
 
     /// <summary>
     ///     True if the attribute's value is a reference to another entity, false if it is a value type.
@@ -39,12 +46,6 @@ public interface IAttribute
     public void SetDbId(RegistryId id, AttributeId attributeId);
 
     /// <summary>
-    /// Sets the serializer for the attribute
-    /// </summary>
-    /// <param name="serializer"></param>
-    public void SetSerializer(IValueSerializer serializer);
-
-    /// <summary>
     ///    True if the attribute is indexed, false if it is not.
     /// </summary>
     bool IsIndexed { get; }
@@ -58,11 +59,6 @@ public interface IAttribute
     ///   The cardinality of the attribute
     /// </summary>
     Cardinality Cardinalty { get; }
-
-    /// <summary>
-    ///   The serializer for the attribute
-    /// </summary>
-    IValueSerializer Serializer { get; }
 
     /// <summary>
     ///     Converts the given values into a typed datom

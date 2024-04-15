@@ -60,7 +60,7 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
         var serializers = valueSerializers.ToDictionary(s => s.NativeType);
 
         BuiltInAttributes.UniqueId.SetDbId(Id, BuiltInAttributes.UniqueIdEntityId);
-        BuiltInAttributes.ValueSerializerId.SetDbId(Id, BuiltInAttributes.ValueSerializerIdEntityId);
+        BuiltInAttributes.ValueSerializerId.SetDbId(Id, BuiltInAttributes.ValueTypeEntityId);
 
         foreach (var attribute in attributes)
         {
