@@ -14,12 +14,13 @@ namespace NexusMods.MnemonicDB.Abstractions;
 ///     Interface for a specific attribute
 /// </summary>
 /// <typeparam name="TValueType"></typeparam>
-public sealed class Attribute<TValueType> : IAttribute
+public sealed class Attribute<TValueType, TLowLevelType> : IAttribute
 {
-    private IValueSerializer<TValueType> _serializer = null!;
+    private IValueSerializer<TValueType, TLowLevelType> _serializer = null!;
     private RegistryId.InlineCache _cache;
 
-    public Attribute(string nsAndName, bool isIndexed = false, bool noHistory = false, Cardinality cardinality = Cardinality.One)
+    public Attribute(string nsAndName, bool isIndexed = false, bool noHistory = false,
+        Cardinality cardinality = Cardinality.One, ValueTags tags = ValueTags.Null)
     {
         Id = Symbol.Intern(nsAndName);
         Cardinalty = cardinality;
