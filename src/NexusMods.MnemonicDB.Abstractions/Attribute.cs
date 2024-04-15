@@ -116,7 +116,7 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
     public Type ValueType => typeof(TValueType);
 
     /// <inheritdoc />
-    public bool IsReference => typeof(TValueType) == typeof(EntityId);
+    public bool IsReference => LowLevelType == ValueTags.Reference;
 
     /// <inheritdoc />
     public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx,

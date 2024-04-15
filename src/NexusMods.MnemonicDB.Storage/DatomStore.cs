@@ -283,7 +283,7 @@ public class DatomStore : IDatomStore
                     var newV = remapFn(MemoryMarshal.Read<EntityId>(datom.ValueSpan.SliceFast(1)));
                     _writer.WriteMarshal(keyPrefix);
                     _writer.WriteMarshal((byte)ValueTags.Reference);
-                    _writer.WriteMarshal(newV.Value);
+                    _writer.WriteMarshal(newV);
                 }
                 else
                 {
@@ -370,10 +370,13 @@ public class DatomStore : IDatomStore
             var debugKey = prevDatom.Prefix;
             Debug.Assert(debugKey.E == MemoryMarshal.Read<KeyPrefix>(datom).E, "Entity should match");
             Debug.Assert(debugKey.A == MemoryMarshal.Read<KeyPrefix>(datom).A, "Attribute should match");
-// TODO: Fix this
-            /*Debug.Assert(
-                attribute.Compare(prevDatom.ValueSpan,
-                    datom.SliceFast(sizeof(KeyPrefix))) == 0, "Values should match");*/
+
+            fixed (byte* aTmp = prevDatom.ValueSpan)
+            fixed (byte* bTmp = datom.SliceFast(sizeof(KeyPrefix)))
+            {
+                var cmp = ValueComparer.CompareValues(aTmp, prevDatom.ValueSpan.Length, bTmp, datom.Length - sizeof(KeyPrefix));
+                Debug.Assert(cmp == 0, "Values should match");
+            }
         }
         #endif
 

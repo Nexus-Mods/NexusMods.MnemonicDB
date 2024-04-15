@@ -61,8 +61,14 @@ public class ValueComparer : IElementComparer
             ValueTags.Utf8 => CompareBlobInternal(aVal, alen, bVal, blen),
             ValueTags.Utf8Insensitive => CompareUtf8Insensitive(aVal, alen, bVal, blen),
             ValueTags.Blob => CompareBlobInternal(aVal, alen, bVal, blen),
-            _ => alen - blen
+            ValueTags.Reference => CompareInternal<ulong>(aVal, bVal),
+            _ => ThrowInvalidCompare()
         };
+    }
+
+    private static int ThrowInvalidCompare()
+    {
+        throw new InvalidOperationException("Invalid compare type");
     }
 
     private static unsafe int CompareBlobInternal(byte* aVal, int aLen, byte* bVal, int bLen)
