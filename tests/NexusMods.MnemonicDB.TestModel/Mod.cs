@@ -12,7 +12,7 @@ public static class Mod
 
     public static readonly StringAttribute Name = new(Namespace, "Name") { IsIndexed = true };
     public static readonly UriAttribute Source = new(Namespace, "Source");
-    public static readonly ReferenceAttribute LoadoutId = new(Namespace, "LoadoutId");
+    public static readonly ReferenceAttribute LoadoutId = new(Namespace, "Loadout");
 
     public class Model(ITransaction tx) : AEntity(tx)
     {

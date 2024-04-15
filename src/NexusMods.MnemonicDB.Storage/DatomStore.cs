@@ -280,10 +280,10 @@ public class DatomStore : IDatomStore
             {
                 if (attr.IsReference)
                 {
-                    var newV = remapFn(MemoryMarshal.Read<EntityId>(datom.ValueSpan));
+                    var newV = remapFn(MemoryMarshal.Read<EntityId>(datom.ValueSpan.SliceFast(1)));
                     _writer.WriteMarshal(keyPrefix);
                     _writer.WriteMarshal((byte)ValueTags.Reference);
-                    _writer.WriteMarshal(newV);
+                    _writer.WriteMarshal(newV.Value);
                 }
                 else
                 {
