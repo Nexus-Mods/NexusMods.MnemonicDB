@@ -8,11 +8,6 @@ public abstract class AIndex<TComparator, TIndexStore>(TIndexStore store) : IInd
     where TComparator : IDatomComparator
     where TIndexStore : class, IIndexStore
 {
-    public int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
-    {
-        return TComparator.Compare(a, b);
-    }
-
     public void Put(IWriteBatch batch, ReadOnlySpan<byte> datom)
     {
         batch.Add(store, datom);

@@ -30,7 +30,7 @@ public class ValueComparer : IElementComparer
     /// <summary>
     ///     Performs a highly optimized, sort between two value pointers.
     /// </summary>
-    private static unsafe int CompareValues(byte* a, int alen, byte* b, int blen)
+    public static unsafe int CompareValues(byte* a, int alen, byte* b, int blen)
     {
         var typeA = a[0];
         var typeB = b[0];

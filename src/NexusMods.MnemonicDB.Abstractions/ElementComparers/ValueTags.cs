@@ -65,6 +65,11 @@ public enum ValueTags : byte
     /// <summary>
     /// Inline binary data
     /// </summary>
-    Blob = 15
+    Blob = 15,
+    
+    /// <summary>
+    /// A reference to another entity
+    /// </summary>
+    Reference = 16,
 
 }

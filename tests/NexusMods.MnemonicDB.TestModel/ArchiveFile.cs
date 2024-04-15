@@ -1,6 +1,7 @@
 ﻿using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.TestModel.Attributes;
 using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.TestModel;
@@ -11,10 +12,11 @@ namespace NexusMods.MnemonicDB.TestModel;
 /// </summary>
 public class ArchiveFile
 {
+    public const string Namespace = "NexusMods.MnemonicDB.TestModel.ArchiveFile";
 
-    public static readonly Attribute<RelativePath> Path = new("NexusMods.MnemonicDB.ArchiveFile/Path");
+    public static readonly RelativePathAttribute Path = new(Namespace, "Path");
 
-    public static readonly Attribute<Hash> Hash = new("NexusMods.MnemonicDB.ArchiveFile/Hash");
+    public static readonly HashAttribute Hash = new(Namespace, "Hash");
 
 
 

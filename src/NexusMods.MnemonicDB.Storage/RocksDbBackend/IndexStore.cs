@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-public class IndexStore : IIndexStore
+public class IndexStore<TComparator> : IRocksDBIndexStore
+where TComparator : IDatomComparator
 {
     private readonly string _handleName;
     private readonly AttributeRegistry _registry;
@@ -30,7 +32,6 @@ public class IndexStore : IIndexStore
 
     public IndexType Type { get; }
 
-
     public void SetupColumnFamily(IIndex index, ColumnFamilies columnFamilies)
     {
         _options = new ColumnFamilyOptions();
@@ -42,7 +43,7 @@ public class IndexStore : IIndexStore
         {
             unsafe
             {
-                AValueSerializer.CompareValues((byte*)a, alen, (byte*)b, blen);
+                return TComparator.Compare((byte*)a, (int)alen, (byte*)b, (int)blen);
             }
         };
 

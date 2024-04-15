@@ -16,4 +16,14 @@ public unsafe interface IDatomComparator
     /// Compare two datoms
     /// </summary>
     public int CompareInstance(byte* aPtr, int aLen, byte* bPtr, int bLen);
+
+    /// <summary>
+    /// Compare two datoms
+    /// </summary>
+    public int CompareInstance(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        fixed(byte* aPtr = a)
+            fixed(byte* bPtr = b)
+                return CompareInstance(aPtr, a.Length, bPtr, b.Length);
+    }
 }

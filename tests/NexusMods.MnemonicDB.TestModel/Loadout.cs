@@ -1,11 +1,13 @@
 ﻿using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
 namespace NexusMods.MnemonicDB.TestModel;
 
 public static class Loadout
 {
-    public static readonly Attribute<string> Name = new("NexusMods.MnemonicDB.TestModel.Loadout/Name");
+    public const string Namespace = "NexusMods.MnemonicDB.TestModel.Loadout";
+    public static readonly StringAttribute Name = new(Namespace, "Name");
 
 
     public class Model(ITransaction tx) : AEntity(tx)

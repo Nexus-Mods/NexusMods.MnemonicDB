@@ -1,9 +1,12 @@
 ﻿using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 
 namespace NexusMods.MnemonicDB.Storage.Abstractions;
 
 public interface IIndexStore
 {
+    /// <summary>
+    /// Get the type of the index
+    /// </summary>
     IndexType Type { get; }
+
 }

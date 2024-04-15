@@ -18,17 +18,18 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// <typeparam name="TValueType"></typeparam>
 public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
 {
-    private RegistryId.InlineCache _cache;
+    protected RegistryId.InlineCache Cache;
 
     protected Attribute(
         ValueTags lowLevelType,
-        string nsAndName,
+        string ns,
+        string name,
         bool isIndexed = false,
         bool noHistory = false,
         Cardinality cardinality = Cardinality.One)
     {
         LowLevelType = lowLevelType;
-        Id = Symbol.Intern(nsAndName);
+        Id = Symbol.Intern(ns, name);
         Cardinalty = cardinality;
         IsIndexed = isIndexed;
         NoHistory = noHistory;
@@ -42,17 +43,35 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(byte lowLevelType, ValueTags tags)
+    protected virtual TValueType FromLowLevel(byte value, ValueTags tags)
     {
-        throw new NotSupportedException("Unsupported low-level type " + lowLevelType + " on attribute " + Id);
+        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
 
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(ushort lowLevelType, ValueTags tags)
+    protected virtual TValueType FromLowLevel(ushort value, ValueTags tags)
     {
-        throw new NotSupportedException("Unsupported low-level type " + lowLevelType + " on attribute " + Id);
+        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
+    }
+
+
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(string value, ValueTags tags)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
+    }
+
+
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(ulong value, ValueTags tags)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
 
 
@@ -63,25 +82,25 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
     public Symbol Id { get; }
 
     /// <inheritdoc />
-    public Cardinality Cardinalty { get; }
+    public Cardinality Cardinalty { get; init; }
 
     /// <inheritdoc />
-    public bool IsIndexed { get; }
+    public bool IsIndexed { get; init; }
 
     /// <inheritdoc />
-    public bool NoHistory { get; }
+    public bool NoHistory { get; init; }
 
     /// <inheritdoc />
     public void SetDbId(RegistryId id, AttributeId attributeId)
     {
-        _cache[id.Value] = attributeId;
+        Cache[id.Value] = attributeId;
     }
 
     /// <inheritdoc />
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public AttributeId GetDbId(RegistryId id)
     {
-        return _cache[id.Value];
+        return Cache[id.Value];
     }
 
     /// <inheritdoc />
@@ -109,27 +128,7 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
         throw new KeyNotFoundException($"Attribute {Id} not found on entity {id}");
     }
 
-    /// <summary>
-    /// Gets all values for this attribute on the given entity
-    /// </summary>
-    public Values<TValueType, TLowLevelType> GetAll(IEntity ent)
-    {
-        var segment = ent.Db.GetSegment(ent.Id);
-        var dbId = _cache[segment.RegistryId.Value];
-        for (var i = 0; i < segment.Count; i++)
-        {
-            var datom = segment[i];
-            if (datom.A != dbId) continue;
 
-            var start = i;
-            while (i < segment.Count && segment[i].A == dbId)
-            {
-                i++;
-            }
-            return new Values<TValueType, TLowLevelType>(segment, start, i, this);
-        }
-        return new Values<TValueType, TLowLevelType>(segment, 0, 0, this);
-    }
 
     /// <inheritdoc />
     public void Add(IEntity entity, TValueType value)

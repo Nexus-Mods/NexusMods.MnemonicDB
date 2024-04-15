@@ -14,7 +14,7 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
 {
     private readonly ColumnFamilies _columnFamilies = new();
     private readonly Dictionary<IndexType, IRocksDbIndex> _indexes = new();
-    private readonly Dictionary<IndexType, IndexStore> _stores = new();
+    private readonly Dictionary<IndexType, IRocksDBIndexStore> _stores = new();
     private RocksDb? _db = null!;
 
     public IWriteBatch CreateBatch()
@@ -25,7 +25,7 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
     public void DeclareIndex<TComparator>(IndexType name)
         where TComparator : IDatomComparator
     {
-        var indexStore = new IndexStore(name.ToString(), name, registry);
+        var indexStore = new IndexStore<TComparator>(name.ToString(), name, registry);
         _stores.Add(name, indexStore);
 
         var index = new Index<TComparator>(indexStore);

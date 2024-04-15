@@ -16,12 +16,12 @@ public class Batch(RocksDb db) : IWriteBatch
 
     public void Add(IIndexStore store, ReadOnlySpan<byte> key)
     {
-        _batch.Put(key, ReadOnlySpan<byte>.Empty, ((IndexStore)store).Handle);
+        _batch.Put(key, ReadOnlySpan<byte>.Empty, ((IRocksDBIndexStore)store).Handle);
     }
 
     public void Delete(IIndexStore store, ReadOnlySpan<byte> key)
     {
-        _batch.Delete(key, ((IndexStore)store).Handle);
+        _batch.Delete(key, ((IRocksDBIndexStore)store).Handle);
     }
 
     public void Commit()

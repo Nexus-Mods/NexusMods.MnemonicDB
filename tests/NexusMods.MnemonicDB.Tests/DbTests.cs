@@ -65,7 +65,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         for (var i = 0; i < times; i++)
         {
             var newTx = Connection.BeginTransaction();
-            Mod.Name.Add(newTx, modId, $"Test Mod {i}");
+            newTx.Add(modId, Mod.Name, $"Test Mod {i}");
             result = await newTx.Commit();
             txEs.Add(result.NewTx);
         }
@@ -110,7 +110,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         for (var i = 0; i < times; i++)
         {
             var newTx = Connection.BeginTransaction();
-            File.Path.Add(newTx, realId, $"C:\\test_{i}.txt_mutate");
+            newTx.Add(realId, File.Path, $"C:\\test_{i}.txt_mutate");
 
             await newTx.Commit();
 
@@ -143,8 +143,10 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         };
 
         // Attach extra attributes to the entity
-        ArchiveFile.Path.Add(tx, file.Id, "C:\\test.zip");
-        ArchiveFile.Hash.Add(tx, file.Id, Hash.From(0xFEEDBEEF));
+
+        tx.Add(file.Id, ArchiveFile.Path, "C:\\test.zip");
+        tx.Add(file.Id, ArchiveFile.Hash, Hash.From(0xFEEDBEEF));
+
         var result = await tx.Commit();
 
 
@@ -190,7 +192,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         for (var idx = 0; idx < 4; idx++)
         {
             tx = Connection.BeginTransaction();
-            File.Hash.Add(tx, realId, Hash.From(0xDEADBEEF + (ulong)idx + 0xEE));
+            tx.Add(realId, File.Hash, Hash.From(0xDEADBEEF + (ulong)idx + 0xEE));
             result = await tx.Commit();
 
             await Task.Delay(100);

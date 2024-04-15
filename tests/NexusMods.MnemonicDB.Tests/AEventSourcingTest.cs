@@ -17,7 +17,6 @@ public class AMnemonicDBTest : IDisposable
     private readonly IAttribute[] _attributes;
     private readonly IServiceProvider _provider;
     private AttributeRegistry _registry;
-    private readonly IValueSerializer[] _valueSerializers;
     private Backend _backend;
 
     private DatomStore _store;
@@ -28,10 +27,9 @@ public class AMnemonicDBTest : IDisposable
     protected AMnemonicDBTest(IServiceProvider provider)
     {
         _provider = provider;
-        _valueSerializers = provider.GetRequiredService<IEnumerable<IValueSerializer>>().ToArray();
         _attributes = provider.GetRequiredService<IEnumerable<IAttribute>>().ToArray();
 
-        _registry = new AttributeRegistry(_valueSerializers, _attributes);
+        _registry = new AttributeRegistry(_attributes);
 
         Config = new DatomStoreSettings
         {
@@ -41,7 +39,7 @@ public class AMnemonicDBTest : IDisposable
         _backend = new Backend(_registry);
 
         _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
-        Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, _valueSerializers, _attributes);
+        Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, _attributes);
 
         Logger = provider.GetRequiredService<ILogger<AMnemonicDBTest>>();
     }
@@ -122,7 +120,7 @@ public class AMnemonicDBTest : IDisposable
         var tx2 = Connection.BeginTransaction();
         foreach (var mod in loadout.Mods)
         {
-            Mod.Name.Add(tx2, mod.Id, mod.Name + " - Updated");
+            tx.Add(mod.Id, Mod.Name, mod.Name + " - Updated");
         }
         await tx2.Commit();
 
@@ -146,9 +144,9 @@ public class AMnemonicDBTest : IDisposable
 
 
         _backend = new Backend(_registry);
-        _registry = new AttributeRegistry(_valueSerializers, _attributes);
+        _registry = new AttributeRegistry(_attributes);
         _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
 
-        Connection = new Connection(_provider.GetRequiredService<ILogger<Connection>>(), _store, _valueSerializers, _attributes);
+        Connection = new Connection(_provider.GetRequiredService<ILogger<Connection>>(), _store, _attributes);
     }
 }
