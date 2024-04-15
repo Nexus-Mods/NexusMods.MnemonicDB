@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.Exceptions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
@@ -18,6 +21,12 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// <typeparam name="TValueType"></typeparam>
 public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
 {
+    private const int MaxStackAlloc = 128;
+    private static Encoding AsciiEncoding = Encoding.ASCII;
+
+    private static Encoding Utf8Encoding = Encoding.UTF8;
+
+
     protected RegistryId.InlineCache Cache;
 
     protected Attribute(
@@ -60,9 +69,9 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(string value, ValueTags tags)
+    protected virtual TValueType FromLowLevel(string value, ValueTags tag)
     {
-        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
+        throw new NotSupportedException("Unsupported low-level type " + tag + " on attribute " + Id);
     }
 
 
@@ -143,26 +152,79 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
     {
         switch (value)
         {
-            case byte b:
-                WriteUnmanaged(b, writer);
+            case byte val:
+                WriteUnmanaged(val, writer);
                 break;
-            case short s:
-                WriteUnmanaged(s, writer);
+            case ushort val:
+                WriteUnmanaged(val, writer);
+                break;
+            case uint val:
+                WriteUnmanaged(val, writer);
+                break;
+            case ulong val:
+                WriteUnmanaged(val, writer);
+                break;
+            case short val:
+                WriteUnmanaged(val, writer);
+                break;
+            case string s when LowLevelType == ValueTags.Ascii:
+                WriteAscii(s, writer);
+                break;
+            case string s when LowLevelType == ValueTags.Utf8:
+                WriteUtf8(s, writer);
+                break;
+            case string s when LowLevelType == ValueTags.Utf8Insensitive:
+                WriteUtf8(s, writer);
                 break;
             default:
-                throw new NotSupportedException("Unsupported low-level type" + value);
+                throw new UnsupportedLowLevelWriteType<TLowLevelType>(value);
         }
+    }
+
+    private void WriteAscii<TWriter>(string s, TWriter writer) where TWriter : IBufferWriter<byte>
+    {
+        var size = s.Length;
+        var span = writer.GetSpan(size + 1);
+        span[0] = (byte)LowLevelType;
+        AsciiEncoding.GetBytes(s, span.SliceFast(1));
+        writer.Advance(size + 1);
+    }
+
+    private void WriteUtf8<TWriter>(string s, TWriter writer) where TWriter : IBufferWriter<byte>
+    {
+        var size = Utf8Encoding.GetByteCount(s);
+        var span = writer.GetSpan(size + 1);
+        span[0] = (byte)LowLevelType;
+        Utf8Encoding.GetBytes(s, span.SliceFast(1));
+        writer.Advance(size + 1);
     }
 
     public TValueType ReadValue(ReadOnlySpan<byte> span)
     {
         var tag = (ValueTags)span[0];
-        return LowLevelType switch
+        var rest = span.SliceFast(1);
+        Debug.Assert(tag == LowLevelType, "Tag mismatch");
+        return tag switch
         {
-            ValueTags.UInt8 => FromLowLevel(ReadUnmanaged<byte>(span), tag),
-            ValueTags.UInt16 => FromLowLevel(ReadUnmanaged<ushort>(span), tag),
-            _ => throw new NotSupportedException("Unsupported low-level type" + LowLevelType)
+            ValueTags.UInt8 => FromLowLevel(ReadUnmanaged<byte>(rest), tag),
+            ValueTags.UInt16 => FromLowLevel(ReadUnmanaged<ushort>(rest), tag),
+            ValueTags.UInt64 => FromLowLevel(ReadUnmanaged<ulong>(rest), tag),
+            ValueTags.Reference => FromLowLevel(ReadUnmanaged<ulong>(rest), tag),
+            ValueTags.Ascii => FromLowLevel(ReadAscii(rest), tag),
+            ValueTags.Utf8 => FromLowLevel(ReadUtf8(rest), tag),
+            ValueTags.Utf8Insensitive => FromLowLevel(ReadUtf8(rest), tag),
+            _ => throw new UnsupportedLowLevelReadType(tag)
         };
+    }
+
+    private string ReadUtf8(ReadOnlySpan<byte> span)
+    {
+        return Utf8Encoding.GetString(span);
+    }
+
+    private string ReadAscii(ReadOnlySpan<byte> span)
+    {
+        return AsciiEncoding.GetString(span);
     }
 
     private unsafe void WriteUnmanaged<TWriter, TValue>(TValue value, TWriter writer)
@@ -171,7 +233,7 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
     {
         var span = writer.GetSpan(sizeof(TValue) + 1);
         span[0] = (byte) LowLevelType;
-        MemoryMarshal.Write(span, value);
+        MemoryMarshal.Write(span.SliceFast(1), value);
         writer.Advance(sizeof(TValue) + 1);
     }
 

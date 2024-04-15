@@ -74,10 +74,7 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
         var c = MemoryMarshal.Read<KeyPrefix>(datom);
 
         var attr = _attributes[c.A.Value];
-        unsafe
-        {
-            return attr.Resolve(c.E, c.A, datom.SliceFast(sizeof(KeyPrefix)), c.T, c.IsRetract);
-        }
+        return attr.Resolve(c.E, c.A, datom.SliceFast(KeyPrefix.Size), c.T, c.IsRetract);
     }
 
     public void Populate(DbAttribute[] attributes)

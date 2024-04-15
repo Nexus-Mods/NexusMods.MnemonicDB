@@ -41,6 +41,9 @@ public class ValueComparer : IElementComparer
         var aVal = a + 1;
         var bVal = b + 1;
 
+        alen -= 1;
+        blen -= 1;
+
         return (ValueTags)typeA switch
         {
             ValueTags.UInt8 => CompareInternal<byte>(aVal, bVal),
@@ -54,46 +57,27 @@ public class ValueComparer : IElementComparer
             ValueTags.Int128 => CompareInternal<Int128>(aVal, bVal),
             ValueTags.Float32 => CompareInternal<float>(aVal, bVal),
             ValueTags.Float64 => CompareInternal<double>(aVal, bVal),
-            ValueTags.Ascii => CompareBlobInternal(aVal, bVal),
-            ValueTags.Utf8 => CompareBlobInternal(aVal, bVal),
-            ValueTags.Utf8Insensitive => CompareUtf8Insensitive(aVal, bVal),
-            ValueTags.Blob => CompareBlobInternal(aVal, bVal),
+            ValueTags.Ascii => CompareBlobInternal(aVal, alen, bVal, blen),
+            ValueTags.Utf8 => CompareBlobInternal(aVal, alen, bVal, blen),
+            ValueTags.Utf8Insensitive => CompareUtf8Insensitive(aVal, alen, bVal, blen),
+            ValueTags.Blob => CompareBlobInternal(aVal, alen, bVal, blen),
             _ => alen - blen
         };
     }
 
-    private static unsafe int CompareBlobInternal(byte* aVal, byte* bVal)
+    private static unsafe int CompareBlobInternal(byte* aVal, int aLen, byte* bVal, int bLen)
     {
-        var aSize = GetInlineSize(ref aVal);
-        var bSize = GetInlineSize(ref bVal);
-
-        return new Span<byte>(aVal, aSize)
-            .SequenceCompareTo(new Span<byte>(bVal, bSize));
+        return new Span<byte>(aVal, aLen)
+            .SequenceCompareTo(new Span<byte>(bVal, bLen));
     }
 
-    private static unsafe int CompareUtf8Insensitive(byte* aVal, byte* bVal)
+    private static unsafe int CompareUtf8Insensitive(byte* aVal, int aLen, byte* bVal, int bLen)
     {
-        var aSize = GetInlineSize(ref aVal);
-        var bSize = GetInlineSize(ref bVal);
-
-        var strA = Utf8Encoding.GetString(aVal, aSize);
-        var strB = Utf8Encoding.GetString(bVal, bSize);
+        var strA = Utf8Encoding.GetString(aVal, aLen);
+        var strB = Utf8Encoding.GetString(bVal, bLen);
 
         return string.Compare(strA, strB, StringComparison.InvariantCultureIgnoreCase);
     }
-
-    private static unsafe int GetInlineSize(ref byte* aVal)
-    {
-        int aSize = aVal[0];
-        if (aSize == byte.MaxValue)
-        {
-            aVal += 1;
-            aSize = ((ushort*)aVal)[0];
-        }
-
-        return aSize;
-    }
-
 
     private static unsafe int CompareInternal<T>(byte* aVal, byte* bVal)
     where T : unmanaged, IComparable<T>
