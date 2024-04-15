@@ -120,7 +120,7 @@ public class AMnemonicDBTest : IDisposable
         var tx2 = Connection.BeginTransaction();
         foreach (var mod in loadout.Mods)
         {
-            tx.Add(mod.Id, Mod.Name, mod.Name + " - Updated");
+            tx2.Add(mod.Id, Mod.Name, mod.Name + " - Updated");
         }
         await tx2.Commit();
 

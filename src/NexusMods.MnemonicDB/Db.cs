@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
@@ -42,13 +43,16 @@ internal class Db : IDb
     {
         var (id, attrId) = key;
 
-        Span<byte> startKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
-        Span<byte> endKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
+        Span<byte> startKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong) + 1];
+        Span<byte> endKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong) + 1];
         MemoryMarshal.Write(startKey,  new KeyPrefix().Set(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false));
         MemoryMarshal.Write(endKey,  new KeyPrefix().Set(EntityId.MaxValueNoPartition, attrId, TxId.MaxValue, false));
 
-        MemoryMarshal.Write(startKey.SliceFast(KeyPrefix.Size), id);
-        MemoryMarshal.Write(endKey.SliceFast(KeyPrefix.Size), id.Value);
+        startKey[KeyPrefix.Size] = (byte)ValueTags.Reference;
+        endKey[KeyPrefix.Size] = (byte)ValueTags.Reference;
+
+        MemoryMarshal.Write(startKey.SliceFast(KeyPrefix.Size + 1), id);
+        MemoryMarshal.Write(endKey.SliceFast(KeyPrefix.Size + 1), id.Value);
 
 
         return db.Snapshot.Datoms(IndexType.VAETCurrent, startKey, endKey);
