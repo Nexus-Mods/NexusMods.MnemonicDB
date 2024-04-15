@@ -39,7 +39,8 @@ public struct Datom(ReadOnlyMemory<byte> memory, IAttributeRegistry registry)
     /// <summary>
     /// Resolves the value of the datom into the given type
     /// </summary>
-    public TVal Resolve<TVal>() => registry.Resolve<TVal>(RawSpan);
+    public TValue Resolve<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute) =>
+        attribute.ReadValue(ValueSpan);
 
     /// <summary>
     /// EntityId of the datom

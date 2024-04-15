@@ -59,7 +59,12 @@ public class Symbol
     /// </summary>
     public static Symbol Intern(string nsStr, string nameStr)
     {
-        return new Symbol((nsStr, nameStr));
+        var nsAndName = (nsStr, nameStr);
+        if (InternedSymbols.TryGetValue(nsAndName, out var symbol))
+            return symbol;
+
+        symbol = new Symbol(nsAndName);
+        return !InternedSymbols.TryAdd(nsAndName, symbol) ? InternedSymbols[nsAndName] : symbol;
     }
 
     /// <summary>
@@ -83,16 +88,6 @@ public class Symbol
         if (lastDot == -1)
             return ("<unknown>", nsAndName);
         return (nsAndName[..lastDot], nsAndName[(lastDot + 1)..]);
-    }
-
-    /// <summary>
-    ///     Construct a new symbol, based on the name of the given type
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <returns></returns>
-    public static Symbol Intern<T>()
-    {
-        return Intern(typeof(T).FullName!.Replace("+", "."));
     }
 
     /// <inheritdoc />

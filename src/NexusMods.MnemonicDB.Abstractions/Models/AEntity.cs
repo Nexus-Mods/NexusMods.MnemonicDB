@@ -34,7 +34,7 @@ public abstract class AEntity : IEntity
     /// <summary>
     /// Get the reverse of a relationship.
     /// </summary>
-    protected Entities<EntityIds, TModel> GetReverse<TModel>(Attribute<EntityId> attribute)
+    protected Entities<EntityIds, TModel> GetReverse<TModel>(Attribute<EntityId, ulong> attribute)
         where TModel : IEntity
     {
         return Db.GetReverse<TModel>(Id, attribute);

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.Paths;
@@ -13,7 +14,7 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
 {
     private readonly ColumnFamilies _columnFamilies = new();
     private readonly Dictionary<IndexType, IRocksDbIndex> _indexes = new();
-    private readonly Dictionary<IndexType, IndexStore> _stores = new();
+    private readonly Dictionary<IndexType, IRocksDBIndexStore> _stores = new();
     private RocksDb? _db = null!;
 
     public IWriteBatch CreateBatch()
@@ -22,12 +23,12 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
     }
 
     public void DeclareIndex<TComparator>(IndexType name)
-        where TComparator : IDatomComparator<AttributeRegistry>
+        where TComparator : IDatomComparator
     {
-        var indexStore = new IndexStore(name.ToString(), name, registry);
+        var indexStore = new IndexStore<TComparator>(name.ToString(), name, registry);
         _stores.Add(name, indexStore);
 
-        var index = new Index<TComparator>(registry, indexStore);
+        var index = new Index<TComparator>(indexStore);
         _indexes.Add(name, index);
     }
 
@@ -70,12 +71,12 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
 
         public IEnumerable<Datom> Datoms(IndexType type, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
         {
-            var comparator = type.GetComparator(registry);
+            var comparator = type.GetComparator();
             var reverse = false;
 
             var lower = a;
             var upper = b;
-            if (comparator.Compare(a, b) > 0)
+            if (comparator.CompareInstance(a, b) > 0)
             {
                 reverse = true;
                 lower = b;

@@ -23,7 +23,7 @@ public interface ITransaction : IDisposable
     /// <summary>
     ///     Adds a new datom to the transaction
     /// </summary>
-    void Add<TVal>(EntityId entityId, Attribute<TVal> attribute, TVal val);
+    void Add<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val);
 
     /// <summary>
     ///     Commits the transaction

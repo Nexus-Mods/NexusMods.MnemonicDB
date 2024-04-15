@@ -23,14 +23,14 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
         return EntityId.From(Interlocked.Increment(ref _tempId));
     }
 
-    public void Add<TVal>(EntityId entityId, Attribute<TVal> attribute, TVal val)
+    public void Add<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val)
     {
         if (_committed)
             throw new InvalidOperationException("Transaction has already been committed");
         _datoms.Add(entityId, attribute, val, ThisTxId, false);
     }
 
-    public void Retract<TVal>(EntityId entityId, Attribute<TVal> attribute, TVal val)
+    public void Retract<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val)
     {
         if (_committed)
             throw new InvalidOperationException("Transaction has already been committed");

@@ -1,12 +1,17 @@
 ﻿using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.Exceptions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -14,72 +19,104 @@ namespace NexusMods.MnemonicDB.Abstractions;
 ///     Interface for a specific attribute
 /// </summary>
 /// <typeparam name="TValueType"></typeparam>
-public sealed class Attribute<TValueType> : IAttribute
+public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
 {
-    private IValueSerializer<TValueType> _serializer = null!;
-    private RegistryId.InlineCache _cache;
+    private const int MaxStackAlloc = 128;
+    private static Encoding AsciiEncoding = Encoding.ASCII;
 
-    public Attribute(string nsAndName, bool isIndexed = false, bool noHistory = false, Cardinality cardinality = Cardinality.One)
+    private static Encoding Utf8Encoding = Encoding.UTF8;
+
+
+    protected RegistryId.InlineCache Cache;
+
+    protected Attribute(
+        ValueTags lowLevelType,
+        string ns,
+        string name,
+        bool isIndexed = false,
+        bool noHistory = false,
+        Cardinality cardinality = Cardinality.One)
     {
-        Id = Symbol.Intern(nsAndName);
+        LowLevelType = lowLevelType;
+        Id = Symbol.Intern(ns, name);
         Cardinalty = cardinality;
         IsIndexed = isIndexed;
         NoHistory = noHistory;
     }
 
+    /// <summary>
+    /// Converts a high-level value to a low-level value
+    /// </summary>
+    protected abstract TLowLevelType ToLowLevel(TValueType value);
+
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(byte value, ValueTags tags)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
+    }
+
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(ushort value, ValueTags tags)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
+    }
+
+
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(string value, ValueTags tag)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + tag + " on attribute " + Id);
+    }
+
+
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(ulong value, ValueTags tags)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
+    }
+
+
+    /// <inheritdoc />
+    public ValueTags LowLevelType { get; }
+
     /// <inheritdoc />
     public Symbol Id { get; }
 
     /// <inheritdoc />
-    public Cardinality Cardinalty { get; }
+    public Cardinality Cardinalty { get; init; }
 
     /// <inheritdoc />
-    public bool IsIndexed { get; }
+    public bool IsIndexed { get; init; }
 
     /// <inheritdoc />
-    public bool NoHistory { get; }
-
-    /// <inheritdoc />
-    public bool Equals(Attribute<TValueType>? other)
-    {
-        return other != null && ReferenceEquals(Id, other.Id);
-    }
-
-    IValueSerializer IAttribute.Serializer => Serializer;
-
-    /// <inheritdoc />
-    public void Add(ITransaction tx, EntityId entity, TValueType value)
-    {
-        tx.Add(entity, this, value);
-    }
+    public bool NoHistory { get; init; }
 
     /// <inheritdoc />
     public void SetDbId(RegistryId id, AttributeId attributeId)
     {
-        _cache[id.Value] = attributeId;
+        Cache[id.Value] = attributeId;
     }
 
     /// <inheritdoc />
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public AttributeId GetDbId(RegistryId id)
     {
-        return _cache[id.Value];
-    }
-
-    /// <inheritdoc />
-    public void SetSerializer(IValueSerializer serializer)
-    {
-        if (serializer is not IValueSerializer<TValueType> valueSerializer)
-            throw new InvalidOperationException(
-                $"Serializer {serializer.GetType()} is not compatible with {typeof(TValueType)}");
-        _serializer = valueSerializer;
+        return Cache[id.Value];
     }
 
     /// <inheritdoc />
     public Type ValueType => typeof(TValueType);
 
     /// <inheritdoc />
-    public bool IsReference => typeof(TValueType) == typeof(EntityId);
+    public bool IsReference => LowLevelType == ValueTags.Reference;
 
     /// <inheritdoc />
     public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx,
@@ -89,39 +126,10 @@ public sealed class Attribute<TValueType> : IAttribute
         {
             E = entityId,
             A = this,
-            V = _serializer.Read(value),
+            V = ReadValue(value),
             T = tx,
             IsRetract = isRetract
         };
-    }
-
-    /// <inheritdoc />
-    public Type GetReadDatomType()
-    {
-        return typeof(ReadDatom);
-    }
-
-    /// <inheritdoc />
-    public IValueSerializer<TValueType> Serializer => _serializer;
-
-
-    /// <summary>
-    /// Gets the value for this attribute on the given entity
-    /// </summary>
-    public TValueType Get(IEntity entity)
-    {
-        var segment = entity.Db.GetSegment(entity.Id);
-        var dbId = _cache[segment.RegistryId.Value];
-        for (var i = 0; i < segment.Count; i++)
-        {
-            var datom = segment[i];
-            if (datom.A == dbId)
-            {
-                return datom.Resolve<TValueType>();
-            }
-        }
-        ThrowKeyNotFoundException(entity.Id);
-        return default!;
     }
 
     private void ThrowKeyNotFoundException(EntityId id)
@@ -129,27 +137,7 @@ public sealed class Attribute<TValueType> : IAttribute
         throw new KeyNotFoundException($"Attribute {Id} not found on entity {id}");
     }
 
-    /// <summary>
-    /// Gets all values for this attribute on the given entity
-    /// </summary>
-    public Values<TValueType> GetAll(IEntity ent)
-    {
-        var segment = ent.Db.GetSegment(ent.Id);
-        var dbId = _cache[segment.RegistryId.Value];
-        for (var i = 0; i < segment.Count; i++)
-        {
-            var datom = segment[i];
-            if (datom.A != dbId) continue;
 
-            var start = i;
-            while (i < segment.Count && segment[i].A == dbId)
-            {
-                i++;
-            }
-            return new Values<TValueType>(segment, start, i, Serializer);
-        }
-        return new Values<TValueType>(segment, 0, 0, Serializer);
-    }
 
     /// <inheritdoc />
     public void Add(IEntity entity, TValueType value)
@@ -157,17 +145,125 @@ public sealed class Attribute<TValueType> : IAttribute
         entity.Tx!.Add(entity.Id, this, value);
     }
 
+
+
+    private void WriteValueLowLevel<TWriter>(TLowLevelType value, TWriter writer)
+        where TWriter : IBufferWriter<byte>
+    {
+        switch (value)
+        {
+            case byte val:
+                WriteUnmanaged(val, writer);
+                break;
+            case ushort val:
+                WriteUnmanaged(val, writer);
+                break;
+            case uint val:
+                WriteUnmanaged(val, writer);
+                break;
+            case ulong val:
+                WriteUnmanaged(val, writer);
+                break;
+            case short val:
+                WriteUnmanaged(val, writer);
+                break;
+            case string s when LowLevelType == ValueTags.Ascii:
+                WriteAscii(s, writer);
+                break;
+            case string s when LowLevelType == ValueTags.Utf8:
+                WriteUtf8(s, writer);
+                break;
+            case string s when LowLevelType == ValueTags.Utf8Insensitive:
+                WriteUtf8(s, writer);
+                break;
+            default:
+                throw new UnsupportedLowLevelWriteType<TLowLevelType>(value);
+        }
+    }
+
+    private void WriteAscii<TWriter>(string s, TWriter writer) where TWriter : IBufferWriter<byte>
+    {
+        var size = s.Length;
+        var span = writer.GetSpan(size + 1);
+        span[0] = (byte)LowLevelType;
+        AsciiEncoding.GetBytes(s, span.SliceFast(1));
+        writer.Advance(size + 1);
+    }
+
+    private void WriteUtf8<TWriter>(string s, TWriter writer) where TWriter : IBufferWriter<byte>
+    {
+        var size = Utf8Encoding.GetByteCount(s);
+        var span = writer.GetSpan(size + 1);
+        span[0] = (byte)LowLevelType;
+        Utf8Encoding.GetBytes(s, span.SliceFast(1));
+        writer.Advance(size + 1);
+    }
+
+    public TValueType ReadValue(ReadOnlySpan<byte> span)
+    {
+        var tag = (ValueTags)span[0];
+        var rest = span.SliceFast(1);
+        Debug.Assert(tag == LowLevelType, "Tag mismatch");
+        return tag switch
+        {
+            ValueTags.UInt8 => FromLowLevel(ReadUnmanaged<byte>(rest), tag),
+            ValueTags.UInt16 => FromLowLevel(ReadUnmanaged<ushort>(rest), tag),
+            ValueTags.UInt64 => FromLowLevel(ReadUnmanaged<ulong>(rest), tag),
+            ValueTags.Reference => FromLowLevel(ReadUnmanaged<ulong>(rest), tag),
+            ValueTags.Ascii => FromLowLevel(ReadAscii(rest), tag),
+            ValueTags.Utf8 => FromLowLevel(ReadUtf8(rest), tag),
+            ValueTags.Utf8Insensitive => FromLowLevel(ReadUtf8(rest), tag),
+            _ => throw new UnsupportedLowLevelReadType(tag)
+        };
+    }
+
+    private string ReadUtf8(ReadOnlySpan<byte> span)
+    {
+        return Utf8Encoding.GetString(span);
+    }
+
+    private string ReadAscii(ReadOnlySpan<byte> span)
+    {
+        return AsciiEncoding.GetString(span);
+    }
+
+    private unsafe void WriteUnmanaged<TWriter, TValue>(TValue value, TWriter writer)
+        where TWriter : IBufferWriter<byte>
+        where TValue : unmanaged
+    {
+        var span = writer.GetSpan(sizeof(TValue) + 1);
+        span[0] = (byte) LowLevelType;
+        MemoryMarshal.Write(span.SliceFast(1), value);
+        writer.Advance(sizeof(TValue) + 1);
+    }
+
+    private TValue ReadUnmanaged<TValue>(ReadOnlySpan<byte> span)
+        where TValue : unmanaged
+    {
+        return MemoryMarshal.Read<TValue>(span);
+    }
+
     /// <summary>
     /// Write a datom for this attribute to the given writer
     /// </summary>
     public void Write<TWriter>(EntityId entityId, RegistryId registryId, TValueType value, TxId txId, bool isRetract, TWriter writer)
-    where TWriter : IBufferWriter<byte>
+        where TWriter : IBufferWriter<byte>
     {
         var prefix = new KeyPrefix().Set(entityId, GetDbId(registryId), txId, isRetract);
         var span = writer.GetSpan(KeyPrefix.Size);
         MemoryMarshal.Write(span, prefix);
         writer.Advance(KeyPrefix.Size);
-        Serializer.Serialize(value, writer);
+        WriteValueLowLevel(ToLowLevel(value), writer);
+    }
+
+
+    /// <summary>
+    /// Write a datom for this attribute to the given writer
+    /// </summary>
+    public void WriteValue<TWriter>(TValueType value, TWriter writer)
+        where TWriter : IBufferWriter<byte>
+    {
+        WriteValueLowLevel(ToLowLevel(value), writer);
     }
 
     /// <summary>

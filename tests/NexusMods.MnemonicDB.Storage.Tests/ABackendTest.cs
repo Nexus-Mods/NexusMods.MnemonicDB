@@ -2,6 +2,8 @@
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.TestModel.Helpers;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.Abstractions.DatomComparators;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
@@ -53,15 +55,25 @@ public abstract class ABackendTest<TStoreType>(
         var tx = await GenerateData();
         var current = tx.Snapshot.Datoms(type.CurrentVariant());
         var history = tx.Snapshot.Datoms(type.HistoryVariant());
-        var comparer = type.GetComparator(Registry);
+        var comparer = type.GetComparator();
         var merged = current
-            .Merge(history, (a, b) => comparer.Compare(a.RawSpan, b.RawSpan))
+            .Merge(history, CompareDatoms(comparer))
             .Select(d => d.Resolved)
             .ToArray();
 
         await Verify(merged.ToTable(Registry))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
+    }
+
+    private static unsafe Func<Datom, Datom, int> CompareDatoms(IDatomComparator comparer)
+    {
+        return (a, b) =>
+        {
+            fixed (byte* aPtr = a.RawSpan)
+            fixed(byte* bPtr = b.RawSpan)
+                return comparer.CompareInstance(aPtr, a.RawSpan.Length, bPtr, b.RawSpan.Length);
+        };
     }
 
 

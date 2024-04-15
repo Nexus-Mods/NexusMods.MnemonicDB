@@ -1,18 +1,13 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using NexusMods.MnemonicDB.Abstractions.Internals;
-
-namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
+﻿namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
 /// <summary>
 /// Compares the A part of the key.
 /// </summary>
-public class AComparer<TRegistry> : IElementComparer<TRegistry>
-    where TRegistry : IAttributeRegistry
+public class AComparer : IElementComparer
 {
     /// <inheritdoc />
-    public static int Compare(TRegistry registry, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    public static unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
     {
-        return MemoryMarshal.Read<KeyPrefix>(a).A.CompareTo(MemoryMarshal.Read<KeyPrefix>(b).A);
+        return IElementComparer.KeyPrefix(aPtr)->A.CompareTo(IElementComparer.KeyPrefix(bPtr)->A);
     }
 }

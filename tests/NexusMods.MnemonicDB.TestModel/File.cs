@@ -1,16 +1,20 @@
 ﻿using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.TestModel.Attributes;
 using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.TestModel;
 
 public static class File
 {
-    public static readonly Attribute<RelativePath> Path = new("NexusMods.MnemonicDB.TestModel.File/Path", isIndexed: true);
-    public static readonly Attribute<Hash> Hash = new("NexusMods.MnemonicDB.TestModel.File/Hash", isIndexed: true);
-    public static readonly Attribute<Size> Size = new("NexusMods.MnemonicDB.TestModel.File/Size");
-    public static readonly Attribute<EntityId> ModId = new("NexusMods.MnemonicDB.TestModel.File/Mod");
+    public const string Namespace = "NexusMods.MnemonicDB.TestModel.File";
+
+    public static readonly RelativePathAttribute Path = new(Namespace, "Path") {IsIndexed = true};
+    public static readonly HashAttribute Hash = new(Namespace, "Hash") {IsIndexed = true};
+    public static readonly SizeAttribute Size = new(Namespace, "Size");
+    public static readonly ReferenceAttribute ModId = new(Namespace, "Mod");
 
     public class Model(ITransaction tx) : AEntity(tx)
     {

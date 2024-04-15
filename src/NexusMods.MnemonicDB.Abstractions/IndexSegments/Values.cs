@@ -7,13 +7,13 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 /// <summary>
 /// A subview of an IndexSegment that returns a specific value type
 /// </summary>
-public struct Values<TValueType>(IndexSegment segment, int start, int end, IValueSerializer<TValueType> serializer) :
+public struct Values<TValueType, TLowLevelType>(IndexSegment segment, int start, int end, Attribute<TValueType, TLowLevelType> attribute) :
     IEnumerable<TValueType>, IIndexSegment<TValueType>
 {
     /// <summary>
     /// Gets the value at the given location
     /// </summary>
-    public TValueType this[int idx] => serializer.Read(segment[idx + start].ValueSpan);
+    public TValueType this[int idx] => attribute.ReadValue(segment[idx + start].ValueSpan);
 
     /// <summary>
     /// Returns the number of items in the collection

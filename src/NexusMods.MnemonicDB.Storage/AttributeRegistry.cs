@@ -53,18 +53,15 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
     ///     Tracks all attributes and their respective serializers as well as the DB entity IDs for each
     ///     attribute
     /// </summary>
-    public AttributeRegistry(IEnumerable<IValueSerializer> valueSerializers, IEnumerable<IAttribute> attributes)
+    public AttributeRegistry(IEnumerable<IAttribute> attributes)
     {
         Id = GetRegistryId(this);
 
-        var serializers = valueSerializers.ToDictionary(s => s.NativeType);
-
         BuiltInAttributes.UniqueId.SetDbId(Id, BuiltInAttributes.UniqueIdEntityId);
-        BuiltInAttributes.ValueSerializerId.SetDbId(Id, BuiltInAttributes.ValueSerializerIdEntityId);
+        BuiltInAttributes.ValueType.SetDbId(Id, BuiltInAttributes.ValueTypeEntityId);
 
         foreach (var attribute in attributes)
         {
-            attribute.SetSerializer(serializers[attribute.ValueType]);
             _attributesBySymbol[attribute.Id] = attribute;
         }
     }
@@ -77,31 +74,7 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
         var c = MemoryMarshal.Read<KeyPrefix>(datom);
 
         var attr = _attributes[c.A.Value];
-        unsafe
-        {
-            return attr.Resolve(c.E, c.A, datom.SliceFast(sizeof(KeyPrefix)), c.T, c.IsRetract);
-        }
-    }
-
-    public TVal Resolve<TVal>(ReadOnlySpan<byte> datom)
-    {
-        var c = MemoryMarshal.Read<KeyPrefix>(datom);
-        var attr = _attributes[c.A.Value];
-
-        unsafe
-        {
-            return ((IValueSerializer<TVal>)attr.Serializer).Read(datom.SliceFast(KeyPrefix.Size));
-        }
-    }
-
-    public int CompareValues(AttributeId id, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
-    {
-        if (a.Length == 0 || b.Length == 0)
-            return a.Length < b.Length ? -1 : a.Length > b.Length ? 1 : 0;
-
-        var attr = _attributes[id.Value];
-
-        return attr.Serializer.Compare(a, b);
+        return attr.Resolve(c.E, c.A, datom.SliceFast(KeyPrefix.Size), c.T, c.IsRetract);
     }
 
     public void Populate(DbAttribute[] attributes)

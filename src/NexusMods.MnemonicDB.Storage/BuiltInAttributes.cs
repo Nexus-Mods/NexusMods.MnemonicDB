@@ -1,7 +1,8 @@
 ﻿using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Storage.Serializers;
 
 namespace NexusMods.MnemonicDB.Storage;
 
@@ -11,15 +12,17 @@ namespace NexusMods.MnemonicDB.Storage;
 public class BuiltInAttributes
 {
 
+    private const string Namespace = "NexusMods.MnemonicDB.DatomStore";
+
     /// <summary>
     ///     The unique identifier of the entity, used to link attributes across application restarts and model changes.
     /// </summary>
-    public static Attribute<Symbol> UniqueId = new ("NexusMods.MnemonicDB.DatomStore/UniqueId");
+    public static SymbolAttribute UniqueId = new (Namespace, "UniqueId");
 
     /// <summary>
     ///      T
     /// </summary>
-    public static Attribute<Symbol> ValueSerializerId = new ("NexusMods.MnemonicDB.DatomStore/ValueSerializerId");
+    public static ValuesTagAttribute ValueType = new (Namespace, "ValueType");
 
 
     /// <summary>
@@ -30,7 +33,7 @@ public class BuiltInAttributes
     /// <summary>
     ///     The database entity id of the UniqueId attribute
     /// </summary>
-    public static readonly AttributeId ValueSerializerIdEntityId = AttributeId.From(2);
+    public static readonly AttributeId ValueTypeEntityId = AttributeId.From(2);
 
 
     /// <summary>
@@ -38,8 +41,8 @@ public class BuiltInAttributes
     /// </summary>
     public static readonly DbAttribute[] Initial =
     [
-        new DbAttribute(UniqueId.Id, UniqueIdEntityId, SymbolSerializer.Id),
-        new DbAttribute(ValueSerializerId.Id, ValueSerializerIdEntityId, SymbolSerializer.Id)
+        new DbAttribute(UniqueId.Id, UniqueIdEntityId, ValueTags.Ascii),
+        new DbAttribute(ValueType.Id, ValueTypeEntityId, ValueTags.UInt8)
     ];
 
     /// <summary>
@@ -50,10 +53,10 @@ public class BuiltInAttributes
         var builder = new IndexSegmentBuilder(registry);
 
         builder.Add(UniqueIdEntityId.ToEntityId(), UniqueId, UniqueId.Id);
-        builder.Add(ValueSerializerIdEntityId.ToEntityId(), UniqueId, ValueSerializerId.Id);
+        builder.Add(ValueTypeEntityId.ToEntityId(), UniqueId, ValueType.Id);
 
-        builder.Add(UniqueIdEntityId.ToEntityId(), ValueSerializerId, SymbolSerializer.Id);
-        builder.Add(ValueSerializerIdEntityId.ToEntityId(), ValueSerializerId, SymbolSerializer.Id);
+        builder.Add(UniqueIdEntityId.ToEntityId(), ValueType, ValueTags.Ascii);
+        builder.Add(ValueTypeEntityId.ToEntityId(), ValueType, ValueTags.UInt8);
         return builder.Build();
     }
 

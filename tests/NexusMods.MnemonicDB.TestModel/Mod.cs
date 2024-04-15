@@ -1,15 +1,18 @@
 ﻿using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.TestModel.Attributes;
 
 namespace NexusMods.MnemonicDB.TestModel;
 
 public static class Mod
 {
+    private const string Namespace = "NexusMods.MnemonicDB.TestModel.Mod";
 
-    public static readonly Attribute<string> Name = new("NexusMods.MnemonicDB.TestModel.Mod/Name", isIndexed: true);
-    public static readonly Attribute<Uri> Source = new("NexusMods.MnemonicDB.TestModel.Mod/Source");
-    public static readonly Attribute<EntityId> LoadoutId = new("NexusMods.MnemonicDB.TestModel.Mod/Loadout");
+    public static readonly StringAttribute Name = new(Namespace, "Name") { IsIndexed = true };
+    public static readonly UriAttribute Source = new(Namespace, "Source");
+    public static readonly ReferenceAttribute LoadoutId = new(Namespace, "Loadout");
 
     public class Model(ITransaction tx) : AEntity(tx)
     {

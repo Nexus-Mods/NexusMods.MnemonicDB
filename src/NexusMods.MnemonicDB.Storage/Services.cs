@@ -2,7 +2,6 @@
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
-using NexusMods.MnemonicDB.Storage.Serializers;
 
 namespace NexusMods.MnemonicDB.Storage;
 
@@ -10,11 +9,6 @@ public static class Services
 {
     public static IServiceCollection AddMnemonicDBStorage(this IServiceCollection services)
     {
-        services.AddValueSerializer<UInt64Serializer>();
-        services.AddValueSerializer<StringSerializer>();
-        services.AddValueSerializer<SymbolSerializer>();
-        services.AddValueSerializer<TxIdSerializer>();
-        services.AddValueSerializer<EntityIdSerializer>();
         services.AddAttributeCollection(typeof(BuiltInAttributes));
         services.AddSingleton<IDatomStore, DatomStore>();
         services.AddSingleton<AttributeRegistry>();

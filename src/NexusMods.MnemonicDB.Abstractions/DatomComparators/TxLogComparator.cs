@@ -7,12 +7,9 @@ namespace NexusMods.MnemonicDB.Abstractions.DatomComparators;
 /// <summary>
 /// The TxLog Comparator.
 /// </summary>
-/// <typeparam name="TRegistry"></typeparam>
-public class TxLogComparator<TRegistry>(TRegistry registry) : ADatomComparator<
-    TxComparer<TRegistry>,
-    EComparer<TRegistry>,
-    AComparer<TRegistry>,
-    ValueComparer<TRegistry>,
-    AssertComparer<TRegistry>,
-    TRegistry>(registry)
-    where TRegistry : IAttributeRegistry;
+public class TxLogComparator : ADatomComparator<
+    TxComparer,
+    EComparer,
+    AComparer,
+    ValueComparer,
+    AssertComparer>;

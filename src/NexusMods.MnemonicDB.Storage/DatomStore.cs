@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Storage.Abstractions;
@@ -124,7 +125,7 @@ public class DatomStore : IDatomStore
         foreach (var attr in newAttrsArray)
         {
             datoms.Add(EntityId.From(attr.AttrEntityId.Value), BuiltInAttributes.UniqueId, attr.UniqueId, TxId.Tmp, false);
-            datoms.Add(EntityId.From(attr.AttrEntityId.Value), BuiltInAttributes.ValueSerializerId, attr.ValueTypeId, TxId.Tmp, false);
+            datoms.Add(EntityId.From(attr.AttrEntityId.Value), BuiltInAttributes.ValueType, attr.LowLevelType, TxId.Tmp, false);
         }
 
         await Transact(datoms.Build());
@@ -279,8 +280,9 @@ public class DatomStore : IDatomStore
             {
                 if (attr.IsReference)
                 {
-                    var newV = remapFn(MemoryMarshal.Read<EntityId>(datom.ValueSpan));
+                    var newV = remapFn(MemoryMarshal.Read<EntityId>(datom.ValueSpan.SliceFast(1)));
                     _writer.WriteMarshal(keyPrefix);
+                    _writer.WriteMarshal((byte)ValueTags.Reference);
                     _writer.WriteMarshal(newV);
                 }
                 else
@@ -368,9 +370,13 @@ public class DatomStore : IDatomStore
             var debugKey = prevDatom.Prefix;
             Debug.Assert(debugKey.E == MemoryMarshal.Read<KeyPrefix>(datom).E, "Entity should match");
             Debug.Assert(debugKey.A == MemoryMarshal.Read<KeyPrefix>(datom).A, "Attribute should match");
-            Debug.Assert(
-                attribute.Serializer.Compare(prevDatom.ValueSpan,
-                    datom.SliceFast(sizeof(KeyPrefix))) == 0, "Values should match");
+
+            fixed (byte* aTmp = prevDatom.ValueSpan)
+            fixed (byte* bTmp = datom.SliceFast(sizeof(KeyPrefix)))
+            {
+                var cmp = ValueComparer.CompareValues(aTmp, prevDatom.ValueSpan.Length, bTmp, datom.Length - sizeof(KeyPrefix));
+                Debug.Assert(cmp == 0, "Values should match");
+            }
         }
         #endif
 
@@ -438,11 +444,14 @@ public class DatomStore : IDatomStore
             if (found.E != keyPrefix.E || found.A != keyPrefix.A)
                 return PrevState.NotExists;
 
-            if (attribute.Serializer.Compare(found.ValueSpan,
-                    span.SliceFast(sizeof(KeyPrefix))) == 0)
-                return PrevState.Duplicate;
-
-            return PrevState.NotExists;
+            var aSpan = found.ValueSpan;
+            var bSpan = span.SliceFast(sizeof(KeyPrefix));
+            fixed (byte* a = aSpan)
+            fixed (byte* b = bSpan)
+            {
+                var cmp = ValueComparer.CompareValues(a, aSpan.Length, b, bSpan.Length);
+                return cmp == 0 ? PrevState.Duplicate : PrevState.NotExists;
+            }
         }
         else
         {
@@ -458,9 +467,14 @@ public class DatomStore : IDatomStore
             if (currKey.E != keyPrefix.E || currKey.A != keyPrefix.A)
                 return PrevState.NotExists;
 
-            if (attribute.Serializer.Compare(datom.ValueSpan,
-                    span.SliceFast(sizeof(KeyPrefix))) == 0)
-                return PrevState.Duplicate;
+            var aSpan = datom.ValueSpan;
+            var bSpan = span.SliceFast(sizeof(KeyPrefix));
+            fixed (byte* a = aSpan)
+            fixed (byte* b = bSpan)
+            {
+                var cmp = ValueComparer.CompareValues(a, aSpan.Length, b, bSpan.Length);
+                if (cmp == 0) return PrevState.Duplicate;
+            }
 
             _retractWriter.Reset();
             _retractWriter.Write(datom.RawSpan);
