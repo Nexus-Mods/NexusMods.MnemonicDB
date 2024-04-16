@@ -74,11 +74,76 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
         throw new NotSupportedException("Unsupported low-level type " + tag + " on attribute " + Id);
     }
 
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(ReadOnlySpan<byte> value, ValueTags tag)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + tag + " on attribute " + Id);
+    }
+
 
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
     protected virtual TValueType FromLowLevel(ulong value, ValueTags tags)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
+    }
+
+
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(UInt128 value, ValueTags tags)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
+    }
+
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(short value, ValueTags tags)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
+    }
+
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(int value, ValueTags tags)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
+    }
+
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(long value, ValueTags tags)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
+    }
+
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(Int128 value, ValueTags tags)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
+    }
+
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(float value, ValueTags tags)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
+    }
+
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(double value, ValueTags tags)
     {
         throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
@@ -164,7 +229,25 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
             case ulong val:
                 WriteUnmanaged(val, writer);
                 break;
+            case UInt128 val:
+                WriteUnmanaged(val, writer);
+                break;
             case short val:
+                WriteUnmanaged(val, writer);
+                break;
+            case int val:
+                WriteUnmanaged(val, writer);
+                break;
+            case long val:
+                WriteUnmanaged(val, writer);
+                break;
+            case Int128 val:
+                WriteUnmanaged(val, writer);
+                break;
+            case float val:
+                WriteUnmanaged(val, writer);
+                break;
+            case double val:
                 WriteUnmanaged(val, writer);
                 break;
             case string s when LowLevelType == ValueTags.Ascii:
@@ -209,10 +292,19 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
             ValueTags.UInt8 => FromLowLevel(ReadUnmanaged<byte>(rest), tag),
             ValueTags.UInt16 => FromLowLevel(ReadUnmanaged<ushort>(rest), tag),
             ValueTags.UInt64 => FromLowLevel(ReadUnmanaged<ulong>(rest), tag),
+            ValueTags.UInt128 => FromLowLevel(ReadUnmanaged<UInt128>(rest), tag),
+            ValueTags.Int16 => FromLowLevel(ReadUnmanaged<short>(rest), tag),
+            ValueTags.Int32 => FromLowLevel(ReadUnmanaged<int>(rest), tag),
+            ValueTags.Int64 => FromLowLevel(ReadUnmanaged<long>(rest), tag),
+            ValueTags.Int128 => FromLowLevel(ReadUnmanaged<Int128>(rest), tag),
+            ValueTags.Float32 => FromLowLevel(ReadUnmanaged<float>(rest), tag),
+            ValueTags.Float64 => FromLowLevel(ReadUnmanaged<double>(rest), tag),
             ValueTags.Reference => FromLowLevel(ReadUnmanaged<ulong>(rest), tag),
             ValueTags.Ascii => FromLowLevel(ReadAscii(rest), tag),
             ValueTags.Utf8 => FromLowLevel(ReadUtf8(rest), tag),
             ValueTags.Utf8Insensitive => FromLowLevel(ReadUtf8(rest), tag),
+            ValueTags.Blob => FromLowLevel(rest, tag),
+            ValueTags.HashedBlob => FromLowLevel(rest.SliceFast(sizeof(ulong)), tag),
             _ => throw new UnsupportedLowLevelReadType(tag)
         };
     }
@@ -246,9 +338,10 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
     /// <summary>
     /// Write a datom for this attribute to the given writer
     /// </summary>
-    public void Write<TWriter>(EntityId entityId, RegistryId registryId, TValueType value, TxId txId, bool isRetract, TWriter writer)
+    public virtual void Write<TWriter>(EntityId entityId, RegistryId registryId, TValueType value, TxId txId, bool isRetract, TWriter writer)
         where TWriter : IBufferWriter<byte>
     {
+        Debug.Assert(LowLevelType != ValueTags.Blob, "Blobs should overwrite this method and throw when ToLowLevel is called");
         var prefix = new KeyPrefix().Set(entityId, GetDbId(registryId), txId, isRetract);
         var span = writer.GetSpan(KeyPrefix.Size);
         MemoryMarshal.Write(span, prefix);
@@ -256,14 +349,16 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
         WriteValueLowLevel(ToLowLevel(value), writer);
     }
 
-
     /// <summary>
-    /// Write a datom for this attribute to the given writer
+    /// Write the key prefix for this attribute to the given writer
     /// </summary>
-    public void WriteValue<TWriter>(TValueType value, TWriter writer)
+    protected void WritePrefix<TWriter>(EntityId entityId, RegistryId registryId, TxId txId, bool isRetract, TWriter writer)
         where TWriter : IBufferWriter<byte>
     {
-        WriteValueLowLevel(ToLowLevel(value), writer);
+        var prefix = new KeyPrefix().Set(entityId, GetDbId(registryId), txId, isRetract);
+        var span = writer.GetSpan(KeyPrefix.Size);
+        MemoryMarshal.Write(span, prefix);
+        writer.Advance(KeyPrefix.Size);
     }
 
     /// <summary>

@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
+using NexusMods.MnemonicDB.Storage.Tests.TestAttributes;
 using NexusMods.MnemonicDB.TestModel;
 using Xunit.DependencyInjection.Logging;
 using File = NexusMods.MnemonicDB.TestModel.File;
@@ -18,6 +19,7 @@ public class Startup
             .AddAttributeCollection(typeof(File))
             .AddAttributeCollection(typeof(Mod))
             .AddAttributeCollection(typeof(Collection))
-            .AddAttributeCollection(typeof(Loadout));
+            .AddAttributeCollection(typeof(Loadout))
+            .AddAttributeCollection(typeof(Blobs));
     }
 }

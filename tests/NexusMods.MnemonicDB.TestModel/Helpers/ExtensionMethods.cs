@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.IO.Hashing;
+using System.Text;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
@@ -56,6 +57,11 @@ public static class ExtensionMethods
                     break;
                 case ulong ul:
                     sb.Append(ul.ToString("X16").PadRight(48));
+                    break;
+                case byte[] byteArray:
+                    var code = XxHash3.HashToUInt64(byteArray);
+                    var hash = code.ToString("X16");
+                    sb.Append($"Blob 0x{hash} {byteArray.Length} bytes".PadRight(48));
                     break;
                 default:
                     sb.Append(TruncateOrPad(datom.ObjectValue.ToString()!, 48));
