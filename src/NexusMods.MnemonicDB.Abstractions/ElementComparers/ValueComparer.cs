@@ -65,7 +65,8 @@ public class ValueComparer : IElementComparer
             ValueTags.Utf8 => CompareBlobInternal(aVal, alen, bVal, blen),
             ValueTags.Utf8Insensitive => CompareUtf8Insensitive(aVal, alen, bVal, blen),
             ValueTags.Blob => CompareBlobInternal(aVal, alen, bVal, blen),
-            ValueTags.HashedBlob => CompareBlobInternal(aVal, alen, bVal, blen),
+            // HashedBlob is a special case, we compare the hashes not the blobs
+            ValueTags.HashedBlob => CompareInternal<ulong>(aVal, bVal),
             ValueTags.Reference => CompareInternal<ulong>(aVal, bVal),
             _ => ThrowInvalidCompare()
         };
