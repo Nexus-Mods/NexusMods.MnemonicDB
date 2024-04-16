@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.Paths;
 using RocksDbSharp;
@@ -105,6 +107,16 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
             {
                 writer.Reset();
                 writer.Write(iterator.GetKeySpan());
+
+                if (writer.Length >= KeyPrefix.Size + 1)
+                {
+                    var tag = (ValueTags)writer.GetWrittenSpan()[KeyPrefix.Size];
+                    if (tag == ValueTags.HashedBlob)
+                    {
+                        writer.Write(iterator.GetValueSpan());
+                    }
+                }
+
                 yield return new Datom(writer.WrittenMemory, registry);
 
                 if (reverse)

@@ -5,6 +5,7 @@ using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Storage.Tests.TestAttributes;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.File;
@@ -40,6 +41,28 @@ public abstract class ABackendTest<TStoreType>(
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }
+
+    [Fact]
+    public async Task CanStoreDataInBlobs()
+    {
+        var data = Enumerable.Range(0, byte.MaxValue).Select(v => (byte)v).ToArray();
+
+        using var segment = new IndexSegmentBuilder(Registry);
+        var entityId = NextTempId();
+        segment.Add(entityId, Blobs.InKeyBlob, data);
+        segment.Add(entityId, Blobs.InValueBlob, data);
+
+        var result = await DatomStore.Transact(segment.Build());
+
+        var datoms = result.Snapshot
+            .Datoms(IndexType.EAVTCurrent)
+            .Select(d => d.Resolved)
+            .ToArray();
+
+        await Verify(datoms.ToTable(Registry))
+            .UseDirectory("BackendTestVerifyData");
+    }
+
 
     [Theory]
     [InlineData(IndexType.EAVTHistory)]

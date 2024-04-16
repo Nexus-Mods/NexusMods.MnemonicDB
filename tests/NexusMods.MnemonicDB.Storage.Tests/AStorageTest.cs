@@ -4,6 +4,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
+using NexusMods.MnemonicDB.Storage.Tests.TestAttributes;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.File;
@@ -36,7 +37,9 @@ public abstract class AStorageTest : IAsyncLifetime
             new DbAttribute(Loadout.Name.Id, AttributeId.From(26), ValueTags.Utf8),
             new DbAttribute(Collection.Name.Id, AttributeId.From(27), ValueTags.Utf8),
             new DbAttribute(Collection.Loadout.Id, AttributeId.From(28), ValueTags.Reference),
-            new DbAttribute(Collection.Mods.Id, AttributeId.From(29), ValueTags.Reference)
+            new DbAttribute(Collection.Mods.Id, AttributeId.From(29), ValueTags.Reference),
+            new DbAttribute(Blobs.InKeyBlob.Id, AttributeId.From(30), ValueTags.Blob),
+            new DbAttribute(Blobs.InValueBlob.Id, AttributeId.From(31), ValueTags.HashedBlob)
         ]);
         _path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("tests_datomstore" + Guid.NewGuid());
 

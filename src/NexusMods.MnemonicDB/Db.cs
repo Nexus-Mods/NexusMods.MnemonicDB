@@ -119,16 +119,10 @@ internal class Db : IDb
             throw new InvalidOperationException($"Attribute {attribute.Id} is not indexed");
 
         using var start = new PooledMemoryBufferWriter(64);
-        var span = MemoryMarshal.Cast<byte, KeyPrefix>(start.GetSpan(KeyPrefix.Size));
-        span[0].Set(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false);
-        start.Advance(KeyPrefix.Size);
-        attribute.WriteValue(value, start);
+        attribute.Write(EntityId.MinValueNoPartition, _registry.Id, value, TxId.MinValue, false, start);
 
         using var end = new PooledMemoryBufferWriter(64);
-        span = MemoryMarshal.Cast<byte, KeyPrefix>(end.GetSpan(KeyPrefix.Size));
-        span[0].Set(EntityId.MaxValueNoPartition, attrId, TxId.MinValue, false);
-        end.Advance(KeyPrefix.Size);
-        attribute.WriteValue(value, end);
+        attribute.Write(EntityId.MaxValueNoPartition, _registry.Id, value, TxId.MinValue, false, end);
 
         var results = Snapshot
             .Datoms(IndexType.AVETCurrent, start.GetWrittenSpan(), end.GetWrittenSpan())

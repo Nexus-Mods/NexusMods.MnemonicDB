@@ -66,10 +66,16 @@ public enum ValueTags : byte
     /// Inline binary data
     /// </summary>
     Blob = 15,
-    
+
+    /// <summary>
+    /// A blob sorted by its xxHash64 hash, and where the data is possibly stored in a separate location
+    /// as to degrade the performance of the key storage
+    /// </summary>
+    HashedBlob = 16,
+
     /// <summary>
     /// A reference to another entity
     /// </summary>
-    Reference = 16,
+    Reference = 17,
 
 }

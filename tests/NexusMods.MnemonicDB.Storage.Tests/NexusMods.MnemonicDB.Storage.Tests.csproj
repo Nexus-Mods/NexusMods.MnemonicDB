@@ -63,4 +63,8 @@
         <ProjectReference Include="..\NexusMods.MnemonicDB.TestModel\NexusMods.MnemonicDB.TestModel.csproj"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="InMemoryTests.CanStoreDataInBlobs.verified.txt" />
+    </ItemGroup>
+
 </Project>
