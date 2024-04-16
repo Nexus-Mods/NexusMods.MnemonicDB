@@ -8,8 +8,8 @@ public class Blobs
 {
     private const string Namespace = "NexusMods.MnemonicDB.Storage.Tests.TestAttributes";
 
-    public static readonly TestBlobAttribute InKeyBlob = new(Namespace, "InKeyBlob");
-    public static readonly TestHashedBlobAttribute InValueBlob = new(Namespace, "InValueBlob");
+    public static readonly TestBlobAttribute InKeyBlob = new(Namespace, "InKeyBlob") {IsIndexed = true};
+    public static readonly TestHashedBlobAttribute InValueBlob = new(Namespace, "InValueBlob") {IsIndexed = true};
 }
 
 

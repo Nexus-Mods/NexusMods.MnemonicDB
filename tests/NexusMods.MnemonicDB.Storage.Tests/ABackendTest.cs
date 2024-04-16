@@ -42,25 +42,69 @@ public abstract class ABackendTest<TStoreType>(
             .UseParameters(type);
     }
 
-    [Fact]
-    public async Task CanStoreDataInBlobs()
+    [Theory]
+    [InlineData(IndexType.TxLog)]
+    [InlineData(IndexType.EAVTHistory)]
+    [InlineData(IndexType.EAVTCurrent)]
+    [InlineData(IndexType.AEVTCurrent)]
+    [InlineData(IndexType.AEVTHistory)]
+    [InlineData(IndexType.VAETCurrent)]
+    [InlineData(IndexType.VAETHistory)]
+    [InlineData(IndexType.AVETCurrent)]
+    [InlineData(IndexType.AVETHistory)]
+    public async Task CanStoreDataInBlobs(IndexType type)
     {
-        var data = Enumerable.Range(0, byte.MaxValue).Select(v => (byte)v).ToArray();
+        // 256 bytes of data
+        var smallData = Enumerable.Range(0, byte.MaxValue)
+            .Select(v => (byte)v).ToArray();
 
-        using var segment = new IndexSegmentBuilder(Registry);
-        var entityId = NextTempId();
-        segment.Add(entityId, Blobs.InKeyBlob, data);
-        segment.Add(entityId, Blobs.InValueBlob, data);
+        // 16MB of data
+        var largeData = Enumerable.Range(0, 1024 * 1024 * 16)
+            .Select(v => (byte)(v % 256))
+            .ToArray();
 
-        var result = await DatomStore.Transact(segment.Build());
 
-        var datoms = result.Snapshot
-            .Datoms(IndexType.EAVTCurrent)
+        var ids = new List<EntityId>();
+
+        for (var i = 0; i < 10; i++)
+        {
+            using var segment = new IndexSegmentBuilder(Registry);
+            var entityId = NextTempId();
+            segment.Add(entityId, Blobs.InKeyBlob, smallData);
+            segment.Add(entityId, Blobs.InValueBlob, largeData);
+            var result = await DatomStore.Transact(segment.Build());
+            ids.Add(result.Remaps[entityId]);
+        }
+
+        // Retract the first 5
+        for (var i = 0; i < 5; i++)
+        {
+            using var segment = new IndexSegmentBuilder(Registry);
+            segment.Add(ids[i], Blobs.InKeyBlob, smallData, true);
+            segment.Add(ids[i], Blobs.InValueBlob, largeData, true);
+            await DatomStore.Transact(segment.Build());
+        }
+
+        smallData[0] = 1;
+        largeData[0] = 1;
+
+        // Change the other 5
+        for (var i = 5; i < 10; i++)
+        {
+            using var segment = new IndexSegmentBuilder(Registry);
+            segment.Add(ids[i], Blobs.InKeyBlob, smallData);
+            segment.Add(ids[i], Blobs.InValueBlob, largeData);
+            await DatomStore.Transact(segment.Build());
+        }
+
+        var datoms = DatomStore.GetSnapshot()
+            .Datoms(type)
             .Select(d => d.Resolved)
             .ToArray();
 
         await Verify(datoms.ToTable(Registry))
-            .UseDirectory("BackendTestVerifyData");
+            .UseDirectory("BackendTestVerifyData")
+            .UseParameters(type);
     }
 
 
