@@ -9,7 +9,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 /// so try to keep the sizes small. The actual limit is based on the underlying storage engine. For larger values
 /// use the HashedBlobAttribute.
 /// </summary>
-public abstract class BlobAttribute<TValue>(string ns, string name) : Attribute<TValue, byte[]>(ValueTags.Blob, ns, name)
+public abstract class BlobAttribute<TValue>(string ns, string name) : ScalarAttribute<TValue, byte[]>(ValueTags.Blob, ns, name)
 {
     /// <inheritdoc />
     public override void Write<TWriter>(EntityId entityId, RegistryId registryId, TValue value, TxId txId, bool isRetract, TWriter writer)

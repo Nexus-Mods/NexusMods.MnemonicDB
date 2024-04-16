@@ -7,7 +7,7 @@ using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 
-public abstract class HashedBlobAttribute<TValue>(string ns, string name) : Attribute<TValue, byte[]>(ValueTags.HashedBlob, ns, name)
+public abstract class HashedBlobAttribute<TValue>(string ns, string name) : ScalarAttribute<TValue, byte[]>(ValueTags.HashedBlob, ns, name)
 {
     public override void Write<TWriter>(EntityId entityId, RegistryId registryId, TValue value, TxId txId, bool isRetract, TWriter writer)
     {
