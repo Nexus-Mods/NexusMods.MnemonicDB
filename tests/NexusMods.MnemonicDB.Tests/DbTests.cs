@@ -1,4 +1,5 @@
-﻿using NexusMods.MnemonicDB.Abstractions;
+﻿using FluentAssertions;
+using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;

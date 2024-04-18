@@ -41,6 +41,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.MnemonicDB.Storag
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneBillionDatomsTest", "benchmarks\OneBillionDatomsTest\OneBillionDatomsTest.csproj", "{EA397BAE-9726-486F-BC9B-87BD86DF157F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.MnemonicDB.QueryEngine", "src\NexusMods.MnemonicDB.QueryEngine\NexusMods.MnemonicDB.QueryEngine.csproj", "{47E14E54-61DE-4AEE-8AA7-47D8DC0EC69C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.MnemonicDB.QueryEngine.Tests", "tests\NexusMods.MnemonicDB.QueryEngine.Tests\NexusMods.MnemonicDB.QueryEngine.Tests.csproj", "{40A864E1-CA73-4806-A752-36B8C56EC456}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +59,8 @@ Global
 		{73E074F9-250F-4D8A-8038-5B12DB761E98} = {0377EBE6-F147-4233-86AD-32C821B9567E}
 		{33A3DA79-D3FD-46DC-8D14-82E23D5B608D} = {6ED01F9D-5E12-4EB2-9601-64A2ADC719DE}
 		{EA397BAE-9726-486F-BC9B-87BD86DF157F} = {72AFE85F-8C12-436A-894E-638ED2C92A76}
+		{47E14E54-61DE-4AEE-8AA7-47D8DC0EC69C} = {0377EBE6-F147-4233-86AD-32C821B9567E}
+		{40A864E1-CA73-4806-A752-36B8C56EC456} = {6ED01F9D-5E12-4EB2-9601-64A2ADC719DE}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{A92DED3D-BC67-4E04-9A06-9A1B302B3070}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -89,5 +95,13 @@ Global
 		{EA397BAE-9726-486F-BC9B-87BD86DF157F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EA397BAE-9726-486F-BC9B-87BD86DF157F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EA397BAE-9726-486F-BC9B-87BD86DF157F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{47E14E54-61DE-4AEE-8AA7-47D8DC0EC69C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{47E14E54-61DE-4AEE-8AA7-47D8DC0EC69C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{47E14E54-61DE-4AEE-8AA7-47D8DC0EC69C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{47E14E54-61DE-4AEE-8AA7-47D8DC0EC69C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{40A864E1-CA73-4806-A752-36B8C56EC456}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40A864E1-CA73-4806-A752-36B8C56EC456}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40A864E1-CA73-4806-A752-36B8C56EC456}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40A864E1-CA73-4806-A752-36B8C56EC456}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
