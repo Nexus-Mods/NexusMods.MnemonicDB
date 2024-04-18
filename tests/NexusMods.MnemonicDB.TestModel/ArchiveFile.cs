@@ -20,7 +20,7 @@ public class ArchiveFile
 
 
 
-    public class Model(ITransaction tx) : AEntity(tx)
+    public class Model(ITransaction tx) : Entity(tx)
     {
         public RelativePath Path
         {

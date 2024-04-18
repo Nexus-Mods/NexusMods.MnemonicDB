@@ -16,7 +16,7 @@ public static class File
     public static readonly SizeAttribute Size = new(Namespace, "Size");
     public static readonly ReferenceAttribute ModId = new(Namespace, "Mod");
 
-    public class Model(ITransaction tx) : AEntity(tx)
+    public class Model(ITransaction tx) : Entity(tx)
     {
         /// <summary>
         /// The path of the file

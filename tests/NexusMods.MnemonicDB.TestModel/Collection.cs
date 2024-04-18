@@ -14,7 +14,7 @@ public static class Collection
     public static readonly ReferenceAttribute Loadout = new(Namespace, "Loadout");
 
 
-    public class Model(ITransaction tx) : AEntity(tx)
+    public class Model(ITransaction tx) : Entity(tx)
     {
         public string Name
         {
