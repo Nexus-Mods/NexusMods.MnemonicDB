@@ -263,4 +263,19 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Verify(ids);
     }
 
+    [Fact]
+    public async Task CanGetDatomsFromEntity()
+    {
+        var loadout = await InsertExampleData();
+        var mod = loadout.Mods.First();
+
+        mod.Contains(Mod.Name).Should().BeTrue();
+        mod.Contains(Mod.Source).Should().BeTrue();
+        mod.Contains(Loadout.Name).Should().BeFalse();
+
+        mod.ToString().Should().Be("Mod+Model<200000000000002>");
+
+        await VerifyTable(mod.Select(d => d.Resolved));
+    }
+
 }

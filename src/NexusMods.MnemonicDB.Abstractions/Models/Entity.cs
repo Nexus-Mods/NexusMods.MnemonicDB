@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
@@ -11,7 +10,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Models;
 /// An entity is a reference to the attributes of a specific EnityId. Think of this as a hashmap
 /// of attributes, or a row in a database table.
 /// </summary>
-public class Entity : IEntity
+public class Entity : IEntityWithTx
 {
     /// <summary>
     /// Constructs an entity, and attaches it to a transaction
@@ -39,7 +38,7 @@ public class Entity : IEntity
     /// <summary>
     /// The transaction the entity is currently attached to (if any)
     /// </summary>
-    public ITransaction? Tx { get; }
+    public ITransaction? Tx { get; set; }
 
     /// <summary>
     /// Get the reverse of a relationship.
@@ -53,12 +52,12 @@ public class Entity : IEntity
     /// <summary>
     /// The id of the entity.
     /// </summary>
-    public EntityId Id { get; private init; }
+    public EntityId Id { get; init; }
 
     /// <summary>
     /// The database the entity is stored in.
     /// </summary>
-    public IDb Db { get; private init; }
+    public IDb Db { get; init; }
 
     /// <inheritdoc />
     public bool Contains(IAttribute attribute)
@@ -88,7 +87,9 @@ public class Entity : IEntity
     /// <inheritdoc />
     public override string ToString()
     {
-        var name = GetType().Name;
+        var fullName = GetType().FullName!;
+        var dotIdx = fullName.LastIndexOf(".");
+        var name = fullName[(dotIdx+1)..];
         return $"{name}<{Id.Value:x}>";
     }
 
