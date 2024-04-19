@@ -14,7 +14,7 @@ public static class Mod
     public static readonly UriAttribute Source = new(Namespace, "Source");
     public static readonly ReferenceAttribute LoadoutId = new(Namespace, "Loadout");
 
-    public class Model(ITransaction tx) : AEntity(tx)
+    public class Model(ITransaction tx) : Entity(tx)
     {
         public string Name
         {

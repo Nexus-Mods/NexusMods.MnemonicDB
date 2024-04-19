@@ -55,6 +55,18 @@ public readonly struct IndexSegment : IEnumerable<Datom>
         }
     }
 
+    /// <summary>
+    /// Returns true if the segment contains the given attribute
+    /// </summary>
+    public bool Contains(IAttribute attribute)
+    {
+        var id = attribute.GetDbId(_registryId);
+        foreach (var datom in this)
+            if (datom.A == id)
+                return true;
+        return false;
+    }
+
     /// <inheritdoc />
     public IEnumerator<Datom> GetEnumerator()
     {

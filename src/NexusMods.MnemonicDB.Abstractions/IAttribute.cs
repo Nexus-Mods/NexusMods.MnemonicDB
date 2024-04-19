@@ -65,4 +65,9 @@ public interface IAttribute
     /// </summary>
     IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx, bool isRetract);
 
+    /// <summary>
+    ///     Returns true if the attribute is in the given entity
+    /// </summary>
+    bool IsIn(IDb db, EntityId id);
+
 }

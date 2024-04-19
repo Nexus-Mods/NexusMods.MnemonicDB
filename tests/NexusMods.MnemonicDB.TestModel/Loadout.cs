@@ -10,7 +10,7 @@ public static class Loadout
     public static readonly StringAttribute Name = new(Namespace, "Name");
 
 
-    public class Model(ITransaction tx) : AEntity(tx)
+    public class Model(ITransaction tx) : Entity(tx)
     {
         public string Name
         {

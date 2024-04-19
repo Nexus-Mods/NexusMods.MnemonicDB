@@ -13,6 +13,7 @@ public class BuiltInAttributes
 {
 
     private const string Namespace = "NexusMods.MnemonicDB.DatomStore";
+    private const string TxNamespace = "NexusMods.MnemonicDB.Transaction";
 
     /// <summary>
     ///     The unique identifier of the entity, used to link attributes across application restarts and model changes.
@@ -26,6 +27,12 @@ public class BuiltInAttributes
 
 
     /// <summary>
+    /// The timestamp of the transaction
+    /// </summary>
+    public static TimestampAttribute TxTimestanp = new(TxNamespace, "Timestamp");
+
+
+    /// <summary>
     ///     The database entity id of the UniqueId attribute
     /// </summary>
     public static readonly AttributeId UniqueIdEntityId = AttributeId.From(1);
@@ -35,6 +42,10 @@ public class BuiltInAttributes
     /// </summary>
     public static readonly AttributeId ValueTypeEntityId = AttributeId.From(2);
 
+    /// <summary>
+    ///     The tx timestamp attribute
+    /// </summary>
+    public static readonly AttributeId TxTimestanpEntityId = AttributeId.From(3);
 
     /// <summary>
     ///     The initial set of built-in attributes that always exist in the database.
@@ -42,7 +53,8 @@ public class BuiltInAttributes
     public static readonly DbAttribute[] Initial =
     [
         new DbAttribute(UniqueId.Id, UniqueIdEntityId, ValueTags.Ascii),
-        new DbAttribute(ValueType.Id, ValueTypeEntityId, ValueTags.UInt8)
+        new DbAttribute(ValueType.Id, ValueTypeEntityId, ValueTags.UInt8),
+        new DbAttribute(TxTimestanp.Id, TxTimestanpEntityId, ValueTags.Int64),
     ];
 
     /// <summary>
@@ -54,9 +66,12 @@ public class BuiltInAttributes
 
         builder.Add(UniqueIdEntityId.ToEntityId(), UniqueId, UniqueId.Id);
         builder.Add(ValueTypeEntityId.ToEntityId(), UniqueId, ValueType.Id);
+        builder.Add(TxTimestanpEntityId.ToEntityId(), UniqueId, TxTimestanp.Id);
 
         builder.Add(UniqueIdEntityId.ToEntityId(), ValueType, ValueTags.Ascii);
         builder.Add(ValueTypeEntityId.ToEntityId(), ValueType, ValueTags.UInt8);
+        builder.Add(TxTimestanpEntityId.ToEntityId(), ValueType, ValueTags.Int64);
+
         return builder.Build();
     }
 

@@ -20,4 +20,14 @@ public readonly partial struct EntityId
     public static EntityId MinValueNoPartition => From(0);
 
     public static EntityId MaxValueNoPartition => From(ulong.MaxValue);
+
+    /// <summary>
+    /// Gets the partition of the id
+    /// </summary>
+    public byte Partition => Ids.GetPartitionValue(this);
+
+    /// <summary>
+    /// Gets just the value portion of the id (ignoring the partition)
+    /// </summary>
+    public ulong ValuePortion => Value & 0x00FFFFFFFFFFFFFF;
 }

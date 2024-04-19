@@ -67,9 +67,10 @@ public abstract class AStorageTest : IAsyncLifetime
         return Task.CompletedTask;
     }
 
-    public EntityId NextTempId()
+    public EntityId NextTempId(byte partition = (byte)Ids.Partition.Entity)
     {
         var id = Interlocked.Increment(ref _tempId);
+        id |= (ulong)partition << 40;
         return EntityId.From(Ids.MakeId(Ids.Partition.Tmp, id));
     }
 }

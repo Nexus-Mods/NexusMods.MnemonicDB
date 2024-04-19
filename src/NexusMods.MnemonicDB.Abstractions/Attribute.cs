@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -197,6 +198,12 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
         };
     }
 
+    public bool IsIn(IDb db, EntityId id)
+    {
+        var index = db.GetSegment(id);
+        return index.Contains(this);
+    }
+
     private void ThrowKeyNotFoundException(EntityId id)
     {
         throw new KeyNotFoundException($"Attribute {Id} not found on entity {id}");
@@ -205,7 +212,7 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
 
 
     /// <inheritdoc />
-    public void Add(IEntity entity, TValueType value)
+    public void Add(IEntityWithTx entity, TValueType value)
     {
         entity.Tx!.Add(entity.Id, this, value);
     }
