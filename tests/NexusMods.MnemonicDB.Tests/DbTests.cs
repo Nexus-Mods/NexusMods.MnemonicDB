@@ -278,4 +278,51 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await VerifyTable(mod.Select(d => d.Resolved));
     }
 
+    [Fact]
+    public async Task CanPutEntitiesInDifferentPartitions()
+    {
+
+        using var tx = Connection.BeginTransaction();
+        var file1 = new File.Model(tx, (byte)Ids.Partition.Entity)
+        {
+            Path = "C:\\test1.txt",
+            Hash = Hash.From(0xDEADBEEF),
+            Size = Size.From(1),
+            ModId = EntityId.From(1)
+        };
+
+        var file2 = new File.Model(tx, (byte)Ids.Partition.Entity + 1)
+        {
+            Path = "C:\\test2.txt",
+            Hash = Hash.From(0xDEADBEEF),
+            Size = Size.From(1),
+            ModId = EntityId.From(1)
+        };
+
+        var file3 = new File.Model(tx, (byte)Ids.Partition.Entity + 200)
+        {
+            Path = "C:\\test3.txt",
+            Hash = Hash.From(0xDEADBEEF),
+            Size = Size.From(1),
+            ModId = EntityId.From(1)
+        };
+
+        // TempIds store the desired partition in the third highest byte
+        (file1.Id.Value >> 40 & 0xFF).Should().Be((byte)Ids.Partition.Entity);
+        (file2.Id.Value >> 40 & 0xFF).Should().Be((byte)Ids.Partition.Entity + 1);
+        (file3.Id.Value >> 40 & 0xFF).Should().Be((byte)Ids.Partition.Entity + 200);
+
+        var result = await tx.Commit();
+        file1 = result.Remap(file1);
+        file2 = result.Remap(file2);
+        file3 = result.Remap(file3);
+
+
+        var allDatoms = file1.Concat(file2).Concat(file3)
+            .Select(f => f.Resolved);
+
+        await VerifyTable(allDatoms);
+
+    }
+
 }

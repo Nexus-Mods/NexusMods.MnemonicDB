@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
@@ -16,14 +17,16 @@ public class Entity : IEntityWithTx
     /// Constructs an entity, and attaches it to a transaction
     /// </summary>
     /// <param name="tx"></param>
-    protected Entity(ITransaction tx)
+    /// <param name="partition">the desired allocated partition for the entity</param>
+    protected Entity(ITransaction tx, byte partition = (byte)Ids.Partition.Entity)
     {
+        Debug.Assert(partition >= (byte)Ids.Partition.Entity, "must place entity in entity partitions");
         // This looks like it's never null, but the framework will force-inject a null here when constructing
         // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
         if (tx != null)
         {
             Tx = tx;
-            Id = tx.TempId();
+            Id = tx.TempId(partition);
             Db = null!;
         }
         else
