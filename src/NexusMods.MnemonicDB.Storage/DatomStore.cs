@@ -265,7 +265,14 @@ public class DatomStore : IDatomStore
 
         var currentSnapshot = _backend.GetSnapshot();
 
-        foreach (var datom in pendingTransaction.Data)
+        var secondaryBuilder = new IndexSegmentBuilder(_registry);
+        var txId = EntityId.From(thisTx.Value);
+        secondaryBuilder.Add(txId, BuiltInAttributes.TxTimestanp,
+            DateTime.UtcNow);
+
+        var datoms = pendingTransaction.Data.Concat(secondaryBuilder.Build());
+
+        foreach (var datom in datoms)
         {
             _writer.Reset();
 

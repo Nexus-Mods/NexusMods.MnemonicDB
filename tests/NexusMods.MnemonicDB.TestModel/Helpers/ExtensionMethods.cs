@@ -35,6 +35,8 @@ public static class ExtensionMethods
             return val.PadRight(length);
         }
 
+        var dateTimeCount = 0;
+
         var sb = new StringBuilder();
         foreach (var datom in datoms)
         {
@@ -50,6 +52,8 @@ public static class ExtensionMethods
             sb.Append($"({attrId}) {symColumn}");
             sb.Append(" | ");
 
+
+
             switch (datom.ObjectValue)
             {
                 case EntityId eid:
@@ -62,6 +66,9 @@ public static class ExtensionMethods
                     var code = XxHash3.HashToUInt64(byteArray);
                     var hash = code.ToString("X16");
                     sb.Append($"Blob 0x{hash} {byteArray.Length} bytes".PadRight(48));
+                    break;
+                case DateTime dateTime:
+                    sb.Append($"DateTime : {dateTimeCount++}".PadRight(48));
                     break;
                 default:
                     sb.Append(TruncateOrPad(datom.ObjectValue.ToString()!, 48));
