@@ -18,7 +18,7 @@ public interface ITransaction : IDisposable
     ///     Gets a temporary id for a new entity
     /// </summary>
     /// <returns></returns>
-    EntityId TempId();
+    EntityId TempId(byte partition = (byte)Ids.Partition.Entity);
 
     /// <summary>
     ///     Adds a new datom to the transaction

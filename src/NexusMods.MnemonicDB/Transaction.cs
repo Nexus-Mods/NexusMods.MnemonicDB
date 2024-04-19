@@ -18,9 +18,12 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
     private bool _committed = false;
 
     /// <inhertdoc />
-    public EntityId TempId()
+    public EntityId TempId(byte entityPartition = (byte)Ids.Partition.Entity)
     {
-        return EntityId.From(Interlocked.Increment(ref _tempId));
+        var tempId = Interlocked.Increment(ref _tempId);
+        // Add the partition to the id
+        var actualId = ((ulong)entityPartition << 40) | tempId;
+        return EntityId.From(actualId);
     }
 
     public void Add<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val)

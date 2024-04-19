@@ -58,6 +58,18 @@ public static class Ids
         return ((ulong)partition << 56) | (id & 0x00FFFFFFFFFFFFFF);
     }
 
+
+    /// <summary>
+    ///     Tags an id with a partition
+    /// </summary>
+    /// <param name="partition"></param>
+    /// <param name="id"></param>
+    /// <returns></returns>
+    public static ulong MakeId(byte partition, ulong id)
+    {
+        return ((ulong)partition << 56) | (id & 0x00FFFFFFFFFFFFFF);
+    }
+
     /// <summary>
     ///     Gets the maximum id for the given partition
     /// </summary>
@@ -116,5 +128,13 @@ public static class Ids
     public static bool IsPartition(ulong id, Partition partition)
     {
         return GetPartition(id) == partition;
+    }
+
+    /// <summary>
+    /// Gets the partition value of the id as a byte
+    /// </summary>
+    public static byte GetPartitionValue(EntityId id)
+    {
+        return (byte)(id.Value >> 56);
     }
 }

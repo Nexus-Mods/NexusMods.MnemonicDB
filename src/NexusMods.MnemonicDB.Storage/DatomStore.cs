@@ -1,16 +1,13 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -40,14 +37,20 @@ public class DatomStore : IDatomStore
     private readonly IIndex _vaetHistory;
     private readonly PooledMemoryBufferWriter _writer;
     private readonly PooledMemoryBufferWriter _prevWriter;
-
-    private TxId _asOfTxId = TxId.MinValue;
-    private EntityId _nextEntityId;
     private readonly Task _startupTask;
+    private TxId _asOfTx = TxId.MinValue;
+
     /// <summary>
     /// Cached version of the registry ID to avoid the overhead of looking it up every time
     /// </summary>
     private readonly RegistryId _registryId;
+
+    /// <summary>
+    /// Cache for the next entity/tx/attribute ids
+    /// </summary>
+    private NextIdCache _nextIdCache;
+
+
 
 
     public DatomStore(ILogger<DatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings,
@@ -63,7 +66,6 @@ public class DatomStore : IDatomStore
         _settings = settings;
         _registry = registry;
         _registryId = registry.Id;
-        _nextEntityId = EntityId.From(Ids.MinId(Ids.Partition.Entity) + 1);
 
         _backend.DeclareEAVT(IndexType.EAVTCurrent);
         _backend.DeclareEAVT(IndexType.EAVTHistory);
@@ -98,7 +100,7 @@ public class DatomStore : IDatomStore
     }
 
     /// <inheritdoc />
-    public TxId AsOfTxId => _asOfTxId;
+    public TxId AsOfTxId => _asOfTx;
 
     /// <inheritdoc />
     public IAttributeRegistry Registry => _registry;
@@ -164,7 +166,7 @@ public class DatomStore : IDatomStore
                         var storeResult = new StoreResult
                         {
                             Remaps = new Dictionary<EntityId, EntityId>(),
-                            AssignedTxId = _asOfTxId,
+                            AssignedTxId = _nextIdCache.AsOfTxId,
                             Snapshot = null!,
                         };
                         pendingTransaction.CompletionSource.TrySetResult(storeResult);
@@ -196,11 +198,9 @@ public class DatomStore : IDatomStore
         try
         {
             var snapshot = _backend.GetSnapshot();
-            var lastTx = snapshot.Datoms(IndexType.TxLog, TxId.MaxValue, TxId.MinValue)
-                .Select(d => d.T)
-                .FirstOrDefault(TxId.MinValue);
+            var lastTx = TxId.From(_nextIdCache.LastEntityInPartition(snapshot, (byte)Ids.Partition.Tx).Value);
 
-            if (lastTx == TxId.MinValue)
+            if (lastTx.Value == TxId.MinValue)
             {
                 _logger.LogInformation("Bootstrapping the datom store no existing state found");
                 var _ = await Transact(BuiltInAttributes.InitialDatoms(_registry));
@@ -209,13 +209,7 @@ public class DatomStore : IDatomStore
 
             _logger.LogInformation("Bootstrapping the datom store, existing state found, last tx: {LastTx}",
                 lastTx.Value.ToString("x"));
-            _asOfTxId = lastTx;
-
-            var lastEnt = snapshot.Datoms(IndexType.EAVTCurrent, EntityId.MaxValueNoPartition, EntityId.MinValueNoPartition)
-                .Select(e => e.E)
-                .FirstOrDefault(EntityId.MinValue);
-
-            _nextEntityId = EntityId.From(lastEnt.Value + 1);
+            _asOfTx = TxId.From(lastTx.Value);
         }
         catch (Exception ex)
         {
@@ -225,7 +219,7 @@ public class DatomStore : IDatomStore
 
     #region Internals
 
-    private EntityId MaybeRemap(EntityId id, Dictionary<EntityId, EntityId> remaps, TxId thisTx)
+    private EntityId MaybeRemap(ISnapshot snapshot, EntityId id, Dictionary<EntityId, EntityId> remaps, TxId thisTx)
     {
         if (Ids.GetPartition(id) == Ids.Partition.Tmp)
         {
@@ -239,10 +233,10 @@ public class DatomStore : IDatomStore
                 }
                 else
                 {
-                    remaps.Add(id, _nextEntityId);
-                    var remapTo = _nextEntityId;
-                    _nextEntityId = EntityId.From(_nextEntityId.Value + 1);
-                    return remapTo;
+                    var partitionId = id.Value >> 40 & 0xFF;
+                    var assignedId = _nextIdCache.NextId(snapshot, (byte)partitionId);
+                    remaps.Add(id, assignedId);
+                    return assignedId;
                 }
             }
 
@@ -255,15 +249,16 @@ public class DatomStore : IDatomStore
 
     private void Log(PendingTransaction pendingTransaction, out StoreResult result)
     {
-        var thisTx = TxId.From(_asOfTxId.Value + 1);
+        var currentSnapshot = _backend.GetSnapshot();
+        var thisTx = TxId.From(_nextIdCache.NextId(currentSnapshot, (byte)Ids.Partition.Tx).Value);
 
         var remaps = new Dictionary<EntityId, EntityId>();
-        var remapFn = (Func<EntityId, EntityId>)(id => MaybeRemap(id, remaps, thisTx));
+        var remapFn = (Func<EntityId, EntityId>)(id => MaybeRemap(currentSnapshot, id, remaps, thisTx));
         using var batch = _backend.CreateBatch();
 
         var swPrepare = Stopwatch.StartNew();
 
-        var currentSnapshot = _backend.GetSnapshot();
+
 
         var secondaryBuilder = new IndexSegmentBuilder(_registry);
         var txId = EntityId.From(thisTx.Value);
@@ -334,6 +329,7 @@ public class DatomStore : IDatomStore
                 swPrepare.ElapsedMilliseconds - swWrite.ElapsedMilliseconds,
                 swWrite.ElapsedMilliseconds);
 
+        _asOfTx = thisTx;
 
         result = new StoreResult
         {
@@ -341,7 +337,6 @@ public class DatomStore : IDatomStore
             Remaps = remaps,
             Snapshot = _backend.GetSnapshot()
         };
-        _asOfTxId = thisTx;
     }
 
     /// <summary>
