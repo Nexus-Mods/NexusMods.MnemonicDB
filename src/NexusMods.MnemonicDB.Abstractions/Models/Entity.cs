@@ -14,6 +14,15 @@ namespace NexusMods.MnemonicDB.Abstractions.Models;
 public class Entity : IEntityWithTx
 {
     /// <summary>
+    /// Constructs an entity, and attaches it to a transaction if one is provided.
+    /// </summary>
+    /// <param name="tx"></param>
+    public Entity(ITransaction tx) : this(tx, (byte)Ids.Partition.Entity)
+    {
+
+    }
+
+    /// <summary>
     /// Constructs an entity, and attaches it to a transaction
     /// </summary>
     /// <param name="tx"></param>

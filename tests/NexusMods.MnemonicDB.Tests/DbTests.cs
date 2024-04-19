@@ -1,5 +1,6 @@
 ﻿using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.File;
@@ -322,7 +323,17 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             .Select(f => f.Resolved);
 
         await VerifyTable(allDatoms);
+    }
 
+    [Fact]
+    public async Task CanLoadEntitiesWithoutSubclass()
+    {
+        var loadout = await InsertExampleData();
+
+        var entityLoadout = Connection.Db.Get<Entity>(loadout.Id);
+
+        entityLoadout.Select(d => d.Resolved)
+            .Should().BeEquivalentTo(loadout.Select(d => d.Resolved));
     }
 
 }
