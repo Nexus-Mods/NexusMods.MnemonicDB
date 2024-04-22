@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
@@ -75,6 +76,34 @@ public class Entity : IEntityWithTx
     public bool Contains(IAttribute attribute)
         => attribute.IsIn(Db, Id);
 
+    /// <summary>
+    /// Gets the value of the given attribute.
+    /// </summary>
+    public TValue Get<TValue, TLowLevel>(ScalarAttribute<TValue, TLowLevel> attr)
+    {
+        return attr.Get(this);
+    }
+
+
+    /// <summary>
+    /// Try to get the value of the given attribute.
+    /// </summary>
+    public bool TryGet<TValue, TLowLevel>(ScalarAttribute<TValue, TLowLevel> attr, out TValue value)
+    {
+        return attr.TryGet(this, out value);
+    }
+
+    /// <summary>
+    /// Gets all the values of the given attribute.
+    /// </summary>
+    public IEnumerable<TValue> Get<TValue, TLowLevel>(CollectionAttribute<TValue, TLowLevel> attr)
+    {
+        return attr.Get(this);
+    }
+
+
+
+
     /// <inheritdoc />
     public static IEntity From(IDb db, EntityId id)
     {
@@ -92,7 +121,7 @@ public class Entity : IEntityWithTx
     /// <inheritdoc />
     public IEnumerator<Datom> GetEnumerator()
     {
-        return Db.GetSegment(Id)
+        return Db.Get(Id)
             .GetEnumerator();
     }
 

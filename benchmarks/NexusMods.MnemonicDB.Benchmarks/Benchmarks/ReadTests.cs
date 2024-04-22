@@ -60,7 +60,7 @@ public class ReadTests : ABenchmark
 
         _db = Connection.Db;
 
-        _preLoaded = _db.Get<File.Model>(_entityIds).ToArray();
+        _preLoaded = _entityIds.Select(id => _db.Get<File.Model>(id)).ToArray();
     }
 
     [Benchmark]
@@ -80,7 +80,7 @@ public class ReadTests : ABenchmark
     [Benchmark]
     public long ReadAll()
     {
-        return _db.Get<File.Model>(_entityIds)
+        return _entityIds.Select(id => _db.Get<File.Model>(id))
             .Sum(e => (long)e.Size.Value);
     }
 

@@ -20,12 +20,14 @@ internal class Db : IDb
 
     private readonly IndexSegmentCache<EntityId> _entityCache;
     private readonly IndexSegmentCache<(EntityId, AttributeId)> _reverseCache;
+    private readonly RegistryId _registryId;
 
     public ISnapshot Snapshot { get; }
     public IAttributeRegistry Registry => _registry;
 
     public Db(ISnapshot snapshot, Connection connection, TxId txId, AttributeRegistry registry)
     {
+        _registryId = registry.Id;
         _registry = registry;
         _connection = connection;
         _entityCache = new IndexSegmentCache<EntityId>(EntityDatoms, registry);
@@ -71,20 +73,12 @@ internal class Db : IDb
         }
     }
 
-    public TValue Get<TValue, TLowLevel>(EntityId id, Attribute<TValue, TLowLevel> attribute)
+    /// <summary>
+    /// Gets the IndexSegment for the given entity id.
+    /// </summary>
+    public IndexSegment Get(EntityId entityId)
     {
-        var attrId = attribute.GetDbId(_registry.Id);
-        var entry = _entityCache.Get(this, id);
-        for (var i = 0; i < entry.Count; i++)
-        {
-            var datom = entry[i];
-            if (datom.A == attrId)
-            {
-                return datom.Resolve(attribute);
-            }
-        }
-
-        throw new KeyNotFoundException();
+        return _entityCache.Get(this, entityId);
     }
 
     public IEnumerable<EntityId> Find(IAttribute attribute)
@@ -158,4 +152,25 @@ internal class Db : IDb
     }
 
     public void Dispose() { }
+
+    public bool Equals(IDb? other)
+    {
+        if (other is null)
+            return false;
+        return ReferenceEquals(_connection, other.Connection)
+               && BasisTxId.Equals(other.BasisTxId);
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (ReferenceEquals(null, obj)) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != GetType()) return false;
+        return Equals((Db)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(_connection, BasisTxId);
+    }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -10,7 +11,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// <summary>
 ///     Represents an immutable database fixed to a specific TxId.
 /// </summary>
-public interface IDb : IDisposable
+public interface IDb : IEquatable<IDb>, IDisposable
 {
     /// <summary>
     ///     Gets the basis TxId of the database.
@@ -33,17 +34,6 @@ public interface IDb : IDisposable
     IAttributeRegistry Registry { get; }
 
     /// <summary>
-    ///     Returns a read model for each of the given entity ids.
-    /// </summary>
-    public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids)
-        where TModel : IEntity;
-
-    /// <summary>
-    /// Gets a single attribute value for the given entity id.
-    /// </summary>
-    public TValue Get<TValue, TLowLevel>(EntityId id, Attribute<TValue, TLowLevel> attribute);
-
-    /// <summary>
     ///     Gets a read model for the given entity id.
     /// </summary>
     /// <param name="id"></param>
@@ -51,6 +41,12 @@ public interface IDb : IDisposable
     /// <returns></returns>
     public TModel Get<TModel>(EntityId id)
         where TModel : IEntity;
+
+
+    /// <summary>
+    /// Gets the index segment for the given entity id.
+    /// </summary>
+    public IndexSegment Get(EntityId entityId);
 
     /// <summary>
     ///     Gets a read model for every enitity that references the given entity id
@@ -82,10 +78,4 @@ public interface IDb : IDisposable
     /// Finds all the entity ids that have the given attribute.
     /// </summary>
     IEnumerable<EntityId> Find(IAttribute attribute);
-
-
-    /// <summary>
-    /// Gets the index segment for the given entity id.
-    /// </summary>
-    IndexSegment GetSegment(EntityId id);
 }
