@@ -7,7 +7,8 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 /// <summary>
 /// A subview of an IndexSegment that returns a specific entity type
 /// </summary>
-public readonly struct Entities<TInner, TEntity>(TInner ids, IDb db) : IEnumerable<TEntity>
+public readonly struct Entities<TInner, TEntity>(TInner ids, IDb db) :
+    IReadOnlyCollection<TEntity>
     where TEntity : IEntity
     where TInner : IIndexSegment<EntityId>
 {

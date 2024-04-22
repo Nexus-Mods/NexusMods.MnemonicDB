@@ -17,7 +17,7 @@ public abstract class CollectionAttribute<TValue, TLowLevel>(ValueTags tag, stri
     /// </summary>
     public Values<TValue, TLowLevel> Get(IEntity ent)
     {
-        var segment = ent.Db.GetSegment(ent.Id);
+        var segment = ent.Db.Get(ent.Id);
         var dbId = Cache[segment.RegistryId.Value];
         for (var i = 0; i < segment.Count; i++)
         {

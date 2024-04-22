@@ -38,7 +38,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         result.NewTx.Value.Should().Be(oldTx.Value + 1, "transaction id should be incremented by 1");
 
         var db = Connection.Db;
-        var resolved = db.Get<File.Model>(ids.Select(id => result[id])).ToArray();
+        var resolved = ids.Select(id => db.Get<File.Model>(result[id])).ToArray();
         await VerifyModel(resolved);
     }
 
@@ -103,7 +103,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var originalDb = Connection.Db;
 
         // Validate the data
-        var found = originalDb.Get<File.Model>([realId]).First();
+        var found = originalDb.Get<File.Model>(realId);
         await VerifyModel(found).UseTextForParameters("original data");
 
 
@@ -120,11 +120,11 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             newDb.BasisTxId.Value.Should().Be(originalDb.BasisTxId.Value + 1UL + (ulong)i,
                 "transaction id should be incremented by 1 for each mutation at iteration " + i);
 
-            var newFound = newDb.Get<File.Model>([realId]).First();
+            var newFound = newDb.Get<File.Model>(realId);
             await VerifyModel(newFound).UseTextForParameters("mutated data " + i);
 
             // Validate the original data
-            var orignalFound = originalDb.Get<File.Model>([realId]).First();
+            var orignalFound = originalDb.Get<File.Model>(realId);
             await VerifyModel(orignalFound).UseTextForParameters("original data" + i);
         }
     }
@@ -155,12 +155,12 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var db = Connection.Db;
 
         // Original data exists
-        var readModel = db.Get<File.Model>([realId]).First();
+        var readModel = db.Get<File.Model>(realId);
         await VerifyModel(readModel).UseTextForParameters("file data");
 
 
         // Extra data exists and can be read with a different read model
-        var archiveReadModel = db.Get<ArchiveFile.Model>([realId]).First();
+        var archiveReadModel = db.Get<ArchiveFile.Model>(realId);
         await VerifyModel(archiveReadModel).UseTextForParameters("archive file data");
     }
 
@@ -234,7 +234,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var newDb = Connection.Db;
 
-        loadout = newDb.Get<Loadout.Model>([result[loadout.Id]]).First();
+        loadout = result.Remap(loadout);
 
         loadout.Mods.Count().Should().Be(2);
         loadout.Mods.Select(m => m.Name).Should().BeEquivalentTo(["Test Mod 1", "Test Mod 2"]);
@@ -257,7 +257,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var db = Connection.Db;
 
         var ids = from id in db.Find(Mod.Name)
-            let thisName = db.Get(id, Mod.Name)
+            let thisName = db.Get<Mod.Model>(id).Name
             from byFind in db.FindIndexed(thisName, Mod.Name)
             select (id.Value.ToString("x"), thisName, byFind.Value.ToString("x"));
 

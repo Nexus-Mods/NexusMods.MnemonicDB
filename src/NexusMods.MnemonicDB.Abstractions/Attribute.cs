@@ -198,9 +198,12 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
         };
     }
 
+    /// <summary>
+    /// Returns true if the attribute is present on the entity
+    /// </summary>
     public bool IsIn(IDb db, EntityId id)
     {
-        var index = db.GetSegment(id);
+        var index = db.Get(id);
         return index.Contains(this);
     }
 
