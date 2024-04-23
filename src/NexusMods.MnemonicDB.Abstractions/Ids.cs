@@ -127,7 +127,7 @@ public static class Ids
     /// <returns></returns>
     public static bool IsPartition(ulong id, Partition partition)
     {
-        return GetPartition(id) == partition;
+        return GetPartitionValue(id) == (byte)partition;
     }
 
     /// <summary>
@@ -136,5 +136,13 @@ public static class Ids
     public static byte GetPartitionValue(EntityId id)
     {
         return (byte)(id.Value >> 56);
+    }
+
+    /// <summary>
+    /// Gets the partition value of the id as a byte
+    /// </summary>
+    public static byte GetPartitionValue(ulong id)
+    {
+        return (byte)(id >> 56);
     }
 }
