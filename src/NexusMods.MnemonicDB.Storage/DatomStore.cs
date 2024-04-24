@@ -116,6 +116,16 @@ public class DatomStore : IDatomStore
         return await pending.CompletionSource.Task;
     }
 
+    /// <inheritdoc />
+    public async Task<StoreResult> Sync()
+    {
+        var pending = new PendingTransaction { Data = new IndexSegment() };
+        if (!_txChannel.Writer.TryWrite(pending))
+            throw new InvalidOperationException("Failed to write to the transaction channel");
+
+        return await pending.CompletionSource.Task;
+    }
+
     public IObservable<(TxId TxId, ISnapshot Snapshot)> TxLog => _updatesSubject;
 
     /// <inheritdoc />
@@ -167,7 +177,7 @@ public class DatomStore : IDatomStore
                         {
                             Remaps = new Dictionary<EntityId, EntityId>(),
                             AssignedTxId = _nextIdCache.AsOfTxId,
-                            Snapshot = null!,
+                            Snapshot = _backend.GetSnapshot(),
                         };
                         pendingTransaction.CompletionSource.TrySetResult(storeResult);
                         continue;
@@ -323,9 +333,10 @@ public class DatomStore : IDatomStore
         batch.Commit();
 
         if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("Transaction {TxId} ({Count} datoms) prepared in {Elapsed}ms, written in {WriteElapsed}ms",
+            _logger.LogDebug("Transaction {TxId} ({Count} datoms, {Size}) prepared in {Elapsed}ms, written in {WriteElapsed}ms",
                 thisTx.Value,
                 pendingTransaction.Data.Count,
+                pendingTransaction.Data.DataSize,
                 swPrepare.ElapsedMilliseconds - swWrite.ElapsedMilliseconds,
                 swWrite.ElapsedMilliseconds);
 

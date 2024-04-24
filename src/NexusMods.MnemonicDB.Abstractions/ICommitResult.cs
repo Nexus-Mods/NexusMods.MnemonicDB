@@ -17,7 +17,8 @@ public interface ICommitResult
 
 
     /// <summary>
-    ///   Remaps a ReadModel to a new instance with the new ids
+    ///   Remaps a ReadModel to a new instance with the new ids, if the entity is not new, it
+    /// updates the entity anyway to be current as of the commit
     /// </summary>
     public T Remap<T>(T model) where T : IEntity;
 
@@ -27,7 +28,7 @@ public interface ICommitResult
     public TxId NewTx { get; }
 
     /// <summary>
-    ///     The datoms that were added to the store as a result of the transaction
+    /// The database up-to-date with the new transaction
     /// </summary>
-    public IEnumerable<IWriteDatom> Datoms => throw new NotImplementedException();
+    public IDb Db { get; }
 }

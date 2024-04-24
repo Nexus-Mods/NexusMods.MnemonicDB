@@ -28,6 +28,14 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
         return default!;
     }
 
+    /// <summary>
+    /// Retracts the attribute from the entity.
+    /// </summary>
+    public void Retract(IEntityWithTx entityWithTx)
+    {
+        Retract(entityWithTx, Get(entityWithTx));
+    }
+
     private void ThrowKeyNotfoundException(IEntity entity)
     {
         throw new KeyNotFoundException($"Entity {entity.Id} does not have attribute {Id}");

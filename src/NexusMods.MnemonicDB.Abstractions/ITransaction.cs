@@ -23,7 +23,13 @@ public interface ITransaction : IDisposable
     /// <summary>
     ///     Adds a new datom to the transaction
     /// </summary>
-    void Add<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val);
+    void Add<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val, bool isRetract = false);
+
+    /// <summary>
+    ///     Adds a new datom to the transaction, that retracts the value for the given attribute
+    /// </summary>
+    void Retract<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val)
+        => Add(entityId, attribute, val, isRetract: true);
 
     /// <summary>
     ///     Commits the transaction

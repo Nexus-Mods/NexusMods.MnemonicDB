@@ -34,4 +34,15 @@ public abstract class CollectionAttribute<TValue, TLowLevel>(ValueTags tag, stri
         return new Values<TValue, TLowLevel>(segment, 0, 0, this);
     }
 
+    /// <summary>
+    /// Retracts all values for this attribute on the given entity
+    /// </summary>
+    public void RetractAll(IEntityWithTx entityWithTx)
+    {
+        foreach (var value in Get(entityWithTx))
+        {
+            Retract(entityWithTx, value);
+        }
+    }
+
 }
