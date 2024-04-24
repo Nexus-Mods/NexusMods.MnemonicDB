@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions;
@@ -27,6 +28,7 @@ internal class Db : IDb
 
     public Db(ISnapshot snapshot, Connection connection, TxId txId, AttributeRegistry registry)
     {
+        Debug.Assert(snapshot != null, $"{nameof(snapshot)} cannot be null");
         _registryId = registry.Id;
         _registry = registry;
         _connection = connection;

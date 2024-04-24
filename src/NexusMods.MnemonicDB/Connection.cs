@@ -19,6 +19,7 @@ namespace NexusMods.MnemonicDB;
 public class Connection : IConnection
 {
     private readonly IDatomStore _store;
+    private IDb _db = null!;
     private readonly Task _startupTask;
 
     /// <summary>
@@ -32,7 +33,12 @@ public class Connection : IConnection
         {
             try
             {
-                await AddMissingAttributes(declaredAttributes);
+                var storeResult = await AddMissingAttributes(declaredAttributes);
+                _db = new Db(storeResult.Snapshot, this, storeResult.AssignedTxId, (AttributeRegistry)_store.Registry);
+                _store.TxLog.Subscribe(log =>
+                {
+                    _db = new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry);
+                });
             }
             catch (Exception ex)
             {
@@ -49,7 +55,7 @@ public class Connection : IConnection
         {
             if (!_startupTask.IsCompleted)
                 _startupTask.Wait();
-            return new Db(_store.GetSnapshot(), this, TxId, (AttributeRegistry)_store.Registry);
+            return _db;
         }
     }
 
@@ -79,7 +85,7 @@ public class Connection : IConnection
         .Select(log => new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry));
 
 
-    private async Task AddMissingAttributes(IEnumerable<IAttribute> declaredAttributes)
+    private async Task<StoreResult> AddMissingAttributes(IEnumerable<IAttribute> declaredAttributes)
     {
 
         var existing = ExistingAttributes().ToDictionary(a => a.UniqueId);
@@ -91,7 +97,7 @@ public class Connection : IConnection
         if (missing.Length == 0)
         {
             _store.Registry.Populate(existing.Values.ToArray());
-            return;
+            return await _store.Sync();
         }
 
         var newAttrs = new List<DbAttribute>();
@@ -106,6 +112,7 @@ public class Connection : IConnection
         }
 
         await _store.RegisterAttributes(newAttrs);
+        return await _store.Sync();
     }
 
     private IEnumerable<DbAttribute> ExistingAttributes()

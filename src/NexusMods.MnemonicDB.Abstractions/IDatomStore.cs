@@ -21,12 +21,22 @@ public interface IDatomStore : IDisposable
     /// </summary>
     public TxId AsOfTxId { get; }
 
+    /// <summary>
+    /// The Attribute Registry for this store
+    /// </summary>
     IAttributeRegistry Registry { get; }
 
     /// <summary>
     ///     Transacts (adds) the given datoms into the store.
     /// </summary>
     public Task<StoreResult> Transact(IndexSegment datoms);
+
+    /// <summary>
+    /// Executes an empty transaction. Returns a StoreResult valid asof the latest
+    /// transaction
+    /// </summary>
+    /// <returns></returns>
+    public Task<StoreResult> Sync();
 
     /// <summary>
     ///     Registers new attributes with the store. These should already have been transacted into the store.

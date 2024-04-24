@@ -212,15 +212,21 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
         throw new KeyNotFoundException($"Attribute {Id} not found on entity {id}");
     }
 
-
-
-    /// <inheritdoc />
+    /// <summary>
+    /// Adds a datom to the active transaction for this entity that adds the given value to this attribute
+    /// </summary>
     public void Add(IEntityWithTx entity, TValueType value)
     {
         entity.Tx!.Add(entity.Id, this, value);
     }
 
-
+    /// <summary>
+    /// Adds a datom to the active transaction for this entity that retracts the given value from this attribute
+    /// </summary>
+    public void Retract(IEntityWithTx entity, TValueType value)
+    {
+        entity.Tx!.Add(entity.Id, this, value, isRetract:true);
+    }
 
     private void WriteValueLowLevel<TWriter>(TLowLevelType value, TWriter writer)
         where TWriter : IBufferWriter<byte>

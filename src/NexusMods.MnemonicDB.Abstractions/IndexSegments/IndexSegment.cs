@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
@@ -32,6 +33,11 @@ public readonly struct IndexSegment : IEnumerable<Datom>
     /// Returns true if this segment is valid (contains data)
     /// </summary>
     public bool Valid => !_data.IsEmpty;
+
+    /// <summary>
+    /// The size of the data in this segment, in bytes
+    /// </summary>
+    public Size DataSize => Size.FromLong(_data.Length);
 
     /// <summary>
     /// The number of datoms in this segment

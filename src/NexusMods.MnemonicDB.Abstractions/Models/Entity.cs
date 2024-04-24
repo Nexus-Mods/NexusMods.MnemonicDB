@@ -101,9 +101,6 @@ public class Entity : IEntityWithTx
         return attr.Get(this);
     }
 
-
-
-
     /// <inheritdoc />
     public static IEntity From(IDb db, EntityId id)
     {

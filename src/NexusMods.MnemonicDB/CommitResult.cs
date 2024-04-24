@@ -11,11 +11,18 @@ public class CommitResult(IDb db, IDictionary<EntityId, EntityId> remaps) : ICom
     public EntityId this[EntityId id] =>
         remaps.TryGetValue(id, out var found) ? found : id;
 
+    /// <inheritdoc />
     public T Remap<T>(T model) where T : IEntity
     {
-        return db.Get<T>(remaps[model.Id]);
+        var id = model.Id;
+        if (remaps.TryGetValue(id, out var found))
+            id = found;
+        return db.Get<T>(id);
     }
 
     /// <inheritdoc />
     public TxId NewTx => db.BasisTxId;
+
+    /// <inheritdoc />
+    public IDb Db => db;
 }
