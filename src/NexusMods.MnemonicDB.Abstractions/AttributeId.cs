@@ -26,4 +26,10 @@ public readonly partial struct AttributeId
     ///     Maximum value for an AttributeId.
     /// </summary>
     public static AttributeId Max => new(ushort.MaxValue);
+
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return "AId:" + Value.ToString("X");
+    }
 }

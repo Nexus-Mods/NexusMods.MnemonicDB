@@ -333,8 +333,8 @@ public class DatomStore : IDatomStore
         batch.Commit();
 
         if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("Transaction {TxId} ({Count} datoms, {Size}) prepared in {Elapsed}ms, written in {WriteElapsed}ms",
-                thisTx.Value,
+            _logger.LogDebug("{TxId} ({Count} datoms, {Size}) prepared in {Elapsed}ms, written in {WriteElapsed}ms",
+                thisTx,
                 pendingTransaction.Data.Count,
                 pendingTransaction.Data.DataSize,
                 swPrepare.ElapsedMilliseconds - swWrite.ElapsedMilliseconds,

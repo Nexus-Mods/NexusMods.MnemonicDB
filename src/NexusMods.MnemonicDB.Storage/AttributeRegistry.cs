@@ -92,7 +92,7 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
     {
         var attr = _attributes[attributeId.Value];
         if (attr == null)
-            throw new InvalidOperationException($"No attribute found for attribute ID {attributeId}");
+            throw new InvalidOperationException($"No attribute found for attribute ID {attributeId}, did you forget to register it?");
         return attr;
     }
 

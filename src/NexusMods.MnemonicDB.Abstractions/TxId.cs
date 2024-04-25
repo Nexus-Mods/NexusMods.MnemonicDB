@@ -27,4 +27,10 @@ public readonly partial struct TxId
     ///     The temporary transaction id, used for referencing the transaction entity
     /// </summary>
     public static TxId Tmp => From(Ids.MakeId(Ids.Partition.Tmp, 0));
+
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return "Tx:" + Value.ToString("X");
+    }
 }

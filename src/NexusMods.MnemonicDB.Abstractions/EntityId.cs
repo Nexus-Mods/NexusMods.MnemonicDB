@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Security.Cryptography;
 using TransparentValueObjects;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -30,4 +31,10 @@ public readonly partial struct EntityId
     /// Gets just the value portion of the id (ignoring the partition)
     /// </summary>
     public ulong ValuePortion => Value & 0x00FFFFFFFFFFFFFF;
+
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return "EId:" + Value.ToString("X");
+    }
 }
