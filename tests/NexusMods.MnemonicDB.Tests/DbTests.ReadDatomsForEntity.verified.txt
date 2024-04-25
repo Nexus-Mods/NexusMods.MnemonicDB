@@ -2,70 +2,70 @@
   {
     Hash: 0x00000000DEADBEEF,
     Mod: 1,
-    ModId: 1,
+    ModId: EId:1,
     Path: C:\test_0.txt,
     Size: 0 B
   },
   {
     Hash: 0x00000000DEADBEF0,
     Mod: 1,
-    ModId: 1,
+    ModId: EId:1,
     Path: C:\test_1.txt,
     Size: 1 B
   },
   {
     Hash: 0x00000000DEADBEF1,
     Mod: 1,
-    ModId: 1,
+    ModId: EId:1,
     Path: C:\test_2.txt,
     Size: 2 B
   },
   {
     Hash: 0x00000000DEADBEF2,
     Mod: 1,
-    ModId: 1,
+    ModId: EId:1,
     Path: C:\test_3.txt,
     Size: 3 B
   },
   {
     Hash: 0x00000000DEADBEF3,
     Mod: 1,
-    ModId: 1,
+    ModId: EId:1,
     Path: C:\test_4.txt,
     Size: 4 B
   },
   {
     Hash: 0x00000000DEADBEF4,
     Mod: 1,
-    ModId: 1,
+    ModId: EId:1,
     Path: C:\test_5.txt,
     Size: 5 B
   },
   {
     Hash: 0x00000000DEADBEF5,
     Mod: 1,
-    ModId: 1,
+    ModId: EId:1,
     Path: C:\test_6.txt,
     Size: 6 B
   },
   {
     Hash: 0x00000000DEADBEF6,
     Mod: 1,
-    ModId: 1,
+    ModId: EId:1,
     Path: C:\test_7.txt,
     Size: 7 B
   },
   {
     Hash: 0x00000000DEADBEF7,
     Mod: 1,
-    ModId: 1,
+    ModId: EId:1,
     Path: C:\test_8.txt,
     Size: 8 B
   },
   {
     Hash: 0x00000000DEADBEF8,
     Mod: 1,
-    ModId: 1,
+    ModId: EId:1,
     Path: C:\test_9.txt,
     Size: 9 B
   }
