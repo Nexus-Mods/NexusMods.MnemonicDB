@@ -29,6 +29,22 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
     }
 
     /// <summary>
+    ///   Gets the value of the attribute from the entity or a default value if the attribute is not present.
+    /// </summary>
+    public TValue Get(IEntity entity, TValue defaultValue)
+    {
+        var segment = entity.Db.Get(entity.Id);
+        var dbId = Cache[segment.RegistryId.Value];
+        for (var i = 0; i < segment.Count; i++)
+        {
+            var datom = segment[i];
+            if (datom.A != dbId) continue;
+            return ReadValue(datom.ValueSpan);
+        }
+        return defaultValue;
+    }
+
+    /// <summary>
     /// Retracts the attribute from the entity.
     /// </summary>
     public void Retract(IEntityWithTx entityWithTx)
