@@ -68,11 +68,15 @@ public interface IDb : IEquatable<IDb>, IDisposable
     /// </summary>
     IEnumerable<TValueType> GetAll<TValueType, TLowLevel>(EntityId modelId, Attribute<TValueType, TLowLevel> attribute);
 
-
     /// <summary>
     /// Finds all the entity ids that have the given attribute with the given value.
     /// </summary>
     IEnumerable<EntityId> FindIndexed<TValue, TLowLevel>(TValue value, Attribute<TValue, TLowLevel> attribute);
+
+    /// <summary>
+    /// Finds all the datoms have the given attribute with the given value.
+    /// </summary>
+    IEnumerable<Datom> FindIndexedDatoms<TValue, TLowLevel>(TValue value, Attribute<TValue, TLowLevel> attribute);
 
     /// <summary>
     /// Finds all the entity ids that have the given attribute.

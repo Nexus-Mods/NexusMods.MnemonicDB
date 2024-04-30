@@ -110,7 +110,12 @@ internal class Db : IDb
 
     public IEnumerable<EntityId> FindIndexed<TValue, TLowLevel>(TValue value, Attribute<TValue, TLowLevel> attribute)
     {
-        var attrId = attribute.GetDbId(_registry.Id);
+        return FindIndexedDatoms(value, attribute)
+            .Select(d => d.E);
+    }
+
+    public IEnumerable<Datom> FindIndexedDatoms<TValue, TLowLevel>(TValue value, Attribute<TValue, TLowLevel> attribute)
+    {
         if (!attribute.IsIndexed)
             throw new InvalidOperationException($"Attribute {attribute.Id} is not indexed");
 
@@ -120,11 +125,8 @@ internal class Db : IDb
         using var end = new PooledMemoryBufferWriter(64);
         attribute.Write(EntityId.MaxValueNoPartition, _registry.Id, value, TxId.MinValue, false, end);
 
-        var results = Snapshot
-            .Datoms(IndexType.AVETCurrent, start.GetWrittenSpan(), end.GetWrittenSpan())
-            .Select(d => d.E);
-
-        return results;
+        return Snapshot
+            .Datoms(IndexType.AVETCurrent, start.GetWrittenSpan(), end.GetWrittenSpan());;
     }
 
     public TModel Get<TModel>(EntityId id)
