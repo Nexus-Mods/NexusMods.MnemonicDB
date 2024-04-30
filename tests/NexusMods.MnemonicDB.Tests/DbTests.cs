@@ -336,4 +336,30 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             .Should().BeEquivalentTo(loadout.Select(d => d.Resolved));
     }
 
+    [Fact]
+    public async Task CanCreateTempEntities()
+    {
+        var loadoutOther = new TempEntity()
+        {
+            { Loadout.Name, "Loadout Other" }
+        };
+
+        var loadout = new TempEntity
+        {
+            { Loadout.Name, "Test Loadout" },
+            { Mod.LoadoutId, loadoutOther},
+        };
+
+        using var tx = Connection.BeginTransaction();
+        loadout.AddTo(tx);
+        var result = await tx.Commit();
+
+        var loaded = result.Db.Get<Loadout.Model>(result[loadout.Id!.Value]);
+        loaded.Name.Should().Be("Test Loadout");
+
+        loadout.GetFirst(Loadout.Name).Should().Be("Test Loadout");
+
+        Mod.LoadoutId.Get(loaded).Should().Be(result[loadoutOther.Id!.Value], "Sub entity should be added to the transaction");
+    }
+
 }

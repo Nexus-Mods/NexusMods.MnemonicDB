@@ -20,7 +20,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 ///     Interface for a specific attribute
 /// </summary>
 /// <typeparam name="TValueType"></typeparam>
-public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
+public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueType>
 {
     private const int MaxStackAlloc = 128;
     private static Encoding AsciiEncoding = Encoding.ASCII;
@@ -220,6 +220,19 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
         entity.Tx!.Add(entity.Id, this, value);
     }
 
+
+    /// <inheritdoc />
+    public void Add(ITransaction tx, EntityId entityId, TValueType value, bool isRetract)
+    {
+        tx.Add(entityId, this, value, isRetract);
+    }
+
+    /// <inheritdoc />
+    public void Add(ITransaction tx, EntityId entityId, object value, bool isRetract)
+    {
+        tx.Add(entityId, this, (TValueType)value, isRetract);
+    }
+
     /// <summary>
     /// Adds a datom to the active transaction for this entity that retracts the given value from this attribute
     /// </summary>
@@ -375,6 +388,12 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute
         var span = writer.GetSpan(KeyPrefix.Size);
         MemoryMarshal.Write(span, prefix);
         writer.Advance(KeyPrefix.Size);
+    }
+
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return Id.ToString();
     }
 
     /// <summary>

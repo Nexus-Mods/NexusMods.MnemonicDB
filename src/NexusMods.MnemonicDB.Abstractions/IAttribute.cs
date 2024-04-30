@@ -65,9 +65,27 @@ public interface IAttribute
     /// </summary>
     IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx, bool isRetract);
 
+
+    /// <summary>
+    /// Adds the value to the transaction on the given entity/attribute, assumes the value is of the correct type
+    /// </summary>
+    void Add(ITransaction tx, EntityId entityId, object value, bool isRetract);
+
     /// <summary>
     ///     Returns true if the attribute is in the given entity
     /// </summary>
     bool IsIn(IDb db, EntityId id);
+}
 
+
+/// <summary>
+/// An attribute that has a specific value type
+/// </summary>
+/// <typeparam name="TValueType"></typeparam>
+public interface IAttribute<TValueType> : IAttribute
+{
+    /// <summary>
+    /// Adds the value to the transaction on the given entity/attribute
+    /// </summary>
+    public void Add(ITransaction tx, EntityId entityId, TValueType value, bool isRetract);
 }
