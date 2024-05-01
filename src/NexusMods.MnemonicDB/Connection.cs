@@ -25,8 +25,9 @@ public class Connection : IConnection
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    public Connection(ILogger<Connection> logger, IDatomStore store, IEnumerable<IAttribute> declaredAttributes)
+    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAttribute> declaredAttributes)
     {
+        ServiceProvider = provider;
         _store = store;
         // Async startup routines, we'll deref this task when we interact with the store
         _startupTask = Task.Run(async () =>
@@ -47,6 +48,8 @@ public class Connection : IConnection
         });
     }
 
+    /// <inheritdoc />
+    public IServiceProvider ServiceProvider { get; set; }
 
     /// <inheritdoc />
     public IDb Db

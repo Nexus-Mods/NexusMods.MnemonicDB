@@ -49,6 +49,12 @@ public class Entity : IEntityWithTx
     }
 
     /// <summary>
+    /// Get the service provider for the current Database connection, use this to
+    /// resolve dependencies.
+    /// </summary>
+    protected IServiceProvider ServiceProvider => Db.Connection.ServiceProvider;
+
+    /// <summary>
     /// The transaction the entity is currently attached to (if any)
     /// </summary>
     public ITransaction? Tx { get; set; }
