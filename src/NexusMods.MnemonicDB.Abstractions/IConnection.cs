@@ -23,6 +23,11 @@ public interface IConnection
     public IObservable<IDb> Revisions { get; }
 
     /// <summary>
+    /// A service provider that entities can use to resolve their values
+    /// </summary>
+    public IServiceProvider ServiceProvider { get; }
+
+    /// <summary>
     /// Returns a snapshot of the database as of the given transaction id.
     /// </summary>
     public IDb AsOf(TxId txId);
