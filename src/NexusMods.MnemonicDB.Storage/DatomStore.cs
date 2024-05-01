@@ -231,7 +231,7 @@ public class DatomStore : IDatomStore
 
     private EntityId MaybeRemap(ISnapshot snapshot, EntityId id, Dictionary<EntityId, EntityId> remaps, TxId thisTx)
     {
-        if (Ids.GetPartition(id) == Ids.Partition.Tmp)
+        if (Ids.GetPartitionValue(id) == (byte)Ids.Partition.Tmp)
         {
             if (!remaps.TryGetValue(id, out var newId))
             {
