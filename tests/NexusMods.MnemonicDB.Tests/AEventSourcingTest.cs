@@ -39,7 +39,7 @@ public class AMnemonicDBTest : IDisposable
         _backend = new Backend(_registry);
 
         _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
-        Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, _attributes);
+        Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, provider, _attributes);
 
         Logger = provider.GetRequiredService<ILogger<AMnemonicDBTest>>();
     }
@@ -147,6 +147,6 @@ public class AMnemonicDBTest : IDisposable
         _registry = new AttributeRegistry(_attributes);
         _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
 
-        Connection = new Connection(_provider.GetRequiredService<ILogger<Connection>>(), _store, _attributes);
+        Connection = new Connection(_provider.GetRequiredService<ILogger<Connection>>(), _store, _provider, _attributes);
     }
 }
