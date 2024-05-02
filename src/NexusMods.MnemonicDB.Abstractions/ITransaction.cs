@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -24,6 +25,12 @@ public interface ITransaction : IDisposable
     ///     Adds a new datom to the transaction
     /// </summary>
     void Add<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val, bool isRetract = false);
+
+    /// <summary>
+    /// Adds a transactor function to the transaction
+    /// </summary>
+    /// <param name="fn"></param>
+    void Add(ITxFunction fn);
 
     /// <summary>
     ///     Adds a new datom to the transaction, that retracts the value for the given attribute

@@ -1,6 +1,7 @@
 ﻿using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.File;
@@ -360,6 +361,53 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         loadout.GetFirst(Loadout.Name).Should().Be("Test Loadout");
 
         Mod.LoadoutId.Get(loaded).Should().Be(result[loadoutOther.Id!.Value], "Sub entity should be added to the transaction");
+    }
+
+    [Fact]
+    public async Task CanExecuteTxFunctions()
+    {
+        EntityId id;
+        // Create a loadout with inital state
+        using var tx = Connection.BeginTransaction();
+        var loadout = new Loadout.Model(tx)
+        {
+            Name = "Test Loadout: 1"
+        };
+        var result = await tx.Commit();
+        id = result[loadout.Id];
+
+        // Update it 1000 times in "parallel". The actual function is executed serially, but we queue up the updates
+        // in parallel. If this was executed in parallel, we'd see a result other than 1001 at the end due to race conditions
+        List<Task> tasks = [];
+        {
+            for (var i = 0; i < 1000; i++)
+            {
+                tasks.Add(Task.Run(async () =>
+                {
+                    using var txInner = Connection.BeginTransaction();
+                    // Send the function for the update, not update itself
+                    txInner.Add(id, 1, AddToName);
+                    await txInner.Commit();
+                }));
+            }
+        }
+
+        await Task.WhenAll(tasks);
+
+        using var db = Connection.Db;
+        loadout = db.Get<Loadout.Model>(id);
+        loadout.Name.Should().Be("Test Loadout: 1001");
+
+        return;
+
+        // Actual work is done here, we load the entity and update it this is executed serially
+        // by the transaction executor
+        void AddToName(ITransaction tx, IDb db, EntityId eid, int amount)
+        {
+            var loadout = db.Get<Loadout.Model>(eid);
+            var oldAmount = int.Parse(loadout.Name.Split(":")[1].Trim());
+            tx.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + amount)}");
+        }
     }
 
 }

@@ -9,6 +9,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.Storage;
 
 namespace NexusMods.MnemonicDB;
@@ -147,11 +148,17 @@ public class Connection : IConnection
         }
     }
 
-    internal async Task<ICommitResult> Transact(IndexSegment datoms)
+    internal async Task<ICommitResult> Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions)
     {
         if (!_startupTask.IsCompleted)
             await _startupTask;
-        var newTx = await _store.Transact(datoms);
+        StoreResult newTx;
+        
+        if (txFunctions == null)
+            newTx = await _store.Transact(datoms, txFunctions);
+        else
+            newTx = await _store.Transact(datoms, txFunctions, snapshot => new Db(snapshot, this, TxId, (AttributeRegistry)_store.Registry));
+
         var result = new CommitResult(new Db(newTx.Snapshot, this, newTx.AssignedTxId, (AttributeRegistry)_store.Registry)
             , newTx.Remaps);
         return result;
