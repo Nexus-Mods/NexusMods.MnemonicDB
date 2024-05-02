@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
 namespace NexusMods.MnemonicDB;
 
@@ -11,6 +13,7 @@ namespace NexusMods.MnemonicDB;
 internal class Transaction(Connection connection, IAttributeRegistry registry) : ITransaction
 {
     private readonly IndexSegmentBuilder _datoms = new(registry);
+    private HashSet<ITxFunction>? _txFunctions = null; // No reason to create the hashset if we don't need it
     private ulong _tempId = Ids.MinId(Ids.Partition.Tmp) + 1;
     private bool _committed = false;
 
@@ -30,10 +33,18 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
         _datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
     }
 
+    public void Add(ITxFunction fn)
+    {
+        if (_committed)
+            throw new InvalidOperationException("Transaction has already been committed");
+        _txFunctions ??= [];
+        _txFunctions?.Add(fn);
+    }
+
     public async Task<ICommitResult> Commit()
     {
         _committed = true;
-        return await connection.Transact(_datoms.Build());
+        return await connection.Transact(_datoms.Build(), _txFunctions);
     }
 
     /// <inheritdoc />

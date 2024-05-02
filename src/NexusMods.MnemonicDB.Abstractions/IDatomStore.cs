@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -29,7 +30,7 @@ public interface IDatomStore : IDisposable
     /// <summary>
     ///     Transacts (adds) the given datoms into the store.
     /// </summary>
-    public Task<StoreResult> Transact(IndexSegment datoms);
+    public Task<StoreResult> Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null, Func<ISnapshot, IDb>? databaseFactory = null);
 
     /// <summary>
     /// Executes an empty transaction. Returns a StoreResult valid asof the latest

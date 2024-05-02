@@ -11,6 +11,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.Storage.DatomStorageStructures;
 using Reloaded.Memory.Extensions;
@@ -107,9 +108,15 @@ public class DatomStore : IDatomStore
 
 
     /// <inheritdoc />
-    public async Task<StoreResult> Transact(IndexSegment datoms)
+    public async Task<StoreResult> Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null,
+        Func<ISnapshot, IDb>? factoryFn = null)
     {
-        var pending = new PendingTransaction { Data = datoms };
+        var pending = new PendingTransaction
+        {
+            Data = datoms,
+            TxFunctions = txFunctions,
+            DatabaseFactory = factoryFn
+        };
         if (!_txChannel.Writer.TryWrite(pending))
             throw new InvalidOperationException("Failed to write to the transaction channel");
 
@@ -119,7 +126,12 @@ public class DatomStore : IDatomStore
     /// <inheritdoc />
     public async Task<StoreResult> Sync()
     {
-        var pending = new PendingTransaction { Data = new IndexSegment() };
+        var pending = new PendingTransaction
+        {
+            Data = new IndexSegment(),
+            TxFunctions = null,
+            DatabaseFactory = null
+        };
         if (!_txChannel.Writer.TryWrite(pending))
             throw new InvalidOperationException("Failed to write to the transaction channel");
 
@@ -140,7 +152,7 @@ public class DatomStore : IDatomStore
             datoms.Add(EntityId.From(attr.AttrEntityId.Value), BuiltInAttributes.ValueType, attr.LowLevelType, TxId.Tmp, false);
         }
 
-        await Transact(datoms.Build());
+        await Transact(datoms.Build(), null, null);
 
         _registry.Populate(newAttrsArray);
     }
@@ -171,7 +183,7 @@ public class DatomStore : IDatomStore
                 try
                 {
                     // Sync transactions have no data, and are used to verify that the store is up to date.
-                    if (!pendingTransaction.Data.Valid)
+                    if (!pendingTransaction.Data.Valid && pendingTransaction.TxFunctions == null)
                     {
                         var storeResult = new StoreResult
                         {
@@ -213,7 +225,7 @@ public class DatomStore : IDatomStore
             if (lastTx.Value == TxId.MinValue)
             {
                 _logger.LogInformation("Bootstrapping the datom store no existing state found");
-                var _ = await Transact(BuiltInAttributes.InitialDatoms(_registry));
+                var _ = await Transact(BuiltInAttributes.InitialDatoms(_registry), null);
                 return;
             }
 
@@ -275,7 +287,26 @@ public class DatomStore : IDatomStore
         secondaryBuilder.Add(txId, BuiltInAttributes.TxTimestanp,
             DateTime.UtcNow);
 
-        var datoms = pendingTransaction.Data.Concat(secondaryBuilder.Build());
+        if (pendingTransaction.TxFunctions != null)
+        {
+            try
+            {
+                var db = pendingTransaction.DatabaseFactory!(currentSnapshot);
+                var tx = new InternalTransaction(secondaryBuilder);
+                foreach (var fn in pendingTransaction.TxFunctions)
+                {
+                    fn.Apply(tx, db);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to apply transaction functions");
+                throw;
+            }
+        }
+
+        var secondaryData = secondaryBuilder.Build();
+        var datoms = pendingTransaction.Data.Concat(secondaryData);
 
         foreach (var datom in datoms)
         {
@@ -335,8 +366,8 @@ public class DatomStore : IDatomStore
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("{TxId} ({Count} datoms, {Size}) prepared in {Elapsed}ms, written in {WriteElapsed}ms",
                 thisTx,
-                pendingTransaction.Data.Count,
-                pendingTransaction.Data.DataSize,
+                pendingTransaction.Data.Count + secondaryData.Count,
+                pendingTransaction.Data.DataSize + secondaryData.DataSize,
                 swPrepare.ElapsedMilliseconds - swWrite.ElapsedMilliseconds,
                 swWrite.ElapsedMilliseconds);
 
