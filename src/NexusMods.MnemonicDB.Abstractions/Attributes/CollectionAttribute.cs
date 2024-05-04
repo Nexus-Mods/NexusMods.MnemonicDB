@@ -25,7 +25,7 @@ public abstract class CollectionAttribute<TValue, TLowLevel>(ValueTags tag, stri
             if (datom.A != dbId) continue;
 
             var start = i;
-            while (i < segment.Count - 1 && segment[i].A == dbId)
+            while (i < segment.Count && segment[i].A == dbId)
             {
                 i++;
             }

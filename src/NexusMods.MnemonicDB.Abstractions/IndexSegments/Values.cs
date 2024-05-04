@@ -36,7 +36,7 @@ public struct Values<TValueType, TLowLevelType>(IndexSegment segment, int start,
     /// <inheritdoc />
     public IEnumerator<TValueType> GetEnumerator()
     {
-        for (var i = start; i < end; i++)
+        for (var i = 0; i < Count; i++)
         {
             yield return this[i];
         }
