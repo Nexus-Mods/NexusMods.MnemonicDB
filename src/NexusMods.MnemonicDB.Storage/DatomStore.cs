@@ -41,6 +41,8 @@ public class DatomStore : IDatomStore
     private readonly Task _startupTask;
     private TxId _asOfTx = TxId.MinValue;
 
+    private static readonly TimeSpan TransactionTimeout = TimeSpan.FromSeconds(10);
+
     /// <summary>
     /// Cached version of the registry ID to avoid the overhead of looking it up every time
     /// </summary>
@@ -111,6 +113,7 @@ public class DatomStore : IDatomStore
     public async Task<StoreResult> Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null,
         Func<ISnapshot, IDb>? factoryFn = null)
     {
+
         var pending = new PendingTransaction
         {
             Data = datoms,
@@ -120,7 +123,15 @@ public class DatomStore : IDatomStore
         if (!_txChannel.Writer.TryWrite(pending))
             throw new InvalidOperationException("Failed to write to the transaction channel");
 
-        return await pending.CompletionSource.Task;
+        try
+        {
+            return await pending.CompletionSource.Task.WaitAsync(TransactionTimeout);
+        }
+        catch (TimeoutException ex)
+        {
+            _logger.LogError(ex, "After waiting for transaction to complete for {TimeoutSpan}", TransactionTimeout);
+            throw;
+        }
     }
 
     /// <inheritdoc />
@@ -202,6 +213,7 @@ public class DatomStore : IDatomStore
                 }
                 catch (Exception ex)
                 {
+                    _logger.LogError(ex, "While commiting transaction");
                     pendingTransaction.CompletionSource.TrySetException(ex);
                 }
             }
