@@ -38,13 +38,13 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Update="xunit" Version="2.7.0"/>
-        <PackageReference Update="xunit.runner.visualstudio" Version="2.5.7">
+        <PackageReference Update="xunit" Version="2.8.0" />
+        <PackageReference Update="xunit.runner.visualstudio" Version="2.8.0">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Update="Xunit.SkippableFact" Version="1.4.13"/>
-        <PackageReference Update="Xunit.DependencyInjection" Version="9.0.1"/>
+        <PackageReference Update="Xunit.DependencyInjection" Version="9.2.1" />
         <PackageReference Update="Xunit.DependencyInjection.Logging" Version="9.0.0"/>
         <PackageReference Update="Xunit.DependencyInjection.SkippableFact" Version="9.0.0"/>
         <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.9.0"/>
