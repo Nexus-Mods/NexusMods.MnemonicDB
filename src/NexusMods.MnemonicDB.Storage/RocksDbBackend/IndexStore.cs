@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using DynamicData;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
@@ -20,6 +22,15 @@ where TComparator : IDatomComparator
     private NameDelegate _nameDelegate = null!;
     private IntPtr _namePtr;
     private ColumnFamilyOptions _options = null!;
+
+    /// <summary>
+    /// This is a bit of a hack, but we throw all our interop delegates in here, and then they
+    /// live for the entire life of the application. It seems that RocksDB will occasionally call
+    /// delegates after we think we've disposed of the handles. It really doesn't matter as these
+    /// things will never amount to more than a few dozen objects.
+    /// </summary>
+    /// <returns></returns>
+    private static List<object> _roots = new ();
 
     public IndexStore(string handleName, IndexType type, AttributeRegistry registry)
     {
@@ -46,6 +57,9 @@ where TComparator : IDatomComparator
                 return TComparator.Compare((byte*)a, (int)alen, (byte*)b, (int)blen);
             }
         };
+
+        // Save these as roots so they never get GC'd
+        _roots.Add((_nameDelegate, _destructorDelegate, _comparatorDelegate));
 
         _comparator =
             Native.Instance.rocksdb_comparator_create(IntPtr.Zero, _destructorDelegate, _comparatorDelegate,

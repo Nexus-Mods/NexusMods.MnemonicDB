@@ -41,6 +41,8 @@ public class DatomStore : IDatomStore
     private readonly Task _startupTask;
     private TxId _asOfTx = TxId.MinValue;
 
+    private static readonly TimeSpan TransactionTimeout = TimeSpan.FromMinutes(120);
+
     /// <summary>
     /// Cached version of the registry ID to avoid the overhead of looking it up every time
     /// </summary>
@@ -111,6 +113,7 @@ public class DatomStore : IDatomStore
     public async Task<StoreResult> Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null,
         Func<ISnapshot, IDb>? factoryFn = null)
     {
+
         var pending = new PendingTransaction
         {
             Data = datoms,
@@ -120,22 +123,20 @@ public class DatomStore : IDatomStore
         if (!_txChannel.Writer.TryWrite(pending))
             throw new InvalidOperationException("Failed to write to the transaction channel");
 
-        return await pending.CompletionSource.Task;
+        var task = pending.CompletionSource.Task;
+        if (await Task.WhenAny(task, Task.Delay(TransactionTimeout)) == task)
+        {
+            return await task;
+        }
+        _logger.LogError("Transaction didn't complete after {Timeout}", TransactionTimeout);
+        throw new TimeoutException($"Transaction didn't complete after {TransactionTimeout}");
+
     }
 
     /// <inheritdoc />
     public async Task<StoreResult> Sync()
     {
-        var pending = new PendingTransaction
-        {
-            Data = new IndexSegment(),
-            TxFunctions = null,
-            DatabaseFactory = null
-        };
-        if (!_txChannel.Writer.TryWrite(pending))
-            throw new InvalidOperationException("Failed to write to the transaction channel");
-
-        return await pending.CompletionSource.Task;
+        return await Transact(new IndexSegment());
     }
 
     public IObservable<(TxId TxId, ISnapshot Snapshot)> TxLog => _updatesSubject;
@@ -202,6 +203,7 @@ public class DatomStore : IDatomStore
                 }
                 catch (Exception ex)
                 {
+                    _logger.LogError(ex, "While commiting transaction");
                     pendingTransaction.CompletionSource.TrySetException(ex);
                 }
             }
