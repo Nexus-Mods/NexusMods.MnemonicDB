@@ -27,7 +27,7 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
     public void DeclareIndex<TComparator>(IndexType name)
         where TComparator : IDatomComparator
     {
-        var indexStore = new IndexStore<TComparator>(name.ToString(), name, registry);
+        var indexStore = new IndexStore<TComparator>(name.ToString(), name);
         _stores.Add(name, indexStore);
 
         var index = new Index<TComparator>(indexStore);

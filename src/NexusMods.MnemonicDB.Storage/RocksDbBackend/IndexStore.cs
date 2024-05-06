@@ -1,23 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using DynamicData;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-public class IndexStore<TComparator> : IRocksDBIndexStore
-where TComparator : IDatomComparator
+public class IndexStore<TComparator>(string handleName, IndexType type) : IRocksDBIndexStore
+    where TComparator : IDatomComparator
 {
-    private readonly string _handleName;
-    private readonly AttributeRegistry _registry;
     private IntPtr _comparator;
     private CompareDelegate _comparatorDelegate = null!;
-    private RocksDb _db = null!;
     private DestructorDelegate _destructorDelegate = null!;
     private NameDelegate _nameDelegate = null!;
     private IntPtr _namePtr;
@@ -30,27 +25,20 @@ where TComparator : IDatomComparator
     /// things will never amount to more than a few dozen objects.
     /// </summary>
     /// <returns></returns>
-    private static List<object> _roots = new ();
-
-    public IndexStore(string handleName, IndexType type, AttributeRegistry registry)
-    {
-        Type = type;
-        _registry = registry;
-        _handleName = handleName;
-    }
+    private static readonly List<object> Roots = new ();
 
     public ColumnFamilyHandle Handle { get; private set; } = null!;
 
-    public IndexType Type { get; }
+    public IndexType Type { get; } = type;
 
     public void SetupColumnFamily(IIndex index, ColumnFamilies columnFamilies)
     {
         _options = new ColumnFamilyOptions();
-        _namePtr = Marshal.StringToHGlobalAnsi(_handleName);
+        _namePtr = Marshal.StringToHGlobalAnsi(handleName);
 
         _nameDelegate = _ => _namePtr;
-        _destructorDelegate = _ => { };
-        _comparatorDelegate = (_, a, alen, b, blen) =>
+        _destructorDelegate = static _ => { };
+        _comparatorDelegate = static (_, a, alen, b, blen) =>
         {
             unsafe
             {
@@ -59,19 +47,18 @@ where TComparator : IDatomComparator
         };
 
         // Save these as roots so they never get GC'd
-        _roots.Add((_nameDelegate, _destructorDelegate, _comparatorDelegate));
+        Roots.Add((_nameDelegate, _destructorDelegate, _comparatorDelegate));
 
         _comparator =
             Native.Instance.rocksdb_comparator_create(IntPtr.Zero, _destructorDelegate, _comparatorDelegate,
                 _nameDelegate);
         _options.SetComparator(_comparator);
 
-        columnFamilies.Add(_handleName, _options);
+        columnFamilies.Add(handleName, _options);
     }
 
     public void PostOpenSetup(RocksDb db)
     {
-        _db = db;
-        Handle = db.GetColumnFamily(_handleName);
+        Handle = db.GetColumnFamily(handleName);
     }
 }
