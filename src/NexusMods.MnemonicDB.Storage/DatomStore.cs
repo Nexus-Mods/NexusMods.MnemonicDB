@@ -136,16 +136,7 @@ public class DatomStore : IDatomStore
     /// <inheritdoc />
     public async Task<StoreResult> Sync()
     {
-        var pending = new PendingTransaction
-        {
-            Data = new IndexSegment(),
-            TxFunctions = null,
-            DatabaseFactory = null
-        };
-        if (!_txChannel.Writer.TryWrite(pending))
-            throw new InvalidOperationException("Failed to write to the transaction channel");
-
-        return await pending.CompletionSource.Task;
+        return await Transact(new IndexSegment());
     }
 
     public IObservable<(TxId TxId, ISnapshot Snapshot)> TxLog => _updatesSubject;
