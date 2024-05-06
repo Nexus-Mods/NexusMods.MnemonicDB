@@ -41,7 +41,7 @@ public class DatomStore : IDatomStore
     private readonly Task _startupTask;
     private TxId _asOfTx = TxId.MinValue;
 
-    private static readonly TimeSpan TransactionTimeout = TimeSpan.FromSeconds(10);
+    private static readonly TimeSpan TransactionTimeout = TimeSpan.FromMinutes(120);
 
     /// <summary>
     /// Cached version of the registry ID to avoid the overhead of looking it up every time
