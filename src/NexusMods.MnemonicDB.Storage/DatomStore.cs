@@ -123,15 +123,14 @@ public class DatomStore : IDatomStore
         if (!_txChannel.Writer.TryWrite(pending))
             throw new InvalidOperationException("Failed to write to the transaction channel");
 
-        try
+        var task = pending.CompletionSource.Task;
+        if (await Task.WhenAny(task, Task.Delay(TransactionTimeout)) == task)
         {
-            return await pending.CompletionSource.Task.WaitAsync(TransactionTimeout);
+            return await task;
         }
-        catch (TimeoutException ex)
-        {
-            _logger.LogError(ex, "After waiting for transaction to complete for {TimeoutSpan}", TransactionTimeout);
-            throw;
-        }
+        _logger.LogError("Transaction didn't complete after {Timeout}", TransactionTimeout);
+        throw new TimeoutException($"Transaction didn't complete after {TransactionTimeout}");
+
     }
 
     /// <inheritdoc />
