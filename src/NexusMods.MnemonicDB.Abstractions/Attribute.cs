@@ -66,6 +66,14 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
         throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
 
+    /// <summary>
+    /// Converts a low-level value to a high-level value
+    /// </summary>
+    protected virtual TValueType FromLowLevel(uint value, ValueTags tags)
+    {
+        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
+    }
+
 
     /// <summary>
     /// Converts a low-level value to a high-level value
@@ -331,6 +339,7 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
             ValueTags.Null => NullFromLowLevel(),
             ValueTags.UInt8 => FromLowLevel(ReadUnmanaged<byte>(rest), tag),
             ValueTags.UInt16 => FromLowLevel(ReadUnmanaged<ushort>(rest), tag),
+            ValueTags.UInt32 => FromLowLevel(ReadUnmanaged<uint>(rest), tag),
             ValueTags.UInt64 => FromLowLevel(ReadUnmanaged<ulong>(rest), tag),
             ValueTags.UInt128 => FromLowLevel(ReadUnmanaged<UInt128>(rest), tag),
             ValueTags.Int16 => FromLowLevel(ReadUnmanaged<short>(rest), tag),

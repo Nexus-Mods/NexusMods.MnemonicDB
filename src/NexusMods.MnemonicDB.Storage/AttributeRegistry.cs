@@ -5,6 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using Reloaded.Memory.Extensions;
 
@@ -69,6 +70,7 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
     /// <inheritdoc />
     public RegistryId Id { get; }
 
+    /// <inheritdoc />
     public IReadDatom Resolve(ReadOnlySpan<byte> datom)
     {
         var c = MemoryMarshal.Read<KeyPrefix>(datom);
@@ -77,11 +79,18 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
         return attr.Resolve(c.E, c.A, datom.SliceFast(KeyPrefix.Size), c.T, c.IsRetract);
     }
 
+    /// <inheritdoc />
     public void Populate(DbAttribute[] attributes)
     {
         foreach (var dbAttribute in attributes)
         {
-            var instance = _attributesBySymbol[dbAttribute.UniqueId];
+            // Do a try/get here because an attribute may not exist in code that exists in the database
+            if (!_attributesBySymbol.TryGetValue(dbAttribute.UniqueId, out var instance))
+            {
+                instance = UnknownAttribute.Create(dbAttribute);
+                _attributesBySymbol[dbAttribute.UniqueId] = instance;
+            }
+
             instance.SetDbId(Id, dbAttribute.AttrEntityId);
             _attributes[dbAttribute.AttrEntityId.Value] = instance;
         }
