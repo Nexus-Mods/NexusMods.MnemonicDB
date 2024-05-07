@@ -364,6 +364,24 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     }
 
     [Fact]
+    public async Task CanWorkWithMarkerAttributes()
+    {
+        var mod = new TempEntity
+        {
+            { Mod.Name, "Test Mod" },
+            Mod.IsMarked,
+        };
+
+        using var tx = Connection.BeginTransaction();
+        mod.AddTo(tx);
+        var result = await tx.Commit();
+
+        var reloaded = result.Db.Get<Mod.Model>(result[mod.Id!.Value]);
+        reloaded.IsMarked.Should().BeTrue();
+
+    }
+
+    [Fact]
     public async Task CanExecuteTxFunctions()
     {
         EntityId id;

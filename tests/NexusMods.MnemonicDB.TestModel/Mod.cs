@@ -14,6 +14,11 @@ public static class Mod
     public static readonly UriAttribute Source = new(Namespace, "Source");
     public static readonly ReferenceAttribute LoadoutId = new(Namespace, "Loadout");
 
+    /// <summary>
+    /// Test attribute for testing marker attributes.
+    /// </summary>
+    public static readonly MarkerAttribute IsMarked = new(Namespace, "IsMarked");
+
     public class Model(ITransaction tx) : Entity(tx)
     {
         public string Name
@@ -26,6 +31,11 @@ public static class Mod
         {
             get => Mod.Source.Get(this);
             init => Mod.Source.Add(this, value);
+        }
+        public bool IsMarked
+        {
+            get => Mod.IsMarked.Contains(this);
+            set => Mod.IsMarked.Add(this);
         }
 
         public EntityId LoadoutId

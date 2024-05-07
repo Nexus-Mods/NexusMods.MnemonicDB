@@ -246,6 +246,9 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
     {
         switch (value)
         {
+            case Null:
+                WriteNull(writer);
+                break;
             case byte val:
                 WriteUnmanaged(val, writer);
                 break;
@@ -293,6 +296,13 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
         }
     }
 
+    private void WriteNull<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
+    {
+        var span = writer.GetSpan(1);
+        span[0] = (byte)ValueTags.Null;
+        writer.Advance(1);
+    }
+
     private void WriteAscii<TWriter>(string s, TWriter writer) where TWriter : IBufferWriter<byte>
     {
         var size = s.Length;
@@ -318,6 +328,7 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
         Debug.Assert(tag == LowLevelType, "Tag mismatch");
         return tag switch
         {
+            ValueTags.Null => NullFromLowLevel(),
             ValueTags.UInt8 => FromLowLevel(ReadUnmanaged<byte>(rest), tag),
             ValueTags.UInt16 => FromLowLevel(ReadUnmanaged<ushort>(rest), tag),
             ValueTags.UInt64 => FromLowLevel(ReadUnmanaged<ulong>(rest), tag),
@@ -336,6 +347,12 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
             ValueTags.HashedBlob => FromLowLevel(rest.SliceFast(sizeof(ulong)), tag),
             _ => throw new UnsupportedLowLevelReadType(tag)
         };
+    }
+
+
+    private TValueType NullFromLowLevel()
+    {
+        return default!;
     }
 
     private string ReadUtf8(ReadOnlySpan<byte> span)
