@@ -1,6 +1,9 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using DynamicData;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
 namespace NexusMods.MnemonicDB.Abstractions.Models;
 
@@ -23,13 +26,20 @@ public class TempEntity : IEnumerable<(IAttribute, object)>
         _members.Add((attribute, value!));
     }
 
-
     /// <summary>
     /// Adds an attribute/value to the entity.
     /// </summary>
     public void Add(IAttribute<EntityId> attribute, TempEntity value)
     {
         _members.Add((attribute, value));
+    }
+
+    /// <summary>
+    /// Adds a marker attribute to the entity.
+    /// </summary>
+    public void Add(MarkerAttribute attr)
+    {
+        _members.Add((attr, new Null()));
     }
 
     /// <summary>
