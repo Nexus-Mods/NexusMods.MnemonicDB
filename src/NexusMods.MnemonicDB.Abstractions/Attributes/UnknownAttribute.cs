@@ -159,7 +159,7 @@ public static class UnknownAttribute
             ValueTags.Utf8Insensitive => new UnknownAttribute<string>(dbAttribute),
             ValueTags.Blob => new UnknownAttribute<byte[]>(dbAttribute),
             ValueTags.HashedBlob => new UnknownAttribute<byte[]>(dbAttribute),
-            ValueTags.Reference => new UnknownAttribute<string>(dbAttribute),
+            ValueTags.Reference => new UnknownAttribute<EntityId>(dbAttribute),
             _ => throw new ArgumentOutOfRangeException(nameof(dbAttribute.LowLevelType), dbAttribute.LowLevelType, null)
         };
     }
