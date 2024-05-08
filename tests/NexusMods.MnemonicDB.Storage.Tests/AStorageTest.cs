@@ -59,6 +59,7 @@ public abstract class AStorageTest : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        await ((DatomStore)DatomStore).StartAsync(CancellationToken.None);
     }
 
     public Task DisposeAsync()

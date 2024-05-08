@@ -4,8 +4,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
@@ -18,13 +20,14 @@ using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Storage;
 
-public class DatomStore : IDatomStore
+public class DatomStore : IDatomStore, IHostedService
 {
     private readonly IIndex _aevtCurrent;
     private readonly IIndex _aevtHistory;
     private readonly IIndex _avetCurrent;
     private readonly IIndex _avetHistory;
     private readonly IStoreBackend _backend;
+    private ISnapshot? _currentSnapshot;
     private readonly IIndex _eavtCurrent;
     private readonly IIndex _eavtHistory;
     private readonly ILogger<DatomStore> _logger;
@@ -38,7 +41,6 @@ public class DatomStore : IDatomStore
     private readonly IIndex _vaetHistory;
     private readonly PooledMemoryBufferWriter _writer;
     private readonly PooledMemoryBufferWriter _prevWriter;
-    private readonly Task _startupTask;
     private TxId _asOfTx = TxId.MinValue;
 
     private static readonly TimeSpan TransactionTimeout = TimeSpan.FromMinutes(120);
@@ -53,9 +55,16 @@ public class DatomStore : IDatomStore
     /// </summary>
     private NextIdCache _nextIdCache;
 
+    private bool _isStarted = false;
 
+    /// <summary>
+    /// The task consuming and logging transactions
+    /// </summary>
+    private Task? _txTask;
 
-
+    /// <summary>
+    /// DI constructor
+    /// </summary>
     public DatomStore(ILogger<DatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings,
         IStoreBackend backend)
     {
@@ -98,8 +107,6 @@ public class DatomStore : IDatomStore
         registry.Populate(BuiltInAttributes.Initial);
 
         _txChannel = Channel.CreateUnbounded<PendingTransaction>();
-        _startupTask = Bootstrap();
-        Task.Run(ConsumeTransactions);
     }
 
     /// <inheritdoc />
@@ -107,7 +114,6 @@ public class DatomStore : IDatomStore
 
     /// <inheritdoc />
     public IAttributeRegistry Registry => _registry;
-
 
     /// <inheritdoc />
     public async Task<StoreResult> Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null,
@@ -161,9 +167,8 @@ public class DatomStore : IDatomStore
     /// <inheritdoc />
     public ISnapshot GetSnapshot()
     {
-        if (!_startupTask.IsCompleted)
-            _startupTask.Wait();
-        return _backend.GetSnapshot();
+        Debug.Assert(_currentSnapshot != null, "Current snapshot should not be null, this should never happen");
+        return _currentSnapshot!;
     }
 
     /// <inheritdoc />
@@ -227,13 +232,22 @@ public class DatomStore : IDatomStore
             if (lastTx.Value == TxId.MinValue)
             {
                 _logger.LogInformation("Bootstrapping the datom store no existing state found");
-                var _ = await Transact(BuiltInAttributes.InitialDatoms(_registry), null);
+                var pending = new PendingTransaction
+                {
+                    Data = BuiltInAttributes.InitialDatoms(_registry),
+                    TxFunctions = null,
+                    DatabaseFactory = null
+                };
+                // Call directly into `Log` as the transaction channel is not yet set up
+                Log(pending, out _);
+                _currentSnapshot = _backend.GetSnapshot();
                 return;
             }
 
             _logger.LogInformation("Bootstrapping the datom store, existing state found, last tx: {LastTx}",
                 lastTx.Value.ToString("x"));
             _asOfTx = TxId.From(lastTx.Value);
+            _currentSnapshot = snapshot;
         }
         catch (Exception ex)
         {
@@ -273,7 +287,7 @@ public class DatomStore : IDatomStore
 
     private void Log(PendingTransaction pendingTransaction, out StoreResult result)
     {
-        var currentSnapshot = _backend.GetSnapshot();
+        var currentSnapshot = _currentSnapshot ?? _backend.GetSnapshot();
         var thisTx = TxId.From(_nextIdCache.NextId(currentSnapshot, (byte)Ids.Partition.Tx).Value);
 
         var remaps = new Dictionary<EntityId, EntityId>();
@@ -375,11 +389,12 @@ public class DatomStore : IDatomStore
 
         _asOfTx = thisTx;
 
+        _currentSnapshot = _backend.GetSnapshot();
         result = new StoreResult
         {
             AssignedTxId = thisTx,
             Remaps = remaps,
-            Snapshot = _backend.GetSnapshot()
+            Snapshot = _currentSnapshot
         };
     }
 
@@ -532,4 +547,23 @@ public class DatomStore : IDatomStore
 
 
     #endregion
+
+    /// <inheritdoc />
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        lock (this)
+        {
+            if (_isStarted) return;
+            _isStarted = true;
+        }
+
+        await Bootstrap();
+        _txTask = Task.Run(ConsumeTransactions);
+    }
+
+    /// <inheritdoc />
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
 }
