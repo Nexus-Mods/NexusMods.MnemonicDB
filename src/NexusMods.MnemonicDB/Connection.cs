@@ -182,6 +182,7 @@ public class Connection : IConnection, IHostedService
     /// <inheritdoc />
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        // Nothing to do
+        return Task.CompletedTask;
     }
 }
