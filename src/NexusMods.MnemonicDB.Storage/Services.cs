@@ -10,8 +10,9 @@ public static class Services
     public static IServiceCollection AddMnemonicDBStorage(this IServiceCollection services)
     {
         services.AddAttributeCollection(typeof(BuiltInAttributes));
-        services.AddSingleton<IDatomStore, DatomStore>();
         services.AddSingleton<AttributeRegistry>();
+        services.AddSingleton<IDatomStore, DatomStore>();
+        services.AddSingleton<DatomStore>(s => (DatomStore)s.GetRequiredService<IDatomStore>());
         return services;
     }
 

@@ -2,8 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
@@ -17,11 +18,12 @@ namespace NexusMods.MnemonicDB;
 /// <summary>
 ///     Main connection class, co-ordinates writes and immutable reads
 /// </summary>
-public class Connection : IConnection
+public class Connection : IConnection, IHostedService
 {
     private readonly IDatomStore _store;
-    private IDb _db = null!;
-    private readonly Task _startupTask;
+    private IDb? _db;
+    private readonly IEnumerable<IAttribute> _declaredAttributes;
+    private readonly ILogger<Connection> _logger;
 
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
@@ -29,24 +31,10 @@ public class Connection : IConnection
     public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAttribute> declaredAttributes)
     {
         ServiceProvider = provider;
+        _logger = logger;
+        _declaredAttributes = declaredAttributes;
         _store = store;
-        // Async startup routines, we'll deref this task when we interact with the store
-        _startupTask = Task.Run(async () =>
-        {
-            try
-            {
-                var storeResult = await AddMissingAttributes(declaredAttributes);
-                _db = new Db(storeResult.Snapshot, this, storeResult.AssignedTxId, (AttributeRegistry)_store.Registry);
-                _store.TxLog.Subscribe(log =>
-                {
-                    _db = new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry);
-                });
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Failed to add missing attributes");
-            }
-        });
+
     }
 
     /// <inheritdoc />
@@ -57,10 +45,15 @@ public class Connection : IConnection
     {
         get
         {
-            if (!_startupTask.IsCompleted)
-                _startupTask.Wait();
-            return _db;
+            if (_db == null)
+                ThrowNullDb();
+            return _db!;
         }
+    }
+
+    private static void ThrowNullDb()
+    {
+        throw new InvalidOperationException("Connection not started, did you forget to start the hosted service?");
     }
 
 
@@ -70,8 +63,6 @@ public class Connection : IConnection
     /// <inheritdoc />
     public IDb AsOf(TxId txId)
     {
-        if (!_startupTask.IsCompleted)
-            _startupTask.Wait();
         var snapshot = new AsOfSnapshot(_store.GetSnapshot(), txId, (AttributeRegistry)_store.Registry);
         return new Db(snapshot, this, txId, (AttributeRegistry)_store.Registry);
     }
@@ -79,8 +70,6 @@ public class Connection : IConnection
     /// <inheritdoc />
     public ITransaction BeginTransaction()
     {
-        if (!_startupTask.IsCompleted)
-            _startupTask.Wait();
         return new Transaction(this, _store.Registry);
     }
 
@@ -150,10 +139,8 @@ public class Connection : IConnection
 
     internal async Task<ICommitResult> Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions)
     {
-        if (!_startupTask.IsCompleted)
-            await _startupTask;
         StoreResult newTx;
-        
+
         if (txFunctions == null)
             newTx = await _store.Transact(datoms, txFunctions);
         else
@@ -162,5 +149,31 @@ public class Connection : IConnection
         var result = new CommitResult(new Db(newTx.Snapshot, this, newTx.AssignedTxId, (AttributeRegistry)_store.Registry)
             , newTx.Remaps);
         return result;
+    }
+
+    /// <inheritdoc />
+    public async Task StartAsync(CancellationToken cancellationToken)
+    {
+        // Won't complete until the DatomStoe has properly started
+        await _store.Sync();
+        try
+        {
+            var storeResult = await AddMissingAttributes(_declaredAttributes);
+            _db = new Db(storeResult.Snapshot, this, storeResult.AssignedTxId, (AttributeRegistry)_store.Registry);
+            _store.TxLog.Subscribe(log =>
+            {
+                _db = new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry);
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to add missing attributes");
+        }
+    }
+
+    /// <inheritdoc />
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
     }
 }
