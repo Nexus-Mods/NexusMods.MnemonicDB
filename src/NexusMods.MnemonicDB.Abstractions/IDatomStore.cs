@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -49,4 +50,9 @@ public interface IDatomStore : IDisposable
     ///     Create a snapshot of the current state of the store.
     /// </summary>
     ISnapshot GetSnapshot();
+
+    /// <summary>
+    /// Starts the store, this is idempotent so calling it multiple times is safe
+    /// </summary>
+    Task StartAsync(CancellationToken none);
 }

@@ -24,6 +24,7 @@ public class Connection : IConnection, IHostedService
     private IDb? _db;
     private readonly IEnumerable<IAttribute> _declaredAttributes;
     private readonly ILogger<Connection> _logger;
+    private bool _isStarted = false;
 
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
@@ -154,8 +155,15 @@ public class Connection : IConnection, IHostedService
     /// <inheritdoc />
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        // Won't complete until the DatomStoe has properly started
-        await _store.Sync();
+        lock (this)
+        {
+            if (_isStarted)
+                return;
+            _isStarted = true;
+        }
+
+        // Won't complete until the DatomStore has properly started
+        await _store.StartAsync(CancellationToken.None);
         try
         {
             var storeResult = await AddMissingAttributes(_declaredAttributes);

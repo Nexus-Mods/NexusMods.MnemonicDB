@@ -55,6 +55,8 @@ public class DatomStore : IDatomStore, IHostedService
     /// </summary>
     private NextIdCache _nextIdCache;
 
+    private bool _isStarted = false;
+
     /// <summary>
     /// The task consuming and logging transactions
     /// </summary>
@@ -549,6 +551,12 @@ public class DatomStore : IDatomStore, IHostedService
     /// <inheritdoc />
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        lock (this)
+        {
+            if (_isStarted) return;
+            _isStarted = true;
+        }
+
         await Bootstrap();
         _txTask = Task.Run(ConsumeTransactions);
     }

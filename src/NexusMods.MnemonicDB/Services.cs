@@ -14,6 +14,7 @@ public static class Services
     public static IServiceCollection AddMnemonicDB(this IServiceCollection services)
     {
         services.AddSingleton<IConnection, Connection>();
+        services.AddHostedService<Connection>(s => (Connection)s.GetRequiredService<IConnection>());
         return services;
     }
 }
