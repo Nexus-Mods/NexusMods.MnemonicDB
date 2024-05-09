@@ -1,0 +1,465 @@
+﻿[
+  {
+    Type: IArchiveFile,
+    Parents: [
+      IFile,
+      IModel
+    ],
+    Attributes: [
+      {
+        LowLevelType: Utf8Insensitive,
+        Id: {
+          Namespace: NexusMods.MnemonicDB.TestModel.ArchiveFile,
+          Name: Path,
+          Id: NexusMods.MnemonicDB.TestModel.ArchiveFile/Path
+        },
+        IsIndexed: false,
+        NoHistory: false,
+        ValueType: RelativePath,
+        IsReference: false
+      },
+      {
+        LowLevelType: UInt64,
+        Id: {
+          Namespace: NexusMods.MnemonicDB.TestModel.ArchiveFile,
+          Name: Hash,
+          Id: NexusMods.MnemonicDB.TestModel.ArchiveFile/Hash
+        },
+        IsIndexed: false,
+        NoHistory: false,
+        ValueType: Hash,
+        IsReference: false
+      }
+    ],
+    Properties: [
+      {
+        Name: Path,
+        Property: IArchiveFile.Path,
+        DbAttribute: {
+          LowLevelType: Utf8Insensitive,
+          Id: {
+            Namespace: NexusMods.MnemonicDB.TestModel.ArchiveFile,
+            Name: Path,
+            Id: NexusMods.MnemonicDB.TestModel.ArchiveFile/Path
+          },
+          IsIndexed: false,
+          NoHistory: false,
+          ValueType: RelativePath,
+          IsReference: false
+        }
+      },
+      {
+        Name: Hash,
+        Property: IArchiveFile.Hash,
+        DbAttribute: {
+          LowLevelType: UInt64,
+          Id: {
+            Namespace: NexusMods.MnemonicDB.TestModel.ArchiveFile,
+            Name: Hash,
+            Id: NexusMods.MnemonicDB.TestModel.ArchiveFile/Hash
+          },
+          IsIndexed: false,
+          NoHistory: false,
+          ValueType: Hash,
+          IsReference: false
+        }
+      }
+    ],
+    Name: NexusMods.MnemonicDB.TestModel.IArchiveFile
+  },
+  {
+    Type: ICollection,
+    Parents: [
+      IModel
+    ],
+    Attributes: [
+      {
+        LowLevelType: Utf8,
+        Id: {
+          Namespace: NexusMods.MnemonicDB.TestModel.Collection,
+          Name: Name,
+          Id: NexusMods.MnemonicDB.TestModel.Collection/Name
+        },
+        IsIndexed: false,
+        NoHistory: false,
+        ValueType: string,
+        IsReference: false
+      },
+      {
+        LowLevelType: Reference,
+        Id: {
+          Namespace: NexusMods.MnemonicDB.TestModel.Collection,
+          Name: Mods,
+          Id: NexusMods.MnemonicDB.TestModel.Collection/Mods
+        },
+        Cardinalty: Many,
+        IsIndexed: false,
+        NoHistory: false,
+        ValueType: EntityId,
+        IsReference: true
+      },
+      {
+        LowLevelType: Reference,
+        Id: {
+          Namespace: NexusMods.MnemonicDB.TestModel.Collection,
+          Name: Loadout,
+          Id: NexusMods.MnemonicDB.TestModel.Collection/Loadout
+        },
+        IsIndexed: false,
+        NoHistory: false,
+        ValueType: EntityId,
+        IsReference: true
+      }
+    ],
+    Properties: [
+      {
+        Name: Name,
+        Property: ICollection.Name,
+        DbAttribute: {
+          LowLevelType: Utf8,
+          Id: {
+            Namespace: NexusMods.MnemonicDB.TestModel.Collection,
+            Name: Name,
+            Id: NexusMods.MnemonicDB.TestModel.Collection/Name
+          },
+          IsIndexed: false,
+          NoHistory: false,
+          ValueType: string,
+          IsReference: false
+        }
+      },
+      {
+        Name: Mods,
+        Property: ICollection.Mods,
+        DbAttribute: {
+          LowLevelType: Reference,
+          Id: {
+            Namespace: NexusMods.MnemonicDB.TestModel.Collection,
+            Name: Mods,
+            Id: NexusMods.MnemonicDB.TestModel.Collection/Mods
+          },
+          Cardinalty: Many,
+          IsIndexed: false,
+          NoHistory: false,
+          ValueType: EntityId,
+          IsReference: true
+        }
+      },
+      {
+        Name: Loadout,
+        Property: ICollection.Loadout,
+        DbAttribute: {
+          LowLevelType: Reference,
+          Id: {
+            Namespace: NexusMods.MnemonicDB.TestModel.Collection,
+            Name: Loadout,
+            Id: NexusMods.MnemonicDB.TestModel.Collection/Loadout
+          },
+          IsIndexed: false,
+          NoHistory: false,
+          ValueType: EntityId,
+          IsReference: true
+        }
+      }
+    ],
+    Name: NexusMods.MnemonicDB.TestModel.ICollection
+  },
+  {
+    Type: IFile,
+    Parents: [
+      IModel
+    ],
+    Attributes: [
+      {
+        LowLevelType: Utf8Insensitive,
+        Id: {
+          Namespace: NexusMods.MnemonicDB.TestModel.File,
+          Name: Path,
+          Id: NexusMods.MnemonicDB.TestModel.File/Path
+        },
+        IsIndexed: true,
+        NoHistory: false,
+        ValueType: RelativePath,
+        IsReference: false
+      },
+      {
+        LowLevelType: UInt64,
+        Id: {
+          Namespace: NexusMods.MnemonicDB.TestModel.File,
+          Name: Hash,
+          Id: NexusMods.MnemonicDB.TestModel.File/Hash
+        },
+        IsIndexed: true,
+        NoHistory: false,
+        ValueType: Hash,
+        IsReference: false
+      },
+      {
+        LowLevelType: UInt64,
+        Id: {
+          Namespace: NexusMods.MnemonicDB.TestModel.File,
+          Name: Size,
+          Id: NexusMods.MnemonicDB.TestModel.File/Size
+        },
+        IsIndexed: false,
+        NoHistory: false,
+        ValueType: Size,
+        IsReference: false
+      },
+      {
+        LowLevelType: Reference,
+        Id: {
+          Namespace: NexusMods.MnemonicDB.TestModel.File,
+          Name: Mod,
+          Id: NexusMods.MnemonicDB.TestModel.File/Mod
+        },
+        IsIndexed: false,
+        NoHistory: false,
+        ValueType: EntityId,
+        IsReference: true
+      }
+    ],
+    Properties: [
+      {
+        Name: Path,
+        Property: IFile.Path,
+        DbAttribute: {
+          LowLevelType: Utf8Insensitive,
+          Id: {
+            Namespace: NexusMods.MnemonicDB.TestModel.File,
+            Name: Path,
+            Id: NexusMods.MnemonicDB.TestModel.File/Path
+          },
+          IsIndexed: true,
+          NoHistory: false,
+          ValueType: RelativePath,
+          IsReference: false
+        }
+      },
+      {
+        Name: Hash,
+        Property: IFile.Hash,
+        DbAttribute: {
+          LowLevelType: UInt64,
+          Id: {
+            Namespace: NexusMods.MnemonicDB.TestModel.File,
+            Name: Hash,
+            Id: NexusMods.MnemonicDB.TestModel.File/Hash
+          },
+          IsIndexed: true,
+          NoHistory: false,
+          ValueType: Hash,
+          IsReference: false
+        }
+      },
+      {
+        Name: Size,
+        Property: IFile.Size,
+        DbAttribute: {
+          LowLevelType: UInt64,
+          Id: {
+            Namespace: NexusMods.MnemonicDB.TestModel.File,
+            Name: Size,
+            Id: NexusMods.MnemonicDB.TestModel.File/Size
+          },
+          IsIndexed: false,
+          NoHistory: false,
+          ValueType: Size,
+          IsReference: false
+        }
+      },
+      {
+        Name: Mod,
+        Property: IFile.Mod,
+        DbAttribute: {
+          LowLevelType: Reference,
+          Id: {
+            Namespace: NexusMods.MnemonicDB.TestModel.File,
+            Name: Mod,
+            Id: NexusMods.MnemonicDB.TestModel.File/Mod
+          },
+          IsIndexed: false,
+          NoHistory: false,
+          ValueType: EntityId,
+          IsReference: true
+        }
+      }
+    ],
+    Name: NexusMods.MnemonicDB.TestModel.IFile
+  },
+  {
+    Type: ILoadout,
+    Parents: [
+      IModel
+    ],
+    Attributes: [
+      {
+        LowLevelType: Utf8,
+        Id: {
+          Namespace: NexusMods.MnemonicDB.TestModel.Loadout,
+          Name: Name,
+          Id: NexusMods.MnemonicDB.TestModel.Loadout/Name
+        },
+        IsIndexed: false,
+        NoHistory: false,
+        ValueType: string,
+        IsReference: false
+      }
+    ],
+    Properties: [
+      {
+        Name: Name,
+        Property: ILoadout.Name,
+        DbAttribute: {
+          LowLevelType: Utf8,
+          Id: {
+            Namespace: NexusMods.MnemonicDB.TestModel.Loadout,
+            Name: Name,
+            Id: NexusMods.MnemonicDB.TestModel.Loadout/Name
+          },
+          IsIndexed: false,
+          NoHistory: false,
+          ValueType: string,
+          IsReference: false
+        }
+      }
+    ],
+    Name: NexusMods.MnemonicDB.TestModel.ILoadout
+  },
+  {
+    Type: IMod,
+    Parents: [
+      IModel
+    ],
+    Attributes: [
+      {
+        LowLevelType: Utf8,
+        Id: {
+          Namespace: NexusMods.MnemonicDB.TestModel.Mod,
+          Name: Name,
+          Id: NexusMods.MnemonicDB.TestModel.Mod/Name
+        },
+        IsIndexed: true,
+        NoHistory: false,
+        ValueType: string,
+        IsReference: false
+      },
+      {
+        LowLevelType: Utf8,
+        Id: {
+          Namespace: NexusMods.MnemonicDB.TestModel.Mod,
+          Name: Source,
+          Id: NexusMods.MnemonicDB.TestModel.Mod/Source
+        },
+        IsIndexed: false,
+        NoHistory: false,
+        ValueType: Uri,
+        IsReference: false
+      },
+      {
+        LowLevelType: Reference,
+        Id: {
+          Namespace: NexusMods.MnemonicDB.TestModel.Mod,
+          Name: Loadout,
+          Id: NexusMods.MnemonicDB.TestModel.Mod/Loadout
+        },
+        IsIndexed: false,
+        NoHistory: false,
+        ValueType: EntityId,
+        IsReference: true
+      },
+      {
+        Id: {
+          Namespace: NexusMods.MnemonicDB.TestModel.Mod,
+          Name: IsMarked,
+          Id: NexusMods.MnemonicDB.TestModel.Mod/IsMarked
+        },
+        IsIndexed: false,
+        NoHistory: false,
+        ValueType: Null,
+        IsReference: false
+      }
+    ],
+    Properties: [
+      {
+        Name: Name,
+        Property: IMod.Name,
+        DbAttribute: {
+          LowLevelType: Utf8,
+          Id: {
+            Namespace: NexusMods.MnemonicDB.TestModel.Mod,
+            Name: Name,
+            Id: NexusMods.MnemonicDB.TestModel.Mod/Name
+          },
+          IsIndexed: true,
+          NoHistory: false,
+          ValueType: string,
+          IsReference: false
+        }
+      },
+      {
+        Name: Source,
+        Property: IMod.Source,
+        DbAttribute: {
+          LowLevelType: Utf8,
+          Id: {
+            Namespace: NexusMods.MnemonicDB.TestModel.Mod,
+            Name: Source,
+            Id: NexusMods.MnemonicDB.TestModel.Mod/Source
+          },
+          IsIndexed: false,
+          NoHistory: false,
+          ValueType: Uri,
+          IsReference: false
+        }
+      },
+      {
+        Name: Loadout,
+        Property: IMod.Loadout,
+        DbAttribute: {
+          LowLevelType: Reference,
+          Id: {
+            Namespace: NexusMods.MnemonicDB.TestModel.Mod,
+            Name: Loadout,
+            Id: NexusMods.MnemonicDB.TestModel.Mod/Loadout
+          },
+          IsIndexed: false,
+          NoHistory: false,
+          ValueType: EntityId,
+          IsReference: true
+        }
+      },
+      {
+        Name: IsMarked,
+        Property: IMod.IsMarked,
+        DbAttribute: {
+          Id: {
+            Namespace: NexusMods.MnemonicDB.TestModel.Mod,
+            Name: IsMarked,
+            Id: NexusMods.MnemonicDB.TestModel.Mod/IsMarked
+          },
+          IsIndexed: false,
+          NoHistory: false,
+          ValueType: Null,
+          IsReference: false
+        }
+      },
+      {
+        Name: Files,
+        Property: IMod.Files,
+        DbAttribute: {
+          Id: {
+            Namespace: NexusMods.MnemonicDB.TestModel.Mod,
+            Name: IsMarked,
+            Id: NexusMods.MnemonicDB.TestModel.Mod/IsMarked
+          },
+          IsIndexed: false,
+          NoHistory: false,
+          ValueType: Null,
+          IsReference: false
+        }
+      }
+    ],
+    Name: NexusMods.MnemonicDB.TestModel.IMod
+  }
+]
