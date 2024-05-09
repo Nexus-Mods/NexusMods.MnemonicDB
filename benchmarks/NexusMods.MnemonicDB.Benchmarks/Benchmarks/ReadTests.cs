@@ -7,6 +7,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
+using Xunit.Sdk;
 
 // ReSharper disable MemberCanBePrivate.Global
 
@@ -19,7 +20,7 @@ public class ReadTests : ABenchmark
     private IDb _db = null!;
     private EntityId[] _entityIds = null!;
     private EntityId _readId;
-    private File.Model[] _preLoaded = null!;
+    private IFile[] _preLoaded = null!;
     private EntityId _modId;
 
     [Params(1, 1000, MaxCount)] public int Count { get; set; } = MaxCount;
@@ -31,22 +32,17 @@ public class ReadTests : ABenchmark
         var tx = Connection.BeginTransaction();
         var entityIds = new List<EntityId>();
 
-        var tmpMod = new Mod.Model(tx)
-        {
-            Name = "TestMod",
-            Source = new Uri("https://www.nexusmods.com"),
-            LoadoutId = EntityId.From(1)
-        };
+        var tmpMod = tx.New<IMod>();
+        tmpMod.Name = "TestMod";
+        tmpMod.Source = new Uri("https://www.nexusmods.com");
 
         for (var i = 0; i < Count; i++)
         {
-            var file = new File.Model(tx)
-            {
-                Hash = Hash.From((ulong)i),
-                Path = $"C:\\test_{i}.txt",
-                Size = Size.From((ulong)i),
-                ModId = tmpMod.Id,
-            };
+            var file = tx.New<IFile>();
+            file.Hash = Hash.From((ulong)i);
+            file.Path = $"C:\\test_{i}.txt";
+            file.Size = Size.From((ulong)i);
+            file.Mod = tmpMod;
             entityIds.Add(file.Id);
         }
 
@@ -60,14 +56,14 @@ public class ReadTests : ABenchmark
 
         _db = Connection.Db;
 
-        _preLoaded = _entityIds.Select(id => _db.Get<File.Model>(id)).ToArray();
+        _preLoaded = _entityIds.Select(id => _db.Get<IFile>(id)).ToArray();
     }
 
     [Benchmark]
     public ulong ReadFiles()
     {
         ulong sum = 0;
-        sum += _db.Get<File.Model>(_readId).Size.Value;
+        sum += _db.Get<IFile>(_readId).Size.Value;
         return sum;
     }
 
@@ -80,7 +76,7 @@ public class ReadTests : ABenchmark
     [Benchmark]
     public long ReadAll()
     {
-        return _entityIds.Select(id => _db.Get<File.Model>(id))
+        return _entityIds.Select(id => _db.Get<IFile>(id))
             .Sum(e => (long)e.Size.Value);
     }
 
@@ -94,12 +90,13 @@ public class ReadTests : ABenchmark
     [Benchmark]
     public ulong ReadAllFromMod()
     {
-        var mod = _db.Get<Mod.Model>(_modId);
+        var mod = _db.Get<IMod>(_modId);
         ulong sum = 0;
-        for (var i = 0; i < mod.Files.Count; i++)
+        for (var i = 0; i < mod.Files.Count(); i++)
         {
-            var file = mod.Files[i];
-            sum += file.Size.Value;
+            throw new NotImplementedException();
+            //var file = mod.Files[i];
+            //sum += file.Size.Value;
         }
 
         return sum;

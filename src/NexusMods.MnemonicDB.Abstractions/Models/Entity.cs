@@ -63,7 +63,7 @@ public class Entity : IEntityWithTx
     /// Get the reverse of a relationship.
     /// </summary>
     protected Entities<EntityIds, TModel> GetReverse<TModel>(Attribute<EntityId, ulong> attribute)
-        where TModel : IEntity
+        where TModel : IModel
     {
         return Db.GetReverse<TModel>(Id, attribute);
     }

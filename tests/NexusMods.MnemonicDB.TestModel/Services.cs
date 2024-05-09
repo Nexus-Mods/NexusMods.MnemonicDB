@@ -7,11 +7,11 @@ public static class Services
 {
     public static IServiceCollection AddTestModel(this IServiceCollection services)
     {
-        services.AddAttributeCollection(typeof(File))
-            .AddAttributeCollection(typeof(ArchiveFile))
-            .AddAttributeCollection(typeof(Loadout))
-            .AddAttributeCollection(typeof(Mod))
-            .AddAttributeCollection(typeof(Collection));
+        services.AddModel<IFile>()
+            .AddModel<IArchiveFile>()
+            .AddModel<ILoadout>()
+            .AddModel<IMod>()
+            .AddModel<ICollection>();
 
         return services;
     }

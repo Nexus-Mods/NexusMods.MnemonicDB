@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
 namespace NexusMods.MnemonicDB;
@@ -45,6 +46,16 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
     {
         _committed = true;
         return await connection.Transact(_datoms.Build(), _txFunctions);
+    }
+
+    public TModel New<TModel>() where TModel : IModel
+    {
+        throw new NotImplementedException();
+    }
+
+    public TModel Edit<TModel>(TModel model) where TModel : IModel
+    {
+        throw new NotImplementedException();
     }
 
     /// <inheritdoc />

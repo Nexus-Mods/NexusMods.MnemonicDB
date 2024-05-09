@@ -40,7 +40,7 @@ public interface IDb : IEquatable<IDb>, IDisposable
     /// <typeparam name="TModel"></typeparam>
     /// <returns></returns>
     public TModel Get<TModel>(EntityId id)
-        where TModel : IEntity;
+        where TModel : IModel;
 
 
     /// <summary>
@@ -53,7 +53,7 @@ public interface IDb : IEquatable<IDb>, IDisposable
     ///     with the given attribute.
     /// </summary>
     public Entities<EntityIds, TModel> GetReverse<TModel>(EntityId id, Attribute<EntityId, ulong> attribute)
-        where TModel : IEntity;
+        where TModel : IModel;
 
     public IEnumerable<IReadDatom> Datoms(EntityId id);
 

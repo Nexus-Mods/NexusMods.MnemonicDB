@@ -6,53 +6,25 @@ using NexusMods.MnemonicDB.TestModel.Attributes;
 
 namespace NexusMods.MnemonicDB.TestModel;
 
-public static class Mod
+public interface IMod : IModel
 {
-    private const string Namespace = "NexusMods.MnemonicDB.TestModel.Mod";
-
-    public static readonly StringAttribute Name = new(Namespace, "Name") { IsIndexed = true };
-    public static readonly UriAttribute Source = new(Namespace, "Source");
-    public static readonly ReferenceAttribute LoadoutId = new(Namespace, "Loadout");
-
-    /// <summary>
-    /// Test attribute for testing marker attributes.
-    /// </summary>
-    public static readonly MarkerAttribute IsMarked = new(Namespace, "IsMarked");
-
-    public class Model(ITransaction tx) : Entity(tx)
+    public static class Attributes
     {
-        public string Name
-        {
-            get => Mod.Name.Get(this);
-            init => Mod.Name.Add(this, value);
-        }
+        private const string Namespace = "NexusMods.MnemonicDB.TestModel.Mod";
 
-        public Uri Source
-        {
-            get => Mod.Source.Get(this);
-            init => Mod.Source.Add(this, value);
-        }
-        public bool IsMarked
-        {
-            get => Mod.IsMarked.Contains(this);
-            set => Mod.IsMarked.Add(this);
-        }
-
-        public EntityId LoadoutId
-        {
-            get => Mod.LoadoutId.Get(this);
-            init => Mod.LoadoutId.Add(this, value);
-        }
-
-        public Loadout.Model Loadout
-        {
-            get => Db.Get<Loadout.Model>(LoadoutId);
-            init => Mod.LoadoutId.Add(this, value.Id);
-        }
-
-        public Entities<EntityIds, File.Model> Files => GetReverse<File.Model>(File.ModId);
-
+        public static readonly StringAttribute Name = new(Namespace, "Name") { IsIndexed = true };
+        public static readonly UriAttribute Source = new(Namespace, "Source");
+        public static readonly ReferenceAttribute LoadoutId = new(Namespace, "Loadout");
+        public static readonly MarkerAttribute IsMarked = new(Namespace, "IsMarked");
     }
 
+    public string Name { get; set; }
 
+    public Uri Source { get; set; }
+
+    public ILoadout Loadout { get; set; }
+
+    public bool IsMarked { get; set; }
+
+    public IEnumerable<IFile> Files { get; }
 }

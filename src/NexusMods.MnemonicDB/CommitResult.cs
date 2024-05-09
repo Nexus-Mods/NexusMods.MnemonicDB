@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
@@ -12,12 +13,15 @@ public class CommitResult(IDb db, IDictionary<EntityId, EntityId> remaps) : ICom
         remaps.TryGetValue(id, out var found) ? found : id;
 
     /// <inheritdoc />
-    public T Remap<T>(T model) where T : IEntity
+    public T Remap<T>(T model) where T : IModel
     {
+        throw new NotImplementedException();
+        /*
         var id = model.Id;
         if (remaps.TryGetValue(id, out var found))
             id = found;
         return db.Get<T>(id);
+        */
     }
 
     /// <inheritdoc />

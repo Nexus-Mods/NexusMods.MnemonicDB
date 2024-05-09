@@ -8,7 +8,6 @@ using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Storage.Tests.TestAttributes;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
-using File = NexusMods.MnemonicDB.TestModel.File;
 
 
 namespace NexusMods.MnemonicDB.Storage.Tests;
@@ -161,23 +160,23 @@ public abstract class ABackendTest<TStoreType>(
 
             using var segment = new IndexSegmentBuilder(Registry);
 
-            segment.Add(id1, File.Path, "/foo/bar");
-            segment.Add(id1, File.Hash, Hash.From(0xDEADBEEF));
-            segment.Add(id1, File.Size, Size.From(42));
-            segment.Add(id2, File.Path, "/qix/bar");
-            segment.Add(id2, File.Hash, Hash.From(0xDEADBEAF));
-            segment.Add(id2, File.Size, Size.From(77));
-            segment.Add(id1, File.ModId, modId1);
-            segment.Add(id2, File.ModId, modId1);
-            segment.Add(modId1, Mod.Name, "Test Mod 1");
-            segment.Add(modId1, Mod.LoadoutId, loadoutId);
-            segment.Add(modId2, Mod.Name, "Test Mod 2");
-            segment.Add(modId2, Mod.LoadoutId, loadoutId);
-            segment.Add(loadoutId, Loadout.Name, "Test Loadout 1");
-            segment.Add(collectionId, Collection.Name, "Test Collection 1");
-            segment.Add(collectionId, Collection.Loadout, loadoutId);
-            segment.Add(collectionId, Collection.Mods, modId1);
-            segment.Add(collectionId, Collection.Mods, modId2);
+            segment.Add(id1, IFile.Attributes.Path, "/foo/bar");
+            segment.Add(id1, IFile.Attributes.Hash, Hash.From(0xDEADBEEF));
+            segment.Add(id1, IFile.Attributes.Size, Size.From(42));
+            segment.Add(id2, IFile.Attributes.Path, "/qix/bar");
+            segment.Add(id2, IFile.Attributes.Hash, Hash.From(0xDEADBEAF));
+            segment.Add(id2, IFile.Attributes.Size, Size.From(77));
+            segment.Add(id1, IFile.Attributes.ModId, modId1);
+            segment.Add(id2, IFile.Attributes.ModId, modId1);
+            segment.Add(modId1, IMod.Attributes.Name, "Test Mod 1");
+            segment.Add(modId1, IMod.Attributes.LoadoutId, loadoutId);
+            segment.Add(modId2, IMod.Attributes.Name, "Test Mod 2");
+            segment.Add(modId2, IMod.Attributes.LoadoutId, loadoutId);
+            segment.Add(loadoutId, ILoadout.Attributes.Name, "Test Loadout 1");
+            segment.Add(collectionId, ICollection.Attributes.Name, "Test Collection 1");
+            segment.Add(collectionId, ICollection.Attributes.Loadout, loadoutId);
+            segment.Add(collectionId, ICollection.Attributes.Mods, modId1);
+            segment.Add(collectionId, ICollection.Attributes.Mods, modId2);
 
             tx = await DatomStore.Transact(segment.Build());
         }
@@ -189,9 +188,9 @@ public abstract class ABackendTest<TStoreType>(
 
         {
             using var segment = new IndexSegmentBuilder(Registry);
-            segment.Add(id2, File.Path, "/foo/qux");
-            segment.Add(id1, File.ModId, modId2);
-            segment.Add(collectionId, Collection.Mods, modId2, true);
+            segment.Add(id2, IFile.Attributes.Path, "/foo/qux");
+            segment.Add(id1, IFile.Attributes.ModId, modId2);
+            segment.Add(collectionId, ICollection.Attributes.Mods, modId2, true);
             tx = await DatomStore.Transact(segment.Build());
         }
         return tx;
@@ -217,10 +216,10 @@ public abstract class ABackendTest<TStoreType>(
         {
             using var segment = new IndexSegmentBuilder(Registry);
 
-            segment.Add(id, File.Path, "/foo/bar");
-            segment.Add(id, File.Hash, Hash.From(0xDEADBEEF));
-            segment.Add(id, File.Size, Size.From(42));
-            segment.Add(id, File.ModId, modId);
+            segment.Add(id, IFile.Attributes.Path, "/foo/bar");
+            segment.Add(id, IFile.Attributes.Hash, Hash.From(0xDEADBEEF));
+            segment.Add(id, IFile.Attributes.Size, Size.From(42));
+            segment.Add(id, IFile.Attributes.ModId, modId);
 
             tx1 = await DatomStore.Transact(segment.Build());
         }
@@ -231,10 +230,10 @@ public abstract class ABackendTest<TStoreType>(
         {
             using var segment = new IndexSegmentBuilder(Registry);
 
-            segment.Add(id, File.Path, "/foo/bar", true);
-            segment.Add(id, File.Hash, Hash.From(0xDEADBEEF), true);
-            segment.Add(id, File.Size, Size.From(42), true);
-            segment.Add(id, File.ModId, modId, true);
+            segment.Add(id, IFile.Attributes.Path, "/foo/bar", true);
+            segment.Add(id, IFile.Attributes.Hash, Hash.From(0xDEADBEEF), true);
+            segment.Add(id, IFile.Attributes.Size, Size.From(42), true);
+            segment.Add(id, IFile.Attributes.ModId, modId, true);
 
             tx2 = await DatomStore.Transact(segment.Build());
 

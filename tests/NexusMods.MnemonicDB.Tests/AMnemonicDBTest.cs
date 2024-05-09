@@ -8,7 +8,6 @@ using NexusMods.MnemonicDB.TestModel.Helpers;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
-using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
 
@@ -47,23 +46,26 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
     protected DatomStoreSettings Config { get; set; }
 
     protected SettingsTask VerifyModel<TReadModel>(TReadModel model)
-        where TReadModel : IEntity
+        where TReadModel : IModel
     {
         var fromAttributes = EntityToDictionary(model);
         return Verify(fromAttributes);
     }
 
-    private Dictionary<string, string> EntityToDictionary<TReadModel>(TReadModel model) where TReadModel : IEntity
+    private Dictionary<string, string> EntityToDictionary<TReadModel>(TReadModel model) where TReadModel : IModel
     {
+        throw new NotImplementedException();
+        /*
         return new Dictionary<string, string>(from prop in model.GetType().GetProperties()
             where prop.Name != "Id" && prop.Name != "Tx" && prop.Name != "Db"
             let value = Stringify(prop.GetValue(model)!)
             where value != null
             select new KeyValuePair<string, string>(prop.Name, value));
+            */
     }
 
     protected SettingsTask VerifyModel<T>(IEnumerable<T> models)
-    where T : IEntity
+    where T : IModel
     {
         return Verify(models.Select(EntityToDictionary).ToArray());
     }
@@ -80,53 +82,45 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
         return Verify(datoms.ToTable(_registry));
     }
 
-    protected async Task<Loadout.Model> InsertExampleData()
+    protected async Task<ILoadout> InsertExampleData()
     {
         var tx = Connection.BeginTransaction();
-        var loadout = new Loadout.Model(tx)
-        {
-            Name = "Test Loadout"
-        };
-        List<Mod.Model> mods = new();
+        var loadout = tx.New<ILoadout>();
+        loadout.Name = "Test Loadout";
+
+        List<IMod> mods = new();
 
         foreach (var modName in new[] { "Mod1", "Mod2", "Mod3" })
         {
-            var mod = new Mod.Model(tx)
-            {
-                Name = modName,
-                Source = new Uri("http://somesite.com/" + modName),
-                Loadout = loadout
-            };
+            var mod = tx.New<IMod>();
+            mod.Name = modName;
+            mod.Source = new Uri("http://somesite.com/" + modName);
+            mod.Loadout = loadout;
 
             var idx = 0;
-            foreach (var file in new[] { "File1", "File2", "File3" })
+            foreach (var path in new[] { "File1", "File2", "File3" })
             {
-                _ = new File.Model(tx)
-                {
-                    Path = file,
-                    Mod = mod,
-                    Size = Size.From((ulong)idx),
-                    Hash = Hash.From((ulong)(0xDEADBEEF + idx))
-                };
+                var file = tx.New<IFile>();
+                file.Path = path;
+                file.Mod = mod;
+                file.Size = Size.From((ulong)idx);
+                file.Hash = Hash.From((ulong)(0xDEADBEEF + idx));
                 idx += 1;
+                mods.Add(mod);
             }
-            mods.Add(mod);
         }
 
-        var txResult = await tx.Commit();
-
-        loadout = txResult.Remap(loadout);
+        await tx.Commit();
 
         var tx2 = Connection.BeginTransaction();
         foreach (var mod in loadout.Mods)
         {
-            tx2.Add(mod.Id, Mod.Name, mod.Name + " - Updated");
+            var editable = tx.Edit(mod);
+            editable.Name = mod.Name + " - Updated";
         }
-        await tx2.Commit();
+        var result = await tx2.Commit();
 
-        return Connection.Db.Get<Loadout.Model>(loadout.Id);
-
-
+        return result.Remap(loadout);
     }
 
     public void Dispose()

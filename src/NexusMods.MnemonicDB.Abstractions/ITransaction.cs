@@ -42,4 +42,15 @@ public interface ITransaction : IDisposable
     ///     Commits the transaction
     /// </summary>
     Task<ICommitResult> Commit();
+
+    /// <summary>
+    /// Creates a new model of the given type, and attaches it to the transaction
+    /// </summary>
+    public TModel New<TModel>() where TModel : IModel;
+
+    /// <summary>
+    /// Return a new version of the model that supports editing, and is attached
+    /// to this transaction
+    /// </summary>
+    TModel Edit<TModel>(TModel model) where TModel : IModel;
 }

@@ -7,7 +7,6 @@ using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.MnemonicDB.Storage.Tests.TestAttributes;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
-using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Storage.Tests;
 
@@ -28,16 +27,16 @@ public abstract class AStorageTest : IAsyncLifetime
         _provider = provider;
         Registry = new AttributeRegistry(provider.GetRequiredService<IEnumerable<IAttribute>>());
         Registry.Populate([
-            new DbAttribute(File.Path.Id, AttributeId.From(20), ValueTags.Utf8Insensitive),
-            new DbAttribute(File.Hash.Id, AttributeId.From(21), ValueTags.UInt64),
-            new DbAttribute(File.Size.Id, AttributeId.From(22), ValueTags.UInt64),
-            new DbAttribute(File.ModId.Id, AttributeId.From(23), ValueTags.Reference),
-            new DbAttribute(Mod.Name.Id, AttributeId.From(24), ValueTags.Utf8),
-            new DbAttribute(Mod.LoadoutId.Id, AttributeId.From(25), ValueTags.Reference),
-            new DbAttribute(Loadout.Name.Id, AttributeId.From(26), ValueTags.Utf8),
-            new DbAttribute(Collection.Name.Id, AttributeId.From(27), ValueTags.Utf8),
-            new DbAttribute(Collection.Loadout.Id, AttributeId.From(28), ValueTags.Reference),
-            new DbAttribute(Collection.Mods.Id, AttributeId.From(29), ValueTags.Reference),
+            new DbAttribute(IFile.Attributes.Path.Id, AttributeId.From(20), ValueTags.Utf8Insensitive),
+            new DbAttribute(IFile.Attributes.Hash.Id, AttributeId.From(21), ValueTags.UInt64),
+            new DbAttribute(IFile.Attributes.Size.Id, AttributeId.From(22), ValueTags.UInt64),
+            new DbAttribute(IFile.Attributes.ModId.Id, AttributeId.From(23), ValueTags.Reference),
+            new DbAttribute(IMod.Attributes.Name.Id, AttributeId.From(24), ValueTags.Utf8),
+            new DbAttribute(IMod.Attributes.LoadoutId.Id, AttributeId.From(25), ValueTags.Reference),
+            new DbAttribute(ILoadout.Attributes.Name.Id, AttributeId.From(26), ValueTags.Utf8),
+            new DbAttribute(ICollection.Attributes.Name.Id, AttributeId.From(27), ValueTags.Utf8),
+            new DbAttribute(ICollection.Attributes.Loadout.Id, AttributeId.From(28), ValueTags.Reference),
+            new DbAttribute(ICollection.Attributes.Mods.Id, AttributeId.From(29), ValueTags.Reference),
             new DbAttribute(Blobs.InKeyBlob.Id, AttributeId.From(30), ValueTags.Blob),
             new DbAttribute(Blobs.InValueBlob.Id, AttributeId.From(31), ValueTags.HashedBlob)
         ]);

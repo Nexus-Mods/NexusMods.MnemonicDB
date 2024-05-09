@@ -69,9 +69,11 @@ internal class Db : IDb
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids)
         where TModel : IEntity
     {
+        throw new NotImplementedException();
         foreach (var id in ids)
         {
-            yield return Get<TModel>(id);
+
+            //yield return Get<TModel>(id);
         }
     }
 
@@ -130,13 +132,13 @@ internal class Db : IDb
     }
 
     public TModel Get<TModel>(EntityId id)
-        where TModel : IEntity
+        where TModel : IModel
     {
         return EntityConstructors<TModel>.Constructor(id, this);
     }
 
     public Entities<EntityIds, TModel> GetReverse<TModel>(EntityId id, Attribute<EntityId, ulong> attribute)
-        where TModel : IEntity
+        where TModel : IModel
     {
         var segment = _reverseCache.Get(this, (id, attribute.GetDbId(_registry.Id)));
         var ids = new EntityIds(segment, 0, segment.Count);

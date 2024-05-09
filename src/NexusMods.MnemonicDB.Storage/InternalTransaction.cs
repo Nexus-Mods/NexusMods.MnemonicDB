@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
 namespace NexusMods.MnemonicDB.Storage;
@@ -40,6 +41,16 @@ internal class InternalTransaction(IndexSegmentBuilder datoms) : ITransaction
     public Task<ICommitResult> Commit()
     {
         throw new NotSupportedException();
+    }
+
+    public TModel New<TModel>() where TModel : IModel
+    {
+        throw new NotImplementedException();
+    }
+
+    public TModel Edit<TModel>(TModel model) where TModel : IModel
+    {
+        throw new NotImplementedException();
     }
 
     /// <inheritdoc />

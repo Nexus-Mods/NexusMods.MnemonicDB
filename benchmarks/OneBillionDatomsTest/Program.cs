@@ -55,13 +55,10 @@ for (ulong i = 0; i < batches; i++)
     for (var j = 0; j < (int)batchSize; j++)
     {
         fileNumber += 1;
-        var _ = new File.Model(tx)
-        {
-            Path = $"c:\\test_{i}_{j}.txt",
-            Hash = Hash.From(fileNumber % 0xFFFF),
-            Size = Size.From(fileNumber),
-            ModId = EntityId.From(1)
-        };
+        var file = tx.New<IFile>();
+        file.Path = $"c:\\test_{i}_{j}.txt";
+        file.Hash = Hash.From(fileNumber % 0xFFFF);
+        file.Size = Size.From(fileNumber);
     }
 
     await tx.Commit();
