@@ -49,5 +49,6 @@ theme:
 nav:
   - Home: index.md
   - Index Format: IndexFormat.md
+  - Value Format: ValueFormat.md
   - Schema Changes: SchemaChanges.md
 

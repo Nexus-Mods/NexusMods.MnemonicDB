@@ -16,10 +16,12 @@ accidentally instantiated).
 ```csharp
 public static class File
 {
-    public static readonly Attribute<ulong> Hash = new("Test.Model.File/Hash", isIndexed: true);
-    public static readonly Attribute<ulong> Size = new("Test.Model.File/Size");
-    public static readonly Attribute<string> Name = new("Test.Model.File/Name", noHistory: true);
-    public static readonly Attribute<EntityId> ModId = new"Test.Model.File/ModId", cardinality: Cardinality.Many);
+    private const string Namespace = "Test.Model.File";
+    
+    public static readonly ScalarAttribute<ulong> Hash = new(Namespace, nameof(Hash), isIndexed: true);
+    public static readonly ScalarAttribute<ulong> Size = new(Namespace, nameof(Size));
+    public static readonly ScalarAttribute<string> Name = new(Namespace, nameof(Name), noHistory: true);
+    public static readonly ReferenceAttribute<EntityId> ModId = new(Namespace, nameof(ModId), cardinality: Cardinality.Many);
 
     public class Model(ITransaction tx) : AEntity(tx)
     {
