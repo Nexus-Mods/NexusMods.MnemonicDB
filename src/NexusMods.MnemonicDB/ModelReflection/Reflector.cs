@@ -82,8 +82,11 @@ public class Reflector(Type[] models)
         foreach (var model in _modelDefinitions.Values)
         {
             var readonlyType = MakeReadonly(moduleBuilder, model);
+            var type = readonlyType.CreateType();
+            break;
 
         }
+
 
     }
 
@@ -99,25 +102,38 @@ public class Reflector(Type[] models)
         il.Emit(OpCodes.Ldarg_0);
         il.Emit(OpCodes.Ldarg_1);
         il.Emit(OpCodes.Ldarg_2);
-        il.Emit(OpCodes.Calli, typeof(ReadOnlyBase).GetConstructor(new[] { typeof(IDb), typeof(EntityId) })!);
+        il.Emit(OpCodes.Calli, typeof(ReadOnlyBase).GetConstructor([typeof(IDb), typeof(EntityId)])!);
         il.Emit(OpCodes.Ret);
 
         foreach (var property in modelDefinition.Properties)
         {
             // Implement the interface properties
             var propertyBuilder = typeBuilder.DefineProperty(property.Name, PropertyAttributes.None, property.Property.PropertyType, null);
-            var getMethod = typeBuilder.DefineMethod($"get_{property.Name}", MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, property.Property.PropertyType, []);
+            var getMethod = typeBuilder.DefineMethod($"get_{property.Name}",
+                MethodAttributes.Public |
+                MethodAttributes.SpecialName |
+                MethodAttributes.HideBySig |
+                MethodAttributes.Virtual, property.Property.PropertyType, []);
             getMethod.SetParameters([]);
-            var p = getMethod.GetParameters();
             propertyBuilder.SetGetMethod(getMethod);
-            using var getIl = new GroboIL(getMethod);
+            var ilMethod = getMethod.GetILGenerator();
+            ilMethod.Emit(OpCodes.Ldarg_0);
+            ilMethod.Emit(OpCodes.Ldfld, property.AttributeField);
+            ilMethod.Emit(OpCodes.Call, typeof(ReadOnlyBase).GetMethod("Get", BindingFlags.NonPublic | BindingFlags.Instance)!
+                .MakeGenericMethod([typeof(string), typeof(string)]));
+            ilMethod.Emit(OpCodes.Ret);
+            typeBuilder.DefineMethodOverride(getMethod, property.Property.GetMethod!);
 
-            getIl.Ldarg(0);
-            getIl.Ldfld(property.AttributeField);
-            var innerMethod = typeof(ReadOnlyBase).GetMethod("Get", BindingFlags.NonPublic | BindingFlags.Instance)!;
-            innerMethod = innerMethod.MakeGenericMethod([typeof(string), typeof(string)]);
-            getIl.Call(innerMethod);
-            getIl.Ret();
+            var setMethod = typeBuilder.DefineMethod($"set_{property.Name}",
+                MethodAttributes.Public |
+                MethodAttributes.SpecialName |
+                MethodAttributes.HideBySig |
+                MethodAttributes.Virtual, typeof(void), [property.Property.PropertyType]);
+            setMethod.SetParameters([property.Property.PropertyType]);
+            propertyBuilder.SetSetMethod(setMethod);
+            var ilSetMethod = setMethod.GetILGenerator();
+            ilSetMethod.Emit(OpCodes.Ret);
+            typeBuilder.DefineMethodOverride(setMethod, property.Property.SetMethod!);
         }
 
         var type = typeBuilder.CreateType();

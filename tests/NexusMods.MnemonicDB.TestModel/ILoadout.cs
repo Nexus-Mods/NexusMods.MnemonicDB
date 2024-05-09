@@ -14,6 +14,7 @@ public interface ILoadout : IModel
     [From(nameof(Attributes.Name))]
     public string Name { get; set; }
 
+
     [Backref(nameof(IMod.Attributes.LoadoutId))]
-    public IEnumerable<IMod> Mods { get; }
+    public IEnumerable<IMod> Mods => [];
 }
