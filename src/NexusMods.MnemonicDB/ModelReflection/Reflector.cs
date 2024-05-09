@@ -107,10 +107,16 @@ public class Reflector(Type[] models)
             // Implement the interface properties
             var propertyBuilder = typeBuilder.DefineProperty(property.Name, PropertyAttributes.None, property.Property.PropertyType, null);
             var getMethod = typeBuilder.DefineMethod($"get_{property.Name}", MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig, property.Property.PropertyType, []);
+            getMethod.SetParameters([]);
+            var p = getMethod.GetParameters();
+            propertyBuilder.SetGetMethod(getMethod);
             using var getIl = new GroboIL(getMethod);
+
             getIl.Ldarg(0);
             getIl.Ldfld(property.AttributeField);
-            getIl.Call(typeof(ReadOnlyBase).GetMethod("Get", BindingFlags.NonPublic | BindingFlags.Instance)!);
+            var innerMethod = typeof(ReadOnlyBase).GetMethod("Get", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            innerMethod = innerMethod.MakeGenericMethod([typeof(string), typeof(string)]);
+            getIl.Call(innerMethod);
             getIl.Ret();
         }
 
