@@ -1,8 +1,8 @@
-site_name: Nexus Event Sourcing Library
-site_url: https://nexus-mods.github.io/NexusMods.EventSourcing/
+site_name: MnemonicDB
+site_url: https://nexus-mods.github.io/NexusMods.MnemonicDB/
 
-repo_name: Nexus-Mods/NexusMods.Archives.Nx
-repo_url: https://github.com/Nexus-Mods/NexusMods.EventSourcing
+repo_name: Nexus-Mods/NexusMods.MnemonicDB
+repo_url: https://github.com/Nexus-Mods/NexusMods.MnemonicDB
 
 extra:
   social:
