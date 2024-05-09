@@ -32,8 +32,8 @@ public static class DependencyInjectionExtensions
         where T : IModel
     {
         var type = typeof(T);
-        if (!type.IsClass)
-            throw new ArgumentException("The type must be a class.", nameof(type));
+        if (!type.IsInterface)
+            throw new ArgumentException("The type must be an interface.", nameof(type));
 
 
         var attributes = type.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly)

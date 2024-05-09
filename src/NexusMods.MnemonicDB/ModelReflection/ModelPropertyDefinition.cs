@@ -10,6 +10,7 @@ namespace NexusMods.MnemonicDB.ModelReflection;
 public record ModelPropertyDefinition(
     string Name,
     PropertyInfo Property,
+    FieldInfo AttributeField,
     IAttribute DbAttribute)
 {
 

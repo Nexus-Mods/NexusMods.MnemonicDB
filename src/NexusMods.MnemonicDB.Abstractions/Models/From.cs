@@ -8,5 +8,8 @@ namespace NexusMods.MnemonicDB.Abstractions.Models;
 [AttributeUsage(AttributeTargets.Property)]
 public class From(string nameFrom) : Attribute
 {
-
+    /// <summary>
+    /// The attribute name this property is backed by
+    /// </summary>
+    public string Name => nameFrom;
 }

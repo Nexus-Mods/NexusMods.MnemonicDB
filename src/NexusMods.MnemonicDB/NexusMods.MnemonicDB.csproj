@@ -5,6 +5,7 @@
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="DynamicData" Version="8.4.1"/>
+        <PackageReference Include="GrEmit" Version="3.4.10" />
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1"/>
         <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.4" />
         <PackageReference Include="Reloaded.Memory" Version="9.4.1"/>

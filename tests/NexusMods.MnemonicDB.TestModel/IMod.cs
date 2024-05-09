@@ -18,13 +18,18 @@ public interface IMod : IModel
         public static readonly MarkerAttribute IsMarked = new(Namespace, "IsMarked");
     }
 
+    [From(nameof(Attributes.Name))]
     public string Name { get; set; }
 
+    [From(nameof(Attributes.Source))]
     public Uri Source { get; set; }
 
+    [From(nameof(Attributes.LoadoutId))]
     public ILoadout Loadout { get; set; }
 
+    [From(nameof(Attributes.IsMarked))]
     public bool IsMarked { get; set; }
 
+    [From(nameof(Attributes.IsMarked))]
     public IEnumerable<IFile> Files { get; }
 }
