@@ -35,6 +35,7 @@
       {
         Name: Path,
         Property: IArchiveFile.Path,
+        AttributeField: IArchiveFile.Attributes.Path,
         DbAttribute: {
           LowLevelType: Utf8Insensitive,
           Id: {
@@ -51,6 +52,7 @@
       {
         Name: Hash,
         Property: IArchiveFile.Hash,
+        AttributeField: IArchiveFile.Attributes.Hash,
         DbAttribute: {
           LowLevelType: UInt64,
           Id: {
@@ -115,6 +117,7 @@
       {
         Name: Name,
         Property: ICollection.Name,
+        AttributeField: ICollection.Attributes.Name,
         DbAttribute: {
           LowLevelType: Utf8,
           Id: {
@@ -131,6 +134,7 @@
       {
         Name: Mods,
         Property: ICollection.Mods,
+        AttributeField: ICollection.Attributes.Mods,
         DbAttribute: {
           LowLevelType: Reference,
           Id: {
@@ -148,6 +152,7 @@
       {
         Name: Loadout,
         Property: ICollection.Loadout,
+        AttributeField: ICollection.Attributes.Loadout,
         DbAttribute: {
           LowLevelType: Reference,
           Id: {
@@ -223,6 +228,7 @@
       {
         Name: Path,
         Property: IFile.Path,
+        AttributeField: IFile.Attributes.Path,
         DbAttribute: {
           LowLevelType: Utf8Insensitive,
           Id: {
@@ -239,6 +245,7 @@
       {
         Name: Hash,
         Property: IFile.Hash,
+        AttributeField: IFile.Attributes.Hash,
         DbAttribute: {
           LowLevelType: UInt64,
           Id: {
@@ -255,6 +262,7 @@
       {
         Name: Size,
         Property: IFile.Size,
+        AttributeField: IFile.Attributes.Size,
         DbAttribute: {
           LowLevelType: UInt64,
           Id: {
@@ -271,6 +279,7 @@
       {
         Name: Mod,
         Property: IFile.Mod,
+        AttributeField: IFile.Attributes.ModId,
         DbAttribute: {
           LowLevelType: Reference,
           Id: {
@@ -310,6 +319,7 @@
       {
         Name: Name,
         Property: ILoadout.Name,
+        AttributeField: ILoadout.Attributes.Name,
         DbAttribute: {
           LowLevelType: Utf8,
           Id: {
@@ -384,6 +394,7 @@
       {
         Name: Name,
         Property: IMod.Name,
+        AttributeField: IMod.Attributes.Name,
         DbAttribute: {
           LowLevelType: Utf8,
           Id: {
@@ -400,6 +411,7 @@
       {
         Name: Source,
         Property: IMod.Source,
+        AttributeField: IMod.Attributes.Source,
         DbAttribute: {
           LowLevelType: Utf8,
           Id: {
@@ -416,6 +428,7 @@
       {
         Name: Loadout,
         Property: IMod.Loadout,
+        AttributeField: IMod.Attributes.LoadoutId,
         DbAttribute: {
           LowLevelType: Reference,
           Id: {
@@ -432,6 +445,7 @@
       {
         Name: IsMarked,
         Property: IMod.IsMarked,
+        AttributeField: IMod.Attributes.IsMarked,
         DbAttribute: {
           Id: {
             Namespace: NexusMods.MnemonicDB.TestModel.Mod,
@@ -447,6 +461,7 @@
       {
         Name: Files,
         Property: IMod.Files,
+        AttributeField: IMod.Attributes.IsMarked,
         DbAttribute: {
           Id: {
             Namespace: NexusMods.MnemonicDB.TestModel.Mod,

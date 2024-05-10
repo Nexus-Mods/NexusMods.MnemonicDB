@@ -35,8 +35,11 @@ public static class DependencyInjectionExtensions
         if (!type.IsInterface)
             throw new ArgumentException("The type must be an interface.", nameof(type));
 
+        var propertyClass = (Type?)type.GetMembers().FirstOrDefault(m => m.Name == "Attributes");
+        if (propertyClass is null)
+            throw new InvalidOperationException($"Model {type.FullName ?? type.Name} does not have an Attributes inner class");
 
-        var attributes = type.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly)
+        var attributes = propertyClass.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.DeclaredOnly)
             .Where(f => f.FieldType.IsAssignableTo(typeof(IAttribute)));
 
         foreach (var attribute in attributes)
