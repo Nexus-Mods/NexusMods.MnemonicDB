@@ -1,4 +1,7 @@
-﻿namespace NexusMods.MnemonicDB.SourceGenerator;
+﻿using System;
+using Microsoft.CodeAnalysis;
+
+namespace NexusMods.MnemonicDB.SourceGenerator;
 
 public record MethodChain()
 {
@@ -25,11 +28,28 @@ public record MethodChain()
                         Name = method.Arguments[0].Value.ToString(),
                         Type = method.GenericTypes![0]
                     };
+                    FindAttributeInInheritanceTree((INamedTypeSymbol)attribute.Type);
                     model.Attributes.Add(attribute);
                     break;
                 }
             }
         }
         return model;
+    }
+
+    public (ITypeSymbol, ITypeSymbol)? FindAttributeInInheritanceTree(INamedTypeSymbol typeSymbol)
+    {
+        while (typeSymbol != null)
+        {
+            if (typeSymbol.OriginalDefinition.ToDisplayString() == "Attribute<TValueType, TLowLevelType>")
+            {
+                return (typeSymbol.TypeArguments[0], typeSymbol.TypeArguments[1]);
+            }
+
+            typeSymbol = typeSymbol.BaseType!;
+        }
+
+        return null;
+
     }
 }
