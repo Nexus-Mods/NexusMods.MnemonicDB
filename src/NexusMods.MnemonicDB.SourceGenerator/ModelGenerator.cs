@@ -44,10 +44,13 @@ public void Execute(GeneratorExecutionContext context)
                 var info = new MethodCall
                 {
                     MethodName = symbol.Name,
-                    GenericTypes = (symbol as IMethodSymbol)?.TypeArguments
-                        .Select(t => t.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)).ToList(),
+                    GenericTypes = (symbol as IMethodSymbol)?.TypeArguments.ToList(),
                     Arguments = currentInvocation.ArgumentList.Arguments
-                        .Select(a => semanticModel.GetConstantValue(a.Expression).Value!).ToList()
+                        .Select(a => a.NameColon is not null
+                            ? new KeyValuePair<string, object>(a.NameColon.Name.Identifier.Text,
+                                semanticModel.GetConstantValue(a.Expression).Value!)
+                            : new KeyValuePair<string, object>("", semanticModel.GetConstantValue(a.Expression).Value!))
+                        .ToList()
                 };
 
                 chain.Insert(0, info); // Insert at the beginning to reverse the order

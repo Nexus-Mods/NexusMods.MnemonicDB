@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
 
 namespace NexusMods.MnemonicDB.SourceGenerator;
 
 public record MethodCall()
 {
     public string MethodName { get; set; } = "";
-    public List<string>? GenericTypes { get; set; } = new();
-    public List<object> Arguments { get; set; } = new();
+    public List<ITypeSymbol>? GenericTypes { get; set; } = new();
+    public List<KeyValuePair<string, object>> Arguments { get; set; } = new();
 }
