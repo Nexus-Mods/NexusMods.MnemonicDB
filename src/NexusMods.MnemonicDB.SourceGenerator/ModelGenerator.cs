@@ -70,6 +70,14 @@ public void Execute(GeneratorExecutionContext context)
             };
         }
     }
+
+    var writer = new Write();
+    foreach (var chain in chains.Values)
+    {
+        writer.Add(chain.Analyze());
+    }
+
+    context.AddSource("model.generated.cs", writer.Build());
 }
 
     private class SyntaxReceiver : ISyntaxReceiver
