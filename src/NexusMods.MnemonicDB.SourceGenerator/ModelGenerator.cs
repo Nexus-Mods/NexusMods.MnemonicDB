@@ -41,6 +41,7 @@ public void Execute(GeneratorExecutionContext context)
 
             if (symbol?.ContainingType.Equals(modelDefinitionSymbol, SymbolEqualityComparer.Default) == true)
             {
+                var trivia = currentInvocation.DescendantTrivia().ToArray();
                 var info = new MethodCall
                 {
                     MethodName = symbol.Name,

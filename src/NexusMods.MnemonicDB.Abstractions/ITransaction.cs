@@ -33,6 +33,13 @@ public interface ITransaction : IDisposable
     void Add(ITxFunction fn);
 
     /// <summary>
+    /// Attach a temporary entity to the transaction, when this transaction is commited,
+    /// the entity's `AddTo` method will be called.
+    /// </summary>
+    /// <param name="entity"></param>
+    void Attach(TempEntity entity);
+
+    /// <summary>
     ///     Adds a new datom to the transaction, that retracts the value for the given attribute
     /// </summary>
     void Retract<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val)

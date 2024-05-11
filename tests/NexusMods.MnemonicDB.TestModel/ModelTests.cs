@@ -1,4 +1,5 @@
-﻿using NexusMods.MnemonicDB.Abstractions.Attributes;
+﻿using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.TestModel.Attributes;
 
@@ -9,11 +10,10 @@ public class ModelTests
     public ModelTests()
     {
         ModelDefinition.New("TestModel")
-        .WithAttribute<StringAttribute>("Name", isIndexed: true)
-        .WithAttribute<UriAttribute>("Source")
-        .WithAttribute<ReferenceAttribute>("LoadoutId")
-        .WithAttribute<MarkerAttribute>("IsMarked")
-        .WithBackReference<Loadout.Model>("Loadout")
+        // The Name of the model
+        .Attribute<StringAttribute>("Name", isIndexed: true)
+        // The Source of the model
+        .Attribute<UriAttribute>("Source")
         .Build();
     }
 

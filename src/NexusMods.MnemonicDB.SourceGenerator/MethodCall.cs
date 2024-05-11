@@ -8,4 +8,6 @@ public record MethodCall()
     public string MethodName { get; set; } = "";
     public List<ITypeSymbol>? GenericTypes { get; set; } = new();
     public List<KeyValuePair<string, object>> Arguments { get; set; } = new();
+
+    public List<string> CodeComments { get; set; } = new();
 }

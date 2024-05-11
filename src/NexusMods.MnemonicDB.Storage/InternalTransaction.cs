@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
 namespace NexusMods.MnemonicDB.Storage;
@@ -32,6 +33,11 @@ internal class InternalTransaction(IndexSegmentBuilder datoms) : ITransaction
 
     /// <inheritdoc />
     public void Add(ITxFunction fn)
+    {
+        throw new NotSupportedException();
+    }
+
+    public void Attach(TempEntity entity)
     {
         throw new NotSupportedException();
     }

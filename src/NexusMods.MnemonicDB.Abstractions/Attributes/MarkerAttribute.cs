@@ -21,7 +21,7 @@ public class MarkerAttribute(string ns, string name) : Attribute<Null, Null>(Val
     /// Add the attribute to the entity.
     /// </summary>
     /// <param name="entityWithTx"></param>
-    public void Add(IEntityWithTx entityWithTx)
+    public void Add(IAttachedEntity entityWithTx)
     {
         Add(entityWithTx, new Null());
     }
@@ -29,7 +29,7 @@ public class MarkerAttribute(string ns, string name) : Attribute<Null, Null>(Val
     /// <summary>
     /// Returns true if the entity contains the attribute.
     /// </summary>
-    public bool Contains(IEntity entity)
+    public bool Contains(IHasEntityIdAndDb entity)
     {
         var segment = entity.Db.Get(entity.Id);
         var dbId = Cache[segment.RegistryId.Value];

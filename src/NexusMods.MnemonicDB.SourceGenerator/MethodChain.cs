@@ -21,14 +21,15 @@ public record MethodChain()
                     model.FullName = $"{Namespace}.{model.Name}";
                     model.Namespace = Namespace;
                     break;
-                case "WithAttribute":
+                case "Attribute":
                 {
                     var attribute = new ConcreteAttribute
                     {
                         Name = method.Arguments[0].Value.ToString(),
-                        Type = method.GenericTypes![0]
+                        Type = method.GenericTypes![0],
+                        TypeInfo = FindAttributeInInheritanceTree((INamedTypeSymbol)method.GenericTypes![0])
                     };
-                    FindAttributeInInheritanceTree((INamedTypeSymbol)attribute.Type);
+
                     model.Attributes.Add(attribute);
                     break;
                 }
@@ -37,13 +38,17 @@ public record MethodChain()
         return model;
     }
 
-    public (ITypeSymbol, ITypeSymbol)? FindAttributeInInheritanceTree(INamedTypeSymbol typeSymbol)
+    public AttributeTypeInfo? FindAttributeInInheritanceTree(INamedTypeSymbol? typeSymbol)
     {
         while (typeSymbol != null)
         {
-            if (typeSymbol.OriginalDefinition.ToDisplayString() == "Attribute<TValueType, TLowLevelType>")
+            if (typeSymbol.OriginalDefinition.ToDisplayString() == "NexusMods.MnemonicDB.Abstractions.Attribute<TValueType, TLowLevelType>")
             {
-                return (typeSymbol.TypeArguments[0], typeSymbol.TypeArguments[1]);
+                return new AttributeTypeInfo
+                {
+                    HighLevel = (INamedTypeSymbol)typeSymbol.TypeArguments[0],
+                    LowLevel = (typeSymbol.TypeArguments[1] as INamedTypeSymbol)!
+                };
             }
 
             typeSymbol = typeSymbol.BaseType!;

@@ -67,7 +67,7 @@ internal class Db : IDb
     public IConnection Connection => _connection;
 
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids)
-        where TModel : IEntity
+        where TModel : IHasEntityIdAndDb
     {
         foreach (var id in ids)
         {
@@ -130,13 +130,13 @@ internal class Db : IDb
     }
 
     public TModel Get<TModel>(EntityId id)
-        where TModel : IEntity
+        where TModel : IHasEntityIdAndDb
     {
         return EntityConstructors<TModel>.Constructor(id, this);
     }
 
     public Entities<EntityIds, TModel> GetReverse<TModel>(EntityId id, Attribute<EntityId, ulong> attribute)
-        where TModel : IEntity
+        where TModel : IHasEntityIdAndDb
     {
         var segment = _reverseCache.Get(this, (id, attribute.GetDbId(_registry.Id)));
         var ids = new EntityIds(segment, 0, segment.Count);

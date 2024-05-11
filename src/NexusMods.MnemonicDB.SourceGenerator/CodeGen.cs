@@ -7,9 +7,10 @@ public class CodeGen
     private int _indent;
     private StringBuilder _builder = new();
 
-    public void Add(string line)
+    public void Add(params string[] lines)
     {
-        if (line.EndsWith("}"))
+        var line = string.Join("", lines);
+        if (line == "}")
             _indent--;
         _builder.Append(new string(' ', _indent * 4));
         _builder.AppendLine(line);

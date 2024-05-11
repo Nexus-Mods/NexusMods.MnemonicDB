@@ -17,4 +17,13 @@ public record ConcreteAttribute
 {
     public string Name { get; set; } = "";
     public ITypeSymbol Type { get; set; } = null!;
+
+    public AttributeTypeInfo? TypeInfo { get; set; } = null!;
+}
+
+
+public record AttributeTypeInfo
+{
+    public INamedTypeSymbol HighLevel { get; set; } = null!;
+    public INamedTypeSymbol LowLevel { get; set; } = null!;
 }

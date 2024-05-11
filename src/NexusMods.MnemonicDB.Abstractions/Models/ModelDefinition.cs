@@ -38,8 +38,25 @@ public class ModelDefinition
     /// <summary>
     /// Defines a new attribute on the model of the given attribute type with the given parameters
     /// </summary>
-    public ModelDefinition WithAttribute<TAttribute>(string name, bool isIndexed = false, bool noHistory = false)
-        where TAttribute : IAttribute
+    public ModelDefinition Attribute<TType>(string name, bool isIndexed = false, bool noHistory = false)
+    where TType : IAttribute
+    {
+        return this;
+    }
+
+    /// <summary>
+    /// Define a reference to another model, via an attribute of the given name.
+    /// </summary>
+    public ModelDefinition References<TModel>(string name)
+    {
+        return this;
+    }
+
+    /// <summary>
+    /// Define an attribute that is a marker; it doesn't have a value, its existance determines if the value
+    /// is true or false.
+    /// </summary>
+    public ModelDefinition MarkedBy(string name)
     {
         return this;
     }
@@ -48,7 +65,7 @@ public class ModelDefinition
     /// Defines a reference in another model that points to this class. These references will be exposed
     /// in the `name` property of this model.
     /// </summary>
-    public ModelDefinition WithBackReference<TModel>(string name)
+    public ModelDefinition BackRef<TModel>(string name)
     {
         return this;
     }
