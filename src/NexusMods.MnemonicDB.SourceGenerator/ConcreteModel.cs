@@ -10,6 +10,8 @@ public record ConcreteModel
     public string Namespace { get; set; } = "";
 
     public List<ConcreteAttribute> Attributes { get; set; } = new();
+
+    public List<ReferenceAttribute> References { get; set; } = new();
 }
 
 
@@ -19,6 +21,18 @@ public record ConcreteAttribute
     public ITypeSymbol Type { get; set; } = null!;
 
     public AttributeTypeInfo? TypeInfo { get; set; } = null!;
+}
+
+public record ReferenceAttribute
+{
+    public string Name { get; set; } = "";
+
+    /// <summary>
+    /// If this is a reference, this is the model that it references.
+    /// </summary>
+    public ITypeSymbol ReferenceModel { get; set; } = null!;
+
+    public bool MultiCardinality { get; set; } = false;
 }
 
 

@@ -6,6 +6,20 @@
     </PropertyGroup>
     <ItemGroup>
       <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+      <PackageReference Include="System.CodeDom" Version="8.0.0" />
+    </ItemGroup>
+    <ItemGroup>
+      <Compile Update="ModelTemplate.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>ModelTemplate.tt</DependentUpon>
+      </Compile>
+    </ItemGroup>
+    <ItemGroup>
+      <None Update="ModelTemplate.tt">
+        <Generator>TextTemplatingFilePreprocessor</Generator>
+        <LastGenOutput>ModelTemplate.cs</LastGenOutput>
+      </None>
     </ItemGroup>
 
 </Project>

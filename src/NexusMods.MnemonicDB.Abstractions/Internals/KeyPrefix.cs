@@ -14,7 +14,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Internals;
 ///         [AttributeId: 2bytes]
 ///         [TxId: 6bytes]
 ///         [EntityID + PartitionID: 7bytes]
-///         [IsRetract: 1bit]
+///         [IsRetract: 1byte]
 ///         The Entity Id is created by taking the last 6 bytes of the id and combining it with
 ///         the partition id. So the encoding logic looks like this:
 ///         packed = (e & 0x00FFFFFFFFFFFFFF) >> 8 | (e & 0xFFFFFFFFFFFF) << 8

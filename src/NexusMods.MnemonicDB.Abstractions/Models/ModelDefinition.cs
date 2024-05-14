@@ -47,6 +47,14 @@ public class ModelDefinition
     /// <summary>
     /// Define a reference to another model, via an attribute of the given name.
     /// </summary>
+    public ModelDefinition Reference<TModel>(string name)
+    {
+        return this;
+    }
+
+    /// <summary>
+    /// Define a multi-cardinality reference to another model, via an attribute of the given name.
+    /// </summary>
     public ModelDefinition References<TModel>(string name)
     {
         return this;

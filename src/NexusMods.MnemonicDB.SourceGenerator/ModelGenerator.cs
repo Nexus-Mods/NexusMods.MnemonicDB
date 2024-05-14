@@ -2,6 +2,7 @@
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using CSharpExtensions = Microsoft.CodeAnalysis.CSharp.CSharpExtensions;
 
 namespace NexusMods.MnemonicDB.SourceGenerator;
 
@@ -22,7 +23,7 @@ public void Execute(GeneratorExecutionContext context)
     var compilation = context.Compilation;
     var modelDefinitionSymbol = compilation.GetTypeByMetadataName("NexusMods.MnemonicDB.Abstractions.Models.ModelDefinition");
 
-    var chains = new Dictionary<string, MethodChain>();
+    var chains = new List<MethodChain>();
 
     var buildInvocations = receiver.Invocations
         .Where(i => (compilation.GetSemanticModel(i.SyntaxTree).GetSymbolInfo(i).Symbol as IMethodSymbol)?.Name == "Build");
@@ -32,7 +33,15 @@ public void Execute(GeneratorExecutionContext context)
         var chain = new List<MethodCall>();
         var currentInvocation = buildInvocation;
 
-        string? ns = null;
+        string? ns;
+        {
+            // Assuming you have an InvocationExpressionSyntax object named 'invocationExpression'
+            var compilationUnit = currentInvocation.AncestorsAndSelf()
+                .OfType<FileScopedNamespaceDeclarationSyntax>()
+                .First();
+            ns = compilationUnit.Name.ToString();
+        }
+
         while (currentInvocation != null)
         {
             var semanticModel = compilation.GetSemanticModel(currentInvocation.SyntaxTree);
@@ -64,21 +73,25 @@ public void Execute(GeneratorExecutionContext context)
         if (chain.First().MethodName == "New")
         {
             var chainName = chain[0].MethodName;
-            chains[chainName] = new MethodChain
+            chains.Add(new MethodChain
             {
                 Namespace = ns!,
                 Methods = chain.ToArray()
-            };
+            });
         }
     }
 
-    var writer = new Write();
-    foreach (var chain in chains.Values)
+    foreach (var chain in chains)
     {
-        writer.Add(chain.Analyze());
+        var concreteModel = chain.Analyze();
+        var writer = new ModelTemplate()
+        {
+            Model = concreteModel
+        };
+        context.AddSource("MnemonicDB_Model_" + concreteModel.Name + ".cs", writer.TransformText());
     }
 
-    context.AddSource("model.generated.cs", writer.Build());
+
 }
 
     private class SyntaxReceiver : ISyntaxReceiver

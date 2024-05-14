@@ -15,6 +15,7 @@ public static class Services
     {
         services.AddSingleton<IConnection, Connection>();
         services.AddHostedService<Connection>(s => (Connection)s.GetRequiredService<IConnection>());
+
         return services;
     }
 }

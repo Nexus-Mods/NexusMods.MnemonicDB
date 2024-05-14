@@ -1,0 +1,52 @@
+<#@ template language="C#" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+
+using __MODELS__ = global::NexusMods.MnemonicDB.Abstractions.Models;
+
+namespace <#=Model.Namespace#>
+{
+    public class <#=Model.Name#> : __MODELS__.TempEntity
+    {
+        public static class Attributes
+        {
+               private const string __ns__ = "<#=Model.Namespace#>";
+
+<#
+foreach (var attribute in Model.Attributes)
+{
+#>
+               public static global::<#=attribute.Type.ToDisplayString()#> <#=attribute.Name#> = new(__ns__, nameof(<#=attribute.Name#>));
+<#
+}
+#>
+               // References
+<#
+foreach (var reference in Model.References)
+{
+    if (reference.MultiCardinality)
+    {
+#>
+               public static global::NexusMods.MnemonicDB.Abstractions.Attributes.ReferencesAttribute <#= reference.Name #>Ids = new(__ns__, nameof(<#= reference.Name #>));
+<#
+    }
+    else
+    {
+#>
+               public static global::NexusMods.MnemonicDB.Abstractions.Attributes.ReferenceAttribute <#= reference.Name #>Id = new(__ns__, nameof(<#= reference.Name #>));
+<#
+    }
+}
+#>
+        }
+
+    }
+
+
+
+}
+
+
+<#+
+    public ConcreteModel Model;
+#>

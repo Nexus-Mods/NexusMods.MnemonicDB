@@ -33,6 +33,29 @@ public record MethodChain()
                     model.Attributes.Add(attribute);
                     break;
                 }
+                case "Reference":
+                {
+                    var attribute = new ReferenceAttribute
+                    {
+                        Name = method.Arguments[0].Value.ToString(),
+                        ReferenceModel = method.GenericTypes![0]
+                    };
+
+                    model.References.Add(attribute);
+                    break;
+                }
+                case "References":
+                {
+                    var attribute = new ReferenceAttribute
+                    {
+                        Name = method.Arguments[0].Value.ToString(),
+                        ReferenceModel = method.GenericTypes![0],
+                        MultiCardinality = true
+                    };
+
+                    model.References.Add(attribute);
+                    break;
+                }
             }
         }
         return model;
