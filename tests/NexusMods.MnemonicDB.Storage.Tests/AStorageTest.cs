@@ -26,7 +26,7 @@ public abstract class AStorageTest : IAsyncLifetime
     protected AStorageTest(IServiceProvider provider, Func<AttributeRegistry, IStoreBackend>? backendFn = null)
     {
         _provider = provider;
-        Registry = new AttributeRegistry(provider.GetRequiredService<IEnumerable<IAttribute>>());
+        Registry = new AttributeRegistry(provider.GetServices<IAttribute>());
         Registry.Populate([
             new DbAttribute(File.Attributes.Path.Id, AttributeId.From(20), ValueTags.Utf8Insensitive),
             new DbAttribute(File.Attributes.Hash.Id, AttributeId.From(21), ValueTags.UInt64),

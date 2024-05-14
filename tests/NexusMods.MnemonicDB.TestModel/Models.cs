@@ -4,7 +4,7 @@ using NexusMods.MnemonicDB.TestModel.Attributes;
 
 namespace NexusMods.MnemonicDB.TestModel;
 
-public static class Models
+public static partial class Models
 {
     public static void RegisterModels()
     {
@@ -17,8 +17,8 @@ public static class Models
             .Build();
 
         ModelDefinition.New("File")
-            .Attribute<RelativePathAttribute>("Path")
-            .Attribute<HashAttribute>("Hash")
+            .Attribute<RelativePathAttribute>("Path", isIndexed: true)
+            .Attribute<HashAttribute>("Hash", isIndexed: true)
             .Attribute<SizeAttribute>("Size")
             .Reference<Mod>("Mod")
             .Build();

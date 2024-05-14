@@ -59,7 +59,11 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
         Id = GetRegistryId(this);
 
         BuiltInAttributes.UniqueId.SetDbId(Id, BuiltInAttributes.UniqueIdEntityId);
+        _attributes[BuiltInAttributes.UniqueIdEntityId.Value] = BuiltInAttributes.UniqueId;
         BuiltInAttributes.ValueType.SetDbId(Id, BuiltInAttributes.ValueTypeEntityId);
+        _attributes[BuiltInAttributes.ValueTypeEntityId.Value] = BuiltInAttributes.ValueType;
+        BuiltInAttributes.TxTimestanp.SetDbId(Id, BuiltInAttributes.TxTimestanpEntityId);
+        _attributes[BuiltInAttributes.TxTimestanpEntityId.Value] = BuiltInAttributes.TxTimestanp;
 
         foreach (var attribute in attributes)
         {

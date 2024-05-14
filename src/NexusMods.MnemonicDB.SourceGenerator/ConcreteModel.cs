@@ -21,11 +21,39 @@ public record ConcreteAttribute
     public ITypeSymbol Type { get; set; } = null!;
 
     public AttributeTypeInfo? TypeInfo { get; set; } = null!;
+
+    public bool IsIndexed { get; set; } = false;
+
+    public bool NoHistory { get; set; } = false;
+
+    public string AttributePostfix
+    {
+        get
+        {
+            List<string> postfixes = new();
+            if (IsIndexed)
+                postfixes.Add("IsIndexed = true");
+            if (NoHistory)
+                postfixes.Add("NoHistory = true");
+            if (postfixes.Count == 0)
+                return "";
+            return $"{{ {string.Join(", ", postfixes)} }}";
+        }
+    }
 }
 
 public record ReferenceAttribute
 {
     public string Name { get; set; } = "";
+
+    public string AttributeName
+    {
+        get
+        {
+            if (MultiCardinality) return Name + "Ids";
+            return Name + "Id";
+        }
+    }
 
     /// <summary>
     /// If this is a reference, this is the model that it references.

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 
 namespace NexusMods.MnemonicDB.SourceGenerator;
@@ -29,6 +30,12 @@ public record MethodChain()
                         Type = method.GenericTypes![0],
                         TypeInfo = FindAttributeInInheritanceTree((INamedTypeSymbol)method.GenericTypes![0])
                     };
+
+                    if (method.Arguments.Any(a => a.Key == "isIndexed" && a.Value is true))
+                        attribute.IsIndexed = true;
+
+                    if (method.Arguments.Any(a => a.Key == "noHistory" && a.Value is true))
+                        attribute.NoHistory = true;
 
                     model.Attributes.Add(attribute);
                     break;

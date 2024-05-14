@@ -2,7 +2,11 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 
+using Microsoft.Extensions.DependencyInjection;
 using __MODELS__ = global::NexusMods.MnemonicDB.Abstractions.Models;
+using __ABSTRACTIONS__ = global::NexusMods.MnemonicDB.Abstractions;
+using __DI__ = Microsoft.Extensions.DependencyInjection;
+
 
 namespace <#=Model.Namespace#>
 {
@@ -10,13 +14,13 @@ namespace <#=Model.Namespace#>
     {
         public static class Attributes
         {
-               private const string __ns__ = "<#=Model.Namespace#>";
+               private const string __ns__ = "<#=Model.Namespace#>.<#=Model.Name#>";
 
 <#
 foreach (var attribute in Model.Attributes)
 {
 #>
-               public static global::<#=attribute.Type.ToDisplayString()#> <#=attribute.Name#> = new(__ns__, nameof(<#=attribute.Name#>));
+               public static readonly global::<#=attribute.Type.ToDisplayString()#> <#=attribute.Name#> = new(__ns__, nameof(<#=attribute.Name#>)) <#=attribute.AttributePostfix#>;
 <#
 }
 #>
@@ -27,19 +31,43 @@ foreach (var reference in Model.References)
     if (reference.MultiCardinality)
     {
 #>
-               public static global::NexusMods.MnemonicDB.Abstractions.Attributes.ReferencesAttribute <#= reference.Name #>Ids = new(__ns__, nameof(<#= reference.Name #>));
+               public static readonly global::NexusMods.MnemonicDB.Abstractions.Attributes.ReferencesAttribute <#= reference.Name #>Ids = new(__ns__, nameof(<#= reference.Name #>));
 <#
     }
     else
     {
 #>
-               public static global::NexusMods.MnemonicDB.Abstractions.Attributes.ReferenceAttribute <#= reference.Name #>Id = new(__ns__, nameof(<#= reference.Name #>));
+               public static readonly global::NexusMods.MnemonicDB.Abstractions.Attributes.ReferenceAttribute <#= reference.Name #>Id = new(__ns__, nameof(<#= reference.Name #>));
 <#
     }
 }
 #>
         }
 
+    }
+
+    public static class <#=Model.Name#>Extensions
+    {
+        public static __DI__.IServiceCollection Add<#=Model.Name#>Model(this __DI__.IServiceCollection collection)
+        {
+<#
+foreach (var attribute in Model.Attributes)
+{
+#>
+            collection.AddSingleton<__ABSTRACTIONS__.IAttribute>(<#=Model.Name#>.Attributes.<#=attribute.Name#>);
+<#
+}
+#>
+<#
+foreach (var attribute in Model.References)
+{
+#>
+            collection.AddSingleton<__ABSTRACTIONS__.IAttribute>(<#=Model.Name#>.Attributes.<#=attribute.AttributeName#>);
+<#
+}
+#>
+            return collection;
+        }
     }
 
 
