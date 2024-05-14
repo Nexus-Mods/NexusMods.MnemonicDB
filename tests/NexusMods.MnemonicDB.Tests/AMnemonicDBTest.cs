@@ -47,33 +47,10 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
 
     protected DatomStoreSettings Config { get; set; }
 
-    protected SettingsTask VerifyModel<TReadModel>(TReadModel model)
-        where TReadModel : IHasEntityIdAndDb
-    {
-        var fromAttributes = EntityToDictionary(model);
-        return Verify(fromAttributes);
-    }
-
-    private Dictionary<string, string> EntityToDictionary<TReadModel>(TReadModel model) where TReadModel : IHasEntityIdAndDb
-    {
-        return new Dictionary<string, string>(from prop in model.GetType().GetProperties()
-            where prop.Name != "Id" && prop.Name != "Tx" && prop.Name != "Db"
-            let value = Stringify(prop.GetValue(model)!)
-            where value != null
-            select new KeyValuePair<string, string>(prop.Name, value));
-    }
-
     protected SettingsTask VerifyModel<T>(IEnumerable<T> models)
-    where T : IHasEntityIdAndDb
+    where T : IEnumerable<IReadDatom>
     {
-        return Verify(models.Select(EntityToDictionary).ToArray());
-    }
-
-    private string Stringify(object value)
-    {
-        if (value is IHasEntityIdAndDb entity)
-            return entity.Id.Value.ToString("x");
-        return value!.ToString() ?? "";
+        return VerifyTable(models.SelectMany(e => e));
     }
 
     protected SettingsTask VerifyTable(IEnumerable<IReadDatom> datoms)

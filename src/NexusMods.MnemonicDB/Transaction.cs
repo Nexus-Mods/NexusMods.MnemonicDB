@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
@@ -15,7 +16,7 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
 {
     private readonly IndexSegmentBuilder _datoms = new(registry);
     private HashSet<ITxFunction>? _txFunctions = null; // No reason to create the hashset if we don't need it
-    private List<TempEntity>? _tempEntities = null;
+    private List<ITemporaryEntity>? _tempEntities = null;
     private ulong _tempId = Ids.MinId(Ids.Partition.Tmp) + 1;
     private bool _committed = false;
 
@@ -35,6 +36,16 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
         _datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
     }
 
+    public void Add(EntityId entityId, ReferencesAttribute attribute, IEnumerable<EntityId> ids)
+    {
+        if (_committed)
+            throw new InvalidOperationException("Transaction has already been committed");
+        foreach (var id in ids)
+        {
+            _datoms.Add(entityId, attribute, id, ThisTxId, isRetract: false);
+        }
+    }
+
     public void Add(ITxFunction fn)
     {
         if (_committed)
@@ -43,7 +54,7 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
         _txFunctions?.Add(fn);
     }
 
-    public void Attach(TempEntity entity)
+    public void Attach(ITemporaryEntity entity)
     {
         _tempEntities ??= [];
         _tempEntities.Add(entity);
@@ -51,7 +62,6 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
 
     public async Task<ICommitResult> Commit()
     {
-        _committed = true;
         if (_tempEntities != null)
         {
             foreach (var entity in _tempEntities!)
@@ -59,6 +69,7 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
                 entity.AddTo(this);
             }
         }
+        _committed = true;
         return await connection.Transact(_datoms.Build(), _txFunctions);
     }
 

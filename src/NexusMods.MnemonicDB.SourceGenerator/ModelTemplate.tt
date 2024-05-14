@@ -10,7 +10,7 @@ using __DI__ = Microsoft.Extensions.DependencyInjection;
 
 namespace <#=Model.Namespace#>
 {
-    public class <#=Model.Name#> : __MODELS__.TempEntity
+    public class <#=Model.Name#> : __MODELS__.ITemporaryEntity
     {
         public static class Attributes
         {
@@ -31,30 +31,130 @@ foreach (var reference in Model.References)
     if (reference.MultiCardinality)
     {
 #>
-               public static readonly global::NexusMods.MnemonicDB.Abstractions.Attributes.ReferencesAttribute <#= reference.Name #>Ids = new(__ns__, nameof(<#= reference.Name #>));
+               public static readonly global::NexusMods.MnemonicDB.Abstractions.Attributes.ReferencesAttribute <#= reference.Name #>Ids = new(__ns__, "<#= reference.Name #>");
 <#
     }
     else
     {
 #>
-               public static readonly global::NexusMods.MnemonicDB.Abstractions.Attributes.ReferenceAttribute <#= reference.Name #>Id = new(__ns__, nameof(<#= reference.Name #>));
+               public static readonly global::NexusMods.MnemonicDB.Abstractions.Attributes.ReferenceAttribute <#= reference.Name #>Id = new(__ns__, "<#= reference.Name #>");
 <#
     }
 }
 #>
         }
 
-    }
-
-    public static class <#=Model.Name#>Extensions
-    {
-        public static __DI__.IServiceCollection Add<#=Model.Name#>Model(this __DI__.IServiceCollection collection)
+        public <#=Model.Name#>(__ABSTRACTIONS__.ITransaction tx)
         {
+            Id = tx.TempId();
+            tx.Attach(this);
+        }
+
+        public <#=Model.Name#>(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.EntityId id)
+        {
+            Id = id;
+            tx.Attach(this);
+        }
+
+
+        public __ABSTRACTIONS__.EntityId Id { get; private set; }
+
 <#
 foreach (var attribute in Model.Attributes)
 {
 #>
-            collection.AddSingleton<__ABSTRACTIONS__.IAttribute>(<#=Model.Name#>.Attributes.<#=attribute.Name#>);
+        public required <#=attribute.TypeInfo!.HighLevel.ToDisplayString()#> <#=attribute.Name#> { get; init; }
+<#
+}
+#>
+
+<#
+foreach (var reference in Model.References)
+{
+    if (reference.MultiCardinality)
+    {
+#>
+        public required __ABSTRACTIONS__.EntityId[] <#=reference.Name#>Ids { get; init; }
+<#
+    }
+    else
+    {
+#>
+        public required __ABSTRACTIONS__.EntityId <#=reference.Name#>Id { get; init; }
+<#
+    }
+}
+#>
+
+
+    public static implicit operator __ABSTRACTIONS__.EntityId(<#=Model.Name#> self) => self.Id;
+
+    public void AddTo(__ABSTRACTIONS__.ITransaction tx)
+    {
+<#
+foreach (var attribute in Model.Attributes)
+{
+#>
+         tx.Add(Id, Attributes.<#=attribute.Name#>, <#=attribute.Name#>);
+<#
+}
+#>
+
+<#
+foreach (var attribute in Model.References)
+{
+    if (attribute.MultiCardinality)
+    {
+#>
+         tx.Add(Id, Attributes.<#= attribute.Name #>Ids, <#= attribute.Name #>Ids);
+<#
+    }
+    else
+    {
+#>
+         tx.Add(Id, Attributes.<#= attribute.Name #>Id, <#= attribute.Name #>Id);
+<#
+    }
+}
+#>
+    }
+
+    public static <#=Model.Name#>ReadModel Get(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id)
+    {
+        return new <#=Model.Name#>ReadModel(db, id);
+    }
+
+    public static IEnumerable<<#=Model.Name#>ReadModel> Get(__ABSTRACTIONS__.IDb db, IEnumerable<__ABSTRACTIONS__.EntityId> ids)
+    {
+        foreach (var id in ids)
+        {
+            yield return Get(db, id);
+        }
+    }
+}
+
+public class <#=Model.Name#>ReadModel(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) : __MODELS__.ReadOnlyModel(db, id)
+{
+
+<#
+foreach (var attribute in Model.Attributes)
+{
+#>
+    public <#=attribute.HighLevelType#> <#=attribute.Name#> => <#=Model.Name#>.Attributes.<#=attribute.Name#>.Get(this);
+<#
+}
+#>
+}
+
+public static class <#=Model.Name#>Extensions
+{
+    public static __DI__.IServiceCollection Add<#=Model.Name#>Model(this __DI__.IServiceCollection collection)
+    {
+<#
+foreach (var attribute in Model.Attributes)
+{
+#>
+        collection.AddSingleton<__ABSTRACTIONS__.IAttribute>(<#=Model.Name#>.Attributes.<#=attribute.Name#>);
 <#
 }
 #>
@@ -62,13 +162,13 @@ foreach (var attribute in Model.Attributes)
 foreach (var attribute in Model.References)
 {
 #>
-            collection.AddSingleton<__ABSTRACTIONS__.IAttribute>(<#=Model.Name#>.Attributes.<#=attribute.AttributeName#>);
+        collection.AddSingleton<__ABSTRACTIONS__.IAttribute>(<#=Model.Name#>.Attributes.<#=attribute.AttributeName#>);
 <#
 }
 #>
-            return collection;
-        }
+        return collection;
     }
+}
 
 
 

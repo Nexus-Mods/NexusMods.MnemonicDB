@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
@@ -31,13 +33,17 @@ internal class InternalTransaction(IndexSegmentBuilder datoms) : ITransaction
         datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
     }
 
+    public void Add(EntityId entityId, ReferencesAttribute attribute, IEnumerable<EntityId> ids)
+    {
+        throw new NotSupportedException();
+    }
+
     /// <inheritdoc />
     public void Add(ITxFunction fn)
     {
         throw new NotSupportedException();
     }
-
-    public void Attach(TempEntity entity)
+    public void Attach(ITemporaryEntity entity)
     {
         throw new NotSupportedException();
     }

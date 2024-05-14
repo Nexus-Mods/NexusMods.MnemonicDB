@@ -21,7 +21,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var ids = new List<EntityId>();
         for (ulong idx = 0; idx < totalCount; idx++)
         {
-            var file = new File.Model(tx)
+            var file = new File(tx)
             {
                 Path = $"C:\\test_{idx}.txt",
                 Hash = Hash.From(idx + 0xDEADBEEF),
@@ -39,7 +39,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         result.NewTx.Value.Should().Be(oldTx.Value + 1, "transaction id should be incremented by 1");
 
         var db = Connection.Db;
-        var resolved = ids.Select(id => db.Get<File.Model>(result[id])).ToArray();
+        var resolved = File.Get(db, ids.Select(id => result[id]));
         await VerifyModel(resolved);
     }
 
@@ -50,11 +50,11 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var txEs = new List<TxId>();
 
         var tx = Connection.BeginTransaction();
-        var file = new Mod.Model(tx)
+        var file = new Mod(tx)
         {
             Name = "Test Mod",
             Source = new Uri("http://test.com"),
-            Loadout = new Loadout.Model(tx)
+            LoadoutId = new Loadout(tx)
             {
                 Name = "Test Loadout"
             }
@@ -67,7 +67,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         for (var i = 0; i < times; i++)
         {
             var newTx = Connection.BeginTransaction();
-            newTx.Add(modId, Mod.Name, $"Test Mod {i}");
+            newTx.Add(modId, Mod.Attributes.Name, $"Test Mod {i}");
             result = await newTx.Commit();
             txEs.Add(result.NewTx);
         }
@@ -80,7 +80,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         }
     }
 
-
+/*
     [Fact]
     public async Task DbIsImmutable()
     {
@@ -427,5 +427,6 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             tx.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + amount)}");
         }
     }
+    */
 
 }

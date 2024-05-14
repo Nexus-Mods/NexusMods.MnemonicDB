@@ -20,6 +20,8 @@ public record ConcreteAttribute
     public string Name { get; set; } = "";
     public ITypeSymbol Type { get; set; } = null!;
 
+    public string HighLevelType => TypeInfo!.HighLevel.ToDisplayString();
+
     public AttributeTypeInfo? TypeInfo { get; set; } = null!;
 
     public bool IsIndexed { get; set; } = false;
@@ -40,6 +42,8 @@ public record ConcreteAttribute
             return $"{{ {string.Join(", ", postfixes)} }}";
         }
     }
+
+    public string PrivateMemberName => "_" + Name[0].ToString().ToLower() + Name[1..];
 }
 
 public record ReferenceAttribute
