@@ -209,50 +209,51 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                     .UseTextForParameters("update_datom_" + idx);
             }
         }
-        /*
-                [Fact]
-                public async Task CanGetChildEntities()
-                {
-                    var tx = Connection.BeginTransaction();
 
-                    var loadout = new Loadout.Model(tx)
-                    {
-                        Name = "Test Loadout"
-                    };
+        [Fact]
+        public async Task CanGetChildEntities()
+        {
+            var tx = Connection.BeginTransaction();
 
-                    _ = new Mod.Model(tx)
-                    {
-                        Name = "Test Mod 1",
-                        Source = new Uri("http://mod1.com"),
-                        Loadout = loadout
-                    };
+            var loadout = new Loadout(tx)
+            {
+                Name = "Test Loadout"
+            };
 
-                    _ = new Mod.Model(tx)
-                    {
-                        Name = "Test Mod 2",
-                        Source = new Uri("http://mod2.com"),
-                        Loadout = loadout
-                    };
+            _ = new Mod(tx)
+            {
+                Name = "Test Mod 1",
+                Source = new Uri("http://mod1.com"),
+                LoadoutId = loadout
+            };
 
-                    var result = await tx.Commit();
+            _ = new Mod(tx)
+            {
+                Name = "Test Mod 2",
+                Source = new Uri("http://mod2.com"),
+                LoadoutId = loadout
+            };
 
-                    var newDb = Connection.Db;
+            var result = await tx.Commit();
 
-                    loadout = result.Remap(loadout);
+            var newDb = Connection.Db;
 
-                    loadout.Mods.Count().Should().Be(2);
-                    loadout.Mods.Select(m => m.Name).Should().BeEquivalentTo(["Test Mod 1", "Test Mod 2"]);
+            var loadoutWritten = loadout.Remap(result);
 
-                    var firstMod = loadout.Mods.First();
-                    Ids.IsPartition(firstMod.Loadout.Id.Value, Ids.Partition.Entity)
-                        .Should()
-                        .Be(true, "the temp id should be replaced with a real id");
-                    firstMod.Loadout.Id.Should().Be(loadout.Id);
-                    firstMod.Db.Should().Be(newDb);
-                    loadout.Name.Should().Be("Test Loadout");
-                    firstMod.Loadout.Name.Should().Be("Test Loadout");
-                }
+            loadoutWritten.Mods.Count().Should().Be(2);
+            loadoutWritten.Mods.Select(m => m.Name).Should().BeEquivalentTo(["Test Mod 1", "Test Mod 2"]);
 
+            var firstMod = loadoutWritten.Mods.First();
+            Ids.IsPartition(firstMod.Loadout.Id.Value, Ids.Partition.Entity)
+                .Should()
+                .Be(true, "the temp id should be replaced with a real id");
+            firstMod.LoadoutId.Should().Be(loadoutWritten.Id);
+            firstMod.Db.Should().Be(newDb);
+            loadout.Name.Should().Be("Test Loadout");
+            firstMod.Loadout.Name.Should().Be("Test Loadout");
+        }
+
+                /*
                 [Fact]
                 public async Task CanFindEntitiesByAttribute()
                 {

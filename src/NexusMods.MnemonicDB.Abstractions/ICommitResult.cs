@@ -20,7 +20,7 @@ public interface ICommitResult
     ///   Remaps a ReadModel to a new instance with the new ids, if the entity is not new, it
     /// updates the entity anyway to be current as of the commit
     /// </summary>
-    public T Remap<T>(T model) where T : IHasEntityIdAndDb;
+    public T Remap<T>(T model) where T : IHasEntityId;
 
     /// <summary>
     ///     Gets the new TxId after the commit

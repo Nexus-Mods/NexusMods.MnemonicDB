@@ -14,6 +14,8 @@ public record ConcreteModel
     public List<ReferenceAttribute> References { get; set; } = new();
 
     public List<Include> Includes { get; set; } = new();
+
+    public List<BackRef> BackRefs { get; set; } = new();
 }
 
 
@@ -53,6 +55,17 @@ public record Include
     public ITypeSymbol TypeInfo { get; set; } = default!;
 }
 
+public record BackRef
+{
+    public ITypeSymbol OtherModel { get; set; } = default!;
+
+    public string OtherModelName => OtherModel.ToDisplayString();
+
+    public string OtherAttributeName { get; set; } = "";
+
+    public string ThisAttributeName { get; set; } = "";
+}
+
 public record ReferenceAttribute
 {
     public string Name { get; set; } = "";
@@ -70,6 +83,8 @@ public record ReferenceAttribute
     /// If this is a reference, this is the model that it references.
     /// </summary>
     public ITypeSymbol ReferenceModel { get; set; } = null!;
+
+    public string ReferenceModelName => ReferenceModel.ToDisplayString();
 
     public bool MultiCardinality { get; set; } = false;
 }

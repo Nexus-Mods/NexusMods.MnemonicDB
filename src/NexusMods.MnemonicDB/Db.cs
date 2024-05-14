@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
@@ -91,6 +92,12 @@ internal class Db : IDb
         return Snapshot
             .Datoms(IndexType.AEVTCurrent, a, b)
             .Select(d => d.E);
+    }
+
+    public EntityIds GetBackRefs(ReferenceAttribute attribute, EntityId id)
+    {
+        var segment = _reverseCache.Get(this, (id, attribute.GetDbId(_registry.Id)));
+        return new EntityIds(segment, 0, segment.Count);
     }
 
     public IndexSegment GetSegment(EntityId id)

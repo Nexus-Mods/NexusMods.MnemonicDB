@@ -30,6 +30,7 @@ public static partial class Models
 
         ModelDefinition.New("Loadout")
             .Attribute<StringAttribute>("Name")
+            .BackRef<Mod>("Loadout", "Mods")
             .Build();
 
         ModelDefinition.New("Collection")

@@ -69,6 +69,18 @@ public record MethodChain()
                     model.Includes.Add(new Include { TypeInfo = include! });
                     break;
                 }
+                case "BackRef":
+                {
+                    var backref = new BackRef
+                    {
+                        OtherModel = method.GenericTypes![0],
+                        OtherAttributeName = method.Arguments[0].Value.ToString(),
+                        ThisAttributeName = method.Arguments[1].Value.ToString()
+                    };
+
+                    model.BackRefs.Add(backref);
+                    break;
+                }
             }
         }
         return model;

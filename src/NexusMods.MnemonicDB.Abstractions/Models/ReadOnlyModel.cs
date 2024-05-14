@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 
 namespace NexusMods.MnemonicDB.Abstractions.Models;
 

@@ -82,4 +82,9 @@ public interface IDb : IEquatable<IDb>, IDisposable
     /// Finds all the entity ids that have the given attribute.
     /// </summary>
     IEnumerable<EntityId> Find(IAttribute attribute);
+
+    /// <summary>
+    /// Gets all the back references for this entity that are through the given attribute.
+    /// </summary>
+    EntityIds GetBackRefs(ReferenceAttribute attribute, EntityId id);
 }

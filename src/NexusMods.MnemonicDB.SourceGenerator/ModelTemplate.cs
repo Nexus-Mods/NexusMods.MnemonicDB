@@ -177,9 +177,23 @@ foreach (var reference in Model.References)
             
             #line default
             #line hidden
-            this.Write("(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.EntityId id)\r\n        {\r\n            Id = id;\r\n            tx.Attach(this);\r\n        }\r\n\r\n\r\n        public __ABSTRACTIONS__.EntityId Id { get; private set; }\r\n\r\n");
+            this.Write("(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.EntityId id)\r\n        {\r\n            Id = id;\r\n            tx.Attach(this);\r\n        }\r\n\r\n        public ");
             
-            #line 62 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 59 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(Model.Name));
+            
+            #line default
+            #line hidden
+            this.Write("ReadModel Remap(__ABSTRACTIONS__.ICommitResult result)\r\n        {\r\n            return new ");
+            
+            #line 61 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(Model.Name));
+            
+            #line default
+            #line hidden
+            this.Write("ReadModel(result.Db, result[Id]);\r\n        }\r\n\r\n\r\n        public __ABSTRACTIONS__.EntityId Id { get; private set; }\r\n\r\n");
+            
+            #line 67 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
 foreach (var attribute in Model.Attributes)
 {
@@ -189,21 +203,21 @@ foreach (var attribute in Model.Attributes)
             #line hidden
             this.Write("        public required ");
             
-            #line 66 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 71 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(attribute.TypeInfo!.HighLevel.ToDisplayString()));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 66 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 71 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(attribute.Name));
             
             #line default
             #line hidden
             this.Write(" { get; init; }\r\n");
             
-            #line 67 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 72 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
 }
 
@@ -212,7 +226,7 @@ foreach (var attribute in Model.Attributes)
             #line hidden
             this.Write("\r\n");
             
-            #line 71 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 76 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
 foreach (var reference in Model.References)
 {
@@ -224,14 +238,14 @@ foreach (var reference in Model.References)
             #line hidden
             this.Write("        public required __ABSTRACTIONS__.EntityId[] ");
             
-            #line 77 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 82 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(reference.Name));
             
             #line default
             #line hidden
             this.Write("Ids { get; init; }\r\n");
             
-            #line 78 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 83 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
     }
     else
@@ -242,14 +256,14 @@ foreach (var reference in Model.References)
             #line hidden
             this.Write("        public required __ABSTRACTIONS__.EntityId ");
             
-            #line 83 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 88 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(reference.Name));
             
             #line default
             #line hidden
             this.Write("Id { get; init; }\r\n");
             
-            #line 84 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 89 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
     }
 }
@@ -259,14 +273,14 @@ foreach (var reference in Model.References)
             #line hidden
             this.Write("\r\n\r\n    public static implicit operator __ABSTRACTIONS__.EntityId(");
             
-            #line 90 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 95 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Model.Name));
             
             #line default
             #line hidden
             this.Write(" self) => self.Id;\r\n\r\n    public void AddTo(__ABSTRACTIONS__.ITransaction tx)\r\n    {\r\n");
             
-            #line 94 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 99 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
 foreach (var attribute in Model.Attributes)
 {
@@ -276,21 +290,21 @@ foreach (var attribute in Model.Attributes)
             #line hidden
             this.Write("         tx.Add(Id, Attributes.");
             
-            #line 98 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 103 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(attribute.Name));
             
             #line default
             #line hidden
             this.Write(", ");
             
-            #line 98 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 103 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(attribute.Name));
             
             #line default
             #line hidden
             this.Write(");\r\n");
             
-            #line 99 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 104 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
 }
 
@@ -299,7 +313,7 @@ foreach (var attribute in Model.Attributes)
             #line hidden
             this.Write("\r\n");
             
-            #line 103 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 108 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
 foreach (var attribute in Model.References)
 {
@@ -311,21 +325,21 @@ foreach (var attribute in Model.References)
             #line hidden
             this.Write("         tx.Add(Id, Attributes.");
             
-            #line 109 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 114 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(attribute.Name));
             
             #line default
             #line hidden
             this.Write("Ids, ");
             
-            #line 109 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 114 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(attribute.Name));
             
             #line default
             #line hidden
             this.Write("Ids);\r\n");
             
-            #line 110 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 115 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
     }
     else
@@ -336,21 +350,21 @@ foreach (var attribute in Model.References)
             #line hidden
             this.Write("         tx.Add(Id, Attributes.");
             
-            #line 115 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 120 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(attribute.Name));
             
             #line default
             #line hidden
             this.Write("Id, ");
             
-            #line 115 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 120 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(attribute.Name));
             
             #line default
             #line hidden
             this.Write("Id);\r\n");
             
-            #line 116 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 121 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
     }
 }
@@ -360,35 +374,35 @@ foreach (var attribute in Model.References)
             #line hidden
             this.Write("    }\r\n\r\n    public static ");
             
-            #line 122 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 127 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Model.Name));
             
             #line default
             #line hidden
             this.Write("ReadModel Get(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id)\r\n    {\r\n        return new ");
             
-            #line 124 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 129 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Model.Name));
             
             #line default
             #line hidden
             this.Write("ReadModel(db, id);\r\n    }\r\n\r\n    public static IEnumerable<");
             
-            #line 127 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 132 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Model.Name));
             
             #line default
             #line hidden
             this.Write("ReadModel> Get(__ABSTRACTIONS__.IDb db, IEnumerable<__ABSTRACTIONS__.EntityId> ids)\r\n    {\r\n        foreach (var id in ids)\r\n        {\r\n            yield return Get(db, id);\r\n        }\r\n    }\r\n}\r\n\r\npublic class ");
             
-            #line 136 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 141 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Model.Name));
             
             #line default
             #line hidden
             this.Write("ReadModel(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) : __MODELS__.ReadOnlyModel(db, id)\r\n{\r\n\r\n");
             
-            #line 139 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 144 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
 foreach (var attribute in Model.Attributes)
 {
@@ -398,35 +412,192 @@ foreach (var attribute in Model.Attributes)
             #line hidden
             this.Write("    public ");
             
-            #line 143 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 148 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(attribute.HighLevelType));
             
             #line default
             #line hidden
             this.Write(" ");
             
-            #line 143 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 148 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(attribute.Name));
             
             #line default
             #line hidden
             this.Write(" => ");
             
-            #line 143 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 148 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Model.Name));
             
             #line default
             #line hidden
             this.Write(".Attributes.");
             
-            #line 143 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 148 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(attribute.Name));
             
             #line default
             #line hidden
             this.Write(".Get(this);\r\n");
             
-            #line 144 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 149 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+
+}
+
+            
+            #line default
+            #line hidden
+            this.Write("\r\n");
+            
+            #line 153 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+
+foreach (var reference in Model.References)
+{
+    if (reference.MultiCardinality)
+    {
+
+            
+            #line default
+            #line hidden
+            this.Write("    public IEnumerable<__ABSTRACTIONS__.EntityId> ");
+            
+            #line 159 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(reference.Name));
+            
+            #line default
+            #line hidden
+            this.Write("Ids => ");
+            
+            #line 159 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(Model.Name));
+            
+            #line default
+            #line hidden
+            this.Write(".Attributes.");
+            
+            #line 159 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(reference.Name));
+            
+            #line default
+            #line hidden
+            this.Write("Ids.Get(this);\r\n");
+            
+            #line 160 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+
+    }
+    else
+    {
+
+            
+            #line default
+            #line hidden
+            this.Write("    public __ABSTRACTIONS__.EntityId ");
+            
+            #line 165 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(reference.Name));
+            
+            #line default
+            #line hidden
+            this.Write("Id => ");
+            
+            #line 165 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(Model.Name));
+            
+            #line default
+            #line hidden
+            this.Write(".Attributes.");
+            
+            #line 165 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(reference.Name));
+            
+            #line default
+            #line hidden
+            this.Write("Id.Get(this);\r\n\r\n    public ");
+            
+            #line 167 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(reference.ReferenceModelName));
+            
+            #line default
+            #line hidden
+            this.Write("ReadModel ");
+            
+            #line 167 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(reference.Name));
+            
+            #line default
+            #line hidden
+            this.Write(" => new ");
+            
+            #line 167 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(reference.ReferenceModelName));
+            
+            #line default
+            #line hidden
+            this.Write("ReadModel(Db, ");
+            
+            #line 167 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(reference.Name));
+            
+            #line default
+            #line hidden
+            this.Write("Id);\r\n");
+            
+            #line 168 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+
+    }
+}
+
+            
+            #line default
+            #line hidden
+            this.Write("\r\n");
+            
+            #line 173 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+
+foreach (var backRef in Model.BackRefs)
+{
+
+            
+            #line default
+            #line hidden
+            this.Write("    public IEnumerable<");
+            
+            #line 177 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(backRef.OtherModelName));
+            
+            #line default
+            #line hidden
+            this.Write("ReadModel> ");
+            
+            #line 177 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(backRef.ThisAttributeName));
+            
+            #line default
+            #line hidden
+            this.Write("\r\n   {\r\n      get {\r\n         foreach (var id in Db.GetBackRefs(");
+            
+            #line 180 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(backRef.OtherModel));
+            
+            #line default
+            #line hidden
+            this.Write(".Attributes.");
+            
+            #line 180 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(backRef.OtherAttributeName));
+            
+            #line default
+            #line hidden
+            this.Write("Id, Id))\r\n         {\r\n            yield return ");
+            
+            #line 182 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            this.Write(this.ToStringHelper.ToStringWithCulture(backRef.OtherModelName));
+            
+            #line default
+            #line hidden
+            this.Write(".Get(Db, id);\r\n         }\r\n      }\r\n   }\r\n");
+            
+            #line 186 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
 }
 
@@ -435,21 +606,21 @@ foreach (var attribute in Model.Attributes)
             #line hidden
             this.Write("}\r\n\r\npublic static class ");
             
-            #line 149 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 191 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Model.Name));
             
             #line default
             #line hidden
             this.Write("Extensions\r\n{\r\n    public static __DI__.IServiceCollection Add");
             
-            #line 151 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 193 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Model.Name));
             
             #line default
             #line hidden
             this.Write("Model(this __DI__.IServiceCollection collection)\r\n    {\r\n");
             
-            #line 153 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 195 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
 foreach (var attribute in Model.Attributes)
 {
@@ -459,21 +630,21 @@ foreach (var attribute in Model.Attributes)
             #line hidden
             this.Write("        collection.AddSingleton<__ABSTRACTIONS__.IAttribute>(");
             
-            #line 157 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 199 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Model.Name));
             
             #line default
             #line hidden
             this.Write(".Attributes.");
             
-            #line 157 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 199 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(attribute.Name));
             
             #line default
             #line hidden
             this.Write(");\r\n");
             
-            #line 158 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 200 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
 }
 
@@ -481,7 +652,7 @@ foreach (var attribute in Model.Attributes)
             #line default
             #line hidden
             
-            #line 161 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 203 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
 foreach (var attribute in Model.References)
 {
@@ -491,21 +662,21 @@ foreach (var attribute in Model.References)
             #line hidden
             this.Write("        collection.AddSingleton<__ABSTRACTIONS__.IAttribute>(");
             
-            #line 165 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 207 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(Model.Name));
             
             #line default
             #line hidden
             this.Write(".Attributes.");
             
-            #line 165 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 207 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(attribute.AttributeName));
             
             #line default
             #line hidden
             this.Write(");\r\n");
             
-            #line 166 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+            #line 208 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
 }
 
@@ -516,7 +687,7 @@ foreach (var attribute in Model.References)
             return this.GenerationEnvironment.ToString();
         }
         
-        #line 178 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
+        #line 220 "C:\oss\NexusMods.MnemonicDB\src\NexusMods.MnemonicDB.SourceGenerator\ModelTemplate.tt"
 
     public ConcreteModel Model;
 

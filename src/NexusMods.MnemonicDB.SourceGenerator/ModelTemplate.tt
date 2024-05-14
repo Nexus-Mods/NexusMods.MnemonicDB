@@ -56,6 +56,11 @@ foreach (var reference in Model.References)
             tx.Attach(this);
         }
 
+        public <#=Model.Name#>ReadModel Remap(__ABSTRACTIONS__.ICommitResult result)
+        {
+            return new <#=Model.Name#>ReadModel(result.Db, result[Id]);
+        }
+
 
         public __ABSTRACTIONS__.EntityId Id { get; private set; }
 
@@ -141,6 +146,43 @@ foreach (var attribute in Model.Attributes)
 {
 #>
     public <#=attribute.HighLevelType#> <#=attribute.Name#> => <#=Model.Name#>.Attributes.<#=attribute.Name#>.Get(this);
+<#
+}
+#>
+
+<#
+foreach (var reference in Model.References)
+{
+    if (reference.MultiCardinality)
+    {
+#>
+    public IEnumerable<__ABSTRACTIONS__.EntityId> <#= reference.Name#>Ids => <#=Model.Name#>.Attributes.<#=reference.Name#>Ids.Get(this);
+<#
+    }
+    else
+    {
+#>
+    public __ABSTRACTIONS__.EntityId <#= reference.Name #>Id => <#=Model.Name#>.Attributes.<#=reference.Name#>Id.Get(this);
+
+    public <#= reference.ReferenceModelName #>ReadModel <#= reference.Name #> => new <#= reference.ReferenceModelName #>ReadModel(Db, <#= reference.Name #>Id);
+<#
+    }
+}
+#>
+
+<#
+foreach (var backRef in Model.BackRefs)
+{
+#>
+    public IEnumerable<<#= backRef.OtherModelName #>ReadModel> <#= backRef.ThisAttributeName #>
+   {
+      get {
+         foreach (var id in Db.GetBackRefs(<#= backRef.OtherModel#>.Attributes.<#= backRef.OtherAttributeName #>Id, Id))
+         {
+            yield return <#= backRef.OtherModelName #>.Get(Db, id);
+         }
+      }
+   }
 <#
 }
 #>

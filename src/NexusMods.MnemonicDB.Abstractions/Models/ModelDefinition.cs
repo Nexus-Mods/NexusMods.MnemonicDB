@@ -56,7 +56,7 @@ public class ModelDefinition
     /// Defines a reference in another model that points to this class. These references will be exposed
     /// in the `name` property of this model.
     /// </summary>
-    public ModelDefinition BackRef<TModel>(string name)
+    public ModelDefinition BackRef<TModel>(string otherAttribute, string thisAttribute)
     {
         return this;
     }
