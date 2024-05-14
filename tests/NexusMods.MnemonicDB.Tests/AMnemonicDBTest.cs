@@ -47,6 +47,12 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
 
     protected DatomStoreSettings Config { get; set; }
 
+    protected SettingsTask VerifyModel<T>(T model)
+    where T : IEnumerable<IReadDatom>
+    {
+        return VerifyTable(model);
+    }
+
     protected SettingsTask VerifyModel<T>(IEnumerable<T> models)
     where T : IEnumerable<IReadDatom>
     {
