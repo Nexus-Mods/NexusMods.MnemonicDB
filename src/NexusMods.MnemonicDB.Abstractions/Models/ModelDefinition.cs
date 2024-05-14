@@ -10,27 +10,10 @@ public class ModelDefinition
         return new ModelDefinition();
     }
 
-    public ModelDefinition Composes<TModel>()
-    {
-        return this;
-    }
-
-    public ModelDefinition Composes<TModelA, TModelB>(string name)
-    {
-        return this;
-    }
-
-    public ModelDefinition Composes<TModelA, TModelB, TModelC>(string name)
-    {
-        return this;
-    }
-
-    public ModelDefinition Composes<TModelA, TModelB, TModelC, TModelD>(string name)
-    {
-        return this;
-    }
-
-    public ModelDefinition Composes<TModelA, TModelB, TModelC, TModelD, TModelE>(string name)
+    /// <summary>
+    /// Specify that this model includes another model.
+    /// </summary>
+    public ModelDefinition FooFar<TModel>()
     {
         return this;
     }

@@ -63,6 +63,12 @@ public record MethodChain()
                     model.References.Add(attribute);
                     break;
                 }
+                case "Include":
+                {
+                    var include = method.GenericTypes![0];
+                    model.Includes.Add(new Include { TypeInfo = include! });
+                    break;
+                }
             }
         }
         return model;

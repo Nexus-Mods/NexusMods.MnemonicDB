@@ -23,6 +23,11 @@ public static partial class Models
             .Reference<Mod>("Mod")
             .Build();
 
+        ModelDefinition.New("ArchiveFile")
+            .Attribute<RelativePathAttribute>("Path")
+            .Attribute<HashAttribute>("Hash")
+            .Build();
+
         ModelDefinition.New("Loadout")
             .Attribute<StringAttribute>("Name")
             .Build();

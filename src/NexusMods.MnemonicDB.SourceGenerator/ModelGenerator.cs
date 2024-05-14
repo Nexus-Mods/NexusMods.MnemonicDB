@@ -50,7 +50,6 @@ public void Execute(GeneratorExecutionContext context)
 
             if (symbol?.ContainingType.Equals(modelDefinitionSymbol, SymbolEqualityComparer.Default) == true)
             {
-                var trivia = currentInvocation.DescendantTrivia().ToArray();
                 var info = new MethodCall
                 {
                     MethodName = symbol.Name,
@@ -72,7 +71,6 @@ public void Execute(GeneratorExecutionContext context)
 
         if (chain.First().MethodName == "New")
         {
-            var chainName = chain[0].MethodName;
             chains.Add(new MethodChain
             {
                 Namespace = ns!,

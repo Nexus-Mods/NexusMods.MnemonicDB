@@ -12,6 +12,8 @@ public record ConcreteModel
     public List<ConcreteAttribute> Attributes { get; set; } = new();
 
     public List<ReferenceAttribute> References { get; set; } = new();
+
+    public List<Include> Includes { get; set; } = new();
 }
 
 
@@ -44,6 +46,11 @@ public record ConcreteAttribute
     }
 
     public string PrivateMemberName => "_" + Name[0].ToString().ToLower() + Name[1..];
+}
+
+public record Include
+{
+    public ITypeSymbol TypeInfo { get; set; } = default!;
 }
 
 public record ReferenceAttribute
