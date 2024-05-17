@@ -1,0 +1,80 @@
+@namespace NexusMods.MnemonicDB.SourceGenerator
+@methodname RenderModel
+@model ModelAnalyzer
+
+using System;
+
+namespace {{= model.Namespace}};
+using __ABSTRACTIONS__ = NexusMods.MnemonicDB.Abstractions;
+using __MODELS__ = NexusMods.MnemonicDB.Abstractions.Models;
+using __SEGMENTS__ = NexusMods.MnemonicDB.Abstractions.IndexSegments;
+
+public partial class {{= model.Name}} {
+
+    {{each attr in model.Attributes}}
+    {{= attr.Comments}}
+    {{if attr.IsReference}}
+    public static {{= attr.AttributeType.ToDisplayString()}} {{= attr.ContextualName}} => {{= attr.FieldName}};
+    {{else}}
+    {{/if}}
+    {{/each}}
+
+
+    public partial class New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
+        public New(__ABSTRACTIONS__.ITransaction tx) : base() {
+            Id = tx.TempId();
+            tx.Attach(this);
+        }
+
+        public void AddTo(__ABSTRACTIONS__.ITransaction tx)
+        {
+            {{each attr in model.Attributes}}
+            {{if attr.IsCollection}}
+            foreach (var itm in {{= attr.ContextualName}}) {
+                tx.Add(Id, {{= attr.FieldName}}, itm, false);
+            }
+            {{else}}
+            tx.Add(Id, {{= attr.FieldName}}, {{= attr.ContextualName}}, false);
+            {{/if}}
+            {{/each}}
+        }
+
+        /// <summary>
+        /// Implicit conversion from the model to the entity id.
+        /// </summary>
+        public static implicit operator __ABSTRACTIONS__.EntityId({{= model.Name}}.New model) {
+            return model.Id;
+        }
+
+        /// <inheritdoc />
+        public __ABSTRACTIONS__.EntityId Id { get; }
+
+        #region Attributes
+        {{each attr in model.Attributes}}
+        {{= attr.Comments}}
+        {{if attr.Flags.HasFlag(AttributeFlags.Reference) && !attr.Flags.HasFlag(AttributeFlags.Collection)}}
+        public required {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} { get; init; }
+        {{elif attr.Flags.HasFlag(AttributeFlags.Reference) && attr.Flags.HasFlag(AttributeFlags.Collection)}}
+        public required {{= attr.HighLevelType.ToDisplayString()}}[] {{= attr.ContextualName}} { get; init; }
+        {{else}}
+        public required {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} { get; init; }
+        {{/if}}
+        {{/each}}
+        #endregion
+    }
+
+        public partial class ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) :
+        __MODELS__.ReadOnlyModel(db, id) {
+
+           {{each attr in model.Attributes}}
+           {{if attr.IsCollection && attr.IsReference}}
+           public __SEGMENTS__.Values<__ABSTRACTIONS__.EntityId, ulong> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
+           {{else}}
+           public {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
+           {{/if}}
+           {{/each}}
+
+
+        }
+
+}

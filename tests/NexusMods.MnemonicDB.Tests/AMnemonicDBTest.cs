@@ -68,15 +68,15 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
     {
 
         var tx = Connection.BeginTransaction();
-        var loadout = new Loadout(tx)
+        var loadout = new Loadout.New(tx)
         {
             Name = "Test Loadout"
         };
-        List<Mod> mods = new();
+        List<Mod.New> mods = new();
 
         foreach (var modName in new[] { "Mod1", "Mod2", "Mod3" })
         {
-            var mod = new Mod(tx)
+            var mod = new Mod.New(tx)
             {
                 Name = modName,
                 Source = new Uri("http://somesite.com/" + modName),
@@ -86,7 +86,7 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
             var idx = 0;
             foreach (var file in new[] { "File1", "File2", "File3" })
             {
-                _ = new File(tx)
+                _ = new File.New(tx)
                 {
                     Path = file,
                     ModId = mod,
@@ -104,7 +104,7 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
         var tx2 = Connection.BeginTransaction();
         foreach (var mod in loadoutWritten.Mods)
         {
-            tx2.Add(txResult[mod.Id], Mod.Attributes.Name, mod.Name + " - Updated");
+            tx2.Add(txResult[mod.Id], Mod.Name, mod.Name + " - Updated");
         }
         await tx2.Commit();
 

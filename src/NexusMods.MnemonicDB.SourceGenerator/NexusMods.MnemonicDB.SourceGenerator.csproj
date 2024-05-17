@@ -8,6 +8,13 @@
     <ItemGroup>
       <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
       <PackageReference Include="System.CodeDom" Version="8.0.0" />
+      <PackageReference Include="Weave" Version="2.1.0"   OutputItemType="Analyzer" ReferenceOutputAssembly="false"  >
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+    <ItemGroup>
+      <WeaveTemplate Include="Template.weave" />
     </ItemGroup>
 
 </Project>

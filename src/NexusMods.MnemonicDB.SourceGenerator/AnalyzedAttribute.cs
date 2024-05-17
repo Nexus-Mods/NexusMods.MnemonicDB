@@ -6,6 +6,28 @@ namespace NexusMods.MnemonicDB.SourceGenerator;
 public class AnalyzedAttribute
 {
     public string Name { get; set; } = "";
+    public string FieldName { get; set; } = "";
+
+    public string ContextualName
+    {
+        get
+        {
+            if (Flags.HasFlag(AttributeFlags.Reference) && Flags.HasFlag(AttributeFlags.Scalar))
+            {
+                return $"{Name}Id";
+            }
+            if (Flags.HasFlag(AttributeFlags.Reference) && Flags.HasFlag(AttributeFlags.Collection))
+            {
+                return $"{Name}Ids";
+            }
+            return Name;
+        }
+    }
+
+    public bool IsReference => Flags.HasFlag(AttributeFlags.Reference);
+    public bool IsCollection => Flags.HasFlag(AttributeFlags.Collection);
+    public bool IsScalar => Flags.HasFlag(AttributeFlags.Scalar);
+
     public AttributeFlags Flags { get; set; }
     public INamedTypeSymbol AttributeType { get; set; } = null!;
     public INamedTypeSymbol HighLevelType { get; set; } = null!;

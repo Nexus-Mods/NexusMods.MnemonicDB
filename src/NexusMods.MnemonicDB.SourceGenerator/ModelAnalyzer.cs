@@ -132,6 +132,7 @@ public class ModelAnalyzer
                 var analyzedAttribute = new AnalyzedAttribute
                 {
                     Name = fieldSymbol.Name,
+                    FieldName = fieldSymbol.ToDisplayString(),
                     Flags = flags,
                     AttributeType = (fieldSymbol.Type as INamedTypeSymbol)!,
                     HighLevelType = highLevel,

@@ -161,24 +161,24 @@ public abstract class ABackendTest<TStoreType>(
 
             using var segment = new IndexSegmentBuilder(Registry);
 
-            segment.Add(id1, File.Attributes.Path, "/foo/bar");
-            segment.Add(id1, File.Attributes.Hash, Hash.From(0xDEADBEEF));
-            segment.Add(id1, File.Attributes.Size, Size.From(42));
-            segment.Add(id2, File.Attributes.Path, "/qix/bar");
-            segment.Add(id2, File.Attributes.Hash, Hash.From(0xDEADBEAF));
-            segment.Add(id2, File.Attributes.Size, Size.From(77));
-            segment.Add(id1, File.Attributes.ModId, modId1);
-            segment.Add(id2, File.Attributes.ModId, modId1);
+            segment.Add(id1, File.Path, "/foo/bar");
+            segment.Add(id1, File.Hash, Hash.From(0xDEADBEEF));
+            segment.Add(id1, File.Size, Size.From(42));
+            segment.Add(id2, File.Path, "/qix/bar");
+            segment.Add(id2, File.Hash, Hash.From(0xDEADBEAF));
+            segment.Add(id2, File.Size, Size.From(77));
+            segment.Add(id1, File.ModId, modId1);
+            segment.Add(id2, File.ModId, modId1);
 
-            segment.Add(modId1, Mod.Attributes.Name, "Test Mod 1");
-            segment.Add(modId1, Mod.Attributes.LoadoutId, loadoutId);
-            segment.Add(modId2, Mod.Attributes.Name, "Test Mod 2");
-            segment.Add(modId2, Mod.Attributes.LoadoutId, loadoutId);
-            segment.Add(loadoutId, Loadout.Attributes.Name, "Test Loadout 1");
-            segment.Add(collectionId, Collection.Attributes.Name, "Test Collection 1");
-            segment.Add(collectionId, Collection.Attributes.LoadoutId, loadoutId);
-            segment.Add(collectionId, Collection.Attributes.ModIds, modId1);
-            segment.Add(collectionId, Collection.Attributes.ModIds, modId2);
+            segment.Add(modId1, Mod.Name, "Test Mod 1");
+            segment.Add(modId1, Mod.LoadoutId, loadoutId);
+            segment.Add(modId2, Mod.Name, "Test Mod 2");
+            segment.Add(modId2, Mod.LoadoutId, loadoutId);
+            segment.Add(loadoutId, Loadout.Name, "Test Loadout 1");
+            segment.Add(collectionId, Collection.Name, "Test Collection 1");
+            segment.Add(collectionId, Collection.LoadoutId, loadoutId);
+            segment.Add(collectionId, Collection.ModIds, modId1);
+            segment.Add(collectionId, Collection.ModIds, modId2);
 
 
             tx = await DatomStore.Transact(segment.Build());
@@ -191,9 +191,9 @@ public abstract class ABackendTest<TStoreType>(
 
         {
             using var segment = new IndexSegmentBuilder(Registry);
-            segment.Add(id2, File.Attributes.Path, "/foo/qux");
-            segment.Add(id1, File.Attributes.ModId, modId2);
-            segment.Add(collectionId, Collection.Attributes.ModIds, modId2, true);
+            segment.Add(id2, File.Path, "/foo/qux");
+            segment.Add(id1, File.ModId, modId2);
+            segment.Add(collectionId, Collection.ModIds, modId2, true);
             tx = await DatomStore.Transact(segment.Build());
         }
         return tx;
@@ -219,10 +219,10 @@ public abstract class ABackendTest<TStoreType>(
         {
             using var segment = new IndexSegmentBuilder(Registry);
 
-            segment.Add(id, File.Attributes.Path, "/foo/bar");
-            segment.Add(id, File.Attributes.Hash, Hash.From(0xDEADBEEF));
-            segment.Add(id, File.Attributes.Size, Size.From(42));
-            segment.Add(id, File.Attributes.ModId, modId);
+            segment.Add(id, File.Path, "/foo/bar");
+            segment.Add(id, File.Hash, Hash.From(0xDEADBEEF));
+            segment.Add(id, File.Size, Size.From(42));
+            segment.Add(id, File.ModId, modId);
 
             tx1 = await DatomStore.Transact(segment.Build());
         }
@@ -233,10 +233,10 @@ public abstract class ABackendTest<TStoreType>(
         {
             using var segment = new IndexSegmentBuilder(Registry);
 
-            segment.Add(id, File.Attributes.Path, "/foo/bar", true);
-            segment.Add(id, File.Attributes.Hash, Hash.From(0xDEADBEEF), true);
-            segment.Add(id, File.Attributes.Size, Size.From(42), true);
-            segment.Add(id, File.Attributes.ModId, modId, true);
+            segment.Add(id, File.Path, "/foo/bar", true);
+            segment.Add(id, File.Hash, Hash.From(0xDEADBEEF), true);
+            segment.Add(id, File.Size, Size.From(42), true);
+            segment.Add(id, File.ModId, modId, true);
 
             tx2 = await DatomStore.Transact(segment.Build());
 

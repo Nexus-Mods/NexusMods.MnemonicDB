@@ -28,16 +28,16 @@ public abstract class AStorageTest : IAsyncLifetime
         _provider = provider;
         Registry = new AttributeRegistry(provider.GetServices<IAttribute>());
         Registry.Populate([
-            new DbAttribute(File.Attributes.Path.Id, AttributeId.From(20), ValueTags.Utf8Insensitive),
-            new DbAttribute(File.Attributes.Hash.Id, AttributeId.From(21), ValueTags.UInt64),
-            new DbAttribute(File.Attributes.Size.Id, AttributeId.From(22), ValueTags.UInt64),
-            new DbAttribute(File.Attributes.ModId.Id, AttributeId.From(23), ValueTags.Reference),
-            new DbAttribute(Mod.Attributes.Name.Id, AttributeId.From(24), ValueTags.Utf8),
-            new DbAttribute(Mod.Attributes.LoadoutId.Id, AttributeId.From(25), ValueTags.Reference),
-            new DbAttribute(Loadout.Attributes.Name.Id, AttributeId.From(26), ValueTags.Utf8),
-            new DbAttribute(Collection.Attributes.Name.Id, AttributeId.From(27), ValueTags.Utf8),
-            new DbAttribute(Collection.Attributes.LoadoutId.Id, AttributeId.From(28), ValueTags.Reference),
-            new DbAttribute(Collection.Attributes.ModIds.Id, AttributeId.From(29), ValueTags.Reference),
+            new DbAttribute(File.Path.Id, AttributeId.From(20), ValueTags.Utf8Insensitive),
+            new DbAttribute(File.Hash.Id, AttributeId.From(21), ValueTags.UInt64),
+            new DbAttribute(File.Size.Id, AttributeId.From(22), ValueTags.UInt64),
+            new DbAttribute(File.ModId.Id, AttributeId.From(23), ValueTags.Reference),
+            new DbAttribute(Mod.Name.Id, AttributeId.From(24), ValueTags.Utf8),
+            new DbAttribute(Mod.LoadoutId.Id, AttributeId.From(25), ValueTags.Reference),
+            new DbAttribute(Loadout.Name.Id, AttributeId.From(26), ValueTags.Utf8),
+            new DbAttribute(Collection.Name.Id, AttributeId.From(27), ValueTags.Utf8),
+            new DbAttribute(Collection.LoadoutId.Id, AttributeId.From(28), ValueTags.Reference),
+            new DbAttribute(Collection.ModIds.Id, AttributeId.From(29), ValueTags.Reference),
             new DbAttribute(Blobs.InKeyBlob.Id, AttributeId.From(30), ValueTags.Blob),
             new DbAttribute(Blobs.InValueBlob.Id, AttributeId.From(31), ValueTags.HashedBlob)
         ]);
