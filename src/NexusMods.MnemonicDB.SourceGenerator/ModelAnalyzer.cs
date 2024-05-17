@@ -77,7 +77,7 @@ public class ModelAnalyzer
                              (trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) ||
                               trivia.IsKind(SyntaxKind.MultiLineCommentTrivia)));
 
-        return string.Join(Environment.NewLine, triviaList.Select(comment => comment.ToString()));
+        return string.Join("\n", triviaList.Select(comment => comment.ToString()));
     }
 
     private List<INamedTypeSymbol> AnalyzeIncludes()
@@ -183,7 +183,7 @@ public class ModelAnalyzer
                              (trivia.IsKind(SyntaxKind.SingleLineCommentTrivia) ||
                               trivia.IsKind(SyntaxKind.MultiLineCommentTrivia)));
 
-        return string.Join(Environment.NewLine, triviaList.Select(comment => comment.ToString()));
+        return string.Join("\n", triviaList.Select(comment => comment.ToString()));
     }
 
     return string.Empty;
