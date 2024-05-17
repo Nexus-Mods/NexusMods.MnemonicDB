@@ -1,4 +1,5 @@
 ﻿using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.Models;
 
 namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 
@@ -12,4 +13,12 @@ public class ReferencesAttribute(string ns, string name) : CollectionAttribute<E
 
     /// <inheritdoc />
     protected override EntityId FromLowLevel(ulong value, ValueTags tags) => EntityId.From(value);
+}
+
+/// <summary>
+/// A typesafe reference attribute, that references entities of type T.
+/// </summary>
+public class ReferencesAttribute<T>(string ns, string name) : ReferencesAttribute(ns, name)
+where T : IModelDefinition
+{
 }

@@ -64,56 +64,51 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
         return Verify(datoms.ToTable(_registry));
     }
 
-    protected async Task InsertExampleData()
+    protected async Task<LoadoutReadModel> InsertExampleData()
     {
-        throw new NotImplementedException();
-        /*
-            var tx = Connection.BeginTransaction();
-            var loadout = new Loadout.Model(tx)
+
+        var tx = Connection.BeginTransaction();
+        var loadout = new Loadout(tx)
+        {
+            Name = "Test Loadout"
+        };
+        List<Mod> mods = new();
+
+        foreach (var modName in new[] { "Mod1", "Mod2", "Mod3" })
+        {
+            var mod = new Mod(tx)
             {
-                Name = "Test Loadout"
+                Name = modName,
+                Source = new Uri("http://somesite.com/" + modName),
+                LoadoutId = loadout
             };
-            List<Mod.Model> mods = new();
 
-            foreach (var modName in new[] { "Mod1", "Mod2", "Mod3" })
+            var idx = 0;
+            foreach (var file in new[] { "File1", "File2", "File3" })
             {
-                var mod = new Mod.Model(tx)
+                _ = new File(tx)
                 {
-                    Name = modName,
-                    Source = new Uri("http://somesite.com/" + modName),
-                    Loadout = loadout
+                    Path = file,
+                    ModId = mod,
+                    Size = Size.From((ulong)idx),
+                    Hash = Hash.From((ulong)(0xDEADBEEF + idx))
                 };
-
-                var idx = 0;
-                foreach (var file in new[] { "File1", "File2", "File3" })
-                {
-                    _ = new File.Model(tx)
-                    {
-                        Path = file,
-                        Mod = mod,
-                        Size = Size.From((ulong)idx),
-                        Hash = Hash.From((ulong)(0xDEADBEEF + idx))
-                    };
-                    idx += 1;
-                }
-                mods.Add(mod);
+                idx += 1;
             }
+            mods.Add(mod);
+        }
 
-            var txResult = await tx.Commit();
+        var txResult = await tx.Commit();
+        var loadoutWritten = loadout.Remap(txResult);
 
-            loadout = txResult.Remap(loadout);
+        var tx2 = Connection.BeginTransaction();
+        foreach (var mod in loadoutWritten.Mods)
+        {
+            tx2.Add(txResult[mod.Id], Mod.Attributes.Name, mod.Name + " - Updated");
+        }
+        await tx2.Commit();
 
-            var tx2 = Connection.BeginTransaction();
-            foreach (var mod in loadout.Mods)
-            {
-                tx2.Add(mod.Id, Mod.Name, mod.Name + " - Updated");
-            }
-            await tx2.Commit();
-
-            return Connection.Db.Get<Loadout.Model>(loadout.Id);
-
-
-        */
+        return Loadout.Get(Connection.Db, loadoutWritten.Id);
     }
 
     public void Dispose()

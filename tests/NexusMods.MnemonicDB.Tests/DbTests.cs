@@ -253,7 +253,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             firstMod.Loadout.Name.Should().Be("Test Loadout");
         }
 
-                /*
+
                 [Fact]
                 public async Task CanFindEntitiesByAttribute()
                 {
@@ -261,14 +261,14 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
                     var db = Connection.Db;
 
-                    var ids = from id in db.Find(Mod.Name)
-                        let thisName = db.Get<Mod.Model>(id).Name
-                        from byFind in db.FindIndexed(thisName, Mod.Name)
-                        select (id.Value.ToString("x"), thisName, byFind.Value.ToString("x"));
+                    var ids = from mod in Mod.All()
+                        from byFind in Mod.WhereName(mod.Name)
+                        select (mod.Id, mod.Name, byFind.Id);
 
                     await Verify(ids);
                 }
 
+                /*
                 [Fact]
                 public async Task CanGetDatomsFromEntity()
                 {
