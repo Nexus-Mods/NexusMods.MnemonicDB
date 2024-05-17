@@ -64,7 +64,7 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
         return Verify(datoms.ToTable(_registry));
     }
 
-    protected async Task<LoadoutReadModel> InsertExampleData()
+    protected async Task<Loadout.ReadOnly> InsertExampleData()
     {
 
         var tx = Connection.BeginTransaction();

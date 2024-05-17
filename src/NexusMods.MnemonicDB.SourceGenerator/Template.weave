@@ -63,6 +63,17 @@ public partial class {{= model.Name}} {
         {{/if}}
         {{/each}}
         #endregion
+
+        #region Methods
+        /// <summary>
+        /// Assumes that this model has been commited to the database
+        /// in the commit result. Loads this entity from the commited database
+        /// and returns a ReadOnly model.
+        /// </summary>
+        public {{= model.Name}}.ReadOnly Remap(__ABSTRACTIONS__.ICommitResult result) {
+            return new {{= model.Name}}.ReadOnly(result.Db, result[Id]);
+        }
+        #endregion
     }
 
         public partial class ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) :
@@ -76,6 +87,11 @@ public partial class {{= model.Name}} {
            {{/if}}
            {{/each}}
 
+           /// <summary>
+           /// Reloads the entity from the given database, essentially
+           /// refreshing the entity.
+           /// </summary>
+           public ReadOnly Rebase(__ABSTRACTIONS__.IDb db) => new ReadOnly(db, Id);
 
         }
 
