@@ -8,6 +8,8 @@ namespace {{= model.Namespace}};
 using __ABSTRACTIONS__ = NexusMods.MnemonicDB.Abstractions;
 using __MODELS__ = NexusMods.MnemonicDB.Abstractions.Models;
 using __SEGMENTS__ = NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using __DI__ = Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 
 public partial class {{= model.Name}} {
 
@@ -76,5 +78,15 @@ public partial class {{= model.Name}} {
 
 
         }
+
+}
+
+public static class {{= model.Name}}DIExtensions {
+    public static __DI__.IServiceCollection Add{{= model.Name}}Model(this __DI__.IServiceCollection services) {
+        {{each attr in model.Attributes}}
+        services.AddSingleton<__ABSTRACTIONS__.IAttribute>(_ => {{= attr.FieldName}});
+        {{/each}}
+        return services;
+    }
 
 }
