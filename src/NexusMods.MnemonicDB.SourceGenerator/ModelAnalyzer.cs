@@ -11,12 +11,13 @@ namespace NexusMods.MnemonicDB.SourceGenerator;
 public class ModelAnalyzer
 {
     private readonly Compilation _compilation;
-    private INamedTypeSymbol ModelDefinitionTypeSymbol { get; }
     private readonly GeneratorExecutionContext _context;
     private readonly ClassDeclarationSyntax _syntax;
     private readonly INamedTypeSymbol _classSymbol;
     private readonly INamedTypeSymbol _attributeTypeSymbol;
     private readonly INamedTypeSymbol _includesTypeSymbol;
+    private readonly INamedTypeSymbol _modelDefinitionTypeSymbol;
+    private readonly INamedTypeSymbol _backReferenceTypeSymbol;
 
     #region OutputProperties
 
@@ -24,6 +25,8 @@ public class ModelAnalyzer
     public INamespaceSymbol Namespace { get; set; } = null!;
 
     public List<AnalyzedAttribute> Attributes { get; } = new();
+
+    public List<AnalyzedBackReferenceAttribute> BackReferences { get; } = new();
 
     public List<INamedTypeSymbol> Includes { get; set; } = new();
     public string Comments { get; set; } = "";
@@ -36,9 +39,10 @@ public class ModelAnalyzer
         _syntax = declarationSyntax;
         _compilation = context.Compilation;
         _classSymbol = (INamedTypeSymbol?)ModelExtensions.GetDeclaredSymbol(_compilation.GetSemanticModel(declarationSyntax.SyntaxTree), declarationSyntax)!;
-        ModelDefinitionTypeSymbol = _compilation.GetTypeByMetadataName(Consts.IModelDefinitionFullName)!;
+        _modelDefinitionTypeSymbol = _compilation.GetTypeByMetadataName(Consts.IModelDefinitionFullName)!;
         _attributeTypeSymbol = _compilation.GetTypeByMetadataName(Consts.AttributeTypeFullName)!;
         _includesTypeSymbol = _compilation.GetTypeByMetadataName(Consts.IncludesAttributeFullName)!;
+        _backReferenceTypeSymbol = _compilation.GetTypeByMetadataName(Consts.BackReferenceAttributeFullName)!;
     }
 
     public bool Analyze()
@@ -83,7 +87,7 @@ public class ModelAnalyzer
                     var typeArgumentSyntax = ((GenericNameSyntax)attribute.Name).TypeArgumentList.Arguments[0];
                     var typeSymbol = ModelExtensions.GetTypeInfo(_compilation.GetSemanticModel(typeArgumentSyntax.SyntaxTree), typeArgumentSyntax).Type;
 
-                    if (typeSymbol != null && typeSymbol.AllInterfaces.Any(i => SymbolEqualityComparer.Default.Equals(i, ModelDefinitionTypeSymbol)))
+                    if (typeSymbol != null && typeSymbol.AllInterfaces.Any(i => SymbolEqualityComparer.Default.Equals(i, _modelDefinitionTypeSymbol)))
                     {
                         includes.Add((INamedTypeSymbol)typeSymbol);
                     }
@@ -98,25 +102,63 @@ public class ModelAnalyzer
     {
         foreach (var member in _classSymbol.GetMembers())
         {
-            if (member is IFieldSymbol fieldSymbol)
+            if (member is not IFieldSymbol fieldSymbol)
+                continue;
+
+            if (TryGetBackReference(fieldSymbol, out var otherModel, out var otherAttribute))
             {
-                if (TryGetAttribyteTypes(fieldSymbol, out var highLevel, out var lowLevel))
+                var comments = GetComments(fieldSymbol);
+                var analyzedAttribute = new AnalyzedBackReferenceAttribute
                 {
-                    var markers = GetInitializerData(fieldSymbol);
-                    var comments = GetComments(fieldSymbol);
-                    var analyzedAttribute = new AnalyzedAttribute
-                    {
-                        Name = fieldSymbol.Name,
-                        AttributeType = (fieldSymbol.Type as INamedTypeSymbol)!,
-                        HighLevelType = highLevel,
-                        LowLevelType = lowLevel,
-                        Markers = markers,
-                        Comments = comments
-                    };
-                    Attributes.Add(analyzedAttribute);
-                }
+                    Name = fieldSymbol.Name,
+                    OtherModel = otherModel,
+                    OtherAttribute = otherAttribute,
+                    Comments = comments
+                };
+                BackReferences.Add(analyzedAttribute);
+            }
+            else if (TryGetAttribyteTypes(fieldSymbol, out var highLevel, out var lowLevel))
+            {
+                var markers = GetInitializerData(fieldSymbol);
+                var comments = GetComments(fieldSymbol);
+                var analyzedAttribute = new AnalyzedAttribute
+                {
+                    Name = fieldSymbol.Name,
+                    AttributeType = (fieldSymbol.Type as INamedTypeSymbol)!,
+                    HighLevelType = highLevel,
+                    LowLevelType = lowLevel,
+                    Markers = markers,
+                    Comments = comments
+                };
+                Attributes.Add(analyzedAttribute);
             }
         }
+    }
+
+    private bool TryGetBackReference(IFieldSymbol fieldSymbol, [NotNullWhen(true)] out INamedTypeSymbol? otherModel, [NotNullWhen(true)] out IFieldSymbol? otherAttribute)
+    {
+        otherModel = null;
+        otherAttribute = null;
+
+        if (SymbolEqualityComparer.Default.Equals(fieldSymbol.Type.OriginalDefinition, _backReferenceTypeSymbol))
+        {
+            var namedTypeSymbol = (INamedTypeSymbol)fieldSymbol.Type;
+            otherModel = (INamedTypeSymbol)namedTypeSymbol.TypeArguments[0]; // This will give you the other model
+
+            var syntaxReference = fieldSymbol.DeclaringSyntaxReferences[0];
+            var syntax = (VariableDeclaratorSyntax)syntaxReference.GetSyntax();
+
+            var objectCreationExpression = (ImplicitObjectCreationExpressionSyntax)syntax.Initializer!.Value;
+            var argumentExpression = objectCreationExpression.ArgumentList!.Arguments[0].Expression;
+
+            var semanticModel = _compilation.GetSemanticModel(argumentExpression.SyntaxTree);
+            var symbolInfo = semanticModel.GetSymbolInfo(argumentExpression);
+            otherAttribute = (IFieldSymbol)symbolInfo.Symbol!; // This is the other attribute
+
+            return true;
+        }
+
+        return false;
     }
 
 
@@ -206,7 +248,7 @@ public class ModelAnalyzer
     {
         foreach (var i in _classSymbol.Interfaces)
         {
-            if (SymbolEqualityComparer.Default.Equals(i, ModelDefinitionTypeSymbol))
+            if (SymbolEqualityComparer.Default.Equals(i, _modelDefinitionTypeSymbol))
                 return true;
         }
         return false;
