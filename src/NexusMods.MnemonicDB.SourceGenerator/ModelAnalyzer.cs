@@ -18,6 +18,10 @@ public class ModelAnalyzer
     private readonly INamedTypeSymbol _includesTypeSymbol;
     private readonly INamedTypeSymbol _modelDefinitionTypeSymbol;
     private readonly INamedTypeSymbol _backReferenceTypeSymbol;
+    private readonly INamedTypeSymbol _markerAttributeTypeSymbol;
+    private readonly INamedTypeSymbol _scalarAttributeTypeSymbol;
+    private readonly INamedTypeSymbol _collectionAttributeTypeSymbol;
+    private readonly INamedTypeSymbol _entityIdTypeSymbol;
 
     #region OutputProperties
 
@@ -43,6 +47,10 @@ public class ModelAnalyzer
         _attributeTypeSymbol = _compilation.GetTypeByMetadataName(Consts.AttributeTypeFullName)!;
         _includesTypeSymbol = _compilation.GetTypeByMetadataName(Consts.IncludesAttributeFullName)!;
         _backReferenceTypeSymbol = _compilation.GetTypeByMetadataName(Consts.BackReferenceAttributeFullName)!;
+        _markerAttributeTypeSymbol = _compilation.GetTypeByMetadataName(Consts.MarkerAttributeFullName)!;
+        _scalarAttributeTypeSymbol = _compilation.GetTypeByMetadataName(Consts.ScalarAttributeFullName)!;
+        _collectionAttributeTypeSymbol = _compilation.GetTypeByMetadataName(Consts.CollectionAttributeFullName)!;
+        _entityIdTypeSymbol = _compilation.GetTypeByMetadataName(Consts.EntityIdFullName)!;
     }
 
     public bool Analyze()
@@ -117,13 +125,14 @@ public class ModelAnalyzer
                 };
                 BackReferences.Add(analyzedAttribute);
             }
-            else if (TryGetAttribyteTypes(fieldSymbol, out var highLevel, out var lowLevel))
+            else if (TryGetAttributeTypes(fieldSymbol, out var highLevel, out var lowLevel, out var flags))
             {
                 var markers = GetInitializerData(fieldSymbol);
                 var comments = GetComments(fieldSymbol);
                 var analyzedAttribute = new AnalyzedAttribute
                 {
                     Name = fieldSymbol.Name,
+                    Flags = flags,
                     AttributeType = (fieldSymbol.Type as INamedTypeSymbol)!,
                     HighLevelType = highLevel,
                     LowLevelType = lowLevel,
@@ -217,20 +226,35 @@ public class ModelAnalyzer
         return markers;
     }
 
-    private bool TryGetAttribyteTypes(IFieldSymbol fieldSymbol,
-        [NotNullWhen(true)] out INamedTypeSymbol? highLevel, [NotNullWhen(true)] out INamedTypeSymbol? lowLevel)
+    private bool TryGetAttributeTypes(IFieldSymbol fieldSymbol,
+        [NotNullWhen(true)] out INamedTypeSymbol? highLevel,
+        [NotNullWhen(true)] out INamedTypeSymbol? lowLevel,
+        out AttributeFlags flags)
     {
         var type = fieldSymbol.Type;
         highLevel = null;
         lowLevel = null;
+        flags = 0;
 
         while (true)
         {
             if (type is INamedTypeSymbol namedTypeSymbol)
             {
+                if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _scalarAttributeTypeSymbol))
+                    flags |= AttributeFlags.Scalar;
+
+                if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _collectionAttributeTypeSymbol))
+                    flags |= AttributeFlags.Collection;
+
+                if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _markerAttributeTypeSymbol))
+                    flags |= AttributeFlags.Marker;
+
                 if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _attributeTypeSymbol))
                 {
                     highLevel = (namedTypeSymbol.TypeArguments[0] as INamedTypeSymbol)!;
+                    if (SymbolEqualityComparer.Default.Equals(highLevel, _entityIdTypeSymbol))
+                        flags |= AttributeFlags.Reference;
+
                     lowLevel = (namedTypeSymbol.TypeArguments[1] as INamedTypeSymbol)!;
                     return true;
                 }
