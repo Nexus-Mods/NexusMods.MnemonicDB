@@ -22,6 +22,8 @@ public class ModelAnalyzer
     private readonly INamedTypeSymbol _scalarAttributeTypeSymbol;
     private readonly INamedTypeSymbol _collectionAttributeTypeSymbol;
     private readonly INamedTypeSymbol _entityIdTypeSymbol;
+    private readonly INamedTypeSymbol _referenceAttributeTypeSymbol;
+    private readonly INamedTypeSymbol _referencesAttributeTypeSymbol;
 
     #region OutputProperties
 
@@ -50,6 +52,8 @@ public class ModelAnalyzer
         _markerAttributeTypeSymbol = _compilation.GetTypeByMetadataName(Consts.MarkerAttributeFullName)!;
         _scalarAttributeTypeSymbol = _compilation.GetTypeByMetadataName(Consts.ScalarAttributeFullName)!;
         _collectionAttributeTypeSymbol = _compilation.GetTypeByMetadataName(Consts.CollectionAttributeFullName)!;
+        _referenceAttributeTypeSymbol = _compilation.GetTypeByMetadataName(Consts.ReferenceAttributeFullName)!;
+        _referencesAttributeTypeSymbol = _compilation.GetTypeByMetadataName(Consts.ReferecnesAttributeFullName)!;
         _entityIdTypeSymbol = _compilation.GetTypeByMetadataName(Consts.EntityIdFullName)!;
     }
 
@@ -140,6 +144,17 @@ public class ModelAnalyzer
                     Markers = markers,
                     Comments = comments
                 };
+
+                if (SymbolEqualityComparer.Default.Equals(fieldSymbol.Type.OriginalDefinition, _referenceAttributeTypeSymbol))
+                {
+                    analyzedAttribute.ReferenceType = ((fieldSymbol.Type as INamedTypeSymbol)!.TypeArguments[0] as INamedTypeSymbol)!;
+                }
+
+                if (SymbolEqualityComparer.Default.Equals(fieldSymbol.Type.OriginalDefinition, _referencesAttributeTypeSymbol))
+                {
+                    analyzedAttribute.ReferenceType = ((fieldSymbol.Type as INamedTypeSymbol)!.TypeArguments[0] as INamedTypeSymbol)!;
+                }
+
                 Attributes.Add(analyzedAttribute);
             }
         }

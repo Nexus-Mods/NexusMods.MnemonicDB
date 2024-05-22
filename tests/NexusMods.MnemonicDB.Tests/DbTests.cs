@@ -242,7 +242,6 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
             loadoutWritten.Mods.Count().Should().Be(2);
             loadoutWritten.Mods.Select(m => m.Name).Should().BeEquivalentTo(["Test Mod 1", "Test Mod 2"]);
-            loadoutWritten.Mods
 
             var firstMod = loadoutWritten.Mods.First();
             Ids.IsPartition(firstMod.Loadout.Id.Value, Ids.Partition.Entity)
@@ -255,21 +254,20 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         }
 
 
-        /*
-                [Fact]
-                public async Task CanFindEntitiesByAttribute()
-                {
-                    await InsertExampleData();
+        [Fact]
+        public async Task CanFindEntitiesByAttribute()
+        {
+            await InsertExampleData();
 
-                    var db = Connection.Db;
+            var db = Connection.Db;
 
-                    var ids = from mod in Mod.All(db)
-                        from byFind in Mod.WhereName(mod.Name)
-                        select (mod.Id, mod.Name, byFind.Id);
+            var ids = from mod in Mod.All(db)
+                from byFind in Mod.FindByName(db, mod.Name)
+                select (mod.Id, mod.Name, byFind.Id, byFind.Name);
 
-                    await Verify(ids);
-                }
-*/
+            await Verify(ids);
+        }
+
                 /*
                 [Fact]
                 public async Task CanGetDatomsFromEntity()

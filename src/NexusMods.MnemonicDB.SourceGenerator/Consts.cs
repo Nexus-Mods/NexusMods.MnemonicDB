@@ -12,6 +12,12 @@ public static class Consts
     public const string AttributeTypeFullName =
         "NexusMods.MnemonicDB.Abstractions.Attribute`2";
 
+    public const string ReferenceAttributeFullName =
+        "NexusMods.MnemonicDB.Abstractions.Attributes.ReferenceAttribute`1";
+
+    public const string ReferecnesAttributeFullName =
+        "NexusMods.MnemonicDB.Abstractions.Attributes.ReferencesAttribute`1";
+
     public const string BackReferenceAttributeFullName =
         "NexusMods.MnemonicDB.Abstractions.Attributes.BackReferenceAttribute`1";
 

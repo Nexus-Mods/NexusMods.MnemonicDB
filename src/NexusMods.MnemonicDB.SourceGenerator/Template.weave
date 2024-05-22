@@ -23,6 +23,18 @@ public partial class {{= model.Name}} {
 
     #region CRUD Methods
 
+    {{each attr in model.Attributes}}
+    {{if attr.IsIndexed}}
+
+    public static IEnumerable<{{= model.Name}}.ReadOnly> FindBy{{= attr.Name}}(__ABSTRACTIONS__.IDb db, {{= attr.HighLevelType.ToDisplayString()}} value) {
+        foreach (var id in db.FindIndexed({{= attr.Name}}, value)) {
+            yield return new {{= model.Name}}.ReadOnly(db, id);
+        }
+    }
+
+    {{/if}}
+    {{/each}}
+
     /// <summary>
     /// Assumes that the id given points to a {{= model.Name}} entity, and
     /// returns a ReadOnly model of the entity.
@@ -31,7 +43,7 @@ public partial class {{= model.Name}} {
         return new {{= model.Name}}.ReadOnly(db, id);
     }
 
-    public static {{= model.Name}}.ReadOnly All(__ABSTRACTIONS__.IDb db) {
+    public static IEnumerable<{{= model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
         throw new Exception("Not implemented");
     }
 
@@ -111,7 +123,7 @@ public partial class {{= model.Name}} {
            {{/if}}
 
            {{if attr.IsReference && attr.IsScalar}}
-           public {{= attr.AttributeType.ToDisplayString()}} {{= attr.Name}} => {{= attr.AttributeType.ToDisplayString()}}.ReadOnly(Db, {{= attr.FieldName}}.Get(this));
+           public {{= attr.ReferenceType.ToDisplayString()}}.ReadOnly {{= attr.Name}} => new {{= attr.ReferenceType.ToDisplayString()}}.ReadOnly(Db, {{= attr.FieldName}}.Get(this));
            {{/if}}
 
            {{/each}}
