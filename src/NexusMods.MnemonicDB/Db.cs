@@ -115,13 +115,13 @@ internal class Db : IDb
         return results;
     }
 
-    public IEnumerable<EntityId> FindIndexed<TValue, TLowLevel>(TValue value, Attribute<TValue, TLowLevel> attribute)
+    public IEnumerable<EntityId> FindIndexed<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value)
     {
-        return FindIndexedDatoms(value, attribute)
+        return FindIndexedDatoms(attribute, value)
             .Select(d => d.E);
     }
 
-    public IEnumerable<Datom> FindIndexedDatoms<TValue, TLowLevel>(TValue value, Attribute<TValue, TLowLevel> attribute)
+    public IEnumerable<Datom> FindIndexedDatoms<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value)
     {
         if (!attribute.IsIndexed)
             throw new InvalidOperationException($"Attribute {attribute.Id} is not indexed");

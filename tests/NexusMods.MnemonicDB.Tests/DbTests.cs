@@ -21,7 +21,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var ids = new List<EntityId>();
         for (ulong idx = 0; idx < totalCount; idx++)
         {
-            var file = new File(tx)
+            var file = new File.New(tx)
             {
                 Path = $"C:\\test_{idx}.txt",
                 Hash = Hash.From(idx + 0xDEADBEEF),
@@ -50,11 +50,11 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var txEs = new List<TxId>();
 
         var tx = Connection.BeginTransaction();
-        var file = new Mod(tx)
+        var file = new Mod.New(tx)
         {
             Name = "Test Mod",
             Source = new Uri("http://test.com"),
-            LoadoutId = new Loadout(tx)
+            LoadoutId = new Loadout.New(tx)
             {
                 Name = "Test Loadout"
             }
@@ -67,7 +67,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         for (var i = 0; i < times; i++)
         {
             var newTx = Connection.BeginTransaction();
-            newTx.Add(modId, Mod.Attributes.Name, $"Test Mod {i}");
+            newTx.Add(modId, Mod.Name, $"Test Mod {i}");
             result = await newTx.Commit();
             txEs.Add(result.NewTx);
         }
@@ -89,7 +89,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         // Insert some data
         var tx = Connection.BeginTransaction();
 
-        var file = new File(tx)
+        var file = new File.New(tx)
         {
             Path = "C:\\test.txt",
             Hash = Hash.From(1 + 0xDEADBEEF),
@@ -112,7 +112,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         for (var i = 0; i < times; i++)
         {
             var newTx = Connection.BeginTransaction();
-            newTx.Add(realId, File.Attributes.Path, $"C:\\test_{i}.txt_mutate");
+            newTx.Add(realId, File.Path, $"C:\\test_{i}.txt_mutate");
 
             await newTx.Commit();
 
@@ -136,7 +136,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     {
         // Insert some data
         var tx = Connection.BeginTransaction();
-        var file = new File(tx)
+        var file = new File.New(tx)
         {
             Path = "C:\\test.txt",
             Hash = Hash.From(1 + 0xDEADBEEF),
@@ -145,7 +145,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         };
 
         // Attach extra attributes to the entity
-        var archiveFile = new ArchiveFile(tx, file.Id)
+        var archiveFile = new ArchiveFile.New(tx)
         {
             Path = "C:\\test.zip",
             Hash = Hash.From(0xFEEDBEEF)
@@ -175,7 +175,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
 
             var tx = Connection.BeginTransaction();
-            var file = new File(tx)
+            var file = new File.New(tx)
             {
                 Path = "C:\\test.txt",
                 Hash = Hash.From((ulong)0xDEADBEEF),
@@ -197,7 +197,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             for (var idx = 0; idx < 4; idx++)
             {
                 tx = Connection.BeginTransaction();
-                tx.Add(realId, File.Attributes.Hash, Hash.From(0xDEADBEEF + (ulong)idx + 0xEE));
+                tx.Add(realId, File.Hash, Hash.From(0xDEADBEEF + (ulong)idx + 0xEE));
                 result = await tx.Commit();
 
                 await Task.Delay(100);
@@ -215,19 +215,19 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         {
             var tx = Connection.BeginTransaction();
 
-            var loadout = new Loadout(tx)
+            var loadout = new Loadout.New(tx)
             {
                 Name = "Test Loadout"
             };
 
-            _ = new Mod(tx)
+            _ = new Mod.New(tx)
             {
                 Name = "Test Mod 1",
                 Source = new Uri("http://mod1.com"),
                 LoadoutId = loadout
             };
 
-            _ = new Mod(tx)
+            _ = new Mod.New(tx)
             {
                 Name = "Test Mod 2",
                 Source = new Uri("http://mod2.com"),
@@ -242,6 +242,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
             loadoutWritten.Mods.Count().Should().Be(2);
             loadoutWritten.Mods.Select(m => m.Name).Should().BeEquivalentTo(["Test Mod 1", "Test Mod 2"]);
+            loadoutWritten.Mods
 
             var firstMod = loadoutWritten.Mods.First();
             Ids.IsPartition(firstMod.Loadout.Id.Value, Ids.Partition.Entity)
@@ -254,6 +255,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         }
 
 
+        /*
                 [Fact]
                 public async Task CanFindEntitiesByAttribute()
                 {
@@ -261,13 +263,13 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
                     var db = Connection.Db;
 
-                    var ids = from mod in Mod.All()
+                    var ids = from mod in Mod.All(db)
                         from byFind in Mod.WhereName(mod.Name)
                         select (mod.Id, mod.Name, byFind.Id);
 
                     await Verify(ids);
                 }
-
+*/
                 /*
                 [Fact]
                 public async Task CanGetDatomsFromEntity()

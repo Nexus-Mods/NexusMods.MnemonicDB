@@ -21,6 +21,30 @@ public partial class {{= model.Name}} {
     {{/if}}
     {{/each}}
 
+    #region CRUD Methods
+
+    /// <summary>
+    /// Assumes that the id given points to a {{= model.Name}} entity, and
+    /// returns a ReadOnly model of the entity.
+    /// </summary>
+    public static {{= model.Name}}.ReadOnly Get(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) {
+        return new {{= model.Name}}.ReadOnly(db, id);
+    }
+
+    public static {{= model.Name}}.ReadOnly All(__ABSTRACTIONS__.IDb db) {
+        throw new Exception("Not implemented");
+    }
+
+    /// <summary>
+    /// Assumes that the ids given point to {{= model.Name}} entities, and
+    /// returns a list of ReadOnly models of the entities.
+    /// </summary>
+    public static IEnumerable<{{= model.Name}}.ReadOnly> Get(__ABSTRACTIONS__.IDb db, IEnumerable<__ABSTRACTIONS__.EntityId> ids) {
+        return ids.Select(id => new {{= model.Name}}.ReadOnly(db, id));
+    }
+
+    #endregion
+
 
     public partial class New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
         public New(__ABSTRACTIONS__.ITransaction tx) : base() {
@@ -85,6 +109,17 @@ public partial class {{= model.Name}} {
            {{else}}
            public {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
            {{/if}}
+
+           {{if attr.IsReference && attr.IsScalar}}
+           public {{= attr.AttributeType.ToDisplayString()}} {{= attr.Name}} => {{= attr.AttributeType.ToDisplayString()}}.ReadOnly(Db, {{= attr.FieldName}}.Get(this));
+           {{/if}}
+
+           {{/each}}
+
+           {{each backref in model.BackReferences}}
+
+           public IEnumerable<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly> {{= backref.Name}} => Db.GetBackRefs({{= backref.OtherAttribute.ToDisplayString()}}, this.Id)
+           .Select(otherId => new {{= backref.OtherModel.ToDisplayString()}}.ReadOnly(Db, otherId));
            {{/each}}
 
            /// <summary>
