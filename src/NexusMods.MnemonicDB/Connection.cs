@@ -24,7 +24,7 @@ public class Connection : IConnection, IHostedService
     private IDb? _db;
     private readonly IEnumerable<IAttribute> _declaredAttributes;
     private readonly ILogger<Connection> _logger;
-    private bool _isStarted = false;
+    private Task? _bootstrapTask;
 
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
@@ -157,11 +157,13 @@ public class Connection : IConnection, IHostedService
     {
         lock (this)
         {
-            if (_isStarted)
-                return;
-            _isStarted = true;
+            _bootstrapTask ??= Task.Run(Bootstrap, cancellationToken);
         }
+        await _bootstrapTask;
+    }
 
+    private async Task Bootstrap()
+    {
         // Won't complete until the DatomStore has properly started
         await _store.StartAsync(CancellationToken.None);
         try
