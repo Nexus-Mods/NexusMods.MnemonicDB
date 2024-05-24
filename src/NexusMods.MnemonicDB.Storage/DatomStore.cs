@@ -43,6 +43,8 @@ public class DatomStore : IDatomStore, IHostedService
     private readonly PooledMemoryBufferWriter _prevWriter;
     private TxId _asOfTx = TxId.MinValue;
 
+    private Task? _bootStrapTask = null;
+
     private static readonly TimeSpan TransactionTimeout = TimeSpan.FromMinutes(120);
 
     /// <summary>
@@ -54,8 +56,6 @@ public class DatomStore : IDatomStore, IHostedService
     /// Cache for the next entity/tx/attribute ids
     /// </summary>
     private NextIdCache _nextIdCache;
-
-    private bool _isStarted = false;
 
     /// <summary>
     /// The task consuming and logging transactions
@@ -241,18 +241,21 @@ public class DatomStore : IDatomStore, IHostedService
                 // Call directly into `Log` as the transaction channel is not yet set up
                 Log(pending, out _);
                 _currentSnapshot = _backend.GetSnapshot();
-                return;
             }
-
-            _logger.LogInformation("Bootstrapping the datom store, existing state found, last tx: {LastTx}",
-                lastTx.Value.ToString("x"));
-            _asOfTx = TxId.From(lastTx.Value);
-            _currentSnapshot = snapshot;
+            else
+            {
+                _logger.LogInformation("Bootstrapping the datom store, existing state found, last tx: {LastTx}",
+                    lastTx.Value.ToString("x"));
+                _asOfTx = TxId.From(lastTx.Value);
+                _currentSnapshot = snapshot;
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to bootstrap the datom store");
+            throw;
         }
+        _txTask = Task.Run(ConsumeTransactions);
     }
 
     #region Internals
@@ -553,17 +556,16 @@ public class DatomStore : IDatomStore, IHostedService
     {
         lock (this)
         {
-            if (_isStarted) return;
-            _isStarted = true;
+            _bootStrapTask ??= Task.Run(Bootstrap, cancellationToken);
         }
 
-        await Bootstrap();
-        _txTask = Task.Run(ConsumeTransactions);
+        await _bootStrapTask;
     }
 
     /// <inheritdoc />
-    public Task StopAsync(CancellationToken cancellationToken)
+    public async Task StopAsync(CancellationToken cancellationToken)
     {
-        return Task.CompletedTask;
+        _txChannel.Writer.TryComplete();
+        await (_txTask ?? Task.CompletedTask);
     }
 }

@@ -8,6 +8,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.Abstractions\NexusMods.MnemonicDB.Abstractions.csproj"/>
+        <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.SourceGenerator\NexusMods.MnemonicDB.SourceGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false"  />
     </ItemGroup>
 
 </Project>
