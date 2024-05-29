@@ -179,7 +179,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
             files.Add(file);
         }
 
-        result = await extraTx.Commit();
+        await extraTx.Commit();
 
         Logger.LogInformation("Restarting storage");
         await RestartDatomStore();

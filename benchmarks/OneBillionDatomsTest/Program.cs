@@ -55,7 +55,7 @@ for (ulong i = 0; i < batches; i++)
     for (var j = 0; j < (int)batchSize; j++)
     {
         fileNumber += 1;
-        var _ = new File.Model(tx)
+        var _ = new File.New(tx)
         {
             Path = $"c:\\test_{i}_{j}.txt",
             Hash = Hash.From(fileNumber % 0xFFFF),

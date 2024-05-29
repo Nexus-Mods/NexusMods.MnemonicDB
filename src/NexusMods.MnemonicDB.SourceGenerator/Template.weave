@@ -13,6 +13,7 @@ using __COMPARERS__ = NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.MnemonicDB.Abstractions;
 
+{{= model.Comments}}
 public partial class {{= model.Name}} {
 
     {{each attr in model.Attributes}}
@@ -144,6 +145,7 @@ public partial class {{= model.Name}} {
         #endregion
     }
 
+    {{= model.Comments}}
     public partial class ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) :
         __MODELS__.ReadOnlyModel(db, id) {
 

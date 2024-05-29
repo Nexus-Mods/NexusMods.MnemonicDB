@@ -19,7 +19,7 @@ public class ReadTests : ABenchmark
     private IDb _db = null!;
     private EntityId[] _entityIds = null!;
     private EntityId _readId;
-    private File.Model[] _preLoaded = null!;
+    private File.ReadOnly[] _preLoaded = null!;
     private EntityId _modId;
 
     [Params(1, 1000, MaxCount)] public int Count { get; set; } = MaxCount;
@@ -31,7 +31,7 @@ public class ReadTests : ABenchmark
         var tx = Connection.BeginTransaction();
         var entityIds = new List<EntityId>();
 
-        var tmpMod = new Mod.Model(tx)
+        var tmpMod = new Mod.New(tx)
         {
             Name = "TestMod",
             Source = new Uri("https://www.nexusmods.com"),
@@ -40,7 +40,7 @@ public class ReadTests : ABenchmark
 
         for (var i = 0; i < Count; i++)
         {
-            var file = new File.Model(tx)
+            var file = new File.New(tx)
             {
                 Hash = Hash.From((ulong)i),
                 Path = $"C:\\test_{i}.txt",
@@ -60,14 +60,14 @@ public class ReadTests : ABenchmark
 
         _db = Connection.Db;
 
-        _preLoaded = _entityIds.Select(id => _db.Get<File.Model>(id)).ToArray();
+        _preLoaded = _entityIds.Select(id => File.Get(_db, id)).ToArray();
     }
 
     [Benchmark]
     public ulong ReadFiles()
     {
         ulong sum = 0;
-        sum += _db.Get<File.Model>(_readId).Size.Value;
+        sum += File.Get(_db, _readId).Size.Value;
         return sum;
     }
 
@@ -80,7 +80,7 @@ public class ReadTests : ABenchmark
     [Benchmark]
     public long ReadAll()
     {
-        return _entityIds.Select(id => _db.Get<File.Model>(id))
+        return _entityIds.Select(id => File.Get(_db, id))
             .Sum(e => (long)e.Size.Value);
     }
 
@@ -94,11 +94,10 @@ public class ReadTests : ABenchmark
     [Benchmark]
     public ulong ReadAllFromMod()
     {
-        var mod = _db.Get<Mod.Model>(_modId);
+        var mod = Mod.Get(_db, _modId);
         ulong sum = 0;
-        for (var i = 0; i < mod.Files.Count; i++)
+        foreach (var file in mod.Files)
         {
-            var file = mod.Files[i];
             sum += file.Size.Value;
         }
 
