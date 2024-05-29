@@ -227,7 +227,7 @@ public class DatomStore : IDatomStore, IHostedService
         try
         {
             var snapshot = _backend.GetSnapshot();
-            var lastTx = TxId.From(_nextIdCache.LastEntityInPartition(snapshot, (byte)Ids.Partition.Tx).Value);
+            var lastTx = TxId.From(_nextIdCache.LastEntityInPartition(snapshot, PartitionId.Transactions).Value);
 
             if (lastTx.Value == TxId.MinValue)
             {
@@ -259,11 +259,11 @@ public class DatomStore : IDatomStore, IHostedService
 
     private EntityId MaybeRemap(ISnapshot snapshot, EntityId id, Dictionary<EntityId, EntityId> remaps, TxId thisTx)
     {
-        if (Ids.GetPartitionValue(id) == (byte)Ids.Partition.Tmp)
+        if (id.Partition == PartitionId.Temp)
         {
             if (!remaps.TryGetValue(id, out var newId))
             {
-                if (id.Value == Ids.MinId(Ids.Partition.Tmp))
+                if (id.Value == PartitionId.Temp.MinValue)
                 {
                     var remapTo = EntityId.From(thisTx.Value);
                     remaps.Add(id, remapTo);
@@ -271,8 +271,8 @@ public class DatomStore : IDatomStore, IHostedService
                 }
                 else
                 {
-                    var partitionId = id.Value >> 40 & 0xFF;
-                    var assignedId = _nextIdCache.NextId(snapshot, (byte)partitionId);
+                    var partitionId = PartitionId.From((byte)(id.Value >> 40 & 0xFF));
+                    var assignedId = _nextIdCache.NextId(snapshot, partitionId);
                     remaps.Add(id, assignedId);
                     return assignedId;
                 }
@@ -288,7 +288,7 @@ public class DatomStore : IDatomStore, IHostedService
     private void Log(PendingTransaction pendingTransaction, out StoreResult result)
     {
         var currentSnapshot = _currentSnapshot ?? _backend.GetSnapshot();
-        var thisTx = TxId.From(_nextIdCache.NextId(currentSnapshot, (byte)Ids.Partition.Tx).Value);
+        var thisTx = TxId.From(_nextIdCache.NextId(currentSnapshot, PartitionId.Transactions).Value);
 
         var remaps = new Dictionary<EntityId, EntityId>();
         var remapFn = (Func<EntityId, EntityId>)(id => MaybeRemap(currentSnapshot, id, remaps, thisTx));
@@ -328,7 +328,7 @@ public class DatomStore : IDatomStore, IHostedService
         {
             _writer.Reset();
 
-            var isRemapped = Ids.IsPartition(datom.E.Value, Ids.Partition.Tmp);
+            var isRemapped = datom.E.InPartition(PartitionId.Temp);
             var attr = _registry.GetAttribute(datom.A);
 
             var currentPrefix = datom.Prefix;

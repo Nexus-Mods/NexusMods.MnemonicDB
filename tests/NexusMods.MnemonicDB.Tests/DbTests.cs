@@ -244,9 +244,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             loadoutWritten.Mods.Select(m => m.Name).Should().BeEquivalentTo(["Test Mod 1", "Test Mod 2"]);
 
             var firstMod = loadoutWritten.Mods.First();
-            Ids.IsPartition(firstMod.Loadout.Id.Value, Ids.Partition.Entity)
-                .Should()
-                .Be(true, "the temp id should be replaced with a real id");
+            firstMod.Loadout.Id.InPartition(PartitionId.Entity).Should().BeTrue("LoadoutId should in the entity partition");
             firstMod.LoadoutId.Should().Be(loadoutWritten.Id);
             firstMod.Db.Should().Be(newDb);
             loadout.Name.Should().Be("Test Loadout");
@@ -296,7 +294,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 ModId = EntityId.From(1)
             };
 
-            var file2 = new File.New(tx, (byte)Ids.Partition.Entity + 1)
+            var file2 = new File.New(tx, PartitionId.From(10))
             {
                 Path = "C:\\test2.txt",
                 Hash = Hash.From(0xDEADBEEF),
@@ -304,7 +302,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 ModId = EntityId.From(1)
             };
 
-            var file3 = new File.Model(tx, (byte)Ids.Partition.Entity + 200)
+            var file3 = new File.New(tx, PartitionId.From(200))
             {
                 Path = "C:\\test3.txt",
                 Hash = Hash.From(0xDEADBEEF),
@@ -313,18 +311,17 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             };
 
             // TempIds store the desired partition in the third highest byte
-            (file1.Id.Value >> 40 & 0xFF).Should().Be((byte)Ids.Partition.Entity);
-            (file2.Id.Value >> 40 & 0xFF).Should().Be((byte)Ids.Partition.Entity + 1);
-            (file3.Id.Value >> 40 & 0xFF).Should().Be((byte)Ids.Partition.Entity + 200);
+            (file1.Id.Value >> 40 & 0xFF).Should().Be(PartitionId.Entity.Value);
+            (file2.Id.Value >> 40 & 0xFF).Should().Be(10);
+            (file3.Id.Value >> 40 & 0xFF).Should().Be(200);
 
             var result = await tx.Commit();
-            file1 = result.Remap(file1);
-            file2 = result.Remap(file2);
-            file3 = result.Remap(file3);
+            var file1RO = file1.Remap(result);
+            var file2RO = file2.Remap(result);
+            var file3RO = file3.Remap(result);
 
 
-            var allDatoms = file1.Concat(file2).Concat(file3)
-                .Select(f => f.Resolved);
+            var allDatoms = file1RO.Concat(file2RO).Concat(file3RO);
 
             await VerifyTable(allDatoms);
         }

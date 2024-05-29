@@ -72,8 +72,13 @@ public partial class {{= model.Name}} {
 
 
     public partial class New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
-        public New(__ABSTRACTIONS__.ITransaction tx, byte partition = 2) : base() {
+        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.PartitionId partition) : base() {
             Id = tx.TempId(partition);
+            tx.Attach(this);
+        }
+
+        public New(__ABSTRACTIONS__.ITransaction tx) : base() {
+            Id = tx.TempId();
             tx.Attach(this);
         }
 

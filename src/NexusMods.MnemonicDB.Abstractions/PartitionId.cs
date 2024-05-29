@@ -39,6 +39,16 @@ public partial struct PartitionId
         return From(id);
     }
 
+    /// <summary>
+    /// Gets the minimum value for this partition
+    /// </summary>
+    public EntityId MinValue => EntityId.From(((ulong)Value << 56) | 0);
+
+    /// <summary>
+    /// Gets the maximum value for this partition
+    /// </summary>
+    public EntityId MaxValue => EntityId.From(((ulong)Value << 56) | 0x00FFFFFFFFFFFFFF);
+
     /// <inheritdoc />
     public override string ToString() => $"PartId:{Value:x}";
 

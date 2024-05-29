@@ -21,9 +21,14 @@ public readonly partial struct EntityId
     public static EntityId MaxValueNoPartition => From(ulong.MaxValue);
 
     /// <summary>
-    /// Gets the partition of the id
+    /// Gets the partition id of the entity id
     /// </summary>
-    public byte Partition => (byte)(Value >> 56);
+    public PartitionId Partition => PartitionId.From((byte)(Value >> 56));
+
+    /// <summary>
+    /// Returns true if the entity id is in the given partition
+    /// </summary>
+    public bool InPartition(PartitionId partitionId) => Partition == partitionId;
 
     /// <summary>
     /// Gets just the value portion of the id (ignoring the partition)
