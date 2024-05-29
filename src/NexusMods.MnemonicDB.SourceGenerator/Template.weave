@@ -9,6 +9,7 @@ using __ABSTRACTIONS__ = NexusMods.MnemonicDB.Abstractions;
 using __MODELS__ = NexusMods.MnemonicDB.Abstractions.Models;
 using __SEGMENTS__ = NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using __DI__ = Microsoft.Extensions.DependencyInjection;
+using __COMPARERS__ = NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.MnemonicDB.Abstractions;
 
@@ -89,6 +90,10 @@ public partial class {{= model.Name}} {
             foreach (var itm in {{= attr.ContextualName}}) {
                 tx.Add(Id, {{= attr.FieldName}}, itm, false);
             }
+            {{elif attr.IsMarker}}
+            if (Is{{= attr.ContextualName}}) {
+                tx.Add(Id, {{= attr.FieldName}}, new __COMPARERS__.Null(), false);
+            }
             {{else}}
             tx.Add(Id, {{= attr.FieldName}}, {{= attr.ContextualName}}, false);
             {{/if}}
@@ -108,10 +113,12 @@ public partial class {{= model.Name}} {
         #region Attributes
         {{each attr in model.Attributes}}
         {{= attr.Comments}}
-        {{if attr.Flags.HasFlag(AttributeFlags.Reference) && !attr.Flags.HasFlag(AttributeFlags.Collection)}}
+        {{if attr.IsReference && !attr.IsCollection}}
         public required {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} { get; init; }
-        {{elif attr.Flags.HasFlag(AttributeFlags.Reference) && attr.Flags.HasFlag(AttributeFlags.Collection)}}
+        {{elif attr.IsReference && attr.IsCollection}}
         public required {{= attr.HighLevelType.ToDisplayString()}}[] {{= attr.ContextualName}} { get; init; }
+        {{elif attr.IsMarker}}
+        public bool Is{{= attr.ContextualName}} { get; init; } = false;
         {{else}}
         public required {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} { get; init; }
         {{/if}}
@@ -130,17 +137,20 @@ public partial class {{= model.Name}} {
         #endregion
     }
 
-        public partial class ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) :
+    public partial class ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) :
         __MODELS__.ReadOnlyModel(db, id) {
 
            protected override string ModelName => "{{= model.Name}}";
 
            {{each attr in model.Attributes}}
-           {{if attr.IsCollection && attr.IsReference}}
+           {{if attr.IsCollection && attr.IsReference && !attr.IsMarker}}
            public __SEGMENTS__.Values<__ABSTRACTIONS__.EntityId, ulong> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
+           {{elif attr.IsMarker}}
+           public bool Is{{= attr.ContextualName}} => {{= attr.FieldName}}.Contains(this);
            {{else}}
            public {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
            {{/if}}
+
 
            {{if attr.IsReference && attr.IsScalar}}
            public {{= attr.ReferenceType.ToDisplayString()}}.ReadOnly {{= attr.Name}} => new {{= attr.ReferenceType.ToDisplayString()}}.ReadOnly(Db, {{= attr.FieldName}}.Get(this));

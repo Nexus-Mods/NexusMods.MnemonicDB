@@ -30,11 +30,15 @@ public class AnalyzedAttribute
 
     public bool IsIndexed => Markers.Contains("IsIndexed");
 
+    /// <summary>
+    /// True if this is a marker attribute.
+    /// </summary>
+    public bool IsMarker => Flags.HasFlag(AttributeFlags.Marker);
+
     public AttributeFlags Flags { get; set; }
     public INamedTypeSymbol AttributeType { get; set; } = null!;
     public INamedTypeSymbol HighLevelType { get; set; } = null!;
     public INamedTypeSymbol LowLevelType { get; set; } = null!;
-
     public INamedTypeSymbol ReferenceType { get; set; } = null!;
     public HashSet<string> Markers { get; set; } = new();
     public string Comments { get; set; } = "";

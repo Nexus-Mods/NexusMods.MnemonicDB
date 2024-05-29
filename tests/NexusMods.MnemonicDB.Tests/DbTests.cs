@@ -326,65 +326,71 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             await VerifyTable(allDatoms);
         }
 
+        [Fact]
+        public async Task CanLoadEntitiesWithoutSubclass()
+        {
+            var loadout = await InsertExampleData();
+
+            var entityLoadout = new ReadOnlyModel(Connection.Db, loadout.Id);
+
+            entityLoadout
+                .Should().BeEquivalentTo(loadout);
+        }
+
+        [Fact]
+        public async Task CanCreateTempEntities()
+        {
+            var loadoutOther = new TempEntity
+            {
+                { Loadout.Name, "Loadout Other" }
+            };
+
+            var loadout = new TempEntity
+            {
+                { Loadout.Name, "Test Loadout" },
+                { Mod.LoadoutId, loadoutOther},
+            };
+
+            using var tx = Connection.BeginTransaction();
+            loadout.AddTo(tx);
+            var result = await tx.Commit();
+
+            var loaded = Loadout.Get(result.Db, result[loadout.Id!.Value]);
+            loaded.Name.Should().Be("Test Loadout");
+
+            loadout.GetFirst(Loadout.Name).Should().Be("Test Loadout");
+
+            Mod.LoadoutId.Get(loaded).Should().Be(result[loadoutOther.Id!.Value], "Sub entity should be added to the transaction");
+        }
+
+        [Fact]
+        public async Task CanWorkWithMarkerAttributes()
+        {
+            var mod = new TempEntity
+            {
+                { Mod.Name, "Test Mod" },
+                Mod.Marked,
+            };
+
+            using var tx = Connection.BeginTransaction();
+            mod.AddTo(tx);
+            var result = await tx.Commit();
+
+            var reloaded = Mod.Get(result.Db, result[mod.Id!.Value]);
+            reloaded.IsMarked.Should().BeTrue();
+
+        }
+
 
                 /*
 
 
 
-                [Fact]
-                public async Task CanLoadEntitiesWithoutSubclass()
-                {
-                    var loadout = await InsertExampleData();
 
-                    var entityLoadout = Connection.Db.Get<Entity>(loadout.Id);
 
-                    entityLoadout.Select(d => d.Resolved)
-                        .Should().BeEquivalentTo(loadout.Select(d => d.Resolved));
-                }
 
-                [Fact]
-                public async Task CanCreateTempEntities()
-                {
-                    var loadoutOther = new TempEntity()
-                    {
-                        { Loadout.Name, "Loadout Other" }
-                    };
 
-                    var loadout = new TempEntity
-                    {
-                        { Loadout.Name, "Test Loadout" },
-                        { Mod.LoadoutId, loadoutOther},
-                    };
 
-                    using var tx = Connection.BeginTransaction();
-                    loadout.AddTo(tx);
-                    var result = await tx.Commit();
-
-                    var loaded = result.Db.Get<Loadout.Model>(result[loadout.Id!.Value]);
-                    loaded.Name.Should().Be("Test Loadout");
-
-                    loadout.GetFirst(Loadout.Name).Should().Be("Test Loadout");
-
-                    Mod.LoadoutId.Get(loaded).Should().Be(result[loadoutOther.Id!.Value], "Sub entity should be added to the transaction");
-                }
-
-                [Fact]
-                public async Task CanWorkWithMarkerAttributes()
-                {
-                    var mod = new TempEntity
-                    {
-                        { Mod.Name, "Test Mod" },
-                        Mod.IsMarked,
-                    };
-
-                    using var tx = Connection.BeginTransaction();
-                    mod.AddTo(tx);
-                    var result = await tx.Commit();
-
-                    var reloaded = result.Db.Get<Mod.Model>(result[mod.Id!.Value]);
-                    reloaded.IsMarked.Should().BeTrue();
-
-                }
 
                 [Fact]
                 public async Task CanExecuteTxFunctions()
