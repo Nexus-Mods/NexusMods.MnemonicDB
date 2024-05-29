@@ -80,8 +80,7 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
             {
                 Name = modName,
                 Source = new Uri("http://somesite.com/" + modName),
-                LoadoutId = loadout,
-                IsMarked = true
+                LoadoutId = loadout
             };
 
             var idx = 0;

@@ -48,9 +48,11 @@ public partial class {{= model.Name}} {
     /// <summary>
     /// A list of all attributes of the model.
     /// </summary>
-    public static __ABSTRACTIONS__.IAttribute[] Attributes => new __ABSTRACTIONS__.IAttribute[] {
+    public static __ABSTRACTIONS__.IAttribute[] RequiredAttributes => new __ABSTRACTIONS__.IAttribute[] {
         {{each attr in model.Attributes}}
+        {{if !attr.IsMarker}}
         {{= attr.FieldName}},
+        {{/if}}
         {{/each}}
     };
 
@@ -58,7 +60,7 @@ public partial class {{= model.Name}} {
     /// Returns all {{= model.Name}} entities in the database.
     /// </summary>
     public static IEnumerable<{{= model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
-        return Get(db, __ABSTRACTIONS__.IDbExtensions.Intersection(db, Attributes));
+        return Get(db, __ABSTRACTIONS__.IDbExtensions.Intersection(db, RequiredAttributes));
     }
 
     /// <summary>
@@ -80,6 +82,11 @@ public partial class {{= model.Name}} {
 
         public New(__ABSTRACTIONS__.ITransaction tx) : base() {
             Id = tx.TempId();
+            tx.Attach(this);
+        }
+
+        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.EntityId eid) : base() {
+            Id = eid;
             tx.Attach(this);
         }
 

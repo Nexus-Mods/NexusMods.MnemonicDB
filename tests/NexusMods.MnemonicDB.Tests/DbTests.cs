@@ -145,7 +145,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         };
 
         // Attach extra attributes to the entity
-        var archiveFile = new ArchiveFile.New(tx)
+        var archiveFile = new ArchiveFile.New(tx, file.Id)
         {
             Path = "C:\\test.zip",
             Hash = Hash.From(0xFEEDBEEF)
@@ -178,7 +178,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             var file = new File.New(tx)
             {
                 Path = "C:\\test.txt",
-                Hash = Hash.From((ulong)0xDEADBEEF),
+                Hash = Hash.From(0xDEADBEEF),
                 Size = Size.From(1),
                 ModId = EntityId.From(1)
             };
@@ -381,63 +381,51 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         }
 
+        [Fact]
+        public async Task CanExecuteTxFunctions()
+        {
+            EntityId id;
+            // Create a loadout with inital state
+            using var tx = Connection.BeginTransaction();
+            var loadout = new Loadout.New(tx)
+            {
+                Name = "Test Loadout: 1"
+            };
+            var result = await tx.Commit();
+            id = result[loadout.Id];
 
-                /*
-
-
-
-
-
-
-
-
-
-                [Fact]
-                public async Task CanExecuteTxFunctions()
+            // Update it 1000 times in "parallel". The actual function is executed serially, but we queue up the updates
+            // in parallel. If this was executed in parallel, we'd see a result other than 1001 at the end due to race conditions
+            List<Task> tasks = [];
+            {
+                for (var i = 0; i < 1000; i++)
                 {
-                    EntityId id;
-                    // Create a loadout with inital state
-                    using var tx = Connection.BeginTransaction();
-                    var loadout = new Loadout.Model(tx)
+                    tasks.Add(Task.Run(async () =>
                     {
-                        Name = "Test Loadout: 1"
-                    };
-                    var result = await tx.Commit();
-                    id = result[loadout.Id];
-
-                    // Update it 1000 times in "parallel". The actual function is executed serially, but we queue up the updates
-                    // in parallel. If this was executed in parallel, we'd see a result other than 1001 at the end due to race conditions
-                    List<Task> tasks = [];
-                    {
-                        for (var i = 0; i < 1000; i++)
-                        {
-                            tasks.Add(Task.Run(async () =>
-                            {
-                                using var txInner = Connection.BeginTransaction();
-                                // Send the function for the update, not update itself
-                                txInner.Add(id, 1, AddToName);
-                                await txInner.Commit();
-                            }));
-                        }
-                    }
-
-                    await Task.WhenAll(tasks);
-
-                    using var db = Connection.Db;
-                    loadout = db.Get<Loadout.Model>(id);
-                    loadout.Name.Should().Be("Test Loadout: 1001");
-
-                    return;
-
-                    // Actual work is done here, we load the entity and update it this is executed serially
-                    // by the transaction executor
-                    void AddToName(ITransaction tx, IDb db, EntityId eid, int amount)
-                    {
-                        var loadout = db.Get<Loadout.Model>(eid);
-                        var oldAmount = int.Parse(loadout.Name.Split(":")[1].Trim());
-                        tx.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + amount)}");
-                    }
+                        using var txInner = Connection.BeginTransaction();
+                        // Send the function for the update, not update itself
+                        txInner.Add(id, 1, AddToName);
+                        await txInner.Commit();
+                    }));
                 }
-                */
+            }
+
+            await Task.WhenAll(tasks);
+
+            var db = Connection.Db;
+            var loadoutRO = Loadout.Get(db, id);
+            loadoutRO.Name.Should().Be("Test Loadout: 1001");
+
+            return;
+
+            // Actual work is done here, we load the entity and update it this is executed serially
+            // by the transaction executor
+            void AddToName(ITransaction tx, IDb db, EntityId eid, int amount)
+            {
+                var loadout = Loadout.Get(db, eid);
+                var oldAmount = int.Parse(loadout.Name.Split(":")[1].Trim());
+                tx.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + amount)}");
+            }
+        }
 
 }

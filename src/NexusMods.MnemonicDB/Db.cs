@@ -162,8 +162,6 @@ internal class Db : IDb
             .Select(d => d.Resolved);
     }
 
-    public void Dispose() { }
-
     public bool Equals(IDb? other)
     {
         if (other is null)

@@ -11,7 +11,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// <summary>
 ///     Represents an immutable database fixed to a specific TxId.
 /// </summary>
-public interface IDb : IEquatable<IDb>, IDisposable
+public interface IDb : IEquatable<IDb>
 {
     /// <summary>
     ///     Gets the basis TxId of the database.
