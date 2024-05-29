@@ -124,6 +124,7 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
         _store.Dispose();
         _backend.Dispose();
 
+        GC.Collect();
 
         _backend = new Backend(_registry);
         _registry = new AttributeRegistry(_attributes);

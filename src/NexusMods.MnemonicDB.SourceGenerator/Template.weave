@@ -152,6 +152,7 @@ public partial class {{= model.Name}} {
            {{each attr in model.Attributes}}
            {{if attr.IsCollection && attr.IsReference && !attr.IsMarker}}
            public __SEGMENTS__.Values<__ABSTRACTIONS__.EntityId, ulong> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
+           public IEnumerable<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => {{= attr.FieldName}}.Get(this).Select(id => new {{= attr.ReferenceType.ToDisplayString()}}.ReadOnly(Db, id));
            {{elif attr.IsMarker}}
            public bool Is{{= attr.ContextualName}} => {{= attr.FieldName}}.Contains(this);
            {{else}}
@@ -176,6 +177,14 @@ public partial class {{= model.Name}} {
            /// refreshing the entity.
            /// </summary>
            public ReadOnly Rebase(__ABSTRACTIONS__.IDb db) => new ReadOnly(db, Id);
+
+           /// <summary>
+           /// Implicit conversion from the model to the entity id.
+           /// </summary>
+           public static implicit operator __ABSTRACTIONS__.EntityId({{= model.Name}}.ReadOnly model) {
+               return model.Id;
+           }
+
 
         }
 
