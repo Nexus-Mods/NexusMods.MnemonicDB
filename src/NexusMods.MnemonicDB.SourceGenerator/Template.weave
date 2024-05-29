@@ -10,6 +10,7 @@ using __MODELS__ = NexusMods.MnemonicDB.Abstractions.Models;
 using __SEGMENTS__ = NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using __DI__ = Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection;
+using NexusMods.MnemonicDB.Abstractions;
 
 public partial class {{= model.Name}} {
 
@@ -43,8 +44,20 @@ public partial class {{= model.Name}} {
         return new {{= model.Name}}.ReadOnly(db, id);
     }
 
+    /// <summary>
+    /// A list of all attributes of the model.
+    /// </summary>
+    public static __ABSTRACTIONS__.IAttribute[] Attributes => new __ABSTRACTIONS__.IAttribute[] {
+        {{each attr in model.Attributes}}
+        {{= attr.FieldName}},
+        {{/each}}
+    };
+
+    /// <summary>
+    /// Returns all {{= model.Name}} entities in the database.
+    /// </summary>
     public static IEnumerable<{{= model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
-        throw new Exception("Not implemented");
+        return Get(db, __ABSTRACTIONS__.IDbExtensions.Intersection(db, Attributes));
     }
 
     /// <summary>
@@ -59,8 +72,8 @@ public partial class {{= model.Name}} {
 
 
     public partial class New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
-        public New(__ABSTRACTIONS__.ITransaction tx) : base() {
-            Id = tx.TempId();
+        public New(__ABSTRACTIONS__.ITransaction tx, byte partition = 2) : base() {
+            Id = tx.TempId(partition);
             tx.Attach(this);
         }
 
@@ -114,6 +127,8 @@ public partial class {{= model.Name}} {
 
         public partial class ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) :
         __MODELS__.ReadOnlyModel(db, id) {
+
+           protected override string ModelName => "{{= model.Name}}";
 
            {{each attr in model.Attributes}}
            {{if attr.IsCollection && attr.IsReference}}

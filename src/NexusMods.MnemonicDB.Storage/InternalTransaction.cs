@@ -12,18 +12,24 @@ namespace NexusMods.MnemonicDB.Storage;
 
 internal class InternalTransaction(IndexSegmentBuilder datoms) : ITransaction
 {
-    private ulong _tempId = Ids.MinId(Ids.Partition.Tmp) + 1;
+    private ulong _tempId = PartitionId.Temp.MakeEntityId(0).Value;
 
     /// <inheritdoc />
-    public TxId ThisTxId => TxId.From(Ids.MinId(Ids.Partition.Tmp));
+    public TxId ThisTxId => TxId.From(PartitionId.Temp.MakeEntityId(0).Value);
+
+    /// <inheritdoc />
+    public EntityId TempId()
+    {
+        return TempId(PartitionId.Entity);
+    }
 
 
     /// <inhertdoc />
-    public EntityId TempId(byte entityPartition = (byte)Ids.Partition.Entity)
+    public EntityId TempId(PartitionId partition)
     {
         var tempId = Interlocked.Increment(ref _tempId);
         // Add the partition to the id
-        var actualId = ((ulong)entityPartition << 40) | tempId;
+        var actualId = ((ulong)partition.Value << 40) | tempId;
         return EntityId.From(actualId);
     }
 

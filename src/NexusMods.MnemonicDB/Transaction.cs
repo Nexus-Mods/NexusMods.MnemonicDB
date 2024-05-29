@@ -17,16 +17,22 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
     private readonly IndexSegmentBuilder _datoms = new(registry);
     private HashSet<ITxFunction>? _txFunctions = null; // No reason to create the hashset if we don't need it
     private List<ITemporaryEntity>? _tempEntities = null;
-    private ulong _tempId = Ids.MinId(Ids.Partition.Tmp) + 1;
+    private ulong _tempId = PartitionId.Temp.MakeEntityId(1).Value;
     private bool _committed = false;
 
     /// <inhertdoc />
-    public EntityId TempId(byte entityPartition = (byte)Ids.Partition.Entity)
+    public EntityId TempId(PartitionId entityPartition)
     {
         var tempId = Interlocked.Increment(ref _tempId);
         // Add the partition to the id
         var actualId = ((ulong)entityPartition << 40) | tempId;
         return EntityId.From(actualId);
+    }
+
+    /// <inhertdoc />
+    public EntityId TempId()
+    {
+        return TempId(PartitionId.Entity);
     }
 
     public void Add<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val, bool isRetract = false)
@@ -74,7 +80,7 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
     }
 
     /// <inheritdoc />
-    public TxId ThisTxId => TxId.From(Ids.MinId(Ids.Partition.Tmp));
+    public TxId ThisTxId => TxId.From(PartitionId.Temp.MakeEntityId(0).Value);
 
     public void Dispose()
     {

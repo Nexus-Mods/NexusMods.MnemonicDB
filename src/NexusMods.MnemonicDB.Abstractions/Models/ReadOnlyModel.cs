@@ -30,4 +30,29 @@ public class ReadOnlyModel(IDb db, EntityId id) : IHasEntityIdAndDb, IEnumerable
     {
         return GetEnumerator();
     }
+
+    /// <summary>
+    /// Looks for the given attribute in the entity
+    /// </summary>
+    public bool Contains(IAttribute attribute)
+    {
+        foreach (var datom in this)
+        {
+            if (datom.A == attribute)
+                return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Override this to provide a custom model name
+    /// </summary>
+    protected virtual string ModelName => GetType().Name;
+
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return $"{ModelName}<{Id.Value:x}>";
+    }
 }

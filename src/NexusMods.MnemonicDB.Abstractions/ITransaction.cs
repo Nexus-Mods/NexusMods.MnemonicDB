@@ -18,10 +18,16 @@ public interface ITransaction : IDisposable
     public TxId ThisTxId { get; }
 
     /// <summary>
-    ///     Gets a temporary id for a new entity
+    ///     Gets a temporary id for a new entity in the given partition
     /// </summary>
     /// <returns></returns>
-    EntityId TempId(byte partition = (byte)Ids.Partition.Entity);
+    EntityId TempId(PartitionId partition);
+
+    /// <summary>
+    ///     Gets a temporary id for a new entity in the default (Entity) partition
+    /// </summary>
+    /// <returns></returns>
+    EntityId TempId();
 
     /// <summary>
     ///     Adds a new datom to the transaction

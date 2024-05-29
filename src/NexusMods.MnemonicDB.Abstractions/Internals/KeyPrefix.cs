@@ -66,7 +66,7 @@ public struct KeyPrefix
     ///     The transaction id, maximum of 2^63 transactions are supported in the system, but really
     ///     it's 2^56 as the upper 8 bits are used for the partition id.
     /// </summary>
-    public TxId T => (TxId)Ids.MakeId(Ids.Partition.Tx, _upper & 0x0000FFFFFFFFFFFF);
+    public TxId T => TxId.From(PartitionId.Transactions.MakeEntityId(_upper & 0x0000FFFFFFFFFFFF).Value);
 
     /// <inheritdoc />
     public override string ToString()
