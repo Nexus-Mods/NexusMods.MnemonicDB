@@ -91,6 +91,12 @@ public partial class {{= model.Name}} {
             tx.Attach(this);
         }
 
+        {{each include in model.Includes}}
+        public required {{= include.ToDisplayString()}}.New {{= include.Name}} {
+          init => Id = value.Id;
+        }
+        {{/each}}
+
         public void AddTo(__ABSTRACTIONS__.ITransaction tx)
         {
             {{each attr in model.Attributes}}
@@ -116,7 +122,7 @@ public partial class {{= model.Name}} {
         }
 
         /// <inheritdoc />
-        public __ABSTRACTIONS__.EntityId Id { get; }
+        public __ABSTRACTIONS__.EntityId Id { get; private set; }
 
         #region Attributes
         {{each attr in model.Attributes}}
@@ -150,6 +156,21 @@ public partial class {{= model.Name}} {
         __MODELS__.ReadOnlyModel(db, id) {
 
            protected override string ModelName => "{{= model.Name}}";
+
+
+           internal bool IsValid()
+           {
+               {{each attr in model.Attributes}}
+               {{if !attr.IsMarker}}
+               if (!Contains({{= attr.FieldName}})) return false;
+               {{/if}}
+               {{/each}}
+               return true;
+           }
+
+           {{each include in model.Includes}}
+           public {{= include.ToDisplayString()}}.ReadOnly {{= include.Name}} => new {{= include.ToDisplayString()}}.ReadOnly(Db, Id);
+           {{/each}}
 
            {{each attr in model.Attributes}}
            {{if attr.IsCollection && attr.IsReference && !attr.IsMarker}}
@@ -192,12 +213,25 @@ public partial class {{= model.Name}} {
 
 }
 
-public static class {{= model.Name}}DIExtensions {
+public static class {{= model.Name}}Extensions {
     public static __DI__.IServiceCollection Add{{= model.Name}}Model(this __DI__.IServiceCollection services) {
         {{each attr in model.Attributes}}
         services.AddSingleton<__ABSTRACTIONS__.IAttribute>(_ => {{= attr.FieldName}});
         {{/each}}
         return services;
     }
+
+    {{each include in model.Includes}}
+    public static bool TryGetAs{{= model.Name}}(this {{= include.ToDisplayString()}}.ReadOnly model, out {{= include.ToDisplayString()}}.ReadOnly result) {
+        var casted = new {{= include.ToDisplayString()}}.ReadOnly(model.Db, model.Id);
+        if (casted.IsValid()) {
+            result = casted;
+            return true;
+        }
+
+        result = default;
+        return false;
+    }
+    {{/each}}
 
 }

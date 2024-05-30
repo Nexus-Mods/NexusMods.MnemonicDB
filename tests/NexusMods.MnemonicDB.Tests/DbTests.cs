@@ -136,17 +136,16 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     {
         // Insert some data
         var tx = Connection.BeginTransaction();
-        var file = new File.New(tx)
-        {
-            Path = "C:\\test.txt",
-            Hash = Hash.From(1 + 0xDEADBEEF),
-            Size = Size.From(1),
-            ModId = EntityId.From(1)
-        };
 
-        // Attach extra attributes to the entity
-        var archiveFile = new ArchiveFile.New(tx, file.Id)
+        var archiveFile = new ArchiveFile.New(tx)
         {
+            File = new File.New(tx)
+            {
+                Path = "C:\\test.txt",
+                Hash = Hash.From(1 + 0xDEADBEEF),
+                Size = Size.From(1),
+                ModId = EntityId.From(1)
+            },
             Path = "C:\\test.zip",
             Hash = Hash.From(0xFEEDBEEF)
         };
@@ -154,7 +153,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var result = await tx.Commit();
 
 
-        var realId = result[file.Id];
+        var realId = result[archiveFile.Id];
         var db = Connection.Db;
 
         // Original data exists
@@ -164,8 +163,14 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         // Extra data exists and can be read with a different read model
         var archiveReadModel = ArchiveFile.Get(db, realId);
-
         await VerifyModel(archiveReadModel).UseTextForParameters("archive file data");
+
+        readModel.Id.Should().Be(archiveReadModel.Id, "both models are the same entity");
+
+        archiveReadModel.File.ToArray().Should().BeEquivalentTo(readModel.ToArray(), "archive file should have the same base data as the file");
+
+        readModel.TryGetAsArchiveFile(out var castedDown).Should().BeTrue();
+        castedDown.Should().BeEquivalentTo(archiveReadModel, "casted down model should be the same as the original model");
     }
 
         [Fact]
