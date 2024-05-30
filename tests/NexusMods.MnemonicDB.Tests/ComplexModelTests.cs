@@ -41,12 +41,6 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
                 LoadoutId = loadout
             };
 
-            /*
-            if (i % 2 == 0)
-                evenCollection.Attach(mod);
-            else
-                oddCollection.Attach(mod);
-*/
             mods.Add(mod);
             for (var j = 0; j < filesPerMod; j++)
             {
