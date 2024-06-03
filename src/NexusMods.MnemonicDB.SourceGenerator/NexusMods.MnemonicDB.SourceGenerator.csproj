@@ -17,4 +17,5 @@
       <WeaveTemplate Include="Template.weave" />
     </ItemGroup>
 
+    <Import Project="$([MSBuild]::GetPathOfFileAbove('NuGet.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
 </Project>

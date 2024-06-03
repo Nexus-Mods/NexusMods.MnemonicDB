@@ -41,125 +41,113 @@ RocksDB. However, the storage layer is abstracted, and any system that supports 
 and backward), and atomic updates across multiple keys can be used. Currently, the only other storage backend is a in-memory
 backed based on Microsoft's `System.Collections.Immutable` library which contains the `ImmutableSortedSet` class.
 
-## Datamodel
-At the core of the application is a set of attribute definitions. These are defined in C# as implementations of the `IAttribute`
-class. Most often these are defined as classes inside a containing class to better group them by name. Here is an example
-of a simple set of attributes:
+## Conceptual Overview
+MnemonicDB stores data (as mentioned) in tuples of `[Entity, Attribute, Value, Transaction, Assert/Retract]`. *Everything*
+in the database is stored on-disk in this format. This includes the schema, the indexes, and the data itself. Thus defining
+a datamodel in this database starts by defining attributes that will be collected into "models".
+
+## Defining Attributes
+Attributes are simply implementations of the `IAttribute` interface, and must inherit from the `Attribute<THighLevel, TLowLevel>` abstract
+class. There is a lot of logic in these classes however, so it is recommended to use one of the provided helper classes such
+as `ScalarAttribute<T>` or `ReferenceAttribute<T>`. In the definition of `Attribute<THighLevel, TLowLevel>`, `THighLevel` refers
+to the C# type that the attribute will contain values of, and `TLowLevel` refers to the type that the database will use to
+store the values. The attribute itself contains conversions to and from these types.
 
 ```csharp
-public class FileAttributes
+var attr = new BooleanAttribute("Test.Namespace", "IsTest") { IsIndexed = true };
+```
+
+In this example a new attribute is defined with the name `Test.Namespace/IsTest`. Names in MneumonicDB are in the format of
+`namespace/name` and are used to uniquely identify the attribute. The `IsIndexed` property is a hint to the database that
+this attribute will be queried on often, and it should be included in the secondary or reverse index.
+
+However, now what the attribute is created, how is it used? It can't yet, instead it must be registered with the DI container.
+When the database starts it will query all the instances of `IAttribute` in the container and register them with the database.
+
+A shorthand for this is to make the attributes static members of a class, and then register them all at once with the `AddAttributeCollection`
+extension method:
+
+```csharp
+public class Person
 {
-    /// <summary>
-    ///     The path of the file
-    /// </summary>
-    public class Path() : Attribute<Path, RelativePath>(isIndexed: true);
+    public const string Namespace = "Test.Model.Person";
 
-    /// <summary>
-    ///     The size of the file
-    /// </summary>
-    public class Size : Attribute<Size, Paths.Size>;
+    public static readonly StringAttribute Name = new(Namespace, nameof(Name)) { IsIndexed = true };
+    public static readonly UInt32Attribute Age = new(Namespace, nameof(Age));
 
-    /// <summary>
-    ///     The hashcode of the file
-    /// </summary>
-    public class Hash() : Attribute<Hash, Hashing.xxHash64.Hash>(isIndexed: true);
+}
 
-    /// <summary>
-    ///     The mod this file belongs to
-    /// </summary>
-    public class ModId : Attribute<ModId, EntityId>;
+services.AddAttributeCollection(typeof(Person));
+```
+
+By convention, the namespace is stored in a constant string, and the attributes are stored as static readonly members of the
+class, using the `nameof` operator to get the name of the attribute.
+
+## Using Source Generators
+Since a lot of code is required to easily define attributes, a source generator is provided to generate this code for you.
+To define such a model, simply subclass your model from `IModelDefinition`. Be sure to include the `partial` keyword on
+the class definition, as the source generator will generate the other half of the class.
+
+```csharp
+public partial class Person : IModelDefinition
+{
+    private const string Namespace = "Test.Person";
+    public static readonly StringAttribute Name = new(Namespace, nameof(Path)) {IsIndexed = true};
+    public static readonly UInt32Attribute Age = new(Namespace, nameof(Age));
 }
 ```
 
-A few interesting features of the above code:
+Once the source generator runs, you will find that a lot of helper methods and code has been added to the class, including:
 
-* Each attribute is defined as a class, this is so the class can later be used in C# attributes such as `[From<Path>]`
-for defining read models (more on this below).
-* Attributes can be indexed, this is a hint to the database that this attribute will be queried on often, and it should
-be included in the secondary or reverse index. In the above example all the entities where `Hash` is `X` can be found
-very quickly, via a single lookup and scan of an index.
-* Attributes define a value type. Also in the app, should be a `IValueSerializer<T>` for each of these value types. But
-this system is open-ended. The serializer is used to convert the value to and from a byte array for storage in the database,
-and to perform comparisons on the values, so longs need not be stored in BigEndian order as they are not compared as byte
-arrays, but as longs. In addition, arbitrary types can be stored in the database, so long as they can be compared in their
-C# form.
+### Lookup Methods
+The methods `.All()`, and `.Get()` are added to the class. These methods can be used to look up all models of this type, or
+just a specific model by its entity ID.
 
-
-Once the attributes are defined, they must be registered with the DI container.
+### Write Model
+A `Person.New` class is created so that new instances of this model can be created easily:
 
 ```csharp
-services.AddAttributeCollection<FileAttributes>();
-```
 
-While attributes can be registered individually, it is recommended to group them into classes as shown above, and register
-them at once via the `AddAttributeCollection` method.
-
-## Read Models
-
-For ease of use, MnemonicDB supports the concept of read models. These are classes that define a set of attributes that
-are commonly queried together. There is nothing that requires these attributes to always be grouped in the same way, and
-users are encouraged to define read models that make sense for their application.
-
-```csharp
-public class File(ITransaction? tx) : AReadModel<File>(tx)
+var txn = db.NewTransaction();
+var person = Person.New(txn)
 {
-    [From<FileAttributes.Path>]
-    public required RelativePath Name { get; set; }
+    Name = "Test",
+    Age = 32
+};
 
-    [From<FileAttributes.Size>]
-    public required Size Size { get; set; }
+await txn.Commit();
 
-    [From<FileAttributes.Hash>]
-    public required Hash Hash { get; set; }
-
-    [From<FileAttributes.ModId>]
-    public required EntityId ModId { get; init; }
-
-    public static File Create(ITransaction tx, string name, Mod mod, Size size, Hash hash)
-    {
-        return new File(tx)
-        {
-            Name = name,
-            Size = size,
-            Hash = hash,
-            ModId = mod.Id
-        };
-    }
-}
 ```
+Every member of the model is required (unless the data is optional), and the `New` method will return a new instance of the
+model that has been attached to the transaction. Committing the transaction will write the data to the database.
 
-The above class defines a read model for a file. It is a simple class with properties that are decorated with the `[From<Attribute>]`
-attribute. This attribute is used to tell the database that when this read model is queried, it should include the values
-for the given DB attributes. The `ITransaction` parameter is used during writes to the database, and can be ignored for now.
+### ReadOnly Model
+A `Person.ReadOnly` class is created so that instances of this model can be read from the database, these are read-only methods
+and are returned by any methods that query the database. The `.Remap` method on the `.New` class will return a `ReadOnly` instance
+given a transaction result.
 
-Now that the read model is defined, it can be used to query the database.
+!!!info
+    During creation of a new entity, the entity ID is not known until the transaction is committed. Thus the `.New` class
+will often have a `.Id` that has a `Partition` type of `Tmp`, meaning it's a temporary Id and never exists in the database
+as that specific id. During the commit, the logging methods in the database will assign a new entity ID for each used Temporary
+id, and those will be returned in the transaction result. The `.Remap` method will then replace the temporary id with the
+newly assigned id, and return a `ReadOnly` instance of the model.
 
 ```csharp
-    var file = db.Get<File>(eId);
 
-    Console.WriteLine($"File: {file.Name} Size: {file.Size} Hash: {file.Hash}");
+var txn = db.NewTransaction();
+var personNew = Person.New(txn)
+{
+    Name = "Test",
+    Age = 32
+};
+
+var result = await txn.Commit();
+
+var person = personNew.Remap(result);
+
+// person.Name == "Test"
+// person.Age == 32
+// person.Id != personNew.Id
+
 ```
-
-## Writing data
-Datoms (tuples of data) are written to the database via transactions. Since MnemonicDB is a single-writer database, transactions
-are not applied directly and do not lock the database. Instead, transactions are created, and then shipped off to the
-writer task which serializes writes to the backing store.
-
-Read models can be used to create new entities in the database. Here is an example of creating a new file entity using
-the above constructor method.
-
-```csharp
-    var tx = db.BeginTransaction();
-    var file = File.Create(tx, "file.txt", mod, 1024, hash);
-    var txResult = await tx.Commit();
-```
-
-A key thing to note in this code is that each entity when it is created fresh, is given a temporary ID. These ids are
-not unique, but are unique to the given transaction. Once `txResult` is returned, the tempId assigned to the entity
-can be resolved to a real ID:
-
-```csharp
-    file = db.Get<File>(txResult[file.Id]);
-```
-
-

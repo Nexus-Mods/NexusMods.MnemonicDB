@@ -29,6 +29,7 @@ public class ModelGenerator : ISourceGenerator
         {
             var writer = new StringWriter();
             Templates.RenderModel(modelAnalyzer, writer);
+
             context.AddSource($"{modelAnalyzer.Name}.Generated.cs", writer.ToString());
         }
         return;
