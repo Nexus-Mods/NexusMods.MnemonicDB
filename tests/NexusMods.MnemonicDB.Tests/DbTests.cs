@@ -104,7 +104,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var originalDb = Connection.Db;
 
         // Validate the data
-        var found = File.Get(originalDb, realId);
+        var found = File.As(originalDb, realId);
         await VerifyModel(found).UseTextForParameters("original data");
 
 
@@ -121,11 +121,11 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             newDb.BasisTxId.Value.Should().Be(originalDb.BasisTxId.Value + 1UL + (ulong)i,
                 "transaction id should be incremented by 1 for each mutation at iteration " + i);
 
-            var newFound = File.Get(newDb, realId);
+            var newFound = File.As(newDb, realId);
             await VerifyModel(newFound).UseTextForParameters("mutated data " + i);
 
             // Validate the original data
-            var orignalFound = File.Get(originalDb, realId);
+            var orignalFound = File.As(originalDb, realId);
             await VerifyModel(orignalFound).UseTextForParameters("original data" + i);
         }
     }
@@ -157,12 +157,12 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var db = Connection.Db;
 
         // Original data exists
-        var readModel = File.Get(db, realId);
+        var readModel = File.As(db, realId);
         await VerifyModel(readModel).UseTextForParameters("file data");
 
 
         // Extra data exists and can be read with a different read model
-        var archiveReadModel = ArchiveFile.Get(db, realId);
+        var archiveReadModel = ArchiveFile.As(db, realId);
         await VerifyModel(archiveReadModel).UseTextForParameters("archive file data");
 
         readModel.Id.Should().Be(archiveReadModel.Id, "both models are the same entity");
@@ -360,7 +360,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             loadout.AddTo(tx);
             var result = await tx.Commit();
 
-            var loaded = Loadout.Get(result.Db, result[loadout.Id!.Value]);
+            var loaded = Loadout.As(result.Db, result[loadout.Id!.Value]);
             loaded.Name.Should().Be("Test Loadout");
 
             loadout.GetFirst(Loadout.Name).Should().Be("Test Loadout");
@@ -381,7 +381,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             mod.AddTo(tx);
             var result = await tx.Commit();
 
-            var reloaded = Mod.Get(result.Db, result[mod.Id!.Value]);
+            var reloaded = Mod.As(result.Db, result[mod.Id!.Value]);
             reloaded.IsMarked.Should().BeTrue();
 
         }
@@ -418,7 +418,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             await Task.WhenAll(tasks);
 
             var db = Connection.Db;
-            var loadoutRO = Loadout.Get(db, id);
+            var loadoutRO = Loadout.As(db, id);
             loadoutRO.Name.Should().Be("Test Loadout: 1001");
 
             return;
@@ -427,7 +427,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             // by the transaction executor
             void AddToName(ITransaction tx, IDb db, EntityId eid, int amount)
             {
-                var loadout = Loadout.Get(db, eid);
+                var loadout = Loadout.As(db, eid);
                 var oldAmount = int.Parse(loadout.Name.Split(":")[1].Trim());
                 tx.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + amount)}");
             }

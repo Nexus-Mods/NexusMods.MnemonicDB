@@ -60,14 +60,14 @@ public class ReadTests : ABenchmark
 
         _db = Connection.Db;
 
-        _preLoaded = _entityIds.Select(id => File.Get(_db, id)).ToArray();
+        _preLoaded = _entityIds.Select(id => File.As(_db, id)).ToArray();
     }
 
     [Benchmark]
     public ulong ReadFiles()
     {
         ulong sum = 0;
-        sum += File.Get(_db, _readId).Size.Value;
+        sum += File.As(_db, _readId).Size.Value;
         return sum;
     }
 
@@ -80,7 +80,7 @@ public class ReadTests : ABenchmark
     [Benchmark]
     public long ReadAll()
     {
-        return _entityIds.Select(id => File.Get(_db, id))
+        return _entityIds.Select(id => File.As(_db, id))
             .Sum(e => (long)e.Size.Value);
     }
 
@@ -94,7 +94,7 @@ public class ReadTests : ABenchmark
     [Benchmark]
     public ulong ReadAllFromMod()
     {
-        var mod = Mod.Get(_db, _modId);
+        var mod = Mod.As(_db, _modId);
         ulong sum = 0;
         foreach (var file in mod.Files)
         {

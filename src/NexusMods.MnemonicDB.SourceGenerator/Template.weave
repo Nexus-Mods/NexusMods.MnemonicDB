@@ -2,6 +2,8 @@
 @methodname RenderModel
 @model ModelAnalyzer
 
+#nullable enable
+
 using System;
 
 namespace {{= model.Namespace}};
@@ -12,6 +14,7 @@ using __DI__ = Microsoft.Extensions.DependencyInjection;
 using __COMPARERS__ = NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.MnemonicDB.Abstractions;
+using System.Diagnostics.CodeAnalysis;
 
 {{= model.Comments}}
 public partial class {{= model.Name}} {
@@ -42,7 +45,7 @@ public partial class {{= model.Name}} {
     /// Assumes that the id given points to a {{= model.Name}} entity, and
     /// returns a ReadOnly model of the entity.
     /// </summary>
-    public static {{= model.Name}}.ReadOnly Get(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) {
+    public static {{= model.Name}}.ReadOnly As(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) {
         return new {{= model.Name}}.ReadOnly(db, id);
     }
 
@@ -61,7 +64,24 @@ public partial class {{= model.Name}} {
     /// Returns all {{= model.Name}} entities in the database.
     /// </summary>
     public static IEnumerable<{{= model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
-        return Get(db, __ABSTRACTIONS__.IDbExtensions.Intersection(db, RequiredAttributes));
+        foreach (var id in __ABSTRACTIONS__.IDbExtensions.Intersection(db, RequiredAttributes))
+        {
+            yield return new {{= model.Name}}.ReadOnly(db, id);
+        }
+    }
+
+    /// <summary>
+    /// Tries to get the entity with the given id from the database, if the model is invalid, it returns false.
+    /// </summary>
+    public static bool TryGet(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id, [NotNullWhen(true)] out {{= model.Name}}.ReadOnly? result)
+    {
+        var model = As(db, id);
+        if (model.IsValid()) {
+            result = model;
+            return true;
+        }
+        result = default;
+        return false;
     }
 
     /// <summary>
@@ -158,7 +178,7 @@ public partial class {{= model.Name}} {
            protected override string ModelName => "{{= model.Name}}";
 
 
-           internal bool IsValid()
+           public virtual bool IsValid()
            {
                {{each attr in model.Attributes}}
                {{if !attr.IsMarker}}
@@ -222,7 +242,7 @@ public static class {{= model.Name}}Extensions {
     }
 
     {{each include in model.Includes}}
-    public static bool TryGetAs{{= model.Name}}(this {{= include.ToDisplayString()}}.ReadOnly model, out {{= include.ToDisplayString()}}.ReadOnly result) {
+    public static bool TryGetAs{{= model.Name}}(this {{= include.ToDisplayString()}}.ReadOnly model, out {{= include.ToDisplayString()}}.ReadOnly? result) {
         var casted = new {{= include.ToDisplayString()}}.ReadOnly(model.Db, model.Id);
         if (casted.IsValid()) {
             result = casted;
