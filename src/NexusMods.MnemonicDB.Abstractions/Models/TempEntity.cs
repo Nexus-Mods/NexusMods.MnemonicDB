@@ -46,7 +46,7 @@ public class TempEntity : IEnumerable<(IAttribute, object)>
     /// Adds the entity and any nested entities to the transaction.
     /// </summary>
     /// <param name="tx"></param>
-    public void AddTo(ITransaction tx)
+    public virtual void AddTo(ITransaction tx)
     {
         Id ??= tx.TempId();
         foreach (var (attribute, value) in _members)

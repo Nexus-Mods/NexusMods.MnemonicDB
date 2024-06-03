@@ -169,15 +169,17 @@ public abstract class ABackendTest<TStoreType>(
             segment.Add(id2, File.Size, Size.From(77));
             segment.Add(id1, File.ModId, modId1);
             segment.Add(id2, File.ModId, modId1);
+
             segment.Add(modId1, Mod.Name, "Test Mod 1");
             segment.Add(modId1, Mod.LoadoutId, loadoutId);
             segment.Add(modId2, Mod.Name, "Test Mod 2");
             segment.Add(modId2, Mod.LoadoutId, loadoutId);
             segment.Add(loadoutId, Loadout.Name, "Test Loadout 1");
             segment.Add(collectionId, Collection.Name, "Test Collection 1");
-            segment.Add(collectionId, Collection.Loadout, loadoutId);
-            segment.Add(collectionId, Collection.Mods, modId1);
-            segment.Add(collectionId, Collection.Mods, modId2);
+            segment.Add(collectionId, Collection.LoadoutId, loadoutId);
+            segment.Add(collectionId, Collection.ModIds, modId1);
+            segment.Add(collectionId, Collection.ModIds, modId2);
+
 
             tx = await DatomStore.Transact(segment.Build());
         }
@@ -191,7 +193,7 @@ public abstract class ABackendTest<TStoreType>(
             using var segment = new IndexSegmentBuilder(Registry);
             segment.Add(id2, File.Path, "/foo/qux");
             segment.Add(id1, File.ModId, modId2);
-            segment.Add(collectionId, Collection.Mods, modId2, true);
+            segment.Add(collectionId, Collection.ModIds, modId2, true);
             tx = await DatomStore.Transact(segment.Build());
         }
         return tx;

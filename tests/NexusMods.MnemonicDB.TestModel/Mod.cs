@@ -1,58 +1,15 @@
-﻿using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.Attributes;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+﻿using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.TestModel.Attributes;
 
 namespace NexusMods.MnemonicDB.TestModel;
 
-public static class Mod
+public partial class Mod : IModelDefinition
 {
     private const string Namespace = "NexusMods.MnemonicDB.TestModel.Mod";
-
-    public static readonly StringAttribute Name = new(Namespace, "Name") { IsIndexed = true };
-    public static readonly UriAttribute Source = new(Namespace, "Source");
-    public static readonly ReferenceAttribute LoadoutId = new(Namespace, "Loadout");
-
-    /// <summary>
-    /// Test attribute for testing marker attributes.
-    /// </summary>
-    public static readonly MarkerAttribute IsMarked = new(Namespace, "IsMarked");
-
-    public class Model(ITransaction tx) : Entity(tx)
-    {
-        public string Name
-        {
-            get => Mod.Name.Get(this);
-            init => Mod.Name.Add(this, value);
-        }
-
-        public Uri Source
-        {
-            get => Mod.Source.Get(this);
-            init => Mod.Source.Add(this, value);
-        }
-        public bool IsMarked
-        {
-            get => Mod.IsMarked.Contains(this);
-            set => Mod.IsMarked.Add(this);
-        }
-
-        public EntityId LoadoutId
-        {
-            get => Mod.LoadoutId.Get(this);
-            init => Mod.LoadoutId.Add(this, value);
-        }
-
-        public Loadout.Model Loadout
-        {
-            get => Db.Get<Loadout.Model>(LoadoutId);
-            init => Mod.LoadoutId.Add(this, value.Id);
-        }
-
-        public Entities<EntityIds, File.Model> Files => GetReverse<File.Model>(File.ModId);
-
-    }
-
-
+    public static readonly StringAttribute Name = new(Namespace, nameof(Name)) { IsIndexed = true };
+    public static readonly UriAttribute Source = new(Namespace, nameof(Source)) { IsIndexed = true };
+    public static readonly ReferenceAttribute<Loadout> Loadout = new(Namespace, nameof(Loadout));
+    public static readonly BackReferenceAttribute<File> Files = new(File.Mod);
+    public static readonly MarkerAttribute Marked = new(Namespace, nameof(Marked)) { IsIndexed = true };
 }

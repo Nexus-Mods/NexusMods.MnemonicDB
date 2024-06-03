@@ -223,14 +223,14 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
     /// <summary>
     /// Adds a datom to the active transaction for this entity that adds the given value to this attribute
     /// </summary>
-    public void Add(IEntityWithTx entity, TValueType value)
+    public void Add(IAttachedEntity entity, TValueType value)
     {
-        entity.Tx!.Add(entity.Id, this, value);
+        entity.Transaction.Add(entity.Id, this, value);
     }
 
 
     /// <inheritdoc />
-    public void Add(ITransaction tx, EntityId entityId, TValueType value, bool isRetract)
+    public void Add(ITransaction tx, EntityId entityId, TValueType value, bool isRetract = false)
     {
         tx.Add(entityId, this, value, isRetract);
     }
@@ -244,9 +244,9 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
     /// <summary>
     /// Adds a datom to the active transaction for this entity that retracts the given value from this attribute
     /// </summary>
-    public void Retract(IEntityWithTx entity, TValueType value)
+    public void Retract(IAttachedEntity entity, TValueType value)
     {
-        entity.Tx!.Add(entity.Id, this, value, isRetract:true);
+        entity.Transaction.Add(entity.Id, this, value, isRetract:true);
     }
 
     private void WriteValueLowLevel<TWriter>(TLowLevelType value, TWriter writer)

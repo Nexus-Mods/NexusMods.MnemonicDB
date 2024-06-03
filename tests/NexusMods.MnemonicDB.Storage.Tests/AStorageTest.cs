@@ -26,7 +26,7 @@ public abstract class AStorageTest : IAsyncLifetime
     protected AStorageTest(IServiceProvider provider, Func<AttributeRegistry, IStoreBackend>? backendFn = null)
     {
         _provider = provider;
-        Registry = new AttributeRegistry(provider.GetRequiredService<IEnumerable<IAttribute>>());
+        Registry = new AttributeRegistry(provider.GetServices<IAttribute>());
         Registry.Populate([
             new DbAttribute(File.Path.Id, AttributeId.From(20), ValueTags.Utf8Insensitive),
             new DbAttribute(File.Hash.Id, AttributeId.From(21), ValueTags.UInt64),
@@ -36,8 +36,8 @@ public abstract class AStorageTest : IAsyncLifetime
             new DbAttribute(Mod.LoadoutId.Id, AttributeId.From(25), ValueTags.Reference),
             new DbAttribute(Loadout.Name.Id, AttributeId.From(26), ValueTags.Utf8),
             new DbAttribute(Collection.Name.Id, AttributeId.From(27), ValueTags.Utf8),
-            new DbAttribute(Collection.Loadout.Id, AttributeId.From(28), ValueTags.Reference),
-            new DbAttribute(Collection.Mods.Id, AttributeId.From(29), ValueTags.Reference),
+            new DbAttribute(Collection.LoadoutId.Id, AttributeId.From(28), ValueTags.Reference),
+            new DbAttribute(Collection.ModIds.Id, AttributeId.From(29), ValueTags.Reference),
             new DbAttribute(Blobs.InKeyBlob.Id, AttributeId.From(30), ValueTags.Blob),
             new DbAttribute(Blobs.InValueBlob.Id, AttributeId.From(31), ValueTags.HashedBlob)
         ]);
@@ -68,10 +68,11 @@ public abstract class AStorageTest : IAsyncLifetime
         return Task.CompletedTask;
     }
 
-    public EntityId NextTempId(byte partition = (byte)Ids.Partition.Entity)
+    public EntityId NextTempId()
     {
+        var partition = PartitionId.Entity;
         var id = Interlocked.Increment(ref _tempId);
         id |= (ulong)partition << 40;
-        return EntityId.From(Ids.MakeId(Ids.Partition.Tmp, id));
+        return PartitionId.Temp.MakeEntityId(id);
     }
 }

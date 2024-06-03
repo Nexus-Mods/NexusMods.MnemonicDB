@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -33,6 +34,7 @@ var host = Host.CreateDefaultBuilder()
 var services = host.Services;
 
 var connection = services.GetRequiredService<IConnection>();
+await ((IHostedService)connection).StartAsync(CancellationToken.None);
 
 ulong batchSize = 1024;
 ulong datomCount = 1_000_000_000;
@@ -55,7 +57,7 @@ for (ulong i = 0; i < batches; i++)
     for (var j = 0; j < (int)batchSize; j++)
     {
         fileNumber += 1;
-        var _ = new File.Model(tx)
+        var _ = new File.New(tx)
         {
             Path = $"c:\\test_{i}_{j}.txt",
             Hash = Hash.From(fileNumber % 0xFFFF),

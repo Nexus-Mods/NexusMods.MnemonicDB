@@ -1,0 +1,237 @@
+@namespace NexusMods.MnemonicDB.SourceGenerator
+@methodname RenderModel
+@model ModelAnalyzer
+
+using System;
+
+namespace {{= model.Namespace}};
+using __ABSTRACTIONS__ = NexusMods.MnemonicDB.Abstractions;
+using __MODELS__ = NexusMods.MnemonicDB.Abstractions.Models;
+using __SEGMENTS__ = NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using __DI__ = Microsoft.Extensions.DependencyInjection;
+using __COMPARERS__ = NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using Microsoft.Extensions.DependencyInjection;
+using NexusMods.MnemonicDB.Abstractions;
+
+{{= model.Comments}}
+public partial class {{= model.Name}} {
+
+    {{each attr in model.Attributes}}
+    {{= attr.Comments}}
+    {{if attr.IsReference}}
+    public static {{= attr.AttributeType.ToDisplayString()}} {{= attr.ContextualName}} => {{= attr.FieldName}};
+    {{else}}
+    {{/if}}
+    {{/each}}
+
+    #region CRUD Methods
+
+    {{each attr in model.Attributes}}
+    {{if attr.IsIndexed}}
+
+    public static IEnumerable<{{= model.Name}}.ReadOnly> FindBy{{= attr.Name}}(__ABSTRACTIONS__.IDb db, {{= attr.HighLevelType.ToDisplayString()}} value) {
+        foreach (var id in db.FindIndexed({{= attr.Name}}, value)) {
+            yield return new {{= model.Name}}.ReadOnly(db, id);
+        }
+    }
+
+    {{/if}}
+    {{/each}}
+
+    /// <summary>
+    /// Assumes that the id given points to a {{= model.Name}} entity, and
+    /// returns a ReadOnly model of the entity.
+    /// </summary>
+    public static {{= model.Name}}.ReadOnly Get(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) {
+        return new {{= model.Name}}.ReadOnly(db, id);
+    }
+
+    /// <summary>
+    /// A list of all attributes of the model.
+    /// </summary>
+    public static __ABSTRACTIONS__.IAttribute[] RequiredAttributes => new __ABSTRACTIONS__.IAttribute[] {
+        {{each attr in model.Attributes}}
+        {{if !attr.IsMarker}}
+        {{= attr.FieldName}},
+        {{/if}}
+        {{/each}}
+    };
+
+    /// <summary>
+    /// Returns all {{= model.Name}} entities in the database.
+    /// </summary>
+    public static IEnumerable<{{= model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
+        return Get(db, __ABSTRACTIONS__.IDbExtensions.Intersection(db, RequiredAttributes));
+    }
+
+    /// <summary>
+    /// Assumes that the ids given point to {{= model.Name}} entities, and
+    /// returns a list of ReadOnly models of the entities.
+    /// </summary>
+    public static IEnumerable<{{= model.Name}}.ReadOnly> Get(__ABSTRACTIONS__.IDb db, IEnumerable<__ABSTRACTIONS__.EntityId> ids) {
+        return ids.Select(id => new {{= model.Name}}.ReadOnly(db, id));
+    }
+
+    #endregion
+
+
+    public partial class New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
+        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.PartitionId partition) : base() {
+            Id = tx.TempId(partition);
+            tx.Attach(this);
+        }
+
+        public New(__ABSTRACTIONS__.ITransaction tx) : base() {
+            Id = tx.TempId();
+            tx.Attach(this);
+        }
+
+        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.EntityId eid) : base() {
+            Id = eid;
+            tx.Attach(this);
+        }
+
+        {{each include in model.Includes}}
+        public required {{= include.ToDisplayString()}}.New {{= include.Name}} {
+          init => Id = value.Id;
+        }
+        {{/each}}
+
+        public void AddTo(__ABSTRACTIONS__.ITransaction tx)
+        {
+            {{each attr in model.Attributes}}
+            {{if attr.IsCollection}}
+            foreach (var itm in {{= attr.ContextualName}}) {
+                tx.Add(Id, {{= attr.FieldName}}, itm, false);
+            }
+            {{elif attr.IsMarker}}
+            if (Is{{= attr.ContextualName}}) {
+                tx.Add(Id, {{= attr.FieldName}}, new __COMPARERS__.Null(), false);
+            }
+            {{else}}
+            tx.Add(Id, {{= attr.FieldName}}, {{= attr.ContextualName}}, false);
+            {{/if}}
+            {{/each}}
+        }
+
+        /// <summary>
+        /// Implicit conversion from the model to the entity id.
+        /// </summary>
+        public static implicit operator __ABSTRACTIONS__.EntityId({{= model.Name}}.New model) {
+            return model.Id;
+        }
+
+        /// <inheritdoc />
+        public __ABSTRACTIONS__.EntityId Id { get; private set; }
+
+        #region Attributes
+        {{each attr in model.Attributes}}
+        {{= attr.Comments}}
+        {{if attr.IsReference && !attr.IsCollection}}
+        public required {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} { get; init; }
+        {{elif attr.IsReference && attr.IsCollection}}
+        public required {{= attr.HighLevelType.ToDisplayString()}}[] {{= attr.ContextualName}} { get; init; }
+        {{elif attr.IsMarker}}
+        public bool Is{{= attr.ContextualName}} { get; init; } = false;
+        {{else}}
+        public required {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} { get; init; }
+        {{/if}}
+        {{/each}}
+        #endregion
+
+        #region Methods
+        /// <summary>
+        /// Assumes that this model has been commited to the database
+        /// in the commit result. Loads this entity from the commited database
+        /// and returns a ReadOnly model.
+        /// </summary>
+        public {{= model.Name}}.ReadOnly Remap(__ABSTRACTIONS__.ICommitResult result) {
+            return new {{= model.Name}}.ReadOnly(result.Db, result[Id]);
+        }
+        #endregion
+    }
+
+    {{= model.Comments}}
+    public partial class ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) :
+        __MODELS__.ReadOnlyModel(db, id) {
+
+           protected override string ModelName => "{{= model.Name}}";
+
+
+           internal bool IsValid()
+           {
+               {{each attr in model.Attributes}}
+               {{if !attr.IsMarker}}
+               if (!Contains({{= attr.FieldName}})) return false;
+               {{/if}}
+               {{/each}}
+               return true;
+           }
+
+           {{each include in model.Includes}}
+           public {{= include.ToDisplayString()}}.ReadOnly {{= include.Name}} => new {{= include.ToDisplayString()}}.ReadOnly(Db, Id);
+           {{/each}}
+
+           {{each attr in model.Attributes}}
+           {{if attr.IsCollection && attr.IsReference && !attr.IsMarker}}
+           public __SEGMENTS__.Values<__ABSTRACTIONS__.EntityId, ulong> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
+           public IEnumerable<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => {{= attr.FieldName}}.Get(this).Select(id => new {{= attr.ReferenceType.ToDisplayString()}}.ReadOnly(Db, id));
+           {{elif attr.IsMarker}}
+           public bool Is{{= attr.ContextualName}} => {{= attr.FieldName}}.Contains(this);
+           {{else}}
+           public {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
+           {{/if}}
+
+
+           {{if attr.IsReference && attr.IsScalar}}
+           public {{= attr.ReferenceType.ToDisplayString()}}.ReadOnly {{= attr.Name}} => new {{= attr.ReferenceType.ToDisplayString()}}.ReadOnly(Db, {{= attr.FieldName}}.Get(this));
+           {{/if}}
+
+           {{/each}}
+
+           {{each backref in model.BackReferences}}
+
+           public IEnumerable<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly> {{= backref.Name}} => Db.GetBackRefs({{= backref.OtherAttribute.ToDisplayString()}}, this.Id)
+           .Select(otherId => new {{= backref.OtherModel.ToDisplayString()}}.ReadOnly(Db, otherId));
+           {{/each}}
+
+           /// <summary>
+           /// Reloads the entity from the given database, essentially
+           /// refreshing the entity.
+           /// </summary>
+           public ReadOnly Rebase(__ABSTRACTIONS__.IDb db) => new ReadOnly(db, Id);
+
+           /// <summary>
+           /// Implicit conversion from the model to the entity id.
+           /// </summary>
+           public static implicit operator __ABSTRACTIONS__.EntityId({{= model.Name}}.ReadOnly model) {
+               return model.Id;
+           }
+
+
+        }
+
+}
+
+public static class {{= model.Name}}Extensions {
+    public static __DI__.IServiceCollection Add{{= model.Name}}Model(this __DI__.IServiceCollection services) {
+        {{each attr in model.Attributes}}
+        services.AddSingleton<__ABSTRACTIONS__.IAttribute>(_ => {{= attr.FieldName}});
+        {{/each}}
+        return services;
+    }
+
+    {{each include in model.Includes}}
+    public static bool TryGetAs{{= model.Name}}(this {{= include.ToDisplayString()}}.ReadOnly model, out {{= include.ToDisplayString()}}.ReadOnly result) {
+        var casted = new {{= include.ToDisplayString()}}.ReadOnly(model.Db, model.Id);
+        if (casted.IsValid()) {
+            result = casted;
+            return true;
+        }
+
+        result = default;
+        return false;
+    }
+    {{/each}}
+
+}

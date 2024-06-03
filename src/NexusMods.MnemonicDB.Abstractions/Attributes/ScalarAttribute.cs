@@ -13,7 +13,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
     /// <summary>
     ///   Gets the value of the attribute from the entity.
     /// </summary>
-    public TValue Get(IEntity entity)
+    public TValue Get(IHasEntityIdAndDb entity)
     {
         var segment = entity.Db.Get(entity.Id);
         var dbId = Cache[segment.RegistryId.Value];
@@ -31,7 +31,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
     /// <summary>
     ///   Gets the value of the attribute from the entity or a default value if the attribute is not present.
     /// </summary>
-    public TValue Get(IEntity entity, TValue defaultValue)
+    public TValue Get(IHasEntityIdAndDb entity, TValue defaultValue)
     {
         var segment = entity.Db.Get(entity.Id);
         var dbId = Cache[segment.RegistryId.Value];
@@ -47,12 +47,12 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
     /// <summary>
     /// Retracts the attribute from the entity.
     /// </summary>
-    public void Retract(IEntityWithTx entityWithTx)
+    public void Retract(IAttachedEntity entityWithTx)
     {
         Retract(entityWithTx, Get(entityWithTx));
     }
 
-    private void ThrowKeyNotfoundException(IEntity entity)
+    private void ThrowKeyNotfoundException(IHasEntityIdAndDb entity)
     {
         throw new KeyNotFoundException($"Entity {entity.Id} does not have attribute {Id}");
     }
@@ -60,7 +60,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
     /// <summary>
     ///   Try to get the value of the attribute from the entity.
     /// </summary>
-    public bool TryGet(Entity entity, out TValue value)
+    public bool TryGet(IHasEntityIdAndDb entity, out TValue value)
     {
         var segment = entity.Db.Get(entity.Id);
         var dbId = Cache[segment.RegistryId.Value];

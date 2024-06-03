@@ -15,7 +15,7 @@ public abstract class CollectionAttribute<TValue, TLowLevel>(ValueTags tag, stri
     /// <summary>
     /// Gets all values for this attribute on the given entity
     /// </summary>
-    public Values<TValue, TLowLevel> Get(IEntity ent)
+    public Values<TValue, TLowLevel> Get(IHasEntityIdAndDb ent)
     {
         var segment = ent.Db.Get(ent.Id);
         var dbId = Cache[segment.RegistryId.Value];
@@ -37,7 +37,7 @@ public abstract class CollectionAttribute<TValue, TLowLevel>(ValueTags tag, stri
     /// <summary>
     /// Retracts all values for this attribute on the given entity
     /// </summary>
-    public void RetractAll(IEntityWithTx entityWithTx)
+    public void RetractAll(IAttachedEntity entityWithTx)
     {
         foreach (var value in Get(entityWithTx))
         {

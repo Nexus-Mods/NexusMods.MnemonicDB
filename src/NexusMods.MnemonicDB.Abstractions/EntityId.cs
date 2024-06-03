@@ -11,21 +11,24 @@ namespace NexusMods.MnemonicDB.Abstractions;
 public readonly partial struct EntityId
 {
     /// <summary>
-    ///     The minimum possible value for an entity id in the entity partition.
-    /// </summary>
-    public static EntityId MinValue => From(Ids.MakeId(Ids.Partition.Entity, 1));
-
-    /// <summary>
     /// Min value for an entity id with no partition
     /// </summary>
     public static EntityId MinValueNoPartition => From(0);
 
+    /// <summary>
+    /// Max value for an entity id with no partition
+    /// </summary>
     public static EntityId MaxValueNoPartition => From(ulong.MaxValue);
 
     /// <summary>
-    /// Gets the partition of the id
+    /// Gets the partition id of the entity id
     /// </summary>
-    public byte Partition => Ids.GetPartitionValue(this);
+    public PartitionId Partition => PartitionId.From((byte)(Value >> 56));
+
+    /// <summary>
+    /// Returns true if the entity id is in the given partition
+    /// </summary>
+    public bool InPartition(PartitionId partitionId) => Partition == partitionId;
 
     /// <summary>
     /// Gets just the value portion of the id (ignoring the partition)

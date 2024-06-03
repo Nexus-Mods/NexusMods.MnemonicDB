@@ -8,6 +8,7 @@ using NexusMods.MnemonicDB.TestModel.Helpers;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
+using Xunit.Sdk;
 using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
@@ -46,33 +47,16 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
 
     protected DatomStoreSettings Config { get; set; }
 
-    protected SettingsTask VerifyModel<TReadModel>(TReadModel model)
-        where TReadModel : IEntity
+    protected SettingsTask VerifyModel<T>(T model)
+    where T : IEnumerable<IReadDatom>
     {
-        var fromAttributes = EntityToDictionary(model);
-        return Verify(fromAttributes);
-    }
-
-    private Dictionary<string, string> EntityToDictionary<TReadModel>(TReadModel model) where TReadModel : IEntity
-    {
-        return new Dictionary<string, string>(from prop in model.GetType().GetProperties()
-            where prop.Name != "Id" && prop.Name != "Tx" && prop.Name != "Db"
-            let value = Stringify(prop.GetValue(model)!)
-            where value != null
-            select new KeyValuePair<string, string>(prop.Name, value));
+        return VerifyTable(model);
     }
 
     protected SettingsTask VerifyModel<T>(IEnumerable<T> models)
-    where T : IEntity
+    where T : IEnumerable<IReadDatom>
     {
-        return Verify(models.Select(EntityToDictionary).ToArray());
-    }
-
-    private string Stringify(object value)
-    {
-        if (value is IEntity entity)
-            return entity.Id.Value.ToString("x");
-        return value!.ToString() ?? "";
+        return VerifyTable(models.SelectMany(e => e));
     }
 
     protected SettingsTask VerifyTable(IEnumerable<IReadDatom> datoms)
@@ -80,31 +64,32 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
         return Verify(datoms.ToTable(_registry));
     }
 
-    protected async Task<Loadout.Model> InsertExampleData()
+    protected async Task<Loadout.ReadOnly> InsertExampleData()
     {
+
         var tx = Connection.BeginTransaction();
-        var loadout = new Loadout.Model(tx)
+        var loadout = new Loadout.New(tx)
         {
             Name = "Test Loadout"
         };
-        List<Mod.Model> mods = new();
+        List<Mod.New> mods = new();
 
         foreach (var modName in new[] { "Mod1", "Mod2", "Mod3" })
         {
-            var mod = new Mod.Model(tx)
+            var mod = new Mod.New(tx)
             {
                 Name = modName,
                 Source = new Uri("http://somesite.com/" + modName),
-                Loadout = loadout
+                LoadoutId = loadout
             };
 
             var idx = 0;
             foreach (var file in new[] { "File1", "File2", "File3" })
             {
-                _ = new File.Model(tx)
+                _ = new File.New(tx)
                 {
                     Path = file,
-                    Mod = mod,
+                    ModId = mod,
                     Size = Size.From((ulong)idx),
                     Hash = Hash.From((ulong)(0xDEADBEEF + idx))
                 };
@@ -114,19 +99,16 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
         }
 
         var txResult = await tx.Commit();
-
-        loadout = txResult.Remap(loadout);
+        var loadoutWritten = loadout.Remap(txResult);
 
         var tx2 = Connection.BeginTransaction();
-        foreach (var mod in loadout.Mods)
+        foreach (var mod in loadoutWritten.Mods)
         {
-            tx2.Add(mod.Id, Mod.Name, mod.Name + " - Updated");
+            tx2.Add(txResult[mod.Id], Mod.Name, mod.Name + " - Updated");
         }
         await tx2.Commit();
 
-        return Connection.Db.Get<Loadout.Model>(loadout.Id);
-
-
+        return Loadout.Get(Connection.Db, loadoutWritten.Id);
     }
 
     public void Dispose()
@@ -142,6 +124,7 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
         _store.Dispose();
         _backend.Dispose();
 
+        GC.Collect();
 
         _backend = new Backend(_registry);
         _registry = new AttributeRegistry(_attributes);

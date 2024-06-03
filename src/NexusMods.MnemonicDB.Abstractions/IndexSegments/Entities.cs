@@ -9,7 +9,7 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 /// </summary>
 public readonly struct Entities<TInner, TEntity>(TInner ids, IDb db) :
     IReadOnlyCollection<TEntity>
-    where TEntity : IEntity
+    where TEntity : IHasEntityIdAndDb
     where TInner : IIndexSegment<EntityId>
 {
     /// <summary>

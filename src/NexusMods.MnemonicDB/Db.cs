@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
@@ -67,7 +68,7 @@ internal class Db : IDb
     public IConnection Connection => _connection;
 
     public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids)
-        where TModel : IEntity
+        where TModel : IHasEntityIdAndDb
     {
         foreach (var id in ids)
         {
@@ -93,6 +94,12 @@ internal class Db : IDb
             .Select(d => d.E);
     }
 
+    public EntityIds GetBackRefs(ReferenceAttribute attribute, EntityId id)
+    {
+        var segment = _reverseCache.Get(this, (id, attribute.GetDbId(_registry.Id)));
+        return new EntityIds(segment, 0, segment.Count);
+    }
+
     public IndexSegment GetSegment(EntityId id)
     {
         return _entityCache.Get(this, id);
@@ -108,13 +115,13 @@ internal class Db : IDb
         return results;
     }
 
-    public IEnumerable<EntityId> FindIndexed<TValue, TLowLevel>(TValue value, Attribute<TValue, TLowLevel> attribute)
+    public IEnumerable<EntityId> FindIndexed<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value)
     {
-        return FindIndexedDatoms(value, attribute)
+        return FindIndexedDatoms(attribute, value)
             .Select(d => d.E);
     }
 
-    public IEnumerable<Datom> FindIndexedDatoms<TValue, TLowLevel>(TValue value, Attribute<TValue, TLowLevel> attribute)
+    public IEnumerable<Datom> FindIndexedDatoms<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value)
     {
         if (!attribute.IsIndexed)
             throw new InvalidOperationException($"Attribute {attribute.Id} is not indexed");
@@ -130,13 +137,13 @@ internal class Db : IDb
     }
 
     public TModel Get<TModel>(EntityId id)
-        where TModel : IEntity
+        where TModel : IHasEntityIdAndDb
     {
         return EntityConstructors<TModel>.Constructor(id, this);
     }
 
     public Entities<EntityIds, TModel> GetReverse<TModel>(EntityId id, Attribute<EntityId, ulong> attribute)
-        where TModel : IEntity
+        where TModel : IHasEntityIdAndDb
     {
         var segment = _reverseCache.Get(this, (id, attribute.GetDbId(_registry.Id)));
         var ids = new EntityIds(segment, 0, segment.Count);
@@ -154,8 +161,6 @@ internal class Db : IDb
         return Snapshot.Datoms(IndexType.TxLog, txId, TxId.From(txId.Value + 1))
             .Select(d => d.Resolved);
     }
-
-    public void Dispose() { }
 
     public bool Equals(IDb? other)
     {

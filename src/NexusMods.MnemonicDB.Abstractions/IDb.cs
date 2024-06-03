@@ -11,7 +11,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// <summary>
 ///     Represents an immutable database fixed to a specific TxId.
 /// </summary>
-public interface IDb : IEquatable<IDb>, IDisposable
+public interface IDb : IEquatable<IDb>
 {
     /// <summary>
     ///     Gets the basis TxId of the database.
@@ -40,7 +40,7 @@ public interface IDb : IEquatable<IDb>, IDisposable
     /// <typeparam name="TModel"></typeparam>
     /// <returns></returns>
     public TModel Get<TModel>(EntityId id)
-        where TModel : IEntity;
+        where TModel : IHasEntityIdAndDb;
 
 
     /// <summary>
@@ -53,7 +53,7 @@ public interface IDb : IEquatable<IDb>, IDisposable
     ///     with the given attribute.
     /// </summary>
     public Entities<EntityIds, TModel> GetReverse<TModel>(EntityId id, Attribute<EntityId, ulong> attribute)
-        where TModel : IEntity;
+        where TModel : IHasEntityIdAndDb;
 
     public IEnumerable<IReadDatom> Datoms(EntityId id);
 
@@ -71,15 +71,20 @@ public interface IDb : IEquatable<IDb>, IDisposable
     /// <summary>
     /// Finds all the entity ids that have the given attribute with the given value.
     /// </summary>
-    IEnumerable<EntityId> FindIndexed<TValue, TLowLevel>(TValue value, Attribute<TValue, TLowLevel> attribute);
+    IEnumerable<EntityId> FindIndexed<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value);
 
     /// <summary>
     /// Finds all the datoms have the given attribute with the given value.
     /// </summary>
-    IEnumerable<Datom> FindIndexedDatoms<TValue, TLowLevel>(TValue value, Attribute<TValue, TLowLevel> attribute);
+    IEnumerable<Datom> FindIndexedDatoms<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value);
 
     /// <summary>
     /// Finds all the entity ids that have the given attribute.
     /// </summary>
     IEnumerable<EntityId> Find(IAttribute attribute);
+
+    /// <summary>
+    /// Gets all the back references for this entity that are through the given attribute.
+    /// </summary>
+    EntityIds GetBackRefs(ReferenceAttribute attribute, EntityId id);
 }
