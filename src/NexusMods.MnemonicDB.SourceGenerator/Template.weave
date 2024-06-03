@@ -64,7 +64,10 @@ public partial class {{= model.Name}} {
     /// Returns all {{= model.Name}} entities in the database.
     /// </summary>
     public static IEnumerable<{{= model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
-        return As(db, __ABSTRACTIONS__.IDbExtensions.Intersection(db, RequiredAttributes));
+        foreach (var id in __ABSTRACTIONS__.IDbExtensions.Intersection(db, RequiredAttributes))
+        {
+            yield return new {{= model.Name}}.ReadOnly(db, id);
+        }
     }
 
     /// <summary>
@@ -239,7 +242,7 @@ public static class {{= model.Name}}Extensions {
     }
 
     {{each include in model.Includes}}
-    public static bool TryGetAs{{= model.Name}}(this {{= include.ToDisplayString()}}.ReadOnly model, out {{= include.ToDisplayString()}}.ReadOnly result) {
+    public static bool TryGetAs{{= model.Name}}(this {{= include.ToDisplayString()}}.ReadOnly model, out {{= include.ToDisplayString()}}.ReadOnly? result) {
         var casted = new {{= include.ToDisplayString()}}.ReadOnly(model.Db, model.Id);
         if (casted.IsValid()) {
             result = casted;

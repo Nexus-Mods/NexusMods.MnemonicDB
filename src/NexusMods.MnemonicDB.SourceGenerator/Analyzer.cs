@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.CodeAnalysis;
 
@@ -30,7 +32,8 @@ public class ModelGenerator : ISourceGenerator
             var writer = new StringWriter();
             Templates.RenderModel(modelAnalyzer, writer);
 
-            context.AddSource($"{modelAnalyzer.Name}.Generated.cs", writer.ToString());
+            var full = modelAnalyzer.Namespace.ToDisplayString().Replace(".", "_") + "_" + modelAnalyzer.Name;
+            context.AddSource($"{full}.Generated.cs", writer.ToString());
         }
         return;
 

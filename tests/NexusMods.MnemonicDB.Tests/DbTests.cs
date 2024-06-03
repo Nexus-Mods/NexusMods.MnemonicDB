@@ -39,7 +39,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         result.NewTx.Value.Should().Be(oldTx.Value + 1, "transaction id should be incremented by 1");
 
         var db = Connection.Db;
-        var resolved = File.As(db, ids.Select(id => result[id]));
+        var resolved = File.Get(db, ids.Select(id => result[id]));
         await VerifyModel(resolved);
     }
 
