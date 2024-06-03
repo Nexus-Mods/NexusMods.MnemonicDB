@@ -123,8 +123,8 @@ public class ModelAnalyzer
                 var analyzedAttribute = new AnalyzedBackReferenceAttribute
                 {
                     Name = fieldSymbol.Name,
-                    OtherModel = otherModel,
-                    OtherAttribute = otherAttribute,
+                    OtherModel = otherModel!,
+                    OtherAttribute = otherAttribute!,
                     Comments = comments
                 };
                 BackReferences.Add(analyzedAttribute);
@@ -139,8 +139,8 @@ public class ModelAnalyzer
                     FieldName = fieldSymbol.ToDisplayString(),
                     Flags = flags,
                     AttributeType = (fieldSymbol.Type as INamedTypeSymbol)!,
-                    HighLevelType = highLevel,
-                    LowLevelType = lowLevel,
+                    HighLevelType = highLevel!,
+                    LowLevelType = lowLevel!,
                     Markers = markers,
                     Comments = comments
                 };
@@ -160,7 +160,7 @@ public class ModelAnalyzer
         }
     }
 
-    private bool TryGetBackReference(IFieldSymbol fieldSymbol, [NotNullWhen(true)] out INamedTypeSymbol? otherModel, [NotNullWhen(true)] out IFieldSymbol? otherAttribute)
+    private bool TryGetBackReference(IFieldSymbol fieldSymbol, out INamedTypeSymbol? otherModel, out IFieldSymbol? otherAttribute)
     {
         otherModel = null;
         otherAttribute = null;
@@ -243,8 +243,8 @@ public class ModelAnalyzer
     }
 
     private bool TryGetAttributeTypes(IFieldSymbol fieldSymbol,
-        [NotNullWhen(true)] out INamedTypeSymbol? highLevel,
-        [NotNullWhen(true)] out INamedTypeSymbol? lowLevel,
+        out INamedTypeSymbol? highLevel,
+        out INamedTypeSymbol? lowLevel,
         out AttributeFlags flags)
     {
         var type = fieldSymbol.Type;
