@@ -7,6 +7,16 @@ namespace NexusMods.MnemonicDB.Abstractions.Models;
 /// </summary>
 public interface IReadOnlyModel : IHasEntityIdAndDb, IReadOnlyCollection<IReadDatom>
 {
+    /// <summary>
+    /// Returns true if all the attributes in the model exist in the attached
+    /// database
+    /// </summary>
+    public bool IsValid();
+
+    /// <summary>
+    /// True if the model contains the given attribute
+    /// </summary>
+    public bool Contains(IAttribute attribute);
 
 }
 
