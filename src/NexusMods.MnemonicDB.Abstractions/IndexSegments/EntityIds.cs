@@ -8,7 +8,7 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 /// A subview of an IndexSegment that returns the entity ids of the segment
 /// </summary>
 public struct EntityIds(IndexSegment segment, int start, int end) :
-    IEnumerable<EntityId>, IIndexSegment<EntityId>
+    IReadOnlyCollection<EntityId>, IIndexSegment<EntityId>
 {
     /// <summary>
     /// Gets the value at the given location

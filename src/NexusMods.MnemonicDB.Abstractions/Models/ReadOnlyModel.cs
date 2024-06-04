@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using NexusMods.MnemonicDB.Abstractions.Attributes;
 
 namespace NexusMods.MnemonicDB.Abstractions.Models;
 
@@ -8,7 +7,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Models;
 /// An entity is a reference to the attributes of a specific EnityId. Think of this as a hashmap
 /// of attributes, or a row in a database table.
 /// </summary>
-public class ReadOnlyModel(IDb db, EntityId id) : IHasEntityIdAndDb, IEnumerable<IReadDatom>
+public readonly struct ReadOnlyModel(IDb db, EntityId id) : IHasEntityIdAndDb, IEnumerable<IReadDatom>
 {
     /// <inheritdoc />
     public EntityId Id => id;
@@ -45,14 +44,9 @@ public class ReadOnlyModel(IDb db, EntityId id) : IHasEntityIdAndDb, IEnumerable
         return false;
     }
 
-    /// <summary>
-    /// Override this to provide a custom model name
-    /// </summary>
-    protected virtual string ModelName => GetType().Name;
-
     /// <inheritdoc />
     public override string ToString()
     {
-        return $"{ModelName}<{Id.Value:x}>";
+        return $"ReadOnlyModel<{Id.Value:x}>";
     }
 }

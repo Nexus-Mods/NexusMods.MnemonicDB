@@ -172,13 +172,81 @@ public partial class {{= model.Name}} {
     }
 
     {{= model.Comments}}
-    public partial class ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) :
-        __MODELS__.ReadOnlyModel(db, id) {
+    public readonly partial struct ReadOnly :
+        __MODELS__.IReadOnlyModel<{{= model.Name}}.ReadOnly> {
 
-           protected override string ModelName => "{{= model.Name}}";
+           private __SEGMENTS__.IndexSegment _segment;
 
+           private ReadOnly(__ABSTRACTIONS__.IDb db, __SEGMENTS__.IndexSegment segment, __ABSTRACTIONS__.EntityId id) {
+               Db = db;
+               Id = id;
+               _segment = segment;
+           }
 
-           public virtual bool IsValid()
+           /// <summary>
+           /// Constructs a new ReadOnly model of the entity.
+           /// </summary>
+           public ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) :
+               this(db, db.Get(id), id)
+           {
+           }
+
+           /// <summary>
+           /// The entity id of the model.
+           /// </summary>
+           public __ABSTRACTIONS__.EntityId Id { get; }
+
+           /// <summary>
+           /// The database that the entity is associated with.
+           /// </summary>
+           public __ABSTRACTIONS__.IDb Db { get; }
+
+           /// <summary>
+           /// Constructs a new ReadOnly model of the entity.
+           /// </summary>
+           public static ReadOnly Create(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) {
+               return new ReadOnly(db, db.Get(id), id);
+           }
+
+           /// <inheritdoc />
+           public int Count => _segment.Count;
+
+           /// <inheritdoc />
+           public IEnumerator<IReadDatom> GetEnumerator()
+           {
+               var segment = Db.Get(Id);
+               for (var i = 0; i < segment.Count; i++)
+               {
+                   yield return segment[i].Resolved;
+               }
+           }
+
+           /// <inheritdoc />
+           IEnumerator IEnumerable.GetEnumerator()
+           {
+               return GetEnumerator();
+           }
+
+           /// <summary>
+           /// Looks for the given attribute in the entity
+           /// </summary>
+           public bool Contains(IAttribute attribute)
+           {
+               foreach (var datom in this)
+               {
+                   if (datom.A == attribute)
+                       return true;
+               }
+
+               return false;
+           }
+
+           public override string ToString()
+           {
+               return "{{= model.Name}}<" + id + ">";
+           }
+
+           public bool IsValid()
            {
                {{each attr in model.Attributes}}
                {{if !attr.IsMarker}}
