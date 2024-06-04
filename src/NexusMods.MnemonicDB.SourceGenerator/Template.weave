@@ -5,6 +5,8 @@
 #nullable enable
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace {{= model.Namespace}};
 using __ABSTRACTIONS__ = NexusMods.MnemonicDB.Abstractions;
@@ -172,13 +174,81 @@ public partial class {{= model.Name}} {
     }
 
     {{= model.Comments}}
-    public partial class ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) :
-        __MODELS__.ReadOnlyModel(db, id) {
+    public readonly partial struct ReadOnly :
+        __MODELS__.IReadOnlyModel<{{= model.Name}}.ReadOnly> {
 
-           protected override string ModelName => "{{= model.Name}}";
+           private readonly __SEGMENTS__.IndexSegment _segment;
+
+           private ReadOnly(__ABSTRACTIONS__.IDb db, __SEGMENTS__.IndexSegment segment, __ABSTRACTIONS__.EntityId id) {
+               Db = db;
+               Id = id;
+               _segment = segment;
+           }
+
+           /// <summary>
+           /// Constructs a new ReadOnly model of the entity.
+           /// </summary>
+           public ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) :
+               this(db, db.Get(id), id)
+           {
+           }
+
+           /// <summary>
+           /// The entity id of the model.
+           /// </summary>
+           public __ABSTRACTIONS__.EntityId Id { get; }
+
+           /// <summary>
+           /// The database that the entity is associated with.
+           /// </summary>
+           public __ABSTRACTIONS__.IDb Db { get; }
+
+           /// <summary>
+           /// Constructs a new ReadOnly model of the entity.
+           /// </summary>
+           public static ReadOnly Create(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) {
+               return new ReadOnly(db, db.Get(id), id);
+           }
+
+           /// <inheritdoc />
+           public int Count => _segment.Count;
 
 
-           public virtual bool IsValid()
+           /// <inheritdoc />
+           public IEnumerator<IReadDatom> GetEnumerator()
+           {
+               for (var i = 0; i < _segment.Count; i++)
+               {
+                   yield return _segment[i].Resolved;
+               }
+           }
+
+           IEnumerator IEnumerable.GetEnumerator()
+           {
+               return GetEnumerator();
+           }
+
+
+           /// <summary>
+           /// Looks for the given attribute in the entity
+           /// </summary>
+           public bool Contains(IAttribute attribute)
+           {
+               foreach (var datom in this)
+               {
+                   if (datom.A == attribute)
+                       return true;
+               }
+
+               return false;
+           }
+
+           public override string ToString()
+           {
+               return "{{= model.Name}}<" + Id + ">";
+           }
+
+           public bool IsValid()
            {
                {{each attr in model.Attributes}}
                {{if !attr.IsMarker}}
@@ -195,7 +265,7 @@ public partial class {{= model.Name}} {
            {{each attr in model.Attributes}}
            {{if attr.IsCollection && attr.IsReference && !attr.IsMarker}}
            public __SEGMENTS__.Values<__ABSTRACTIONS__.EntityId, ulong> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
-           public IEnumerable<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => {{= attr.FieldName}}.Get(this).Select(id => new {{= attr.ReferenceType.ToDisplayString()}}.ReadOnly(Db, id));
+           public __SEGMENTS__.ValueEntities<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => __SEGMENTS__.ValuesExtensions.AsModels<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly>({{= attr.FieldName}}.Get(this), Db);
            {{elif attr.IsMarker}}
            public bool Is{{= attr.ContextualName}} => {{= attr.FieldName}}.Contains(this);
            {{else}}
@@ -211,8 +281,7 @@ public partial class {{= model.Name}} {
 
            {{each backref in model.BackReferences}}
 
-           public IEnumerable<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly> {{= backref.Name}} => Db.GetBackRefs({{= backref.OtherAttribute.ToDisplayString()}}, this.Id)
-           .Select(otherId => new {{= backref.OtherModel.ToDisplayString()}}.ReadOnly(Db, otherId));
+           public __SEGMENTS__.Entities<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly> {{= backref.Name}} => Db.GetBackRefs({{= backref.OtherAttribute.ToDisplayString()}}, this.Id).AsModels<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly>(Db);
            {{/each}}
 
            /// <summary>

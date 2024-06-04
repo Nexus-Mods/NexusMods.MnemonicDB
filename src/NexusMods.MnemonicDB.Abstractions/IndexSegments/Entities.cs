@@ -36,3 +36,43 @@ public readonly struct Entities<TInner, TEntity>(TInner ids, IDb db) :
         return GetEnumerator();
     }
 }
+
+
+/// <summary>
+/// A wrapper around EntityIds that auto-creates the given ReadModel on-the-fly
+/// </summary>
+/// <typeparam name="TModel"></typeparam>
+public readonly struct Entities<TModel> : IReadOnlyCollection<TModel>
+where TModel : IReadOnlyModel<TModel>
+{
+    private readonly EntityIds _ids;
+    private readonly IDb _db;
+
+    /// <summary>
+    /// A wrapper around EntityIds that auto-creates the given ReadModel on-the-fly
+    /// </summary>
+    /// <typeparam name="TModel"></typeparam>
+    public Entities(EntityIds ids, IDb db)
+    {
+        _ids = ids;
+        _db = db;
+    }
+
+
+    /// <inheritdoc />
+    public IEnumerator<TModel> GetEnumerator()
+    {
+        foreach (var id in _ids)
+        {
+            yield return TModel.Create(_db, id);
+        }
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
+
+    /// <inheritdoc />
+    public int Count => _ids.Count;
+}
