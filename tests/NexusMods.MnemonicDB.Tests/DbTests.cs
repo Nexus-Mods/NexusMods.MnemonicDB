@@ -281,7 +281,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             mod.Contains(Mod.Source).Should().BeTrue();
             mod.Contains(Loadout.Name).Should().BeFalse();
 
-            mod.ToString().Should().Be("Mod<200000000000002>");
+            mod.ToString().Should().Be("Mod<EId:200000000000002>");
 
             await VerifyTable(mod);
         }

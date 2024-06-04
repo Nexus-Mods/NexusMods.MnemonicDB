@@ -51,7 +51,7 @@ public struct EntityIds(IndexSegment segment, int start, int end) :
     /// <summary>
     /// Creates a view of these Ids that auto-casts every Id into a model of the given model type
     /// </summary>
-    Entities<TModel> AsModels<TModel>(IDb db)
+    public Entities<TModel> AsModels<TModel>(IDb db)
     where TModel : IReadOnlyModel<TModel>
     {
         return new Entities<TModel>(this, db);

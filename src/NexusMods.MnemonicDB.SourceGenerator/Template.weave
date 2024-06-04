@@ -265,7 +265,7 @@ public partial class {{= model.Name}} {
            {{each attr in model.Attributes}}
            {{if attr.IsCollection && attr.IsReference && !attr.IsMarker}}
            public __SEGMENTS__.Values<__ABSTRACTIONS__.EntityId, ulong> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
-           public IEnumerable<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => {{= attr.FieldName}}.Get(this).Select(id => new {{= attr.ReferenceType.ToDisplayString()}}.ReadOnly(Db, id));
+           public __SEGMENTS__.ValueEntities<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => __SEGMENTS__.ValuesExtensions.AsModels<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly>({{= attr.FieldName}}.Get(this), Db);
            {{elif attr.IsMarker}}
            public bool Is{{= attr.ContextualName}} => {{= attr.FieldName}}.Contains(this);
            {{else}}
@@ -281,7 +281,7 @@ public partial class {{= model.Name}} {
 
            {{each backref in model.BackReferences}}
 
-           public __SEGMENTS__.Entities<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly> {{= backref.Name}} => Db.GetBackRefs({{= backref.OtherAttribute.ToDisplayString()}}, this.Id).AsModels<{{= backRef.OtherModel.ToDisplayString()}}.ReadOnly>(Db);
+           public __SEGMENTS__.Entities<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly> {{= backref.Name}} => Db.GetBackRefs({{= backref.OtherAttribute.ToDisplayString()}}, this.Id).AsModels<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly>(Db);
            {{/each}}
 
            /// <summary>

@@ -15,4 +15,13 @@ public static class ValuesExtensions
     {
         return new Entities<Values<EntityId, ulong>, TModel>(ids, db);
     }
+
+    /// <summary>
+    /// Returns a view of the values as models whose ids are the given id
+    /// </summary>
+    public static ValueEntities<TModel> AsModels<TModel>(this Values<EntityId, ulong> values, IDb db)
+        where TModel : IReadOnlyModel<TModel>
+    {
+        return new ValueEntities<TModel>(values, db);
+    }
 }
