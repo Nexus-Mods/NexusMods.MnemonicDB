@@ -245,12 +245,12 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
             var loadoutWritten = loadout.Remap(result);
 
-            loadoutWritten.Mods.Count().Should().Be(2);
+            loadoutWritten.Mods.Count.Should().Be(2);
             loadoutWritten.Mods.Select(m => m.Name).Should().BeEquivalentTo(["Test Mod 1", "Test Mod 2"]);
 
             var firstMod = loadoutWritten.Mods.First();
             firstMod.Loadout.Id.InPartition(PartitionId.Entity).Should().BeTrue("LoadoutId should in the entity partition");
-            firstMod.LoadoutId.Should().Be(loadoutWritten.Id);
+            firstMod.LoadoutId.Should().BeEquivalentTo(loadoutWritten.LoadoutId);
             firstMod.Db.Should().Be(newDb);
             loadout.Name.Should().Be("Test Loadout");
             firstMod.Loadout.Name.Should().Be("Test Loadout");

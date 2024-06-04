@@ -7,6 +7,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TransparentValueObjects;
 
 namespace {{= model.Namespace}};
 using __ABSTRACTIONS__ = NexusMods.MnemonicDB.Abstractions;
@@ -143,6 +144,18 @@ public partial class {{= model.Name}} {
             return model.Id;
         }
 
+        /// <summary>
+        /// Implicit conversion from the model to the model id.
+        /// </summary>
+        public static implicit operator {{= model.Name}}Id({{= model.Name}}.New model) {
+            return model.{{= model.Name}}Id;
+        }
+
+        /// <summary>
+        /// The entity id of the model as a model id.
+        /// </summary>
+        public {{= model.Name}}Id {{= model.Name}}Id => {{= model.Name}}Id.From(Id);
+
         /// <inheritdoc />
         public __ABSTRACTIONS__.EntityId Id { get; private set; }
 
@@ -150,7 +163,7 @@ public partial class {{= model.Name}} {
         {{each attr in model.Attributes}}
         {{= attr.Comments}}
         {{if attr.IsReference && !attr.IsCollection}}
-        public required {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} { get; init; }
+        public required {{= attr.ReferenceType.ToDisplayString()}}Id {{= attr.ContextualName}} { get; init; }
         {{elif attr.IsReference && attr.IsCollection}}
         public required {{= attr.HighLevelType.ToDisplayString()}}[] {{= attr.ContextualName}} { get; init; }
         {{elif attr.IsMarker}}
@@ -197,6 +210,9 @@ public partial class {{= model.Name}} {
            /// The entity id of the model.
            /// </summary>
            public __ABSTRACTIONS__.EntityId Id { get; }
+
+           /// <inheritdoc />
+           public {{= model.Name}}Id {{= model.Name}}Id => {{= model.Name}}Id.From(Id);
 
            /// <summary>
            /// The database that the entity is associated with.
@@ -268,6 +284,8 @@ public partial class {{= model.Name}} {
            public __SEGMENTS__.ValueEntities<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => __SEGMENTS__.ValuesExtensions.AsModels<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly>({{= attr.FieldName}}.Get(this), Db);
            {{elif attr.IsMarker}}
            public bool Is{{= attr.ContextualName}} => {{= attr.FieldName}}.Contains(this);
+           {{elif attr.IsReference}}
+           public {{= attr.ReferenceType.ToDisplayString()}}Id {{= attr.ContextualName}} => {{= attr.ReferenceType.ToDisplayString()}}Id.From({{= attr.FieldName}}.Get(this));
            {{else}}
            public {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
            {{/if}}
@@ -297,10 +315,58 @@ public partial class {{= model.Name}} {
                return model.Id;
            }
 
-
+           public static implicit operator {{= model.Name}}Id({{= model.Name}}.ReadOnly? model) {
+               return {{= model.Name}}Id.From(model!.Value.Id);
+           }
         }
-
 }
+
+/// <summary>
+/// A value object representing the id of a {{= model.Name}} entity.
+/// </summary>
+public readonly partial struct {{= model.Name}}Id : IEquatable<{{= model.Name}}Id>, IEquatable<__ABSTRACTIONS__.EntityId>
+{
+    public readonly EntityId Value;
+
+    public {{= model.Name}}Id(EntityId id) => Value = id;
+
+    /// <summary>
+    /// Constructs a new {{= model.Name}}Id from the given entity id.
+    /// </summary>
+    public static {{= model.Name}}Id From(__ABSTRACTIONS__.EntityId id) => new {{= model.Name}}Id(id);
+
+    /// <summary>
+    /// Constructs a new {{= model.Name}}Id from the given ulong.
+    /// </summary>
+    public static {{= model.Name}}Id From(ulong id) => new {{= model.Name}}Id(__ABSTRACTIONS__.EntityId.From(id));
+
+    public static implicit operator EntityId({{= model.Name}}Id id) => id.Value;
+    public static implicit operator {{= model.Name}}Id(EntityId id) => {{= model.Name}}Id.From(id);
+
+
+    public bool Equals({{= model.Name}}Id other)
+    {
+        if (other == null) return false;
+        return Value.Value == other.Value.Value;
+    }
+
+
+    public bool Equals(__ABSTRACTIONS__.EntityId other)
+    {
+        if (other == null) return false;
+        return Value.Value == other.Value;
+    }
+
+    public override string ToString()
+    {
+        return "{{= model.Name}}Id:" + Value.Value.ToString("x");
+    }
+
+    public static bool operator ==({{= model.Name}}Id left, {{= model.Name}}Id right) => left.Equals(right);
+
+    public static bool operator !=({{= model.Name}}Id left, {{= model.Name}}Id right) => !left.Equals(right);
+}
+
 
 public static class {{= model.Name}}Extensions {
     public static __DI__.IServiceCollection Add{{= model.Name}}Model(this __DI__.IServiceCollection services) {
