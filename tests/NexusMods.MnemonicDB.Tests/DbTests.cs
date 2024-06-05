@@ -512,4 +512,28 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             }
         }
 
+        [Fact]
+        public async Task CanReadAndWriteOptionalAttributes()
+        {
+            var loadout = await InsertExampleData();
+
+            var firstMod = loadout.Mods.First();
+
+            firstMod.Contains(Mod.Description).Should().BeFalse();
+
+
+            using var tx = Connection.BeginTransaction();
+            var mod = new Mod.New(tx)
+            {
+                LoadoutId = loadout,
+                Name = "Test Mod",
+                Source = new Uri("http://test.com"),
+                Description = "Test Description"
+            };
+            var result = await tx.Commit();
+
+            var remapped = mod.Remap(result);
+            remapped.Description.Should().Be("Test Description");
+        }
+
 }
