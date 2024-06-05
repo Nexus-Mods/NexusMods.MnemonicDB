@@ -170,9 +170,6 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
     public bool IsIndexed { get; init; }
 
     /// <inheritdoc />
-    public bool IsOptional { get; init; }
-
-    /// <inheritdoc />
     public bool NoHistory { get; init; }
 
     /// <inheritdoc />

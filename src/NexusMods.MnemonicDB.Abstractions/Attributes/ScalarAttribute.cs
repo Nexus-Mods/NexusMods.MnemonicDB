@@ -73,4 +73,10 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
     /// The default value for this attribute that is used when the attribute is not present on an entity
     /// </summary>
     public TValue? DefaultValue { get; init; }
+
+    /// <summary>
+    /// True if the attribute is optional, and not required by models
+    /// </summary>
+    public bool IsOptional { get; init; }
+
 }
