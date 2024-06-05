@@ -51,6 +51,11 @@ public interface IAttribute
     bool IsIndexed { get; }
 
     /// <summary>
+    /// True if the attribute is optional, and not required by models
+    /// </summary>
+    bool IsOptional { get; }
+
+    /// <summary>
     ///   True if the attribute has no history, false if it does.
     /// </summary>
     bool NoHistory { get; }

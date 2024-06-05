@@ -157,7 +157,6 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
         throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
 
-
     /// <inheritdoc />
     public ValueTags LowLevelType { get; }
 
@@ -169,6 +168,9 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
 
     /// <inheritdoc />
     public bool IsIndexed { get; init; }
+
+    /// <inheritdoc />
+    public bool IsOptional { get; init; }
 
     /// <inheritdoc />
     public bool NoHistory { get; init; }

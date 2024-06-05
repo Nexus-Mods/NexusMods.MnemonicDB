@@ -31,7 +31,7 @@ public class ModelAnalyzer
     public INamespaceSymbol Namespace { get; set; } = null!;
 
     public List<AnalyzedAttribute> Attributes { get; } = new();
-
+    
     public List<AnalyzedBackReferenceAttribute> BackReferences { get; } = new();
 
     public List<INamedTypeSymbol> Includes { get; set; } = new();

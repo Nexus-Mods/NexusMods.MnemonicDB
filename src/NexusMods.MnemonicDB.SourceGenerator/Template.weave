@@ -57,7 +57,7 @@ public partial class {{= model.Name}} {
     /// </summary>
     public static __ABSTRACTIONS__.IAttribute[] RequiredAttributes => new __ABSTRACTIONS__.IAttribute[] {
         {{each attr in model.Attributes}}
-        {{if !attr.IsMarker}}
+        {{if !attr.IsMarker && !attr.IsOptional}}
         {{= attr.FieldName}},
         {{/if}}
         {{/each}}
@@ -125,14 +125,22 @@ public partial class {{= model.Name}} {
             {{each attr in model.Attributes}}
             {{if attr.IsCollection}}
             foreach (var itm in {{= attr.ContextualName}}) {
-                tx.Add(Id, {{= attr.FieldName}}, itm, false);
+                tx.Add(Id, {{= attr.FieldName}}, itm, true);
             }
             {{elif attr.IsMarker}}
             if (Is{{= attr.ContextualName}}) {
                 tx.Add(Id, {{= attr.FieldName}}, new __COMPARERS__.Null(), false);
             }
             {{else}}
+            {{if attr.IsOptional}}
+            if ({{= attr.ContextualName}} is not null) {
+                tx.Add(Id, {{= attr.FieldName}}, {{= attr.ContextualName}}!, false);
+            }
+            {{else}}
             tx.Add(Id, {{= attr.FieldName}}, {{= attr.ContextualName}}, false);
+
+            {{/if}}
+
             {{/if}}
             {{/each}}
         }
@@ -163,13 +171,13 @@ public partial class {{= model.Name}} {
         {{each attr in model.Attributes}}
         {{= attr.Comments}}
         {{if attr.IsReference && !attr.IsCollection}}
-        public required {{= attr.ReferenceType.ToDisplayString()}}Id {{= attr.ContextualName}} { get; init; }
+        public {{= attr.Prefix}} {{= attr.ReferenceType.ToDisplayString()}}Id {{= attr.ContextualName}} { get; init; }
         {{elif attr.IsReference && attr.IsCollection}}
-        public required {{= attr.HighLevelType.ToDisplayString()}}[] {{= attr.ContextualName}} { get; init; }
+        public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}}[] {{= attr.ContextualName}} { get; init; }
         {{elif attr.IsMarker}}
         public bool Is{{= attr.ContextualName}} { get; init; } = false;
         {{else}}
-        public required {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} { get; init; }
+        public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}}{{= attr.Postfix}} {{= attr.ContextualName}} { get; init; }
         {{/if}}
         {{/each}}
         #endregion
@@ -267,7 +275,7 @@ public partial class {{= model.Name}} {
            public bool IsValid()
            {
                {{each attr in model.Attributes}}
-               {{if !attr.IsMarker}}
+               {{if !attr.IsMarker && !attr.IsOptional}}
                if (!Contains({{= attr.FieldName}})) return false;
                {{/if}}
                {{/each}}
