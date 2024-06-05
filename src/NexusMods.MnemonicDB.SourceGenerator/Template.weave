@@ -274,6 +274,9 @@ public partial class {{= model.Name}} {
 
            public bool IsValid()
            {
+               // This is true when the struct is a default value.
+               if (Db == null) return false;
+
                {{each attr in model.Attributes}}
                {{if !attr.IsMarker && !attr.IsOptional}}
                if (!Contains({{= attr.FieldName}})) return false;
@@ -385,7 +388,7 @@ public static class {{= model.Name}}Extensions {
     }
 
     {{each include in model.Includes}}
-    public static bool TryGetAs{{= model.Name}}(this {{= include.ToDisplayString()}}.ReadOnly model, [NotNullWhen(true)] out {{= model.Name}}.ReadOnly? result) {
+    public static bool TryGetAs{{= model.Name}}(this {{= include.ToDisplayString()}}.ReadOnly model, [NotNullWhen(true)] out {{= model.Name}}.ReadOnly result) {
         var casted = new {{= model.Name}}.ReadOnly(model.Db, model.Id);
         if (casted.IsValid()) {
             result = casted;

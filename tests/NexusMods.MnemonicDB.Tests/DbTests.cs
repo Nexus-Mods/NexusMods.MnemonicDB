@@ -171,6 +171,12 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         readModel.TryGetAsArchiveFile(out var castedDown).Should().BeTrue();
         (castedDown is ArchiveFile.ReadOnly).Should().BeTrue();
+
+        var badCast = new File.ReadOnly(result.Db, EntityId.From(1));
+        badCast.IsValid().Should().BeFalse("bad cast should not validate");
+        badCast.TryGetAsArchiveFile(out var archiveFileBad).Should().BeFalse("bad cast should not be able to cast down");
+        archiveFileBad.IsValid().Should().BeFalse("bad cast should not validate as archive file");
+
         castedDown.Should().BeEquivalentTo(archiveReadModel, "casted down model should be the same as the original model");
     }
 
