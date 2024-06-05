@@ -132,9 +132,13 @@ public partial class {{= model.Name}} {
                 tx.Add(Id, {{= attr.FieldName}}, new __COMPARERS__.Null(), false);
             }
             {{else}}
-            {{if attr.IsOptional}}
+            {{if attr.IsOptional && !attr.IsReference}}
             if ({{= attr.ContextualName}} is not null) {
                 tx.Add(Id, {{= attr.FieldName}}, {{= attr.ContextualName}}!, false);
+            }
+            {{elif attr.IsOptional && attr.IsReference}}
+            if ({{= attr.ContextualName}}.Value != 0) {
+                tx.Add(Id, {{= attr.FieldName}}, {{= attr.ContextualName}}.Value, false);
             }
             {{else}}
             tx.Add(Id, {{= attr.FieldName}}, {{= attr.ContextualName}}, false);
@@ -357,14 +361,12 @@ public readonly partial struct {{= model.Name}}Id : IEquatable<{{= model.Name}}I
 
     public bool Equals({{= model.Name}}Id other)
     {
-        if (other == null) return false;
         return Value.Value == other.Value.Value;
     }
 
 
     public bool Equals(__ABSTRACTIONS__.EntityId other)
     {
-        if (other == null) return false;
         return Value.Value == other.Value;
     }
 
@@ -376,6 +378,16 @@ public readonly partial struct {{= model.Name}}Id : IEquatable<{{= model.Name}}I
     public static bool operator ==({{= model.Name}}Id left, {{= model.Name}}Id right) => left.Equals(right);
 
     public static bool operator !=({{= model.Name}}Id left, {{= model.Name}}Id right) => !left.Equals(right);
+
+    public override bool Equals(object? obj)
+    {
+        return obj is {{= model.Name}}Id id && Equals(id);
+    }
+
+    public override int GetHashCode()
+    {
+        return Value.GetHashCode();
+    }
 }
 
 
