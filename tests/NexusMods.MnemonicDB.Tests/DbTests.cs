@@ -39,7 +39,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         result.NewTx.Value.Should().Be(oldTx.Value + 1, "transaction id should be incremented by 1");
 
         var db = Connection.Db;
-        var resolved = File.Get(db, ids.Select(id => result[id]));
+        var resolved = File.Load(db, ids.Select(id => result[id]));
         await VerifyModel(resolved);
     }
 
@@ -104,7 +104,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var originalDb = Connection.Db;
 
         // Validate the data
-        var found = File.As(originalDb, realId);
+        var found = File.Load(originalDb, realId);
         await VerifyModel(found).UseTextForParameters("original data");
 
 
@@ -121,11 +121,11 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             newDb.BasisTxId.Value.Should().Be(originalDb.BasisTxId.Value + 1UL + (ulong)i,
                 "transaction id should be incremented by 1 for each mutation at iteration " + i);
 
-            var newFound = File.As(newDb, realId);
+            var newFound = File.Load(newDb, realId);
             await VerifyModel(newFound).UseTextForParameters("mutated data " + i);
 
             // Validate the original data
-            var orignalFound = File.As(originalDb, realId);
+            var orignalFound = File.Load(originalDb, realId);
             await VerifyModel(orignalFound).UseTextForParameters("original data" + i);
         }
     }
@@ -157,12 +157,12 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var db = Connection.Db;
 
         // Original data exists
-        var readModel = File.As(db, realId);
+        var readModel = File.Load(db, realId);
         await VerifyModel(readModel).UseTextForParameters("file data");
 
 
         // Extra data exists and can be read with a different read model
-        var archiveReadModel = ArchiveFile.As(db, realId);
+        var archiveReadModel = ArchiveFile.Load(db, realId);
         await VerifyModel(archiveReadModel).UseTextForParameters("archive file data");
 
         readModel.Id.Should().Be(archiveReadModel.Id, "both models are the same entity");
@@ -170,6 +170,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         archiveReadModel.File.ToArray().Should().BeEquivalentTo(readModel.ToArray(), "archive file should have the same base data as the file");
 
         readModel.TryGetAsArchiveFile(out var castedDown).Should().BeTrue();
+        (castedDown is ArchiveFile.ReadOnly).Should().BeTrue();
         castedDown.Should().BeEquivalentTo(archiveReadModel, "casted down model should be the same as the original model");
     }
 
@@ -360,7 +361,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             loadout.AddTo(tx);
             var result = await tx.Commit();
 
-            var loaded = Loadout.As(result.Db, result[loadout.Id!.Value]);
+            var loaded = Loadout.Load(result.Db, result[loadout.Id!.Value]);
             loaded.Name.Should().Be("Test Loadout");
 
             loadout.GetFirst(Loadout.Name).Should().Be("Test Loadout");
@@ -381,7 +382,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             mod.AddTo(tx);
             var result = await tx.Commit();
 
-            var reloaded = Mod.As(result.Db, result[mod.Id!.Value]);
+            var reloaded = Mod.Load(result.Db, result[mod.Id!.Value]);
             reloaded.IsMarked.Should().BeTrue();
 
         }
@@ -418,7 +419,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             await Task.WhenAll(tasks);
 
             var db = Connection.Db;
-            var loadoutRO = Loadout.As(db, id);
+            var loadoutRO = Loadout.Load(db, id);
             loadoutRO.Name.Should().Be("Test Loadout: 1001");
 
             return;
@@ -427,10 +428,112 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             // by the transaction executor
             void AddToName(ITransaction tx, IDb db, EntityId eid, int amount)
             {
-                var loadout = Loadout.As(db, eid);
+                var loadout = Loadout.Load(db, eid);
                 var oldAmount = int.Parse(loadout.Name.Split(":")[1].Trim());
                 tx.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + amount)}");
             }
+        }
+
+        [Fact]
+        public async Task NonRecursiveDeleteDeletesOnlyOneEntity()
+        {
+            var loadout = await InsertExampleData();
+            var firstDb = Connection.Db;
+
+            var firstMod = loadout.Mods.First();
+            var firstFiles = firstMod.Files.ToArray();
+
+            loadout.Mods.Count.Should().Be(3);
+
+            using var tx = Connection.BeginTransaction();
+            tx.Delete(firstMod.Id, false);
+            var result = await tx.Commit();
+
+            loadout = loadout.Rebase(result.Db);
+
+            loadout.Mods.Count.Should().Be(2);
+
+            var modRefreshed = Mod.Load(result.Db, firstMod.ModId);
+            modRefreshed.IsValid().Should().BeFalse("Mod should be deleted");
+
+            Mod.TryGet(result.Db, firstMod.ModId, out _).Should().BeFalse("Mod should be deleted");
+            Mod.TryGet(firstDb, firstMod.ModId, out _).Should().BeTrue("The history of the mod still exists");
+
+            foreach (var file in firstFiles)
+            {
+                var reloaded = File.Load(result.Db, result[file.Id]);
+                reloaded.IsValid().Should().BeTrue("File should still exist, the delete wasn't recursive");
+            }
+        }
+
+        [Fact]
+        public async Task RecursiveDeleteDeletesModsAsWellButNotCollections()
+        {
+            var loadout = await InsertExampleData();
+            var firstDb = Connection.Db;
+            var firstMod = loadout.Mods.First();
+
+            using var extraTx = Connection.BeginTransaction();
+            var collection = new Collection.New(extraTx)
+            {
+                Name = "Test Collection",
+                ModIds = [firstMod],
+                LoadoutId = loadout
+            };
+            var result = await extraTx.Commit();
+
+            loadout = loadout.Rebase(result.Db);
+
+
+            var firstFiles = firstMod.Files.ToArray();
+
+            loadout.Mods.Count.Should().Be(3);
+            loadout.Collections.Count.Should().Be(1);
+
+            using var tx = Connection.BeginTransaction();
+            tx.Delete(firstMod.Id, true);
+            result = await tx.Commit();
+
+            loadout = loadout.Rebase(result.Db);
+
+            loadout.Mods.Count.Should().Be(2);
+            loadout.Collections.Count.Should().Be(1);
+
+            var modRefreshed = Mod.Load(result.Db, firstMod.ModId);
+            modRefreshed.IsValid().Should().BeFalse("Mod should be deleted");
+
+            Mod.TryGet(result.Db, firstMod.ModId, out _).Should().BeFalse("Mod should be deleted");
+            Mod.TryGet(firstDb, firstMod.ModId, out _).Should().BeTrue("The history of the mod still exists");
+
+            foreach (var file in firstFiles)
+            {
+                var reloaded = File.Load(result.Db, result[file.Id]);
+                reloaded.IsValid().Should().BeFalse("File should be deleted, the delete was recursive");
+            }
+        }
+
+        [Fact]
+        public async Task CanReadAndWriteOptionalAttributes()
+        {
+            var loadout = await InsertExampleData();
+
+            var firstMod = loadout.Mods.First();
+
+            firstMod.Contains(Mod.Description).Should().BeFalse();
+
+
+            using var tx = Connection.BeginTransaction();
+            var mod = new Mod.New(tx)
+            {
+                LoadoutId = loadout,
+                Name = "Test Mod",
+                Source = new Uri("http://test.com"),
+                Description = "Test Description"
+            };
+            var result = await tx.Commit();
+
+            var remapped = mod.Remap(result);
+            remapped.Description.Should().Be("Test Description");
         }
 
 }

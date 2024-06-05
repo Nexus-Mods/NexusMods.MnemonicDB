@@ -24,24 +24,11 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
             return ReadValue(datom.ValueSpan);
         }
 
+        if (DefaultValue is not null)
+            return DefaultValue;
+
         ThrowKeyNotfoundException(entity);
         return default!;
-    }
-
-    /// <summary>
-    ///   Gets the value of the attribute from the entity or a default value if the attribute is not present.
-    /// </summary>
-    public TValue Get(IHasEntityIdAndDb entity, TValue defaultValue)
-    {
-        var segment = entity.Db.Get(entity.Id);
-        var dbId = Cache[segment.RegistryId.Value];
-        for (var i = 0; i < segment.Count; i++)
-        {
-            var datom = segment[i];
-            if (datom.A != dbId) continue;
-            return ReadValue(datom.ValueSpan);
-        }
-        return defaultValue;
     }
 
     /// <summary>
@@ -72,7 +59,24 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
             return true;
         }
 
+        if (DefaultValue is not null)
+        {
+            value = DefaultValue;
+            return true;
+        }
+
         value = default!;
         return false;
     }
+
+    /// <summary>
+    /// The default value for this attribute that is used when the attribute is not present on an entity
+    /// </summary>
+    public TValue? DefaultValue { get; init; }
+
+    /// <summary>
+    /// True if the attribute is optional, and not required by models
+    /// </summary>
+    public bool IsOptional { get; init; }
+
 }

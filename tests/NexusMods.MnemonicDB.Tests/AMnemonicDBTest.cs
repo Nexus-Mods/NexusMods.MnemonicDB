@@ -108,7 +108,7 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
         }
         await tx2.Commit();
 
-        return Loadout.As(Connection.Db, loadoutWritten.Id);
+        return Loadout.Load(Connection.Db, loadoutWritten.Id);
     }
 
     public void Dispose()

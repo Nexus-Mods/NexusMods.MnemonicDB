@@ -75,4 +75,10 @@ where TModel : IReadOnlyModel<TModel>
 
     /// <inheritdoc />
     public int Count => _ids.Count;
+
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return $"Entities<{typeof(TModel).FullName ?? typeof(TModel).Name}>({Count})";
+    }
 }

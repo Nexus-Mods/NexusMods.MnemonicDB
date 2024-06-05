@@ -22,6 +22,7 @@ internal class Db : IDb
 
     private readonly IndexSegmentCache<EntityId> _entityCache;
     private readonly IndexSegmentCache<(EntityId, AttributeId)> _reverseCache;
+    private readonly IndexSegmentCache<EntityId> _referencesCache;
     private readonly RegistryId _registryId;
 
     public ISnapshot Snapshot { get; }
@@ -35,6 +36,7 @@ internal class Db : IDb
         _connection = connection;
         _entityCache = new IndexSegmentCache<EntityId>(EntityDatoms, registry);
         _reverseCache = new IndexSegmentCache<(EntityId, AttributeId)>(ReverseDatoms, registry);
+        _referencesCache = new IndexSegmentCache<EntityId>(ReferenceDatoms, registry);
         Snapshot = snapshot;
         BasisTxId = txId;
     }
@@ -100,8 +102,30 @@ internal class Db : IDb
         return new EntityIds(segment, 0, segment.Count);
     }
 
+    private static IEnumerable<Datom> ReferenceDatoms(IDb db, EntityId eid)
+    {
+        Span<byte> startKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong) + 1];
+        Span<byte> endKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong) + 1];
+        MemoryMarshal.Write(startKey,  new KeyPrefix().Set(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false));
+        MemoryMarshal.Write(endKey,  new KeyPrefix().Set(EntityId.MaxValueNoPartition, AttributeId.Max, TxId.MaxValue, false));
+
+        startKey[KeyPrefix.Size] = (byte)ValueTags.Reference;
+        endKey[KeyPrefix.Size] = (byte)ValueTags.Reference;
+
+        MemoryMarshal.Write(startKey.SliceFast(KeyPrefix.Size + 1), eid);
+        MemoryMarshal.Write(endKey.SliceFast(KeyPrefix.Size + 1), eid);
+        return db.Snapshot.Datoms(IndexType.VAETCurrent, startKey, endKey);
+    }
+
+    public IndexSegment ReferencesTo(EntityId id)
+    {
+        return _referencesCache.Get(this, id);
+    }
+
     public IndexSegment GetSegment(EntityId id)
     {
+        var a = KeyPrefix.Min;
+        var b = new KeyPrefix().Set(EntityId.MaxValueNoPartition, AttributeId.Max, TxId.MaxValue, false);
         return _entityCache.Get(this, id);
     }
 
