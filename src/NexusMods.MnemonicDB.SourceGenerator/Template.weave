@@ -48,7 +48,7 @@ public partial class {{= model.Name}} {
     /// Assumes that the id given points to a {{= model.Name}} entity, and
     /// returns a ReadOnly model of the entity.
     /// </summary>
-    public static {{= model.Name}}.ReadOnly As(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) {
+    public static {{= model.Name}}.ReadOnly Load(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) {
         return new {{= model.Name}}.ReadOnly(db, id);
     }
 
@@ -78,7 +78,7 @@ public partial class {{= model.Name}} {
     /// </summary>
     public static bool TryGet(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id, [NotNullWhen(true)] out {{= model.Name}}.ReadOnly? result)
     {
-        var model = As(db, id);
+        var model = Load(db, id);
         if (model.IsValid()) {
             result = model;
             return true;
@@ -91,7 +91,7 @@ public partial class {{= model.Name}} {
     /// Assumes that the ids given point to {{= model.Name}} entities, and
     /// returns a list of ReadOnly models of the entities.
     /// </summary>
-    public static IEnumerable<{{= model.Name}}.ReadOnly> Get(__ABSTRACTIONS__.IDb db, IEnumerable<__ABSTRACTIONS__.EntityId> ids) {
+    public static IEnumerable<{{= model.Name}}.ReadOnly> Load(__ABSTRACTIONS__.IDb db, IEnumerable<__ABSTRACTIONS__.EntityId> ids) {
         return ids.Select(id => new {{= model.Name}}.ReadOnly(db, id));
     }
 
@@ -377,8 +377,8 @@ public static class {{= model.Name}}Extensions {
     }
 
     {{each include in model.Includes}}
-    public static bool TryGetAs{{= model.Name}}(this {{= include.ToDisplayString()}}.ReadOnly model, out {{= include.ToDisplayString()}}.ReadOnly? result) {
-        var casted = new {{= include.ToDisplayString()}}.ReadOnly(model.Db, model.Id);
+    public static bool TryGetAs{{= model.Name}}(this {{= include.ToDisplayString()}}.ReadOnly model, [NotNullWhen(true)] out {{= model.Name}}.ReadOnly? result) {
+        var casted = new {{= model.Name}}.ReadOnly(model.Db, model.Id);
         if (casted.IsValid()) {
             result = casted;
             return true;
