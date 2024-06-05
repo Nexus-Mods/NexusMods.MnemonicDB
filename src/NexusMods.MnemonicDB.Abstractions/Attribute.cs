@@ -460,6 +460,12 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
         }
 
         /// <inheritdoc />
+        public void Retract(ITransaction tx)
+        {
+            tx.Add(E, (Attribute<TValueType, TLowLevelType>)A, V, true);
+        }
+
+        /// <inheritdoc />
         public object ObjectValue => V!;
 
         /// <inheritdoc />

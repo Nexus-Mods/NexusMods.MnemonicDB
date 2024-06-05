@@ -36,4 +36,9 @@ public interface IReadDatom
     ///     True if this is a retraction of a previous datom.
     /// </summary>
     public bool IsRetract { get; }
+
+    /// <summary>
+    /// Adds the datom to the transaction as a retraction.
+    /// </summary>
+    void Retract(ITransaction tx);
 }

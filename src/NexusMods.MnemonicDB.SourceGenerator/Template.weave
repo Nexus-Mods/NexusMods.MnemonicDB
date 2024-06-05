@@ -125,7 +125,7 @@ public partial class {{= model.Name}} {
             {{each attr in model.Attributes}}
             {{if attr.IsCollection}}
             foreach (var itm in {{= attr.ContextualName}}) {
-                tx.Add(Id, {{= attr.FieldName}}, itm, true);
+                tx.Add(Id, {{= attr.FieldName}}, itm, false);
             }
             {{elif attr.IsMarker}}
             if (Is{{= attr.ContextualName}}) {

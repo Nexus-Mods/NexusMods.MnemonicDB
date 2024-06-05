@@ -434,4 +434,82 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             }
         }
 
+        [Fact]
+        public async Task NonRecursiveDeleteDeletesOnlyOneEntity()
+        {
+            var loadout = await InsertExampleData();
+            var firstDb = Connection.Db;
+
+            var firstMod = loadout.Mods.First();
+            var firstFiles = firstMod.Files.ToArray();
+
+            loadout.Mods.Count.Should().Be(3);
+
+            using var tx = Connection.BeginTransaction();
+            tx.Delete(firstMod.Id, false);
+            var result = await tx.Commit();
+
+            loadout = loadout.Rebase(result.Db);
+
+            loadout.Mods.Count.Should().Be(2);
+
+            var modRefreshed = Mod.Load(result.Db, firstMod.ModId);
+            modRefreshed.IsValid().Should().BeFalse("Mod should be deleted");
+
+            Mod.TryGet(result.Db, firstMod.ModId, out _).Should().BeFalse("Mod should be deleted");
+            Mod.TryGet(firstDb, firstMod.ModId, out _).Should().BeTrue("The history of the mod still exists");
+
+            foreach (var file in firstFiles)
+            {
+                var reloaded = File.Load(result.Db, result[file.Id]);
+                reloaded.IsValid().Should().BeTrue("File should still exist, the delete wasn't recursive");
+            }
+        }
+
+        [Fact]
+        public async Task RecursiveDeleteDeletesModsAsWellButNotCollections()
+        {
+            var loadout = await InsertExampleData();
+            var firstDb = Connection.Db;
+            var firstMod = loadout.Mods.First();
+
+            using var extraTx = Connection.BeginTransaction();
+            var collection = new Collection.New(extraTx)
+            {
+                Name = "Test Collection",
+                ModIds = [firstMod],
+                LoadoutId = loadout
+            };
+            var result = await extraTx.Commit();
+
+            loadout = loadout.Rebase(result.Db);
+
+
+            var firstFiles = firstMod.Files.ToArray();
+
+            loadout.Mods.Count.Should().Be(3);
+            loadout.Collections.Count.Should().Be(1);
+
+            using var tx = Connection.BeginTransaction();
+            tx.Delete(firstMod.Id, true);
+            result = await tx.Commit();
+
+            loadout = loadout.Rebase(result.Db);
+
+            loadout.Mods.Count.Should().Be(2);
+            loadout.Collections.Count.Should().Be(1);
+
+            var modRefreshed = Mod.Load(result.Db, firstMod.ModId);
+            modRefreshed.IsValid().Should().BeFalse("Mod should be deleted");
+
+            Mod.TryGet(result.Db, firstMod.ModId, out _).Should().BeFalse("Mod should be deleted");
+            Mod.TryGet(firstDb, firstMod.ModId, out _).Should().BeTrue("The history of the mod still exists");
+
+            foreach (var file in firstFiles)
+            {
+                var reloaded = File.Load(result.Db, result[file.Id]);
+                reloaded.IsValid().Should().BeFalse("File should be deleted, the delete was recursive");
+            }
+        }
+
 }
