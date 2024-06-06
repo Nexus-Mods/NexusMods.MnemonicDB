@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using DynamicData;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
@@ -9,31 +10,26 @@ namespace NexusMods.MnemonicDB.Abstractions;
 
 public class DynamicCache : IDynamicCache
 {
-    private readonly ConcurrentDictionary<Type,object> _allEntities;
-    private readonly IConnection _connection;
+    private struct CacheEntry
+    {
+        public IndexType IndexType;
+        public Memory<byte> From;
+        public Memory<byte> To;
+        public SourceCache<IReadDatom, > Cache;
+    }
 
-    public DynamicCache(IConnection connection)
+    private readonly IConnection _connection;
+    private readonly KeyBuilder _keyBuilder;
+    private readonly ConcurrentBag<(Memory<byte> From, Memo)>
+
+    public DynamicCache(IConnection connection, RegistryId registryId)
     {
         _connection = connection;
-        _allEntities = new ConcurrentDictionary<Type, object>();
+        _keyBuilder = new KeyBuilder(registryId);
     }
-
-    public IObservable<IChangeSet<TModel, EntityId>> Entities<TModel>(IAttribute[] watchAttributes)
-        where TModel : IRepository<TModel>
+    public IObservable<IChangeSet<Attribute<THighLevel, TLowLevel>.ReadDatom, EntityId>> Query<TModel, THighLevel, TLowLevel>(Attribute<THighLevel, TLowLevel> attr, THighLevel value)
     {
-        throw new NotImplementedException();
-    }
-
-    public IObservable<IChangeSet<TModel, EntityId>> Entities<TModel>() where TModel : IRepository<TModel>
-    {
-        throw new NotImplementedException();
-    }
-
-    public IObservable<IChangeSet<TModel, EntityId>> Entities<TModel, THighLevel, TLowLevel>(Attribute<THighLevel, TLowLevel> attr, THighLevel value)
-        where TModel : IRepository<TModel>
-    {
-
-        throw new NotImplementedException();
-
+        var from = _keyBuilder.From(attr, value);
+        var to = _keyBuilder.To(attr, value);
     }
 }
