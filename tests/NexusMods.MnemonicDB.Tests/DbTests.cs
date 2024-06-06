@@ -1,4 +1,6 @@
-﻿using NexusMods.MnemonicDB.Abstractions;
+﻿using System.Reactive.Linq;
+using DynamicData;
+using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
@@ -214,8 +216,9 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
                 await Task.Delay(100);
 
-                updates.Should().HaveCount(idx + 1);
-                var updateDatom = updates[idx];
+                // +2 because we always get one update for the initial state and one for the new state
+                updates.Should().HaveCount(idx + 2);
+                var updateDatom = updates[idx + 1];
 
                 await VerifyTable(updateDatom)
                     .UseTextForParameters("update_datom_" + idx);
@@ -540,6 +543,39 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
             var remapped = mod.Remap(result);
             remapped.Description.Should().Be("Test Description");
+        }
+
+        [Fact]
+        public async Task CanGetModelRevisions()
+        {
+            var loadout = await InsertExampleData();
+
+            var loadoutNames = new List<string>();
+
+
+            using var subscription = loadout.Revisions()
+                .Select(l => l.Name)
+                .Finally(() => loadoutNames.Add("DONE"))
+                .Subscribe(l => loadoutNames.Add(l));
+
+
+            loadoutNames.Count.Should().Be(1, "Only the current revision should be loaded");
+
+            using var tx1 = Connection.BeginTransaction();
+            tx1.Add(loadout.Id, Loadout.Name, "Update 1");
+            var result = await tx1.Commit();
+
+            using var tx2 = Connection.BeginTransaction();
+            tx2.Add(loadout.Id, Loadout.Name, "Update 2");
+            var result2 = await tx2.Commit();
+
+            using var tx3 = Connection.BeginTransaction();
+            tx3.Delete(loadout.Id, true);
+            var result3 = await tx3.Commit();
+
+            loadoutNames.Count.Should().Be(4, "All revisions should be loaded");
+
+            loadoutNames.Should().BeEquivalentTo(["Test Loadout", "Update 1", "Update 2", "DONE"]);
         }
 
 }

@@ -14,7 +14,8 @@ namespace NexusMods.MnemonicDB.Abstractions;
 public interface IDatomStore : IDisposable
 {
     /// <summary>
-    ///     An observable of the transaction log, for getting the latest changes to the store.
+    ///     An observable of the transaction log, for getting the latest changes to the store. This observable
+    /// will always start with the most recent value, so there is no reason to use `StartWith` or `Replay` on it.
     /// </summary>
     public IObservable<(TxId TxId, ISnapshot Snapshot)> TxLog { get; }
 

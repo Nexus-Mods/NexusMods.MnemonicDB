@@ -34,6 +34,11 @@ public interface IDb : IEquatable<IDb>
     IAttributeRegistry Registry { get; }
 
     /// <summary>
+    /// Analytics for the database.
+    /// </summary>
+    IAnalytics Analytics { get; }
+
+    /// <summary>
     ///     Gets a read model for the given entity id.
     /// </summary>
     /// <param name="id"></param>

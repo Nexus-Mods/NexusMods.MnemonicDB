@@ -24,6 +24,7 @@ internal class Db : IDb
     private readonly IndexSegmentCache<(EntityId, AttributeId)> _reverseCache;
     private readonly IndexSegmentCache<EntityId> _referencesCache;
     private readonly RegistryId _registryId;
+    private readonly Lazy<IAnalytics> _analytics;
 
     public ISnapshot Snapshot { get; }
     public IAttributeRegistry Registry => _registry;
@@ -37,6 +38,7 @@ internal class Db : IDb
         _entityCache = new IndexSegmentCache<EntityId>(EntityDatoms, registry);
         _reverseCache = new IndexSegmentCache<(EntityId, AttributeId)>(ReverseDatoms, registry);
         _referencesCache = new IndexSegmentCache<EntityId>(ReferenceDatoms, registry);
+        _analytics = new Lazy<IAnalytics>(() => new Analytics(this));
         Snapshot = snapshot;
         BasisTxId = txId;
     }
@@ -66,6 +68,8 @@ internal class Db : IDb
     }
 
     public TxId BasisTxId { get; }
+
+    public IAnalytics Analytics => _analytics.Value;
 
     public IConnection Connection => _connection;
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
@@ -21,10 +22,12 @@ namespace NexusMods.MnemonicDB;
 public class Connection : IConnection, IHostedService
 {
     private readonly IDatomStore _store;
-    private IDb? _db;
     private readonly IEnumerable<IAttribute> _declaredAttributes;
     private readonly ILogger<Connection> _logger;
     private Task? _bootstrapTask;
+
+    private BehaviorSubject<IDb> _dbStream;
+    private IDisposable? _dbStreamDisposable;
 
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
@@ -35,7 +38,7 @@ public class Connection : IConnection, IHostedService
         _logger = logger;
         _declaredAttributes = declaredAttributes;
         _store = store;
-
+        _dbStream = new BehaviorSubject<IDb>(null!);
     }
 
     /// <inheritdoc />
@@ -46,9 +49,11 @@ public class Connection : IConnection, IHostedService
     {
         get
         {
-            if (_db == null)
+            var val = _dbStream.Value;
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (val == null)
                 ThrowNullDb();
-            return _db!;
+            return val!;
         }
     }
 
@@ -75,9 +80,15 @@ public class Connection : IConnection, IHostedService
     }
 
     /// <inheritdoc />
-    public IObservable<IDb> Revisions => _store.TxLog
-        .Select(log => new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry));
-
+    public IObservable<IDb> Revisions
+    {
+        get
+        {
+            if (_dbStream == null)
+                ThrowNullDb();
+            return _dbStream!;
+        }
+    }
 
     private async Task<StoreResult> AddMissingAttributes(IEnumerable<IAttribute> declaredAttributes)
     {
@@ -169,11 +180,10 @@ public class Connection : IConnection, IHostedService
         try
         {
             var storeResult = await AddMissingAttributes(_declaredAttributes);
-            _db = new Db(storeResult.Snapshot, this, storeResult.AssignedTxId, (AttributeRegistry)_store.Registry);
-            _store.TxLog.Subscribe(log =>
-            {
-                _db = new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry);
-            });
+
+            _dbStreamDisposable = _store.TxLog
+                .Select(log => new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry))
+                .Subscribe(_dbStream);
         }
         catch (Exception ex)
         {
@@ -184,7 +194,7 @@ public class Connection : IConnection, IHostedService
     /// <inheritdoc />
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        // Nothing to do
+        _dbStreamDisposable?.Dispose();
         return Task.CompletedTask;
     }
 }

@@ -36,7 +36,7 @@ public class DatomStore : IDatomStore, IHostedService
     private readonly DatomStoreSettings _settings;
     private readonly Channel<PendingTransaction> _txChannel;
     private readonly IIndex _txLog;
-    private readonly Subject<(TxId TxId, ISnapshot snapshot)> _updatesSubject;
+    private BehaviorSubject<(TxId TxId, ISnapshot snapshot)>? _updatesSubject;
     private readonly IIndex _vaetCurrent;
     private readonly IIndex _vaetHistory;
     private readonly PooledMemoryBufferWriter _writer;
@@ -101,9 +101,6 @@ public class DatomStore : IDatomStore, IHostedService
         _avetCurrent = _backend.GetIndex(IndexType.AVETCurrent);
         _avetHistory = _backend.GetIndex(IndexType.AVETHistory);
 
-
-        _updatesSubject = new Subject<(TxId TxId, ISnapshot Snapshot)>();
-
         registry.Populate(BuiltInAttributes.Initial);
 
         _txChannel = Channel.CreateUnbounded<PendingTransaction>();
@@ -145,7 +142,16 @@ public class DatomStore : IDatomStore, IHostedService
         return await Transact(new IndexSegment());
     }
 
-    public IObservable<(TxId TxId, ISnapshot Snapshot)> TxLog => _updatesSubject;
+    /// <inheritdoc />
+    public IObservable<(TxId TxId, ISnapshot Snapshot)> TxLog
+    {
+        get
+        {
+            if (_updatesSubject == null)
+                throw new InvalidOperationException("The store is not yet started");
+            return _updatesSubject;
+        }
+    }
 
     /// <inheritdoc />
     public async Task RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
@@ -174,7 +180,7 @@ public class DatomStore : IDatomStore, IHostedService
     /// <inheritdoc />
     public void Dispose()
     {
-        _updatesSubject.Dispose();
+        _updatesSubject?.Dispose();
         _writer.Dispose();
         _retractWriter.Dispose();
     }
@@ -203,7 +209,7 @@ public class DatomStore : IDatomStore, IHostedService
 
                     Log(pendingTransaction, out var result);
 
-                    _updatesSubject.OnNext((result.AssignedTxId, result.Snapshot));
+                    _updatesSubject?.OnNext((result.AssignedTxId, result.Snapshot));
                     pendingTransaction.CompletionSource.TrySetResult(result);
                 }
                 catch (Exception ex)
@@ -255,6 +261,8 @@ public class DatomStore : IDatomStore, IHostedService
             _logger.LogError(ex, "Failed to bootstrap the datom store");
             throw;
         }
+
+        _updatesSubject = new BehaviorSubject<(TxId TxId, ISnapshot snapshot)>((_asOfTx, _currentSnapshot));
         _txTask = Task.Run(ConsumeTransactions);
     }
 
