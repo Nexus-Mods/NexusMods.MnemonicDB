@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -108,7 +109,7 @@ public readonly struct SliceDescriptor
     {
         return new SliceDescriptor
         {
-            Index = IndexType.AEVTCurrent,
+            Index = IndexType.VAETCurrent,
             From = Datom(EntityId.MinValueNoPartition, referenceAttribute, pointingTo, TxId.MinValue, false, dbRegistry),
             To = Datom(EntityId.MaxValueNoPartition, referenceAttribute, pointingTo, TxId.MaxValue, false, dbRegistry)
         };
@@ -170,6 +171,21 @@ public readonly struct SliceDescriptor
             Index = index,
             From = new Datom(from, registry),
             To = new Datom(to, registry)
+        };
+    }
+
+
+    /// <summary>
+    /// Creates a slice descriptor for the given attribute in the current AEVT index
+    /// </summary>
+    public static SliceDescriptor Create(IAttribute attr, IAttributeRegistry registry)
+    {
+        var attrId = attr.GetDbId(registry.Id);
+        return new SliceDescriptor
+        {
+            Index = IndexType.AEVTCurrent,
+            From = Datom(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false, registry),
+            To = Datom(EntityId.MaxValueNoPartition, attrId, TxId.MaxValue, false, registry)
         };
     }
 

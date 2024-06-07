@@ -26,7 +26,7 @@ internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeRegistry re
         var history = inner.Datoms(descriptor with {Index = descriptor.Index.HistoryVariant()});
         var comparatorFn = descriptor.Index.GetComparator();
 
-        using var builder = new IndexSegmentBuilder();
+        using var builder = new IndexSegmentBuilder(registry);
 
         var merged = current.Merge(history,
             (dCurrent, dHistory) => comparatorFn.CompareInstance(dCurrent.RawSpan, dHistory.RawSpan));
@@ -49,7 +49,7 @@ internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeRegistry re
         var history = inner.DatomsChunked(descriptor with {Index = descriptor.Index.HistoryVariant()}, chunkSize).SelectMany(c => c);
         var comparatorFn = descriptor.Index.GetComparator();
 
-        using var builder = new IndexSegmentBuilder();
+        using var builder = new IndexSegmentBuilder(registry);
 
         var merged = current.Merge(history,
             (dCurrent, dHistory) => comparatorFn.CompareInstance(dCurrent.RawSpan, dHistory.RawSpan));

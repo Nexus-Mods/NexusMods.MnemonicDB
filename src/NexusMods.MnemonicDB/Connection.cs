@@ -124,9 +124,8 @@ public class Connection : IConnection, IHostedService
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
         var snapshot = _store.GetSnapshot();
-        var start = BuiltInAttributes.UniqueIdEntityId;
         var sliceDescriptor =
-            SliceDescriptor.Create(EntityId.From(AttributeId.Min.Value), EntityId.From(AttributeId.Max.Value), _store.Registry);
+            SliceDescriptor.Create(BuiltInAttributes.UniqueId, _store.Registry);
 
         var attrIds = snapshot.Datoms(sliceDescriptor)
             .Select(d => d.E);
