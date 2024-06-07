@@ -193,16 +193,36 @@ public readonly struct SliceDescriptor
     /// </summary>
     public static SliceDescriptor Create(IndexType index, IAttributeRegistry registry)
     {
-        var from = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size);
-        from.AsSpan().Clear();
-        var to = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size);
-        to.AsSpan().Fill(byte.MaxValue);
-        return new SliceDescriptor
+        if (index is IndexType.VAETCurrent or IndexType.VAETHistory)
         {
-            Index = index,
-            From = new Datom(from, registry),
-            To = new Datom(to, registry)
-        };
+            // VAET has a special case where we need to include the reference type and an actual reference
+            // in the slice
+            var from = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + 9);
+            from.AsSpan().Clear();
+            from[KeyPrefix.Size + 1] = (byte)ValueTags.Reference;
+            var to = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + 9);
+            to.AsSpan().Fill(byte.MaxValue);
+            from[KeyPrefix.Size + 1] = (byte)ValueTags.Reference;
+            return new SliceDescriptor
+            {
+                Index = index,
+                From = new Datom(from, registry),
+                To = new Datom(to, registry)
+            };
+        }
+        else
+        {
+            var from = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size);
+            from.AsSpan().Clear();
+            var to = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size);
+            to.AsSpan().Fill(byte.MaxValue);
+            return new SliceDescriptor
+            {
+                Index = index,
+                From = new Datom(from, registry),
+                To = new Datom(to, registry)
+            };
+        }
 
     }
 
