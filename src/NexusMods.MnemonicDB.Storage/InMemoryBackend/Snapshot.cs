@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Microsoft.Win32;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
@@ -23,8 +24,12 @@ public class Snapshot : ISnapshot
     /// <inheritdoc />
     public IndexSegment Datoms(SliceDescriptor descriptor)
     {
-        var idxLower = _indexes[(int)descriptor.Index].IndexOf(descriptor.From.RawSpan.ToArray());
-        var idxUpper = _indexes[(int)descriptor.Index].IndexOf(descriptor.To.RawSpan.ToArray());
+        var thisIndex = _indexes[(int)descriptor.Index];
+        if (thisIndex.Count == 0)
+            return new IndexSegment();
+
+        var idxLower = thisIndex.IndexOf(descriptor.From.RawSpan.ToArray());
+        var idxUpper = thisIndex.IndexOf(descriptor.To.RawSpan.ToArray());
 
         if (idxLower < 0)
             idxLower = ~idxLower;
@@ -43,21 +48,22 @@ public class Snapshot : ISnapshot
             reverse = true;
         }
 
-        using var segmentBuilder = new IndexSegmentBuilder();
-        var index = _indexes[(int)descriptor.Index];
+        using var segmentBuilder = new IndexSegmentBuilder(_registry);
 
         if (!reverse)
         {
-            for (var i = lower; i < upper; i++)
+            for (var i = lower; i <= upper; i++)
             {
-                segmentBuilder.Add(index.ElementAt(i));
+                if (i >= thisIndex.Count)
+                    break;
+                segmentBuilder.Add(thisIndex.ElementAt(i));
             }
         }
         else
         {
-            for (var i = upper; i > lower; i--)
+            for (var i = upper; i >= lower; i--)
             {
-                segmentBuilder.Add(index.ElementAt(i));
+                segmentBuilder.Add(thisIndex.ElementAt(i));
             }
         }
         return segmentBuilder.Build();
@@ -86,7 +92,7 @@ public class Snapshot : ISnapshot
             reverse = true;
         }
 
-        using var segmentBuilder = new IndexSegmentBuilder();
+        using var segmentBuilder = new IndexSegmentBuilder(_registry);
         var index = _indexes[(int)descriptor.Index];
 
         if (!reverse)

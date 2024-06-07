@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -432,7 +433,17 @@ public class DatomStore : IDatomStore, IHostedService
         prevKey.Set(e, a, TxId.MinValue, false);
         MemoryMarshal.Write(_prevWriter.GetWrittenSpanWritable(), prevKey);
 
-        var sliceDescriptor = SliceDescriptor.Create(IndexType.EAVTCurrent, _prevWriter.GetWrittenSpan(), _registry);
+        var low = new Datom(_prevWriter.GetWrittenSpan().ToArray(), Registry);
+        prevKey.Set(e, a, TxId.MaxValue, false);
+        MemoryMarshal.Write(_prevWriter.GetWrittenSpanWritable(), prevKey);
+        var high = new Datom(_prevWriter.GetWrittenSpan().ToArray(), Registry);
+        var sliceDescriptor = new SliceDescriptor
+        {
+            Index = IndexType.EAVTCurrent,
+            From = low,
+            To = high
+        };
+
         var prevDatom = iterator.Datoms(sliceDescriptor)
             .Select(d => d.Clone())
             .FirstOrDefault();
@@ -511,9 +522,8 @@ public class DatomStore : IDatomStore, IHostedService
 
         if (attribute.Cardinalty == Cardinality.Many)
         {
-            var sliceDescriptor = SliceDescriptor.Create(IndexType.EAVTCurrent, span, _registry);
+            var sliceDescriptor = SliceDescriptor.Exact(IndexType.EAVTCurrent, span, _registry);
             var found = snapshot.Datoms(sliceDescriptor)
-                .Select(d => d.Clone())
                 .FirstOrDefault();
             if (!found.Valid) return PrevState.NotExists;
             if (found.E != keyPrefix.E || found.A != keyPrefix.A)
@@ -534,7 +544,6 @@ public class DatomStore : IDatomStore, IHostedService
             var descriptor = SliceDescriptor.Create(keyPrefix.E, keyPrefix.A, _registry);
 
             var datom = snapshot.Datoms(descriptor)
-                .Select(d => d.Clone())
                 .FirstOrDefault();
             if (!datom.Valid) return PrevState.NotExists;
 

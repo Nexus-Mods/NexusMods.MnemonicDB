@@ -156,6 +156,23 @@ public readonly struct SliceDescriptor
         };
     }
 
+    /// <summary>
+    /// Creates a slice descriptor for the given exactly from the given index
+    /// </summary>
+    public static SliceDescriptor Exact(IndexType index, ReadOnlySpan<byte> span, IAttributeRegistry registry)
+    {
+        var from = span.ToArray();
+        var to = span.ToArray();
+        var prefix = MemoryMarshal.Read<KeyPrefix>(to.AsSpan());
+        prefix.Set(prefix.E, prefix.A, TxId.From(prefix.T.Value + 1), prefix.IsRetract);
+        return new SliceDescriptor
+        {
+            Index = index,
+            From = new Datom(from, registry),
+            To = new Datom(to, registry)
+        };
+    }
+
 
     /// <summary>
     /// Creates a slice descriptor for datoms that reference the given entity via the VAET index
@@ -176,11 +193,15 @@ public readonly struct SliceDescriptor
     /// </summary>
     public static SliceDescriptor Create(IndexType index, IAttributeRegistry registry)
     {
+        var from = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size);
+        from.AsSpan().Clear();
+        var to = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size);
+        to.AsSpan().Fill(byte.MaxValue);
         return new SliceDescriptor
         {
             Index = index,
-            From = new Datom(Array.Empty<byte>(), registry),
-            To = new Datom(Array.Empty<byte>(), registry)
+            From = new Datom(from, registry),
+            To = new Datom(to, registry)
         };
 
     }
@@ -232,4 +253,5 @@ public readonly struct SliceDescriptor
         MemoryMarshal.Write(span.SliceFast(KeyPrefix.Size + 1), value);
         return new Datom(data, registry);
     }
+
 }

@@ -85,7 +85,7 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
                 .SetIterateLowerBound(from.RawSpan.ToArray())
                 .SetIterateUpperBound(to.RawSpan.ToArray());
 
-            using var builder = new IndexSegmentBuilder();
+            using var builder = new IndexSegmentBuilder(registry);
 
             using var iterator = backend._db!.NewIterator(backend._stores[descriptor.Index].Handle, options);
             if (reverse)
@@ -130,7 +130,7 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
                 .SetIterateLowerBound(from.RawSpan.ToArray())
                 .SetIterateUpperBound(to.RawSpan.ToArray());
 
-            using var builder = new IndexSegmentBuilder();
+            using var builder = new IndexSegmentBuilder(registry);
 
             using var iterator = backend._db!.NewIterator(backend._stores[descriptor.Index].Handle, options);
             if (reverse)
