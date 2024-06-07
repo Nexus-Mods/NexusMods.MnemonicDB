@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.DependencyInjection;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
@@ -10,6 +11,7 @@ using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage;
 using Reloaded.Memory.Extensions;
 
@@ -45,26 +47,12 @@ internal class Db : IDb
 
     private static IEnumerable<Datom> EntityDatoms(IDb db, EntityId id)
     {
-        return db.Snapshot.Datoms(IndexType.EAVTCurrent, id, EntityId.From(id.Value + 1));
+        return db.Snapshot.Datoms(SliceDescriptor.Create(id, db.Registry));
     }
 
     private static IEnumerable<Datom> ReverseDatoms(IDb db, (EntityId, AttributeId) key)
     {
-        var (id, attrId) = key;
-
-        Span<byte> startKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong) + 1];
-        Span<byte> endKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong) + 1];
-        MemoryMarshal.Write(startKey,  new KeyPrefix().Set(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false));
-        MemoryMarshal.Write(endKey,  new KeyPrefix().Set(EntityId.MaxValueNoPartition, attrId, TxId.MaxValue, false));
-
-        startKey[KeyPrefix.Size] = (byte)ValueTags.Reference;
-        endKey[KeyPrefix.Size] = (byte)ValueTags.Reference;
-
-        MemoryMarshal.Write(startKey.SliceFast(KeyPrefix.Size + 1), id);
-        MemoryMarshal.Write(endKey.SliceFast(KeyPrefix.Size + 1), id.Value);
-
-
-        return db.Snapshot.Datoms(IndexType.VAETCurrent, startKey, endKey);
+        return db.Snapshot.Datoms(SliceDescriptor.Create(key.Item2, key.Item1, db.Registry));
     }
 
     public TxId BasisTxId { get; }
@@ -93,10 +81,8 @@ internal class Db : IDb
     public IEnumerable<EntityId> Find(IAttribute attribute)
     {
         var attrId = attribute.GetDbId(_registry.Id);
-        var a = new KeyPrefix().Set(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false);
-        var b = new KeyPrefix().Set(EntityId.MaxValueNoPartition, attrId, TxId.MaxValue, false);
         return Snapshot
-            .Datoms(IndexType.AEVTCurrent, a, b)
+            .Datoms(SliceDescriptor.Create(attrId, _registry))
             .Select(d => d.E);
     }
 
@@ -108,17 +94,7 @@ internal class Db : IDb
 
     private static IEnumerable<Datom> ReferenceDatoms(IDb db, EntityId eid)
     {
-        Span<byte> startKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong) + 1];
-        Span<byte> endKey = stackalloc byte[KeyPrefix.Size + sizeof(ulong) + 1];
-        MemoryMarshal.Write(startKey,  new KeyPrefix().Set(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false));
-        MemoryMarshal.Write(endKey,  new KeyPrefix().Set(EntityId.MaxValueNoPartition, AttributeId.Max, TxId.MaxValue, false));
-
-        startKey[KeyPrefix.Size] = (byte)ValueTags.Reference;
-        endKey[KeyPrefix.Size] = (byte)ValueTags.Reference;
-
-        MemoryMarshal.Write(startKey.SliceFast(KeyPrefix.Size + 1), eid);
-        MemoryMarshal.Write(endKey.SliceFast(KeyPrefix.Size + 1), eid);
-        return db.Snapshot.Datoms(IndexType.VAETCurrent, startKey, endKey);
+        return db.Snapshot.Datoms(SliceDescriptor.CreateReferenceTo(eid, db.Registry));
     }
 
     public IndexSegment ReferencesTo(EntityId id)
@@ -154,14 +130,8 @@ internal class Db : IDb
         if (!attribute.IsIndexed)
             throw new InvalidOperationException($"Attribute {attribute.Id} is not indexed");
 
-        using var start = new PooledMemoryBufferWriter(64);
-        attribute.Write(EntityId.MinValueNoPartition, _registry.Id, value, TxId.MinValue, false, start);
-
-        using var end = new PooledMemoryBufferWriter(64);
-        attribute.Write(EntityId.MaxValueNoPartition, _registry.Id, value, TxId.MinValue, false, end);
-
         return Snapshot
-            .Datoms(IndexType.AVETCurrent, start.GetWrittenSpan(), end.GetWrittenSpan());;
+            .Datoms(SliceDescriptor.Create(attribute, value, _registry));;
     }
 
     public TModel Get<TModel>(EntityId id)
@@ -186,7 +156,7 @@ internal class Db : IDb
 
     public IEnumerable<IReadDatom> Datoms(TxId txId)
     {
-        return Snapshot.Datoms(IndexType.TxLog, txId, TxId.From(txId.Value + 1))
+        return Snapshot.Datoms(SliceDescriptor.Create(txId, _registry))
             .Select(d => d.Resolved);
     }
 

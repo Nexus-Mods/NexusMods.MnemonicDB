@@ -11,6 +11,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.Storage;
 
@@ -124,7 +125,10 @@ public class Connection : IConnection, IHostedService
     {
         var snapshot = _store.GetSnapshot();
         var start = BuiltInAttributes.UniqueIdEntityId;
-        var attrIds = snapshot.Datoms(IndexType.AEVTCurrent, start, AttributeId.From((ushort)(start.Value + 1)))
+        var sliceDescriptor =
+            SliceDescriptor.Create(EntityId.From(AttributeId.Min.Value), EntityId.From(AttributeId.Max.Value), _store.Registry);
+
+        var attrIds = snapshot.Datoms(sliceDescriptor)
             .Select(d => d.E);
 
         foreach (var attrId in attrIds)
@@ -132,10 +136,8 @@ public class Connection : IConnection, IHostedService
             var serializerId = ValueTags.Null;
             var uniqueId = Symbol.Unknown;
 
-            var from = new KeyPrefix().Set(attrId, AttributeId.Min, TxId.MinValue, false);
-            var to = new KeyPrefix().Set(attrId, AttributeId.Max, TxId.MaxValue, false);
-
-            foreach (var rawDatom in snapshot.Datoms(IndexType.EAVTCurrent, from, to))
+            var entityDescriptor = SliceDescriptor.Create(EntityId.From(attrId.Value), _store.Registry);
+            foreach (var rawDatom in snapshot.Datoms(entityDescriptor))
             {
                 var datom = rawDatom.Resolved;
 

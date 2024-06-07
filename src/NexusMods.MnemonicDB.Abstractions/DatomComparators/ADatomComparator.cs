@@ -1,4 +1,5 @@
 ﻿using System;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
@@ -29,6 +30,24 @@ public abstract unsafe class ADatomComparator<TA, TB, TC, TD, TE> : IDatomCompar
         if (cmp != 0) return cmp;
 
         return TE.Compare(aPtr, aLen, bPtr, bLen);
+    }
+
+    /// <summary>
+    /// Compare two datom spans
+    /// </summary>
+    public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        fixed(byte* aPtr = a)
+        fixed(byte* bPtr = b)
+            return Compare(aPtr, a.Length, bPtr, b.Length);
+    }
+
+    /// <summary>
+    /// Compare two datoms
+    /// </summary>
+    public static int Compare(in Datom a, in Datom b)
+    {
+        return Compare(a.RawSpan, b.RawSpan);
     }
 
     /// <inheritdoc />

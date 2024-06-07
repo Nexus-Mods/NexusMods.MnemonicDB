@@ -5,6 +5,7 @@ using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage.Tests.TestAttributes;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
@@ -33,7 +34,7 @@ public abstract class ABackendTest<TStoreType>(
     {
         var tx = await GenerateData();
         var datoms = tx.Snapshot
-            .Datoms(type)
+            .Datoms(SliceDescriptor.Create(type, Registry))
             .Select(d => d.Resolved)
             .ToArray();
 
@@ -98,7 +99,7 @@ public abstract class ABackendTest<TStoreType>(
         }
 
         var datoms = DatomStore.GetSnapshot()
-            .Datoms(type)
+            .Datoms(SliceDescriptor.Create(type, Registry))
             .Select(d => d.Resolved)
             .ToArray();
 
@@ -120,8 +121,8 @@ public abstract class ABackendTest<TStoreType>(
     public async Task HistoricalQueriesReturnAllDataSorted(IndexType type)
     {
         var tx = await GenerateData();
-        var current = tx.Snapshot.Datoms(type.CurrentVariant());
-        var history = tx.Snapshot.Datoms(type.HistoryVariant());
+        var current = tx.Snapshot.Datoms(SliceDescriptor.Create(type.CurrentVariant(), Registry));
+        var history = tx.Snapshot.Datoms(SliceDescriptor.Create(type.HistoryVariant(), Registry));
         var comparer = type.GetComparator();
         var merged = current
             .Merge(history, CompareDatoms(comparer))
@@ -244,7 +245,7 @@ public abstract class ABackendTest<TStoreType>(
 
 
         var datoms = tx2.Snapshot
-            .Datoms(type)
+            .Datoms(SliceDescriptor.Create(type, Registry))
             .Select(d => d.Resolved)
             .ToArray();
         await Verify(datoms.ToTable(Registry))

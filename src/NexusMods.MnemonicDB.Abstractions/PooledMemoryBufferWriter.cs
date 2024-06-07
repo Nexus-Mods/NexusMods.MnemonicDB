@@ -91,7 +91,7 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
     }
 
     /// <summary>
-    ///     Resets the buffer writer, allowing it to be reused.
+    ///     Writes the given span to the buffer, and advances the length.
     /// </summary>
     public void Write(ReadOnlySpan<byte> span)
     {

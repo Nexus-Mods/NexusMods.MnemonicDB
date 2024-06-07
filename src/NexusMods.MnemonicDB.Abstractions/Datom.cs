@@ -77,4 +77,28 @@ public struct Datom(ReadOnlyMemory<byte> memory, IAttributeRegistry registry)
     {
         return Resolved.ToString()!;
     }
+
+    /// <summary>
+    /// Returns -1 if this datom is less than the other, 0 if they are equal, and 1 if this datom is greater than the other.
+    /// in relation to the given index type.
+    /// </summary>
+    public int Compare(Datom other, IndexType indexType)
+    {
+        switch (indexType)
+        {
+            case IndexType.TxLog:
+                return DatomComparators.TxLogComparator.Compare(RawSpan, other.RawSpan);
+            case IndexType.EAVTCurrent:
+            case IndexType.EAVTHistory:
+                return DatomComparators.EAVTComparator.Compare(RawSpan, other.RawSpan);
+            case IndexType.AEVTCurrent:
+            case IndexType.AEVTHistory:
+                return DatomComparators.AEVTComparator.Compare(RawSpan, other.RawSpan);
+            case IndexType.VAETCurrent:
+            case IndexType.VAETHistory:
+                return DatomComparators.VAETComparator.Compare(RawSpan, other.RawSpan);
+            default:
+                throw new ArgumentOutOfRangeException(nameof(indexType), indexType, "Unknown index type");
+        }
+    }
 }

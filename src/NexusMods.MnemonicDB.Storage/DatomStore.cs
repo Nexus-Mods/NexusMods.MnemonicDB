@@ -13,6 +13,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.Storage.DatomStorageStructures;
@@ -233,7 +234,7 @@ public class DatomStore : IDatomStore, IHostedService
         try
         {
             var snapshot = _backend.GetSnapshot();
-            var lastTx = TxId.From(_nextIdCache.LastEntityInPartition(snapshot, PartitionId.Transactions).Value);
+            var lastTx = TxId.From(_nextIdCache.LastEntityInPartition(snapshot, PartitionId.Transactions, _registry).Value);
 
             if (lastTx.Value == TxId.MinValue)
             {
@@ -283,7 +284,7 @@ public class DatomStore : IDatomStore, IHostedService
                 else
                 {
                     var partitionId = PartitionId.From((byte)(id.Value >> 40 & 0xFF));
-                    var assignedId = _nextIdCache.NextId(snapshot, partitionId);
+                    var assignedId = _nextIdCache.NextId(snapshot, partitionId, _registry);
                     remaps.Add(id, assignedId);
                     return assignedId;
                 }
@@ -299,7 +300,7 @@ public class DatomStore : IDatomStore, IHostedService
     private void Log(PendingTransaction pendingTransaction, out StoreResult result)
     {
         var currentSnapshot = _currentSnapshot ?? _backend.GetSnapshot();
-        var thisTx = TxId.From(_nextIdCache.NextId(currentSnapshot, PartitionId.Transactions).Value);
+        var thisTx = TxId.From(_nextIdCache.NextId(currentSnapshot, PartitionId.Transactions, _registry).Value);
 
         var remaps = new Dictionary<EntityId, EntityId>();
         var remapFn = (Func<EntityId, EntityId>)(id => MaybeRemap(currentSnapshot, id, remaps, thisTx));
@@ -431,7 +432,8 @@ public class DatomStore : IDatomStore, IHostedService
         prevKey.Set(e, a, TxId.MinValue, false);
         MemoryMarshal.Write(_prevWriter.GetWrittenSpanWritable(), prevKey);
 
-        var prevDatom = iterator.Datoms(IndexType.EAVTCurrent, _prevWriter.GetWrittenSpan())
+        var sliceDescriptor = SliceDescriptor.Create(IndexType.EAVTCurrent, _prevWriter.GetWrittenSpan(), _registry);
+        var prevDatom = iterator.Datoms(sliceDescriptor)
             .Select(d => d.Clone())
             .FirstOrDefault();
 
@@ -509,7 +511,8 @@ public class DatomStore : IDatomStore, IHostedService
 
         if (attribute.Cardinalty == Cardinality.Many)
         {
-            var found = snapshot.Datoms(IndexType.EAVTCurrent, span)
+            var sliceDescriptor = SliceDescriptor.Create(IndexType.EAVTCurrent, span, _registry);
+            var found = snapshot.Datoms(sliceDescriptor)
                 .Select(d => d.Clone())
                 .FirstOrDefault();
             if (!found.Valid) return PrevState.NotExists;
@@ -527,10 +530,10 @@ public class DatomStore : IDatomStore, IHostedService
         }
         else
         {
-            KeyPrefix start = default;
-            start.Set(keyPrefix.E, keyPrefix.A, TxId.MinValue, false);
 
-            var datom = snapshot.Datoms(IndexType.EAVTCurrent, start)
+            var descriptor = SliceDescriptor.Create(keyPrefix.E, keyPrefix.A, _registry);
+
+            var datom = snapshot.Datoms(descriptor)
                 .Select(d => d.Clone())
                 .FirstOrDefault();
             if (!datom.Valid) return PrevState.NotExists;

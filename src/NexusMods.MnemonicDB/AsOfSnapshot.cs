@@ -4,7 +4,9 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage;
 using Reloaded.Memory.Extensions;
 
@@ -17,20 +19,56 @@ namespace NexusMods.MnemonicDB;
 /// </summary>
 internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeRegistry registry) : ISnapshot
 {
-    /// <inheritdoc />
-    public IEnumerable<Datom> Datoms(IndexType type, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    public IndexSegment Datoms(SliceDescriptor descriptor)
     {
-        var current = inner.Datoms(type.CurrentVariant(), a, b);
-        var history = inner.Datoms(type.HistoryVariant(), a, b);
-        var comparatorFn = type.GetComparator();
+        // TODO: stop using IEnumerable and use IndexSegment directly
+        var current = inner.Datoms(descriptor with {Index = descriptor.Index.CurrentVariant()});
+        var history = inner.Datoms(descriptor with {Index = descriptor.Index.HistoryVariant()});
+        var comparatorFn = descriptor.Index.GetComparator();
+
+        using var builder = new IndexSegmentBuilder();
+
         var merged = current.Merge(history,
             (dCurrent, dHistory) => comparatorFn.CompareInstance(dCurrent.RawSpan, dHistory.RawSpan));
         var filtered = merged.Where(d => d.T <= asOfTxId);
 
         var withoutRetracts = ApplyRetracts(filtered);
-        return withoutRetracts;
+
+        foreach (var datom in withoutRetracts)
+        {
+            builder.Add(datom.RawSpan);
+        }
+
+        return builder.Build();
     }
 
+    public IEnumerable<IndexSegment> DatomsChunked(SliceDescriptor descriptor, int chunkSize)
+    {
+        // TODO: stop using IEnumerable and use IndexSegment directly
+        var current = inner.DatomsChunked(descriptor with {Index = descriptor.Index.CurrentVariant()}, chunkSize).SelectMany(c => c);
+        var history = inner.DatomsChunked(descriptor with {Index = descriptor.Index.HistoryVariant()}, chunkSize).SelectMany(c => c);
+        var comparatorFn = descriptor.Index.GetComparator();
+
+        using var builder = new IndexSegmentBuilder();
+
+        var merged = current.Merge(history,
+            (dCurrent, dHistory) => comparatorFn.CompareInstance(dCurrent.RawSpan, dHistory.RawSpan));
+        var filtered = merged.Where(d => d.T <= asOfTxId);
+
+        var withoutRetracts = ApplyRetracts(filtered);
+
+        foreach (var datom in withoutRetracts)
+        {
+            builder.Add(datom.RawSpan);
+            if (builder.Count % chunkSize == 0)
+            {
+                yield return builder.Build();
+                builder.Reset();
+            }
+        }
+
+        yield return builder.Build();
+    }
 
 
     /// <summary>

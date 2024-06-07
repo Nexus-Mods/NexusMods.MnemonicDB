@@ -27,6 +27,20 @@ public struct IndexSegmentBuilder : IDisposable
     }
 
     /// <summary>
+    /// The number of datoms in the segment
+    /// </summary>
+    public int Count => _offsets.Count;
+
+    /// <summary>
+    /// Resets the builder so it can be reused
+    /// </summary>
+    public void Reset()
+    {
+        _offsets.Clear();
+        _data.Reset();
+    }
+
+    /// <summary>
     /// Add a datom to the segment
     /// </summary>
     public void Add(IEnumerable<Datom> datoms)
@@ -63,6 +77,15 @@ public struct IndexSegmentBuilder : IDisposable
     {
         _offsets.Add(_data.Length);
         attribute.Write(entityId, _registryId, value, TxId.Tmp, isRetract, _data);
+    }
+
+    /// <summary>
+    /// Append
+    /// </summary>
+    public readonly void Add(ReadOnlySpan<byte> rawData)
+    {
+        _offsets.Add(_data.Length);
+        _data.Write(rawData);
     }
 
     /// <summary>

@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Storage;
 
@@ -21,12 +22,12 @@ public struct NextIdCache
     /// <summary>
     /// Gets the next id for the given partition
     /// </summary>
-    public EntityId NextId(ISnapshot snapshot, PartitionId partitionId)
+    public EntityId NextId(ISnapshot snapshot, PartitionId partitionId, IAttributeRegistry registry)
     {
         var partition = partitionId.Value;
         if (this[partition] == 0)
         {
-            var lastEnt = LastEntityInPartition(snapshot, partitionId);
+            var lastEnt = LastEntityInPartition(snapshot, partitionId, registry);
             this[partition] = lastEnt.Value;
         }
 
@@ -37,7 +38,7 @@ public struct NextIdCache
     /// <summary>
     /// Gets the last recorded entity in the partition in the snapshot
     /// </summary>
-    public EntityId LastEntityInPartition(ISnapshot snapshot, PartitionId partitionId)
+    public EntityId LastEntityInPartition(ISnapshot snapshot, PartitionId partitionId, IAttributeRegistry registry)
     {
         var partition = partitionId.Value;
         if (this[partition] != 0)
@@ -45,10 +46,10 @@ public struct NextIdCache
             return partitionId.MakeEntityId(this[partition]);
         }
 
-        var startPrefix = new KeyPrefix().Set(partitionId.MakeEntityId(ulong.MaxValue), AttributeId.Min, TxId.MinValue, false);
-        var endPrefix = new KeyPrefix().Set(partitionId.MakeEntityId(0), AttributeId.Max, TxId.MaxValue, false);
+        var descriptor = SliceDescriptor.Create(partitionId.MakeEntityId(ulong.MaxValue), partitionId.MakeEntityId(0), registry);
 
-        var lastEnt = snapshot.Datoms(IndexType.EAVTCurrent, startPrefix, endPrefix)
+        var lastEnt = snapshot.DatomsChunked(descriptor, 1)
+            .SelectMany(c => c)
             .Select(d => d.E)
             .FirstOrDefault(partitionId.MakeEntityId(0));
 
