@@ -94,6 +94,9 @@ public struct Datom(ReadOnlyMemory<byte> memory, IAttributeRegistry registry)
             case IndexType.AEVTCurrent:
             case IndexType.AEVTHistory:
                 return DatomComparators.AEVTComparator.Compare(RawSpan, other.RawSpan);
+            case IndexType.AVETCurrent:
+            case IndexType.AVETHistory:
+                return DatomComparators.AVETComparator.Compare(RawSpan, other.RawSpan);
             case IndexType.VAETCurrent:
             case IndexType.VAETHistory:
                 return DatomComparators.VAETComparator.Compare(RawSpan, other.RawSpan);
