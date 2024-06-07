@@ -138,7 +138,7 @@ public readonly struct SliceDescriptor
         {
             Index = IndexType.EAVTCurrent,
             From = Datom(e, a, TxId.MinValue, false, dbRegistry),
-            To = Datom(e, a, TxId.MaxValue, false, dbRegistry)
+            To = Datom(e, AttributeId.From((ushort)(a.Value + 1)), TxId.MaxValue, false, dbRegistry)
         };
     }
 
