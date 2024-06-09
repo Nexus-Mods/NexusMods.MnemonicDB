@@ -5,6 +5,7 @@ using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -60,7 +61,15 @@ public interface IDb : IEquatable<IDb>
     public Entities<EntityIds, TModel> GetReverse<TModel>(EntityId id, Attribute<EntityId, ulong> attribute)
         where TModel : IHasEntityIdAndDb;
 
+    /// <summary>
+    /// Get all the datoms for the given entity id.
+    /// </summary>
     public IEnumerable<IReadDatom> Datoms(EntityId id);
+
+    /// <summary>
+    /// Get all the datoms for the given slice descriptor.
+    /// </summary>
+    public IndexSegment Datoms(SliceDescriptor sliceDescriptor);
 
     /// <summary>
     ///     Gets the datoms for the given transaction id.

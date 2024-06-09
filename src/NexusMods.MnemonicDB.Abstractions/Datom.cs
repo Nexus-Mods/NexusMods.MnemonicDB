@@ -58,6 +58,11 @@ public struct Datom(ReadOnlyMemory<byte> memory, IAttributeRegistry registry)
     public TxId T => Prefix.T;
 
     /// <summary>
+    /// True if the datom is a retract
+    /// </summary>
+    public bool IsRetract => Prefix.IsRetract;
+
+    /// <summary>
     /// Copies the data of this datom onto the heap so it's detached from the current iteration.
     /// </summary>
     public Datom Clone()
