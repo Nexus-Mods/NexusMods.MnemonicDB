@@ -154,6 +154,11 @@ internal class Db : IDb
             .Select(d => d.Resolved);
     }
 
+    public IndexSegment Datoms(SliceDescriptor sliceDescriptor)
+    {
+        return Snapshot.Datoms(sliceDescriptor);
+    }
+
     public IEnumerable<IReadDatom> Datoms(TxId txId)
     {
         return Snapshot.Datoms(SliceDescriptor.Create(txId, _registry))

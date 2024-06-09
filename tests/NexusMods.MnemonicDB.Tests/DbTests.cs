@@ -3,6 +3,7 @@ using DynamicData;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
@@ -576,6 +577,41 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             loadoutNames.Count.Should().Be(4, "All revisions should be loaded");
 
             loadoutNames.Should().BeEquivalentTo(["Test Loadout", "Update 1", "Update 2", "DONE"]);
+        }
+
+        [Fact]
+        public async Task CanObserveIndexChanges()
+        {
+            var loadout = await InsertExampleData();
+
+            List<string[]> changes = new();
+
+            // Define the slice to observe
+            var slice = SliceDescriptor.Create(Mod.Name, Connection.Db.Registry);
+
+            // Setup the subscription
+            using var _ = MutableSlice.Observe(Connection, slice)
+                // Snapshot the values each time
+                .QueryWhenChanged(datoms => datoms.Select(d => d.Resolved.ObjectValue.ToString()!).ToArray())
+                // Add the changes to the list
+                .Subscribe(x => changes.Add(x));
+
+            // Rename a mod
+            using var tx = Connection.BeginTransaction();
+            tx.Add(loadout.Mods.First().Id, Mod.Name, "Test Mod 1");
+            await tx.Commit();
+
+            // Add a new mod
+            using var tx2 = Connection.BeginTransaction();
+            tx2.Add(tx2.TempId(), Mod.Name, "Test Mod 2");
+            await tx2.Commit();
+
+            // Delete the first mod
+            using var tx3 = Connection.BeginTransaction();
+            tx3.Retract(loadout.Mods.First().Id, Mod.Name, "Test Mod 1");
+            await tx3.Commit();
+
+            await Verify(changes);
         }
 
 }

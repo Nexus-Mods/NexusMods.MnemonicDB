@@ -18,17 +18,19 @@ public static class MutableSlice
     /// </summary>
     public static IObservable<IChangeSet<Datom>> Observe(IConnection conn, SliceDescriptor descriptor)
     {
-        var set = new SortedSet<Datom>(PartialComparator(descriptor.Index));
+        var comparator = PartialComparator(descriptor.Index);
+        var equality = (IEqualityComparer<Datom>)comparator;
+        var set = new SortedSet<Datom>(comparator);
 
         return conn.Revisions.Select((db, idx) =>
         {
             if (idx == 0)
                 return Setup(set, db, descriptor);
-            return Diff(set, db, descriptor);
+            return Diff(set, db, descriptor, equality);
         });
     }
 
-    private static IChangeSet<Datom> Diff(SortedSet<Datom> set, IDb db, SliceDescriptor descriptor)
+    private static IChangeSet<Datom> Diff(SortedSet<Datom> set, IDb db, SliceDescriptor descriptor, IEqualityComparer<Datom> comparer)
     {
         var updates = db.Datoms(SliceDescriptor.Create(db.BasisTxId, db.Registry));
         List<Change<Datom>>? changes = null;
@@ -39,7 +41,7 @@ public static class MutableSlice
                 continue;
             if (datom.IsRetract)
             {
-                var idx = set.IndexOf(datom);
+                var idx = set.IndexOf(datom, comparer);
                 if (idx >= 0)
                 {
                     set.Remove(datom);
@@ -71,7 +73,7 @@ public static class MutableSlice
         return new ChangeSet<Datom>([new Change<Datom>(ListChangeReason.AddRange, datoms)]);
     }
 
-    private struct Comparer<TInner> : IComparer<Datom>
+    private struct Comparer<TInner> : IComparer<Datom>, IEqualityComparer<Datom>
     where TInner : IDatomComparator
     {
         public unsafe int Compare(Datom a, Datom b)
@@ -81,6 +83,16 @@ public static class MutableSlice
             fixed(byte* aPtr = aSpan)
             fixed(byte* bPtr = bSpan)
                 return TInner.Compare(aPtr, aSpan.Length, bPtr, bSpan.Length);
+        }
+
+        public bool Equals(Datom x, Datom y)
+        {
+            return Compare(x, y) == 0;
+        }
+
+        public int GetHashCode(Datom obj)
+        {
+            throw new NotSupportedException();
         }
     }
 
