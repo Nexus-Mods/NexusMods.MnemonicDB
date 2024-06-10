@@ -27,7 +27,7 @@ public class Connection : IConnection, IHostedService
     private readonly ILogger<Connection> _logger;
     private Task? _bootstrapTask;
 
-    private BehaviorSubject<IDb> _dbStream;
+    private BehaviorSubject<Revision> _dbStream;
     private IDisposable? _dbStreamDisposable;
 
     /// <summary>
@@ -39,7 +39,7 @@ public class Connection : IConnection, IHostedService
         _logger = logger;
         _declaredAttributes = declaredAttributes;
         _store = store;
-        _dbStream = new BehaviorSubject<IDb>(null!);
+        _dbStream = new BehaviorSubject<Revision>(default!);
     }
 
     /// <inheritdoc />
@@ -50,13 +50,16 @@ public class Connection : IConnection, IHostedService
     {
         get
         {
-            var val = _dbStream.Value;
+            var val = _dbStream;
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             if (val == null)
                 ThrowNullDb();
-            return val!;
+            return val!.Value.Database;
         }
     }
+
+    /// <inheritdoc />
+    public IAttributeRegistry Registry => _store.Registry;
 
     private static void ThrowNullDb()
     {
@@ -81,11 +84,11 @@ public class Connection : IConnection, IHostedService
     }
 
     /// <inheritdoc />
-    public IObservable<IDb> Revisions
+    public IObservable<Revision> Revisions
     {
         get
         {
-            if (_dbStream == null)
+            if (_dbStream == default!)
                 ThrowNullDb();
             return _dbStream!;
         }
@@ -183,7 +186,16 @@ public class Connection : IConnection, IHostedService
             var storeResult = await AddMissingAttributes(_declaredAttributes);
 
             _dbStreamDisposable = _store.TxLog
-                .Select(log => new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry))
+                .Select(log =>
+                {
+                    var db = new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry);
+                    var addedItems = db.Datoms(SliceDescriptor.Create(db.BasisTxId, _store.Registry));
+                    return new Revision
+                    {
+                        Database = db,
+                        AddedDatoms = addedItems
+                    };
+                })
                 .Subscribe(_dbStream);
         }
         catch (Exception ex)

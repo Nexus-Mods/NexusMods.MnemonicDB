@@ -2,37 +2,43 @@
 using System.Collections.Generic;
 using System.Reactive.Linq;
 using DynamicData;
-using Microsoft.Extensions.DependencyInjection;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
 namespace NexusMods.MnemonicDB.Abstractions.Query;
 
-public static class MutableSlice
+public static class ObservableDatoms
 {
 
     /// <summary>
     /// Observe a slice of the database, as datoms are added or removed from the database, the observer will be updated
     /// with the changeset of datoms that have been added or removed.
     /// </summary>
-    public static IObservable<IChangeSet<Datom>> Observe(IConnection conn, SliceDescriptor descriptor)
+    public static IObservable<IChangeSet<Datom>> ObserveDatoms(this IConnection conn, SliceDescriptor descriptor)
     {
         var comparator = PartialComparator(descriptor.Index);
         var equality = (IEqualityComparer<Datom>)comparator;
         var set = new SortedSet<Datom>(comparator);
 
-        return conn.Revisions.Select((db, idx) =>
+        return conn.Revisions.Select((rev, idx) =>
         {
             if (idx == 0)
-                return Setup(set, db, descriptor);
-            return Diff(set, db, descriptor, equality);
+                return Setup(set, rev.Database, descriptor);
+            return Diff(set, rev.AddedDatoms, descriptor, equality);
         });
     }
 
-    private static IChangeSet<Datom> Diff(SortedSet<Datom> set, IDb db, SliceDescriptor descriptor, IEqualityComparer<Datom> comparer)
+    /// <summary>
+    /// Observe all datoms for a given entity id
+    /// </summary>
+    public static IObservable<IChangeSet<Datom>> ObserveDatoms(this IConnection conn, EntityId id)
     {
-        var updates = db.Datoms(SliceDescriptor.Create(db.BasisTxId, db.Registry));
+        return conn.ObserveDatoms(SliceDescriptor.Create(id, conn.Registry));
+    }
+
+    private static IChangeSet<Datom> Diff(SortedSet<Datom> set, IndexSegment updates, SliceDescriptor descriptor, IEqualityComparer<Datom> comparer)
+    {
         List<Change<Datom>>? changes = null;
 
         foreach (var datom in updates)

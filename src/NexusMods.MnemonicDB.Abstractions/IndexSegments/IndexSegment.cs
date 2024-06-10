@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using DynamicData;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.Paths;
@@ -86,5 +87,15 @@ public readonly struct IndexSegment : IEnumerable<Datom>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
+    }
+
+    /// <summary>
+    /// Create a new index segment from the given datoms
+    /// </summary>
+    public static IndexSegment From(IAttributeRegistry registry, IReadOnlyCollection<Datom> datoms)
+    {
+        using var builder = new IndexSegmentBuilder(registry, datoms.Count);
+        builder.Add(datoms);
+        return builder.Build();
     }
 }
