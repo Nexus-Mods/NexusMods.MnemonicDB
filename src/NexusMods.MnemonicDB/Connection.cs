@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
@@ -10,6 +11,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.Storage;
 
@@ -21,10 +23,12 @@ namespace NexusMods.MnemonicDB;
 public class Connection : IConnection, IHostedService
 {
     private readonly IDatomStore _store;
-    private IDb? _db;
     private readonly IEnumerable<IAttribute> _declaredAttributes;
     private readonly ILogger<Connection> _logger;
     private Task? _bootstrapTask;
+
+    private BehaviorSubject<Revision> _dbStream;
+    private IDisposable? _dbStreamDisposable;
 
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
@@ -35,7 +39,7 @@ public class Connection : IConnection, IHostedService
         _logger = logger;
         _declaredAttributes = declaredAttributes;
         _store = store;
-
+        _dbStream = new BehaviorSubject<Revision>(default!);
     }
 
     /// <inheritdoc />
@@ -46,11 +50,16 @@ public class Connection : IConnection, IHostedService
     {
         get
         {
-            if (_db == null)
+            var val = _dbStream;
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
+            if (val == null)
                 ThrowNullDb();
-            return _db!;
+            return val!.Value.Database;
         }
     }
+
+    /// <inheritdoc />
+    public IAttributeRegistry Registry => _store.Registry;
 
     private static void ThrowNullDb()
     {
@@ -75,9 +84,15 @@ public class Connection : IConnection, IHostedService
     }
 
     /// <inheritdoc />
-    public IObservable<IDb> Revisions => _store.TxLog
-        .Select(log => new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry));
-
+    public IObservable<Revision> Revisions
+    {
+        get
+        {
+            if (_dbStream == default!)
+                ThrowNullDb();
+            return _dbStream!;
+        }
+    }
 
     private async Task<StoreResult> AddMissingAttributes(IEnumerable<IAttribute> declaredAttributes)
     {
@@ -112,8 +127,10 @@ public class Connection : IConnection, IHostedService
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
         var snapshot = _store.GetSnapshot();
-        var start = BuiltInAttributes.UniqueIdEntityId;
-        var attrIds = snapshot.Datoms(IndexType.AEVTCurrent, start, AttributeId.From((ushort)(start.Value + 1)))
+        var sliceDescriptor =
+            SliceDescriptor.Create(BuiltInAttributes.UniqueId, _store.Registry);
+
+        var attrIds = snapshot.Datoms(sliceDescriptor)
             .Select(d => d.E);
 
         foreach (var attrId in attrIds)
@@ -121,10 +138,8 @@ public class Connection : IConnection, IHostedService
             var serializerId = ValueTags.Null;
             var uniqueId = Symbol.Unknown;
 
-            var from = new KeyPrefix().Set(attrId, AttributeId.Min, TxId.MinValue, false);
-            var to = new KeyPrefix().Set(attrId, AttributeId.Max, TxId.MaxValue, false);
-
-            foreach (var rawDatom in snapshot.Datoms(IndexType.EAVTCurrent, from, to))
+            var entityDescriptor = SliceDescriptor.Create(EntityId.From(attrId.Value), _store.Registry);
+            foreach (var rawDatom in snapshot.Datoms(entityDescriptor))
             {
                 var datom = rawDatom.Resolved;
 
@@ -169,11 +184,19 @@ public class Connection : IConnection, IHostedService
         try
         {
             var storeResult = await AddMissingAttributes(_declaredAttributes);
-            _db = new Db(storeResult.Snapshot, this, storeResult.AssignedTxId, (AttributeRegistry)_store.Registry);
-            _store.TxLog.Subscribe(log =>
-            {
-                _db = new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry);
-            });
+
+            _dbStreamDisposable = _store.TxLog
+                .Select(log =>
+                {
+                    var db = new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry);
+                    var addedItems = db.Datoms(SliceDescriptor.Create(db.BasisTxId, _store.Registry));
+                    return new Revision
+                    {
+                        Database = db,
+                        AddedDatoms = addedItems
+                    };
+                })
+                .Subscribe(_dbStream);
         }
         catch (Exception ex)
         {
@@ -184,7 +207,7 @@ public class Connection : IConnection, IHostedService
     /// <inheritdoc />
     public Task StopAsync(CancellationToken cancellationToken)
     {
-        // Nothing to do
+        _dbStreamDisposable?.Dispose();
         return Task.CompletedTask;
     }
 }

@@ -10,9 +10,11 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.Storage.DatomStorageStructures;
@@ -36,7 +38,7 @@ public class DatomStore : IDatomStore, IHostedService
     private readonly DatomStoreSettings _settings;
     private readonly Channel<PendingTransaction> _txChannel;
     private readonly IIndex _txLog;
-    private readonly Subject<(TxId TxId, ISnapshot snapshot)> _updatesSubject;
+    private BehaviorSubject<(TxId TxId, ISnapshot snapshot)>? _updatesSubject;
     private readonly IIndex _vaetCurrent;
     private readonly IIndex _vaetHistory;
     private readonly PooledMemoryBufferWriter _writer;
@@ -101,9 +103,6 @@ public class DatomStore : IDatomStore, IHostedService
         _avetCurrent = _backend.GetIndex(IndexType.AVETCurrent);
         _avetHistory = _backend.GetIndex(IndexType.AVETHistory);
 
-
-        _updatesSubject = new Subject<(TxId TxId, ISnapshot Snapshot)>();
-
         registry.Populate(BuiltInAttributes.Initial);
 
         _txChannel = Channel.CreateUnbounded<PendingTransaction>();
@@ -145,7 +144,16 @@ public class DatomStore : IDatomStore, IHostedService
         return await Transact(new IndexSegment());
     }
 
-    public IObservable<(TxId TxId, ISnapshot Snapshot)> TxLog => _updatesSubject;
+    /// <inheritdoc />
+    public IObservable<(TxId TxId, ISnapshot Snapshot)> TxLog
+    {
+        get
+        {
+            if (_updatesSubject == null)
+                throw new InvalidOperationException("The store is not yet started");
+            return _updatesSubject;
+        }
+    }
 
     /// <inheritdoc />
     public async Task RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
@@ -174,7 +182,7 @@ public class DatomStore : IDatomStore, IHostedService
     /// <inheritdoc />
     public void Dispose()
     {
-        _updatesSubject.Dispose();
+        _updatesSubject?.Dispose();
         _writer.Dispose();
         _retractWriter.Dispose();
     }
@@ -203,7 +211,7 @@ public class DatomStore : IDatomStore, IHostedService
 
                     Log(pendingTransaction, out var result);
 
-                    _updatesSubject.OnNext((result.AssignedTxId, result.Snapshot));
+                    _updatesSubject?.OnNext((result.AssignedTxId, result.Snapshot));
                     pendingTransaction.CompletionSource.TrySetResult(result);
                 }
                 catch (Exception ex)
@@ -227,7 +235,7 @@ public class DatomStore : IDatomStore, IHostedService
         try
         {
             var snapshot = _backend.GetSnapshot();
-            var lastTx = TxId.From(_nextIdCache.LastEntityInPartition(snapshot, PartitionId.Transactions).Value);
+            var lastTx = TxId.From(_nextIdCache.LastEntityInPartition(snapshot, PartitionId.Transactions, _registry).Value);
 
             if (lastTx.Value == TxId.MinValue)
             {
@@ -255,6 +263,8 @@ public class DatomStore : IDatomStore, IHostedService
             _logger.LogError(ex, "Failed to bootstrap the datom store");
             throw;
         }
+
+        _updatesSubject = new BehaviorSubject<(TxId TxId, ISnapshot snapshot)>((_asOfTx, _currentSnapshot));
         _txTask = Task.Run(ConsumeTransactions);
     }
 
@@ -275,7 +285,7 @@ public class DatomStore : IDatomStore, IHostedService
                 else
                 {
                     var partitionId = PartitionId.From((byte)(id.Value >> 40 & 0xFF));
-                    var assignedId = _nextIdCache.NextId(snapshot, partitionId);
+                    var assignedId = _nextIdCache.NextId(snapshot, partitionId, _registry);
                     remaps.Add(id, assignedId);
                     return assignedId;
                 }
@@ -291,7 +301,7 @@ public class DatomStore : IDatomStore, IHostedService
     private void Log(PendingTransaction pendingTransaction, out StoreResult result)
     {
         var currentSnapshot = _currentSnapshot ?? _backend.GetSnapshot();
-        var thisTx = TxId.From(_nextIdCache.NextId(currentSnapshot, PartitionId.Transactions).Value);
+        var thisTx = TxId.From(_nextIdCache.NextId(currentSnapshot, PartitionId.Transactions, _registry).Value);
 
         var remaps = new Dictionary<EntityId, EntityId>();
         var remapFn = (Func<EntityId, EntityId>)(id => MaybeRemap(currentSnapshot, id, remaps, thisTx));
@@ -423,7 +433,18 @@ public class DatomStore : IDatomStore, IHostedService
         prevKey.Set(e, a, TxId.MinValue, false);
         MemoryMarshal.Write(_prevWriter.GetWrittenSpanWritable(), prevKey);
 
-        var prevDatom = iterator.Datoms(IndexType.EAVTCurrent, _prevWriter.GetWrittenSpan())
+        var low = new Datom(_prevWriter.GetWrittenSpan().ToArray(), Registry);
+        prevKey.Set(e, a, TxId.MaxValue, false);
+        MemoryMarshal.Write(_prevWriter.GetWrittenSpanWritable(), prevKey);
+        var high = new Datom(_prevWriter.GetWrittenSpan().ToArray(), Registry);
+        var sliceDescriptor = new SliceDescriptor
+        {
+            Index = IndexType.EAVTCurrent,
+            From = low,
+            To = high
+        };
+
+        var prevDatom = iterator.Datoms(sliceDescriptor)
             .Select(d => d.Clone())
             .FirstOrDefault();
 
@@ -501,8 +522,8 @@ public class DatomStore : IDatomStore, IHostedService
 
         if (attribute.Cardinalty == Cardinality.Many)
         {
-            var found = snapshot.Datoms(IndexType.EAVTCurrent, span)
-                .Select(d => d.Clone())
+            var sliceDescriptor = SliceDescriptor.Exact(IndexType.EAVTCurrent, span, _registry);
+            var found = snapshot.Datoms(sliceDescriptor)
                 .FirstOrDefault();
             if (!found.Valid) return PrevState.NotExists;
             if (found.E != keyPrefix.E || found.A != keyPrefix.A)
@@ -519,11 +540,10 @@ public class DatomStore : IDatomStore, IHostedService
         }
         else
         {
-            KeyPrefix start = default;
-            start.Set(keyPrefix.E, keyPrefix.A, TxId.MinValue, false);
 
-            var datom = snapshot.Datoms(IndexType.EAVTCurrent, start)
-                .Select(d => d.Clone())
+            var descriptor = SliceDescriptor.Create(keyPrefix.E, keyPrefix.A, _registry);
+
+            var datom = snapshot.Datoms(descriptor)
                 .FirstOrDefault();
             if (!datom.Valid) return PrevState.NotExists;
 

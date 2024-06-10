@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Reactive.Linq;
 
 namespace NexusMods.MnemonicDB.Abstractions.Models;
 
@@ -7,6 +9,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Models;
 /// </summary>
 public interface IReadOnlyModel : IHasEntityIdAndDb, IReadOnlyCollection<IReadDatom>
 {
+
     /// <summary>
     /// Returns true if all the attributes in the model exist in the attached
     /// database

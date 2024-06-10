@@ -476,6 +476,24 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
         {
             return $"({(IsRetract ? "-" : "+")}, {E.Value:x}, {A.Id.Name}, {V}, {T.Value:x})";
         }
+
+        /// <inheritdoc />
+        public bool EqualsByValue(IReadDatom other)
+        {
+            if (other is not ReadDatom o)
+                return false;
+            return A == o.A && E == o.E && V!.Equals(o.V);
+        }
+
+        /// <inheritdoc />
+        public int HashCodeByValue()
+        {
+            return HashCode.Combine(A, E, V);
+        }
+
+
     }
+
+
 
 }

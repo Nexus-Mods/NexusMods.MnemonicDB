@@ -13,4 +13,5 @@ public partial class Mod : IModelDefinition
     public static readonly BackReferenceAttribute<File> Files = new(File.Mod);
     public static readonly MarkerAttribute Marked = new(Namespace, nameof(Marked)) { IsIndexed = true };
     public static readonly StringAttribute Description = new(Namespace, nameof(Description)) { IsOptional = true };
+    public static readonly ReferenceAttribute<Mod> LoadAfter = new(Namespace, nameof(LoadAfter)) { IsOptional = true };
 }

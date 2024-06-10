@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using Microsoft.Win32;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomComparators;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Storage.InMemoryBackend;
 
@@ -21,10 +21,15 @@ public class Snapshot : ISnapshot
 
     public void Dispose() { }
 
-    public IEnumerable<Datom> Datoms(IndexType type, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    /// <inheritdoc />
+    public IndexSegment Datoms(SliceDescriptor descriptor)
     {
-        var idxLower = _indexes[(int)type].IndexOf(a.ToArray());
-        var idxUpper = _indexes[(int)type].IndexOf(b.ToArray());
+        var thisIndex = _indexes[(int)descriptor.Index];
+        if (thisIndex.Count == 0)
+            return new IndexSegment();
+
+        var idxLower = thisIndex.IndexOf(descriptor.From.RawSpan.ToArray());
+        var idxUpper = thisIndex.IndexOf(descriptor.To.RawSpan.ToArray());
 
         if (idxLower < 0)
             idxLower = ~idxLower;
@@ -43,25 +48,77 @@ public class Snapshot : ISnapshot
             reverse = true;
         }
 
-        return DatomsInner(type, reverse, lower, upper);
+        using var segmentBuilder = new IndexSegmentBuilder(_registry);
 
+        if (!reverse)
+        {
+            for (var i = lower; i <= upper; i++)
+            {
+                if (i >= thisIndex.Count)
+                    break;
+                segmentBuilder.Add(thisIndex.ElementAt(i));
+            }
+        }
+        else
+        {
+            for (var i = upper; i >= lower; i--)
+            {
+                segmentBuilder.Add(thisIndex.ElementAt(i));
+            }
+        }
+        return segmentBuilder.Build();
     }
 
-    private IEnumerable<Datom> DatomsInner(IndexType type, bool reverse, int lower, int upper)
+    /// <inheritdoc />
+    public IEnumerable<IndexSegment> DatomsChunked(SliceDescriptor descriptor, int chunkSize)
     {
+        var idxLower = _indexes[(int)descriptor.Index].IndexOf(descriptor.From.RawSpan.ToArray());
+        var idxUpper = _indexes[(int)descriptor.Index].IndexOf(descriptor.To.RawSpan.ToArray());
+
+        if (idxLower < 0)
+            idxLower = ~idxLower;
+
+        if (idxUpper < 0)
+            idxUpper = ~idxUpper;
+
+        var lower = idxLower;
+        var upper = idxUpper;
+        var reverse = false;
+
+        if (idxLower > idxUpper)
+        {
+            lower = idxUpper;
+            upper = idxLower;
+            reverse = true;
+        }
+
+        using var segmentBuilder = new IndexSegmentBuilder(_registry);
+        var index = _indexes[(int)descriptor.Index];
+
         if (!reverse)
         {
             for (var i = lower; i < upper; i++)
             {
-                yield return new Datom(_indexes[(int)type].ElementAt(i), _registry);
+                segmentBuilder.Add(index.ElementAt(i));
+                if (segmentBuilder.Count == chunkSize)
+                {
+                    yield return segmentBuilder.Build();
+                    segmentBuilder.Reset();
+                }
             }
         }
         else
         {
             for (var i = upper; i > lower; i--)
             {
-                yield return new Datom(_indexes[(int)type].ElementAt(i), _registry);
+                segmentBuilder.Add(index.ElementAt(i));
+                if (segmentBuilder.Count == chunkSize)
+                {
+                    yield return segmentBuilder.Build();
+                    segmentBuilder.Reset();
+                }
             }
         }
+        yield return segmentBuilder.Build();
     }
 }

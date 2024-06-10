@@ -23,7 +23,7 @@ public unsafe interface IDatomComparator
     public int CompareInstance(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         fixed(byte* aPtr = a)
-            fixed(byte* bPtr = b)
-                return CompareInstance(aPtr, a.Length, bPtr, b.Length);
+        fixed(byte* bPtr = b)
+            return CompareInstance(aPtr, a.Length, bPtr, b.Length);
     }
 }

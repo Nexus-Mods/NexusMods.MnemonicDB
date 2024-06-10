@@ -32,4 +32,12 @@ public readonly partial struct AttributeId
     {
         return "AId:" + Value.ToString("X");
     }
+
+    /// <summary>
+    /// Returns the next AttributeId after this one.
+    /// </summary>
+    public AttributeId Next()
+    {
+        return new((ushort)(Value + 1));
+    }
 }

@@ -1,19 +1,17 @@
 ﻿using System;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions.DatomComparators;
 
 /// <summary>
-/// Abstract datom comparator, compares the A, B, C, D and E parts of the datom, in that order
+/// A comparator that only considers the EAV portion of the datom, useful for in-memory sets that
+/// are not concerned with time, and only contain asserts
 /// </summary>
-public abstract unsafe class ADatomComparator<TA, TB, TC, TD, TE> : IDatomComparator
+public abstract unsafe class APartialDatomComparator<TA, TB, TC> : IDatomComparator
     where TA : IElementComparer
     where TB : IElementComparer
     where TC : IElementComparer
-    where TD : IElementComparer
-    where TE : IElementComparer
 {
     public static int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
     {
@@ -23,13 +21,7 @@ public abstract unsafe class ADatomComparator<TA, TB, TC, TD, TE> : IDatomCompar
         cmp = TB.Compare(aPtr, aLen, bPtr, bLen);
         if (cmp != 0) return cmp;
 
-        cmp = TC.Compare(aPtr, aLen, bPtr, bLen);
-        if (cmp != 0) return cmp;
-
-        cmp = TD.Compare(aPtr, aLen, bPtr, bLen);
-        if (cmp != 0) return cmp;
-
-        return TE.Compare(aPtr, aLen, bPtr, bLen);
+        return TC.Compare(aPtr, aLen, bPtr, bLen);
     }
 
     /// <summary>
