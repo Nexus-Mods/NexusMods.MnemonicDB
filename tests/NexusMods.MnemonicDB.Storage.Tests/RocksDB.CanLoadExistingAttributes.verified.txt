@@ -1,0 +1,3 @@
+﻿+ | 0000000000000001 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/UniqueId         | 0100000000000001
++ | 0000000000000002 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/ValueType        | 0100000000000001
++ | 0000000000000003 | (0001) UniqueId                 | NexusMods.MnemonicDB.Transaction/Timestamp       | 0100000000000001

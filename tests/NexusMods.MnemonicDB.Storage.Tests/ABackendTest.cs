@@ -252,4 +252,15 @@ public abstract class ABackendTest<TStoreType>(
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }
+
+
+    [Fact]
+    public async Task CanLoadExistingAttributes()
+    {
+        var attrs = DatomStore.GetSnapshot().Datoms(SliceDescriptor.Create(BuiltInAttributes.UniqueId, Registry))
+            .Select(d => d.Resolved)
+            .ToArray();
+
+        await Verify(attrs.ToTable(Registry));
+    }
 }

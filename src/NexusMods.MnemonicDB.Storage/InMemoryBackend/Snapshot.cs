@@ -30,42 +30,52 @@ public class Snapshot : ISnapshot
 
         var idxLower = thisIndex.IndexOf(descriptor.From.RawSpan.ToArray());
         var idxUpper = thisIndex.IndexOf(descriptor.To.RawSpan.ToArray());
+        bool upperExact = true;
+        bool lowerExact = true;
 
         if (idxLower < 0)
+        {
             idxLower = ~idxLower;
+            lowerExact = false;
+        }
 
         if (idxUpper < 0)
+        {
             idxUpper = ~idxUpper;
+            upperExact = false;
+        }
 
         var lower = idxLower;
         var upper = idxUpper;
-        var reverse = false;
 
-        if (idxLower > idxUpper)
+        if (descriptor.IsReverse)
         {
             lower = idxUpper;
             upper = idxLower;
-            reverse = true;
+            (lowerExact, upperExact) = (upperExact, lowerExact);
         }
 
         using var segmentBuilder = new IndexSegmentBuilder(_registry);
 
-        if (!reverse)
+        if (descriptor.IsReverse)
         {
-            for (var i = lower; i <= upper; i++)
-            {
-                if (i >= thisIndex.Count)
-                    break;
-                segmentBuilder.Add(thisIndex.ElementAt(i));
-            }
-        }
-        else
-        {
+            if (!lowerExact)
+                lower++;
             for (var i = upper; i >= lower; i--)
             {
                 segmentBuilder.Add(thisIndex.ElementAt(i));
             }
         }
+        else
+        {
+            if (!upperExact)
+                upper--;
+            for (var i = lower; i <= upper; i++)
+            {
+                segmentBuilder.Add(thisIndex.ElementAt(i));
+            }
+        }
+
         return segmentBuilder.Build();
     }
 
