@@ -31,6 +31,11 @@ public class AnalyzedAttribute
     public bool IsOptional => Markers.Contains("IsOptional");
 
     /// <summary>
+    /// True if this is a value type.
+    /// </summary>
+    public bool IsValueType => HighLevelType.IsValueType;
+
+    /// <summary>
     /// The C# prefix for the attribute, for now this is just required or empty
     /// </summary>
     public string Prefix => IsOptional ? "" : "required";
