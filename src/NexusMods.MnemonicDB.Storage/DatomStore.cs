@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
@@ -103,7 +104,7 @@ public class DatomStore : IDatomStore, IHostedService
         _avetCurrent = _backend.GetIndex(IndexType.AVETCurrent);
         _avetHistory = _backend.GetIndex(IndexType.AVETHistory);
 
-        registry.Populate(BuiltInAttributes.Initial);
+        registry.Populate(AttributeDefinition.HardcodedDbAttributes);
 
         _txChannel = Channel.CreateUnbounded<PendingTransaction>();
     }
@@ -161,12 +162,10 @@ public class DatomStore : IDatomStore, IHostedService
         var datoms = new IndexSegmentBuilder(_registry);
         var newAttrsArray = newAttrs.ToArray();
 
-        foreach (var attr in newAttrsArray)
-        {
-            datoms.Add(EntityId.From(attr.AttrEntityId.Value), BuiltInAttributes.UniqueId, attr.UniqueId, TxId.Tmp, false);
-            datoms.Add(EntityId.From(attr.AttrEntityId.Value), BuiltInAttributes.ValueType, attr.LowLevelType, TxId.Tmp, false);
-        }
-
+        var internalTx = new InternalTransaction(null!, datoms);
+        foreach (var attribute in newAttrsArray)
+            AttributeDefinition.Insert(internalTx, attribute.Attribute, attribute.AttrEntityId.Value);
+        internalTx.ProcessTemporaryEntities();
         await Transact(datoms.Build(), null, null);
 
         _registry.Populate(newAttrsArray);
@@ -240,9 +239,13 @@ public class DatomStore : IDatomStore, IHostedService
             if (lastTx.Value == TxId.MinValue)
             {
                 _logger.LogInformation("Bootstrapping the datom store no existing state found");
+                using var builder = new IndexSegmentBuilder(_registry);
+                var internalTx = new InternalTransaction(null!, builder);
+                AttributeDefinition.AddInitial(internalTx);
+                internalTx.ProcessTemporaryEntities();
                 var pending = new PendingTransaction
                 {
-                    Data = BuiltInAttributes.InitialDatoms(_registry),
+                    Data = builder.Build(),
                     TxFunctions = null,
                     DatabaseFactory = null
                 };
@@ -313,15 +316,14 @@ public class DatomStore : IDatomStore, IHostedService
 
         var secondaryBuilder = new IndexSegmentBuilder(_registry);
         var txId = EntityId.From(thisTx.Value);
-        secondaryBuilder.Add(txId, BuiltInAttributes.TxTimestanp,
-            DateTime.UtcNow);
+        secondaryBuilder.Add(txId, Transaction.Timestamp, DateTime.UtcNow);
 
         if (pendingTransaction.TxFunctions != null)
         {
             try
             {
                 var db = pendingTransaction.DatabaseFactory!(currentSnapshot);
-                var tx = new InternalTransaction(secondaryBuilder);
+                var tx = new InternalTransaction(db, secondaryBuilder);
                 foreach (var fn in pendingTransaction.TxFunctions)
                 {
                     fn.Apply(tx, db);

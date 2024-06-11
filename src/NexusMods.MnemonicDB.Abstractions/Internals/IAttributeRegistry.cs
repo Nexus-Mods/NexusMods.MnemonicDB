@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Collections.Generic;
 
 namespace NexusMods.MnemonicDB.Abstractions.Internals;
 
@@ -15,13 +16,13 @@ public interface IAttributeRegistry
     /// <param name="datom"></param>
     /// <returns></returns>
     public IReadDatom Resolve(ReadOnlySpan<byte> datom);
-    
+
     /// <summary>
     /// Populates the registry with the given attributes, mostly used for
     /// internal registration of attributes
     /// </summary>
     /// <param name="attributes"></param>
-    public void Populate(DbAttribute[] attributes);
+    public void Populate(IEnumerable<DbAttribute> attributes);
 
     /// <summary>
     /// The registry id of the registry, this can be used to link attributes to attribute ids.

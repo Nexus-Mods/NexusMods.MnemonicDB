@@ -1,4 +1,12 @@
-﻿+ | 0200000000000006 | (001E) InKeyBlob                | Blob 0x5B9FC61196AD8F3A 255 bytes                | 0100000000000011
+﻿+ | 0000000000000006 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Cardinality      | 0100000000000001
++ | 0000000000000007 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Documentation    | 0100000000000001
++ | 0000000000000003 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Indexed          | 0100000000000001
++ | 0000000000000005 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/NoHistory        | 0100000000000001
++ | 0000000000000004 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Optional         | 0100000000000001
++ | 0000000000000001 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/UniqueId         | 0100000000000001
++ | 0000000000000002 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/ValueType        | 0100000000000001
++ | 0000000000000008 | (0001) UniqueId                 | NexusMods.MnemonicDB.Transaction/Timestamp       | 0100000000000001
++ | 0200000000000006 | (001E) InKeyBlob                | Blob 0x5B9FC61196AD8F3A 255 bytes                | 0100000000000011
 + | 0200000000000007 | (001E) InKeyBlob                | Blob 0x5B9FC61196AD8F3A 255 bytes                | 0100000000000012
 + | 0200000000000008 | (001E) InKeyBlob                | Blob 0x5B9FC61196AD8F3A 255 bytes                | 0100000000000013
 + | 0200000000000009 | (001E) InKeyBlob                | Blob 0x5B9FC61196AD8F3A 255 bytes                | 0100000000000014

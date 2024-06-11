@@ -28,18 +28,18 @@ public abstract class AStorageTest : IAsyncLifetime
         _provider = provider;
         Registry = new AttributeRegistry(provider.GetServices<IAttribute>());
         Registry.Populate([
-            new DbAttribute(File.Path.Id, AttributeId.From(20), ValueTags.Utf8Insensitive),
-            new DbAttribute(File.Hash.Id, AttributeId.From(21), ValueTags.UInt64),
-            new DbAttribute(File.Size.Id, AttributeId.From(22), ValueTags.UInt64),
-            new DbAttribute(File.ModId.Id, AttributeId.From(23), ValueTags.Reference),
-            new DbAttribute(Mod.Name.Id, AttributeId.From(24), ValueTags.Utf8),
-            new DbAttribute(Mod.LoadoutId.Id, AttributeId.From(25), ValueTags.Reference),
-            new DbAttribute(Loadout.Name.Id, AttributeId.From(26), ValueTags.Utf8),
-            new DbAttribute(Collection.Name.Id, AttributeId.From(27), ValueTags.Utf8),
-            new DbAttribute(Collection.LoadoutId.Id, AttributeId.From(28), ValueTags.Reference),
-            new DbAttribute(Collection.ModIds.Id, AttributeId.From(29), ValueTags.Reference),
-            new DbAttribute(Blobs.InKeyBlob.Id, AttributeId.From(30), ValueTags.Blob),
-            new DbAttribute(Blobs.InValueBlob.Id, AttributeId.From(31), ValueTags.HashedBlob)
+            new DbAttribute(File.Path.Id, AttributeId.From(20), ValueTags.Utf8Insensitive, File.Path),
+            new DbAttribute(File.Hash.Id, AttributeId.From(21), ValueTags.UInt64, File.Hash),
+            new DbAttribute(File.Size.Id, AttributeId.From(22), ValueTags.UInt64, File.Size),
+            new DbAttribute(File.ModId.Id, AttributeId.From(23), ValueTags.Reference, File.ModId),
+            new DbAttribute(Mod.Name.Id, AttributeId.From(24), ValueTags.Utf8, Mod.Name),
+            new DbAttribute(Mod.LoadoutId.Id, AttributeId.From(25), ValueTags.Reference, Mod.LoadoutId),
+            new DbAttribute(Loadout.Name.Id, AttributeId.From(26), ValueTags.Utf8, Loadout.Name),
+            new DbAttribute(Collection.Name.Id, AttributeId.From(27), ValueTags.Utf8, Collection.Name),
+            new DbAttribute(Collection.LoadoutId.Id, AttributeId.From(28), ValueTags.Reference, Collection.LoadoutId),
+            new DbAttribute(Collection.ModIds.Id, AttributeId.From(29), ValueTags.Reference, Collection.ModIds),
+            new DbAttribute(Blobs.InKeyBlob.Id, AttributeId.From(30), ValueTags.Blob, Blobs.InKeyBlob),
+            new DbAttribute(Blobs.InValueBlob.Id, AttributeId.From(31), ValueTags.HashedBlob, Blobs.InValueBlob),
         ]);
         _path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("tests_datomstore" + Guid.NewGuid());
 

@@ -1,4 +1,12 @@
-﻿+ | 0200000000000001 | (0014) Path                     | /foo/bar                                         | 0100000000000002
+﻿+ | 0000000000000006 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Cardinality      | 0100000000000001
++ | 0000000000000007 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Documentation    | 0100000000000001
++ | 0000000000000003 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Indexed          | 0100000000000001
++ | 0000000000000005 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/NoHistory        | 0100000000000001
++ | 0000000000000004 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Optional         | 0100000000000001
++ | 0000000000000001 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/UniqueId         | 0100000000000001
++ | 0000000000000002 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/ValueType        | 0100000000000001
++ | 0000000000000008 | (0001) UniqueId                 | NexusMods.MnemonicDB.Transaction/Timestamp       | 0100000000000001
++ | 0200000000000001 | (0014) Path                     | /foo/bar                                         | 0100000000000002
 + | 0200000000000002 | (0014) Path                     | /foo/qux                                         | 0100000000000003
 + | 0200000000000002 | (0014) Path                     | /qix/bar                                         | 0100000000000002
 - | 0200000000000002 | (0014) Path                     | /qix/bar                                         | 0100000000000003

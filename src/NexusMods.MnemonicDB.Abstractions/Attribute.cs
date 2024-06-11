@@ -173,6 +173,9 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
     public bool NoHistory { get; init; }
 
     /// <inheritdoc />
+    public virtual bool DeclaredOptional { get; protected init; }
+
+    /// <inheritdoc />
     public void SetDbId(RegistryId id, AttributeId attributeId)
     {
         Cache[id.Value] = attributeId;
@@ -182,7 +185,9 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public AttributeId GetDbId(RegistryId id)
     {
-        return Cache[id.Value];
+        var aid = Cache[id.Value];
+        Debug.Assert(aid.Value != 0, $"Attribute ID is 0 for {Id}, was it registered?");
+        return aid;
     }
 
     /// <inheritdoc />

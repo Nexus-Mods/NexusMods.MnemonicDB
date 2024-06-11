@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -23,7 +24,7 @@ namespace NexusMods.MnemonicDB;
 public class Connection : IConnection, IHostedService
 {
     private readonly IDatomStore _store;
-    private readonly IEnumerable<IAttribute> _declaredAttributes;
+    private readonly Dictionary<Symbol, IAttribute> _declaredAttributes;
     private readonly ILogger<Connection> _logger;
     private Task? _bootstrapTask;
 
@@ -37,7 +38,7 @@ public class Connection : IConnection, IHostedService
     {
         ServiceProvider = provider;
         _logger = logger;
-        _declaredAttributes = declaredAttributes;
+        _declaredAttributes = declaredAttributes.ToDictionary(a => a.Id);
         _store = store;
         _dbStream = new BehaviorSubject<Revision>(default!);
     }
@@ -105,6 +106,7 @@ public class Connection : IConnection, IHostedService
         var missing = declaredAttributes.Where(a => !existing.ContainsKey(a.Id)).ToArray();
         if (missing.Length == 0)
         {
+            // Nothing new to assert, so just add the new data to the registry
             _store.Registry.Populate(existing.Values.ToArray());
             return await _store.Sync();
         }
@@ -117,7 +119,7 @@ public class Connection : IConnection, IHostedService
             var id = ++attrId;
 
             var uniqueId = attr.Id;
-            newAttrs.Add(new DbAttribute(uniqueId, AttributeId.From(id), attr.LowLevelType));
+            newAttrs.Add(new DbAttribute(uniqueId, AttributeId.From(id), attr.LowLevelType, attr));
         }
 
         await _store.RegisterAttributes(newAttrs);
@@ -126,30 +128,12 @@ public class Connection : IConnection, IHostedService
 
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
-        var snapshot = _store.GetSnapshot();
-        var sliceDescriptor =
-            SliceDescriptor.Create(BuiltInAttributes.UniqueId, _store.Registry);
+        var db = new Db(_store.GetSnapshot(), this, TxId, (AttributeRegistry)_store.Registry);
 
-        var attrIds = snapshot.Datoms(sliceDescriptor)
-            .Select(d => d.E);
-
-        foreach (var attrId in attrIds)
+        foreach (var attribute in AttributeDefinition.All(db))
         {
-            var serializerId = ValueTags.Null;
-            var uniqueId = Symbol.Unknown;
-
-            var entityDescriptor = SliceDescriptor.Create(EntityId.From(attrId.Value), _store.Registry);
-            foreach (var rawDatom in snapshot.Datoms(entityDescriptor))
-            {
-                var datom = rawDatom.Resolved;
-
-                if (datom.A == BuiltInAttributes.ValueType && datom is Attribute<ValueTags, byte>.ReadDatom serializerIdDatom)
-                    serializerId = serializerIdDatom.V;
-                else if (datom.A == BuiltInAttributes.UniqueId && datom is Attribute<Symbol, string>.ReadDatom uniqueIdDatom)
-                    uniqueId = uniqueIdDatom.V;
-            }
-
-            yield return new DbAttribute(uniqueId, AttributeId.From((ushort)attrId.Value), serializerId);
+            var declared = _declaredAttributes[attribute.UniqueId];
+            yield return new DbAttribute(attribute.UniqueId, AttributeId.From((ushort)attribute.Id.Value), attribute.ValueType, declared);
         }
     }
 
@@ -183,7 +167,7 @@ public class Connection : IConnection, IHostedService
         await _store.StartAsync(CancellationToken.None);
         try
         {
-            var storeResult = await AddMissingAttributes(_declaredAttributes);
+            var storeResult = await AddMissingAttributes(_declaredAttributes.Values);
 
             _dbStreamDisposable = _store.TxLog
                 .Select(log =>

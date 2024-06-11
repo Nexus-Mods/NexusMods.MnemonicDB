@@ -6,5 +6,14 @@
 /// </summary>
 public struct Null
 {
+    /// <summary>
+    /// A singleton instance of the null value.
+    /// </summary>
+    public static Null Instance { get; } = new();
 
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return "Null";
+    }
 }
