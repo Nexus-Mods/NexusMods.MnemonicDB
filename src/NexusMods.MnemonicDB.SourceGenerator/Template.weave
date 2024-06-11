@@ -142,9 +142,13 @@ public partial class {{= model.Name}} {
                 tx.Add(Id, {{= attr.FieldName}}, new __COMPARERS__.Null(), false);
             }
             {{else}}
-            {{if attr.IsOptional && !attr.IsReference}}
+            {{if attr.IsOptional && !attr.IsReference && !attr.IsValueType}}
             if ({{= attr.ContextualName}} is not null) {
                 tx.Add(Id, {{= attr.FieldName}}, {{= attr.ContextualName}}!, false);
+            }
+            {{elif attr.IsOptional && attr.IsValueType && !attr.IsReference}}
+            if ({{= attr.ContextualName}}.HasValue) {
+                tx.Add(Id, {{= attr.FieldName}}, {{= attr.ContextualName}}.Value, false);
             }
             {{elif attr.IsOptional && attr.IsReference}}
             if ({{= attr.ContextualName}}.Value != 0) {
