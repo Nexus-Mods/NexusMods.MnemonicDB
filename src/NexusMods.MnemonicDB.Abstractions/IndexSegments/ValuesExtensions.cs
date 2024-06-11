@@ -11,7 +11,7 @@ public static class ValuesExtensions
     /// Re-frames the view as a view of entities of the given type
     /// </summary>
     public static Entities<Values<EntityId, ulong>, TModel> As<TModel>(this Values<EntityId, ulong> ids, IDb db)
-        where TModel : IHasEntityIdAndDb
+        where TModel : IReadOnlyModel<TModel>
     {
         return new Entities<Values<EntityId, ulong>, TModel>(ids, db);
     }

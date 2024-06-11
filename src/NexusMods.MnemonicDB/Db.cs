@@ -141,7 +141,7 @@ internal class Db : IDb
     }
 
     public Entities<EntityIds, TModel> GetReverse<TModel>(EntityId id, Attribute<EntityId, ulong> attribute)
-        where TModel : IHasEntityIdAndDb
+        where TModel : IReadOnlyModel<TModel>
     {
         var segment = _reverseCache.Get(this, (id, attribute.GetDbId(_registry.Id)));
         var ids = new EntityIds(segment, 0, segment.Count);

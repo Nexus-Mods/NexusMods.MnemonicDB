@@ -56,6 +56,11 @@ public interface IAttribute
     bool NoHistory { get; }
 
     /// <summary>
+    ///   True if the attribute is optional, false if it is not.
+    /// </summary>
+    bool DeclaredOptional { get; }
+
+    /// <summary>
     ///   The cardinality of the attribute
     /// </summary>
     Cardinality Cardinalty { get; }

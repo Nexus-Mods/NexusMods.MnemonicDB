@@ -5,6 +5,7 @@
 #nullable enable
 
 using System;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using TransparentValueObjects;
@@ -53,13 +54,22 @@ public partial class {{= model.Name}} {
     }
 
     /// <summary>
-    /// A list of all attributes of the model.
+    /// A list of all required attributes of the model.
     /// </summary>
     public static __ABSTRACTIONS__.IAttribute[] RequiredAttributes => new __ABSTRACTIONS__.IAttribute[] {
         {{each attr in model.Attributes}}
         {{if !attr.IsMarker && !attr.IsOptional}}
         {{= attr.FieldName}},
         {{/if}}
+        {{/each}}
+    };
+
+    /// <summary>
+    /// A list of all attributes of the model.
+    /// </summary>
+    public static __ABSTRACTIONS__.IAttribute[] AllAttributes => new __ABSTRACTIONS__.IAttribute[] {
+        {{each attr in model.Attributes}}
+        {{= attr.FieldName}},
         {{/each}}
     };
 

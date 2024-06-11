@@ -7,6 +7,7 @@ using System.Threading;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.Paths.Trees;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Storage;
@@ -57,18 +58,7 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
     public AttributeRegistry(IEnumerable<IAttribute> attributes)
     {
         Id = GetRegistryId(this);
-
-        BuiltInAttributes.UniqueId.SetDbId(Id, BuiltInAttributes.UniqueIdEntityId);
-        _attributes[BuiltInAttributes.UniqueIdEntityId.Value] = BuiltInAttributes.UniqueId;
-        BuiltInAttributes.ValueType.SetDbId(Id, BuiltInAttributes.ValueTypeEntityId);
-        _attributes[BuiltInAttributes.ValueTypeEntityId.Value] = BuiltInAttributes.ValueType;
-        BuiltInAttributes.TxTimestanp.SetDbId(Id, BuiltInAttributes.TxTimestanpEntityId);
-        _attributes[BuiltInAttributes.TxTimestanpEntityId.Value] = BuiltInAttributes.TxTimestanp;
-
-        foreach (var attribute in attributes)
-        {
-            _attributesBySymbol[attribute.Id] = attribute;
-        }
+        _attributesBySymbol = attributes.ToDictionary(a => a.Id);
     }
 
     /// <inheritdoc />
@@ -84,7 +74,7 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
     }
 
     /// <inheritdoc />
-    public void Populate(DbAttribute[] attributes)
+    public void Populate(IEnumerable<DbAttribute> attributes)
     {
         foreach (var dbAttribute in attributes)
         {

@@ -2,6 +2,7 @@
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.TestModel.Helpers;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
@@ -257,7 +258,7 @@ public abstract class ABackendTest<TStoreType>(
     [Fact]
     public async Task CanLoadExistingAttributes()
     {
-        var attrs = DatomStore.GetSnapshot().Datoms(SliceDescriptor.Create(BuiltInAttributes.UniqueId, Registry))
+        var attrs = DatomStore.GetSnapshot().Datoms(SliceDescriptor.Create(AttributeDefinition.UniqueId, Registry))
             .Select(d => d.Resolved)
             .ToArray();
 

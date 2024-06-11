@@ -10,9 +10,11 @@ using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
 namespace NexusMods.MnemonicDB.Storage;
 
-internal class InternalTransaction(IndexSegmentBuilder datoms) : ITransaction
+internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : ITransaction
 {
     private ulong _tempId = PartitionId.Temp.MakeEntityId(0).Value;
+    private List<ITemporaryEntity>? _temporaryEntities = null;
+    private List<ITxFunction>? _txFunctions = null;
 
     /// <inheritdoc />
     public TxId ThisTxId => TxId.From(PartitionId.Temp.MakeEntityId(0).Value);
@@ -47,17 +49,32 @@ internal class InternalTransaction(IndexSegmentBuilder datoms) : ITransaction
     /// <inheritdoc />
     public void Add(ITxFunction fn)
     {
-        throw new NotSupportedException();
+        fn.Apply(this, basisDb);
     }
     public void Attach(ITemporaryEntity entity)
     {
-        throw new NotSupportedException();
+        _temporaryEntities ??= new();
+        _temporaryEntities.Add(entity);
     }
 
     /// <inheritdoc />
     public Task<ICommitResult> Commit()
     {
         throw new NotSupportedException();
+    }
+
+    /// <summary>
+    /// Writes the temporary entities to the backing index builder.
+    /// </summary>
+    public void ProcessTemporaryEntities()
+    {
+        if (_temporaryEntities is null)
+            return;
+
+        foreach (var entity in _temporaryEntities)
+        {
+            entity.AddTo(this);
+        }
     }
 
     /// <inheritdoc />

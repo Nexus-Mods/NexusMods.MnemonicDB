@@ -40,16 +40,6 @@ public interface IDb : IEquatable<IDb>
     IAnalytics Analytics { get; }
 
     /// <summary>
-    ///     Gets a read model for the given entity id.
-    /// </summary>
-    /// <param name="id"></param>
-    /// <typeparam name="TModel"></typeparam>
-    /// <returns></returns>
-    public TModel Get<TModel>(EntityId id)
-        where TModel : IHasEntityIdAndDb;
-
-
-    /// <summary>
     /// Gets the index segment for the given entity id.
     /// </summary>
     public IndexSegment Get(EntityId entityId);
@@ -59,7 +49,7 @@ public interface IDb : IEquatable<IDb>
     ///     with the given attribute.
     /// </summary>
     public Entities<EntityIds, TModel> GetReverse<TModel>(EntityId id, Attribute<EntityId, ulong> attribute)
-        where TModel : IHasEntityIdAndDb;
+        where TModel : IReadOnlyModel<TModel>;
 
     /// <summary>
     /// Get all the datoms for the given entity id.

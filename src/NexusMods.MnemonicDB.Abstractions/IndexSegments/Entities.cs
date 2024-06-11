@@ -9,13 +9,13 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 /// </summary>
 public readonly struct Entities<TInner, TEntity>(TInner ids, IDb db) :
     IReadOnlyCollection<TEntity>
-    where TEntity : IHasEntityIdAndDb
+    where TEntity : IReadOnlyModel<TEntity>
     where TInner : IIndexSegment<EntityId>
 {
     /// <summary>
     /// Gets the entity at the given index
     /// </summary>
-    public TEntity this[int idx] => db.Get<TEntity>(ids[idx]);
+    public TEntity this[int idx] => TEntity.Create(db, ids[idx]);
 
     /// <summary>
     /// The number of entities in the collection

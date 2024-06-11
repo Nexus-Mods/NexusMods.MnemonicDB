@@ -8,10 +8,10 @@ public enum Cardinality
     /// <summary>
     /// Only one value per entity
     /// </summary>
-    One,
+    One = 1,
 
     /// <summary>
     /// Zero or one values per entity
     /// </summary>
-    Many
+    Many = 2
 }
