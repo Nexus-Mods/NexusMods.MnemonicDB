@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
@@ -84,6 +85,7 @@ public struct IndexSegmentBuilder : IDisposable
     /// </summary>
     public readonly void Add(ReadOnlySpan<byte> rawData)
     {
+        Debug.Assert(rawData.Length > KeyPrefix.Size, "Raw data must be at least the size of a KeyPrefix");
         _offsets.Add(_data.Length);
         _data.Write(rawData);
     }
