@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
@@ -55,6 +56,11 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
     {
         _temporaryEntities ??= new();
         _temporaryEntities.Add(entity);
+    }
+
+    public void Add(Datom datom)
+    {
+        datoms.Add(datom.RawSpan);
     }
 
     /// <inheritdoc />

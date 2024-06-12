@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
@@ -50,6 +51,12 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
         {
             _datoms.Add(entityId, attribute, id, ThisTxId, isRetract: false);
         }
+    }
+
+    /// <inheritdoc />
+    public void Add(Datom datom)
+    {
+        _datoms.Add(datom.RawSpan);
     }
 
     public void Add(ITxFunction fn)

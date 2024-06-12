@@ -109,4 +109,19 @@ public struct Datom(ReadOnlyMemory<byte> memory, IAttributeRegistry registry)
                 throw new ArgumentOutOfRangeException(nameof(indexType), indexType, "Unknown index type");
         }
     }
+
+    /// <summary>
+    /// Clone this datom and return it as a retraction datom
+    /// </summary>
+    /// <returns></returns>
+    public Datom Retract()
+    {
+        var data = GC.AllocateUninitializedArray<byte>(RawSpan.Length);
+        var dataSpan = data.AsSpan();
+        RawSpan.CopyTo(dataSpan);
+        var prefix = MemoryMarshal.Read<KeyPrefix>(dataSpan);
+        var newPrefix = new KeyPrefix().Set(prefix.E, prefix.A, TxId.Tmp, true);
+        MemoryMarshal.Write(dataSpan, newPrefix);
+        return new Datom(data, registry);
+    }
 }

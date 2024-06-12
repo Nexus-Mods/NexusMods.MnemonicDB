@@ -92,11 +92,9 @@ public static class ExtensionMethods
 
     private static void DeleteThisOnly(ITransaction tx, IDb db, EntityId eid)
     {
-        var segment = db.Get(eid);
-        foreach (var datom in segment)
+        foreach (var datom in db.Get(eid))
         {
-            var resolved = datom.Resolved;
-            resolved.Retract(tx);
+            tx.Add(datom.Retract());
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
@@ -58,6 +59,11 @@ public interface ITransaction : IDisposable
     /// </summary>
     void Retract<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val)
         => Add(entityId, attribute, val, isRetract: true);
+
+    /// <summary>
+    /// Retract a specific datom
+    /// </summary>
+    void Add(Datom datom);
 
     /// <summary>
     ///     Commits the transaction
