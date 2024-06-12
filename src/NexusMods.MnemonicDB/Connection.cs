@@ -42,6 +42,27 @@ public class Connection : IConnection, IHostedService
         _dbStream = new BehaviorSubject<Revision>(default!);
     }
 
+    /// <summary>
+    /// Scrubs the transaction stream so that we only ever move forward and never repeat transactions
+    /// </summary>
+    private static IObservable<(TxId TxId, ISnapshot Snapshot)> ForwardOnly(IObservable<(TxId txId, ISnapshot snapshot)> dbStream)
+    {
+        TxId? prev = null;
+
+        return Observable.Create((IObserver<(TxId txId, ISnapshot snapshot)> observer) =>
+        {
+            return dbStream.Subscribe((nextItem) =>
+            {
+                var (nextTxId, _) = nextItem;
+                if (prev != null && prev.Value >= nextTxId)
+                    return;
+
+                observer.OnNext(nextItem);
+                prev = nextTxId;
+            }, observer.OnError, observer.OnCompleted);
+        });
+    }
+
     /// <inheritdoc />
     public IServiceProvider ServiceProvider { get; set; }
 
@@ -168,7 +189,7 @@ public class Connection : IConnection, IHostedService
         {
             var storeResult = await AddMissingAttributes(_declaredAttributes.Values);
 
-            _dbStreamDisposable = _store.TxLog
+            _dbStreamDisposable = ForwardOnly(_store.TxLog)
                 .Select(log =>
                 {
                     var db = new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry);
