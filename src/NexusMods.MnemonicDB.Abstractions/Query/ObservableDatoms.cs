@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reactive.Linq;
 using DynamicData;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
@@ -35,6 +36,30 @@ public static class ObservableDatoms
     public static IObservable<IChangeSet<Datom>> ObserveDatoms(this IConnection conn, EntityId id)
     {
         return conn.ObserveDatoms(SliceDescriptor.Create(id, conn.Registry));
+    }
+
+    /// <summary>
+    /// Observe changes for a given attribue on a given entity id
+    /// </summary>
+    public static IObservable<IChangeSet<Datom>> ObserveDatoms(this IConnection conn, EntityId id, IAttribute attribute)
+    {
+        return conn.ObserveDatoms(SliceDescriptor.Create(id, attribute.GetDbId(conn.Registry.Id), conn.Registry));
+    }
+
+    /// <summary>
+    /// Observe changes for datoms that point to the given entity id via the given attribute
+    /// </summary>
+    public static IObservable<IChangeSet<Datom>> ObserveDatoms(this IConnection conn, ReferenceAttribute attribute, EntityId id)
+    {
+        return conn.ObserveDatoms(SliceDescriptor.Create(attribute, id, conn.Registry));
+    }
+
+    /// <summary>
+    /// Observe changes for a given attribute
+    /// </summary>
+    public static IObservable<IChangeSet<Datom>> ObserveDatoms(this IConnection conn, IAttribute attribute)
+    {
+        return conn.ObserveDatoms(SliceDescriptor.Create(attribute, conn.Registry));
     }
 
     private static IChangeSet<Datom> Diff(SortedSet<Datom> set, IndexSegment updates, SliceDescriptor descriptor, IEqualityComparer<Datom> comparer)

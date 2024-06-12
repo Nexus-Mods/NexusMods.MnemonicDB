@@ -552,9 +552,6 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var loadoutNames = new List<string>();
 
-
-        // TODO: re-enable this once we decide on how to handle revisions
-        /*
         using var subscription = loadout.Revisions()
             .Select(l => l.Name)
             .Finally(() => loadoutNames.Add("DONE"))
@@ -578,9 +575,19 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         loadoutNames.Count.Should().Be(4, "All revisions should be loaded");
 
         loadoutNames.Should().BeEquivalentTo(["Test Loadout", "Update 1", "Update 2", "DONE"]);
-        */
 
+    }
 
+    [Fact]
+    public async Task CanFindByReference()
+    {
+        var loadout = await InsertExampleData();
+        foreach (var mod in loadout.Mods)
+        {
+            var found = Mod.FindByLoadout(Connection.Db, mod.LoadoutId)
+                .Select(f => f.Id);
+            found.Should().Contain(mod.Id, "we can look entities via the value if they are references");
+        }
     }
 
     [Fact]

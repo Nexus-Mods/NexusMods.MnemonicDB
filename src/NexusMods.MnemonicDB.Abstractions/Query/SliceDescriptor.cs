@@ -102,6 +102,19 @@ public readonly struct SliceDescriptor
     }
 
     /// <summary>
+    /// Creates a slice descriptor for the given reference attribute and entity that is being pointed to.
+    /// </summary>
+    public static SliceDescriptor Create(ReferenceAttribute attr, EntityId value, IAttributeRegistry registry)
+    {
+        return new SliceDescriptor
+        {
+            Index = IndexType.VAETCurrent,
+            From = Datom(EntityId.MinValueNoPartition, attr, value, TxId.MinValue, false, registry),
+            To = Datom(EntityId.MaxValueNoPartition, attr, value, TxId.MaxValue, false, registry)
+        };
+    }
+
+    /// <summary>
     /// Creates a slice descriptor for the given reference attribute and entity that is being pointed to, this is a
     /// reverse lookup.
     /// </summary>

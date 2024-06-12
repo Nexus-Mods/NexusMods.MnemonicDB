@@ -34,14 +34,12 @@ public partial class {{= model.Name}} {
     #region CRUD Methods
 
     {{each attr in model.Attributes}}
-    {{if attr.IsIndexed}}
-
+    {{if attr.IsIndexed || attr.IsReference}}
     public static IEnumerable<{{= model.Name}}.ReadOnly> FindBy{{= attr.Name}}(__ABSTRACTIONS__.IDb db, {{= attr.HighLevelType.ToDisplayString()}} value) {
         foreach (var id in db.FindIndexed({{= attr.Name}}, value)) {
             yield return new {{= model.Name}}.ReadOnly(db, id);
         }
     }
-
     {{/if}}
     {{/each}}
 
@@ -244,6 +242,11 @@ public partial class {{= model.Name}} {
            /// The database that the entity is associated with.
            /// </summary>
            public __ABSTRACTIONS__.IDb Db { get; }
+
+           /// <summary>
+           /// Rebases the entity to the most recent version of the database
+           /// </summary>
+           public ReadOnly Rebase() => new ReadOnly(Db.Connection.Db, Id);
 
            /// <summary>
            /// Constructs a new ReadOnly model of the entity.

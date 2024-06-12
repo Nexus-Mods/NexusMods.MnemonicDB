@@ -125,6 +125,13 @@ internal class Db : IDb
             .Select(d => d.E);
     }
 
+    public IEnumerable<EntityId> FindIndexed(ReferenceAttribute attribute, EntityId value)
+    {
+        return Snapshot
+            .Datoms(SliceDescriptor.Create(attribute, value, _registry))
+            .Select(d => d.E);
+    }
+
     public IEnumerable<Datom> FindIndexedDatoms<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value)
     {
         if (!attribute.IsIndexed)
