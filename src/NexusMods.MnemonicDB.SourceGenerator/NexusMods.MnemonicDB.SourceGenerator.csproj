@@ -4,8 +4,6 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <TargetFramework>netstandard2.0</TargetFramework>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
-        <IncludeBuildOutput>false</IncludeBuildOutput>
-        
     </PropertyGroup>
     <ItemGroup>
       <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.7.0" />
@@ -21,7 +19,7 @@
         <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
 
-    
+
     <ItemGroup>
       <WeaveTemplate Include="Template.weave" />
     </ItemGroup>

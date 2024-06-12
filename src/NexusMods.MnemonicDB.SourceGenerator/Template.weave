@@ -21,7 +21,8 @@ using NexusMods.MnemonicDB.Abstractions;
 using System.Diagnostics.CodeAnalysis;
 
 {{= model.Comments}}
-public partial class {{= model.Name}} {
+public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}}, {{= model.Name}}.ReadOnly>
+{
 
     {{each attr in model.Attributes}}
     {{= attr.Comments}}
@@ -44,14 +45,6 @@ public partial class {{= model.Name}} {
     {{/each}}
 
     /// <summary>
-    /// Assumes that the id given points to a {{= model.Name}} entity, and
-    /// returns a ReadOnly model of the entity.
-    /// </summary>
-    public static {{= model.Name}}.ReadOnly Load(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) {
-        return new {{= model.Name}}.ReadOnly(db, id);
-    }
-
-    /// <summary>
     /// A list of all required attributes of the model.
     /// </summary>
     public static __ABSTRACTIONS__.IAttribute[] RequiredAttributes => new __ABSTRACTIONS__.IAttribute[] {
@@ -61,6 +54,12 @@ public partial class {{= model.Name}} {
         {{/if}}
         {{/each}}
     };
+
+    /// <summary>
+    /// The primary attribute of the model, this really just means one of the required attributes of the model
+    /// if an entity has this attribute, it is considered a valid entity.
+    /// </summary>
+    public static __ABSTRACTIONS__.IAttribute PrimaryAttribute => {{= model.Attributes[0].FieldName}};
 
     /// <summary>
     /// A list of all attributes of the model.
@@ -75,10 +74,15 @@ public partial class {{= model.Name}} {
     /// Returns all {{= model.Name}} entities in the database.
     /// </summary>
     public static IEnumerable<{{= model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
-        foreach (var id in __ABSTRACTIONS__.IDbExtensions.Intersection(db, RequiredAttributes))
-        {
-            yield return new {{= model.Name}}.ReadOnly(db, id);
-        }
+        return db.Find(PrimaryAttribute).Select(eid => new ReadOnly(db, eid));
+    }
+
+
+    /// <summary>
+    /// Loads a model from the database, not providing any validation
+    /// </summary>
+    public static ReadOnly Load(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) {
+        return new ReadOnly(db, id);
     }
 
     /// <summary>
@@ -298,12 +302,7 @@ public partial class {{= model.Name}} {
                // This is true when the struct is a default value.
                if (Db == null) return false;
 
-               {{each attr in model.Attributes}}
-               {{if !attr.IsMarker && !attr.IsOptional}}
-               if (!Contains({{= attr.FieldName}})) return false;
-               {{/if}}
-               {{/each}}
-               return true;
+               return this.Contains(PrimaryAttribute);
            }
 
            {{each include in model.Includes}}
