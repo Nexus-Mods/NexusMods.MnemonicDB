@@ -21,12 +21,18 @@ public static class ObservableDatoms
         var comparator = PartialComparator(descriptor.Index);
         var equality = (IEqualityComparer<Datom>)comparator;
         var set = new SortedSet<Datom>(comparator);
+        var lastIdx = TxId.From(0);
 
         return conn.Revisions.Select((rev, idx) =>
         {
-            if (idx == 0)
-                return Setup(set, rev.Database, descriptor);
-            return Diff(set, rev.AddedDatoms, descriptor, equality);
+            lock (set)
+            {
+                if (rev.Database.BasisTxId <= lastIdx)
+                    return ChangeSet<Datom>.Empty;
+                if (idx == 0)
+                    return Setup(set, rev.Database, descriptor);
+                return Diff(set, rev.AddedDatoms, descriptor, equality);
+            }
         });
     }
 
