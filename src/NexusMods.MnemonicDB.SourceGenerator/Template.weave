@@ -16,6 +16,9 @@ using __MODELS__ = NexusMods.MnemonicDB.Abstractions.Models;
 using __SEGMENTS__ = NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using __DI__ = Microsoft.Extensions.DependencyInjection;
 using __COMPARERS__ = NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.Query;
+using System.Reactive.Linq;
+using DynamicData;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.MnemonicDB.Abstractions;
 using System.Diagnostics.CodeAnalysis;
@@ -83,6 +86,25 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     /// </summary>
     public static ReadOnly Load(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) {
         return new ReadOnly(db, id);
+    }
+
+    /// <summary>
+    /// Observe a model from the database, the stream ends when the model is deleted or otherwise invalidated
+    /// </summary>
+    public static IObservable<ReadOnly> Observe(IConnection conn, EntityId id)
+    {
+        return conn.ObserveDatoms(id)
+            .QueryWhenChanged(d => new ReadOnly(conn.Db, id))
+            .TakeWhile(model => model.IsValid());
+    }
+
+    /// <summary>
+    /// Observe all models of this type from the database
+    /// </summary>
+    public static IObservable<DynamicData.IChangeSet<ReadOnly>> ObserveAll(IConnection conn)
+    {
+        return conn.ObserveDatoms(PrimaryAttribute)
+            .Transform(d => Load(conn.Db, d.E));
     }
 
     /// <summary>
@@ -416,6 +438,9 @@ public static class {{= model.Name}}Extensions {
     }
 
     {{each include in model.Includes}}
+    /// <summary>
+    /// Tries to get the entity as a {{= model.Name}} entity, if the entity is not a {{= model.Name}} entity, it returns false.
+    /// </summary>
     public static bool TryGetAs{{= model.Name}}(this {{= include.ToDisplayString()}}.ReadOnly model, [NotNullWhen(true)] out {{= model.Name}}.ReadOnly result) {
         var casted = new {{= model.Name}}.ReadOnly(model.Db, model.Id);
         if (casted.IsValid()) {
@@ -425,6 +450,38 @@ public static class {{= model.Name}}Extensions {
 
         result = default;
         return false;
+    }
+
+    /// <summary>
+    /// Gets entities from the given collection that are of type {{= model.Name}}
+    /// </summary>
+    public static IEnumerable<{{= model.Name}}.ReadOnly> OfType{{= model.Name}}(this IEnumerable<{{= include.ToDisplayString()}}.ReadOnly> models) {
+        foreach (var model in models)
+        {
+            if (model.TryGetAs{{= model.Name}}(out var casted))
+            {
+                yield return casted;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets entities from the given collection that are of type {{= model.Name}}
+    /// </summary>
+    public static {{= model.Name}}.ReadOnly To{{= model.Name}}(this {{= include.ToDisplayString()}}.ReadOnly model) {
+        if (!model.TryGetAs{{= model.Name}}(out var casted))
+        {
+            throw new InvalidCastException("The model is not a {{= model.Name}} entity.");
+        }
+
+        return casted;
+    }
+
+    /// <summary>
+    /// Returns true if the entity is a {{= model.Name}} entity.
+    /// </summary>
+    public static bool Is{{= model.Name}}(this {{= include.ToDisplayString()}}.ReadOnly model) {
+        return model.TryGetAs{{= model.Name}}(out var _);
     }
     {{/each}}
 
