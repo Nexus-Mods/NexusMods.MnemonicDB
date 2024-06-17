@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Linq;
 using DynamicData;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
@@ -23,7 +24,9 @@ public static class ObservableDatoms
         var set = new SortedSet<Datom>(comparator);
         var lastIdx = TxId.From(0);
 
-        return conn.Revisions.Select((rev, idx) =>
+        return conn.Revisions
+            .Where(rev => rev.AddedDatoms.Valid)
+            .Select((rev, idx) =>
         {
             lock (set)
             {
@@ -72,6 +75,9 @@ public static class ObservableDatoms
     {
         List<Change<Datom>>? changes = null;
 
+        // TEMPORARY for testing
+        var prevSet = set.ToArray();
+
         foreach (var datom in updates)
         {
             if (!descriptor.Includes(datom))
@@ -87,6 +93,7 @@ public static class ObservableDatoms
                 }
                 else
                 {
+                    var existsOriginally = prevSet.Any(d => comparer.Equals(d, datom));
                     throw new InvalidOperationException("Retract without assert in set");
                 }
             }
