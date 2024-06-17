@@ -14,6 +14,24 @@ public static class ObservableDatoms
 {
 
     /// <summary>
+    /// Delays the creation of the IObservable until after the first value from the src is received. Once the first
+    /// value arrives the ctor function will be called to create the observable. This is useful for situations where
+    /// the creation of an observable is not valid until some startup operations have been performed that will eventually
+    /// publish a value to an observable.
+    /// </summary>
+    public static IObservable<TResult> DelayUntilFirstValue<TSrc, TResult>(this IObservable<TSrc> src,
+        Func<IObservable<TResult>> constructorFn)
+    {
+        ArgumentNullException.ThrowIfNull(src);
+        ArgumentNullException.ThrowIfNull(constructorFn);
+
+        return src
+            .Take(1)
+            .Select(_ => constructorFn())
+            .Switch();
+    }
+
+    /// <summary>
     /// Observe a slice of the database, as datoms are added or removed from the database, the observer will be updated
     /// with the changeset of datoms that have been added or removed.
     /// </summary>
@@ -51,11 +69,12 @@ public static class ObservableDatoms
     }
 
     /// <summary>
-    /// Observe changes for a given attribue on a given entity id
+    /// Observe changes for a given attribute on a given entity id
     /// </summary>
     public static IObservable<IChangeSet<Datom>> ObserveDatoms(this IConnection conn, EntityId id, IAttribute attribute)
     {
-        return conn.ObserveDatoms(SliceDescriptor.Create(id, attribute.GetDbId(conn.Registry.Id), conn.Registry));
+
+        return conn.Revisions.DelayUntilFirstValue(() => conn.ObserveDatoms(SliceDescriptor.Create(id, attribute.GetDbId(conn.Registry.Id), conn.Registry)));
     }
 
     /// <summary>
@@ -63,7 +82,7 @@ public static class ObservableDatoms
     /// </summary>
     public static IObservable<IChangeSet<Datom>> ObserveDatoms(this IConnection conn, ReferenceAttribute attribute, EntityId id)
     {
-        return conn.ObserveDatoms(SliceDescriptor.Create(attribute, id, conn.Registry));
+        return conn.Revisions.DelayUntilFirstValue(() => conn.ObserveDatoms(SliceDescriptor.Create(attribute, id, conn.Registry)));
     }
 
     /// <summary>
@@ -71,7 +90,7 @@ public static class ObservableDatoms
     /// </summary>
     public static IObservable<IChangeSet<Datom>> ObserveDatoms(this IConnection conn, IAttribute attribute)
     {
-        return conn.ObserveDatoms(SliceDescriptor.Create(attribute, conn.Registry));
+        return conn.Revisions.DelayUntilFirstValue(() => conn.ObserveDatoms(SliceDescriptor.Create(attribute, conn.Registry)));
     }
 
     private static IChangeSet<Datom> Diff(SortedSet<Datom> set, IndexSegment updates, SliceDescriptor descriptor, IEqualityComparer<Datom> comparer)
