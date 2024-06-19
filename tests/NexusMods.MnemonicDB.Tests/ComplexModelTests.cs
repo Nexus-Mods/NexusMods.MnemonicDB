@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.File;
@@ -79,7 +80,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
 
         var db = Connection.Db;
 
-        var loadoutRO = loadout.Remap(result);
+        var loadoutRO = result.Remap(loadout);
 
         var totalSize = Size.Zero;
 
@@ -155,9 +156,9 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         var result = await tx.Commit();
 
         var extraTx = Connection.BeginTransaction();
-        var loadout = newLoadout.Remap(result);
+        var loadout = result.Remap(newLoadout);
 
-        var firstMod = mods[0].Remap(result);
+        var firstMod = result.Remap(mods[0]);
         for (var idx = 0; idx < extraFiles; idx++)
         {
             var name = $"Extra File {idx}";
@@ -202,7 +203,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         };
 
         var result2 = await tx2.Commit();
-        var newNewLoadOut = newNewLoadOutNew.Remap(result2);
+        var newNewLoadOut = result2.Remap(newNewLoadOutNew);
 
         newNewLoadOut.Id.Should().NotBe(loadout.Id,
             "new loadout should have a different id because the connection re-detected the max EntityId");

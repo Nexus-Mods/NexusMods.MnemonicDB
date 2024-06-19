@@ -13,15 +13,6 @@ public class CommitResult(IDb db, IDictionary<EntityId, EntityId> remaps) : ICom
         remaps.TryGetValue(id, out var found) ? found : id;
 
     /// <inheritdoc />
-    public T Remap<T>(T model) where T : IHasEntityId
-    {
-        var id = model.Id;
-        if (remaps.TryGetValue(id, out var found))
-            id = found;
-        throw new NotImplementedException();
-    }
-
-    /// <inheritdoc />
     public TxId NewTx => db.BasisTxId;
 
     /// <inheritdoc />
