@@ -40,7 +40,7 @@ public struct Datom(ReadOnlyMemory<byte> memory, IAttributeRegistry registry)
     /// Resolves the value of the datom into the given type
     /// </summary>
     public TValue Resolve<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute) =>
-        attribute.ReadValue(ValueSpan);
+        attribute.ReadValue(ValueSpan, Prefix.ValueTag);
 
     /// <summary>
     /// EntityId of the datom
@@ -120,7 +120,7 @@ public struct Datom(ReadOnlyMemory<byte> memory, IAttributeRegistry registry)
         var dataSpan = data.AsSpan();
         RawSpan.CopyTo(dataSpan);
         var prefix = MemoryMarshal.Read<KeyPrefix>(dataSpan);
-        var newPrefix = new KeyPrefix().Set(prefix.E, prefix.A, TxId.Tmp, true);
+        var newPrefix = prefix with { IsRetract = true, T = TxId.Tmp };
         MemoryMarshal.Write(dataSpan, newPrefix);
         return new Datom(data, registry);
     }

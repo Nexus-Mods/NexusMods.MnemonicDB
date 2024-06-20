@@ -15,9 +15,6 @@ public abstract class BlobAttribute<TValue>(string ns, string name) : ScalarAttr
     public override void Write<TWriter>(EntityId entityId, RegistryId registryId, TValue value, TxId txId, bool isRetract, TWriter writer)
     {
         WritePrefix(entityId, registryId, txId, isRetract, writer);
-        var span = writer.GetSpan(1);
-        span[0] = (byte)ValueTags.Blob;
-        writer.Advance(1);
         WriteValue(value, writer);
     }
 

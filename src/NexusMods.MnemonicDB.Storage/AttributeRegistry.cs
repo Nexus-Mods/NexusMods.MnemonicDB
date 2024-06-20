@@ -70,7 +70,7 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
         var c = MemoryMarshal.Read<KeyPrefix>(datom);
 
         var attr = _attributes[c.A.Value];
-        return attr.Resolve(c.E, c.A, datom.SliceFast(KeyPrefix.Size), c.T, c.IsRetract);
+        return attr.Resolve(c.E, c.A, datom.SliceFast(KeyPrefix.Size), c.T, c.IsRetract, c.ValueTag);
     }
 
     /// <inheritdoc />

@@ -19,10 +19,9 @@ public abstract class HashedBlobAttribute<TValue>(string ns, string name) : Scal
 
         var hash = XxHash3.HashToUInt64(valueSpan);
 
-        var writerSpan = writer.GetSpan(sizeof(ulong) + 1);
-        writerSpan[0] = (byte)ValueTags.HashedBlob;
-        MemoryMarshal.Write(writerSpan.SliceFast(1), hash);
-        writer.Advance(sizeof(ulong) + 1);
+        var writerSpan = writer.GetSpan(sizeof(ulong));
+        MemoryMarshal.Write(writerSpan, hash);
+        writer.Advance(sizeof(ulong));
         writer.Write(valueSpan);
     }
 

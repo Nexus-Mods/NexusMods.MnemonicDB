@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Storage.Abstractions;
@@ -19,9 +20,8 @@ public class Batch(RocksDb db) : IWriteBatch
 
     private ValueTags Tag(ReadOnlySpan<byte> key)
     {
-        if (key.Length < KeyPrefix.Size + 1)
-            return ValueTags.Null;
-        return (ValueTags)key[KeyPrefix.Size];
+        var prefix = MemoryMarshal.Read<KeyPrefix>(key);
+        return prefix.ValueTag;
     }
 
     public void Add(IIndexStore store, ReadOnlySpan<byte> key)
@@ -29,8 +29,8 @@ public class Batch(RocksDb db) : IWriteBatch
         var outOfBandData = ReadOnlySpan<byte>.Empty;
         if (Tag(key) == ValueTags.HashedBlob)
         {
-            outOfBandData = key.SliceFast(KeyPrefix.Size + 1 + sizeof(ulong));
-            key = key.SliceFast(0, KeyPrefix.Size + 1 + sizeof(ulong));
+            outOfBandData = key.SliceFast(KeyPrefix.Size + sizeof(ulong));
+            key = key.SliceFast(0, KeyPrefix.Size + sizeof(ulong));
         }
 
         _batch.Put(key, outOfBandData, ((IRocksDBIndexStore)store).Handle);
@@ -40,7 +40,7 @@ public class Batch(RocksDb db) : IWriteBatch
     {
         if (Tag(key) == ValueTags.HashedBlob)
         {
-            key = key.SliceFast(0, KeyPrefix.Size + 1 + sizeof(ulong));
+            key = key.SliceFast(0, KeyPrefix.Size + sizeof(ulong));
         }
 
         _batch.Delete(key, ((IRocksDBIndexStore)store).Handle);

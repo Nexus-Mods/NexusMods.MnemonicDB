@@ -68,7 +68,7 @@ public interface IAttribute
     /// <summary>
     ///     Converts the given values into a typed datom
     /// </summary>
-    IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx, bool isRetract);
+    IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx, bool isRetract, ValueTags valueTag);
 
 
     /// <summary>

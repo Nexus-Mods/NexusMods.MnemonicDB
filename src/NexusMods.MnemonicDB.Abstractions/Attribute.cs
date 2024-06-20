@@ -198,13 +198,13 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
 
     /// <inheritdoc />
     public IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx,
-        bool isRetract)
+        bool isRetract, ValueTags valueTag)
     {
         return new ReadDatom
         {
             E = entityId,
             A = this,
-            V = ReadValue(value),
+            V = ReadValue(value, valueTag),
             T = tx,
             IsRetract = isRetract
         };
@@ -310,54 +310,47 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
 
     private void WriteNull<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
     {
-        var span = writer.GetSpan(1);
-        span[0] = (byte)ValueTags.Null;
-        writer.Advance(1);
+        // Do Nothing
     }
 
     private void WriteAscii<TWriter>(string s, TWriter writer) where TWriter : IBufferWriter<byte>
     {
         var size = s.Length;
-        var span = writer.GetSpan(size + 1);
-        span[0] = (byte)LowLevelType;
-        AsciiEncoding.GetBytes(s, span.SliceFast(1));
-        writer.Advance(size + 1);
+        var span = writer.GetSpan(size);
+        AsciiEncoding.GetBytes(s, span);
+        writer.Advance(size);
     }
 
     private void WriteUtf8<TWriter>(string s, TWriter writer) where TWriter : IBufferWriter<byte>
     {
         var size = Utf8Encoding.GetByteCount(s);
-        var span = writer.GetSpan(size + 1);
-        span[0] = (byte)LowLevelType;
-        Utf8Encoding.GetBytes(s, span.SliceFast(1));
-        writer.Advance(size + 1);
+        var span = writer.GetSpan(size);
+        Utf8Encoding.GetBytes(s, span);
+        writer.Advance(size);
     }
 
-    public TValueType ReadValue(ReadOnlySpan<byte> span)
+    public TValueType ReadValue(ReadOnlySpan<byte> span, ValueTags tag)
     {
-        var tag = (ValueTags)span[0];
-        var rest = span.SliceFast(1);
-        Debug.Assert(tag == LowLevelType, "Tag mismatch");
-        return tag switch
+        return LowLevelType switch
         {
             ValueTags.Null => NullFromLowLevel(),
-            ValueTags.UInt8 => FromLowLevel(ReadUnmanaged<byte>(rest), tag),
-            ValueTags.UInt16 => FromLowLevel(ReadUnmanaged<ushort>(rest), tag),
-            ValueTags.UInt32 => FromLowLevel(ReadUnmanaged<uint>(rest), tag),
-            ValueTags.UInt64 => FromLowLevel(ReadUnmanaged<ulong>(rest), tag),
-            ValueTags.UInt128 => FromLowLevel(ReadUnmanaged<UInt128>(rest), tag),
-            ValueTags.Int16 => FromLowLevel(ReadUnmanaged<short>(rest), tag),
-            ValueTags.Int32 => FromLowLevel(ReadUnmanaged<int>(rest), tag),
-            ValueTags.Int64 => FromLowLevel(ReadUnmanaged<long>(rest), tag),
-            ValueTags.Int128 => FromLowLevel(ReadUnmanaged<Int128>(rest), tag),
-            ValueTags.Float32 => FromLowLevel(ReadUnmanaged<float>(rest), tag),
-            ValueTags.Float64 => FromLowLevel(ReadUnmanaged<double>(rest), tag),
-            ValueTags.Reference => FromLowLevel(ReadUnmanaged<ulong>(rest), tag),
-            ValueTags.Ascii => FromLowLevel(ReadAscii(rest), tag),
-            ValueTags.Utf8 => FromLowLevel(ReadUtf8(rest), tag),
-            ValueTags.Utf8Insensitive => FromLowLevel(ReadUtf8(rest), tag),
-            ValueTags.Blob => FromLowLevel(rest, tag),
-            ValueTags.HashedBlob => FromLowLevel(rest.SliceFast(sizeof(ulong)), tag),
+            ValueTags.UInt8 => FromLowLevel(ReadUnmanaged<byte>(span), tag),
+            ValueTags.UInt16 => FromLowLevel(ReadUnmanaged<ushort>(span), tag),
+            ValueTags.UInt32 => FromLowLevel(ReadUnmanaged<uint>(span), tag),
+            ValueTags.UInt64 => FromLowLevel(ReadUnmanaged<ulong>(span), tag),
+            ValueTags.UInt128 => FromLowLevel(ReadUnmanaged<UInt128>(span), tag),
+            ValueTags.Int16 => FromLowLevel(ReadUnmanaged<short>(span), tag),
+            ValueTags.Int32 => FromLowLevel(ReadUnmanaged<int>(span), tag),
+            ValueTags.Int64 => FromLowLevel(ReadUnmanaged<long>(span), tag),
+            ValueTags.Int128 => FromLowLevel(ReadUnmanaged<Int128>(span), tag),
+            ValueTags.Float32 => FromLowLevel(ReadUnmanaged<float>(span), tag),
+            ValueTags.Float64 => FromLowLevel(ReadUnmanaged<double>(span), tag),
+            ValueTags.Reference => FromLowLevel(ReadUnmanaged<ulong>(span), tag),
+            ValueTags.Ascii => FromLowLevel(ReadAscii(span), tag),
+            ValueTags.Utf8 => FromLowLevel(ReadUtf8(span), tag),
+            ValueTags.Utf8Insensitive => FromLowLevel(ReadUtf8(span), tag),
+            ValueTags.Blob => FromLowLevel(span, tag),
+            ValueTags.HashedBlob => FromLowLevel(span.SliceFast(sizeof(ulong)), tag),
             _ => throw new UnsupportedLowLevelReadType(tag)
         };
     }
@@ -382,10 +375,9 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
         where TWriter : IBufferWriter<byte>
         where TValue : unmanaged
     {
-        var span = writer.GetSpan(sizeof(TValue) + 1);
-        span[0] = (byte) LowLevelType;
-        MemoryMarshal.Write(span.SliceFast(1), value);
-        writer.Advance(sizeof(TValue) + 1);
+        var span = writer.GetSpan(sizeof(TValue));
+        MemoryMarshal.Write(span, value);
+        writer.Advance(sizeof(TValue));
     }
 
     private TValue ReadUnmanaged<TValue>(ReadOnlySpan<byte> span)
@@ -401,7 +393,7 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
         where TWriter : IBufferWriter<byte>
     {
         Debug.Assert(LowLevelType != ValueTags.Blob, "Blobs should overwrite this method and throw when ToLowLevel is called");
-        var prefix = new KeyPrefix().Set(entityId, GetDbId(registryId), txId, isRetract);
+        var prefix = new KeyPrefix(entityId, GetDbId(registryId), txId, isRetract, LowLevelType);
         var span = writer.GetSpan(KeyPrefix.Size);
         MemoryMarshal.Write(span, prefix);
         writer.Advance(KeyPrefix.Size);
@@ -414,7 +406,7 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
     protected void WritePrefix<TWriter>(EntityId entityId, RegistryId registryId, TxId txId, bool isRetract, TWriter writer)
         where TWriter : IBufferWriter<byte>
     {
-        var prefix = new KeyPrefix().Set(entityId, GetDbId(registryId), txId, isRetract);
+        var prefix = new KeyPrefix(entityId, GetDbId(registryId), txId, isRetract, LowLevelType);
         var span = writer.GetSpan(KeyPrefix.Size);
         MemoryMarshal.Write(span, prefix);
         writer.Advance(KeyPrefix.Size);
