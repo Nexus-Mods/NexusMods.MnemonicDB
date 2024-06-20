@@ -299,10 +299,9 @@ public readonly struct SliceDescriptor
     /// </summary>
     public static Datom Datom(EntityId e, AttributeId a, EntityId value, TxId id, bool isRetract, IAttributeRegistry registry)
     {
-        throw new NotImplementedException();
         var data = new Memory<byte>(GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + sizeof(ulong)));
         var span = data.Span;
-        var prefix = new KeyPrefix(e, a, id, isRetract, ValueTags.Null);
+        var prefix = new KeyPrefix(e, a, id, isRetract, ValueTags.Reference);
         MemoryMarshal.Write(span, prefix);
         MemoryMarshal.Write(span.SliceFast(KeyPrefix.Size), value);
         return new Datom(data, registry);
