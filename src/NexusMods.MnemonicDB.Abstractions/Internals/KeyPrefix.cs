@@ -43,7 +43,7 @@ public readonly record struct KeyPrefix
     /// <summary>
     ///    Sets the key prefix to the given values
     /// </summary>
-    private KeyPrefix(ulong upper, ulong lower)
+    public KeyPrefix(ulong upper, ulong lower)
     {
         _upper = upper;
         _lower = lower;
