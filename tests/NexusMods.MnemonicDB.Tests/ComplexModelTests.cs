@@ -78,15 +78,11 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         Logger.LogInformation($"Commit took {sw.ElapsedMilliseconds}ms");
 
 
-        var db = Connection.Db;
-
         var loadoutRO = result.Remap(loadout);
 
-        var totalSize = Size.Zero;
+        loadoutRO.Mods.Count.Should().Be(modCount, "all mods should be loaded");
 
-        loadoutRO.Mods.Count().Should().Be(modCount, "all mods should be loaded");
-
-        loadoutRO.Collections.Count().Should().Be(2, "all collections should be loaded");
+        loadoutRO.Collections.Count.Should().Be(2, "all collections should be loaded");
 
         loadoutRO.Collections.SelectMany(c => c.ModIds)
             .Count().Should().Be(loadoutRO.Mods.Count(), "all mods should be in a collection");
