@@ -100,7 +100,7 @@ public class Batch(RocksDb db) : IWriteBatch
             MemoryMarshal.Write(keySpan, datom.Prefix);
             datom.ValueSpan.CopyTo(keySpan.SliceFast(KeyPrefix.Size));
 
-            _batch.Put(keySpan, ReadOnlySpan<byte>.Empty, ((IRocksDBIndexStore)store).Handle);
+            _batch.Delete(keySpan, ((IRocksDBIndexStore)store).Handle);
         }
         else
         {
@@ -109,7 +109,7 @@ public class Batch(RocksDb db) : IWriteBatch
             MemoryMarshal.Write(keySpan, datom.Prefix);
             datom.ValueSpan.CopyTo(keySpan[KeyPrefix.Size..]);
 
-            _batch.Put(keySpan, ReadOnlySpan<byte>.Empty, ((IRocksDBIndexStore)store).Handle);
+            _batch.Delete(keySpan, ((IRocksDBIndexStore)store).Handle);
         }
 
     }

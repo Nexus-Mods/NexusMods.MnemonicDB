@@ -37,7 +37,6 @@ public class IndexSegmentBenchmarks
     [Benchmark]
     public int FindLinear()
     {
-        var count = 0;
         var find = EntityId.From((ulong)ToFind);
         for (var i = 0; i < _index.Count; i++)
         {
