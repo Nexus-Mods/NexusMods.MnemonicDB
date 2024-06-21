@@ -60,7 +60,7 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
 
     public void Add(Datom datom)
     {
-        datoms.Add(datom.RawSpan);
+        datoms.Add(datom);
     }
 
     /// <inheritdoc />

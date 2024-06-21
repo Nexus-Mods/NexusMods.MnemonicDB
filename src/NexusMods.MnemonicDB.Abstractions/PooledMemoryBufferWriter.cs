@@ -3,6 +3,8 @@ using System.Buffers;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.Internals;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -97,6 +99,14 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
     {
         span.CopyTo(GetSpan(span.Length));
         Advance(span.Length);
+    }
+
+    public void Write(in Datom datom)
+    {
+        var span = GetSpan(KeyPrefix.Size + datom.ValueSpan.Length);
+        MemoryMarshal.Write(span, datom.Prefix);
+        datom.ValueSpan.CopyTo(span.SliceFast(KeyPrefix.Size));
+        Advance(KeyPrefix.Size + datom.ValueSpan.Length);
     }
 
     /// <summary>

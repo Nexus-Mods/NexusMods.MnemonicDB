@@ -12,6 +12,5 @@ public class EAVTComparator : ADatomComparator<
     EComparer,
     AComparer,
     ValueComparer,
-    TxComparer,
-    AssertComparer>;
+    TxComparer>;
 

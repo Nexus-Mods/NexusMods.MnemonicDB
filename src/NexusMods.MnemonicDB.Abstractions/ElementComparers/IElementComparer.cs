@@ -1,4 +1,5 @@
 ﻿using System;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
@@ -10,12 +11,22 @@ namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 public interface IElementComparer
 {
     /// <summary>
-    /// Compares two elements of a datom.
+    /// Compares two elements of a datom from the given pointers
+    /// </summary>
+    public static abstract unsafe int Compare(KeyPrefix* aPrefix, byte* aPtr, int aLen, KeyPrefix* bPrefix, byte* bPtr, int bLen);
+
+    /// <summary>
+    /// Compares two elements of a datom from the given pointers
     /// </summary>
     public static abstract unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen);
 
     /// <summary>
-    /// Get the key prefix from a pointer.
+    /// Compares the elements from two datoms.
     /// </summary>
-    protected static unsafe KeyPrefix* KeyPrefix(byte *ptr) => (KeyPrefix*) ptr;
+    public static abstract int Compare(in Datom a, in Datom b);
+
+    /// <summary>
+    /// Compare two datom spans
+    /// </summary>
+    public static abstract int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
 }

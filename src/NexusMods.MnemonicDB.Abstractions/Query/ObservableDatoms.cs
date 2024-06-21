@@ -142,13 +142,9 @@ public static class ObservableDatoms
     private struct Comparer<TInner> : IComparer<Datom>, IEqualityComparer<Datom>
     where TInner : IDatomComparator
     {
-        public unsafe int Compare(Datom a, Datom b)
+        public int Compare(Datom a, Datom b)
         {
-            var aSpan = a.RawSpan;
-            var bSpan = b.RawSpan;
-            fixed(byte* aPtr = aSpan)
-            fixed(byte* bPtr = bSpan)
-                return TInner.Compare(aPtr, aSpan.Length, bPtr, bSpan.Length);
+            return TInner.Compare(a, b);
         }
 
         public bool Equals(Datom x, Datom y)

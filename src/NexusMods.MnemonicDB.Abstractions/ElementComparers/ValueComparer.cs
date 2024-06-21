@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Text;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
@@ -10,27 +12,64 @@ namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 public class ValueComparer : IElementComparer
 {
     #region Constants
-    private const int MaxStackAlloc = 128;
-    private static readonly Encoding AsciiEncoding = Encoding.ASCII;
     private static readonly Encoding Utf8Encoding = Encoding.UTF8;
     #endregion
 
-
     /// <inheritdoc />
-    public static unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
+    public static unsafe int Compare(KeyPrefix* aPrefix, byte* aPtr, int aLen, KeyPrefix* bPrefix, byte* bPtr, int bLen)
     {
-        var ptrA = aPtr + sizeof(KeyPrefix);
-        var ptrB = bPtr + sizeof(KeyPrefix);
-        var aSize = aLen - sizeof(KeyPrefix);
-        var bSize = bLen - sizeof(KeyPrefix);
-
         var prefixA = *(KeyPrefix*)aPtr;
         var prefixB = *(KeyPrefix*)bPtr;
 
         var typeA = prefixA.ValueTag;
         var typeB = prefixB.ValueTag;
 
-        return CompareValues(typeA, ptrA, aSize, typeB, ptrB, bSize);
+        return CompareValues(typeA, aPtr, aLen, typeB, bPtr, bLen);
+    }
+
+    /// <inheritdoc />
+    public static unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
+    {
+        var typeA = ((KeyPrefix*)aPtr)->ValueTag;
+        var typeB = ((KeyPrefix*)bPtr)->ValueTag;
+
+        return CompareValues(typeA, aPtr, aLen, typeB, bPtr, bLen);
+    }
+
+    /// <inheritdoc />
+    public static int Compare(in Datom a, in Datom b)
+    {
+        var typeA = a.Prefix.ValueTag;
+        var typeB = b.Prefix.ValueTag;
+
+        unsafe
+        {
+            fixed (byte* aPtr = a.ValueSpan)
+            {
+                fixed (byte* bPtr = b.ValueSpan)
+                {
+                    return CompareValues(typeA, aPtr, a.ValueSpan.Length, typeB, bPtr, b.ValueSpan.Length);
+                }
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        var typeA = KeyPrefix.Read(a).ValueTag;
+        var typeB = KeyPrefix.Read(b).ValueTag;
+
+        unsafe
+        {
+            fixed (byte* aPtr = a.SliceFast(KeyPrefix.Size))
+            {
+                fixed (byte* bPtr = b.SliceFast(KeyPrefix.Size))
+                {
+                    return CompareValues(typeA, aPtr, a.Length, typeB, bPtr, b.Length);
+                }
+            }
+        }
     }
 
     /// <summary>
@@ -92,4 +131,5 @@ public class ValueComparer : IElementComparer
     {
         return ((T*)aVal)[0].CompareTo(((T*)bVal)[0]);
     }
+
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
@@ -42,15 +43,26 @@ public struct IndexSegmentBuilder : IDisposable
     }
 
     /// <summary>
-    /// Add a datom to the segment
+    /// Add the datoms to the segment
     /// </summary>
     public void Add(IEnumerable<Datom> datoms)
     {
         foreach (var datom in datoms)
         {
-            _offsets.Add(_data.Length);
-            _data.Write(datom.RawSpan);
+            Add(datom);
         }
+    }
+
+    /// <summary>
+    /// Add a datom to the segment
+    /// </summary>
+    /// <param name="datom"></param>
+    public void Add(in Datom datom)
+    {
+        _offsets.Add(_data.Length - KeyPrefix.Size);
+        var span = _data.GetSpan(KeyPrefix.Size);
+        MemoryMarshal.Write(span, datom.Prefix);
+        _data.Write(datom.ValueSpan);
     }
 
     /// <summary>

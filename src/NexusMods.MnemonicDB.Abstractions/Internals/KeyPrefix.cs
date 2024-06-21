@@ -134,5 +134,11 @@ public readonly record struct KeyPrefix
     public static KeyPrefix Min => new(0, 0);
 
     public static KeyPrefix Max => new(0, 0);
+
+    /// <summary>
+    /// Returns true if this key is valid
+    /// </summary>
+    public bool IsValid => _upper != 0;
+
     #endregion
 }

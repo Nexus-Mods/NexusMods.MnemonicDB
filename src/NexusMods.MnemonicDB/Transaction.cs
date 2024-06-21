@@ -56,7 +56,7 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
     /// <inheritdoc />
     public void Add(Datom datom)
     {
-        _datoms.Add(datom.RawSpan);
+        _datoms.Add(datom);
     }
 
     public void Add(ITxFunction fn)

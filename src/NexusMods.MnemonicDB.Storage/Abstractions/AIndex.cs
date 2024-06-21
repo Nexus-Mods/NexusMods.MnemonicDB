@@ -8,9 +8,21 @@ public abstract class AIndex<TComparator, TIndexStore>(TIndexStore store) : IInd
     where TComparator : IDatomComparator
     where TIndexStore : class, IIndexStore
 {
+    /// <inheritdoc />
+    public void Put(IWriteBatch batch, in Datom datom)
+    {
+
+    }
+
+    /// <inheritdoc />
     public void Put(IWriteBatch batch, ReadOnlySpan<byte> datom)
     {
         batch.Add(store, datom);
+    }
+
+    public void Delete(IWriteBatch batch, in Datom datom)
+    {
+        throw new NotImplementedException();
     }
 
     public void Delete(IWriteBatch batch, ReadOnlySpan<byte> datom)

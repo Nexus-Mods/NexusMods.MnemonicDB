@@ -20,8 +20,8 @@ internal class Snapshot(Backend backend, AttributeRegistry registry) : ISnapshot
 
         var options = new ReadOptions()
             .SetSnapshot(_snapshot)
-            .SetIterateLowerBound(from.RawSpan.ToArray())
-            .SetIterateUpperBound(to.RawSpan.ToArray());
+            .SetIterateLowerBound(from.ToArray())
+            .SetIterateUpperBound(to.ToArray());
 
         using var builder = new IndexSegmentBuilder(registry);
 
@@ -65,8 +65,8 @@ internal class Snapshot(Backend backend, AttributeRegistry registry) : ISnapshot
 
         var options = new ReadOptions()
             .SetSnapshot(_snapshot)
-            .SetIterateLowerBound(from.RawSpan.ToArray())
-            .SetIterateUpperBound(to.RawSpan.ToArray());
+            .SetIterateLowerBound(from.ToArray())
+            .SetIterateUpperBound(to.ToArray());
 
         using var builder = new IndexSegmentBuilder(registry);
 

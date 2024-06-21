@@ -1,6 +1,7 @@
 ﻿using System;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions.DatomComparators;
 
@@ -13,6 +14,19 @@ public abstract unsafe class APartialDatomComparator<TA, TB, TC> : IDatomCompara
     where TB : IElementComparer
     where TC : IElementComparer
 {
+    /// <inheritdoc />
+    public static int Compare(KeyPrefix* aPrefix, byte* aPtr, int aLen, KeyPrefix* bPrefix, byte* bPtr, int bLen)
+    {
+        var cmp = TA.Compare(aPrefix, aPtr, aLen, bPrefix, bPtr, bLen);
+        if (cmp != 0) return cmp;
+
+        cmp = TB.Compare(aPrefix, aPtr, aLen, bPrefix, bPtr, bLen);
+        if (cmp != 0) return cmp;
+
+        return TC.Compare(aPrefix, aPtr, aLen, bPrefix, bPtr, bLen);
+    }
+
+    /// <inheritdoc />
     public static int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
     {
         var cmp = TA.Compare(aPtr, aLen, bPtr, bLen);
@@ -24,27 +38,75 @@ public abstract unsafe class APartialDatomComparator<TA, TB, TC> : IDatomCompara
         return TC.Compare(aPtr, aLen, bPtr, bLen);
     }
 
-    /// <summary>
-    /// Compare two datom spans
-    /// </summary>
-    public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
-    {
-        fixed(byte* aPtr = a)
-        fixed(byte* bPtr = b)
-            return Compare(aPtr, a.Length, bPtr, b.Length);
-    }
-
-    /// <summary>
-    /// Compare two datoms
-    /// </summary>
+    /// <inheritdoc />
     public static int Compare(in Datom a, in Datom b)
     {
-        return Compare(a.RawSpan, b.RawSpan);
+        var cmp = TA.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        cmp = TB.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        return TC.Compare(a, b);
+    }
+
+    /// <inheritdoc />
+    public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        var cmp = TA.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        cmp = TB.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        return TC.Compare(a, b);
+    }
+
+    /// <inheritdoc />
+    public int CompareInstance(KeyPrefix* aPrefix, byte* aPtr, int aLen, KeyPrefix* bPrefix, byte* bPtr, int bLen)
+    {
+        var cmp = TA.Compare(aPrefix, aPtr, aLen, bPrefix, bPtr, bLen);
+        if (cmp != 0) return cmp;
+
+        cmp = TB.Compare(aPrefix, aPtr, aLen, bPrefix, bPtr, bLen);
+        if (cmp != 0) return cmp;
+
+        return TC.Compare(aPrefix, aPtr, aLen, bPrefix, bPtr, bLen);
     }
 
     /// <inheritdoc />
     public int CompareInstance(byte* aPtr, int aLen, byte* bPtr, int bLen)
     {
-        return Compare(aPtr, aLen, bPtr, bLen);
+        var cmp = TA.Compare(aPtr, aLen, bPtr, bLen);
+        if (cmp != 0) return cmp;
+
+        cmp = TB.Compare(aPtr, aLen, bPtr, bLen);
+        if (cmp != 0) return cmp;
+
+        return TC.Compare(aPtr, aLen, bPtr, bLen);
+    }
+
+    /// <inheritdoc />
+    public int CompareInstance(in Datom a, in Datom b)
+    {
+        var cmp = TA.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        cmp = TB.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        return TC.Compare(a, b);
+    }
+
+    /// <inheritdoc />
+    public int CompareInstance(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        var cmp = TA.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        cmp = TB.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        return TC.Compare(a, b);
     }
 }

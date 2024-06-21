@@ -470,33 +470,33 @@ public class DatomStore : IDatomStore, IHostedService
         }
         #endif
 
-        _eavtCurrent.Delete(batch, prevDatom.RawSpan);
-        _aevtCurrent.Delete(batch, prevDatom.RawSpan);
+        _eavtCurrent.Delete(batch, prevDatom);
+        _aevtCurrent.Delete(batch, prevDatom);
         if (attribute.IsReference)
-            _vaetCurrent.Delete(batch, prevDatom.RawSpan);
+            _vaetCurrent.Delete(batch, prevDatom);
         if (attribute.IsIndexed)
-            _avetCurrent.Delete(batch, prevDatom.RawSpan);
+            _avetCurrent.Delete(batch, prevDatom);
 
         _txLog.Put(batch, datom);
         if (attribute.NoHistory) return;
 
         // Move the datom to the history index and also record the retraction
-        _eavtHistory.Put(batch, prevDatom.RawSpan);
+        _eavtHistory.Put(batch, prevDatom);
         _eavtHistory.Put(batch, datom);
 
         // Move the datom to the history index and also record the retraction
-        _aevtHistory.Put(batch, prevDatom.RawSpan);
+        _aevtHistory.Put(batch, prevDatom);
         _aevtHistory.Put(batch, datom);
 
         if (attribute.IsReference)
         {
-            _vaetHistory.Put(batch, prevDatom.RawSpan);
+            _vaetHistory.Put(batch, prevDatom);
             _vaetHistory.Put(batch, datom);
         }
 
         if (attribute.IsIndexed)
         {
-            _avetHistory.Put(batch, prevDatom.RawSpan);
+            _avetHistory.Put(batch, prevDatom);
             _avetHistory.Put(batch, datom);
         }
     }
@@ -567,7 +567,7 @@ public class DatomStore : IDatomStore, IHostedService
             }
 
             _retractWriter.Reset();
-            _retractWriter.Write(datom.RawSpan);
+            _retractWriter.Write(datom);
 
             return PrevState.Exists;
         }

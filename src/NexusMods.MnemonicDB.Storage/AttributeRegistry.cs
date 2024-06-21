@@ -73,6 +73,12 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
         return attr.Resolve(c.E, c.A, datom.SliceFast(KeyPrefix.Size), c.T, c.IsRetract, c.ValueTag);
     }
 
+    public IReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> datom)
+    {
+        var attr = _attributes[prefix.A.Value];
+        return attr.Resolve(prefix.E, prefix.A, datom, prefix.T, prefix.IsRetract, prefix.ValueTag);
+    }
+
     /// <inheritdoc />
     public void Populate(IEnumerable<DbAttribute> attributes)
     {

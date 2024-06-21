@@ -123,19 +123,13 @@ public readonly struct IndexSegment : IEnumerable<Datom>
     {
         get
         {
-            // ICK, this is here just to test the code, then rewrite Datom to inline the KeyPrefix
             var offsets = _offsets;
             var fromOffset = offsets[idx];
             var toOffset = offsets[idx + 1];
 
-            var slice = GC.AllocateUninitializedArray<byte>(toOffset - fromOffset + KeyPrefix.Size);
+            var valueSlice = _data.Slice(fromOffset, toOffset - fromOffset);
 
-            var prefix = new KeyPrefix(_uppers[idx], _lowers[idx]);
-            MemoryMarshal.Write(slice, prefix);
-
-            _data.Span.SliceFast(fromOffset, toOffset - fromOffset).CopyTo(slice.AsSpan().SliceFast(KeyPrefix.Size));
-
-            return new Datom(slice, _registry);
+            return new Datom(new KeyPrefix(_uppers[idx], _lowers[idx]), valueSlice, _registry);
         }
     }
 
