@@ -33,7 +33,7 @@ public class ValueComparer : IElementComparer
         var typeA = ((KeyPrefix*)aPtr)->ValueTag;
         var typeB = ((KeyPrefix*)bPtr)->ValueTag;
 
-        return CompareValues(typeA, aPtr, aLen, typeB, bPtr, bLen);
+        return CompareValues(typeA, aPtr + KeyPrefix.Size, aLen - KeyPrefix.Size, typeB, bPtr + KeyPrefix.Size, bLen - KeyPrefix.Size);
     }
 
     /// <inheritdoc />
@@ -66,7 +66,7 @@ public class ValueComparer : IElementComparer
             {
                 fixed (byte* bPtr = b.SliceFast(KeyPrefix.Size))
                 {
-                    return CompareValues(typeA, aPtr, a.Length, typeB, bPtr, b.Length);
+                    return CompareValues(typeA, aPtr + KeyPrefix.Size, a.Length - KeyPrefix.Size, typeB, bPtr + KeyPrefix.Size, b.Length - KeyPrefix.Size);
                 }
             }
         }
