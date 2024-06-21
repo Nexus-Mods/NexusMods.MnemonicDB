@@ -37,7 +37,6 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var oldTx = Connection.TxId;
         var result = await tx.Commit();
 
-        await Task.Delay(1000);
         result.NewTx.Should().NotBe(oldTx, "transaction id should be incremented");
         result.NewTx.Value.Should().Be(oldTx.Value + 1, "transaction id should be incremented by 1");
 

@@ -59,9 +59,10 @@ public struct IndexSegmentBuilder : IDisposable
     /// <param name="datom"></param>
     public void Add(in Datom datom)
     {
-        _offsets.Add(_data.Length - KeyPrefix.Size);
+        _offsets.Add(_data.Length);
         var span = _data.GetSpan(KeyPrefix.Size);
         MemoryMarshal.Write(span, datom.Prefix);
+        _data.Advance(KeyPrefix.Size);
         _data.Write(datom.ValueSpan);
     }
 

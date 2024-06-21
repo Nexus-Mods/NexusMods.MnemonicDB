@@ -168,4 +168,39 @@ public readonly struct IndexSegment : IEnumerable<Datom>
         builder.Add(datoms);
         return builder.Build();
     }
+
+    /// <summary>
+    /// Finds the first index of the given entity id
+    /// </summary>
+    /// <returns></returns>
+    public int FindFirst(EntityId find)
+    {
+        var left = 0;
+        var right = _rowCount - 1;
+        var result = -1;
+        while (left <= right)
+        {
+            var mid = left + (right - left) / 2;
+
+
+            var lower = _lowers[mid];
+            var e = EntityId.From((lower & 0xFF00000000000000) | ((lower >> 8) & 0x0000FFFFFFFFFFFF));
+
+            var comparison = e.CompareTo(find);
+            if (comparison == 0)
+            {
+                result = mid; // Don't return, but continue searching to the left
+                right = mid - 1;
+            }
+            else if (comparison < 0)
+            {
+                left = mid + 1;
+            }
+            else
+            {
+                right = mid - 1;
+            }
+        }
+        return result; // Return the first occurrence found, or -1 if not found
+    }
 }
