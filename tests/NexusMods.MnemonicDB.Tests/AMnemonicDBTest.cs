@@ -99,7 +99,7 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
         }
 
         var txResult = await tx.Commit();
-        var loadoutWritten = loadout.Remap(txResult);
+        var loadoutWritten = txResult.Remap(loadout);
 
         var tx2 = Connection.BeginTransaction();
         foreach (var mod in loadoutWritten.Mods)

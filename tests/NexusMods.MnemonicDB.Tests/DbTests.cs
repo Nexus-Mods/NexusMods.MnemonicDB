@@ -37,7 +37,6 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var oldTx = Connection.TxId;
         var result = await tx.Commit();
 
-        await Task.Delay(1000);
         result.NewTx.Should().NotBe(oldTx, "transaction id should be incremented");
         result.NewTx.Value.Should().Be(oldTx.Value + 1, "transaction id should be incremented by 1");
 
@@ -170,7 +169,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         readModel.Id.Should().Be(archiveReadModel.Id, "both models are the same entity");
 
-        archiveReadModel.File.ToArray().Should().BeEquivalentTo(readModel.ToArray(), "archive file should have the same base data as the file");
+        archiveReadModel.AsFile().ToArray().Should().BeEquivalentTo(readModel.ToArray(), "archive file should have the same base data as the file");
 
         readModel.TryGetAsArchiveFile(out var castedDown).Should().BeTrue();
         (castedDown is ArchiveFile.ReadOnly).Should().BeTrue();
@@ -253,7 +252,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var newDb = Connection.Db;
 
-        var loadoutWritten = loadout.Remap(result);
+        var loadoutWritten = result.Remap(loadout);
 
         loadoutWritten.Mods.Count.Should().Be(2);
         loadoutWritten.Mods.Select(m => m.Name).Should().BeEquivalentTo(["Test Mod 1", "Test Mod 2"]);
@@ -331,9 +330,9 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         (file3.Id.Value >> 40 & 0xFF).Should().Be(200);
 
         var result = await tx.Commit();
-        var file1RO = file1.Remap(result);
-        var file2RO = file2.Remap(result);
-        var file3RO = file3.Remap(result);
+        var file1RO = result.Remap(file1);
+        var file2RO = result.Remap(file2);
+        var file3RO = result.Remap(file3);
 
 
         var allDatoms = file1RO.Concat(file2RO).Concat(file3RO);
@@ -458,7 +457,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx.Delete(firstMod.Id, false);
         var result = await tx.Commit();
 
-        loadout = loadout.Rebase(result.Db);
+        loadout = loadout.Rebase();
 
         loadout.Mods.Count.Should().Be(2);
 
@@ -541,7 +540,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         };
         var result = await tx.Commit();
 
-        var remapped = mod.Remap(result);
+        var remapped = result.Remap(mod);
         remapped.Description.Should().Be("Test Description");
     }
 

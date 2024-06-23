@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Text;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
@@ -10,44 +12,77 @@ namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 public class ValueComparer : IElementComparer
 {
     #region Constants
-    private const int MaxStackAlloc = 128;
-    private static readonly Encoding AsciiEncoding = Encoding.ASCII;
     private static readonly Encoding Utf8Encoding = Encoding.UTF8;
     #endregion
 
+    /// <inheritdoc />
+    public static unsafe int Compare(KeyPrefix* aPrefix, byte* aPtr, int aLen, KeyPrefix* bPrefix, byte* bPtr, int bLen)
+    {
+        var prefixA = *(KeyPrefix*)aPtr;
+        var prefixB = *(KeyPrefix*)bPtr;
+
+        var typeA = prefixA.ValueTag;
+        var typeB = prefixB.ValueTag;
+
+        return CompareValues(typeA, aPtr, aLen, typeB, bPtr, bLen);
+    }
 
     /// <inheritdoc />
     public static unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
     {
-        var ptrA = aPtr + sizeof(KeyPrefix);
-        var ptrB = bPtr + sizeof(KeyPrefix);
-        var aSize = aLen - sizeof(KeyPrefix);
-        var bSize = bLen - sizeof(KeyPrefix);
+        var typeA = ((KeyPrefix*)aPtr)->ValueTag;
+        var typeB = ((KeyPrefix*)bPtr)->ValueTag;
 
-        return CompareValues(ptrA, aSize, ptrB, bSize);
+        return CompareValues(typeA, aPtr + KeyPrefix.Size, aLen - KeyPrefix.Size, typeB, bPtr + KeyPrefix.Size, bLen - KeyPrefix.Size);
+    }
+
+    /// <inheritdoc />
+    public static int Compare(in Datom a, in Datom b)
+    {
+        var typeA = a.Prefix.ValueTag;
+        var typeB = b.Prefix.ValueTag;
+
+        unsafe
+        {
+            fixed (byte* aPtr = a.ValueSpan)
+            {
+                fixed (byte* bPtr = b.ValueSpan)
+                {
+                    return CompareValues(typeA, aPtr, a.ValueSpan.Length, typeB, bPtr, b.ValueSpan.Length);
+                }
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        var typeA = KeyPrefix.Read(a).ValueTag;
+        var typeB = KeyPrefix.Read(b).ValueTag;
+
+        unsafe
+        {
+            fixed (byte* aPtr = a.SliceFast(KeyPrefix.Size))
+            {
+                fixed (byte* bPtr = b.SliceFast(KeyPrefix.Size))
+                {
+                    return CompareValues(typeA, aPtr + KeyPrefix.Size, a.Length - KeyPrefix.Size, typeB, bPtr + KeyPrefix.Size, b.Length - KeyPrefix.Size);
+                }
+            }
+        }
     }
 
     /// <summary>
     ///     Performs a highly optimized, sort between two value pointers.
     /// </summary>
-    public static unsafe int CompareValues(byte* a, int alen, byte* b, int blen)
+    public static unsafe int CompareValues(ValueTags typeA, byte* aVal, int aLen, ValueTags typeB, byte* bVal, int bLen)
     {
-        if (alen == 0 || blen == 0)
-            return alen.CompareTo(blen);
-
-        var typeA = a[0];
-        var typeB = b[0];
-
+        if (aLen == 0 || bLen == 0)
+            return aLen.CompareTo(bLen);
         if (typeA != typeB)
             return typeA.CompareTo(typeB);
 
-        var aVal = a + 1;
-        var bVal = b + 1;
-
-        alen -= 1;
-        blen -= 1;
-
-        return (ValueTags)typeA switch
+        return typeA switch
         {
             ValueTags.Null => 0,
             ValueTags.UInt8 => CompareInternal<byte>(aVal, bVal),
@@ -61,10 +96,10 @@ public class ValueComparer : IElementComparer
             ValueTags.Int128 => CompareInternal<Int128>(aVal, bVal),
             ValueTags.Float32 => CompareInternal<float>(aVal, bVal),
             ValueTags.Float64 => CompareInternal<double>(aVal, bVal),
-            ValueTags.Ascii => CompareBlobInternal(aVal, alen, bVal, blen),
-            ValueTags.Utf8 => CompareBlobInternal(aVal, alen, bVal, blen),
-            ValueTags.Utf8Insensitive => CompareUtf8Insensitive(aVal, alen, bVal, blen),
-            ValueTags.Blob => CompareBlobInternal(aVal, alen, bVal, blen),
+            ValueTags.Ascii => CompareBlobInternal(aVal, aLen, bVal, bLen),
+            ValueTags.Utf8 => CompareBlobInternal(aVal, aLen, bVal, bLen),
+            ValueTags.Utf8Insensitive => CompareUtf8Insensitive(aVal, aLen, bVal, bLen),
+            ValueTags.Blob => CompareBlobInternal(aVal, aLen, bVal, bLen),
             // HashedBlob is a special case, we compare the hashes not the blobs
             ValueTags.HashedBlob => CompareInternal<ulong>(aVal, bVal),
             ValueTags.Reference => CompareInternal<ulong>(aVal, bVal),
@@ -96,7 +131,5 @@ public class ValueComparer : IElementComparer
     {
         return ((T*)aVal)[0].CompareTo(((T*)bVal)[0]);
     }
-
-
 
 }

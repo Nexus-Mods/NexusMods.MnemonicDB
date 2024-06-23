@@ -13,7 +13,14 @@ public struct Values<TValueType, TLowLevelType>(IndexSegment segment, int start,
     /// <summary>
     /// Gets the value at the given location
     /// </summary>
-    public TValueType this[int idx] => attribute.ReadValue(segment[idx + start].ValueSpan);
+    public TValueType this[int idx]
+    {
+        get
+        {
+            var datom = segment[idx + start];
+            return attribute.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag);
+        }
+    }
 
     /// <summary>
     /// Returns the number of items in the collection

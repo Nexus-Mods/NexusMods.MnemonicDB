@@ -2,13 +2,14 @@
 
 using System;
 using System.Diagnostics;
+using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Diagnosers;
 using BenchmarkDotNet.Running;
 using JetBrains.Profiler.Api;
 using NexusMods.MnemonicDB.Benchmarks.Benchmarks;
 
 
-//#if DEBUG
+#if DEBUG
 
 var benchmark = new ReadTests
 {
@@ -29,12 +30,9 @@ for (var i = 0; i < 10000; i++)
 MeasureProfiler.SaveData();
 Console.WriteLine("Elapsed: " + sw.Elapsed + " Result: " + result);
 
-/*
 #else
 
-BenchmarkRunner.Run<ReadTests>();
-
+BenchmarkRunner.Run<IndexSegmentEBenchmarks>(config: DefaultConfig.Instance.WithOption(ConfigOptions.DisableOptimizationsValidator, true));
 #endif
 
-*/
 

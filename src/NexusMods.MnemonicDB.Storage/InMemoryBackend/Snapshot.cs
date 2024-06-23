@@ -27,8 +27,8 @@ public class Snapshot : ISnapshot
         if (thisIndex.Count == 0)
             return new IndexSegment();
 
-        var idxLower = thisIndex.IndexOf(descriptor.From.RawSpan.ToArray());
-        var idxUpper = thisIndex.IndexOf(descriptor.To.RawSpan.ToArray());
+        var idxLower = thisIndex.IndexOf(descriptor.From.ToArray());
+        var idxUpper = thisIndex.IndexOf(descriptor.To.ToArray());
         bool upperExact = true;
         bool lowerExact = true;
 
@@ -81,8 +81,8 @@ public class Snapshot : ISnapshot
     /// <inheritdoc />
     public IEnumerable<IndexSegment> DatomsChunked(SliceDescriptor descriptor, int chunkSize)
     {
-        var idxLower = _indexes[(int)descriptor.Index].IndexOf(descriptor.From.RawSpan.ToArray());
-        var idxUpper = _indexes[(int)descriptor.Index].IndexOf(descriptor.To.RawSpan.ToArray());
+        var idxLower = _indexes[(int)descriptor.Index].IndexOf(descriptor.From.ToArray());
+        var idxUpper = _indexes[(int)descriptor.Index].IndexOf(descriptor.To.ToArray());
 
         if (idxLower < 0)
             idxLower = ~idxLower;

@@ -136,14 +136,9 @@ public abstract class ABackendTest<TStoreType>(
             .UseParameters(type);
     }
 
-    private static unsafe Func<Datom, Datom, int> CompareDatoms(IDatomComparator comparer)
+    private static Func<Datom, Datom, int> CompareDatoms(IDatomComparator comparer)
     {
-        return (a, b) =>
-        {
-            fixed (byte* aPtr = a.RawSpan)
-            fixed(byte* bPtr = b.RawSpan)
-                return comparer.CompareInstance(aPtr, a.RawSpan.Length, bPtr, b.RawSpan.Length);
-        };
+        return (a, b) => comparer.CompareInstance(a, b);
     }
 
 

@@ -11,5 +11,4 @@ public class TxLogComparator : ADatomComparator<
     TxComparer,
     EComparer,
     AComparer,
-    ValueComparer,
-    AssertComparer>;
+    ValueComparer>;

@@ -9,38 +9,63 @@ namespace NexusMods.MnemonicDB.Abstractions.DatomIterators;
 /// Represents a raw (unparsed) datom from an index. Most of the time this datom is only valid for the
 /// lifetime of the current iteration. It is not safe to store this datom for later use.
 /// </summary>
-public struct Datom(ReadOnlyMemory<byte> memory, IAttributeRegistry registry)
+public readonly struct Datom
 {
+    private readonly KeyPrefix _prefix;
+    private readonly ReadOnlyMemory<byte> _valueBlob;
+    private readonly IAttributeRegistry _registry;
+
     /// <summary>
-    /// A span of the raw datom
+    /// Create a new datom from the given prefix and value
     /// </summary>
-    public ReadOnlySpan<byte> RawSpan => memory.Span;
+    public Datom(in KeyPrefix prefix, ReadOnlyMemory<byte> value, IAttributeRegistry registry)
+    {
+        _registry = registry;
+        _prefix = prefix;
+        _valueBlob = value;
+    }
+
+    /// <summary>
+    /// Create a new datom from the given datom memory span and registry
+    /// </summary>
+    public Datom(ReadOnlyMemory<byte> datom, IAttributeRegistry registry)
+    {
+        _registry = registry;
+        _prefix = KeyPrefix.Read(datom.Span);
+        _valueBlob = datom[KeyPrefix.Size..];
+    }
+
+    /// <summary>
+    /// Converts the entire datom into a byte array
+    /// </summary>
+    public byte[] ToArray()
+    {
+        var array = new byte[KeyPrefix.Size + _valueBlob.Length];
+        MemoryMarshal.Write(array, _prefix);
+        _valueBlob.Span.CopyTo(array.AsSpan(KeyPrefix.Size));
+        return array;
+    }
 
     /// <summary>
     /// The KeyPrefix of the datom
     /// </summary>
-    public KeyPrefix Prefix => MemoryMarshal.Read<KeyPrefix>(RawSpan);
+    public KeyPrefix Prefix => _prefix;
 
     /// <summary>
     /// The valuespan of the datom
     /// </summary>
-    public ReadOnlySpan<byte> ValueSpan => RawSpan.SliceFast(KeyPrefix.Size);
-
-    /// <summary>
-    /// The attribute registry for this datom
-    /// </summary>
-    public IAttributeRegistry Registry => registry;
+    public ReadOnlySpan<byte> ValueSpan => _valueBlob.Span;
 
     /// <summary>
     /// Resolves this datom into the IReadDatom form
     /// </summary>
-    public IReadDatom Resolved => registry.Resolve(RawSpan);
+    public IReadDatom Resolved => _registry.Resolve(_prefix, _valueBlob.Span);
 
     /// <summary>
     /// Resolves the value of the datom into the given type
     /// </summary>
     public TValue Resolve<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute) =>
-        attribute.ReadValue(ValueSpan);
+        attribute.ReadValue(ValueSpan, Prefix.ValueTag);
 
     /// <summary>
     /// EntityId of the datom
@@ -67,15 +92,13 @@ public struct Datom(ReadOnlyMemory<byte> memory, IAttributeRegistry registry)
     /// </summary>
     public Datom Clone()
     {
-        var copy = new byte[memory.Length];
-        memory.Span.CopyTo(copy);
-        return new Datom(copy, registry);
+        return new Datom(_prefix, _valueBlob.ToArray(), _registry);
     }
 
     /// <summary>
     /// Returns true if the datom is valid
     /// </summary>
-    public bool Valid => memory.Length > 0;
+    public bool Valid => _prefix.IsValid;
 
     /// <inheritdoc />
     public override string ToString()
@@ -92,19 +115,19 @@ public struct Datom(ReadOnlyMemory<byte> memory, IAttributeRegistry registry)
         switch (indexType)
         {
             case IndexType.TxLog:
-                return DatomComparators.TxLogComparator.Compare(RawSpan, other.RawSpan);
+                return DatomComparators.TxLogComparator.Compare(this, other);
             case IndexType.EAVTCurrent:
             case IndexType.EAVTHistory:
-                return DatomComparators.EAVTComparator.Compare(RawSpan, other.RawSpan);
+                return DatomComparators.EAVTComparator.Compare(this, other);
             case IndexType.AEVTCurrent:
             case IndexType.AEVTHistory:
-                return DatomComparators.AEVTComparator.Compare(RawSpan, other.RawSpan);
+                return DatomComparators.AEVTComparator.Compare(this, other);
             case IndexType.AVETCurrent:
             case IndexType.AVETHistory:
-                return DatomComparators.AVETComparator.Compare(RawSpan, other.RawSpan);
+                return DatomComparators.AVETComparator.Compare(this, other);
             case IndexType.VAETCurrent:
             case IndexType.VAETHistory:
-                return DatomComparators.VAETComparator.Compare(RawSpan, other.RawSpan);
+                return DatomComparators.VAETComparator.Compare(this, other);
             default:
                 throw new ArgumentOutOfRangeException(nameof(indexType), indexType, "Unknown index type");
         }
@@ -116,12 +139,6 @@ public struct Datom(ReadOnlyMemory<byte> memory, IAttributeRegistry registry)
     /// <returns></returns>
     public Datom Retract()
     {
-        var data = GC.AllocateUninitializedArray<byte>(RawSpan.Length);
-        var dataSpan = data.AsSpan();
-        RawSpan.CopyTo(dataSpan);
-        var prefix = MemoryMarshal.Read<KeyPrefix>(dataSpan);
-        var newPrefix = new KeyPrefix().Set(prefix.E, prefix.A, TxId.Tmp, true);
-        MemoryMarshal.Write(dataSpan, newPrefix);
-        return new Datom(data, registry);
+        return new Datom(_prefix with {IsRetract = true, T = TxId.Tmp}, _valueBlob, _registry);
     }
 }

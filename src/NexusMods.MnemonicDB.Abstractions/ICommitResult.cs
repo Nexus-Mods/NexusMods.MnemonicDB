@@ -15,13 +15,6 @@ public interface ICommitResult
     /// <param name="id"></param>
     public EntityId this[EntityId id] { get; }
 
-
-    /// <summary>
-    ///   Remaps a ReadModel to a new instance with the new ids, if the entity is not new, it
-    /// updates the entity anyway to be current as of the commit
-    /// </summary>
-    public T Remap<T>(T model) where T : IHasEntityId;
-
     /// <summary>
     ///     Gets the new TxId after the commit
     /// </summary>

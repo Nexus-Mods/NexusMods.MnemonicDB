@@ -20,8 +20,8 @@ internal class Snapshot(Backend backend, AttributeRegistry registry) : ISnapshot
 
         var options = new ReadOptions()
             .SetSnapshot(_snapshot)
-            .SetIterateLowerBound(from.RawSpan.ToArray())
-            .SetIterateUpperBound(to.RawSpan.ToArray());
+            .SetIterateLowerBound(from.ToArray())
+            .SetIterateUpperBound(to.ToArray());
 
         using var builder = new IndexSegmentBuilder(registry);
 
@@ -38,10 +38,10 @@ internal class Snapshot(Backend backend, AttributeRegistry registry) : ISnapshot
             writer.Reset();
             writer.Write(iterator.GetKeySpan());
 
-            if (writer.Length >= KeyPrefix.Size + 1)
+            if (writer.Length >= KeyPrefix.Size)
             {
-                var tag = (ValueTags)writer.GetWrittenSpan()[KeyPrefix.Size];
-                if (tag == ValueTags.HashedBlob)
+                var prefix = KeyPrefix.Read(writer.GetWrittenSpan());
+                if (prefix.ValueTag == ValueTags.HashedBlob)
                 {
                     writer.Write(iterator.GetValueSpan());
                 }
@@ -65,8 +65,8 @@ internal class Snapshot(Backend backend, AttributeRegistry registry) : ISnapshot
 
         var options = new ReadOptions()
             .SetSnapshot(_snapshot)
-            .SetIterateLowerBound(from.RawSpan.ToArray())
-            .SetIterateUpperBound(to.RawSpan.ToArray());
+            .SetIterateLowerBound(from.ToArray())
+            .SetIterateUpperBound(to.ToArray());
 
         using var builder = new IndexSegmentBuilder(registry);
 
@@ -83,10 +83,10 @@ internal class Snapshot(Backend backend, AttributeRegistry registry) : ISnapshot
             writer.Reset();
             writer.Write(iterator.GetKeySpan());
 
-            if (writer.Length >= KeyPrefix.Size + 1)
+            if (writer.Length >= KeyPrefix.Size)
             {
-                var tag = (ValueTags)writer.GetWrittenSpan()[KeyPrefix.Size];
-                if (tag == ValueTags.HashedBlob)
+                var prefix = KeyPrefix.Read(writer.GetWrittenSpan());
+                if (prefix.ValueTag == ValueTags.HashedBlob)
                 {
                     writer.Write(iterator.GetValueSpan());
                 }

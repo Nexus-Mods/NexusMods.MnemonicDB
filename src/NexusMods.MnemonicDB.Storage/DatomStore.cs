@@ -349,14 +349,13 @@ public class DatomStore : IDatomStore, IHostedService
             var currentPrefix = datom.Prefix;
 
             var newE = isRemapped ? remapFn(currentPrefix.E) : currentPrefix.E;
-            var keyPrefix = new KeyPrefix().Set(newE, currentPrefix.A, thisTx, currentPrefix.IsRetract);
+            var keyPrefix = currentPrefix with {E = newE, T = thisTx};
 
             {
                 if (attr.IsReference)
                 {
-                    var newV = remapFn(MemoryMarshal.Read<EntityId>(datom.ValueSpan.SliceFast(1)));
+                    var newV = remapFn(MemoryMarshal.Read<EntityId>(datom.ValueSpan));
                     _writer.WriteMarshal(keyPrefix);
-                    _writer.WriteMarshal((byte)ValueTags.Reference);
                     _writer.WriteMarshal(newV);
                 }
                 else
@@ -421,8 +420,7 @@ public class DatomStore : IDatomStore, IHostedService
     private void SwitchPrevToRetraction(TxId thisTx)
     {
         var prevKey = MemoryMarshal.Read<KeyPrefix>(_retractWriter.GetWrittenSpan());
-        var (e, a, _, _) = prevKey;
-        prevKey.Set(e, a, thisTx, true);
+        prevKey = prevKey with {T = thisTx, IsRetract = true};
         MemoryMarshal.Write(_retractWriter.GetWrittenSpanWritable(), prevKey);
     }
 
@@ -431,14 +429,16 @@ public class DatomStore : IDatomStore, IHostedService
         _prevWriter.Reset();
         _prevWriter.Write(datom);
         var prevKey = MemoryMarshal.Read<KeyPrefix>(_prevWriter.GetWrittenSpan());
-        var (e, a, _, _) = prevKey;
-        prevKey.Set(e, a, TxId.MinValue, false);
+
+        prevKey = prevKey with {T = TxId.MinValue, IsRetract = false};
         MemoryMarshal.Write(_prevWriter.GetWrittenSpanWritable(), prevKey);
 
         var low = new Datom(_prevWriter.GetWrittenSpan().ToArray(), Registry);
-        prevKey.Set(e, a, TxId.MaxValue, false);
+
+        prevKey = prevKey with {T = TxId.MaxValue, IsRetract = false};
         MemoryMarshal.Write(_prevWriter.GetWrittenSpanWritable(), prevKey);
         var high = new Datom(_prevWriter.GetWrittenSpan().ToArray(), Registry);
+
         var sliceDescriptor = new SliceDescriptor
         {
             Index = IndexType.EAVTCurrent,
@@ -455,45 +455,48 @@ public class DatomStore : IDatomStore, IHostedService
         {
             Debug.Assert(prevDatom.Valid, "Previous datom should exist");
             var debugKey = prevDatom.Prefix;
-            Debug.Assert(debugKey.E == MemoryMarshal.Read<KeyPrefix>(datom).E, "Entity should match");
-            Debug.Assert(debugKey.A == MemoryMarshal.Read<KeyPrefix>(datom).A, "Attribute should match");
+
+            var otherPrefix = MemoryMarshal.Read<KeyPrefix>(datom);
+            Debug.Assert(debugKey.E == otherPrefix.E, "Entity should match");
+            Debug.Assert(debugKey.A == otherPrefix.A, "Attribute should match");
 
             fixed (byte* aTmp = prevDatom.ValueSpan)
             fixed (byte* bTmp = datom.SliceFast(sizeof(KeyPrefix)))
             {
-                var cmp = ValueComparer.CompareValues(aTmp, prevDatom.ValueSpan.Length, bTmp, datom.Length - sizeof(KeyPrefix));
+                var valueTag = prevDatom.Prefix.ValueTag;
+                var cmp = ValueComparer.CompareValues(prevDatom.Prefix.ValueTag, aTmp, prevDatom.ValueSpan.Length, otherPrefix.ValueTag, bTmp, datom.Length - sizeof(KeyPrefix));
                 Debug.Assert(cmp == 0, "Values should match");
             }
         }
         #endif
 
-        _eavtCurrent.Delete(batch, prevDatom.RawSpan);
-        _aevtCurrent.Delete(batch, prevDatom.RawSpan);
+        _eavtCurrent.Delete(batch, prevDatom);
+        _aevtCurrent.Delete(batch, prevDatom);
         if (attribute.IsReference)
-            _vaetCurrent.Delete(batch, prevDatom.RawSpan);
+            _vaetCurrent.Delete(batch, prevDatom);
         if (attribute.IsIndexed)
-            _avetCurrent.Delete(batch, prevDatom.RawSpan);
+            _avetCurrent.Delete(batch, prevDatom);
 
         _txLog.Put(batch, datom);
         if (attribute.NoHistory) return;
 
         // Move the datom to the history index and also record the retraction
-        _eavtHistory.Put(batch, prevDatom.RawSpan);
+        _eavtHistory.Put(batch, prevDatom);
         _eavtHistory.Put(batch, datom);
 
         // Move the datom to the history index and also record the retraction
-        _aevtHistory.Put(batch, prevDatom.RawSpan);
+        _aevtHistory.Put(batch, prevDatom);
         _aevtHistory.Put(batch, datom);
 
         if (attribute.IsReference)
         {
-            _vaetHistory.Put(batch, prevDatom.RawSpan);
+            _vaetHistory.Put(batch, prevDatom);
             _vaetHistory.Put(batch, datom);
         }
 
         if (attribute.IsIndexed)
         {
-            _avetHistory.Put(batch, prevDatom.RawSpan);
+            _avetHistory.Put(batch, prevDatom);
             _avetHistory.Put(batch, datom);
         }
     }
@@ -536,7 +539,7 @@ public class DatomStore : IDatomStore, IHostedService
             fixed (byte* a = aSpan)
             fixed (byte* b = bSpan)
             {
-                var cmp = ValueComparer.CompareValues(a, aSpan.Length, b, bSpan.Length);
+                var cmp = ValueComparer.CompareValues(found.Prefix.ValueTag, a, aSpan.Length, keyPrefix.ValueTag, b, bSpan.Length);
                 return cmp == 0 ? PrevState.Duplicate : PrevState.NotExists;
             }
         }
@@ -555,15 +558,16 @@ public class DatomStore : IDatomStore, IHostedService
 
             var aSpan = datom.ValueSpan;
             var bSpan = span.SliceFast(sizeof(KeyPrefix));
+            var bPrefix = MemoryMarshal.Read<KeyPrefix>(span);
             fixed (byte* a = aSpan)
             fixed (byte* b = bSpan)
             {
-                var cmp = ValueComparer.CompareValues(a, aSpan.Length, b, bSpan.Length);
+                var cmp = ValueComparer.CompareValues(datom.Prefix.ValueTag, a, aSpan.Length, bPrefix.ValueTag, b, bSpan.Length);
                 if (cmp == 0) return PrevState.Duplicate;
             }
 
             _retractWriter.Reset();
-            _retractWriter.Write(datom.RawSpan);
+            _retractWriter.Write(datom);
 
             return PrevState.Exists;
         }

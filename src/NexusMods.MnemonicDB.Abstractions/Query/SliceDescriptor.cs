@@ -177,8 +177,6 @@ public readonly struct SliceDescriptor
     {
         var from = span.ToArray();
         var to = span.ToArray();
-        var prefix = MemoryMarshal.Read<KeyPrefix>(to.AsSpan());
-        prefix.Set(prefix.E, prefix.A, TxId.From(prefix.T.Value + 1), prefix.IsRetract);
         return new SliceDescriptor
         {
             Index = index,
@@ -226,12 +224,19 @@ public readonly struct SliceDescriptor
         {
             // VAET has a special case where we need to include the reference type and an actual reference
             // in the slice
-            var from = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + 9);
+            var from = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + sizeof(ulong));
             from.AsSpan().Clear();
-            from[KeyPrefix.Size + 1] = (byte)ValueTags.Reference;
-            var to = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + 9);
+
+            var fromPrefix = new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false, ValueTags.Reference);
+            MemoryMarshal.Write(from, fromPrefix);
+
+
+            var to = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + sizeof(ulong));
             to.AsSpan().Fill(byte.MaxValue);
-            from[KeyPrefix.Size + 1] = (byte)ValueTags.Reference;
+
+            var toPrefix = new KeyPrefix(EntityId.MaxValueNoPartition, AttributeId.Max, TxId.MaxValue, true, ValueTags.Reference);
+            MemoryMarshal.Write(to, toPrefix);
+
             return new SliceDescriptor
             {
                 Index = index,
@@ -261,7 +266,7 @@ public readonly struct SliceDescriptor
     public static Datom Datom(EntityId e, AttributeId a, TxId id, bool isRetract, IAttributeRegistry registry)
     {
         var data = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size);
-        var prefix = new KeyPrefix().Set(e, a, id, isRetract);
+        var prefix = new KeyPrefix(e, a, id, isRetract, ValueTags.Null);
         MemoryMarshal.Write(data, prefix);
         return new Datom(data, registry);
     }
@@ -294,12 +299,11 @@ public readonly struct SliceDescriptor
     /// </summary>
     public static Datom Datom(EntityId e, AttributeId a, EntityId value, TxId id, bool isRetract, IAttributeRegistry registry)
     {
-        var data = new Memory<byte>(GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + 1 + sizeof(ulong)));
+        var data = new Memory<byte>(GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + sizeof(ulong)));
         var span = data.Span;
-        var prefix = new KeyPrefix().Set(e, a, id, isRetract);
+        var prefix = new KeyPrefix(e, a, id, isRetract, ValueTags.Reference);
         MemoryMarshal.Write(span, prefix);
-        span[KeyPrefix.Size] = (byte)ValueTags.Reference;
-        MemoryMarshal.Write(span.SliceFast(KeyPrefix.Size + 1), value);
+        MemoryMarshal.Write(span.SliceFast(KeyPrefix.Size), value);
         return new Datom(data, registry);
     }
 

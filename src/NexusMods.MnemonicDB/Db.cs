@@ -102,13 +102,6 @@ internal class Db : IDb
         return _referencesCache.Get(this, id);
     }
 
-    public IndexSegment GetSegment(EntityId id)
-    {
-        var a = KeyPrefix.Min;
-        var b = new KeyPrefix().Set(EntityId.MaxValueNoPartition, AttributeId.Max, TxId.MaxValue, false);
-        return _entityCache.Get(this, id);
-    }
-
     public IEnumerable<TValue> GetAll<TValue, TLowLevel>(EntityId id, Attribute<TValue, TLowLevel> attribute)
     {
         var attrId = attribute.GetDbId(_registry.Id);

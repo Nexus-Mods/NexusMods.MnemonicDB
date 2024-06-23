@@ -22,6 +22,7 @@ using DynamicData;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.MnemonicDB.Abstractions;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Contracts;
 
 {{= model.Comments}}
 public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}}, {{= model.Name}}.ReadOnly>
@@ -223,17 +224,6 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         {{/if}}
         {{/each}}
         #endregion
-
-        #region Methods
-        /// <summary>
-        /// Assumes that this model has been commited to the database
-        /// in the commit result. Loads this entity from the commited database
-        /// and returns a ReadOnly model.
-        /// </summary>
-        public {{= model.Name}}.ReadOnly Remap(__ABSTRACTIONS__.ICommitResult result) {
-            return new {{= model.Name}}.ReadOnly(result.Db, result[Id]);
-        }
-        #endregion
     }
 
     {{= model.Comments}}
@@ -328,7 +318,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            }
 
            {{each include in model.Includes}}
-           public {{= include.ToDisplayString()}}.ReadOnly {{= include.Name}} => new {{= include.ToDisplayString()}}.ReadOnly(Db, Id);
+           public {{= include.ToDisplayString()}}.ReadOnly As{{= include.Name}}() => new {{= include.ToDisplayString()}}.ReadOnly(Db, Id);
            {{/each}}
 
            {{each attr in model.Attributes}}
@@ -359,6 +349,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            /// Reloads the entity from the given database, essentially
            /// refreshing the entity.
            /// </summary>
+           [Pure]
            public ReadOnly Rebase(__ABSTRACTIONS__.IDb db) => new ReadOnly(db, Id);
 
            /// <summary>
@@ -484,5 +475,14 @@ public static class {{= model.Name}}Extensions {
         return model.TryGetAs{{= model.Name}}(out var _);
     }
     {{/each}}
+
+    /// <summary>
+    /// Assumes that this model has been commited to the database
+    /// in the commit result. Loads this entity from the commited database
+    /// and returns a ReadOnly model.
+    /// </summary>
+    public static {{= model.Name}}.ReadOnly Remap(this __ABSTRACTIONS__.ICommitResult result, {{= model.Name}}.New model) {
+        return new {{= model.Name}}.ReadOnly(result.Db, result[model.Id]);
+    }
 
 }

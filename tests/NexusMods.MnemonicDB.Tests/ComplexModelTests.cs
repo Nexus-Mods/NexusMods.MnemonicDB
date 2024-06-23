@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.File;
@@ -77,15 +78,11 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         Logger.LogInformation($"Commit took {sw.ElapsedMilliseconds}ms");
 
 
-        var db = Connection.Db;
+        var loadoutRO = result.Remap(loadout);
 
-        var loadoutRO = loadout.Remap(result);
+        loadoutRO.Mods.Count.Should().Be(modCount, "all mods should be loaded");
 
-        var totalSize = Size.Zero;
-
-        loadoutRO.Mods.Count().Should().Be(modCount, "all mods should be loaded");
-
-        loadoutRO.Collections.Count().Should().Be(2, "all collections should be loaded");
+        loadoutRO.Collections.Count.Should().Be(2, "all collections should be loaded");
 
         loadoutRO.Collections.SelectMany(c => c.ModIds)
             .Count().Should().Be(loadoutRO.Mods.Count(), "all mods should be in a collection");
@@ -155,9 +152,9 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         var result = await tx.Commit();
 
         var extraTx = Connection.BeginTransaction();
-        var loadout = newLoadout.Remap(result);
+        var loadout = result.Remap(newLoadout);
 
-        var firstMod = mods[0].Remap(result);
+        var firstMod = result.Remap(mods[0]);
         for (var idx = 0; idx < extraFiles; idx++)
         {
             var name = $"Extra File {idx}";
@@ -202,7 +199,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         };
 
         var result2 = await tx2.Commit();
-        var newNewLoadOut = newNewLoadOutNew.Remap(result2);
+        var newNewLoadOut = result2.Remap(newNewLoadOutNew);
 
         newNewLoadOut.Id.Should().NotBe(loadout.Id,
             "new loadout should have a different id because the connection re-detected the max EntityId");
