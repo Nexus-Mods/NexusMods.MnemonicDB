@@ -32,7 +32,7 @@ Console.WriteLine("Elapsed: " + sw.Elapsed + " Result: " + result);
 
 #else
 
-BenchmarkRunner.Run<IndexSegmentBenchmarks>(config: DefaultConfig.Instance.WithOption(ConfigOptions.DisableOptimizationsValidator, true));
+BenchmarkRunner.Run<IndexSegmentEBenchmarks>(config: DefaultConfig.Instance.WithOption(ConfigOptions.DisableOptimizationsValidator, true));
 #endif
 
 

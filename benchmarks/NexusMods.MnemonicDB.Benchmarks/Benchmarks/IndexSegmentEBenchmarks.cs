@@ -10,11 +10,11 @@ using NexusMods.MnemonicDB.Storage;
 namespace NexusMods.MnemonicDB.Benchmarks.Benchmarks;
 
 [MemoryDiagnoser]
-public class IndexSegmentBenchmarks
+public class IndexSegmentEBenchmarks
 {
     private readonly IndexSegment _index;
 
-    public IndexSegmentBenchmarks()
+    public IndexSegmentEBenchmarks()
     {
         var registry = new AttributeRegistry([]);
         using var builder = new IndexSegmentBuilder(registry);
@@ -31,7 +31,7 @@ public class IndexSegmentBenchmarks
         _index = builder.Build();
     }
 
-    [Params(1, 10, 71, 99)] public int ToFind { get; set; }
+    [Params(0, 1, 2, 3, 10, 71, 99)] public int ToFind { get; set; }
 
 
     [Benchmark]
@@ -82,6 +82,13 @@ public class IndexSegmentBenchmarks
     {
         var find = EntityId.From((ulong)ToFind);
         return _index.FindFirst(find); // Return the first occurrence found, or -1 if not found
+    }
+
+    [Benchmark]
+    public int FindBinarySearchReworkAVX2()
+    {
+        var find = EntityId.From((ulong)ToFind);
+        return _index.FindFirstAVX2(find.Value); // Return the first occurrence found, or -1 if not found
     }
 
 
