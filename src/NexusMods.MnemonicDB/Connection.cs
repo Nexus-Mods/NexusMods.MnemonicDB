@@ -40,6 +40,7 @@ public class Connection : IConnection, IHostedService
         _declaredAttributes = declaredAttributes.ToDictionary(a => a.Id);
         _store = store;
         _dbStream = new BehaviorSubject<Revision>(default!);
+        Bootstrap();
     }
 
     /// <summary>
