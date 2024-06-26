@@ -5,7 +5,6 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
@@ -20,12 +19,11 @@ namespace NexusMods.MnemonicDB;
 /// <summary>
 ///     Main connection class, co-ordinates writes and immutable reads
 /// </summary>
-public class Connection : IConnection, IHostedService
+public class Connection : IConnection
 {
     private readonly IDatomStore _store;
     private readonly Dictionary<Symbol, IAttribute> _declaredAttributes;
     private readonly ILogger<Connection> _logger;
-    private Task? _bootstrapTask;
 
     private BehaviorSubject<Revision> _dbStream;
     private IDisposable? _dbStreamDisposable;
@@ -167,16 +165,6 @@ public class Connection : IConnection, IHostedService
         var result = new CommitResult(new Db(newTx.Snapshot, this, newTx.AssignedTxId, (AttributeRegistry)_store.Registry)
             , newTx.Remaps);
         return result;
-    }
-
-    /// <inheritdoc />
-    public async Task StartAsync(CancellationToken cancellationToken)
-    {
-        lock (this)
-        {
-            _bootstrapTask ??= Task.Run(Bootstrap, cancellationToken);
-        }
-        await _bootstrapTask;
     }
 
     private void Bootstrap()
