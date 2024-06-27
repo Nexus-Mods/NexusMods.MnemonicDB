@@ -5,7 +5,6 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
@@ -20,12 +19,11 @@ namespace NexusMods.MnemonicDB;
 /// <summary>
 ///     Main connection class, co-ordinates writes and immutable reads
 /// </summary>
-public class Connection : IConnection, IHostedService
+public class Connection : IConnection
 {
     private readonly IDatomStore _store;
     private readonly Dictionary<Symbol, IAttribute> _declaredAttributes;
     private readonly ILogger<Connection> _logger;
-    private Task? _bootstrapTask;
 
     private BehaviorSubject<Revision> _dbStream;
     private IDisposable? _dbStreamDisposable;
@@ -40,6 +38,7 @@ public class Connection : IConnection, IHostedService
         _declaredAttributes = declaredAttributes.ToDictionary(a => a.Id);
         _store = store;
         _dbStream = new BehaviorSubject<Revision>(default!);
+        Bootstrap();
     }
 
     /// <summary>
@@ -115,9 +114,8 @@ public class Connection : IConnection, IHostedService
         }
     }
 
-    private async Task<StoreResult> AddMissingAttributes(IEnumerable<IAttribute> declaredAttributes)
+    private void AddMissingAttributes(IEnumerable<IAttribute> declaredAttributes)
     {
-
         var existing = ExistingAttributes().ToDictionary(a => a.UniqueId);
         if (existing.Count == 0)
             throw new AggregateException(
@@ -128,7 +126,6 @@ public class Connection : IConnection, IHostedService
         {
             // Nothing new to assert, so just add the new data to the registry
             _store.Registry.Populate(existing.Values.ToArray());
-            return await _store.Sync();
         }
 
         var newAttrs = new List<DbAttribute>();
@@ -142,8 +139,7 @@ public class Connection : IConnection, IHostedService
             newAttrs.Add(new DbAttribute(uniqueId, AttributeId.From(id), attr.LowLevelType, attr));
         }
 
-        await _store.RegisterAttributes(newAttrs);
-        return await _store.Sync();
+        _store.RegisterAttributes(newAttrs);
     }
 
     private IEnumerable<DbAttribute> ExistingAttributes()
@@ -162,32 +158,20 @@ public class Connection : IConnection, IHostedService
         StoreResult newTx;
 
         if (txFunctions == null)
-            newTx = await _store.Transact(datoms, txFunctions);
+            newTx = await _store.TransactAsync(datoms, txFunctions);
         else
-            newTx = await _store.Transact(datoms, txFunctions, snapshot => new Db(snapshot, this, TxId, (AttributeRegistry)_store.Registry));
+            newTx = await _store.TransactAsync(datoms, txFunctions, snapshot => new Db(snapshot, this, TxId, (AttributeRegistry)_store.Registry));
 
         var result = new CommitResult(new Db(newTx.Snapshot, this, newTx.AssignedTxId, (AttributeRegistry)_store.Registry)
             , newTx.Remaps);
         return result;
     }
 
-    /// <inheritdoc />
-    public async Task StartAsync(CancellationToken cancellationToken)
+    private void Bootstrap()
     {
-        lock (this)
-        {
-            _bootstrapTask ??= Task.Run(Bootstrap, cancellationToken);
-        }
-        await _bootstrapTask;
-    }
-
-    private async Task Bootstrap()
-    {
-        // Won't complete until the DatomStore has properly started
-        await _store.StartAsync(CancellationToken.None);
         try
         {
-            var storeResult = await AddMissingAttributes(_declaredAttributes.Values);
+            AddMissingAttributes(_declaredAttributes.Values);
 
             _dbStreamDisposable = ForwardOnly(_store.TxLog)
                 .Select(log =>

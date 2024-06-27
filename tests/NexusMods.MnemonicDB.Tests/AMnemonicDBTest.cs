@@ -13,7 +13,7 @@ using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
 
-public class AMnemonicDBTest : IDisposable, IAsyncLifetime
+public class AMnemonicDBTest : IDisposable
 {
     private readonly IAttribute[] _attributes;
     private readonly IServiceProvider _provider;
@@ -131,18 +131,6 @@ public class AMnemonicDBTest : IDisposable, IAsyncLifetime
         _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
 
         Connection = new Connection(_provider.GetRequiredService<ILogger<Connection>>(), _store, _provider, _attributes);
-        await InitializeAsync();
     }
 
-    public async Task InitializeAsync()
-    {
-        await _store.StartAsync(CancellationToken.None);
-        await ((Connection)Connection).StartAsync(CancellationToken.None);
-    }
-
-    public Task DisposeAsync()
-    {
-        // Nothing to do
-        return Task.CompletedTask;
-    }
 }

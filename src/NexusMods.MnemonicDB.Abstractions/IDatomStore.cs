@@ -32,7 +32,13 @@ public interface IDatomStore : IDisposable
     /// <summary>
     ///     Transacts (adds) the given datoms into the store.
     /// </summary>
-    public Task<StoreResult> Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null, Func<ISnapshot, IDb>? databaseFactory = null);
+    public Task<StoreResult> TransactAsync(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null, Func<ISnapshot, IDb>? databaseFactory = null);
+
+
+    /// <summary>
+    ///     Transacts (adds) the given datoms into the store.
+    /// </summary>
+    public StoreResult Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null, Func<ISnapshot, IDb>? databaseFactory = null);
 
     /// <summary>
     /// Executes an empty transaction. Returns a StoreResult valid asof the latest
@@ -42,18 +48,13 @@ public interface IDatomStore : IDisposable
     public Task<StoreResult> Sync();
 
     /// <summary>
-    ///     Registers new attributes with the store. These should already have been transacted into the store.
+    ///     Registers new attributes with the store.
     /// </summary>
     /// <param name="newAttrs"></param>
-    Task RegisterAttributes(IEnumerable<DbAttribute> newAttrs);
+    void RegisterAttributes(IEnumerable<DbAttribute> newAttrs);
 
     /// <summary>
     ///     Create a snapshot of the current state of the store.
     /// </summary>
     ISnapshot GetSnapshot();
-
-    /// <summary>
-    /// Starts the store, this is idempotent so calling it multiple times is safe
-    /// </summary>
-    Task StartAsync(CancellationToken none);
 }

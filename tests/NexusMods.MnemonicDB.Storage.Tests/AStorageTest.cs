@@ -11,7 +11,7 @@ using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Storage.Tests;
 
-public abstract class AStorageTest : IAsyncLifetime
+public abstract class AStorageTest : IDisposable
 {
     private readonly AbsolutePath _path;
     private readonly IServiceProvider _provider;
@@ -56,16 +56,9 @@ public abstract class AStorageTest : IAsyncLifetime
 
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
     }
-
-    public async Task InitializeAsync()
-    {
-        await ((DatomStore)DatomStore).StartAsync(CancellationToken.None);
-    }
-
-    public Task DisposeAsync()
+    public void Dispose()
     {
         Registry.Dispose();
-        return Task.CompletedTask;
     }
 
     public EntityId NextTempId()

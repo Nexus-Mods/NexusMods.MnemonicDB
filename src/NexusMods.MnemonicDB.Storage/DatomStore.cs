@@ -1,13 +1,12 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
@@ -23,7 +22,7 @@ using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Storage;
 
-public class DatomStore : IDatomStore, IHostedService
+public class DatomStore : IDatomStore
 {
     private readonly IIndex _aevtCurrent;
     private readonly IIndex _aevtHistory;
@@ -37,7 +36,8 @@ public class DatomStore : IDatomStore, IHostedService
     private readonly PooledMemoryBufferWriter _retractWriter;
     private readonly AttributeRegistry _registry;
     private readonly DatomStoreSettings _settings;
-    private readonly Channel<PendingTransaction> _txChannel;
+
+    private readonly BlockingCollection<PendingTransaction> _pendingTransactions;
     private readonly IIndex _txLog;
     private BehaviorSubject<(TxId TxId, ISnapshot snapshot)>? _updatesSubject;
     private readonly IIndex _vaetCurrent;
@@ -51,11 +51,6 @@ public class DatomStore : IDatomStore, IHostedService
     private static readonly TimeSpan TransactionTimeout = TimeSpan.FromMinutes(120);
 
     /// <summary>
-    /// Cached version of the registry ID to avoid the overhead of looking it up every time
-    /// </summary>
-    private readonly RegistryId _registryId;
-
-    /// <summary>
     /// Cache for the next entity/tx/attribute ids
     /// </summary>
     private NextIdCache _nextIdCache;
@@ -63,7 +58,7 @@ public class DatomStore : IDatomStore, IHostedService
     /// <summary>
     /// The task consuming and logging transactions
     /// </summary>
-    private Task? _txTask;
+    private Thread? _loggerThread;
 
     /// <summary>
     /// DI constructor
@@ -71,6 +66,8 @@ public class DatomStore : IDatomStore, IHostedService
     public DatomStore(ILogger<DatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings,
         IStoreBackend backend)
     {
+        _pendingTransactions = new BlockingCollection<PendingTransaction>(new ConcurrentQueue<PendingTransaction>());
+
         _backend = backend;
         _writer = new PooledMemoryBufferWriter();
         _retractWriter = new PooledMemoryBufferWriter();
@@ -80,7 +77,6 @@ public class DatomStore : IDatomStore, IHostedService
         _logger = logger;
         _settings = settings;
         _registry = registry;
-        _registryId = registry.Id;
 
         _backend.DeclareEAVT(IndexType.EAVTCurrent);
         _backend.DeclareEAVT(IndexType.EAVTHistory);
@@ -106,7 +102,7 @@ public class DatomStore : IDatomStore, IHostedService
 
         registry.Populate(AttributeDefinition.HardcodedDbAttributes);
 
-        _txChannel = Channel.CreateUnbounded<PendingTransaction>();
+        Bootstrap();
     }
 
     /// <inheritdoc />
@@ -116,7 +112,7 @@ public class DatomStore : IDatomStore, IHostedService
     public IAttributeRegistry Registry => _registry;
 
     /// <inheritdoc />
-    public async Task<StoreResult> Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null,
+    public async Task<StoreResult> TransactAsync(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null,
         Func<ISnapshot, IDb>? factoryFn = null)
     {
 
@@ -126,8 +122,7 @@ public class DatomStore : IDatomStore, IHostedService
             TxFunctions = txFunctions,
             DatabaseFactory = factoryFn
         };
-        if (!_txChannel.Writer.TryWrite(pending))
-            throw new InvalidOperationException("Failed to write to the transaction channel");
+        _pendingTransactions.Add(pending);
 
         var task = pending.CompletionSource.Task;
         if (await Task.WhenAny(task, Task.Delay(TransactionTimeout)) == task)
@@ -139,10 +134,32 @@ public class DatomStore : IDatomStore, IHostedService
 
     }
 
+    public StoreResult Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null,
+        Func<ISnapshot, IDb>? factoryFn = null)
+    {
+
+        var pending = new PendingTransaction
+        {
+            Data = datoms,
+            TxFunctions = txFunctions,
+            DatabaseFactory = factoryFn
+        };
+        _pendingTransactions.Add(pending);
+
+        var task = pending.CompletionSource.Task;
+        if (Task.WhenAny(task, Task.Delay(TransactionTimeout)).Result == task)
+        {
+            return task.Result;
+        }
+        _logger.LogError("Transaction didn't complete after {Timeout}", TransactionTimeout);
+        throw new TimeoutException($"Transaction didn't complete after {TransactionTimeout}");
+
+    }
+
     /// <inheritdoc />
     public async Task<StoreResult> Sync()
     {
-        return await Transact(new IndexSegment());
+        return await TransactAsync(new IndexSegment());
     }
 
     /// <inheritdoc />
@@ -157,7 +174,7 @@ public class DatomStore : IDatomStore, IHostedService
     }
 
     /// <inheritdoc />
-    public async Task RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
+    public void RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
     {
         var datoms = new IndexSegmentBuilder(_registry);
         var newAttrsArray = newAttrs.ToArray();
@@ -166,7 +183,7 @@ public class DatomStore : IDatomStore, IHostedService
         foreach (var attribute in newAttrsArray)
             AttributeDefinition.Insert(internalTx, attribute.Attribute, attribute.AttrEntityId.Value);
         internalTx.ProcessTemporaryEntities();
-        await Transact(datoms.Build(), null, null);
+        Transact(datoms.Build(), null, null);
 
         _registry.Populate(newAttrsArray);
     }
@@ -181,18 +198,20 @@ public class DatomStore : IDatomStore, IHostedService
     /// <inheritdoc />
     public void Dispose()
     {
+        _pendingTransactions.CompleteAdding();
         _updatesSubject?.Dispose();
         _writer.Dispose();
         _retractWriter.Dispose();
     }
 
-    private async Task ConsumeTransactions()
+    private void ConsumeTransactions()
     {
         try
         {
-            while (await _txChannel.Reader.WaitToReadAsync())
+            while (!_pendingTransactions.IsCompleted)
             {
-                var pendingTransaction = await _txChannel.Reader.ReadAsync();
+                if (!_pendingTransactions.TryTake(out var pendingTransaction, -1))
+                    continue;
                 try
                 {
                     // Sync transactions have no data, and are used to verify that the store is up to date.
@@ -229,7 +248,7 @@ public class DatomStore : IDatomStore, IHostedService
     /// <summary>
     ///     Sets up the initial state of the store.
     /// </summary>
-    private async Task Bootstrap()
+    private void Bootstrap()
     {
         try
         {
@@ -268,7 +287,8 @@ public class DatomStore : IDatomStore, IHostedService
         }
 
         _updatesSubject = new BehaviorSubject<(TxId TxId, ISnapshot snapshot)>((_asOfTx, _currentSnapshot));
-        _txTask = Task.Run(ConsumeTransactions);
+        _loggerThread = new Thread(ConsumeTransactions);
+        _loggerThread.Start();
     }
 
     #region Internals
@@ -577,21 +597,4 @@ public class DatomStore : IDatomStore, IHostedService
 
     #endregion
 
-    /// <inheritdoc />
-    public async Task StartAsync(CancellationToken cancellationToken)
-    {
-        lock (this)
-        {
-            _bootStrapTask ??= Task.Run(Bootstrap, cancellationToken);
-        }
-
-        await _bootStrapTask;
-    }
-
-    /// <inheritdoc />
-    public async Task StopAsync(CancellationToken cancellationToken)
-    {
-        _txChannel.Writer.TryComplete();
-        await (_txTask ?? Task.CompletedTask);
-    }
 }
