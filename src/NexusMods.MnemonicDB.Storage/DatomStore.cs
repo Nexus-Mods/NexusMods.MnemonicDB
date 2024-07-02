@@ -288,6 +288,7 @@ public class DatomStore : IDatomStore
 
         _updatesSubject = new BehaviorSubject<(TxId TxId, ISnapshot snapshot)>((_asOfTx, _currentSnapshot));
         _loggerThread = new Thread(ConsumeTransactions);
+        _loggerThread.IsBackground = true;
         _loggerThread.Start();
     }
 
