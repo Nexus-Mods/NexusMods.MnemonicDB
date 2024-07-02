@@ -45,12 +45,12 @@ internal class Db : IDb
         BasisTxId = txId;
     }
 
-    private static IEnumerable<Datom> EntityDatoms(IDb db, EntityId id)
+    private static IndexSegment EntityDatoms(IDb db, EntityId id)
     {
         return db.Snapshot.Datoms(SliceDescriptor.Create(id, db.Registry));
     }
 
-    private static IEnumerable<Datom> ReverseDatoms(IDb db, (EntityId, AttributeId) key)
+    private static IndexSegment ReverseDatoms(IDb db, (EntityId, AttributeId) key)
     {
         return db.Snapshot.Datoms(SliceDescriptor.Create(key.Item2, key.Item1, db.Registry));
     }
@@ -92,7 +92,7 @@ internal class Db : IDb
         return new EntityIds(segment, 0, segment.Count);
     }
 
-    private static IEnumerable<Datom> ReferenceDatoms(IDb db, EntityId eid)
+    private static IndexSegment ReferenceDatoms(IDb db, EntityId eid)
     {
         return db.Snapshot.Datoms(SliceDescriptor.CreateReferenceTo(eid, db.Registry));
     }
