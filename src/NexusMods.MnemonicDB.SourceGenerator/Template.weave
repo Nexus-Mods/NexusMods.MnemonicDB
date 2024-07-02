@@ -230,12 +230,15 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     public readonly partial struct ReadOnly :
         __MODELS__.IReadOnlyModel<{{= model.Name}}.ReadOnly> {
 
-           private readonly __SEGMENTS__.IndexSegment _segment;
+           /// <summary>
+           /// The database segment containing the datoms for this entity in EAVT order.
+           /// </summary>
+           public readonly __SEGMENTS__.IndexSegment IndexSegment;
 
-           private ReadOnly(__ABSTRACTIONS__.IDb db, __SEGMENTS__.IndexSegment segment, __ABSTRACTIONS__.EntityId id) {
+           public ReadOnly(__ABSTRACTIONS__.IDb db, __SEGMENTS__.IndexSegment segment, __ABSTRACTIONS__.EntityId id) {
                Db = db;
                Id = id;
-               _segment = segment;
+               IndexSegment = segment;
            }
 
            /// <summary>
@@ -272,15 +275,15 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            }
 
            /// <inheritdoc />
-           public int Count => _segment.Count;
+           public int Count => IndexSegment.Count;
 
 
            /// <inheritdoc />
            public IEnumerator<IReadDatom> GetEnumerator()
            {
-               for (var i = 0; i < _segment.Count; i++)
+               for (var i = 0; i < IndexSegment.Count; i++)
                {
-                   yield return _segment[i].Resolved;
+                   yield return IndexSegment[i].Resolved;
                }
            }
 
@@ -433,7 +436,7 @@ public static class {{= model.Name}}Extensions {
     /// Tries to get the entity as a {{= model.Name}} entity, if the entity is not a {{= model.Name}} entity, it returns false.
     /// </summary>
     public static bool TryGetAs{{= model.Name}}(this {{= include.ToDisplayString()}}.ReadOnly model, [NotNullWhen(true)] out {{= model.Name}}.ReadOnly result) {
-        var casted = new {{= model.Name}}.ReadOnly(model.Db, model.Id);
+        var casted = new {{= model.Name}}.ReadOnly(model.Db, model.IndexSegment, model.Id);
         if (casted.IsValid()) {
             result = casted;
             return true;

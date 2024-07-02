@@ -12,7 +12,7 @@ namespace NexusMods.MnemonicDB;
 /// A cache for index segments, given a key type and a iterator factory, caches the results
 /// of the factory in a segment for fast access.
 /// </summary>
-internal readonly struct IndexSegmentCache<TKey>(Func<IDb, TKey, IEnumerable<Datom>> iteratorFactory, IAttributeRegistry registry)
+internal readonly struct IndexSegmentCache<TKey>(Func<IDb, TKey, IndexSegment> segmentFactory, IAttributeRegistry registry)
     where TKey : notnull
 {
     private readonly ConcurrentDictionary<TKey, IndexSegment> _cache = new();
@@ -22,17 +22,8 @@ internal readonly struct IndexSegmentCache<TKey>(Func<IDb, TKey, IEnumerable<Dat
         if (_cache.TryGetValue(key, out var segment))
             return segment;
 
-        var iterator = iteratorFactory(snapshot, key);
-        return Add(key, iterator);
-    }
-
-    private IndexSegment Add(TKey key, IEnumerable<Datom> segment)
-    {
-        var builder = new IndexSegmentBuilder(registry, 128);
-        builder.Add(segment);
-        var built = builder.Build();
-        _cache.TryAdd(key, built);
-        return built;
-
+        var newSegment = segmentFactory(snapshot, key);
+        _cache.TryAdd(key, newSegment);
+        return newSegment;
     }
 }
