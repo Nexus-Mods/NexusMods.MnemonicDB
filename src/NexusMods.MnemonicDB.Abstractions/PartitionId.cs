@@ -1,5 +1,5 @@
 ﻿using System;
-using Vogen;
+using TransparentValueObjects;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -7,7 +7,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// Represents a partition id
 /// </summary>
 [ValueObject<byte>]
-public partial struct PartitionId
+public readonly partial struct PartitionId
 {
     /// <summary>
     /// Where attributes are stored
