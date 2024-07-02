@@ -16,4 +16,4 @@ on:
 
 jobs:
   build-and-test:
-    uses: Nexus-Mods/NexusMods.App.Meta/.github/workflows/dotnet-build-and-test-with-osx.yaml@5f26fdb2b042b7ac372e50eddd551905fb26f0fe
+    uses: Nexus-Mods/NexusMods.App.Meta/.github/workflows/dotnet-build-and-test-with-osx.yaml@75faebd40fc091fcaf995c6c174867537caf2b05
