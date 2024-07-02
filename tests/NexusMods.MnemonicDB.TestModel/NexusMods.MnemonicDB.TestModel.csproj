@@ -39,6 +39,9 @@
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
+      <PackageReference Include="Argon" Version="0.17.0" />
+      <PackageReference Include="NexusMods.Hashing.xxHash64" Version="2.0.2" />
+      <PackageReference Include="Verify.Xunit" Version="25.2.0" />
     </ItemGroup>
 
 </Project>

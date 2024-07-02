@@ -12,22 +12,22 @@ public readonly partial struct PartitionId
     /// <summary>
     /// Where attributes are stored
     /// </summary>
-    public static PartitionId Attribute = From(0);
+    public static readonly PartitionId Attribute = From(0);
 
     /// <summary>
     /// Transaction partition
     /// </summary>
-    public static PartitionId Transactions = From(1);
+    public static readonly PartitionId Transactions = From(1);
 
     /// <summary>
     /// Default partition for entities
     /// </summary>
-    public static PartitionId Entity = From(2);
+    public static readonly PartitionId Entity = From(2);
 
     /// <summary>
     /// Default partition for temporary entities
     /// </summary>
-    public static PartitionId Temp = From(3);
+    public static readonly PartitionId Temp = From(3);
 
     /// <summary>
     /// Creates a partition id for the user partition

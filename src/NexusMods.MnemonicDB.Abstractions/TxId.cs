@@ -11,12 +11,12 @@ public readonly partial struct TxId
     /// <summary>
     ///     Maximum possible value for a TxId.
     /// </summary>
-    public static TxId MaxValue = From(ulong.MaxValue);
+    public static readonly TxId MaxValue = From(ulong.MaxValue);
 
     /// <summary>
     ///     The minimum possible value for a TxId.
     /// </summary>
-    public static TxId MinValue = From(PartitionId.Transactions.MakeEntityId(0).Value);
+    public static readonly TxId MinValue = From(PartitionId.Transactions.MakeEntityId(0).Value);
 
     /// <summary>
     ///     The temporary transaction id, used for referencing the transaction entity
