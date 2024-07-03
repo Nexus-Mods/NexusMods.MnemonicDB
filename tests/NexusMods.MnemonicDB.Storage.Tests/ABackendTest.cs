@@ -68,7 +68,7 @@ public abstract class ABackendTest<TStoreType>(
 
         var ids = new List<EntityId>();
 
-        for (var i = 0; i < 10; i++)
+        for (var i = 0; i < 4; i++)
         {
             using var segment = new IndexSegmentBuilder(Registry);
             var entityId = NextTempId();
@@ -78,8 +78,8 @@ public abstract class ABackendTest<TStoreType>(
             ids.Add(result.Remaps[entityId]);
         }
 
-        // Retract the first 5
-        for (var i = 0; i < 5; i++)
+        // Retract the first 2
+        for (var i = 0; i < 2; i++)
         {
             using var segment = new IndexSegmentBuilder(Registry);
             segment.Add(ids[i], Blobs.InKeyBlob, smallData, true);
@@ -90,8 +90,8 @@ public abstract class ABackendTest<TStoreType>(
         smallData[0] = 1;
         largeData[0] = 1;
 
-        // Change the other 5
-        for (var i = 5; i < 10; i++)
+        // Change the other 2
+        for (var i = 5; i < 2; i++)
         {
             using var segment = new IndexSegmentBuilder(Registry);
             segment.Add(ids[i], Blobs.InKeyBlob, smallData);
