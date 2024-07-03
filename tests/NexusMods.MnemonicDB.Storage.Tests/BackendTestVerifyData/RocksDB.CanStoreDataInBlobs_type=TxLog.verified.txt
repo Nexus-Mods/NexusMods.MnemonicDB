@@ -38,60 +38,8 @@
 + | 0200000000000004 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000005
 + | 0200000000000004 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 0100000000000005
 + | 0100000000000006 | (0008) Timestamp                | DateTime : 5                                     | 0100000000000006
-+ | 0200000000000005 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000006
-+ | 0200000000000005 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 0100000000000006
+- | 0200000000000001 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000006
+- | 0200000000000001 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 0100000000000006
 + | 0100000000000007 | (0008) Timestamp                | DateTime : 6                                     | 0100000000000007
-+ | 0200000000000006 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000007
-+ | 0200000000000006 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 0100000000000007
-+ | 0100000000000008 | (0008) Timestamp                | DateTime : 7                                     | 0100000000000008
-+ | 0200000000000007 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000008
-+ | 0200000000000007 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 0100000000000008
-+ | 0100000000000009 | (0008) Timestamp                | DateTime : 8                                     | 0100000000000009
-+ | 0200000000000008 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000009
-+ | 0200000000000008 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 0100000000000009
-+ | 010000000000000A | (0008) Timestamp                | DateTime : 9                                     | 010000000000000A
-+ | 0200000000000009 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 010000000000000A
-+ | 0200000000000009 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 010000000000000A
-+ | 010000000000000B | (0008) Timestamp                | DateTime : 10                                    | 010000000000000B
-+ | 020000000000000A | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 010000000000000B
-+ | 020000000000000A | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 010000000000000B
-+ | 010000000000000C | (0008) Timestamp                | DateTime : 11                                    | 010000000000000C
-- | 0200000000000001 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 010000000000000C
-- | 0200000000000001 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 010000000000000C
-+ | 010000000000000D | (0008) Timestamp                | DateTime : 12                                    | 010000000000000D
-- | 0200000000000002 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 010000000000000D
-- | 0200000000000002 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 010000000000000D
-+ | 010000000000000E | (0008) Timestamp                | DateTime : 13                                    | 010000000000000E
-- | 0200000000000003 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 010000000000000E
-- | 0200000000000003 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 010000000000000E
-+ | 010000000000000F | (0008) Timestamp                | DateTime : 14                                    | 010000000000000F
-- | 0200000000000004 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 010000000000000F
-- | 0200000000000004 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 010000000000000F
-+ | 0100000000000010 | (0008) Timestamp                | DateTime : 15                                    | 0100000000000010
-- | 0200000000000005 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000010
-- | 0200000000000005 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 0100000000000010
-+ | 0100000000000011 | (0008) Timestamp                | DateTime : 16                                    | 0100000000000011
-- | 0200000000000006 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000011
-+ | 0200000000000006 | (001E) InKeyBlob                | Blob 0x5B9FC61196AD8F3A 255 bytes                | 0100000000000011
-+ | 0200000000000006 | (001F) InValueBlob              | Blob 0x8467AA8594A0F639 16777216 bytes           | 0100000000000011
-- | 0200000000000006 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 0100000000000011
-+ | 0100000000000012 | (0008) Timestamp                | DateTime : 17                                    | 0100000000000012
-- | 0200000000000007 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000012
-+ | 0200000000000007 | (001E) InKeyBlob                | Blob 0x5B9FC61196AD8F3A 255 bytes                | 0100000000000012
-+ | 0200000000000007 | (001F) InValueBlob              | Blob 0x8467AA8594A0F639 16777216 bytes           | 0100000000000012
-- | 0200000000000007 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 0100000000000012
-+ | 0100000000000013 | (0008) Timestamp                | DateTime : 18                                    | 0100000000000013
-- | 0200000000000008 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000013
-+ | 0200000000000008 | (001E) InKeyBlob                | Blob 0x5B9FC61196AD8F3A 255 bytes                | 0100000000000013
-+ | 0200000000000008 | (001F) InValueBlob              | Blob 0x8467AA8594A0F639 16777216 bytes           | 0100000000000013
-- | 0200000000000008 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 0100000000000013
-+ | 0100000000000014 | (0008) Timestamp                | DateTime : 19                                    | 0100000000000014
-- | 0200000000000009 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000014
-+ | 0200000000000009 | (001E) InKeyBlob                | Blob 0x5B9FC61196AD8F3A 255 bytes                | 0100000000000014
-+ | 0200000000000009 | (001F) InValueBlob              | Blob 0x8467AA8594A0F639 16777216 bytes           | 0100000000000014
-- | 0200000000000009 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 0100000000000014
-+ | 0100000000000015 | (0008) Timestamp                | DateTime : 20                                    | 0100000000000015
-- | 020000000000000A | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000015
-+ | 020000000000000A | (001E) InKeyBlob                | Blob 0x5B9FC61196AD8F3A 255 bytes                | 0100000000000015
-+ | 020000000000000A | (001F) InValueBlob              | Blob 0x8467AA8594A0F639 16777216 bytes           | 0100000000000015
-- | 020000000000000A | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 0100000000000015
+- | 0200000000000002 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000007
+- | 0200000000000002 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 0100000000000007

@@ -6,13 +6,7 @@
 + | 0000000000000001 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/UniqueId         | 0100000000000001
 + | 0000000000000002 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/ValueType        | 0100000000000001
 + | 0000000000000008 | (0001) UniqueId                 | NexusMods.MnemonicDB.Transaction/Timestamp       | 0100000000000001
-+ | 0200000000000006 | (001E) InKeyBlob                | Blob 0x5B9FC61196AD8F3A 255 bytes                | 0100000000000011
-+ | 0200000000000007 | (001E) InKeyBlob                | Blob 0x5B9FC61196AD8F3A 255 bytes                | 0100000000000012
-+ | 0200000000000008 | (001E) InKeyBlob                | Blob 0x5B9FC61196AD8F3A 255 bytes                | 0100000000000013
-+ | 0200000000000009 | (001E) InKeyBlob                | Blob 0x5B9FC61196AD8F3A 255 bytes                | 0100000000000014
-+ | 020000000000000A | (001E) InKeyBlob                | Blob 0x5B9FC61196AD8F3A 255 bytes                | 0100000000000015
-+ | 0200000000000006 | (001F) InValueBlob              | Blob 0x8467AA8594A0F639 16777216 bytes           | 0100000000000011
-+ | 0200000000000007 | (001F) InValueBlob              | Blob 0x8467AA8594A0F639 16777216 bytes           | 0100000000000012
-+ | 0200000000000008 | (001F) InValueBlob              | Blob 0x8467AA8594A0F639 16777216 bytes           | 0100000000000013
-+ | 0200000000000009 | (001F) InValueBlob              | Blob 0x8467AA8594A0F639 16777216 bytes           | 0100000000000014
-+ | 020000000000000A | (001F) InValueBlob              | Blob 0x8467AA8594A0F639 16777216 bytes           | 0100000000000015
++ | 0200000000000003 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000004
++ | 0200000000000004 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000005
++ | 0200000000000003 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 0100000000000004
++ | 0200000000000004 | (001F) InValueBlob              | Blob 0x8FFA0F9DFCB11153 16777216 bytes           | 0100000000000005
