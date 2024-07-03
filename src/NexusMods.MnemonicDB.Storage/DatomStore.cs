@@ -60,6 +60,8 @@ public class DatomStore : IDatomStore
     /// </summary>
     private Thread? _loggerThread;
 
+    private CancellationTokenSource _shutdownToken = new();
+
     /// <summary>
     /// DI constructor
     /// </summary>
@@ -199,6 +201,8 @@ public class DatomStore : IDatomStore
     public void Dispose()
     {
         _pendingTransactions.CompleteAdding();
+        _shutdownToken.Cancel();
+        _loggerThread?.Join();
         _updatesSubject?.Dispose();
         _writer.Dispose();
         _retractWriter.Dispose();
@@ -208,7 +212,7 @@ public class DatomStore : IDatomStore
     {
         try
         {
-            while (!_pendingTransactions.IsCompleted)
+            while (!_pendingTransactions.IsCompleted && !_shutdownToken.Token.IsCancellationRequested)
             {
                 if (!_pendingTransactions.TryTake(out var pendingTransaction, -1))
                     continue;
