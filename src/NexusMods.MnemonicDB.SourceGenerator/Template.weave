@@ -134,15 +134,35 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 
 
     public partial class New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
-        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.PartitionId partition) : base() {
-            Id = tx.TempId(partition);
-            tx.Attach(this);
-        }
 
+
+        {{if model.Includes.Count == 0}}
+        
         public New(__ABSTRACTIONS__.ITransaction tx) : base() {
             Id = tx.TempId();
             tx.Attach(this);
         }
+        
+        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.PartitionId partition) : base() {
+            Id = tx.TempId(partition);
+            tx.Attach(this);
+        }
+        
+        {{else}}
+        
+        public New(__ABSTRACTIONS__.ITransaction tx, out __ABSTRACTIONS__.EntityId id) : base() {
+            Id = tx.TempId();
+            id = Id;
+            tx.Attach(this);
+        }
+        
+        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.PartitionId partition, out __ABSTRACTIONS__.EntityId id) : base() {
+            Id = tx.TempId(partition);
+            id = Id;
+            tx.Attach(this);
+        }
+        
+        {{/if}}
 
         public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.EntityId eid) : base() {
             Id = eid;
@@ -151,7 +171,10 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 
         {{each include in model.Includes}}
         public required {{= include.ToDisplayString()}}.New {{= include.Name}} {
-          init => Id = value.Id;
+          init => {
+               if (Id != value.Id)
+                   throw new InvalidOperationException("The id of the included entity must match the id of the including entity.");
+          }
         }
         {{/each}}
 

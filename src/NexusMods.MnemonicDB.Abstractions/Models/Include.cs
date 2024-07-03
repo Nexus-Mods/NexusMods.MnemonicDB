@@ -6,7 +6,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Models;
 /// Denotes that this model includes the attributes of another model
 /// </summary>
 /// <typeparam name="T"></typeparam>
-[AttributeUsage(AttributeTargets.Class)]
+[AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
 public class Include<T> : Attribute
 where T : IModelDefinition
 {

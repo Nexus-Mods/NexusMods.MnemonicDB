@@ -9,5 +9,8 @@ public static class Services
             .AddArchiveFileModel()
             .AddModModel()
             .AddLoadoutModel()
-            .AddCollectionModel();
+            .AddCollectionModel()
+            .AddParentAModel()
+            .AddParentBModel()
+            .AddChildModel();
 }

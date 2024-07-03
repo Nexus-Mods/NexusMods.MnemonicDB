@@ -139,9 +139,9 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         // Insert some data
         var tx = Connection.BeginTransaction();
 
-        var archiveFile = new ArchiveFile.New(tx)
+        var archiveFile = new ArchiveFile.New(tx, out var id)
         {
-            File = new File.New(tx)
+            File = new File.New(tx, id)
             {
                 Path = "C:\\test.txt",
                 Hash = Hash.From(1 + 0xDEADBEEF),
@@ -622,5 +622,70 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await tx3.Commit();
 
         await Verify(changes);
+    }
+
+    [Fact]
+    public async Task MultipleIncludesDontSplitEntities()
+    {
+        using var tx = Connection.BeginTransaction();
+        var child = new Child.New(tx, out var id)
+        {
+            Name = "Test Child",
+            ParentA = new ParentA.New(tx, id)
+            {
+                Name = "Parent A"
+            },
+            ParentB = new ParentB.New(tx, id)
+            {
+                Name = "Parent B"
+            }
+        };
+        
+        var result = await tx.Commit();
+        
+        var childRO = result.Remap(child);
+        
+        childRO.AsParentA().Name.Should().Be("Parent A");
+        childRO.AsParentB().Name.Should().Be("Parent B");
+        childRO.Name.Should().Be("Test Child");
+        
+
+        // If the above is working correctly we'll only have one entityId for the client, if it's wrong, the
+        // one of the parents may have a different entityId
+        await VerifyTable(result.Db.Datoms(result.NewTx));
+    }
+    
+    [Fact]
+    public async Task MultipleIncludesCanBeConstructedSeparately()
+    {
+        using var tx = Connection.BeginTransaction();
+        
+        var parentA = new ParentA.New(tx)
+        {
+            Name = "Parent A"
+        };
+        
+        var child = new Child.New(tx, parentA.Id)
+        {
+            Name = "Test Child",
+            ParentA = parentA,
+            ParentB = new ParentB.New(tx, parentA.Id)
+            {
+                Name = "Parent B"
+            }
+        };
+        
+        var result = await tx.Commit();
+        
+        var childRO = result.Remap(child);
+        
+        childRO.AsParentA().Name.Should().Be("Parent A");
+        childRO.AsParentB().Name.Should().Be("Parent B");
+        childRO.Name.Should().Be("Test Child");
+        
+
+        // If the above is working correctly we'll only have one entityId for the client, if it's wrong, the
+        // one of the parents may have a different entityId
+        await VerifyTable(result.Db.Datoms(result.NewTx));
     }
 }
