@@ -234,7 +234,7 @@ public class DatomStore : IDatomStore
                     Log(pendingTransaction, out var result);
 
                     _updatesSubject?.OnNext((result.AssignedTxId, result.Snapshot));
-                    pendingTransaction.CompletionSource.TrySetResult(result);
+                    pendingTransaction.Complete(result);
                 }
                 catch (Exception ex)
                 {
@@ -291,8 +291,11 @@ public class DatomStore : IDatomStore
         }
 
         _updatesSubject = new BehaviorSubject<(TxId TxId, ISnapshot snapshot)>((_asOfTx, _currentSnapshot));
-        _loggerThread = new Thread(ConsumeTransactions);
-        _loggerThread.IsBackground = true;
+        _loggerThread = new Thread(ConsumeTransactions)
+        {
+            IsBackground = true,
+            Name = "MnemonicDB Transaction Logger",
+        };
         _loggerThread.Start();
     }
 

@@ -21,7 +21,7 @@ internal class PendingTransaction
     /// <summary>
     ///     The data to be commited
     /// </summary>
-    public required IndexSegment Data { get; init; }
+    public required IndexSegment Data { get; set; }
 
     /// <summary>
     ///     Tx functions to be applied to the transaction, if any
@@ -33,4 +33,10 @@ internal class PendingTransaction
     /// if TxFunctions is null.
     /// </summary>
     public required Func<ISnapshot, IDb>? DatabaseFactory { get; init; }
+    
+    public void Complete(StoreResult result)
+    {
+        Data = new IndexSegment();
+        Task.Run(() => CompletionSource.SetResult(result));
+    }
 }
