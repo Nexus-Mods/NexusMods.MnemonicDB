@@ -77,7 +77,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         foreach (var txId in txEs)
         {
             var db = Connection.AsOf(txId);
-            var resolved = db.Datoms(modId);
+            var resolved = db.Datoms(modId).Resolved();
             await VerifyTable(resolved).UseTextForParameters("mod data_" + txId.Value);
         }
     }
@@ -652,7 +652,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         // If the above is working correctly we'll only have one entityId for the client, if it's wrong, the
         // one of the parents may have a different entityId
-        await VerifyTable(result.Db.Datoms(result.NewTx));
+        await VerifyTable(result.Db.Datoms(result.NewTx).Resolved());
     }
     
     [Fact]
@@ -686,6 +686,6 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         // If the above is working correctly we'll only have one entityId for the client, if it's wrong, the
         // one of the parents may have a different entityId
-        await VerifyTable(result.Db.Datoms(result.NewTx));
+        await VerifyTable(result.Db.Datoms(result.NewTx).Resolved());
     }
 }

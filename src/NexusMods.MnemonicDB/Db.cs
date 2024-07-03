@@ -26,7 +26,6 @@ internal class Db : IDb
     private readonly IndexSegmentCache<(EntityId, AttributeId)> _reverseCache;
     private readonly IndexSegmentCache<EntityId> _referencesCache;
     private readonly RegistryId _registryId;
-    private readonly Lazy<IAnalytics> _analytics;
 
     public ISnapshot Snapshot { get; }
     public IAttributeRegistry Registry => _registry;
@@ -40,7 +39,6 @@ internal class Db : IDb
         _entityCache = new IndexSegmentCache<EntityId>(EntityDatoms, registry);
         _reverseCache = new IndexSegmentCache<(EntityId, AttributeId)>(ReverseDatoms, registry);
         _referencesCache = new IndexSegmentCache<EntityId>(ReferenceDatoms, registry);
-        _analytics = new Lazy<IAnalytics>(() => new Analytics(this));
         Snapshot = snapshot;
         BasisTxId = txId;
     }
@@ -56,20 +54,9 @@ internal class Db : IDb
     }
 
     public TxId BasisTxId { get; }
-
-    public IAnalytics Analytics => _analytics.Value;
-
+    
     public IConnection Connection => _connection;
-
-    public IEnumerable<TModel> Get<TModel>(IEnumerable<EntityId> ids)
-        where TModel : IHasEntityIdAndDb
-    {
-        foreach (var id in ids)
-        {
-            yield return Get<TModel>(id);
-        }
-    }
-
+    
     /// <summary>
     /// Gets the IndexSegment for the given entity id.
     /// </summary>
@@ -78,17 +65,9 @@ internal class Db : IDb
         return _entityCache.Get(this, entityId);
     }
 
-    public IEnumerable<EntityId> Find(IAttribute attribute)
-    {
-        var attrId = attribute.GetDbId(_registry.Id);
-        return Snapshot
-            .Datoms(SliceDescriptor.Create(attrId, _registry))
-            .Select(d => d.E);
-    }
-
     public EntityIds GetBackRefs(ReferenceAttribute attribute, EntityId id)
     {
-        var segment = _reverseCache.Get(this, (id, attribute.GetDbId(_registry.Id)));
+        var segment = _reverseCache.Get(this, (id, attribute.GetDbId(_registryId)));
         return new EntityIds(segment, 0, segment.Count);
     }
 
@@ -104,7 +83,7 @@ internal class Db : IDb
 
     public IEnumerable<TValue> GetAll<TValue, TLowLevel>(EntityId id, Attribute<TValue, TLowLevel> attribute)
     {
-        var attrId = attribute.GetDbId(_registry.Id);
+        var attrId = attribute.GetDbId(_registryId);
         var results = _entityCache.Get(this, id)
             .Where(d => d.A == attrId)
             .Select(d => d.Resolve(attribute));
@@ -112,28 +91,16 @@ internal class Db : IDb
         return results;
     }
 
-    public IEnumerable<EntityId> FindIndexed<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value)
+    public IndexSegment Datoms<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value)
     {
-        return FindIndexedDatoms(attribute, value)
-            .Select(d => d.E);
+        return Datoms(SliceDescriptor.Create(attribute, value, _registry));
     }
 
-    public IEnumerable<EntityId> FindIndexed(ReferenceAttribute attribute, EntityId value)
+    public IndexSegment Datoms(ReferenceAttribute attribute, EntityId value)
     {
-        return Snapshot
-            .Datoms(SliceDescriptor.Create(attribute, value, _registry))
-            .Select(d => d.E);
+        return Datoms(SliceDescriptor.Create(attribute, value, _registry));
     }
-
-    public IEnumerable<Datom> FindIndexedDatoms<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value)
-    {
-        if (!attribute.IsIndexed)
-            throw new InvalidOperationException($"Attribute {attribute.Id} is not indexed");
-
-        return Snapshot
-            .Datoms(SliceDescriptor.Create(attribute, value, _registry));;
-    }
-
+    
     public TModel Get<TModel>(EntityId id)
         where TModel : IHasEntityIdAndDb
     {
@@ -143,15 +110,19 @@ internal class Db : IDb
     public Entities<EntityIds, TModel> GetReverse<TModel>(EntityId id, Attribute<EntityId, ulong> attribute)
         where TModel : IReadOnlyModel<TModel>
     {
-        var segment = _reverseCache.Get(this, (id, attribute.GetDbId(_registry.Id)));
+        var segment = _reverseCache.Get(this, (id, attribute.GetDbId(_registryId)));
         var ids = new EntityIds(segment, 0, segment.Count);
         return new Entities<EntityIds, TModel>(ids, this);
     }
 
-    public IEnumerable<IReadDatom> Datoms(EntityId entityId)
+    public IndexSegment Datoms(EntityId entityId)
     {
-        return _entityCache.Get(this, entityId)
-            .Select(d => d.Resolved);
+        return _entityCache.Get(this, entityId);
+    }
+    
+    public IndexSegment Datoms(IAttribute attribute)
+    {
+        return Snapshot.Datoms(SliceDescriptor.Create(attribute, _registry));
     }
 
     public IndexSegment Datoms(SliceDescriptor sliceDescriptor)
@@ -159,10 +130,9 @@ internal class Db : IDb
         return Snapshot.Datoms(sliceDescriptor);
     }
 
-    public IEnumerable<IReadDatom> Datoms(TxId txId)
+    public IndexSegment Datoms(TxId txId)
     {
-        return Snapshot.Datoms(SliceDescriptor.Create(txId, _registry))
-            .Select(d => d.Resolved);
+        return Snapshot.Datoms(SliceDescriptor.Create(txId, _registry));
     }
 
     public bool Equals(IDb? other)

@@ -4,25 +4,30 @@
 
 #nullable enable
 
-using System;
-using System.Linq;
-using System.Collections;
-using System.Collections.Generic;
-using TransparentValueObjects;
+
 
 namespace {{= model.Namespace}};
+
+using global::System;
+using global::System.Linq;
+using global::System.Collections;
+using global::System.Collections.Generic;
+using global::TransparentValueObjects;
+
+using global::NexusMods.MnemonicDB.Abstractions.Query;
+using global::System.Reactive.Linq;
+using global::DynamicData;
+using global::Microsoft.Extensions.DependencyInjection;
+using global::NexusMods.MnemonicDB.Abstractions;
+using global::System.Diagnostics.CodeAnalysis;
+using global::System.Diagnostics.Contracts;
+
 using __ABSTRACTIONS__ = NexusMods.MnemonicDB.Abstractions;
 using __MODELS__ = NexusMods.MnemonicDB.Abstractions.Models;
 using __SEGMENTS__ = NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using __DI__ = Microsoft.Extensions.DependencyInjection;
 using __COMPARERS__ = NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.Query;
-using System.Reactive.Linq;
-using DynamicData;
-using Microsoft.Extensions.DependencyInjection;
-using NexusMods.MnemonicDB.Abstractions;
-using System.Diagnostics.CodeAnalysis;
-using System.Diagnostics.Contracts;
+
 
 {{= model.Comments}}
 public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}}, {{= model.Name}}.ReadOnly>
@@ -40,10 +45,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 
     {{each attr in model.Attributes}}
     {{if attr.IsIndexed || attr.IsReference}}
-    public static IEnumerable<{{= model.Name}}.ReadOnly> FindBy{{= attr.Name}}(__ABSTRACTIONS__.IDb db, {{= attr.HighLevelType.ToDisplayString()}} value) {
-        foreach (var id in db.FindIndexed({{= attr.Name}}, value)) {
-            yield return new {{= model.Name}}.ReadOnly(db, id);
-        }
+    public static __SEGMENTS__.Entities<{{= model.Name}}.ReadOnly> FindBy{{= attr.Name}}(__ABSTRACTIONS__.IDb db, {{= attr.HighLevelType.ToDisplayString()}} value) {
+        return db.Datoms({{= attr.FieldName}}, value).AsModels<{{= model.Name}}.ReadOnly>(db);
     }
     {{/if}}
     {{/each}}
@@ -77,8 +80,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     /// <summary>
     /// Returns all {{= model.Name}} entities in the database.
     /// </summary>
-    public static IEnumerable<{{= model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
-        return db.Find(PrimaryAttribute).Select(eid => new ReadOnly(db, eid));
+    public static __SEGMENTS__.Entities<{{=model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
+        return db.Datoms(PrimaryAttribute).AsModels<{{= model.Name}}.ReadOnly>(db);
     }
 
 

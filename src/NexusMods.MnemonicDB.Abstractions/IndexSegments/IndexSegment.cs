@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -8,6 +9,7 @@ using System.Runtime.Intrinsics.X86;
 using DynamicData;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.Paths;
 using Reloaded.Memory.Extensions;
 
@@ -157,6 +159,14 @@ public readonly struct IndexSegment : IEnumerable<Datom>
         }
     }
 
+    /// <summary>
+    /// Resolves all the datoms in this segment
+    /// </summary>
+    public IEnumerable<IReadDatom> Resolved()
+    {
+        return this.Select(d => d.Resolved);
+    }
+
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
@@ -170,6 +180,16 @@ public readonly struct IndexSegment : IEnumerable<Datom>
         using var builder = new IndexSegmentBuilder(registry, datoms.Count);
         builder.Add(datoms);
         return builder.Build();
+    }
+
+    /// <summary>
+    /// Converts this index segment to am Entities segment, where each datom in this index becomes
+    /// a loaded model. Assumes that datoms with duplicate entity ids should be loaded as separate models.
+    /// </summary>
+    public Entities<TModel> AsModels<TModel>(IDb fromDb) 
+        where TModel : IReadOnlyModel<TModel>
+    {
+        return new Entities<TModel>(new EntityIds(this, 0, Count), fromDb);
     }
 
     /// <summary>

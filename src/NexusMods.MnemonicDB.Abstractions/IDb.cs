@@ -36,11 +36,6 @@ public interface IDb : IEquatable<IDb>
     IAttributeRegistry Registry { get; }
 
     /// <summary>
-    /// Analytics for the database.
-    /// </summary>
-    IAnalytics Analytics { get; }
-
-    /// <summary>
     /// Gets the index segment for the given entity id.
     /// </summary>
     public IndexSegment Get(EntityId entityId);
@@ -55,7 +50,7 @@ public interface IDb : IEquatable<IDb>
     /// <summary>
     /// Get all the datoms for the given entity id.
     /// </summary>
-    public IEnumerable<IReadDatom> Datoms(EntityId id);
+    public IndexSegment Datoms(EntityId id);
 
     /// <summary>
     /// Get all the datoms for the given slice descriptor.
@@ -65,34 +60,23 @@ public interface IDb : IEquatable<IDb>
     /// <summary>
     ///     Gets the datoms for the given transaction id.
     /// </summary>
-    public IEnumerable<IReadDatom> Datoms(TxId txId);
+    public IndexSegment Datoms(TxId txId);
+    
+    /// <summary>
+    /// Finds all datoms that have the given attribute
+    /// </summary>
+    IndexSegment Datoms(IAttribute attribute);
+    
+    /// <summary>
+    /// Finds all the datoms that have the given attribute with the given value.
+    /// </summary>
+    IndexSegment Datoms<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value);
 
     /// <summary>
-    /// Gets all values for the given attribute on the given entity. There's no reason to use this
-    /// on attributes that are not multi-valued.
+    /// Finds all the datoms that have the given attribute with the given value.
     /// </summary>
-    IEnumerable<TValueType> GetAll<TValueType, TLowLevel>(EntityId modelId, Attribute<TValueType, TLowLevel> attribute);
-
-    /// <summary>
-    /// Finds all the entity ids that have the given attribute with the given value.
-    /// </summary>
-    IEnumerable<EntityId> FindIndexed<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value);
-
-    /// <summary>
-    /// Finds all the entity ids that have the given attribute with the given value.
-    /// </summary>
-    IEnumerable<EntityId> FindIndexed(ReferenceAttribute attribute, EntityId value);
-
-    /// <summary>
-    /// Finds all the datoms have the given attribute with the given value.
-    /// </summary>
-    IEnumerable<Datom> FindIndexedDatoms<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value);
-
-    /// <summary>
-    /// Finds all the entity ids that have the given attribute.
-    /// </summary>
-    IEnumerable<EntityId> Find(IAttribute attribute);
-
+    IndexSegment Datoms(ReferenceAttribute attribute, EntityId value);
+    
     /// <summary>
     /// Gets all the back references for this entity that are through the given attribute.
     /// </summary>
