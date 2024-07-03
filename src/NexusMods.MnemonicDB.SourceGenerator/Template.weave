@@ -171,7 +171,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 
         {{each include in model.Includes}}
         public required {{= include.ToDisplayString()}}.New {{= include.Name}} {
-          init => {
+          init {
                if (Id != value.Id)
                    throw new InvalidOperationException("The id of the included entity must match the id of the including entity.");
           }
