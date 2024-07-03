@@ -13,7 +13,6 @@
         <PackageReference Include="RocksDB" Version="8.11.3.46984"/>
         <PackageReference Include="System.Threading.Channels" Version="8.0.0"/>
         <PackageReference Include="TransparentValueObjects" Version="1.0.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
-        <PackageReference Update="JetBrains.Annotations" Version="2023.3.0"/>
     </ItemGroup>
 
     <ItemGroup>
