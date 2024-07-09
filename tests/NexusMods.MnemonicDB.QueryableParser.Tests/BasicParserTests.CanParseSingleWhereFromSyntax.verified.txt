@@ -1,0 +1,5 @@
+﻿Conjunction:
+  Root: Query -> ?3
+  ?3.Name -> ?4
+  Test -> ?5
+  ?5 == ?4
