@@ -40,7 +40,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     {{else}}
     {{/if}}
     {{/each}}
-
+    
     #region CRUD Methods
 
     {{each attr in model.Attributes}}
@@ -82,6 +82,10 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     /// </summary>
     public static __SEGMENTS__.Entities<{{=model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
         return db.Datoms(PrimaryAttribute).AsModels<{{= model.Name}}.ReadOnly>(db);
+    }
+    
+    public static IQueryable<{{= model.Name}}.ReadOnly> Query(__ABSTRACTIONS__.IConnection conn) {
+        throw new NotImplementedException();
     }
 
 
@@ -266,7 +270,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
                Id = id;
                IndexSegment = segment;
            }
-
+           
+           
            /// <summary>
            /// Constructs a new ReadOnly model of the entity.
            /// </summary>

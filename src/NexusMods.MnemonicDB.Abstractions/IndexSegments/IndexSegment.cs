@@ -43,6 +43,11 @@ public readonly struct IndexSegment : IEnumerable<Datom>
         _data = memory;
         ReprocessData(data, offsets, memory.Span);
     }
+    
+    /// <summary>
+    /// The data in this segment as a single span
+    /// </summary>
+    public ReadOnlySpan<byte> DataSpan => _data.Span;
 
     /// <summary>
     /// All the upper values

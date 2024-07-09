@@ -10,7 +10,7 @@
         <PackageReference Include="NexusMods.Paths" Version="0.9.5" />
         <PackageReference Include="System.IO.Hashing" Version="8.0.0" />
         <PackageReference Include="TransparentValueObjects" Version="1.0.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
-        <PackageReference Update="JetBrains.Annotations" Version="2023.3.0"/>
+        <PackageReference Update="JetBrains.Annotations" Version="2024.2.0" />
         <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.SourceGenerator\NexusMods.MnemonicDB.SourceGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
