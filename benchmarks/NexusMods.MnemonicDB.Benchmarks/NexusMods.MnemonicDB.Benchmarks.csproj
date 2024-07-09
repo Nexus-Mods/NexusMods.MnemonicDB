@@ -10,7 +10,7 @@
     <ItemGroup>
         <PackageReference Include="BenchmarkDotNet" Version="0.13.12"/>
         <PackageReference Include="JetBrains.Profiler.Api" Version="1.4.6" />
-        <PackageReference Update="JetBrains.Annotations" Version="2023.3.0"/>
+        <PackageReference Update="JetBrains.Annotations" Version="2024.2.0" />
     </ItemGroup>
 
     <ItemGroup>
