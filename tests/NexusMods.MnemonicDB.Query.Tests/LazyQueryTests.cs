@@ -28,5 +28,20 @@ public class LazyQueryTests
 
         await Verify(results);
     }
+
+    [Fact]
+    public async Task CanPerformSimpleQueryWithParamater()
+    {
+        var x = Term.LVar<int>();
+        var max = Term.LVar<int>();
+        
+        var query = new IFact[]
+        {
+            new Fact<int, int>(Source.Range, max, x)
+        };
+        var results = _engine.Query(query, max, 20, x);
+        
+        await Verify(results);
+    }
     
 }

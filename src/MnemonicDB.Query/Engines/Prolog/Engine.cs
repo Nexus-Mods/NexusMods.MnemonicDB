@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using DynamicData.Kernel;
 using NexusMods.MnemonicDB.Abstractions;
 
 namespace MnemonicDB.Query.Engines.Datalog.Prolog;
@@ -32,9 +34,22 @@ public class Engine
         _sources = tmp;
     }
 
-    public IEnumerable<T> Query<T>(IFact[] query, Term<T> term)
+    public IEnumerable<TOut> Query<TIn, TOut>(IFact[] query, Term<TIn> inTerm, TIn binding, Term<TOut> outVar) 
+        where TOut : notnull
     {
-        IEnumerable<HashmapEnvironment> envs = new List<HashmapEnvironment> { new() };
+        var firstEnv = new HashmapEnvironment().Bind(inTerm, binding);
+        return QueryInner(firstEnv, query, env =>
+        {
+            if (env.TryGet(outVar, out var value))
+                return Optional.Some(value);
+            return Optional.None<TOut>();
+        });
+    }
+    
+    public IEnumerable<TOut> QueryInner<TOut, TEnv>(TEnv initialEnv, IFact[] query, Func<TEnv, Optional<TOut>> selector)
+    where TEnv : IEnvironment<TEnv> where TOut : notnull
+    {
+        IEnumerable<TEnv> envs = [initialEnv];
         
         foreach (var fact in query)
         {
@@ -52,13 +67,24 @@ public class Engine
             }
         }
 
-        return envs.Select(env =>
-            {
-                if (env.TryGet(term, out var value))
-                    return (true, value);
-                return (false, default!);
-            })
-            .Where(t => t.Item1)
-            .Select(t => t.Item2!);
+        foreach (var result in envs)
+        {
+            var selected = selector(result);
+            if (!selected.HasValue)
+                continue;
+            yield return selected.Value;
+        }
+    }
+
+    public IEnumerable<T> Query<T>(IFact[] query, Term<T> term) 
+        where T : notnull
+    {
+        var firstEnv = new HashmapEnvironment();
+        return QueryInner(firstEnv, query, env =>
+        {
+            if (env.TryGet(term, out var value))
+                return Optional.Some(value);
+            return Optional.None<T>();
+        });
     }
 }
