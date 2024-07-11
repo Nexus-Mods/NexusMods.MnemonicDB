@@ -19,14 +19,14 @@
         <IncludeAssets>runtime; build; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
       <PackageReference Update="xunit" Version="2.8.1" />
-      <PackageReference Update="xunit.runner.visualstudio" Version="2.8.1">
+      <PackageReference Update="xunit.runner.visualstudio" Version="2.8.2">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
       <PackageReference Update="Xunit.SkippableFact" Version="1.4.13" />
-      <PackageReference Update="Xunit.DependencyInjection" Version="9.3.0" />
-      <PackageReference Update="Xunit.DependencyInjection.Logging" Version="9.0.0" />
-      <PackageReference Update="Xunit.DependencyInjection.SkippableFact" Version="9.0.0" />
+      <PackageReference Update="Xunit.DependencyInjection" Version="8.9.1" />
+      <PackageReference Update="Xunit.DependencyInjection.Logging" Version="8.0.0" />
+      <PackageReference Update="Xunit.DependencyInjection.SkippableFact" Version="8.1.0" />
       <PackageReference Update="NexusMods.Hashing.xxHash64" Version="2.0.2" />
       <PackageReference Update="Verify" Version="25.2.0" />
       <PackageReference Update="Verify.Xunit" Version="25.2.0" />
@@ -41,7 +41,19 @@
       </PackageReference>
       <PackageReference Include="Argon" Version="0.17.0" />
       <PackageReference Include="NexusMods.Hashing.xxHash64" Version="2.0.2" />
-      <PackageReference Include="Verify.Xunit" Version="25.2.0" />
+      <PackageReference Include="Verify.Xunit" Version="25.3.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="ModlistParser\" />
+      <Folder Include="Resources\" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Resources\games.json.bz2" />
+      <None Update="ModlistParser\Resources\modlist_reformatted.bz2">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

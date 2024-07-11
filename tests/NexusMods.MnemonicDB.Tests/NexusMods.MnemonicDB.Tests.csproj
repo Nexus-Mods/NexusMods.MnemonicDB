@@ -7,6 +7,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\NexusMods.MnemonicDB\NexusMods.MnemonicDB.csproj"/>
+        <ProjectReference Include="..\NexusMods.MnemonicDB.RealisticTestData\NexusMods.MnemonicDB.RealisticTestData.csproj" />
         <ProjectReference Include="..\NexusMods.MnemonicDB.TestModel\NexusMods.MnemonicDB.TestModel.csproj"/>
     </ItemGroup>
 
@@ -33,9 +34,9 @@
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
       <PackageReference Update="Xunit.SkippableFact" Version="1.4.13" />
-      <PackageReference Update="Xunit.DependencyInjection" Version="9.3.0" />
-      <PackageReference Update="Xunit.DependencyInjection.Logging" Version="9.0.0" />
-      <PackageReference Update="Xunit.DependencyInjection.SkippableFact" Version="9.0.0" />
+      <PackageReference Update="Xunit.DependencyInjection" Version="8.9.1" />
+      <PackageReference Update="Xunit.DependencyInjection.Logging" Version="8.1.0" />
+      <PackageReference Update="Xunit.DependencyInjection.SkippableFact" Version="8.1.0" />
       <PackageReference Update="NexusMods.Hashing.xxHash64" Version="2.0.2" />
       <PackageReference Update="Verify" Version="25.2.0" />
       <PackageReference Update="Verify.Xunit" Version="25.2.0" />
