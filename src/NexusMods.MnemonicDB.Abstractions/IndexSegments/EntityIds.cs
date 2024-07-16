@@ -22,6 +22,11 @@ public struct EntityIds(IndexSegment segment, int start, int end) :
     public int Count => end - start;
 
     /// <summary>
+    /// Returns the underlying segment
+    /// </summary>
+    public IndexSegment IndexSegment => segment;
+
+    /// <summary>
     /// Converts the view to an array
     /// </summary>
     public EntityId[] ToArray()

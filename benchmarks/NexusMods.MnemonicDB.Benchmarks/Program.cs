@@ -11,28 +11,27 @@ using NexusMods.MnemonicDB.Benchmarks.Benchmarks;
 
 #if DEBUG
 
-var benchmark = new ReadTests
-{
-    Count = 128
-};
+using var benchmark = new RealDataBenchmarks();
 
 var sw = Stopwatch.StartNew();
 await benchmark.Setup();
 
 ulong result = 0;
-
+Console.WriteLine("Starting benchmark");
 MeasureProfiler.StartCollectingData();
 //MemoryProfiler.CollectAllocations(true);
-for (var i = 0; i < 10000; i++)
-    result = benchmark.ReadAllFromMod();
+for (var i = 0; i < 1; i++)
+    result = benchmark.CountHashes();
 //MemoryProfiler.CollectAllocations(false);
 
 MeasureProfiler.SaveData();
 Console.WriteLine("Elapsed: " + sw.Elapsed + " Result: " + result);
 
+
 #else
 
-BenchmarkRunner.Run<IndexSegmentEBenchmarks>(config: DefaultConfig.Instance.WithOption(ConfigOptions.DisableOptimizationsValidator, true));
+BenchmarkRunner.Run<RealDataBenchmarks>(config: DefaultConfig.Instance.WithOption(ConfigOptions.DisableOptimizationsValidator, true));
 #endif
+
 
 

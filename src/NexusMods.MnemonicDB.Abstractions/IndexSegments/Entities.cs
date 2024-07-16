@@ -57,6 +57,11 @@ where TModel : IReadOnlyModel<TModel>
         _ids = ids;
         _db = db;
     }
+    
+    /// <summary>
+    /// Returns the underlying segment
+    /// </summary>
+    public IndexSegment IndexSegment => _ids.IndexSegment;
 
 
     /// <inheritdoc />

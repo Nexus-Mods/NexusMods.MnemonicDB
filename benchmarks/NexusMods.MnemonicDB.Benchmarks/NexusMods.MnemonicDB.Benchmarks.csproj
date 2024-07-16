@@ -16,6 +16,7 @@
     <ItemGroup>
         <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.Abstractions\NexusMods.MnemonicDB.Abstractions.csproj"/>
         <ProjectReference Include="..\..\src\NexusMods.MnemonicDB\NexusMods.MnemonicDB.csproj"/>
+        <ProjectReference Include="..\..\tests\NexusMods.MnemonicDB.RealisticTestData\NexusMods.MnemonicDB.RealisticTestData.csproj" />
         <ProjectReference Include="..\..\tests\NexusMods.MnemonicDB.TestModel\NexusMods.MnemonicDB.TestModel.csproj"/>
     </ItemGroup>
 

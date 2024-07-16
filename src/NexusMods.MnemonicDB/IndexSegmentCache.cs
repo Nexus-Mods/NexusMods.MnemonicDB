@@ -26,4 +26,9 @@ internal readonly struct IndexSegmentCache<TKey>(Func<IDb, TKey, IndexSegment> s
         _cache.TryAdd(key, newSegment);
         return newSegment;
     }
+    
+    public void Clear()
+    {
+        _cache.Clear();
+    }
 }

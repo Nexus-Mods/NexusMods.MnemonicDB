@@ -2,22 +2,18 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
-using Microsoft.Extensions.DependencyInjection;
+using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage;
-using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB;
 
-internal class Db : IDb
+public class Db : IDb
 {
     private readonly Connection _connection;
     private readonly AttributeRegistry _registry;
@@ -41,6 +37,16 @@ internal class Db : IDb
         _referencesCache = new IndexSegmentCache<EntityId>(ReferenceDatoms, registry);
         Snapshot = snapshot;
         BasisTxId = txId;
+    }
+    
+    /// <summary>
+    /// Clears the internal caches, for use in testing
+    /// </summary>
+    public void ClearCache()
+    {
+        _entityCache.Clear();
+        _reverseCache.Clear();
+        _referencesCache.Clear();
     }
 
     private static IndexSegment EntityDatoms(IDb db, EntityId id)
@@ -69,6 +75,15 @@ internal class Db : IDb
     {
         var segment = _reverseCache.Get(this, (id, attribute.GetDbId(_registryId)));
         return new EntityIds(segment, 0, segment.Count);
+    }
+
+    private void PreCache(IndexSegment segment)
+    {
+        Parallel.ForEach(segment, d =>
+        {
+            _entityCache.Get(this, d.E);
+        });
+            
     }
 
     private static IndexSegment ReferenceDatoms(IDb db, EntityId eid)
