@@ -7,6 +7,7 @@ using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions.Query;
 
@@ -55,7 +56,7 @@ public static class ObservableDatoms
 
                 if (idx == 0)
                     return Setup(set, rev.Database, descriptor);
-                return Diff(set, rev.AddedDatoms, descriptor, equality);
+                return Diff(conn.Registry, set, rev.AddedDatoms, descriptor, equality);
             }
         });
     }
@@ -93,31 +94,52 @@ public static class ObservableDatoms
         return conn.Revisions.DelayUntilFirstValue(() => conn.ObserveDatoms(SliceDescriptor.Create(attribute, conn.Registry)));
     }
 
-    private static IChangeSet<Datom> Diff(SortedSet<Datom> set, IndexSegment updates, SliceDescriptor descriptor, IEqualityComparer<Datom> comparer)
+    private static IChangeSet<Datom> Diff(IAttributeRegistry registry, SortedSet<Datom> set, IndexSegment updates, SliceDescriptor descriptor, IEqualityComparer<Datom> comparer)
     {
         List<Change<Datom>>? changes = null;
-
-        // TEMPORARY for testing
-        var prevSet = set.ToArray();
-
-        foreach (var datom in updates)
+        
+        for (int i = 0; i < updates.Count; i++) 
         {
+            var datom = updates[i];
             if (!descriptor.Includes(datom))
                 continue;
             if (datom.IsRetract)
             {
                 var idx = set.IndexOf(datom, comparer);
-                if (idx >= 0)
+                if (idx < 0)
                 {
-                    set.Remove(datom);
-                    changes ??= [];
-                    changes.Add(new Change<Datom>(ListChangeReason.Remove, datom, idx));
-                }
-                else
-                {
-                    var existsOriginally = prevSet.Any(d => comparer.Equals(d, datom));
                     throw new InvalidOperationException("Retract without assert in set");
                 }
+
+                set.Remove(datom);
+                changes ??= [];
+
+                // If the attribute is cardinality many, we can just remove the datom
+                if (registry.GetAttribute(datom.A).Cardinalty == Cardinality.Many)
+                {
+                    changes.Add(new Change<Datom>(ListChangeReason.Remove, datom, idx));
+                    continue;
+                }
+
+                // If the next datom is not the same E or A, we can remove the datom
+                if (updates.Count <= i + 1)
+                {
+                    changes.Add(new Change<Datom>(ListChangeReason.Remove, datom, idx));
+                    continue;
+                }
+
+                var nextDatom = updates[i + 1];
+                if (nextDatom.E != datom.E || nextDatom.A != datom.A)
+                {
+                    changes.Add(new Change<Datom>(ListChangeReason.Remove, datom, idx));
+                    continue;
+                }
+
+                // Otherwise we skip the add, and issue a refresh, update the cache, and skip the next datom
+                // because we've already processed it
+                changes.Add(new Change<Datom>(ListChangeReason.Refresh, nextDatom, datom, idx));
+                set.Add(nextDatom);
+                i++;
             }
             else
             {
