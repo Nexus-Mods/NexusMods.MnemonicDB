@@ -44,20 +44,19 @@ public class Connection : IConnection
     /// <summary>
     /// Scrubs the transaction stream so that we only ever move forward and never repeat transactions
     /// </summary>
-    private static IObservable<(TxId TxId, ISnapshot Snapshot)> ForwardOnly(IObservable<(TxId txId, ISnapshot snapshot)> dbStream)
+    private static IObservable<Db> ForwardOnly(IObservable<IDb> dbStream)
     {
         TxId? prev = null;
 
-        return Observable.Create((IObserver<(TxId txId, ISnapshot snapshot)> observer) =>
+        return Observable.Create((IObserver<Db> observer) =>
         {
-            return dbStream.Subscribe((nextItem) =>
+            return dbStream.Subscribe(nextItem =>
             {
-                var (nextTxId, _) = nextItem;
-                if (prev != null && prev.Value >= nextTxId)
+                if (prev != null && prev.Value >= nextItem.BasisTxId)
                     return;
 
-                observer.OnNext(nextItem);
-                prev = nextTxId;
+                observer.OnNext((Db)nextItem);
+                prev = nextItem.BasisTxId;
             }, observer.OnError, observer.OnCompleted);
         });
     }
@@ -94,7 +93,10 @@ public class Connection : IConnection
     public IDb AsOf(TxId txId)
     {
         var snapshot = new AsOfSnapshot(_store.GetSnapshot(), txId, (AttributeRegistry)_store.Registry);
-        return new Db(snapshot, this, txId, (AttributeRegistry)_store.Registry);
+        return new Db(snapshot, txId, (AttributeRegistry)_store.Registry)
+        {
+            Connection = this
+        };
     }
 
     /// <inheritdoc />
@@ -144,7 +146,10 @@ public class Connection : IConnection
 
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
-        var db = new Db(_store.GetSnapshot(), this, TxId, (AttributeRegistry)_store.Registry);
+        var db = new Db(_store.GetSnapshot(), TxId, (AttributeRegistry)_store.Registry)
+        {
+            Connection = this
+        };
 
         foreach (var attribute in AttributeDefinition.All(db))
         {
@@ -156,14 +161,11 @@ public class Connection : IConnection
     internal async Task<ICommitResult> Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions)
     {
         StoreResult newTx;
+        IDb newDb;
 
-        if (txFunctions == null)
-            newTx = await _store.TransactAsync(datoms, txFunctions);
-        else
-            newTx = await _store.TransactAsync(datoms, txFunctions, snapshot => new Db(snapshot, this, TxId, (AttributeRegistry)_store.Registry));
-
-        var result = new CommitResult(new Db(newTx.Snapshot, this, newTx.AssignedTxId, (AttributeRegistry)_store.Registry)
-            , newTx.Remaps);
+        (newTx, newDb) = await _store.TransactAsync(datoms, txFunctions);
+        ((Db)newDb).Connection = this;
+        var result = new CommitResult(newDb, newTx.Remaps);
         return result;
     }
 
@@ -174,9 +176,9 @@ public class Connection : IConnection
             AddMissingAttributes(_declaredAttributes.Values);
 
             _dbStreamDisposable = ForwardOnly(_store.TxLog)
-                .Select(log =>
+                .Select(db =>
                 {
-                    var db = new Db(log.Snapshot, this, log.TxId, (AttributeRegistry)_store.Registry);
+                    db.Connection = this;
                     var addedItems = db.Datoms(SliceDescriptor.Create(db.BasisTxId, _store.Registry));
                     return new Revision
                     {

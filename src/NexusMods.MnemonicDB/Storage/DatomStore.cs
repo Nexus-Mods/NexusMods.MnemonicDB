@@ -39,7 +39,7 @@ public class DatomStore : IDatomStore
 
     private readonly BlockingCollection<PendingTransaction> _pendingTransactions;
     private readonly IIndex _txLog;
-    private BehaviorSubject<(TxId TxId, ISnapshot snapshot)>? _updatesSubject;
+    private BehaviorSubject<IDb>? _updatesSubject;
     private readonly IIndex _vaetCurrent;
     private readonly IIndex _vaetHistory;
     private readonly PooledMemoryBufferWriter _writer;
@@ -47,6 +47,8 @@ public class DatomStore : IDatomStore
     private TxId _asOfTx = TxId.MinValue;
 
     private Task? _bootStrapTask = null;
+    
+    private IDb? _currentDb = null;
 
     private static readonly TimeSpan TransactionTimeout = TimeSpan.FromMinutes(120);
 
@@ -106,7 +108,7 @@ public class DatomStore : IDatomStore
 
         Bootstrap();
     }
-
+    
     /// <inheritdoc />
     public TxId AsOfTxId => _asOfTx;
 
@@ -114,15 +116,13 @@ public class DatomStore : IDatomStore
     public IAttributeRegistry Registry => _registry;
 
     /// <inheritdoc />
-    public async Task<StoreResult> TransactAsync(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null,
-        Func<ISnapshot, IDb>? factoryFn = null)
+    public async Task<(StoreResult, IDb)> TransactAsync(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null)
     {
 
         var pending = new PendingTransaction
         {
             Data = datoms,
-            TxFunctions = txFunctions,
-            DatabaseFactory = factoryFn
+            TxFunctions = txFunctions
         };
         _pendingTransactions.Add(pending);
 
@@ -136,15 +136,14 @@ public class DatomStore : IDatomStore
 
     }
 
-    public StoreResult Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null,
-        Func<ISnapshot, IDb>? factoryFn = null)
+    /// <inheritdoc />
+    public (StoreResult, IDb) Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null)
     {
 
         var pending = new PendingTransaction
         {
             Data = datoms,
-            TxFunctions = txFunctions,
-            DatabaseFactory = factoryFn
+            TxFunctions = txFunctions
         };
         _pendingTransactions.Add(pending);
 
@@ -157,15 +156,9 @@ public class DatomStore : IDatomStore
         throw new TimeoutException($"Transaction didn't complete after {TransactionTimeout}");
 
     }
-
+    
     /// <inheritdoc />
-    public async Task<StoreResult> Sync()
-    {
-        return await TransactAsync(new IndexSegment());
-    }
-
-    /// <inheritdoc />
-    public IObservable<(TxId TxId, ISnapshot Snapshot)> TxLog
+    public IObservable<IDb> TxLog
     {
         get
         {
@@ -185,7 +178,7 @@ public class DatomStore : IDatomStore
         foreach (var attribute in newAttrsArray)
             AttributeDefinition.Insert(internalTx, attribute.Attribute, attribute.AttrEntityId.Value);
         internalTx.ProcessTemporaryEntities();
-        Transact(datoms.Build(), null, null);
+        Transact(datoms.Build());
 
         _registry.Populate(newAttrsArray);
     }
@@ -227,14 +220,12 @@ public class DatomStore : IDatomStore
                             AssignedTxId = _nextIdCache.AsOfTxId,
                             Snapshot = _backend.GetSnapshot(),
                         };
-                        pendingTransaction.CompletionSource.TrySetResult(storeResult);
+                        pendingTransaction.Complete(storeResult, _currentDb!);
                         continue;
                     }
 
                     Log(pendingTransaction, out var result);
-
-                    _updatesSubject?.OnNext((result.AssignedTxId, result.Snapshot));
-                    pendingTransaction.Complete(result);
+                    FinishTransaction(result, pendingTransaction);
                 }
                 catch (Exception ex)
                 {
@@ -247,6 +238,16 @@ public class DatomStore : IDatomStore
         {
             _logger.LogError(ex, "Transaction consumer crashed");
         }
+    }
+
+    /// <summary>
+    /// Given the new store result, process the new database state, complete the transaction and notify the observers
+    /// </summary>
+    private void FinishTransaction(StoreResult result, PendingTransaction pendingTransaction)
+    {
+        _currentDb = new Db(result.Snapshot, result.AssignedTxId, _registry);
+        _updatesSubject?.OnNext(_currentDb!);
+        pendingTransaction.Complete(result, _currentDb);
     }
 
     /// <summary>
@@ -269,8 +270,7 @@ public class DatomStore : IDatomStore
                 var pending = new PendingTransaction
                 {
                     Data = builder.Build(),
-                    TxFunctions = null,
-                    DatabaseFactory = null
+                    TxFunctions = null
                 };
                 // Call directly into `Log` as the transaction channel is not yet set up
                 Log(pending, out _);
@@ -289,8 +289,9 @@ public class DatomStore : IDatomStore
             _logger.LogError(ex, "Failed to bootstrap the datom store");
             throw;
         }
-
-        _updatesSubject = new BehaviorSubject<(TxId TxId, ISnapshot snapshot)>((_asOfTx, _currentSnapshot));
+        
+        _currentDb = new Db(_currentSnapshot, _asOfTx, _registry);
+        _updatesSubject = new BehaviorSubject<IDb>(_currentDb);
         _loggerThread = new Thread(ConsumeTransactions)
         {
             IsBackground = true,
@@ -350,7 +351,7 @@ public class DatomStore : IDatomStore
         {
             try
             {
-                var db = pendingTransaction.DatabaseFactory!(currentSnapshot);
+                var db = _currentDb!;
                 var tx = new InternalTransaction(db, secondaryBuilder);
                 foreach (var fn in pendingTransaction.TxFunctions)
                 {

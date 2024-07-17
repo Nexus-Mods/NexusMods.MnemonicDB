@@ -17,7 +17,7 @@ public interface IDatomStore : IDisposable
     ///     An observable of the transaction log, for getting the latest changes to the store. This observable
     /// will always start with the most recent value, so there is no reason to use `StartWith` or `Replay` on it.
     /// </summary>
-    public IObservable<(TxId TxId, ISnapshot Snapshot)> TxLog { get; }
+    public IObservable<IDb> TxLog { get; }
 
     /// <summary>
     ///     Gets the latest transaction id found in the log.
@@ -32,20 +32,13 @@ public interface IDatomStore : IDisposable
     /// <summary>
     ///     Transacts (adds) the given datoms into the store.
     /// </summary>
-    public Task<StoreResult> TransactAsync(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null, Func<ISnapshot, IDb>? databaseFactory = null);
+    public Task<(StoreResult, IDb)> TransactAsync(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null);
 
 
     /// <summary>
     ///     Transacts (adds) the given datoms into the store.
     /// </summary>
-    public StoreResult Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null, Func<ISnapshot, IDb>? databaseFactory = null);
-
-    /// <summary>
-    /// Executes an empty transaction. Returns a StoreResult valid asof the latest
-    /// transaction
-    /// </summary>
-    /// <returns></returns>
-    public Task<StoreResult> Sync();
+    public (StoreResult, IDb) Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null);
 
     /// <summary>
     ///     Registers new attributes with the store.

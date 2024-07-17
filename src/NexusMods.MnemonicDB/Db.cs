@@ -19,23 +19,27 @@ namespace NexusMods.MnemonicDB;
 
 internal class Db : IDb
 {
-    private readonly Connection _connection;
     private readonly AttributeRegistry _registry;
 
     private readonly IndexSegmentCache<EntityId> _entityCache;
     private readonly IndexSegmentCache<(EntityId, AttributeId)> _reverseCache;
     private readonly IndexSegmentCache<EntityId> _referencesCache;
     private readonly RegistryId _registryId;
-
+    
+    /// <summary>
+    /// The connection is used by several methods to navigate the graph of objects of Db, Connection, Datom Store, and
+    /// Attribute Registry. However we want the Datom Store and Connection to be decoupled, so the Connection starts null
+    /// and is set by the Connection class after the Datom Store has pushed the Db object to it.
+    /// </summary>
+    private IConnection? _connection;
     public ISnapshot Snapshot { get; }
     public IAttributeRegistry Registry => _registry;
 
-    public Db(ISnapshot snapshot, Connection connection, TxId txId, AttributeRegistry registry)
+    public Db(ISnapshot snapshot, TxId txId, AttributeRegistry registry)
     {
         Debug.Assert(snapshot != null, $"{nameof(snapshot)} cannot be null");
         _registryId = registry.Id;
         _registry = registry;
-        _connection = connection;
         _entityCache = new IndexSegmentCache<EntityId>(EntityDatoms, registry);
         _reverseCache = new IndexSegmentCache<(EntityId, AttributeId)>(ReverseDatoms, registry);
         _referencesCache = new IndexSegmentCache<EntityId>(ReferenceDatoms, registry);
@@ -54,9 +58,21 @@ internal class Db : IDb
     }
 
     public TxId BasisTxId { get; }
-    
-    public IConnection Connection => _connection;
-    
+
+    public IConnection Connection
+    {
+        get
+        {
+            Debug.Assert(_connection != null, "Connection is not set");
+            return _connection!;
+        }
+        set
+        {
+            Debug.Assert(_connection == null || ReferenceEquals(_connection, value), "Connection is already set");
+            _connection = value;
+        }
+    }
+
     /// <summary>
     /// Gets the IndexSegment for the given entity id.
     /// </summary>
