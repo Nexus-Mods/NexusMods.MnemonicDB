@@ -24,6 +24,11 @@ public interface IDb : IEquatable<IDb>
     ///     The connection that this database is using for its state.
     /// </summary>
     IConnection Connection { get; }
+    
+    /// <summary>
+    ///     The datoms that were added in the most recent transaction (indicated by the basis TxId).
+    /// </summary>
+    IndexSegment RecentlyAdded { get; }
 
     /// <summary>
     /// The snapshot that this database is based on.

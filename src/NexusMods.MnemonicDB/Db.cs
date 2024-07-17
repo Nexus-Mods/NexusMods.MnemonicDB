@@ -29,7 +29,7 @@ internal class Db : IDb
     public ISnapshot Snapshot { get; }
     public IAttributeRegistry Registry => _registry;
 
-    public IndexSegment RecentlyAdded;
+    public IndexSegment RecentlyAdded { get; }
 
     public Db(ISnapshot snapshot, TxId txId, AttributeRegistry registry)
     {

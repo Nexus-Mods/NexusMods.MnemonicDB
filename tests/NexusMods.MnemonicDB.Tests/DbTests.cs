@@ -204,8 +204,8 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         Connection.Revisions.Subscribe(update =>
         {
             // Only Txes we care about
-            if (update.AddedDatoms.Any(d => d.E == realId))
-                updates.Add(update.AddedDatoms.Select(d => d.Resolved).ToArray());
+            if (update.RecentlyAdded.Any(d => d.E == realId))
+                updates.Add(update.RecentlyAdded.Select(d => d.Resolved).ToArray());
         });
 
         for (var idx = 0; idx < 4; idx++)

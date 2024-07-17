@@ -25,7 +25,7 @@ public class Connection : IConnection
     private readonly Dictionary<Symbol, IAttribute> _declaredAttributes;
     private readonly ILogger<Connection> _logger;
 
-    private BehaviorSubject<Revision> _dbStream;
+    private BehaviorSubject<IDb> _dbStream;
     private IDisposable? _dbStreamDisposable;
 
     /// <summary>
@@ -37,7 +37,7 @@ public class Connection : IConnection
         _logger = logger;
         _declaredAttributes = declaredAttributes.ToDictionary(a => a.Id);
         _store = store;
-        _dbStream = new BehaviorSubject<Revision>(default!);
+        _dbStream = new BehaviorSubject<IDb>(default!);
         Bootstrap();
     }
 
@@ -73,7 +73,7 @@ public class Connection : IConnection
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             if (val == null)
                 ThrowNullDb();
-            return val!.Value.Database;
+            return val!.Value;
         }
     }
 
@@ -106,7 +106,7 @@ public class Connection : IConnection
     }
 
     /// <inheritdoc />
-    public IObservable<Revision> Revisions
+    public IObservable<IDb> Revisions
     {
         get
         {
@@ -178,13 +178,8 @@ public class Connection : IConnection
             _dbStreamDisposable = ForwardOnly(_store.TxLog)
                 .Select(db =>
                 {
-                    db.Connection = this;
-                    var addedItems = db.Datoms(SliceDescriptor.Create(db.BasisTxId, _store.Registry));
-                    return new Revision
-                    {
-                        Database = db,
-                        AddedDatoms = addedItems
-                    };
+                    db.Connection = this; 
+                    return db;
                 })
                 .Subscribe(_dbStream);
         }
