@@ -2,18 +2,13 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
-using Microsoft.Extensions.DependencyInjection;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage;
-using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB;
 
@@ -28,7 +23,7 @@ internal class Db : IDb
     
     /// <summary>
     /// The connection is used by several methods to navigate the graph of objects of Db, Connection, Datom Store, and
-    /// Attribute Registry. However we want the Datom Store and Connection to be decoupled, so the Connection starts null
+    /// Attribute Registry. However, we want the Datom Store and Connection to be decoupled, so the Connection starts null
     /// and is set by the Connection class after the Datom Store has pushed the Db object to it.
     /// </summary>
     private IConnection? _connection;
