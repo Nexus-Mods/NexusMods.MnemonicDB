@@ -344,7 +344,7 @@ public class DatomStore : IDatomStore
 
         var secondaryBuilder = new IndexSegmentBuilder(_registry);
         var txId = EntityId.From(thisTx.Value);
-        secondaryBuilder.Add(txId, Transaction.Timestamp, DateTime.UtcNow);
+        secondaryBuilder.Add(txId, MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp, DateTime.UtcNow);
 
         if (pendingTransaction.TxFunctions != null)
         {
