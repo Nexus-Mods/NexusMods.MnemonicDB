@@ -44,19 +44,19 @@ public static class ObservableDatoms
         var lastTxId = TxId.From(0);
 
         return conn.Revisions
-            .Where(rev => rev.AddedDatoms.Valid)
+            .Where(rev => rev.RecentlyAdded.Count > 0)
             .Select((rev, idx) =>
         {
             lock (set)
             {
-                if (rev.Database.BasisTxId <= lastTxId)
+                if (rev.BasisTxId <= lastTxId)
                     return ChangeSet<Datom>.Empty;
 
-                lastTxId = rev.Database.BasisTxId;
+                lastTxId = rev.BasisTxId;
 
                 if (idx == 0)
-                    return Setup(set, rev.Database, descriptor);
-                return Diff(conn.Registry, set, rev.AddedDatoms, descriptor, equality);
+                    return Setup(set, rev, descriptor);
+                return Diff(conn.Registry, set, rev.RecentlyAdded, descriptor, equality);
             }
         });
     }

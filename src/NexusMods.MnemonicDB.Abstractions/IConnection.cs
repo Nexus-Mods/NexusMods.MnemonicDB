@@ -43,7 +43,7 @@ public interface IConnection
     /// <summary>
     ///     A sequential stream of database revisions.
     /// </summary>
-    public IObservable<Revision> Revisions { get; }
+    public IObservable<IDb> Revisions { get; }
 
     /// <summary>
     /// A service provider that entities can use to resolve their values

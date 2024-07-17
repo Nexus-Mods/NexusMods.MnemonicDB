@@ -53,7 +53,7 @@ public abstract class AStorageTest : IDisposable
 
         DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), Registry, DatomStoreSettings,
             backendFn(Registry));
-
+        
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
     }
     public void Dispose()

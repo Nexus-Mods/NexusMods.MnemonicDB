@@ -18,7 +18,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.Storage\NexusMods.MnemonicDB.Storage.csproj"/>
+        <ProjectReference Include="..\..\src\NexusMods.MnemonicDB\NexusMods.MnemonicDB.csproj" />
         <ProjectReference Include="..\NexusMods.MnemonicDB.TestModel\NexusMods.MnemonicDB.TestModel.csproj"/>
     </ItemGroup>
 

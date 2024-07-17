@@ -24,6 +24,11 @@ public interface IDb : IEquatable<IDb>
     ///     The connection that this database is using for its state.
     /// </summary>
     IConnection Connection { get; }
+    
+    /// <summary>
+    ///     The datoms that were added in the most recent transaction (indicated by the basis TxId).
+    /// </summary>
+    IndexSegment RecentlyAdded { get; }
 
     /// <summary>
     /// The snapshot that this database is based on.
@@ -39,13 +44,6 @@ public interface IDb : IEquatable<IDb>
     /// Gets the index segment for the given entity id.
     /// </summary>
     public IndexSegment Get(EntityId entityId);
-
-    /// <summary>
-    ///     Gets a read model for every enitity that references the given entity id
-    ///     with the given attribute.
-    /// </summary>
-    public Entities<EntityIds, TModel> GetReverse<TModel>(EntityId id, Attribute<EntityId, ulong> attribute)
-        where TModel : IReadOnlyModel<TModel>;
 
     /// <summary>
     /// Get all the datoms for the given entity id.

@@ -74,7 +74,7 @@ public abstract class ABackendTest<TStoreType>(
             var entityId = NextTempId();
             segment.Add(entityId, Blobs.InKeyBlob, smallData);
             segment.Add(entityId, Blobs.InValueBlob, largeData);
-            var result = await DatomStore.TransactAsync(segment.Build());
+            var (result, _) = await DatomStore.TransactAsync(segment.Build());
             ids.Add(result.Remaps[entityId]);
         }
 
@@ -179,7 +179,7 @@ public abstract class ABackendTest<TStoreType>(
             segment.Add(collectionId, Collection.ModIds, modId2);
 
 
-            tx = await DatomStore.TransactAsync(segment.Build());
+            (tx, _) = await DatomStore.TransactAsync(segment.Build());
         }
 
         id1 = tx.Remaps[id1];
@@ -192,7 +192,7 @@ public abstract class ABackendTest<TStoreType>(
             segment.Add(id2, File.Path, "/foo/qux");
             segment.Add(id1, File.ModId, modId2);
             segment.Add(collectionId, Collection.ModIds, modId2, true);
-            tx = await DatomStore.TransactAsync(segment.Build());
+            (tx, _) = await DatomStore.TransactAsync(segment.Build());
         }
         return tx;
     }
@@ -222,7 +222,7 @@ public abstract class ABackendTest<TStoreType>(
             segment.Add(id, File.Size, Size.From(42));
             segment.Add(id, File.ModId, modId);
 
-            tx1 = await DatomStore.TransactAsync(segment.Build());
+            (tx1, _) = await DatomStore.TransactAsync(segment.Build());
         }
 
         id = tx1.Remaps[id];
@@ -236,7 +236,7 @@ public abstract class ABackendTest<TStoreType>(
             segment.Add(id, File.Size, Size.From(42), true);
             segment.Add(id, File.ModId, modId, true);
 
-            tx2 = await DatomStore.TransactAsync(segment.Build());
+            (tx2, _) = await DatomStore.TransactAsync(segment.Build());
 
         }
 
