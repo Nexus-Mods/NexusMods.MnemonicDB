@@ -2,6 +2,7 @@
 using DynamicData;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
@@ -622,6 +623,54 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await tx3.Commit();
 
         await Verify(changes);
+    }
+
+    /// <summary>
+    /// Test for a flickering bug in UI users, where datoms that are changed result in a `add` and a `remove` operation
+    /// causing the UI to flicker, instead we want to issue changes on a ScalarAttribute as a refresh/change
+    /// </summary>
+    [Fact]
+    public async Task CanObserveIndexChangesWithoutFlickering()
+    {
+        
+        var loadout = await InsertExampleData();
+        
+        List<IChangeSet<Datom>> changes = new();
+
+        // Define the slice to observe
+        var slice = SliceDescriptor.Create(Mod.Name, Connection.Db.Registry);
+
+        // Setup the subscription
+        using var _ = Connection.ObserveDatoms(slice)
+            // Add the changes to the list
+            .Subscribe(x => changes.Add(x));
+
+        // Rename a mod, should result in a refresh, not a add and remove
+        using var tx = Connection.BeginTransaction();
+        tx.Add(loadout.Mods.First().Id, Mod.Name, "Test Mod 1");
+        await tx.Commit();
+
+        // Add a new mod
+        using var tx2 = Connection.BeginTransaction();
+        tx2.Add(tx2.TempId(), Mod.Name, "Test Mod 2");
+        await tx2.Commit();
+
+        // Delete the first mod
+        using var tx3 = Connection.BeginTransaction();
+        tx3.Retract(loadout.Mods.First().Id, Mod.Name, "Test Mod 1");
+        await tx3.Commit();
+
+
+        var changesProcessed = changes.Select(change => new
+        {
+            Added = change.Adds,
+            Removed = change.Removes,
+            Refreshes = change.Refreshes
+        });
+        
+        await Verify(changesProcessed);
+        
+        
     }
 
     [Fact]

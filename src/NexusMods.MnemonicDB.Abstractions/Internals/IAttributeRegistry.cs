@@ -16,6 +16,12 @@ public interface IAttributeRegistry
     /// <param name="datom"></param>
     /// <returns></returns>
     public IReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> datom);
+    
+    
+    /// <summary>
+    /// Resolve the given attribute id into an attribute
+    /// </summary>
+    public IAttribute GetAttribute(AttributeId attributeId);
 
     /// <summary>
     /// Populates the registry with the given attributes, mostly used for
