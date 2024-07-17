@@ -22,7 +22,7 @@ public class ABenchmark : IAsyncLifetime
         var builder = Host.CreateDefaultBuilder()
             .ConfigureServices(services =>
             {
-                services.AddMnemonicDBStorage()
+                services
                     .AddRocksDbBackend()
                     .AddMnemonicDB()
                     .AddTestModel()
