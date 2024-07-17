@@ -225,7 +225,12 @@ public class DatomStore : IDatomStore
                     }
 
                     Log(pendingTransaction, out var result);
+                    
+                    var sw = Stopwatch.StartNew();
                     FinishTransaction(result, pendingTransaction);
+                    
+                    if (_logger.IsEnabled(LogLevel.Debug))
+                        _logger.LogDebug("Transaction {TxId} post-processed in {Elapsed}ms", result.AssignedTxId, sw.ElapsedMilliseconds);
                 }
                 catch (Exception ex)
                 {
@@ -245,7 +250,7 @@ public class DatomStore : IDatomStore
     /// </summary>
     private void FinishTransaction(StoreResult result, PendingTransaction pendingTransaction)
     {
-        _currentDb = new Db(result.Snapshot, result.AssignedTxId, _registry);
+        _currentDb = ((Db)_currentDb!).WithNext(result, result.AssignedTxId);
         _updatesSubject?.OnNext(_currentDb!);
         pendingTransaction.Complete(result, _currentDb);
     }

@@ -41,13 +41,6 @@ public interface IDb : IEquatable<IDb>
     public IndexSegment Get(EntityId entityId);
 
     /// <summary>
-    ///     Gets a read model for every enitity that references the given entity id
-    ///     with the given attribute.
-    /// </summary>
-    public Entities<EntityIds, TModel> GetReverse<TModel>(EntityId id, Attribute<EntityId, ulong> attribute)
-        where TModel : IReadOnlyModel<TModel>;
-
-    /// <summary>
     /// Get all the datoms for the given entity id.
     /// </summary>
     public IndexSegment Datoms(EntityId id);

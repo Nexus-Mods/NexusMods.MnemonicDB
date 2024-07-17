@@ -5,7 +5,7 @@ using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
-public enum IndexType
+public enum IndexType : byte
 {
     // Transaction log, the final source of truth, used
     // for replaying the database

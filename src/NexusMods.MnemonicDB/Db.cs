@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using NexusMods.MnemonicDB.Abstractions;
@@ -8,6 +9,7 @@ using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
+using NexusMods.MnemonicDB.Caching;
 using NexusMods.MnemonicDB.Storage;
 
 namespace NexusMods.MnemonicDB;
@@ -15,10 +17,7 @@ namespace NexusMods.MnemonicDB;
 internal class Db : IDb
 {
     private readonly AttributeRegistry _registry;
-
-    private readonly IndexSegmentCache<EntityId> _entityCache;
-    private readonly IndexSegmentCache<(EntityId, AttributeId)> _reverseCache;
-    private readonly IndexSegmentCache<EntityId> _referencesCache;
+    private readonly IndexSegmentCache _cache;
     private readonly RegistryId _registryId;
     
     /// <summary>
@@ -30,21 +29,43 @@ internal class Db : IDb
     public ISnapshot Snapshot { get; }
     public IAttributeRegistry Registry => _registry;
 
+    public IndexSegment RecentlyAdded;
+
     public Db(ISnapshot snapshot, TxId txId, AttributeRegistry registry)
     {
         Debug.Assert(snapshot != null, $"{nameof(snapshot)} cannot be null");
         _registryId = registry.Id;
         _registry = registry;
-        _entityCache = new IndexSegmentCache<EntityId>(EntityDatoms, registry);
-        _reverseCache = new IndexSegmentCache<(EntityId, AttributeId)>(ReverseDatoms, registry);
-        _referencesCache = new IndexSegmentCache<EntityId>(ReferenceDatoms, registry);
+        _cache = new IndexSegmentCache();
         Snapshot = snapshot;
         BasisTxId = txId;
+        RecentlyAdded = new IndexSegment();
     }
 
-    private static IndexSegment EntityDatoms(IDb db, EntityId id)
+    private Db(ISnapshot snapshot, TxId txId, AttributeRegistry registry, RegistryId registryId, IConnection connection, IndexSegmentCache newCache, IndexSegment recentlyAdded)
     {
-        return db.Snapshot.Datoms(SliceDescriptor.Create(id, db.Registry));
+        _registry = registry;
+        _registryId = registryId;
+        _cache = newCache;
+        _connection = connection;
+        Snapshot = snapshot;
+        BasisTxId = txId;
+        RecentlyAdded = recentlyAdded;
+    }
+
+    /// <summary>
+    /// Create a new Db instance with the given store result and transaction id integrated, will evict old items
+    /// from the cache, and update the cache with the new datoms.
+    /// </summary>
+    internal Db WithNext(StoreResult storeResult, TxId txId)
+    {
+        var newCache = _cache.ForkAndEvict(storeResult, _registry, out var newDatoms);
+        return new Db(storeResult.Snapshot, txId, _registry, _registryId, _connection!, newCache, newDatoms);
+    }
+
+    private IndexSegment EntityDatoms(IDb db, EntityId id)
+    {
+        return _cache.Get(id, db);
     }
 
     private static IndexSegment ReverseDatoms(IDb db, (EntityId, AttributeId) key)
@@ -73,35 +94,20 @@ internal class Db : IDb
     /// </summary>
     public IndexSegment Get(EntityId entityId)
     {
-        return _entityCache.Get(this, entityId);
+        return Datoms(entityId);
     }
 
     public EntityIds GetBackRefs(ReferenceAttribute attribute, EntityId id)
     {
-        var segment = _reverseCache.Get(this, (id, attribute.GetDbId(_registryId)));
+        var segment = _cache.GetReverse(attribute.GetDbId(_registryId), id, this);
         return new EntityIds(segment, 0, segment.Count);
     }
-
-    private static IndexSegment ReferenceDatoms(IDb db, EntityId eid)
-    {
-        return db.Snapshot.Datoms(SliceDescriptor.CreateReferenceTo(eid, db.Registry));
-    }
-
+    
     public IndexSegment ReferencesTo(EntityId id)
     {
-        return _referencesCache.Get(this, id);
+        return _cache.GetReferences(id, this);
     }
-
-    public IEnumerable<TValue> GetAll<TValue, TLowLevel>(EntityId id, Attribute<TValue, TLowLevel> attribute)
-    {
-        var attrId = attribute.GetDbId(_registryId);
-        var results = _entityCache.Get(this, id)
-            .Where(d => d.A == attrId)
-            .Select(d => d.Resolve(attribute));
-
-        return results;
-    }
-
+    
     public IndexSegment Datoms<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value)
     {
         return Datoms(SliceDescriptor.Create(attribute, value, _registry));
@@ -111,24 +117,10 @@ internal class Db : IDb
     {
         return Datoms(SliceDescriptor.Create(attribute, value, _registry));
     }
-    
-    public TModel Get<TModel>(EntityId id)
-        where TModel : IHasEntityIdAndDb
-    {
-        return EntityConstructors<TModel>.Constructor(id, this);
-    }
-
-    public Entities<EntityIds, TModel> GetReverse<TModel>(EntityId id, Attribute<EntityId, ulong> attribute)
-        where TModel : IReadOnlyModel<TModel>
-    {
-        var segment = _reverseCache.Get(this, (id, attribute.GetDbId(_registryId)));
-        var ids = new EntityIds(segment, 0, segment.Count);
-        return new Entities<EntityIds, TModel>(ids, this);
-    }
 
     public IndexSegment Datoms(EntityId entityId)
     {
-        return _entityCache.Get(this, entityId);
+        return _cache.Get(entityId, this);
     }
     
     public IndexSegment Datoms(IAttribute attribute)
