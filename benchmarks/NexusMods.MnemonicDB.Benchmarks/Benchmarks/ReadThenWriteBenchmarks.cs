@@ -9,6 +9,7 @@ using NexusMods.Paths;
 namespace NexusMods.MnemonicDB.Benchmarks.Benchmarks;
 
 [MemoryDiagnoser]
+[MaxIterationCount(20)]
 public class ReadThenWriteBenchmarks : ABenchmark
 {
 
@@ -38,7 +39,7 @@ public class ReadThenWriteBenchmarks : ABenchmark
             
             _modId = mod.Id;
 
-            for (int j = 0; j < 100; j++)
+            for (int j = 0; j < 1000; j++)
             {
                 var file = new File.New(tx)
                 {
