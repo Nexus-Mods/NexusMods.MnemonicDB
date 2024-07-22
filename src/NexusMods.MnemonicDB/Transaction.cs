@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
@@ -20,6 +21,7 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
     private List<ITemporaryEntity>? _tempEntities = null;
     private ulong _tempId = PartitionId.Temp.MakeEntityId(1).Value;
     private bool _committed = false;
+    private readonly object _lock = new();
 
     /// <inhertdoc />
     public EntityId TempId(PartitionId entityPartition)
@@ -38,52 +40,77 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
 
     public void Add<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val, bool isRetract = false)
     {
-        if (_committed)
-            throw new InvalidOperationException("Transaction has already been committed");
-        _datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
+        lock (_lock)
+        {
+            if (_committed)
+                throw new InvalidOperationException("Transaction has already been committed");
+
+            _datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
+        }
     }
 
     public void Add(EntityId entityId, ReferencesAttribute attribute, IEnumerable<EntityId> ids)
     {
-        if (_committed)
-            throw new InvalidOperationException("Transaction has already been committed");
-        foreach (var id in ids)
+        lock (_lock)
         {
-            _datoms.Add(entityId, attribute, id, ThisTxId, isRetract: false);
+            if (_committed)
+                throw new InvalidOperationException("Transaction has already been committed");
+
+            foreach (var id in ids)
+            {
+                _datoms.Add(entityId, attribute, id, ThisTxId, isRetract: false);
+            }
         }
     }
 
     /// <inheritdoc />
     public void Add(Datom datom)
     {
-        _datoms.Add(datom);
+        lock (_lock)
+        {
+            _datoms.Add(datom);
+        }
     }
 
     public void Add(ITxFunction fn)
     {
-        if (_committed)
-            throw new InvalidOperationException("Transaction has already been committed");
-        _txFunctions ??= [];
-        _txFunctions?.Add(fn);
+        lock (_lock)
+        {
+            if (_committed)
+                throw new InvalidOperationException("Transaction has already been committed");
+
+            _txFunctions ??= [];
+            _txFunctions?.Add(fn);
+        }
     }
 
     public void Attach(ITemporaryEntity entity)
     {
-        _tempEntities ??= [];
-        _tempEntities.Add(entity);
+        lock (_lock)
+        {
+            _tempEntities ??= [];
+            _tempEntities.Add(entity);
+        }
     }
 
     public async Task<ICommitResult> Commit()
     {
-        if (_tempEntities != null)
+        IndexSegment built;
+        lock (_lock)
         {
-            foreach (var entity in _tempEntities!)
+            if (_tempEntities != null)
             {
-                entity.AddTo(this);
+                foreach (var entity in _tempEntities!)
+                {
+                    entity.AddTo(this);
+                }
             }
+
+            _committed = true;
+            // Build the datoms block here, so that future calls to add won't modify this while we're building
+            built = _datoms.Build();
         }
-        _committed = true;
-        return await connection.Transact(_datoms.Build(), _txFunctions);
+        return await connection.Transact(built, _txFunctions);
     }
 
     /// <inheritdoc />
