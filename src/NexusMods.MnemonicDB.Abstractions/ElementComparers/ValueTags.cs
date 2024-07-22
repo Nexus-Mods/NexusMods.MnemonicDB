@@ -77,5 +77,39 @@ public enum ValueTags : byte
     /// A reference to another entity
     /// </summary>
     Reference = 17,
-
+    
+    /// <summary>
+    /// A tuple of two values
+    /// </summary>
+    Tuple2 = 18,
+    
+    /// <summary>
+    /// A tuple of three values
+    /// </summary>
+    Tuple3 = 19,
+    
+    /// <summary>
+    /// A tuple of four values
+    /// </summary>
+    Tuple4 = 20,
+    
+    /// <summary>
+    /// A tuple of five values
+    /// </summary>
+    Tuple5 = 21,
+    
+    /// <summary>
+    /// A tuple of six values
+    /// </summary>
+    Tuple6 = 22,
+    
+    /// <summary>
+    /// A tuple of seven values
+    /// </summary>
+    Tuple7 = 23,
+    
+    /// <summary>
+    /// A tuple of eight values
+    /// </summary>
+    Tuple8 = 24,
 }

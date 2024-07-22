@@ -100,6 +100,19 @@ public readonly struct SliceDescriptor
             To = Datom(EntityId.MaxValueNoPartition, attr, value, TxId.MaxValue, false, registry)
         };
     }
+    
+    /// <summary>
+    /// Creates a slice descriptor for the given attribute in the current AVET index for the given range
+    /// </summary>
+    public static SliceDescriptor Create<THighLevel, TLowLevel>(Attribute<THighLevel, TLowLevel> attr, THighLevel fromValue, THighLevel toValue, IAttributeRegistry registry)
+    {
+        return new SliceDescriptor
+        {
+            Index = IndexType.AVETCurrent,
+            From = Datom(EntityId.MinValueNoPartition, attr, fromValue, TxId.MinValue, false, registry),
+            To = Datom(EntityId.MaxValueNoPartition, attr, toValue, TxId.MaxValue, false, registry)
+        };
+    }
 
     /// <summary>
     /// Creates a slice descriptor for the given reference attribute and entity that is being pointed to.

@@ -80,6 +80,11 @@ public interface IAttribute
     ///     Returns true if the attribute is in the given entity
     /// </summary>
     bool IsIn(IDb db, EntityId id);
+    
+    /// <summary>
+    /// Remap any entity ids in the value span (inplace)
+    /// </summary>
+    public void Remap(Func<EntityId, EntityId> remapper, Span<byte> valueSpan);
 }
 
 
@@ -93,4 +98,5 @@ public interface IAttribute<TValueType> : IAttribute
     /// Adds the value to the transaction on the given entity/attribute
     /// </summary>
     public void Add(ITransaction tx, EntityId entityId, TValueType value, bool isRetract);
+    
 }

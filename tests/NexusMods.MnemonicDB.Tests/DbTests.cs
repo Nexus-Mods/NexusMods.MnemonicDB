@@ -737,4 +737,56 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         // one of the parents may have a different entityId
         await VerifyTable(result.Db.Datoms(result.NewTx).Resolved());
     }
+
+
+    [Fact]
+    public async Task CanWriteTupleAttributes()
+    {
+        using var tx = Connection.BeginTransaction();
+
+        var loadout1 = new Loadout.New(tx)
+        {
+            Name = "Test Loadout"
+        };
+        
+        var mod = new Mod.New(tx)
+        {
+            Name = "Test Mod",
+            Source = new Uri("http://test.com"),
+            LoadoutId = loadout1 
+        };
+        
+        var fileA = new File.New(tx)
+        {
+            Path = "C:\\test.txt",
+            Hash = Hash.From(0xDEADBEEF),
+            Size = Size.From(1),
+            ModId = mod.Id,
+            TuplePath = (loadout1, "1")
+        };
+        
+        var fileB = new File.New(tx)
+        {
+            Path = "C:\\test2.txt",
+            Hash = Hash.From(0xDEADBEEF),
+            Size = Size.From(1),
+            ModId = mod.Id,
+            TuplePath = (loadout1, "2")
+        };
+        
+        var fileC = new File.New(tx)
+        {
+            Path = "C:\\test3.txt",
+            Hash = Hash.From(0xDEADBEEF),
+            Size = Size.From(1),
+            ModId = mod.Id,
+            TuplePath = (PartitionId.Attribute.MakeEntityId(1), "3")
+        };
+        
+        var result = await tx.Commit();
+
+        var avet = Connection.Db.Datoms(SliceDescriptor.Create(File.TuplePath, (EntityId.From(0), ""), (EntityId.MaxValueNoPartition, ""), Connection.Db.Registry));
+        await VerifyTable(avet.Resolved());
+        
+    }
 }
