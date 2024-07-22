@@ -1,4 +1,5 @@
-﻿using NexusMods.MnemonicDB.Abstractions.Attributes;
+﻿using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.TestModel.Attributes;
 
@@ -11,4 +12,9 @@ public partial class File : IModelDefinition
     public static readonly HashAttribute Hash = new(Namespace, nameof(Hash)) {IsIndexed = true};
     public static readonly SizeAttribute Size = new(Namespace, nameof(Size));
     public static readonly ReferenceAttribute<Mod> Mod = new(Namespace, nameof(Mod));
+
+    /// <summary>
+    /// A combination of the loadout 
+    /// </summary>
+    public static readonly TuplePath TuplePath = new(Namespace, nameof(TuplePath)) {IsIndexed = true, IsOptional = true};
 }

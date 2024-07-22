@@ -386,18 +386,12 @@ public class DatomStore : IDatomStore
             var keyPrefix = currentPrefix with {E = newE, T = thisTx};
 
             {
-                if (attr.IsReference)
-                {
-                    var newV = remapFn(MemoryMarshal.Read<EntityId>(datom.ValueSpan));
-                    _writer.WriteMarshal(keyPrefix);
-                    _writer.WriteMarshal(newV);
-                }
-                else
-                {
-                    _writer.WriteMarshal(keyPrefix);
-                    _writer.Write(datom.ValueSpan);
-                }
-
+                _writer.WriteMarshal(keyPrefix);
+                var valueSpan = datom.ValueSpan;
+                var span = _writer.GetSpan(valueSpan.Length);
+                valueSpan.CopyTo(span);
+                attr.Remap(remapFn, span);
+                _writer.Advance(valueSpan.Length);
             }
 
             var newSpan = _writer.GetWrittenSpan();

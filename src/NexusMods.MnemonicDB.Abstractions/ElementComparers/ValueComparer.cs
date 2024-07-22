@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 using System.Text;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -96,20 +97,102 @@ public class ValueComparer : IElementComparer
             ValueTags.Int128 => CompareInternal<Int128>(aVal, bVal),
             ValueTags.Float32 => CompareInternal<float>(aVal, bVal),
             ValueTags.Float64 => CompareInternal<double>(aVal, bVal),
-            ValueTags.Ascii => CompareBlobInternal(aVal, aLen, bVal, bLen),
-            ValueTags.Utf8 => CompareBlobInternal(aVal, aLen, bVal, bLen),
+            ValueTags.Ascii => CompareAscii(aVal, aLen, bVal, bLen),
+            ValueTags.Utf8 => CompareUtf8(aVal, aLen, bVal, bLen),
             ValueTags.Utf8Insensitive => CompareUtf8Insensitive(aVal, aLen, bVal, bLen),
             ValueTags.Blob => CompareBlobInternal(aVal, aLen, bVal, bLen),
             // HashedBlob is a special case, we compare the hashes not the blobs
             ValueTags.HashedBlob => CompareInternal<ulong>(aVal, bVal),
             ValueTags.Reference => CompareInternal<ulong>(aVal, bVal),
-            _ => ThrowInvalidCompare()
+            ValueTags.Tuple2 => CompareTuples(aVal, aLen, bVal, bLen, 2),
+            _ => ThrowInvalidCompare(typeA)
         };
     }
 
-    private static int ThrowInvalidCompare()
+    private static unsafe int CompareTuples(byte* aVal, int aLen, byte* bVal, int bLen, int i)
     {
-        throw new InvalidOperationException("Invalid compare type");
+        var typeA1 = (ValueTags)aVal[0];
+        var typeB1 = (ValueTags)bVal[0];
+        
+        if (typeA1 != typeB1)
+            return typeA1.CompareTo(typeB1);
+        
+        var aLen1 = GetValueLength(typeA1, aVal);
+        var bLen1 = GetValueLength(typeB1, bVal);
+        
+        var cmp = CompareValues(typeA1, aVal + 2, aLen1, typeB1, bVal + 2, bLen1);
+        if (cmp != 0)
+            return cmp;
+        
+        var typeA2 = (ValueTags)aVal[1];
+        var typeB2 = (ValueTags)bVal[1];
+        
+        
+        if (typeA2 != typeB2)
+            return typeA2.CompareTo(typeB2);
+        
+        var aLen2 = GetValueLength(typeA2, aVal + 2 + aLen1);
+        var bLen2 = GetValueLength(typeB2, bVal + 2 + bLen1);
+        
+        return CompareValues(typeA2, aVal + 2 + aLen1 + 2, aLen2, typeB2, bVal + 2 + bLen1 + 2, bLen2);
+    }
+
+    private static unsafe int GetValueLength(ValueTags tag, byte* aVal)
+    {
+        switch (tag)
+        {
+            case ValueTags.Null:
+                return 0;
+            case ValueTags.UInt8:
+                return sizeof(byte);
+            case ValueTags.UInt16:
+                return sizeof(ushort);
+            case ValueTags.UInt32:
+                return sizeof(uint);
+            case ValueTags.UInt64:
+                return sizeof(ulong);
+            case ValueTags.UInt128:
+                return sizeof(UInt128);
+            case ValueTags.Int16:
+                return sizeof(short);
+            case ValueTags.Int32:
+                return sizeof(int);
+            case ValueTags.Int64:
+                return sizeof(long);
+            case ValueTags.Int128:
+                return sizeof(Int128);
+            case ValueTags.Float32:
+                return sizeof(float);
+            case ValueTags.Float64:
+                return sizeof(double);
+            case ValueTags.Ascii:
+                return ((int*)aVal)[0] + sizeof(int);
+            case ValueTags.Utf8:
+                return ((int*)aVal)[0] + sizeof(int);
+            case ValueTags.Utf8Insensitive:
+                return ((int*)aVal)[0] + sizeof(int);
+            case ValueTags.Blob:
+                return ((int*)aVal)[0] + sizeof(int);
+            case ValueTags.HashedBlob:
+                return sizeof(ulong);
+            case ValueTags.Reference:
+                return sizeof(ulong);
+            case ValueTags.Tuple2:
+            case ValueTags.Tuple3:
+            case ValueTags.Tuple4:
+            case ValueTags.Tuple5:
+            case ValueTags.Tuple6:
+            case ValueTags.Tuple7:
+            case ValueTags.Tuple8:
+                throw new NotSupportedException();
+            default:
+                throw new ArgumentOutOfRangeException(nameof(tag), tag, null);
+        }
+    }
+
+    private static int ThrowInvalidCompare(ValueTags typeA)
+    {
+        throw new InvalidOperationException($"Invalid comparison for type {typeA}"); 
     }
 
     private static unsafe int CompareBlobInternal(byte* aVal, int aLen, byte* bVal, int bLen)
@@ -117,11 +200,23 @@ public class ValueComparer : IElementComparer
         return new Span<byte>(aVal, aLen)
             .SequenceCompareTo(new Span<byte>(bVal, bLen));
     }
+    
+    private static unsafe int CompareAscii(byte* aVal, int aLen, byte* bVal, int bLen)
+    {
+        return new Span<byte>(aVal + sizeof(uint), aLen - sizeof(uint))
+            .SequenceCompareTo(new Span<byte>(bVal + sizeof(uint), bLen - sizeof(uint)));
+    }
+    
+    private static unsafe int CompareUtf8(byte* aVal, int aLen, byte* bVal, int bLen)
+    {
+        return new Span<byte>(aVal + sizeof(uint), aLen - sizeof(uint))
+            .SequenceCompareTo(new Span<byte>(bVal + sizeof(uint), bLen - sizeof(uint)));
+    }
 
     private static unsafe int CompareUtf8Insensitive(byte* aVal, int aLen, byte* bVal, int bLen)
     {
-        var strA = Utf8Encoding.GetString(aVal, aLen);
-        var strB = Utf8Encoding.GetString(bVal, bLen);
+        var strA = Utf8Encoding.GetString(aVal + sizeof(uint), aLen - sizeof(uint));
+        var strB = Utf8Encoding.GetString(bVal + sizeof(uint), bLen - sizeof(uint));
 
         return string.Compare(strA, strB, StringComparison.InvariantCultureIgnoreCase);
     }

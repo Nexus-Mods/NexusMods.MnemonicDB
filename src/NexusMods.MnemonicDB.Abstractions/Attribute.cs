@@ -17,7 +17,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 ///     Interface for a specific attribute
 /// </summary>
 /// <typeparam name="TValueType"></typeparam>
-public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueType>
+public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<TValueType>
 {
     private const int MaxStackAlloc = 128;
     private static Encoding AsciiEncoding = Encoding.ASCII;
@@ -216,6 +216,17 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
         return index.Contains(this);
     }
 
+    /// <inheritdoc />
+    public virtual void Remap(Func<EntityId, EntityId> remapper, Span<byte> valueSpan)
+    {
+        if (LowLevelType == ValueTags.Reference)
+        {
+            var id = MemoryMarshal.Read<EntityId>(valueSpan);
+            var newId = remapper(id);
+            MemoryMarshal.Write(valueSpan, newId);
+        }
+    }
+
     private void ThrowKeyNotFoundException(EntityId id)
     {
         throw new KeyNotFoundException($"Attribute {Id} not found on entity {id}");
@@ -250,164 +261,6 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
         entity.Transaction.Add(entity.Id, this, value, isRetract:true);
     }
 
-    private void WriteValueLowLevel<TWriter>(TLowLevelType value, TWriter writer)
-        where TWriter : IBufferWriter<byte>
-    {
-        switch (value)
-        {
-            case Null:
-                WriteNull(writer);
-                break;
-            case byte val:
-                WriteUnmanaged(val, writer);
-                break;
-            case ushort val:
-                WriteUnmanaged(val, writer);
-                break;
-            case uint val:
-                WriteUnmanaged(val, writer);
-                break;
-            case ulong val:
-                WriteUnmanaged(val, writer);
-                break;
-            case UInt128 val:
-                WriteUnmanaged(val, writer);
-                break;
-            case short val:
-                WriteUnmanaged(val, writer);
-                break;
-            case int val:
-                WriteUnmanaged(val, writer);
-                break;
-            case long val:
-                WriteUnmanaged(val, writer);
-                break;
-            case Int128 val:
-                WriteUnmanaged(val, writer);
-                break;
-            case float val:
-                WriteUnmanaged(val, writer);
-                break;
-            case double val:
-                WriteUnmanaged(val, writer);
-                break;
-            case string s when LowLevelType == ValueTags.Ascii:
-                WriteAscii(s, writer);
-                break;
-            case string s when LowLevelType == ValueTags.Utf8:
-                WriteUtf8(s, writer);
-                break;
-            case string s when LowLevelType == ValueTags.Utf8Insensitive:
-                WriteUtf8(s, writer);
-                break;
-            default:
-                throw new UnsupportedLowLevelWriteType<TLowLevelType>(value);
-        }
-    }
-
-    private void WriteNull<TWriter>(TWriter writer) where TWriter : IBufferWriter<byte>
-    {
-        // Do Nothing
-    }
-
-    private void WriteAscii<TWriter>(string s, TWriter writer) where TWriter : IBufferWriter<byte>
-    {
-        var size = s.Length;
-        var span = writer.GetSpan(size);
-        AsciiEncoding.GetBytes(s, span);
-        writer.Advance(size);
-    }
-
-    private void WriteUtf8<TWriter>(string s, TWriter writer) where TWriter : IBufferWriter<byte>
-    {
-        var size = Utf8Encoding.GetByteCount(s);
-        var span = writer.GetSpan(size);
-        Utf8Encoding.GetBytes(s, span);
-        writer.Advance(size);
-    }
-
-    public TValueType ReadValue(ReadOnlySpan<byte> span, ValueTags tag)
-    {
-        return LowLevelType switch
-        {
-            ValueTags.Null => NullFromLowLevel(),
-            ValueTags.UInt8 => FromLowLevel(ReadUnmanaged<byte>(span), tag),
-            ValueTags.UInt16 => FromLowLevel(ReadUnmanaged<ushort>(span), tag),
-            ValueTags.UInt32 => FromLowLevel(ReadUnmanaged<uint>(span), tag),
-            ValueTags.UInt64 => FromLowLevel(ReadUnmanaged<ulong>(span), tag),
-            ValueTags.UInt128 => FromLowLevel(ReadUnmanaged<UInt128>(span), tag),
-            ValueTags.Int16 => FromLowLevel(ReadUnmanaged<short>(span), tag),
-            ValueTags.Int32 => FromLowLevel(ReadUnmanaged<int>(span), tag),
-            ValueTags.Int64 => FromLowLevel(ReadUnmanaged<long>(span), tag),
-            ValueTags.Int128 => FromLowLevel(ReadUnmanaged<Int128>(span), tag),
-            ValueTags.Float32 => FromLowLevel(ReadUnmanaged<float>(span), tag),
-            ValueTags.Float64 => FromLowLevel(ReadUnmanaged<double>(span), tag),
-            ValueTags.Reference => FromLowLevel(ReadUnmanaged<ulong>(span), tag),
-            ValueTags.Ascii => FromLowLevel(ReadAscii(span), tag),
-            ValueTags.Utf8 => FromLowLevel(ReadUtf8(span), tag),
-            ValueTags.Utf8Insensitive => FromLowLevel(ReadUtf8(span), tag),
-            ValueTags.Blob => FromLowLevel(span, tag),
-            ValueTags.HashedBlob => FromLowLevel(span.SliceFast(sizeof(ulong)), tag),
-            _ => throw new UnsupportedLowLevelReadType(tag)
-        };
-    }
-
-
-    private TValueType NullFromLowLevel()
-    {
-        return default!;
-    }
-
-    private string ReadUtf8(ReadOnlySpan<byte> span)
-    {
-        return Utf8Encoding.GetString(span);
-    }
-
-    private string ReadAscii(ReadOnlySpan<byte> span)
-    {
-        return AsciiEncoding.GetString(span);
-    }
-
-    private unsafe void WriteUnmanaged<TWriter, TValue>(TValue value, TWriter writer)
-        where TWriter : IBufferWriter<byte>
-        where TValue : unmanaged
-    {
-        var span = writer.GetSpan(sizeof(TValue));
-        MemoryMarshal.Write(span, value);
-        writer.Advance(sizeof(TValue));
-    }
-
-    private TValue ReadUnmanaged<TValue>(ReadOnlySpan<byte> span)
-        where TValue : unmanaged
-    {
-        return MemoryMarshal.Read<TValue>(span);
-    }
-
-    /// <summary>
-    /// Write a datom for this attribute to the given writer
-    /// </summary>
-    public virtual void Write<TWriter>(EntityId entityId, RegistryId registryId, TValueType value, TxId txId, bool isRetract, TWriter writer)
-        where TWriter : IBufferWriter<byte>
-    {
-        Debug.Assert(LowLevelType != ValueTags.Blob, "Blobs should overwrite this method and throw when ToLowLevel is called");
-        var prefix = new KeyPrefix(entityId, GetDbId(registryId), txId, isRetract, LowLevelType);
-        var span = writer.GetSpan(KeyPrefix.Size);
-        MemoryMarshal.Write(span, prefix);
-        writer.Advance(KeyPrefix.Size);
-        WriteValueLowLevel(ToLowLevel(value), writer);
-    }
-
-    /// <summary>
-    /// Write the key prefix for this attribute to the given writer
-    /// </summary>
-    protected void WritePrefix<TWriter>(EntityId entityId, RegistryId registryId, TxId txId, bool isRetract, TWriter writer)
-        where TWriter : IBufferWriter<byte>
-    {
-        var prefix = new KeyPrefix(entityId, GetDbId(registryId), txId, isRetract, LowLevelType);
-        var span = writer.GetSpan(KeyPrefix.Size);
-        MemoryMarshal.Write(span, prefix);
-        writer.Advance(KeyPrefix.Size);
-    }
 
     /// <inheritdoc />
     public override string ToString()
