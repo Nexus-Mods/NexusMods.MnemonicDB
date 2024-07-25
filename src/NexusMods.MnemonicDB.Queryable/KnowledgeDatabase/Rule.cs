@@ -1,4 +1,6 @@
-﻿namespace NexusMods.MnemonicDB.Queryable.AbstractSyntaxTree;
+﻿using NexusMods.MnemonicDB.Queryable.KnowledgeDatabase;
+
+namespace NexusMods.MnemonicDB.Queryable.AbstractSyntaxTree;
 
 public class Rule
 {

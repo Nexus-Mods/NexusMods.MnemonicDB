@@ -1,6 +1,7 @@
 ﻿using System;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Queryable.AbstractSyntaxTree;
+using NexusMods.MnemonicDB.Queryable.KnowledgeDatabase;
 
 namespace NexusMods.MnemonicDB.Queryable;
 
