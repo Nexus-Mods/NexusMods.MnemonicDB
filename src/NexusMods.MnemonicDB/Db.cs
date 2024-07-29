@@ -39,7 +39,7 @@ internal class Db : IDb
         _cache = new IndexSegmentCache();
         Snapshot = snapshot;
         BasisTxId = txId;
-        RecentlyAdded = new IndexSegment();
+        RecentlyAdded = snapshot.Datoms(SliceDescriptor.Create(txId, registry));
     }
 
     private Db(ISnapshot snapshot, TxId txId, AttributeRegistry registry, RegistryId registryId, IConnection connection, IndexSegmentCache newCache, IndexSegment recentlyAdded)

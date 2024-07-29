@@ -2,6 +2,7 @@
 using DynamicData;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
@@ -601,7 +602,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var slice = SliceDescriptor.Create(Mod.Name, Connection.Db.Registry);
 
         // Setup the subscription
-        using var _ = ObservableDatoms.ObserveDatoms(Connection, slice)
+        using var _ = Connection.ObserveDatoms(slice)
             // Snapshot the values each time
             .QueryWhenChanged(datoms => datoms.Select(d => d.Resolved.ObjectValue.ToString()!).ToArray())
             // Add the changes to the list
@@ -623,6 +624,18 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await tx3.Commit();
 
         await Verify(changes);
+    }
+
+    [Fact]
+    public async Task CanGetInitialDbStateFromObservable()
+    {
+        var attrs = await Connection.ObserveDatoms(AttributeDefinition.UniqueId).FirstAsync();
+        attrs.TotalChanges.Should().BeGreaterThan(0);
+
+        
+        attrs = await Connection.ObserveDatoms(AttributeDefinition.UniqueId).FirstAsync();
+        attrs.TotalChanges.Should().BeGreaterThan(0);
+
     }
 
     /// <summary>
