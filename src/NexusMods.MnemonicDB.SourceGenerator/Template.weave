@@ -240,13 +240,13 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         {{each attr in model.Attributes}}
         {{= attr.Comments}}
         {{if attr.IsReference && !attr.IsCollection}}
-        public {{= attr.Prefix}} {{= attr.ReferenceType.ToDisplayString()}}Id {{= attr.ContextualName}} { get; init; }
+        public {{= attr.Prefix}} {{= attr.ReferenceType.ToDisplayString()}}Id {{= attr.ContextualName}} { get; set; }
         {{elif attr.IsReference && attr.IsCollection}}
-        public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}}[] {{= attr.ContextualName}} { get; init; }
+        public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}}[] {{= attr.ContextualName}} { get; set; }
         {{elif attr.IsMarker}}
-        public bool Is{{= attr.ContextualName}} { get; init; } = false;
+        public bool Is{{= attr.ContextualName}} { get; set; } = false;
         {{else}}
-        public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}}{{= attr.Postfix}} {{= attr.ContextualName}} { get; init; }
+        public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}}{{= attr.Postfix}} {{= attr.ContextualName}} { get; set; }
         {{/if}}
         {{/each}}
         #endregion
