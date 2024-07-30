@@ -63,8 +63,15 @@ public class Connection : IConnection
                 
                 foreach (var analyzer in _analyzers)
                 {
-                    var result = analyzer.Analyze(nextItem);
-                    db.AnalyzerData.Add(analyzer.GetType(), result);
+                    try
+                    {
+                        var result = analyzer.Analyze(nextItem);
+                        db.AnalyzerData.Add(analyzer.GetType(), result);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to analyze with {Analyzer}", analyzer.GetType().Name);
+                    }
                 }
                 
                 observer.OnNext((Db)nextItem);
