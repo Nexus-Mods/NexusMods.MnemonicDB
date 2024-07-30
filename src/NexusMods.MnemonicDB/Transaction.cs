@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
@@ -17,10 +16,10 @@ namespace NexusMods.MnemonicDB;
 internal class Transaction(Connection connection, IAttributeRegistry registry) : ITransaction
 {
     private readonly IndexSegmentBuilder _datoms = new(registry);
-    private HashSet<ITxFunction>? _txFunctions = null; // No reason to create the hashset if we don't need it
-    private List<ITemporaryEntity>? _tempEntities = null;
+    private HashSet<ITxFunction>? _txFunctions; // No reason to create the hashset if we don't need it
+    private List<ITemporaryEntity>? _tempEntities;
     private ulong _tempId = PartitionId.Temp.MakeEntityId(1).Value;
-    private bool _committed = false;
+    private bool _committed;
     private readonly object _lock = new();
 
     /// <inhertdoc />

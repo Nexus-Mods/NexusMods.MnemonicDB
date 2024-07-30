@@ -10,10 +10,10 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 /// <summary>
 /// A builder for constructing an index segment
 /// </summary>
-public struct IndexSegmentBuilder : IDisposable
+public readonly struct IndexSegmentBuilder : IDisposable
 {
-    private List<int> _offsets;
-    private PooledMemoryBufferWriter _data;
+    private readonly List<int> _offsets;
+    private readonly PooledMemoryBufferWriter _data;
     private readonly RegistryId _registryId;
     private readonly IAttributeRegistry _registry;
 
@@ -69,7 +69,7 @@ public struct IndexSegmentBuilder : IDisposable
     /// <summary>
     /// Add a datom to the segment
     /// </summary>
-    public readonly void Add<TValue, TLowLevelType>(EntityId entityId, Attribute<TValue, TLowLevelType> attribute, TValue value, TxId txId, bool isRetract)
+    public void Add<TValue, TLowLevelType>(EntityId entityId, Attribute<TValue, TLowLevelType> attribute, TValue value, TxId txId, bool isRetract)
     {
         _offsets.Add(_data.Length);
         attribute.Write(entityId, _registryId, value, txId, isRetract, _data);
@@ -78,7 +78,7 @@ public struct IndexSegmentBuilder : IDisposable
     /// <summary>
     /// Adds an assert datom to the segment for the tmp transaction
     /// </summary>
-    public readonly void Add<TValue, TLowLevelType>(EntityId entityId, Attribute<TValue, TLowLevelType> attribute, TValue value)
+    public void Add<TValue, TLowLevelType>(EntityId entityId, Attribute<TValue, TLowLevelType> attribute, TValue value)
     {
         _offsets.Add(_data.Length);
         attribute.Write(entityId, _registryId, value, TxId.Tmp, false, _data);
@@ -87,7 +87,7 @@ public struct IndexSegmentBuilder : IDisposable
     /// <summary>
     /// Adds a datom to the segment for the tmp transaction, with the given assert flag
     /// </summary>
-    public readonly void Add<TValue, TLowLevelType>(EntityId entityId, Attribute<TValue, TLowLevelType> attribute, TValue value, bool isRetract)
+    public void Add<TValue, TLowLevelType>(EntityId entityId, Attribute<TValue, TLowLevelType> attribute, TValue value, bool isRetract)
     {
         _offsets.Add(_data.Length);
         attribute.Write(entityId, _registryId, value, TxId.Tmp, isRetract, _data);
@@ -96,7 +96,7 @@ public struct IndexSegmentBuilder : IDisposable
     /// <summary>
     /// Append
     /// </summary>
-    public readonly void Add(ReadOnlySpan<byte> rawData)
+    public void Add(ReadOnlySpan<byte> rawData)
     {
         Debug.Assert(rawData.Length >= KeyPrefix.Size, "Raw data must be at least the size of a KeyPrefix");
         _offsets.Add(_data.Length);
@@ -106,14 +106,14 @@ public struct IndexSegmentBuilder : IDisposable
     /// <summary>
     /// Construct the index segment
     /// </summary>
-    public readonly IndexSegment Build()
+    public IndexSegment Build()
     {
         _offsets.Add(_data.Length);
         return new IndexSegment(_data.GetWrittenSpan(), _offsets.ToArray(), _registry);
     }
 
     /// <inheritdoc />
-    public readonly void Dispose()
+    public void Dispose()
     {
         _data.Dispose();
     }
