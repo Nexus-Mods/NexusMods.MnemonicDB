@@ -30,6 +30,8 @@ internal class Db : IDb
     public IAttributeRegistry Registry => _registry;
 
     public IndexSegment RecentlyAdded { get; }
+    
+    internal Dictionary<Type, object> AnalyzerData { get; } = new();
 
     public Db(ISnapshot snapshot, TxId txId, AttributeRegistry registry)
     {
@@ -107,7 +109,14 @@ internal class Db : IDb
     {
         return _cache.GetReferences(id, this);
     }
-    
+
+    TReturn IDb.AnalyzerData<TAnalyzer, TReturn>()
+    {
+        if (AnalyzerData.TryGetValue(typeof(TAnalyzer), out var value))
+            return (TReturn)value;
+        throw new KeyNotFoundException($"Analyzer {typeof(TAnalyzer).Name} not found");
+    }
+
     public IndexSegment Datoms<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value)
     {
         return Datoms(SliceDescriptor.Create(attribute, value, _registry));

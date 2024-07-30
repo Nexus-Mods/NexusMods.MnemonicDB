@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
@@ -60,4 +61,9 @@ public interface IConnection
     /// </summary>
     /// <returns></returns>
     public ITransaction BeginTransaction();
+    
+    /// <summary>
+    /// The analyzers that are available for this connection
+    /// </summary>
+    public IAnalyzer[] Analyzers { get; }
 }

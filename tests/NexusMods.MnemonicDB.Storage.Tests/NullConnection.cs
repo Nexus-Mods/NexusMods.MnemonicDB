@@ -19,4 +19,6 @@ public class NullConnection : IConnection
     {
         throw new NotSupportedException();
     }
+
+    public IAnalyzer[] Analyzers => throw new NotSupportedException();
 }

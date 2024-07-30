@@ -84,4 +84,10 @@ public interface IDb : IEquatable<IDb>
     /// Returns an index segment of all the datoms that are a reference pointing to the given entity id.
     /// </summary>
     IndexSegment ReferencesTo(EntityId eid);
+    
+    /// <summary>
+    /// Get the cached data for the given analyzer.
+    /// </summary>
+    TReturn AnalyzerData<TAnalyzer, TReturn>() 
+        where TAnalyzer : IAnalyzer<TReturn>;
 }

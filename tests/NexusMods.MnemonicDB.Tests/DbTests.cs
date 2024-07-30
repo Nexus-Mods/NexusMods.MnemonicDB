@@ -8,6 +8,7 @@ using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.TestModel;
+using NexusMods.MnemonicDB.TestModel.Analyzers;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.File;
 
@@ -800,6 +801,33 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var avet = Connection.Db.Datoms(SliceDescriptor.Create(File.TuplePath, (EntityId.From(0), ""), (EntityId.MaxValueNoPartition, ""), Connection.Db.Registry));
         await VerifyTable(avet.Resolved());
+    }
+
+    [Fact]
+    public async Task CanGetAnalyzerData()
+    {
+        using var tx = Connection.BeginTransaction();
         
+        var loadout1 = new Loadout.New(tx)
+        {
+            Name = "Test Loadout"
+        };
+        
+        var mod = new Mod.New(tx)
+        {
+            Name = "Test Mod",
+            Source = new Uri("http://test.com"),
+            LoadoutId = loadout1 
+        };
+
+        var result = await tx.Commit();
+
+        result.Db.Should().Be(Connection.Db);
+        
+        var countData = Connection.Db.AnalyzerData<DatomCountAnalyzer, int>();
+        countData.Should().Be(result.Db.RecentlyAdded.Count);
+        
+        var attrs = Connection.Db.AnalyzerData<AttributesAnalyzer, HashSet<IAttribute>>();
+        attrs.Should().NotBeEmpty();
     }
 }
