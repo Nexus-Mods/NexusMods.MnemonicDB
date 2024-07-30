@@ -173,11 +173,18 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         }
 
         {{each include in model.Includes}}
+        public {{= include.ToDisplayString()}}.New Get{{=include.Name}}(__ABSTRACTIONS__.ITransaction tx) {
+            if (!tx.TryGet<{{= include.ToDisplayString()}}.New>(Id, out var value))
+                throw new InvalidOperationException($"Unable to find {typeof({{= include.ToDisplayString()}}.New)} with ID {Id} in transaction!");
+
+            return value;
+        }
+
         public required {{= include.ToDisplayString()}}.New {{= include.Name}} {
-          init {
-               if (Id != value.Id)
-                   throw new InvalidOperationException("The id of the included entity must match the id of the including entity.");
-          }
+            init {
+                if (Id != value.Id)
+                    throw new InvalidOperationException("The id of the included entity must match the id of the including entity.");
+            }
         }
         {{/each}}
 

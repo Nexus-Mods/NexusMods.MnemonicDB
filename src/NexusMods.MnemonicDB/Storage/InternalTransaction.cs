@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
@@ -61,6 +62,24 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
     public void Add(Datom datom)
     {
         datoms.Add(datom);
+    }
+
+    public bool TryGet<TEntity>(EntityId entityId, [NotNullWhen(true)] out TEntity? entity)
+        where TEntity : class, ITemporaryEntity
+    {
+        entity = null;
+        if (_temporaryEntities is null) return false;
+
+        foreach (var tempEntity in _temporaryEntities)
+        {
+            if (tempEntity.Id != entityId) continue;
+            if (tempEntity is not TEntity actual) continue;
+
+            entity = actual;
+            return true;
+        }
+
+        return false;
     }
 
     /// <inheritdoc />
