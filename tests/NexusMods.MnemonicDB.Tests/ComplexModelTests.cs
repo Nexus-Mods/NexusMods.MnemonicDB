@@ -204,4 +204,31 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         newNewLoadOut.Id.Should().NotBe(loadout.Id,
             "new loadout should have a different id because the connection re-detected the max EntityId");
     }
+
+    [Fact]
+    public async Task CanGetFromTransaction()
+    {
+        using var tx = Connection.BeginTransaction();
+
+        var archiveFile = new ArchiveFile.New(tx, out var id)
+        {
+            Hash = Hash.Zero,
+            Path = "foo",
+            File = new File.New(tx, id)
+            {
+                Hash = Hash.Zero,
+                Path = "foo",
+                Size = Size.One,
+                ModId = tx.TempId(),
+            },
+        };
+
+        archiveFile.GetFile(tx).Path.Should().Be("foo");
+        archiveFile.GetFile(tx).Path = "bar";
+        archiveFile.GetFile(tx).Path.Should().Be("bar");
+
+        var result = await tx.Commit();
+        var remap = result.Remap(archiveFile);
+        remap.AsFile().Path.Should().Be("bar");
+    }
 }

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Models;
@@ -11,6 +13,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// <summary>
 ///     Represents a transaction, which is a set of proposed changes to the datom store
 /// </summary>
+[PublicAPI]
 public interface ITransaction : IDisposable
 {
     /// <summary>
@@ -64,6 +67,12 @@ public interface ITransaction : IDisposable
     /// Retract a specific datom
     /// </summary>
     void Add(Datom datom);
+
+    /// <summary>
+    /// Tries to find and return a previously attached entity by ID.
+    /// </summary>
+    bool TryGet<TEntity>(EntityId entityId, [NotNullWhen(true)] out TEntity? entity)
+        where TEntity : class, ITemporaryEntity;
 
     /// <summary>
     ///     Commits the transaction

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
@@ -90,6 +91,29 @@ internal class Transaction(Connection connection, IAttributeRegistry registry) :
             _tempEntities ??= [];
             _tempEntities.Add(entity);
         }
+    }
+
+    public bool TryGet<TEntity>(EntityId entityId, [NotNullWhen(true)] out TEntity? entity)
+        where TEntity : class, ITemporaryEntity
+    {
+        entity = null;
+        if (_tempEntities is null) return false;
+
+        lock (_lock)
+        {
+            // NOTE(erri120): this can probably be optimized,
+            // as the list is very likely to be sorted by ID.
+            foreach (var tempEntity in _tempEntities)
+            {
+                if (tempEntity.Id != entityId) continue;
+                if (tempEntity is not TEntity actual) continue;
+
+                entity = actual;
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public async Task<ICommitResult> Commit()
