@@ -7,6 +7,7 @@ using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.MnemonicDB.TestModel.Helpers;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.TestModel;
+using NexusMods.MnemonicDB.TestModel.Analyzers;
 using NexusMods.Paths;
 using Xunit.Sdk;
 using File = NexusMods.MnemonicDB.TestModel.File;
@@ -23,6 +24,7 @@ public class AMnemonicDBTest : IDisposable
     private DatomStore _store;
     protected IConnection Connection;
     protected ILogger Logger;
+    private readonly IAnalyzer[] _analyzers;
 
 
     protected AMnemonicDBTest(IServiceProvider provider)
@@ -40,7 +42,14 @@ public class AMnemonicDBTest : IDisposable
         _backend = new Backend(_registry);
 
         _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
-        Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, provider, _attributes);
+
+        _analyzers =
+        new IAnalyzer[]{
+            new DatomCountAnalyzer(),
+            new AttributesAnalyzer(),
+        };
+        
+        Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, provider, _attributes, _analyzers);
 
         Logger = provider.GetRequiredService<ILogger<AMnemonicDBTest>>();
     }
@@ -130,7 +139,7 @@ public class AMnemonicDBTest : IDisposable
         _registry = new AttributeRegistry(_attributes);
         _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
 
-        Connection = new Connection(_provider.GetRequiredService<ILogger<Connection>>(), _store, _provider, _attributes);
+        Connection = new Connection(_provider.GetRequiredService<ILogger<Connection>>(), _store, _provider, _attributes, _analyzers);
     }
 
 }

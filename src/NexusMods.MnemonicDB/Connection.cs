@@ -27,24 +27,26 @@ public class Connection : IConnection
 
     private BehaviorSubject<IDb> _dbStream;
     private IDisposable? _dbStreamDisposable;
+    private readonly IAnalyzer[] _analyzers;
 
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAttribute> declaredAttributes)
+    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAttribute> declaredAttributes, IEnumerable<IAnalyzer> analyzers)
     {
         ServiceProvider = provider;
         _logger = logger;
         _declaredAttributes = declaredAttributes.ToDictionary(a => a.Id);
         _store = store;
         _dbStream = new BehaviorSubject<IDb>(default!);
+        _analyzers = analyzers.ToArray();
         Bootstrap();
     }
 
     /// <summary>
     /// Scrubs the transaction stream so that we only ever move forward and never repeat transactions
     /// </summary>
-    private static IObservable<Db> ForwardOnly(IObservable<IDb> dbStream)
+    private IObservable<Db> ProcessUpdate(IObservable<IDb> dbStream)
     {
         TxId? prev = null;
 
@@ -52,9 +54,19 @@ public class Connection : IConnection
         {
             return dbStream.Subscribe(nextItem =>
             {
+                
                 if (prev != null && prev.Value >= nextItem.BasisTxId)
                     return;
 
+                var db = (Db)nextItem;
+                db.Connection = this;
+                
+                foreach (var analyzer in _analyzers)
+                {
+                    var result = analyzer.Analyze(nextItem);
+                    db.AnalyzerData.Add(analyzer.GetType(), result);
+                }
+                
                 observer.OnNext((Db)nextItem);
                 prev = nextItem.BasisTxId;
             }, observer.OnError, observer.OnCompleted);
@@ -104,6 +116,9 @@ public class Connection : IConnection
     {
         return new Transaction(this, _store.Registry);
     }
+
+    /// <inheritdoc />
+    public IAnalyzer[] Analyzers => _analyzers;
 
     /// <inheritdoc />
     public IObservable<IDb> Revisions
@@ -175,12 +190,7 @@ public class Connection : IConnection
         {
             AddMissingAttributes(_declaredAttributes.Values);
 
-            _dbStreamDisposable = ForwardOnly(_store.TxLog)
-                .Select(db =>
-                {
-                    db.Connection = this; 
-                    return db;
-                })
+            _dbStreamDisposable = ProcessUpdate(_store.TxLog)
                 .Subscribe(_dbStream);
         }
         catch (Exception ex)
