@@ -18,7 +18,7 @@ public struct Values<TValueType, TLowLevelType>(IndexSegment segment, int start,
         get
         {
             var datom = segment[idx + start];
-            return attribute.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag);
+            return attribute.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, segment.RegistryId);
         }
     }
 

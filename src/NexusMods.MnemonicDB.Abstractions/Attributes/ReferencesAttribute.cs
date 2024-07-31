@@ -12,7 +12,8 @@ public class ReferencesAttribute(string ns, string name) : CollectionAttribute<E
     protected override ulong ToLowLevel(EntityId value) => value.Value;
 
     /// <inheritdoc />
-    protected override EntityId FromLowLevel(ulong value, ValueTags tags) => EntityId.From(value);
+    protected override EntityId FromLowLevel(ulong value, ValueTags tags, RegistryId registryId) 
+        => EntityId.From(value);
 }
 
 /// <summary>

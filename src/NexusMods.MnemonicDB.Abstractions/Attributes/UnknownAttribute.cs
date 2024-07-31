@@ -19,7 +19,7 @@ public class UnknownAttribute<TLowLevel>(DbAttribute dbAttribute) :
     }
 
     /// <inheritdoc />
-    protected override TLowLevel FromLowLevel(byte value, ValueTags tags)
+    protected override TLowLevel FromLowLevel(byte value, ValueTags tags, RegistryId registryId)
     {
         if (tags != LowLevelType)
         {
@@ -30,7 +30,7 @@ public class UnknownAttribute<TLowLevel>(DbAttribute dbAttribute) :
     }
 
     /// <inheritdoc />
-    protected override TLowLevel FromLowLevel(ushort value, ValueTags tags)
+    protected override TLowLevel FromLowLevel(ushort value, ValueTags tags, RegistryId registryId)
     {
         if (tags != LowLevelType)
         {
@@ -41,7 +41,7 @@ public class UnknownAttribute<TLowLevel>(DbAttribute dbAttribute) :
     }
 
     /// <inheritdoc />
-    protected override TLowLevel FromLowLevel(uint value, ValueTags tags)
+    protected override TLowLevel FromLowLevel(uint value, ValueTags tags, RegistryId registryId)
     {
         if (tags != LowLevelType)
         {
@@ -53,7 +53,7 @@ public class UnknownAttribute<TLowLevel>(DbAttribute dbAttribute) :
 
 
     /// <inheritdoc />
-    protected override TLowLevel FromLowLevel(ulong value, ValueTags tags)
+    protected override TLowLevel FromLowLevel(ulong value, ValueTags tags, RegistryId registryId)
     {
         if (tags != LowLevelType)
         {
@@ -64,7 +64,7 @@ public class UnknownAttribute<TLowLevel>(DbAttribute dbAttribute) :
     }
 
     /// <inheritdoc />
-    protected override TLowLevel FromLowLevel(short value, ValueTags tags)
+    protected override TLowLevel FromLowLevel(short value, ValueTags tags, RegistryId registryId)
     {
         if (tags != LowLevelType)
         {
@@ -75,7 +75,7 @@ public class UnknownAttribute<TLowLevel>(DbAttribute dbAttribute) :
     }
 
     /// <inheritdoc />
-    protected override TLowLevel FromLowLevel(int value, ValueTags tags)
+    protected override TLowLevel FromLowLevel(int value, ValueTags tags, RegistryId registryId)
     {
         if (tags != LowLevelType)
         {
@@ -86,7 +86,7 @@ public class UnknownAttribute<TLowLevel>(DbAttribute dbAttribute) :
     }
 
     /// <inheritdoc />
-    protected override TLowLevel FromLowLevel(long value, ValueTags tags)
+    protected override TLowLevel FromLowLevel(long value, ValueTags tags, RegistryId registryId)
     {
         if (tags != LowLevelType)
         {
@@ -97,7 +97,7 @@ public class UnknownAttribute<TLowLevel>(DbAttribute dbAttribute) :
     }
 
     /// <inheritdoc />
-    protected override TLowLevel FromLowLevel(float value, ValueTags tags)
+    protected override TLowLevel FromLowLevel(float value, ValueTags tags, RegistryId registryId)
     {
         if (tags != LowLevelType)
         {
@@ -108,7 +108,7 @@ public class UnknownAttribute<TLowLevel>(DbAttribute dbAttribute) :
     }
 
     /// <inheritdoc />
-    protected override TLowLevel FromLowLevel(double value, ValueTags tags)
+    protected override TLowLevel FromLowLevel(double value, ValueTags tags, RegistryId registryId)
     {
         if (tags != LowLevelType)
         {
@@ -119,7 +119,7 @@ public class UnknownAttribute<TLowLevel>(DbAttribute dbAttribute) :
     }
 
     /// <inheritdoc />
-    protected override TLowLevel FromLowLevel(string value, ValueTags tags)
+    protected override TLowLevel FromLowLevel(string value, ValueTags tags, RegistryId registryId)
     {
         if (tags != LowLevelType)
         {

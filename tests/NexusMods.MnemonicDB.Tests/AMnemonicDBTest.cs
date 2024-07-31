@@ -17,7 +17,7 @@ namespace NexusMods.MnemonicDB.Tests;
 public class AMnemonicDBTest : IDisposable
 {
     private readonly IAttribute[] _attributes;
-    private readonly IServiceProvider _provider;
+    protected readonly IServiceProvider Provider;
     private AttributeRegistry _registry;
     private Backend _backend;
 
@@ -29,10 +29,10 @@ public class AMnemonicDBTest : IDisposable
 
     protected AMnemonicDBTest(IServiceProvider provider)
     {
-        _provider = provider;
+        Provider = provider;
         _attributes = provider.GetRequiredService<IEnumerable<IAttribute>>().ToArray();
 
-        _registry = new AttributeRegistry(_attributes);
+        _registry = new AttributeRegistry(provider, _attributes);
 
         Config = new DatomStoreSettings
         {
@@ -136,10 +136,10 @@ public class AMnemonicDBTest : IDisposable
         GC.Collect();
 
         _backend = new Backend(_registry);
-        _registry = new AttributeRegistry(_attributes);
-        _store = new DatomStore(_provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
+        _registry = new AttributeRegistry(Provider, _attributes);
+        _store = new DatomStore(Provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
 
-        Connection = new Connection(_provider.GetRequiredService<ILogger<Connection>>(), _store, _provider, _attributes, _analyzers);
+        Connection = new Connection(Provider.GetRequiredService<ILogger<Connection>>(), _store, Provider, _attributes, _analyzers);
     }
 
 }

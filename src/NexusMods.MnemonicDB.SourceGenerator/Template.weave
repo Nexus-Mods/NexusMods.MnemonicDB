@@ -146,11 +146,6 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
             tx.Attach(this);
         }
         
-        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.PartitionId partition) : base() {
-            Id = tx.TempId(partition);
-            tx.Attach(this);
-        }
-        
         {{else}}
         
         public New(__ABSTRACTIONS__.ITransaction tx, out __ABSTRACTIONS__.EntityId id) : base() {

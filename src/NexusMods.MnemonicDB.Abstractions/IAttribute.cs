@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -68,9 +69,8 @@ public interface IAttribute
     /// <summary>
     ///     Converts the given values into a typed datom
     /// </summary>
-    IReadDatom Resolve(EntityId entityId, AttributeId attributeId, ReadOnlySpan<byte> value, TxId tx, bool isRetract, ValueTags valueTag);
-
-
+    IReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, RegistryId registryId);
+    
     /// <summary>
     /// Adds the value to the transaction on the given entity/attribute, assumes the value is of the correct type
     /// </summary>

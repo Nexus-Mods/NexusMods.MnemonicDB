@@ -11,5 +11,6 @@ public class StringAttribute(string ns, string name) : ScalarAttribute<string, s
     protected override string ToLowLevel(string value) => value;
 
     /// <inheritdoc />
-    protected override string FromLowLevel(string lowLevelType, ValueTags tags) => lowLevelType;
+    protected override string FromLowLevel(string lowLevelType, ValueTags tags, RegistryId registryId) 
+        => lowLevelType;
 }

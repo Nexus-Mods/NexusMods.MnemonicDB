@@ -143,28 +143,28 @@ public partial class Attribute<TValueType, TLowLevelType>
     }
     
     
-    public virtual TValueType ReadValue(ReadOnlySpan<byte> span, ValueTags tag)
+    public virtual TValueType ReadValue(ReadOnlySpan<byte> span, ValueTags tag, RegistryId registryId)
     {
         return LowLevelType switch
         {
             ValueTags.Null => NullFromLowLevel(),
-            ValueTags.UInt8 => FromLowLevel(ReadUnmanaged<byte>(span, out _), tag),
-            ValueTags.UInt16 => FromLowLevel(ReadUnmanaged<ushort>(span, out _), tag),
-            ValueTags.UInt32 => FromLowLevel(ReadUnmanaged<uint>(span, out _), tag),
-            ValueTags.UInt64 => FromLowLevel(ReadUnmanaged<ulong>(span, out _), tag),
-            ValueTags.UInt128 => FromLowLevel(ReadUnmanaged<UInt128>(span, out _), tag),
-            ValueTags.Int16 => FromLowLevel(ReadUnmanaged<short>(span, out _), tag),
-            ValueTags.Int32 => FromLowLevel(ReadUnmanaged<int>(span, out _), tag),
-            ValueTags.Int64 => FromLowLevel(ReadUnmanaged<long>(span, out _), tag),
-            ValueTags.Int128 => FromLowLevel(ReadUnmanaged<Int128>(span, out _), tag),
-            ValueTags.Float32 => FromLowLevel(ReadUnmanaged<float>(span, out _), tag),
-            ValueTags.Float64 => FromLowLevel(ReadUnmanaged<double>(span, out _), tag),
-            ValueTags.Reference => FromLowLevel(ReadUnmanaged<ulong>(span, out _), tag),
-            ValueTags.Ascii => FromLowLevel(ReadAscii(span, out _), tag),
-            ValueTags.Utf8 => FromLowLevel(ReadUtf8(span, out _), tag),
-            ValueTags.Utf8Insensitive => FromLowLevel(ReadUtf8(span, out _), tag),
-            ValueTags.Blob => FromLowLevel(span, tag),
-            ValueTags.HashedBlob => FromLowLevel(span.SliceFast(sizeof(ulong)), tag),
+            ValueTags.UInt8 => FromLowLevel(ReadUnmanaged<byte>(span, out _), tag, registryId),
+            ValueTags.UInt16 => FromLowLevel(ReadUnmanaged<ushort>(span, out _), tag, registryId),
+            ValueTags.UInt32 => FromLowLevel(ReadUnmanaged<uint>(span, out _), tag, registryId),
+            ValueTags.UInt64 => FromLowLevel(ReadUnmanaged<ulong>(span, out _), tag, registryId),
+            ValueTags.UInt128 => FromLowLevel(ReadUnmanaged<UInt128>(span, out _), tag, registryId),
+            ValueTags.Int16 => FromLowLevel(ReadUnmanaged<short>(span, out _), tag, registryId),
+            ValueTags.Int32 => FromLowLevel(ReadUnmanaged<int>(span, out _), tag, registryId),
+            ValueTags.Int64 => FromLowLevel(ReadUnmanaged<long>(span, out _), tag, registryId),
+            ValueTags.Int128 => FromLowLevel(ReadUnmanaged<Int128>(span, out _), tag, registryId),
+            ValueTags.Float32 => FromLowLevel(ReadUnmanaged<float>(span, out _), tag, registryId),
+            ValueTags.Float64 => FromLowLevel(ReadUnmanaged<double>(span, out _), tag, registryId),
+            ValueTags.Reference => FromLowLevel(ReadUnmanaged<ulong>(span, out _), tag, registryId),
+            ValueTags.Ascii => FromLowLevel(ReadAscii(span, out _), tag, registryId),
+            ValueTags.Utf8 => FromLowLevel(ReadUtf8(span, out _), tag, registryId),
+            ValueTags.Utf8Insensitive => FromLowLevel(ReadUtf8(span, out _), tag, registryId),
+            ValueTags.Blob => FromLowLevel(span, tag, registryId),
+            ValueTags.HashedBlob => FromLowLevel(span.SliceFast(sizeof(ulong)), tag, registryId),
             _ => throw new UnsupportedLowLevelReadType(tag)
         };
     }
@@ -172,7 +172,7 @@ public partial class Attribute<TValueType, TLowLevelType>
     /// <summary>
     /// Reads a low-level value of a specific type from the given span
     /// </summary>
-    protected TLowLevel ReadValue<TLowLevel>(ReadOnlySpan<byte> span, ValueTags tag, out int size)
+    protected TLowLevel ReadValue<TLowLevel>(ReadOnlySpan<byte> span, ValueTags tag, RegistryId registryId, out int size)
     {
         size = sizeof(ulong);
         return tag switch
@@ -193,7 +193,7 @@ public partial class Attribute<TValueType, TLowLevelType>
             ValueTags.Ascii => (TLowLevel)(object)ReadAscii(span, out size),
             ValueTags.Utf8 => (TLowLevel)(object)ReadUtf8(span, out size),
             ValueTags.Utf8Insensitive => (TLowLevel)(object)ReadUtf8(span, out size),
-            ValueTags.Blob => (TLowLevel)(object)FromLowLevel(span, tag)!,
+            ValueTags.Blob => (TLowLevel)(object)FromLowLevel(span, tag, registryId)!,
             ValueTags.HashedBlob => (TLowLevel)(object)span.SliceFast(sizeof(ulong)).ToArray(),
             _ => throw new UnsupportedLowLevelReadType(tag),
         };
