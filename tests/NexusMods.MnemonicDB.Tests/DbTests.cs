@@ -1,5 +1,6 @@
 ﻿using System.Reactive.Linq;
 using DynamicData;
+using Microsoft.Extensions.DependencyInjection;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
@@ -311,7 +312,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             ModId = EntityId.From(1)
         };
 
-        var file2 = new File.New(tx, PartitionId.From(10))
+        var file2 = new File.New(tx, tx.TempId(PartitionId.From(10)))
         {
             Path = "C:\\test2.txt",
             Hash = Hash.From(0xDEADBEEF),
@@ -319,7 +320,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             ModId = EntityId.From(1)
         };
 
-        var file3 = new File.New(tx, PartitionId.From(200))
+        var file3 = new File.New(tx, tx.TempId(PartitionId.From(200)))
         {
             Path = "C:\\test3.txt",
             Hash = Hash.From(0xDEADBEEF),
@@ -829,5 +830,27 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         var attrs = Connection.Db.AnalyzerData<AttributesAnalyzer, HashSet<IAttribute>>();
         attrs.Should().NotBeEmpty();
+    }
+
+    [Fact]
+    public async Task CanGetAttributesThatRequireDI()
+    {
+        var fileSystem = Provider.GetRequiredService<IFileSystem>();
+        
+        var path = fileSystem.GetKnownPath(KnownPath.EntryDirectory).Combine("/foo/bar/qux.txt");
+        
+        using var tx = Connection.BeginTransaction();
+        
+        var loadout1 = new Loadout.New(tx)
+        {
+            Name = "Test Loadout",
+            GamePath = path
+        };
+        
+        var result = await tx.Commit();
+        
+        var loadout = result.Remap(loadout1);
+        
+        loadout.GamePath.Should().Be(path);
     }
 }

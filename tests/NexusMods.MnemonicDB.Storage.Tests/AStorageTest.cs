@@ -26,7 +26,7 @@ public abstract class AStorageTest : IDisposable
     protected AStorageTest(IServiceProvider provider, Func<AttributeRegistry, IStoreBackend>? backendFn = null)
     {
         _provider = provider;
-        Registry = new AttributeRegistry(provider.GetServices<IAttribute>());
+        Registry = new AttributeRegistry(provider, provider.GetServices<IAttribute>());
         Registry.Populate([
             new DbAttribute(File.Path.Id, AttributeId.From(20), ValueTags.Utf8Insensitive, File.Path),
             new DbAttribute(File.Hash.Id, AttributeId.From(21), ValueTags.UInt64, File.Hash),

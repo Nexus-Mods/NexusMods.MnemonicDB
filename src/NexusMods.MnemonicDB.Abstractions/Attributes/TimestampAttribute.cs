@@ -13,7 +13,7 @@ public class TimestampAttribute(string ns, string name) : ScalarAttribute<DateTi
     protected override long ToLowLevel(DateTime value) => value.ToFileTimeUtc();
 
     /// <inheritdoc />
-    protected override DateTime FromLowLevel(long value, ValueTags tags)
+    protected override DateTime FromLowLevel(long value, ValueTags tags, RegistryId registryId)
     {
         return DateTime.FromFileTimeUtc(value);
     }

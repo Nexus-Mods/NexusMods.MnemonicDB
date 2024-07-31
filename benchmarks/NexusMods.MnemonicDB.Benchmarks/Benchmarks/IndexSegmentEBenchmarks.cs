@@ -16,7 +16,7 @@ public class IndexSegmentEBenchmarks
 
     public IndexSegmentEBenchmarks()
     {
-        var registry = new AttributeRegistry([]);
+        var registry = new AttributeRegistry(null!, []);
         using var builder = new IndexSegmentBuilder(registry);
 
         for (var e = 1; e < 100; e++)

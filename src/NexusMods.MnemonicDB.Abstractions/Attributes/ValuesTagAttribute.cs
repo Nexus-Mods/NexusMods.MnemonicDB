@@ -11,5 +11,6 @@ public class ValuesTagAttribute(string ns, string name) : ScalarAttribute<ValueT
     protected override byte ToLowLevel(ValueTags value) => (byte)value;
 
     /// <inheritdoc />
-    protected override ValueTags FromLowLevel(byte lowLevelType, ValueTags tags) => (ValueTags)lowLevelType;
+    protected override ValueTags FromLowLevel(byte lowLevelType, ValueTags tags, RegistryId registryId) 
+        => (ValueTags)lowLevelType;
 }

@@ -35,4 +35,24 @@ public interface IAttributeRegistry
     /// A separate registry id is used for each registry instance and backing datom store.
     /// </summary>
     public RegistryId Id { get; }
+    
+    /// <summary>
+    /// This is used by various attributes who need a service provider specific to a registry
+    /// </summary>
+    public IServiceProvider ServiceProvider { get; }
+}
+
+/// <summary>
+/// No it's not a AbstractSingletonProxyFactoryBean, it's registry of attribute registries
+/// </summary>
+public static class AttributeRegistryRegistry
+{
+    /// <summary>
+    /// All the registries currently active for this program, noramlly this is only one, but during tests, database
+    /// migrations or the like, there may be more than one. This is used so that we can pass around a very small number
+    /// (A byte) to reference the correct registry, as well as globally look up all the registries. Writing to this
+    /// collection should never be done outside of the AttributeRegistry class. Reading can be done by anyone who has a
+    /// valid registry id.
+    /// </summary>
+    public static readonly IAttributeRegistry?[] Registries = new IAttributeRegistry[8];
 }

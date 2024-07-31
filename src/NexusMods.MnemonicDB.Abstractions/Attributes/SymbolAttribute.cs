@@ -11,6 +11,7 @@ public class SymbolAttribute(string ns, string name) : ScalarAttribute<Symbol, s
     protected override string ToLowLevel(Symbol value) => value.Id;
 
     /// <inheritdoc />
-    protected override Symbol FromLowLevel(string value, ValueTags tags) => Symbol.InternPreSanitized(value);
+    protected override Symbol FromLowLevel(string value, ValueTags tags, RegistryId registryId) 
+        => Symbol.InternPreSanitized(value);
 }
 

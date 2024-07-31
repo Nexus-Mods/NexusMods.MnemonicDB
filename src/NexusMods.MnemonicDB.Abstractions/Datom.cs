@@ -60,13 +60,7 @@ public readonly struct Datom
     /// Resolves this datom into the IReadDatom form
     /// </summary>
     public IReadDatom Resolved => _registry.Resolve(_prefix, _valueBlob.Span);
-
-    /// <summary>
-    /// Resolves the value of the datom into the given type
-    /// </summary>
-    public TValue Resolve<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute) =>
-        attribute.ReadValue(ValueSpan, Prefix.ValueTag);
-
+    
     /// <summary>
     /// EntityId of the datom
     /// </summary>

@@ -2,13 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Threading;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.Paths.Trees;
-using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Storage;
 
@@ -18,17 +14,17 @@ namespace NexusMods.MnemonicDB.Storage;
 /// </summary>
 public class AttributeRegistry : IAttributeRegistry, IDisposable
 {
-    private static readonly AttributeRegistry?[] _registries = new AttributeRegistry[8];
-
+    
     private static RegistryId GetRegistryId(AttributeRegistry registry)
     {
-        lock (_registries)
+        var registries = AttributeRegistryRegistry.Registries;
+        lock (registries)
         {
-            for (var i = 0; i < _registries.Length; i++)
+            for (var i = 0; i < registries.Length; i++)
             {
-                if (_registries[i] != null) continue;
+                if (registries[i] != null) continue;
 
-                _registries[i] = registry;
+                registries[i] = registry;
                 return RegistryId.From((byte)i);
             }
         }
@@ -55,9 +51,10 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
     ///     Tracks all attributes and their respective serializers as well as the DB entity IDs for each
     ///     attribute
     /// </summary>
-    public AttributeRegistry(IEnumerable<IAttribute> attributes)
+    public AttributeRegistry(IServiceProvider provider, IEnumerable<IAttribute> attributes)
     {
         Id = GetRegistryId(this);
+        ServiceProvider = provider;
         _attributesBySymbol = attributes.ToDictionary(a => a.Id);
     }
 
@@ -65,18 +62,13 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
     public RegistryId Id { get; }
 
     /// <inheritdoc />
-    public IReadDatom Resolve(ReadOnlySpan<byte> datom)
-    {
-        var c = MemoryMarshal.Read<KeyPrefix>(datom);
+    public IServiceProvider ServiceProvider { get; }
 
-        var attr = _attributes[c.A.Value];
-        return attr.Resolve(c.E, c.A, datom.SliceFast(KeyPrefix.Size), c.T, c.IsRetract, c.ValueTag);
-    }
-
-    public IReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> datom)
+    /// <inheritdoc />
+    public IReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan)
     {
         var attr = _attributes[prefix.A.Value];
-        return attr.Resolve(prefix.E, prefix.A, datom, prefix.T, prefix.IsRetract, prefix.ValueTag);
+        return attr.Resolve(prefix, valueSpan, Id);
     }
 
     /// <inheritdoc />
@@ -107,6 +99,6 @@ public class AttributeRegistry : IAttributeRegistry, IDisposable
 
     public void Dispose()
     {
-        _registries[Id.Value] = null!;
+        AttributeRegistryRegistry.Registries[Id.Value] = null!;
     }
 }

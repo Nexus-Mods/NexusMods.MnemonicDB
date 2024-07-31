@@ -1,4 +1,5 @@
-﻿using NexusMods.MnemonicDB.Abstractions.Attributes;
+﻿using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.Paths;
 
@@ -12,7 +13,7 @@ public class RelativePathAttribute(string ns, string name) :
         return value.Path;
     }
 
-    protected override RelativePath FromLowLevel(string lowLevelType, ValueTags tags)
+    protected override RelativePath FromLowLevel(string lowLevelType, ValueTags tags, RegistryId registryId)
     {
         return new RelativePath(lowLevelType);
     }

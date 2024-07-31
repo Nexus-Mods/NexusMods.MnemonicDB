@@ -26,7 +26,7 @@ public abstract class BlobAttribute<TValue>(string ns, string name) : ScalarAttr
     /// <summary>
     /// Overwrite this method to read the value from the reader
     /// </summary>
-    protected abstract override TValue FromLowLevel(ReadOnlySpan<byte> value, ValueTags tag);
+    protected abstract override TValue FromLowLevel(ReadOnlySpan<byte> value, ValueTags tags, RegistryId registryId);
 
     /// <summary>
     /// Overwrite this method to write the value to the writer

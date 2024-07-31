@@ -30,7 +30,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
         {
             var datom = segment[i];
             if (datom.A != dbId) continue;
-            return ReadValue(datom.ValueSpan, datom.Prefix.ValueTag);
+            return ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, segment.RegistryId);
         }
 
         if (DefaultValue is not null)
@@ -64,7 +64,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
         {
             var datom = segment[i];
             if (datom.A != dbId) continue;
-            value = ReadValue(datom.ValueSpan, datom.Prefix.ValueTag);
+            value = ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, segment.RegistryId);
             return true;
         }
 
