@@ -123,11 +123,6 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
         tx.Attach(this);
     }
     
-    public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.PartitionId partition) : base() {
-        Id = tx.TempId(partition);
-        tx.Attach(this);
-    }
-    
 
         public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.EntityId eid) : base() {
             Id = eid;
