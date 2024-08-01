@@ -243,8 +243,10 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         {{= attr.Comments}}
         {{if attr.IsReference && !attr.IsCollection}}
         public {{= attr.Prefix}} {{= attr.ReferenceType.ToDisplayString()}}Id {{= attr.ContextualName}} { get; set; }
-        {{elif attr.IsReference && attr.IsCollection}}
-        public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}}[] {{= attr.ContextualName}} { get; set; }
+        {{elif attr.IsCollection}}
+        public IEnumerable<{{= attr.HighLevelType.ToDisplayString()}}> {{= attr.ContextualName}} { get; set; } = [];
+        {{elif attr.IsReference}}
+        public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} { get; set; }
         {{elif attr.IsMarker}}
         public bool Is{{= attr.ContextualName}} { get; set; } = false;
         {{else}}
@@ -356,6 +358,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            {{if attr.IsCollection && attr.IsReference && !attr.IsMarker}}
            public __SEGMENTS__.Values<__ABSTRACTIONS__.EntityId, ulong> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
            public __SEGMENTS__.ValueEntities<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => __SEGMENTS__.ValuesExtensions.AsModels<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly>({{= attr.FieldName}}.Get(this), Db);
+           {{elif attr.IsCollection}}
+           public __SEGMENTS__.Values<{{=attr.HighLevelType.ToDisplayString()}}, {{=attr.LowLevelType.ToDisplayString()}}> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
            {{elif attr.IsMarker}}
            public bool Is{{= attr.ContextualName}} => {{= attr.FieldName}}.Contains(this);
            {{elif attr.IsReference}}

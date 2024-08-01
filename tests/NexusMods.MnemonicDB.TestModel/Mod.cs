@@ -15,4 +15,5 @@ public partial class Mod : IModelDefinition
     public static readonly StringAttribute Description = new(Namespace, nameof(Description)) { IsOptional = true };
     public static readonly HashAttribute OptionalHash = new(Namespace, nameof(OptionalHash)) { IsOptional = true };
     public static readonly ReferenceAttribute<Mod> LoadAfter = new(Namespace, nameof(LoadAfter)) { IsOptional = true };
+    public static readonly StringsAttribute Tags = new(Namespace, nameof(Tags));
 }

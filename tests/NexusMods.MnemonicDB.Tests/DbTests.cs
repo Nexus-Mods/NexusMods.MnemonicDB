@@ -853,4 +853,29 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         loadout.GamePath.Should().Be(path);
     }
+
+    [Fact]
+    public async Task CollectionAttributesAreSupportedOnModels()
+    {
+        using var tx = Connection.BeginTransaction();
+        
+        var loadout1 = new Loadout.New(tx)
+        {
+            Name = "Test Loadout"
+        };
+        
+        var mod = new Mod.New(tx)
+        {
+            Name = "Test Mod",
+            Source = new Uri("http://test.com"),
+            LoadoutId = loadout1,
+            Tags = ["A", "B", "C"]
+        };
+
+        var result = await tx.Commit();
+        
+        var modRO = result.Remap(mod);
+        
+        modRO.Tags.Should().BeEquivalentTo(["A", "B", "C"]);
+    }
 }
