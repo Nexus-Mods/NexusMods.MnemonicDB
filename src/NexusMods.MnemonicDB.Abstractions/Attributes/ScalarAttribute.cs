@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using DynamicData.Kernel;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
@@ -8,7 +9,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 /// An attribute that represents a scalar value, where there is a 1:1 ratio between the attribute and the value.
 /// </summary>
 public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string ns, string name) :
-    Attribute<TValue, TLowLevel>(tag, ns, name)
+    Attribute<TValue, TLowLevel>(tag, ns, name) where TValue : notnull
 {
     /// <summary>
     /// True if the attribute is optional, and not required by models
@@ -33,8 +34,8 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
             return ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, segment.RegistryId);
         }
 
-        if (DefaultValue is not null)
-            return DefaultValue;
+        if (DefaultValue.HasValue)
+            return DefaultValue.Value;
 
         ThrowKeyNotfoundException(entity);
         return default!;
@@ -68,9 +69,9 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
             return true;
         }
 
-        if (DefaultValue is not null)
+        if (DefaultValue.HasValue)
         {
-            value = DefaultValue;
+            value = DefaultValue.Value;
             return true;
         }
 
@@ -81,5 +82,5 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
     /// <summary>
     /// The default value for this attribute that is used when the attribute is not present on an entity
     /// </summary>
-    public TValue? DefaultValue { get; init; }
+    public Optional<TValue> DefaultValue { get; init; }
 }
