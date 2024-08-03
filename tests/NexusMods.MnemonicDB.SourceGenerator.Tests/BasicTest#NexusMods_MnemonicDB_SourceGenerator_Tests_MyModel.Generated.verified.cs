@@ -173,6 +173,8 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
            /// The database segment containing the datoms for this entity in EAVT order.
            /// </summary>
            public readonly __SEGMENTS__.IndexSegment IndexSegment;
+           
+           __SEGMENTS__.IndexSegment __MODELS__.IHasIdAndIndexSegment.IndexSegment => this.IndexSegment; 
 
            public ReadOnly(__ABSTRACTIONS__.IDb db, __SEGMENTS__.IndexSegment segment, __ABSTRACTIONS__.EntityId id) {
                Db = db;
