@@ -2,6 +2,7 @@
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 
@@ -15,7 +16,30 @@ public abstract class CollectionAttribute<TValue, TLowLevel>(ValueTags tag, stri
     /// <summary>
     /// Gets all values for this attribute on the given entity
     /// </summary>
-    public Values<TValue, TLowLevel> Get(IHasEntityIdAndDb ent)
+    public Values<TValue, TLowLevel> Get(IHasIdAndIndexSegment ent)
+    {
+        var segment = ent.IndexSegment;
+        var dbId = Cache[segment.RegistryId.Value];
+        for (var i = 0; i < segment.Count; i++)
+        {
+            var datom = segment[i];
+            if (datom.A != dbId) continue;
+
+            var start = i;
+            while (i < segment.Count && segment[i].A == dbId)
+            {
+                i++;
+            }
+            return new Values<TValue, TLowLevel>(segment, start, i, this);
+        }
+        return new Values<TValue, TLowLevel>(segment, 0, 0, this);
+    }
+    
+    /// <summary>
+    /// Gets all values for this attribute on the given entity, this performs a lookup in the database
+    /// so prefer using the overload with IHasIdAndIndexSegment if you already have the segment.
+    /// </summary>
+    protected Values<TValue, TLowLevel> Get(IHasEntityIdAndDb ent)
     {
         var segment = ent.Db.Get(ent.Id);
         var dbId = Cache[segment.RegistryId.Value];

@@ -535,17 +535,32 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
 
         using var tx = Connection.BeginTransaction();
-        var mod = new Mod.New(tx)
+        var modWithDescription = new Mod.New(tx)
         {
             LoadoutId = loadout,
             Name = "Test Mod",
             Source = new Uri("http://test.com"),
             Description = "Test Description"
         };
+        
+        var modWithoutDiscription = new Mod.New(tx)
+        {
+            LoadoutId = loadout,
+            Name = "Test Mod 2",
+            Source = new Uri("http://test.com"),
+        };
+        
         var result = await tx.Commit();
 
-        var remapped = result.Remap(mod);
+        var remapped = result.Remap(modWithDescription);
+        remapped.Contains(Mod.Description).Should().BeTrue();
+        Mod.Description.TryGet(remapped, out var foundDesc).Should().BeTrue();
+        foundDesc.Should().Be("Test Description");
         remapped.Description.Should().Be("Test Description");
+        
+        var remapped2 = result.Remap(modWithoutDiscription);
+        remapped2.Contains(Mod.Description).Should().BeFalse();
+        Mod.Description.TryGet(remapped2, out var foundDesc2).Should().BeFalse();
     }
 
     [Fact]

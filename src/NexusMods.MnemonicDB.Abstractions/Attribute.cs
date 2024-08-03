@@ -208,6 +208,15 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
         return index.Contains(this);
     }
 
+    /// <summary>
+    /// Returns true if the attribute is present on the entity
+    /// </summary>
+    public bool IsIn<T>(T entity)
+    where T : IHasIdAndIndexSegment
+    {
+        return entity.IndexSegment.Contains(this);
+    }
+
     /// <inheritdoc />
     public virtual void Remap(Func<EntityId, EntityId> remapper, Span<byte> valueSpan)
     {
