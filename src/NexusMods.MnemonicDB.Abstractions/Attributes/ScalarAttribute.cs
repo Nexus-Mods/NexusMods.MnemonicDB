@@ -23,7 +23,29 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
     /// <summary>
     ///   Gets the value of the attribute from the entity.
     /// </summary>
-    public TValue Get(IHasEntityIdAndDb entity)
+    public TValue Get(IHasIdAndIndexSegment entity)
+    {
+        var segment = entity.IndexSegment;
+        var dbId = Cache[segment.RegistryId.Value];
+        for (var i = 0; i < segment.Count; i++)
+        {
+            var datom = segment[i];
+            if (datom.A != dbId) continue;
+            return ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, segment.RegistryId);
+        }
+
+        if (DefaultValue.HasValue)
+            return DefaultValue.Value;
+
+        ThrowKeyNotfoundException(entity);
+        return default!;
+    }
+    
+    /// <summary>
+    ///   Gets the value of the attribute from the entity, this performs a lookup in the database
+    /// so prefer using the overload with IHasIdAndIndexSegment if you already have the segment.
+    /// </summary>
+    protected TValue Get(IHasEntityIdAndDb entity)
     {
         var segment = entity.Db.Get(entity.Id);
         var dbId = Cache[segment.RegistryId.Value];
@@ -57,9 +79,9 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
     /// <summary>
     ///   Try to get the value of the attribute from the entity.
     /// </summary>
-    public bool TryGet(IHasEntityIdAndDb entity, out TValue value)
+    public bool TryGet(IHasIdAndIndexSegment entity, out TValue value)
     {
-        var segment = entity.Db.Get(entity.Id);
+        var segment = entity.IndexSegment;
         var dbId = Cache[segment.RegistryId.Value];
         for (var i = 0; i < segment.Count; i++)
         {

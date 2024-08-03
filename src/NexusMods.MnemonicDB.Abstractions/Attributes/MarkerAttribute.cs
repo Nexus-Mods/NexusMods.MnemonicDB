@@ -20,9 +20,9 @@ public class MarkerAttribute(string ns, string name) : Attribute<Null, Null>(Val
     /// <summary>
     /// Returns true if the entity contains the attribute.
     /// </summary>
-    public bool Contains(IHasEntityIdAndDb entity)
+    public bool Contains(IHasIdAndIndexSegment entity)
     {
-        var segment = entity.Db.Get(entity.Id);
+        var segment = entity.IndexSegment;
         var dbId = Cache[segment.RegistryId.Value];
         for (var i = 0; i < segment.Count; i++)
         {

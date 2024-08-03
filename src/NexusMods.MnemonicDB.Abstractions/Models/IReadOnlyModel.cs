@@ -7,7 +7,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Models;
 /// <summary>
 /// Base interface for all read-only models
 /// </summary>
-public interface IReadOnlyModel : IHasEntityIdAndDb, IReadOnlyCollection<IReadDatom>
+public interface IReadOnlyModel : IHasIdAndIndexSegment, IReadOnlyCollection<IReadDatom>
 {
 
     /// <summary>
