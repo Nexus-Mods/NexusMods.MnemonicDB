@@ -818,6 +818,26 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var avet = Connection.Db.Datoms(SliceDescriptor.Create(File.TuplePath, (EntityId.From(0), ""), (EntityId.MaxValueNoPartition, ""), Connection.Db.Registry));
         await VerifyTable(avet.Resolved());
     }
+    
+    [Fact]
+    public async Task CanUseTuple3Attributes()
+    {
+        using var tx = Connection.BeginTransaction();
+        var fileA = new File.New(tx)
+        {
+            Path = "C:\\test.txt",
+            Hash = Hash.From(0xDEADBEEF),
+            Size = Size.From(1),
+            ModId = EntityId.From(0),
+            TupleTest = (1, 2, 3)
+        };
+
+        var results = await tx.Commit();
+        
+        var file = results.Remap(fileA);
+        
+        file.TupleTest.Should().Be((1, 2, 3));
+    }
 
     [Fact]
     public async Task CanGetAnalyzerData()
