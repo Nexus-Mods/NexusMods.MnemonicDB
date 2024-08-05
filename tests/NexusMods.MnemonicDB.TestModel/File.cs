@@ -1,5 +1,6 @@
 ﻿using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.TestModel.Attributes;
 
@@ -17,4 +18,9 @@ public partial class File : IModelDefinition
     /// A combination of the loadout 
     /// </summary>
     public static readonly TuplePath TuplePath = new(Namespace, nameof(TuplePath)) {IsIndexed = true, IsOptional = true};
+    
+    /// <summary>
+    /// Tuple3 test
+    /// </summary>
+    public static readonly Int3Attribute TupleTest = new(Namespace, nameof(TupleTest)) { IsIndexed = true, IsOptional = true};
 }
