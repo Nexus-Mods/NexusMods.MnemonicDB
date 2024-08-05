@@ -66,9 +66,9 @@ public class TupleAttribute<T1HighLevel, T1LowLevel, T2HighLevel, T2LowLevel> : 
         span[0] = (byte)_tag1;
         span[1] = (byte)_tag2;
         writer.Advance(2);
-        
-        WriteValueLowLevel(value.Item1, _tag1, writer);
-        WriteValueLowLevel(value.Item2, _tag2, writer);
+        var (ll1, ll2) = ToLowLevel(value);
+        WriteValueLowLevel(ll1, _tag1, writer);
+        WriteValueLowLevel(ll2, _tag2, writer);
     }
 
     /// <inheritdoc />
@@ -145,9 +145,10 @@ public class TupleAttribute<T1HighLevel, T1LowLevel, T2HighLevel, T2LowLevel, T3
         span[2] = (byte)_tag3;
         writer.Advance(3);
         
-        WriteValueLowLevel(value.Item1, _tag1, writer);
-        WriteValueLowLevel(value.Item2, _tag2, writer);
-        WriteValueLowLevel(value.Item3, _tag3, writer);
+        var (ll1, ll2, ll3) = ToLowLevel(value);
+        WriteValueLowLevel(ll1, _tag1, writer);
+        WriteValueLowLevel(ll2, _tag2, writer);
+        WriteValueLowLevel(ll3, _tag3, writer);
     }
 
     /// <inheritdoc />
