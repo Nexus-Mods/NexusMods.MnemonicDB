@@ -4,14 +4,14 @@ using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
 namespace NexusMods.MnemonicDB.TestModel.Attributes;
 
-public class Int3Attribute(string ns, string name) : TupleAttribute<int, int, int, int, int, int>(ValueTags.Int32, ValueTags.Int32, ValueTags.Int32, ns, name)
+public class Int3Attribute(string ns, string name) : TupleAttribute<int, int, int, int, string, string>(ValueTags.Int32, ValueTags.Int32, ValueTags.Ascii, ns, name)
 {
-    protected override (int, int, int) FromLowLevel((int, int, int) value)
+    protected override (int, int, string) FromLowLevel((int, int, string) value)
     {
         return value;
     }
 
-    protected override (int, int, int) ToLowLevel((int, int, int) value)
+    protected override (int, int, string) ToLowLevel((int, int, string) value)
     {
         return value;
     }

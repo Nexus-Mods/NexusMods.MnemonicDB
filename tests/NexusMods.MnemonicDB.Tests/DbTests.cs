@@ -823,20 +823,18 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     public async Task CanUseTuple3Attributes()
     {
         using var tx = Connection.BeginTransaction();
-        var fileA = new File.New(tx)
+        
+        foreach (var a in new[]{1, 2, 3})
+        foreach (var b in new[]{1, 2, 3})
+        foreach (var c in new[]{1, 2, 3})
         {
-            Path = "C:\\test.txt",
-            Hash = Hash.From(0xDEADBEEF),
-            Size = Size.From(1),
-            ModId = EntityId.From(0),
-            TupleTest = (1, 2, 3)
-        };
+            var tmpId = tx.TempId();
+            tx.Add(tmpId, File.TupleTest, (a, b, c.ToString()));
+        }
 
         var results = await tx.Commit();
         
-        var file = results.Remap(fileA);
-        
-        file.TupleTest.Should().Be((1, 2, 3));
+        await VerifyTable(results.Db.Datoms(File.TupleTest).Resolved());
     }
 
     [Fact]

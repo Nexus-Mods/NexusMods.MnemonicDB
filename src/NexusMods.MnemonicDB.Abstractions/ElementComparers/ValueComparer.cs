@@ -104,12 +104,13 @@ public class ValueComparer : IElementComparer
             // HashedBlob is a special case, we compare the hashes not the blobs
             ValueTags.HashedBlob => CompareInternal<ulong>(aVal, bVal),
             ValueTags.Reference => CompareInternal<ulong>(aVal, bVal),
-            ValueTags.Tuple2 => CompareTuples(aVal, aLen, bVal, bLen, 2),
+            ValueTags.Tuple2 => CompareTuples2(aVal, aLen, bVal, bLen),
+            ValueTags.Tuple3 => CompareTuples3(aVal, aLen, bVal, bLen),
             _ => ThrowInvalidCompare(typeA)
         };
     }
 
-    private static unsafe int CompareTuples(byte* aVal, int aLen, byte* bVal, int bLen, int i)
+    private static unsafe int CompareTuples2(byte* aVal, int aLen, byte* bVal, int bLen)
     {
         var typeA1 = (ValueTags)aVal[0];
         var typeB1 = (ValueTags)bVal[0];
@@ -120,6 +121,7 @@ public class ValueComparer : IElementComparer
         var aLen1 = GetValueLength(typeA1, aVal);
         var bLen1 = GetValueLength(typeB1, bVal);
         
+        // +2 for the type tags (A, B)
         var cmp = CompareValues(typeA1, aVal + 2, aLen1, typeB1, bVal + 2, bLen1);
         if (cmp != 0)
             return cmp;
@@ -127,15 +129,58 @@ public class ValueComparer : IElementComparer
         var typeA2 = (ValueTags)aVal[1];
         var typeB2 = (ValueTags)bVal[1];
         
-        
         if (typeA2 != typeB2)
             return typeA2.CompareTo(typeB2);
         
+        // +2 for the type tags (A, B), + the length of the first value
         var aLen2 = GetValueLength(typeA2, aVal + 2 + aLen1);
         var bLen2 = GetValueLength(typeB2, bVal + 2 + bLen1);
         
         return CompareValues(typeA2, aVal + 2 + aLen1 + 2, aLen2, typeB2, bVal + 2 + bLen1 + 2, bLen2);
     }
+    
+    private static unsafe int CompareTuples3(byte* aVal, int aLen, byte* bVal, int bLen)
+    {
+        var typeA1 = (ValueTags)aVal[0];
+        var typeB1 = (ValueTags)bVal[0];
+        
+        if (typeA1 != typeB1)
+            return typeA1.CompareTo(typeB1);
+        
+        var aLen1 = GetValueLength(typeA1, aVal);
+        var bLen1 = GetValueLength(typeB1, bVal);
+        
+        // +3 for the type tags (A, B, C)
+        var cmp = CompareValues(typeA1, aVal + 3, aLen1, typeB1, bVal + 3, bLen1);
+        if (cmp != 0)
+            return cmp;
+        
+        var typeA2 = (ValueTags)aVal[1];
+        var typeB2 = (ValueTags)bVal[1];
+        
+        if (typeA2 != typeB2)
+            return typeA2.CompareTo(typeB2);
+        
+        // +2 for the type tags (A, B), + the length of the first value
+        var aLen2 = GetValueLength(typeA2, aVal + 3 + aLen1);
+        var bLen2 = GetValueLength(typeB2, bVal + 3 + bLen1);
+        
+        cmp = CompareValues(typeA2, aVal + 3 + aLen1 + 3, aLen2, typeB2, bVal + 3 + bLen1 + 3, bLen2);
+        if (cmp != 0)
+            return cmp;
+        
+        var typeA3 = (ValueTags)aVal[2];
+        var typeB3 = (ValueTags)bVal[2];
+        
+        if (typeA3 != typeB3)
+            return typeA3.CompareTo(typeB3);
+        
+        var aLen3 = GetValueLength(typeA3, aVal + 3 + aLen1 + aLen2);
+        var bLen3 = GetValueLength(typeB3, bVal + 3 + bLen1 + bLen2);
+        
+        return CompareValues(typeA3, aVal + 3 + aLen1 + aLen2, aLen3, typeB3, bVal + 3 + bLen1 + bLen2, bLen3);
+    }
+    
 
     private static unsafe int GetValueLength(ValueTags tag, byte* aVal)
     {
