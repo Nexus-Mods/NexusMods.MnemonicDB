@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 
@@ -6,7 +7,10 @@ namespace NexusMods.Query.Abstractions.Facts;
 
 public record struct Datom<THighLevel, TLowLevel> : IFact<EntityId, Attribute<THighLevel, TLowLevel>, THighLevel>
 {
-    
+    public Func<object[], IEnumerable<object[]>> MakeLazy(Dictionary<ILVar, int> lvars, HashSet<ILVar> bound)
+    {
+        var aState =
+    }
 }
 
 public static class DatomExtensions

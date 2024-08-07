@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace NexusMods.Query.Abstractions;
 
 /// <summary>
@@ -5,7 +8,7 @@ namespace NexusMods.Query.Abstractions;
 /// </summary>
 public interface IFact
 {
-    
+    public Func<object[], IEnumerable<object[]>> MakeLazy(Dictionary<ILVar, int> lvars, HashSet<ILVar> bound);
 }
 
 
@@ -28,7 +31,7 @@ public interface IFact<TA, TB> : IFact
 /// <summary>
 /// A typed fact, with three fields
 /// </summary>
-public interface IFact<TA, TB, TC> : IFact
+public interface IFact<TA, TB, TC> : IFact where TA : notnull where TB : notnull where TC : notnull
 {
-    
+    public void Bind(Term<TA> a, Term<TB> b, Term<TC> c);
 }

@@ -9,30 +9,29 @@ public class Query
 {
     public static QueryBuilder New()
     {
-        return new QueryBuilder();
+        return new QueryBuilder(ImmutableList<IPredicate>.Empty);
     }
 }
 
-public class QueryBuilder
+public struct QueryBuilder(ImmutableList<IPredicate> Predicates)
 {
-    public ImmutableList<IPredicate> Predicates { get; } = ImmutableList<IPredicate>.Empty;
     
     public QueryBuilder Where<TFact, TA>(Term<TA> a) 
         where TFact : IFact<TA> where TA : notnull
     {
-        return this;
+        return new QueryBuilder(Predicates: Predicates.Add(new Predicate<TFact, TA>(a)));
     }
     
     public QueryBuilder Where<TFact, TA, TB>(Term<TA> a, Term<TB> b) 
         where TFact : IFact<TA, TB> where TA : notnull where TB : notnull
     {
-        return this;
+        return new QueryBuilder(Predicates: Predicates.Add(new Predicate<TFact, TA, TB>(a, b)));
     }
     
     public QueryBuilder Where<TFact, TA, TB, TC>(Term<TA> a, Term<TB> b, Term<TC> c) 
         where TFact : IFact<TA, TB, TC> where TA : notnull where TB : notnull where TC : notnull
     {
-        return this;
+        return new QueryBuilder(Predicates: Predicates.Add(new Predicate<TFact, TA, TB, TC>(a, b, c)));
     }
     
     public QueryBuilder Declare<T>(out LVar<T> lvar) where T : notnull
@@ -41,8 +40,7 @@ public class QueryBuilder
         return this;
     }
     
-    public Func<IDb, IEnumerable<TFact>> ToQuery<TFact, TA, TB>(TA a, TB b) 
-        where TFact : IFact<TA, TB>
+    public Func<IDb, IEnumerable<(TA, TB)>> ToQuery<TA, TB>(TA a, TB b) 
     {
         return _ => throw new NotImplementedException();
     }

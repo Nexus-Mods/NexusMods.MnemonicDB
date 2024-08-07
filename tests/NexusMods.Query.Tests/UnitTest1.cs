@@ -28,10 +28,6 @@ public class UnitTest1
 
 public static class Extensions
 {
-    public static Func<IDb, IEnumerable<UnitTest1.LoadoutNames>> MyFact(this QueryBuilder qb, Term<EntityId> lvar, Term<string> x)
-    {
-        return qb.Produce<UnitTest1.MyFact, int>(x);
-    }
     
 
 
