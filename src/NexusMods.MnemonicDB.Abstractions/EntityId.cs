@@ -1,6 +1,4 @@
-﻿using System;
-using System.Security.Cryptography;
-using TransparentValueObjects;
+﻿using TransparentValueObjects;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -8,7 +6,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 ///     A unique identifier for an entity.
 /// </summary>
 [ValueObject<ulong>]
-public readonly partial struct EntityId
+public readonly partial struct EntityId : IAugmentWith<JsonAugment>
 {
     /// <summary>
     /// Min value for an entity id with no partition
