@@ -2,5 +2,5 @@
 
 public interface ILVar
 {
-    
+    public ILVarBox MakeBox();
 }

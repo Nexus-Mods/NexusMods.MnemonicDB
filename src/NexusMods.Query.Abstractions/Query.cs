@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.Query.Abstractions.Engines.TopDownLazy;
 
 namespace NexusMods.Query.Abstractions;
 
@@ -40,8 +41,10 @@ public struct QueryBuilder(ImmutableList<IPredicate> Predicates)
         return this;
     }
     
-    public Func<IDb, IEnumerable<(TA, TB)>> ToQuery<TA, TB>(TA a, TB b) 
+    public Func<IDb, IEnumerable<(TA, TB)>> ToQuery<TA, TB>(LVar<TA> a, LVar<TB> b) 
+        where TB : notnull 
+        where TA : notnull
     {
-        return _ => throw new NotImplementedException();
+        return Engine.Build(Predicates, a, b);
     }
 }

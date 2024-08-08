@@ -3,7 +3,7 @@ using DynamicData.Kernel;
 
 namespace NexusMods.Query.Abstractions;
 
-public struct Term<T>(Optional<T> value, Optional<LVar<T>> lvar)
+public record struct Term<T>(Optional<T> Constant, Optional<LVar<T>> Variable)
     where T : notnull
 {
     public static Term<T> Value(T value) => new(value, Optional<LVar<T>>.None);
@@ -14,9 +14,9 @@ public struct Term<T>(Optional<T> value, Optional<LVar<T>> lvar)
 
     public void RegisterLVar(HashSet<ILVar> lVars)
     {
-        if (lvar.HasValue)
+        if (Variable.HasValue)
         {
-            lVars.Add(lvar.Value);
+            lVars.Add(Variable.Value);
         }
     }
 }

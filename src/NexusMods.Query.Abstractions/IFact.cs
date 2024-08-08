@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using NexusMods.Query.Abstractions.Engines;
+using NexusMods.Query.Abstractions.Engines.TopDownLazy;
 
 namespace NexusMods.Query.Abstractions;
 
@@ -32,6 +34,7 @@ public interface IFact<TA, TB> : IFact
 /// A typed fact, with three fields
 /// </summary>
 public interface IFact<TA, TB, TC> : IFact where TA : notnull where TB : notnull where TC : notnull
-{
-    public void Bind(Term<TA> a, Term<TB> b, Term<TC> c);
+{ 
+    static abstract Func<IEnumerable<ILVarBox[]>, IEnumerable<ILVarBox[]>> MakeLazyUCC(Context context, int aIdx, TB cB, TC cC);
+    static abstract Func<IEnumerable<ILVarBox[]>, IEnumerable<ILVarBox[]>> MakeLazyLCU(Context context, int aIdx, TB cB, int cIdx);
 }
