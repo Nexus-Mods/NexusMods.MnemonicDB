@@ -405,11 +405,12 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 /// <summary>
 /// A value object representing the id of a {{= model.Name}} entity.
 /// </summary>
+[global::System.Text.Json.Serialization.JsonConverter(typeof({{= model.Name}}Id.JsonConverter))]
 public readonly partial struct {{= model.Name}}Id : IEquatable<{{= model.Name}}Id>, IEquatable<__ABSTRACTIONS__.EntityId>
 {
-    public readonly EntityId Value;
+    public readonly __ABSTRACTIONS__.EntityId Value;
 
-    public {{= model.Name}}Id(EntityId id) => Value = id;
+    public {{= model.Name}}Id(__ABSTRACTIONS__.EntityId id) => Value = id;
 
     /// <summary>
     /// Constructs a new {{= model.Name}}Id from the given entity id.
@@ -421,7 +422,7 @@ public readonly partial struct {{= model.Name}}Id : IEquatable<{{= model.Name}}I
     /// </summary>
     public static {{= model.Name}}Id From(ulong id) => new {{= model.Name}}Id(__ABSTRACTIONS__.EntityId.From(id));
 
-    public static implicit operator EntityId({{= model.Name}}Id id) => id.Value;
+    public static implicit operator __ABSTRACTIONS__.EntityId({{= model.Name}}Id id) => id.Value;
     public static implicit operator {{= model.Name}}Id(EntityId id) => {{= model.Name}}Id.From(id);
 
 
@@ -454,6 +455,31 @@ public readonly partial struct {{= model.Name}}Id : IEquatable<{{= model.Name}}I
     {
         return Value.GetHashCode();
     }
+
+	public class JsonConverter : global::System.Text.Json.Serialization.JsonConverter<{{= model.Name}}Id>
+	{
+	    private readonly global::System.Text.Json.Serialization.JsonConverter<__ABSTRACTIONS__.EntityId> _innerConverter = new __ABSTRACTIONS__.EntityId.JsonConverter();
+
+		public override {{= model.Name}}Id Read(ref global::System.Text.Json.Utf8JsonReader reader, global::System.Type typeToConvert, global::System.Text.Json.JsonSerializerOptions options)
+		{
+		    return _innerConverter.Read(ref reader, typeToConvert, options);
+		}
+
+		public override void Write(global::System.Text.Json.Utf8JsonWriter writer, {{= model.Name}}Id value, global::System.Text.Json.JsonSerializerOptions options)
+		{
+		    _innerConverter.Write(writer, value.Value, options);
+		}
+
+		public override {{= model.Name}}Id ReadAsPropertyName(ref global::System.Text.Json.Utf8JsonReader reader, global::System.Type typeToConvert, global::System.Text.Json.JsonSerializerOptions options)
+		{
+    		return _innerConverter.ReadAsPropertyName(ref reader, typeToConvert, options);
+		}
+
+		public override void WriteAsPropertyName(global::System.Text.Json.Utf8JsonWriter writer, {{= model.Name}}Id value, global::System.Text.Json.JsonSerializerOptions options)
+		{
+		    _innerConverter.WriteAsPropertyName(writer, value.Value, options);
+		}
+	}
 }
 
 

@@ -291,11 +291,12 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
 /// <summary>
 /// A value object representing the id of a MyModel entity.
 /// </summary>
+[global::System.Text.Json.Serialization.JsonConverter(typeof(MyModelId.JsonConverter))]
 public readonly partial struct MyModelId : IEquatable<MyModelId>, IEquatable<__ABSTRACTIONS__.EntityId>
 {
-    public readonly EntityId Value;
+    public readonly __ABSTRACTIONS__.EntityId Value;
 
-    public MyModelId(EntityId id) => Value = id;
+    public MyModelId(__ABSTRACTIONS__.EntityId id) => Value = id;
 
     /// <summary>
     /// Constructs a new MyModelId from the given entity id.
@@ -307,7 +308,7 @@ public readonly partial struct MyModelId : IEquatable<MyModelId>, IEquatable<__A
     /// </summary>
     public static MyModelId From(ulong id) => new MyModelId(__ABSTRACTIONS__.EntityId.From(id));
 
-    public static implicit operator EntityId(MyModelId id) => id.Value;
+    public static implicit operator __ABSTRACTIONS__.EntityId(MyModelId id) => id.Value;
     public static implicit operator MyModelId(EntityId id) => MyModelId.From(id);
 
 
@@ -340,6 +341,31 @@ public readonly partial struct MyModelId : IEquatable<MyModelId>, IEquatable<__A
     {
         return Value.GetHashCode();
     }
+
+	public class JsonConverter : global::System.Text.Json.Serialization.JsonConverter<MyModelId>
+	{
+	    private readonly global::System.Text.Json.Serialization.JsonConverter<__ABSTRACTIONS__.EntityId> _innerConverter = new __ABSTRACTIONS__.EntityId.JsonConverter();
+
+		public override MyModelId Read(ref global::System.Text.Json.Utf8JsonReader reader, global::System.Type typeToConvert, global::System.Text.Json.JsonSerializerOptions options)
+		{
+		    return _innerConverter.Read(ref reader, typeToConvert, options);
+		}
+
+		public override void Write(global::System.Text.Json.Utf8JsonWriter writer, MyModelId value, global::System.Text.Json.JsonSerializerOptions options)
+		{
+		    _innerConverter.Write(writer, value.Value, options);
+		}
+
+		public override MyModelId ReadAsPropertyName(ref global::System.Text.Json.Utf8JsonReader reader, global::System.Type typeToConvert, global::System.Text.Json.JsonSerializerOptions options)
+		{
+    		return _innerConverter.ReadAsPropertyName(ref reader, typeToConvert, options);
+		}
+
+		public override void WriteAsPropertyName(global::System.Text.Json.Utf8JsonWriter writer, MyModelId value, global::System.Text.Json.JsonSerializerOptions options)
+		{
+		    _innerConverter.WriteAsPropertyName(writer, value.Value, options);
+		}
+	}
 }
 
 
