@@ -6,7 +6,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-using DynamicData;
+using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
@@ -19,12 +19,12 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 ///  A segment of an index, used most often as a cache. For example when an entity is read from the database,
 /// the whole entity may be cached in one of these segments for fast access.
 /// </summary>
-public readonly struct IndexSegment : IEnumerable<Datom>
+[PublicAPI]
+public readonly struct IndexSegment : IReadOnlyList<Datom>
 {
     private readonly IAttributeRegistry _registry;
     private readonly int _rowCount;
     private readonly ReadOnlyMemory<byte> _data;
-
 
     /// <summary>
     /// Construct a new index segment from the given data and offsets
@@ -32,32 +32,36 @@ public readonly struct IndexSegment : IEnumerable<Datom>
     public IndexSegment(ReadOnlySpan<byte> data, ReadOnlySpan<int> offsets, IAttributeRegistry registry)
     {
         _registry = registry;
+
         if (data.Length == 0)
         {
             _rowCount = 0;
             _data = ReadOnlyMemory<byte>.Empty;
             return;
         }
+
         _rowCount = offsets.Length - 1;
+
         var memory = new Memory<byte>(GC.AllocateUninitializedArray<byte>(data.Length + (_rowCount + 1) * sizeof(int)));
         _data = memory;
-        ReprocessData(data, offsets, memory.Span);
+
+        ReprocessData(_rowCount, data, offsets, memory.Span);
     }
 
     /// <summary>
     /// All the upper values
     /// </summary>
-    private ReadOnlySpan<ulong> _uppers => _data.Span.SliceFast(0, _rowCount * sizeof(ulong)).CastFast<byte, ulong>();
+    private ReadOnlySpan<ulong> Uppers => _data.Span.SliceFast(0, _rowCount * sizeof(ulong)).CastFast<byte, ulong>();
 
     /// <summary>
     /// All the lower values
     /// </summary>
-    private ReadOnlySpan<ulong> _lowers => _data.Span.SliceFast(_rowCount * sizeof(ulong), _rowCount * sizeof(ulong)).CastFast<byte, ulong>();
+    private ReadOnlySpan<ulong> Lowers => _data.Span.SliceFast(_rowCount * sizeof(ulong), _rowCount * sizeof(ulong)).CastFast<byte, ulong>();
 
     /// <summary>
     /// All the offsets
     /// </summary>
-    private ReadOnlySpan<int> _offsets => _data.Span.SliceFast(_rowCount * sizeof(ulong) * 2, (_rowCount + 1) * sizeof(int)).CastFast<byte, int>();
+    private ReadOnlySpan<int> Offsets => _data.Span.SliceFast(_rowCount * sizeof(ulong) * 2, (_rowCount + 1) * sizeof(int)).CastFast<byte, int>();
 
     /// <summary>
     /// Pivots all the data into 4 columns:
@@ -66,21 +70,21 @@ public readonly struct IndexSegment : IEnumerable<Datom>
     ///  - (int) offsets for each row's value into the value blob
     ///  - (byte[]) value blob
     /// </summary>
-    private void ReprocessData(ReadOnlySpan<byte> data, ReadOnlySpan<int> offsets, Span<byte> dataSpan)
+    private static void ReprocessData(int rowCount, ReadOnlySpan<byte> data, ReadOnlySpan<int> offsets, Span<byte> dataSpan)
     {
-        var uppers = dataSpan.SliceFast(0, _rowCount * sizeof(ulong)).CastFast<byte, ulong>();
-        var lowers = dataSpan.SliceFast(_rowCount * sizeof(ulong), _rowCount * sizeof(ulong)).CastFast<byte, ulong>();
+        var uppers = dataSpan.SliceFast(0, rowCount * sizeof(ulong)).CastFast<byte, ulong>();
+        var lowers = dataSpan.SliceFast(rowCount * sizeof(ulong), rowCount * sizeof(ulong)).CastFast<byte, ulong>();
 
-        // Extra space for one int in the offsets so we can calculate the size of the last row
-        var valueOffsets = dataSpan.SliceFast(_rowCount * sizeof(ulong) * 2, (_rowCount + 1) * sizeof(int)).CastFast<byte, int>();
-        var values = dataSpan.SliceFast((_rowCount * (sizeof(ulong) * 2 + sizeof(int))) + sizeof(int));
+        // Extra space for one int in the offsets, so we can calculate the size of the last row
+        var valueOffsets = dataSpan.SliceFast(rowCount * sizeof(ulong) * 2, (rowCount + 1) * sizeof(int)).CastFast<byte, int>();
+        var values = dataSpan.SliceFast(rowCount * (sizeof(ulong) * 2 + sizeof(int)) + sizeof(int));
 
         var relativeValueOffset = 0;
 
         // The first row starts at the beginning of the value blob
-        var absoluteValueOffset = _rowCount * (sizeof(ulong) * 2 + sizeof(int)) + sizeof(int);
+        var absoluteValueOffset = rowCount * (sizeof(ulong) * 2 + sizeof(int)) + sizeof(int);
 
-        for (var i = 0; i < _rowCount; i++)
+        for (var i = 0; i < rowCount; i++)
         {
             var rowSegment = data.Slice(offsets[i], offsets[i + 1] - offsets[i]);
             var prefix = MemoryMarshal.Read<KeyPrefix>(rowSegment);
@@ -96,10 +100,8 @@ public readonly struct IndexSegment : IEnumerable<Datom>
         }
 
         // The last row's offset is the size of the value blob
-        valueOffsets[_rowCount] = absoluteValueOffset;
+        valueOffsets[rowCount] = absoluteValueOffset;
     }
-
-
 
     /// <summary>
     /// Returns true if this segment is valid (contains data)
@@ -128,13 +130,13 @@ public readonly struct IndexSegment : IEnumerable<Datom>
     {
         get
         {
-            var offsets = _offsets;
+            var offsets = Offsets;
             var fromOffset = offsets[idx];
             var toOffset = offsets[idx + 1];
 
             var valueSlice = _data.Slice(fromOffset, toOffset - fromOffset);
 
-            return new Datom(new KeyPrefix(_uppers[idx], _lowers[idx]), valueSlice, _registry);
+            return new Datom(new KeyPrefix(Uppers[idx], Lowers[idx]), valueSlice, _registry);
         }
     }
 
@@ -150,14 +152,16 @@ public readonly struct IndexSegment : IEnumerable<Datom>
         return false;
     }
 
+    /// <summary>
+    /// Returns the enumerator.
+    /// </summary>
+    public Enumerator GetEnumerator() => new(this);
+
     /// <inheritdoc />
-    public IEnumerator<Datom> GetEnumerator()
-    {
-        for (var i = 0; i < _rowCount; i++)
-        {
-            yield return this[i];
-        }
-    }
+    IEnumerator<Datom> IEnumerable<Datom>.GetEnumerator() => GetEnumerator();
+
+    /// <inheritdoc />
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     /// <summary>
     /// Resolves all the datoms in this segment
@@ -167,10 +171,6 @@ public readonly struct IndexSegment : IEnumerable<Datom>
         return this.Select(d => d.Resolved);
     }
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
 
     /// <summary>
     /// Create a new index segment from the given datoms
@@ -206,7 +206,7 @@ public readonly struct IndexSegment : IEnumerable<Datom>
             var mid = left + (right - left) / 2;
 
 
-            var lower = _lowers[mid];
+            var lower = Lowers[mid];
             var e = EntityId.From((lower & 0xFF00000000000000) | ((lower >> 8) & 0x0000FFFFFFFFFFFF));
 
             var comparison = e.CompareTo(find);
@@ -234,7 +234,7 @@ public readonly struct IndexSegment : IEnumerable<Datom>
             .WithElement(2, find)
             .WithElement(3, find);
 
-        var casted = MemoryMarshal.Cast<ulong, Vector256<ulong>>(_lowers);
+        var casted = MemoryMarshal.Cast<ulong, Vector256<ulong>>(Lowers);
 
         for (var idx = 0; idx < casted.Length; idx += 1)
         {
@@ -255,14 +255,47 @@ public readonly struct IndexSegment : IEnumerable<Datom>
         }
 
         // Handle remaining elements
-        for (int i = (casted.Length * Vector256<ulong>.Count); i < _lowers.Length; i++)
+        for (int i = (casted.Length * Vector256<ulong>.Count); i < Lowers.Length; i++)
         {
-            if (_lowers[i] >= find)
+            if (Lowers[i] >= find)
             {
                 return i;
             }
         }
 
         return -1; // No value found that is greater than or equal to the target
+    }
+
+    /// <summary>
+    /// Enumerator.
+    /// </summary>
+    public struct Enumerator : IEnumerator<Datom>
+    {
+        private readonly IndexSegment _indexSegment;
+        private int _index;
+
+        internal Enumerator(IndexSegment indexSegment)
+        {
+            _indexSegment = indexSegment;
+        }
+
+        /// <inheritdoc/>
+        public Datom Current { get; private set; } = default!;
+
+        object IEnumerator.Current => Current;
+
+        /// <inheritdoc/>
+        public bool MoveNext()
+        {
+            if (_index >= _indexSegment.Count) return false;
+            Current = _indexSegment[_index++];
+            return true;
+        }
+
+        /// <inheritdoc/>
+        public void Reset() => _index = 0;
+
+        /// <inheritdoc/>
+        public void Dispose() { }
     }
 }
