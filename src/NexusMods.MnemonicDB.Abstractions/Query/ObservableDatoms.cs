@@ -49,7 +49,7 @@ public static class ObservableDatoms
         {
             lock (set)
             {
-                if (rev.BasisTxId <= lastTxId)
+                if (rev.BasisTxId <= lastTxId && idx != 0)
                     return ChangeSet<Datom>.Empty;
 
                 lastTxId = rev.BasisTxId;

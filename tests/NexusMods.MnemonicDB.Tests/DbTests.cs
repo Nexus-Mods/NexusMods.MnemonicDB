@@ -911,4 +911,50 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         modRO.Tags.Should().BeEquivalentTo(["A", "B", "C"]);
     }
+
+    /// <summary>
+    /// Tests a bug experienced in the app, when RefCount is used with ObserveDatoms, if the last subscription
+    /// is disposed, and then another subscriber attaches, an exception would be thrown. This test ensures that
+    /// this behavior works correctly.
+    /// </summary>
+    [Fact]
+    public async Task RefCountWorksWithObservables()
+    {
+        var tx = Connection.BeginTransaction();
+        var mod = new Mod.New(tx)
+        {
+            Name = "Test Mod",
+            Source = new Uri("http://test.com"),
+            LoadoutId = EntityId.From(0)
+        };
+        var result = await tx.Commit();
+        
+        var modRO = result.Remap(mod);
+
+        var refObs = Mod.Observe(Connection, modRO.Id)
+            .Replay(1)
+            .RefCount();
+        
+        List<Mod.ReadOnly> mods = [];
+        
+        var firstDisp = refObs.Subscribe(mods.Add);
+
+        {
+            var tx2 = Connection.BeginTransaction();
+            tx2.Add(modRO.Id, Mod.Name, "Test Mod 2");
+            await tx2.Commit();
+        }
+        
+        firstDisp.Dispose();
+        
+        var secondDisp = refObs.Subscribe(mods.Add);
+        
+        {
+            var tx2 = Connection.BeginTransaction();
+            tx2.Add(modRO.Id, Mod.Name, "Test Mod 3");
+            await tx2.Commit();
+        }
+        
+        await Verify(mods.Distinct().Select(m => m.Name));
+    }
 }
