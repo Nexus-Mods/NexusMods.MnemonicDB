@@ -203,6 +203,8 @@ public class DatomStore : IDatomStore
 
     private void ConsumeTransactions()
     {
+        var debugEnabled = _logger.IsEnabled(LogLevel.Debug);
+
         try
         {
             while (!_pendingTransactions.IsCompleted && !_shutdownToken.Token.IsCancellationRequested)
@@ -225,12 +227,17 @@ public class DatomStore : IDatomStore
                     }
 
                     Log(pendingTransaction, out var result);
-                    
-                    var sw = Stopwatch.StartNew();
-                    FinishTransaction(result, pendingTransaction);
-                    
-                    if (_logger.IsEnabled(LogLevel.Debug))
+
+                    if (debugEnabled)
+                    {
+                        var sw = Stopwatch.StartNew();
+                        FinishTransaction(result, pendingTransaction);
                         _logger.LogDebug("Transaction {TxId} post-processed in {Elapsed}ms", result.AssignedTxId, sw.ElapsedMilliseconds);
+                    }
+                    else
+                    {
+                        FinishTransaction(result, pendingTransaction);
+                    }
                 }
                 catch (Exception ex)
                 {
