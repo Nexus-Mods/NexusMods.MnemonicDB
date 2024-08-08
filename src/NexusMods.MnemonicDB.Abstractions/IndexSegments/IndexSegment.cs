@@ -45,7 +45,7 @@ public readonly struct IndexSegment : IReadOnlyList<Datom>
         var memory = new Memory<byte>(GC.AllocateUninitializedArray<byte>(data.Length + (_rowCount + 1) * sizeof(int)));
         _data = memory;
 
-        ReprocessData(data, offsets, memory.Span);
+        ReprocessData(_rowCount, data, offsets, memory.Span);
     }
 
     /// <summary>
@@ -70,21 +70,21 @@ public readonly struct IndexSegment : IReadOnlyList<Datom>
     ///  - (int) offsets for each row's value into the value blob
     ///  - (byte[]) value blob
     /// </summary>
-    private void ReprocessData(ReadOnlySpan<byte> data, ReadOnlySpan<int> offsets, Span<byte> dataSpan)
+    private static void ReprocessData(int rowCount, ReadOnlySpan<byte> data, ReadOnlySpan<int> offsets, Span<byte> dataSpan)
     {
-        var uppers = dataSpan.SliceFast(0, _rowCount * sizeof(ulong)).CastFast<byte, ulong>();
-        var lowers = dataSpan.SliceFast(_rowCount * sizeof(ulong), _rowCount * sizeof(ulong)).CastFast<byte, ulong>();
+        var uppers = dataSpan.SliceFast(0, rowCount * sizeof(ulong)).CastFast<byte, ulong>();
+        var lowers = dataSpan.SliceFast(rowCount * sizeof(ulong), rowCount * sizeof(ulong)).CastFast<byte, ulong>();
 
-        // Extra space for one int in the offsets so we can calculate the size of the last row
-        var valueOffsets = dataSpan.SliceFast(_rowCount * sizeof(ulong) * 2, (_rowCount + 1) * sizeof(int)).CastFast<byte, int>();
-        var values = dataSpan.SliceFast((_rowCount * (sizeof(ulong) * 2 + sizeof(int))) + sizeof(int));
+        // Extra space for one int in the offsets, so we can calculate the size of the last row
+        var valueOffsets = dataSpan.SliceFast(rowCount * sizeof(ulong) * 2, (rowCount + 1) * sizeof(int)).CastFast<byte, int>();
+        var values = dataSpan.SliceFast(rowCount * (sizeof(ulong) * 2 + sizeof(int)) + sizeof(int));
 
         var relativeValueOffset = 0;
 
         // The first row starts at the beginning of the value blob
-        var absoluteValueOffset = _rowCount * (sizeof(ulong) * 2 + sizeof(int)) + sizeof(int);
+        var absoluteValueOffset = rowCount * (sizeof(ulong) * 2 + sizeof(int)) + sizeof(int);
 
-        for (var i = 0; i < _rowCount; i++)
+        for (var i = 0; i < rowCount; i++)
         {
             var rowSegment = data.Slice(offsets[i], offsets[i + 1] - offsets[i]);
             var prefix = MemoryMarshal.Read<KeyPrefix>(rowSegment);
@@ -100,7 +100,7 @@ public readonly struct IndexSegment : IReadOnlyList<Datom>
         }
 
         // The last row's offset is the size of the value blob
-        valueOffsets[_rowCount] = absoluteValueOffset;
+        valueOffsets[rowCount] = absoluteValueOffset;
     }
 
     /// <summary>
