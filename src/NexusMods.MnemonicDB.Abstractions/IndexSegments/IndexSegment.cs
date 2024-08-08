@@ -20,7 +20,7 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 /// the whole entity may be cached in one of these segments for fast access.
 /// </summary>
 [PublicAPI]
-public readonly struct IndexSegment : IEnumerable<Datom>
+public readonly struct IndexSegment : IReadOnlyList<Datom>
 {
     private readonly IAttributeRegistry _registry;
     private readonly int _rowCount;
