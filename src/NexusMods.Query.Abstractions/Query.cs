@@ -35,9 +35,19 @@ public struct QueryBuilder(ImmutableList<IPredicate> Predicates)
         return new QueryBuilder(Predicates: Predicates.Add(new Predicate<TFact, TA, TB, TC>(a, b, c)));
     }
     
-    public QueryBuilder Declare<T>(out LVar<T> lvar) where T : notnull
+    public QueryBuilder Declare<T>(out LVar<T> lvar) 
+        where T : notnull
     {
         lvar = new LVar<T>();
+        return this;
+    }
+
+    public QueryBuilder Declare<TA, TB>(out LVar<TA> lvar, out LVar<TB> lvar2) 
+        where TB : notnull 
+        where TA : notnull 
+    {
+        lvar = new LVar<TA>();
+        lvar2 = new LVar<TB>();
         return this;
     }
     

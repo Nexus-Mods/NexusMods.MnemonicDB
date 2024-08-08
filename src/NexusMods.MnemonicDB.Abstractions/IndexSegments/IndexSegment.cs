@@ -265,4 +265,12 @@ public readonly struct IndexSegment : IEnumerable<Datom>
 
         return -1; // No value found that is greater than or equal to the target
     }
+
+    /// <summary>
+    /// Assumes that the segment is sorted by entity id, and returns true if the given entity id is present
+    /// </summary>
+    public bool ContainsESorted(EntityId e)
+    {
+        throw new NotImplementedException();
+    }
 }

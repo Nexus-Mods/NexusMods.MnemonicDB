@@ -1,9 +1,24 @@
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Query.Abstractions;
 using NexusMods.Query.Abstractions.Facts;
 
 namespace NexusMods.Query.Tests;
+
+public static class Rules
+{
+    public static QueryBuilder LoadoutName(this QueryBuilder builder, LVar<string> modName, LVar<string> loadoutName)
+    {
+        var modId = new LVar<EntityId>();
+        var loadoutId = new LVar<EntityId>();
+        
+        return builder
+            .Datom(modId, Mod.Name, modName)
+            .Datom(modId, Mod.Loadout, loadoutId)
+            .Datom(loadoutId, Loadout.Name, loadoutName);
+    }
+}
 
 public class SimpleDBTests : IAsyncLifetime
 {
@@ -16,11 +31,14 @@ public class SimpleDBTests : IAsyncLifetime
     public Func<IDb, IEnumerable<(EntityId, string)>> GetMyFacts = 
         Query.Abstractions.Query
         .New()
-        .Datom(out var modId, Mod.Name, "Test Mod")
-        .Datom(modId, Mod.Loadout, out var loadoutId)
-        .Datom(loadoutId, Loadout.Name, out var name)
+        .Declare<EntityId, EntityId>(out var modId, out var loadoutId)
+        .Declare<string>(out var name)
+        .Datom(modId, Mod.Name, "Test Mod")
+        .Datom(modId, Mod.Marked, Null.Instance)
+        .Datom(modId, Mod.Loadout, loadoutId)
+        .Datom(loadoutId, Loadout.Name, name)
         .ToQuery(loadoutId, name);
-
+    
 
     [Fact]
     public async Task Test1()

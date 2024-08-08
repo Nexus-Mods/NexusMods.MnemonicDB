@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.Query.Abstractions.Engines;
 using NexusMods.Query.Abstractions.Engines.TopDownLazy;
 
@@ -58,6 +59,32 @@ public record struct Datom<THighLevel, TLowLevel> : IFact<EntityId, Attribute<TH
                     cBox.Value = cB.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, db.Registry.Id);
                     yield return row;
                 }
+            }
+        }
+    }
+
+    public static Func<IEnumerable<ILVarBox[]>, IEnumerable<ILVarBox[]>> MakeLazyLCC(Context context, int aIdx, Attribute<THighLevel, TLowLevel> cB, THighLevel cC)
+    {
+        var (type, dbIdx) = context.Resolve(Term<IDb>.LVar(ConstantLVars.Db));
+        
+        if (type != ResolveType.LVar)
+            throw new InvalidOperationException("Db is not an LVar");
+
+        return Execute;
+
+        IEnumerable<ILVarBox[]> Execute(IEnumerable<ILVarBox[]> stream)
+        {
+            IndexSegment segment = default!;
+            IDb prevDb = default!;
+            foreach (var row in stream)
+            {
+                var db = ((LVarBox<IDb>)row[dbIdx]).Value;
+                var aBox = (LVarBox<EntityId>)row[aIdx];
+                if (!ReferenceEquals(db, prevDb)) 
+                    segment = db.Datoms(cB, cC);
+
+                if (segment.ContainsESorted(aBox.Value))
+                    yield return row;
             }
         }
     }

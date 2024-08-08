@@ -60,6 +60,8 @@ public record Predicate<TFact, TA, TB, TC>(Term<TA> A, Term<TB> B, Term<TC> C) :
                 return TFact.MakeLazyUCC(context, aIdx, B.Constant.Value, C.Constant.Value);
             case (ResolveType.LVar, ResolveType.Constant, ResolveType.Unbound):
                 return TFact.MakeLazyLCU(context, aIdx, B.Constant.Value, cIdx);
+            case (ResolveType.LVar, ResolveType.Constant, ResolveType.Constant):
+                return TFact.MakeLazyLCC(context, aIdx, B.Constant.Value, C.Constant.Value);
             
             default:
                 throw new Exception($"Invalid Bindings for Predicate, got {aBound}, {bBound}, {cBound}");
