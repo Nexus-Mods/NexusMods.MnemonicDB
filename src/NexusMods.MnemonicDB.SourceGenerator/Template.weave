@@ -405,11 +405,12 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 /// <summary>
 /// A value object representing the id of a {{= model.Name}} entity.
 /// </summary>
+[global::System.Text.Json.Serialization.JsonConverter(typeof(__ABSTRACTIONS__.EntityId.JsonConverter))]
 public readonly partial struct {{= model.Name}}Id : IEquatable<{{= model.Name}}Id>, IEquatable<__ABSTRACTIONS__.EntityId>
 {
-    public readonly EntityId Value;
+    public readonly __ABSTRACTIONS__.EntityId Value;
 
-    public {{= model.Name}}Id(EntityId id) => Value = id;
+    public {{= model.Name}}Id(__ABSTRACTIONS__.EntityId id) => Value = id;
 
     /// <summary>
     /// Constructs a new {{= model.Name}}Id from the given entity id.
@@ -421,7 +422,7 @@ public readonly partial struct {{= model.Name}}Id : IEquatable<{{= model.Name}}I
     /// </summary>
     public static {{= model.Name}}Id From(ulong id) => new {{= model.Name}}Id(__ABSTRACTIONS__.EntityId.From(id));
 
-    public static implicit operator EntityId({{= model.Name}}Id id) => id.Value;
+    public static implicit operator __ABSTRACTIONS__.EntityId({{= model.Name}}Id id) => id.Value;
     public static implicit operator {{= model.Name}}Id(EntityId id) => {{= model.Name}}Id.From(id);
 
 
