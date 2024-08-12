@@ -35,7 +35,9 @@ public interface IFact<TA, TB> : IFact
 /// </summary>
 public interface IFact<TA, TB, TC> : IFact where TA : notnull where TB : notnull where TC : notnull
 { 
-    static abstract Func<IEnumerable<ILVarBox[]>, IEnumerable<ILVarBox[]>> MakeLazyUCC(Context context, int aIdx, TB cB, TC cC);
+    static abstract void MakeLazyUCC<TEmitter>(Context context, TEmitter emitter, TB cB, TC cC) 
+        where TEmitter : IEmitter<TA>;
+    
     static abstract Func<IEnumerable<ILVarBox[]>, IEnumerable<ILVarBox[]>> MakeLazyLCU(Context context, int aIdx, TB cB, int cIdx);
     static abstract Func<IEnumerable<ILVarBox[]>, IEnumerable<ILVarBox[]>> MakeLazyLCC(Context context, int aIdx, TB cB, TC cC);
 }

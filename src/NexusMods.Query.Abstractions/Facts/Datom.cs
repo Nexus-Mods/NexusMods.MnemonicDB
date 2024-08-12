@@ -9,12 +9,20 @@ namespace NexusMods.Query.Abstractions.Facts;
 
 public record struct Datom<THighLevel, TLowLevel> : IFact<EntityId, Attribute<THighLevel, TLowLevel>, THighLevel> where THighLevel : notnull
 {
-    public static Func<IEnumerable<ILVarBox[]>, IEnumerable<ILVarBox[]>> MakeLazyUCC(Context context, int aIdx, Attribute<THighLevel, TLowLevel> cB, THighLevel cC)
+    public static void MakeLazyUCC<TEmitter>(Context context, TEmitter emitter, Attribute<THighLevel, TLowLevel> cB, THighLevel cC) 
+        where TEmitter : IEmitter<EntityId>
     {
         var (type, dbIdx) = context.Resolve(Term<IDb>.LVar(ConstantLVars.Db));
         
         if (type != ResolveType.LVar)
             throw new InvalidOperationException("Db is not an LVar");
+        
+        var db = ((LVarBox<IDb>)row[dbIdx]).Value;
+        foreach (var datom in db.Datoms(cB, cC))
+        {
+            aBox.Value = datom.E;
+            yield return row;
+        }
 
         return Execute;
 
@@ -22,19 +30,16 @@ public record struct Datom<THighLevel, TLowLevel> : IFact<EntityId, Attribute<TH
         {
             foreach (var row in stream)
             {
-                var db = ((LVarBox<IDb>)row[dbIdx]).Value;
+
                 var aBox = (LVarBox<EntityId>)row[aIdx];
-                foreach (var datom in db.Datoms(cB, cC))
-                {
-                    aBox.Value = datom.E;
-                    yield return row;
-                }
+
             }
         }
         
     }
 
-    public static Func<IEnumerable<ILVarBox[]>, IEnumerable<ILVarBox[]>> MakeLazyLCU(Context context, int aIdx, Attribute<THighLevel, TLowLevel> cB, int cIdx)
+    public static void MakeLazyLCU<TEmitter>(Context context, TEmitter emitter, Attribute<THighLevel, TLowLevel> cB, int cIdx)
+    where TEmitter : IEmitter<EntityId>
     {
         var (type, dbIdx) = context.Resolve(Term<IDb>.LVar(ConstantLVars.Db));
         
