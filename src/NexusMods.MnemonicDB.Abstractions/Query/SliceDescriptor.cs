@@ -95,7 +95,7 @@ public readonly struct SliceDescriptor
     {
         return new SliceDescriptor
         {
-            Index = IndexType.AVETCurrent,
+            Index = attr.IsReference ? IndexType.VAETCurrent : IndexType.AVETCurrent,
             From = Datom(EntityId.MinValueNoPartition, attr, value, TxId.MinValue, false, registry),
             To = Datom(EntityId.MaxValueNoPartition, attr, value, TxId.MaxValue, false, registry)
         };

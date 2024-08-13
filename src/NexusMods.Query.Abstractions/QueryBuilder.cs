@@ -1,9 +1,12 @@
+using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Query.Abstractions.Engines.Abstract;
 using NexusMods.Query.Abstractions.Optimizer;
+using NexusMods.Query.Abstractions.Predicates;
 
 namespace NexusMods.Query.Abstractions;
 
@@ -17,21 +20,46 @@ public record QueryBuilder
     
     public static QueryBuilder New<T>(out Variable<T> variable, [CallerArgumentExpression("variable")] string caller = "")
     {
-        var lastPart = caller.LastIndexOf(' ');
-        if (lastPart > 0)
-        {
-            caller = caller[(lastPart + 1)..];
-        }
-        
-        variable = Variable<T>.New(caller);
-        
+        VariableFromCallerName(out variable, caller);
+
         return new QueryBuilder
         {
             Inputs = [variable],
         };
     }
     
+    public static QueryBuilder New()
+    {
+        return new QueryBuilder
+        {
+            Inputs = [],
+        };
+    }
+    
     public QueryBuilder Declare<T>(out Variable<T> variable, [CallerArgumentExpression("variable")] string caller = "")
+    {
+        VariableFromCallerName(out variable, caller);
+        return this with { InnerVariables = InnerVariables.Append(variable).ToArray() };
+    }
+    
+    public QueryBuilder Declare<T>(out Variable<T> variable1, out Variable<T> variable2, 
+        [CallerArgumentExpression("variable2")] string caller2 = "", [CallerArgumentExpression("variable1")] string caller1 = "")
+    {
+        VariableFromCallerName(out variable1, caller1);
+        VariableFromCallerName(out variable2, caller2);
+        return this with { InnerVariables = InnerVariables.Append(variable1).Append(variable2).ToArray() };
+    }
+    
+    public QueryBuilder Declare<T>(out Variable<T> variable1, out Variable<T> variable2, out Variable<T> variable3,
+        [CallerArgumentExpression("variable2")] string caller2 = "", [CallerArgumentExpression("variable1")] string caller1 = "", [CallerArgumentExpression("variable3")] string caller3 = "")
+    {
+        VariableFromCallerName(out variable1, caller1);
+        VariableFromCallerName(out variable2, caller2);
+        VariableFromCallerName(out variable3, caller3);
+        return this with { InnerVariables = InnerVariables.Append(variable1).Append(variable2).Append(variable3).ToArray() };
+    }
+
+    private static void VariableFromCallerName<T>(out Variable<T> variable, string caller)
     {
         var lastPart = caller.LastIndexOf(' ');
         if (lastPart > 0)
@@ -40,8 +68,9 @@ public record QueryBuilder
         }
         
         variable = Variable<T>.New(caller);
-        return this with { InnerVariables = InnerVariables.Append(variable).ToArray() };
     }
+
+
     
     public QueryBuilder Datoms<THighLevel, TLowLevel>(Argument<EntityId> e, Attribute<THighLevel, TLowLevel> attribute, Argument<THighLevel> value) 
         where THighLevel : notnull
@@ -50,15 +79,28 @@ public record QueryBuilder
         return this with { Goals = Goals.Add(goal)};
     }
     
-    public RootQuery Return<T>(Variable<T> variable)
+    public Func<IDb, TIn, List<TOut>> Return<TIn, TOut>(Variable<TOut> variable) 
+        where TIn : notnull 
+        where TOut : notnull
     {
         var query = new RootQuery(new Conjunction(Goals.ToArray()), Inputs.Append(ConstantNodes.Db).ToArray(), variable, InnerVariables);
         new AssignBindings().Execute(query);
 
-        var builtExpression = new ExpressionBuilder();
+        var builtExpression = new LazyBuilder();
+        var built = builtExpression.Build<TIn, TOut>(query);
         
-        var built = builtExpression.Build(query);
-        
-        return query;
+        return built;
+    }
+    
+    public Func<IDb, List<TOut>> Return<TOut>(Variable<TOut> variable) 
+        where TOut : notnull
+    {
+        var query = new RootQuery(new Conjunction(Goals.ToArray()), Inputs.Append(ConstantNodes.Db).ToArray(), variable, InnerVariables);
+        new AssignBindings().Execute(query);
+
+        var builtExpression = new LazyBuilder();
+        var built = builtExpression.Build<TOut>(query);
+
+        return built;
     }
 }

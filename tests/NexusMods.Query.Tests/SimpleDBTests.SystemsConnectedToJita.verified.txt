@@ -1,0 +1,9 @@
+﻿[
+  Maurasi,
+  Ikuchi,
+  New Caldari,
+  Perimeter,
+  Muvolailen,
+  Niyabainen,
+  Sobaseki
+]

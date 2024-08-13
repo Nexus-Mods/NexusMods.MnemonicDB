@@ -1,0 +1,12 @@
+﻿[
+  Oijanen,
+  Konora,
+  Eurgrana,
+  Dital,
+  Dital,
+  Dital,
+  Reblier,
+  Pertnineere,
+  Efa,
+  Efa
+]

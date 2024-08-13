@@ -15,7 +15,7 @@ public record Disjunction(IGoal[] Goals) : IGoal
         throw new NotImplementedException();
     }
 
-    public Expression Emit(Dictionary<IVariable, Expression> combinedVariables, Expression innerExpr)
+    public Environment.Execute Emit(EnvironmentDefinition env, Environment.Execute innerExpr)
     {
         throw new NotImplementedException();
     }

@@ -39,6 +39,10 @@ public record Goal(IPredicate Predicate, IArgument[] Arguments) : IGoal
         return $"{Predicate}({string.Join(", ", Arguments.Select(t => t.ToString()))})";
     }
 
+    public Environment.Execute Emit(EnvironmentDefinition env, Environment.Execute innerExpr)
+    {
+        return Predicate.Emit(BindingTypes, env, Arguments, innerExpr);
+    }
 
 
     public BindingType[] BindingTypes { get; set; } = [];
@@ -46,10 +50,5 @@ public record Goal(IPredicate Predicate, IArgument[] Arguments) : IGoal
     public bool IsSupported(Span<BindingType> bindingTypes)
     {
         throw new NotImplementedException();
-    }
-
-    public Expression Emit(Dictionary<IVariable, Expression> combinedVariables, Expression innerExpr)
-    {
-        return Predicate.Emit(BindingTypes, combinedVariables, Arguments, innerExpr);
     }
 }

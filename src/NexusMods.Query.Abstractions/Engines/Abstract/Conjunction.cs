@@ -16,13 +16,12 @@ public record Conjunction(IGoal[] Goals) : IGoal
         throw new NotImplementedException();
     }
 
-    public Expression Emit(Dictionary<IVariable, Expression> combinedVariables, Expression innerExpr)
+    public Environment.Execute Emit(EnvironmentDefinition env, Environment.Execute innerExpr)
     {
         foreach (var goal in Goals.Reverse())
         {
-            innerExpr = goal.Emit(combinedVariables, innerExpr);
+            innerExpr = goal.Emit(env, innerExpr);
         }
-
         return innerExpr;
     }
 }

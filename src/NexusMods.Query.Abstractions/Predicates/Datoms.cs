@@ -4,24 +4,83 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.Query.Abstractions.Engines.Abstract;
+using NexusMods.Query.Abstractions.Engines.Slots;
+using NexusMods.Query.Abstractions.Engines.Steps;
+using Environment = NexusMods.Query.Abstractions.Engines.Environment;
 
 namespace NexusMods.Query.Abstractions.Predicates;
 
 public class Datoms<THighLevel, TLowLevel> : APredicate<IDb, EntityId, Attribute<THighLevel, TLowLevel>, THighLevel> 
+    where THighLevel : notnull
 {
-    protected override Expression EmitCVCO(Expression aExpr, ParameterExpression bExpr, Expression cExpr, Expression dExpr, Expression innerExpr)
+    protected override Environment.Execute EmitCVCO<TSlotA, TSlotB, TSlotC, TSlotD>(TSlotA a, TSlotB b, TSlotC c, TSlotD d, Environment.Execute innerExpr)
     {
-
-        return Foreach(Expression.Call(aExpr, "Datoms", [typeof(THighLevel), typeof(TLowLevel)], [cExpr, dExpr]), datom =>
+        return (ref Environment env) =>
         {
-            return Expression.Block(
-                Expression.Assign(bExpr, Expression.Property(datom, "E")),
-                innerExpr);
-        });
+            var db = a.Get(ref env);
+            var attr = c.Get(ref env);
+            var attrId = attr.GetDbId(db.Registry.Id);
+            foreach (var datom in db.Datoms(b.Get(ref env)))
+            {
+                if (datom.A != attrId)
+                    continue;
+                d.Set(ref env, ((Attribute<THighLevel, TLowLevel>.ReadDatom)datom.Resolved).V);
+                innerExpr(ref env);
+            }
+        };
+    }
+
+    protected override Environment.Execute EmitCOCC<TSlotA, TSlotB, TSlotC, TSlotD>(TSlotA a, TSlotB b, TSlotC c, TSlotD d, Environment.Execute inner)
+    {
+        return (ref Environment env) =>
+        {
+            foreach (var datom in a.Get(ref env).Datoms(c.Get(ref env), d.Get(ref env)))
+            {
+                b.Set(ref env, datom.E);
+                inner(ref env);
+            }
+        };
+    }
+
+    protected override Environment.Execute EmitCCCC<TSlotA, TSlotB, TSlotC, TSlotD>(TSlotA a, TSlotB b, TSlotC c, TSlotD d, Environment.Execute innerExpression)
+    {
+        return (ref Environment env) =>
+        {
+            var db = a.Get(ref env);
+            var attr = c.Get(ref env);
+            var attrId = attr.GetDbId(db.Registry.Id);
+            var value = d.Get(ref env);
+            foreach (var datom in db.Datoms(b.Get(ref env)))
+            {
+                if (datom.A != attrId)
+                    continue;
+                
+                if (((Attribute<THighLevel, TLowLevel>.ReadDatom)datom.Resolved).V.Equals(value))
+                    innerExpression(ref env);
+            }
+        };
+    }
+
+    private class StepCVCO(ISlot<IDb> a, ISlot<EntityId> b, ISlot<Attribute<THighLevel, TLowLevel>> c, ISlot<THighLevel> d, IStep innerExpression) : IStep
+    {
+        public void Execute(ref Environment environment)
+        { 
+            var db = a.Get(ref environment);
+            var attr = c.Get(ref environment);
+            var value = d.Get(ref environment);
+            
+            foreach (var datom in db.Datoms(attr, value))
+            {
+                b.Set(ref environment, datom.E);
+                innerExpression.Execute(ref environment);
+            }
+        }
     }
     
-    
+
+
     /// <summary>
     /// Constructs a foreach loop via Linq Expressions
     /// </summary>

@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using NexusMods.Query.Abstractions.Engines.Slots;
 
 namespace NexusMods.Query.Abstractions.Engines.Abstract;
 
@@ -26,4 +27,32 @@ public record Variable<T>(string Name, ulong Id) : IVariable
     }
 
     public Type Type => typeof(T);
+    
+    public SlotDefinition MakeSlotDefinition(ref int objectOffset, ref int valueOffset)
+    {
+        if (typeof(T).IsValueType)
+        {
+            var size = System.Runtime.InteropServices.Marshal.SizeOf<T>();
+            var definition = new SlotDefinition()
+            {
+                Type = typeof(T),
+                Offset = valueOffset,
+                Size = size
+            };
+            valueOffset += size;
+            return definition;
+        }
+        else
+        {
+            var definition = new SlotDefinition
+            {
+                Type = typeof(T),
+                Offset = objectOffset,
+                Size = IntPtr.Size
+            };
+            objectOffset++;
+            return definition;
+        }
+    }
+
 }

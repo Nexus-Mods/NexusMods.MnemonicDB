@@ -9,7 +9,7 @@ namespace NexusMods.Query.Abstractions.Engines.Abstract;
 /// </summary>
 public interface IPredicate
 { 
-    Expression Emit(BindingType[] bindingTypes, Dictionary<IVariable,Expression> combinedVariables, IArgument[] innerExpression, Expression innerExpr);
+    Environment.Execute Emit(BindingType[] bindingTypes, EnvironmentDefinition env, IArgument[] innerExpression, Environment.Execute innerExpr);
 }
 
 

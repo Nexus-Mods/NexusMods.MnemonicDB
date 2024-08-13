@@ -6,7 +6,5 @@ namespace NexusMods.Query.Abstractions.Engines.Abstract;
 
 public interface IGoal
 { 
-    public IArgument[] Arguments { get; }
-    bool IsSupported(Span<BindingType> bindingTypes);
-    Expression Emit(Dictionary<IVariable, Expression> combinedVariables, Expression innerExpr);
+    Environment.Execute Emit(EnvironmentDefinition environment, Environment.Execute innerExpr);
 }

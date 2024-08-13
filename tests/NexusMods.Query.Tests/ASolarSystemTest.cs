@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.Paths;
@@ -10,10 +11,12 @@ namespace NexusMods.Query.Tests;
 public class ASolarSystemTest : IAsyncLifetime
 {
     protected readonly IConnection Connection;
+    protected readonly ILogger Logger;
 
     public ASolarSystemTest(IServiceProvider conn)
     {
         Connection = conn.GetRequiredService<IConnection>();
+        Logger = conn.GetRequiredService<ILogger<ASolarSystemTest>>();
     }
     
     public async Task InitializeAsync()
@@ -24,11 +27,20 @@ public class ASolarSystemTest : IAsyncLifetime
         
         foreach (var solarSystem in await ReadCSVFile("mapSolarSystems.csv.gz"))
         {
+            var security = float.Parse(solarSystem["security"]);
+            var securityClass = security switch
+            {
+                >= 0.5f => SecurityClass.High,
+                > 0.0f => SecurityClass.Low,
+                _ => SecurityClass.Null,
+            };
+
             var system = new SolarSystem.New(tx)
             {
                 Name = solarSystem["solarSystemName"],
-                SecurityLevel = float.Parse(solarSystem["security"]),
+                SecurityLevel = security,
                 SecurityClass = solarSystem["securityClass"],
+                SecurityStatus = securityClass,
             };
             
             mappings[ulong.Parse(solarSystem["solarSystemID"])] = system.Id;
