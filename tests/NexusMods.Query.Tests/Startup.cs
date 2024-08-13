@@ -5,6 +5,8 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.Storage.InMemoryBackend;
 using NexusMods.MnemonicDB.TestModel;
+using NexusMods.Query.Tests.Models;
+using Xunit.DependencyInjection.Logging;
 
 namespace NexusMods.Query.Tests;
 
@@ -14,10 +16,12 @@ public class Startup
     {
         services.AddTestModel()
             .AddMnemonicDB()
+            .AddLogging(l => l.AddXunitOutput().SetMinimumLevel(LogLevel.Debug))
             .AddDatomStoreSettings(new DatomStoreSettings()
             {
                 Path = default,
             })
+            .AddSolarSystemModel()
             .AddSingleton<IStoreBackend, Backend>();
 
     }

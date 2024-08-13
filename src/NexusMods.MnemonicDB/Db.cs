@@ -105,6 +105,12 @@ internal class Db : IDb
         return new EntityIds(segment, 0, segment.Count);
     }
     
+    public EntityIds GetBackRefs(ReferencesAttribute attribute, EntityId id)
+    {
+        var segment = _cache.GetReverse(attribute.GetDbId(_registryId), id, this);
+        return new EntityIds(segment, 0, segment.Count);
+    }
+    
     public IndexSegment ReferencesTo(EntityId id)
     {
         return _cache.GetReferences(id, this);

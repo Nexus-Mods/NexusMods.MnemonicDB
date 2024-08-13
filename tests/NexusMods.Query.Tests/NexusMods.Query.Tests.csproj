@@ -3,7 +3,7 @@
     <PropertyGroup>
         <!-- https://github.com/pengweiqhca/Xunit.DependencyInjection#how-to-disable-xunitdependencyinjection -->
         <EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>true</EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>
-        <RootNamespace>NexusMods.MnemonicDB.Tests</RootNamespace>
+        <RootNamespace>NexusMods.Query.Tests</RootNamespace>
     </PropertyGroup>
     
     <PropertyGroup>
@@ -23,6 +23,7 @@
       <ProjectReference Include="..\..\src\NexusMods.MnemonicDB\NexusMods.MnemonicDB.csproj" />
       <ProjectReference Include="..\..\src\NexusMods.Query.Abstractions\NexusMods.Query.Abstractions.csproj" />
       <ProjectReference Include="..\NexusMods.MnemonicDB.TestModel\NexusMods.MnemonicDB.TestModel.csproj" />
+      <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.SourceGenerator\NexusMods.MnemonicDB.SourceGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false"  />
     </ItemGroup>
 
     <ItemGroup>
@@ -53,6 +54,15 @@
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Resources\mapSolarSystemJumps.csv.gz">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Resources\mapSolarSystems.csv.gz">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
 </Project>

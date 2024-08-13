@@ -79,6 +79,11 @@ public interface IDb : IEquatable<IDb>
     /// Gets all the back references for this entity that are through the given attribute.
     /// </summary>
     EntityIds GetBackRefs(ReferenceAttribute attribute, EntityId id);
+    
+    /// <summary>
+    /// Gets all the back references for this entity that are through the given attribute.
+    /// </summary>
+    EntityIds GetBackRefs(ReferencesAttribute attribute, EntityId id);
 
     /// <summary>
     /// Returns an index segment of all the datoms that are a reference pointing to the given entity id.
