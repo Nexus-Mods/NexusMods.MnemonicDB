@@ -2,12 +2,14 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Engines;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.TestModel;
 
 namespace NexusMods.MnemonicDB.Benchmarks.Benchmarks;
 
 [MemoryDiagnoser]
+[SimpleJob(runStrategy: RunStrategy.Monitoring, warmupCount: 1)]
 public class ObserveAllBenchmarks : ABenchmark
 {
     private string[] _names = [];
