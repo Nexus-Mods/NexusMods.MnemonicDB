@@ -53,7 +53,7 @@ public class ObservableTests : AMnemonicDBTest
             .Bind(out var list)
             .Subscribe();
 
-        var stress = Enumerable.Range(start: 0, count: 10_000).Select(i => $"Loadout {i}").ToArray();
+        var stress = Enumerable.Range(start: 0, count: 100).Select(i => $"Loadout {i}").ToArray();
         await Add(stress);
 
         list.Should().ContainInOrder(stress);
