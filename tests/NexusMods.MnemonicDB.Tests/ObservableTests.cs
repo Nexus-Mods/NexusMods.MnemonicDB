@@ -39,38 +39,59 @@ public class ObservableTests : AMnemonicDBTest
 
         list.Should().ContainSingle(static name => name.Equals("Loadout 3"));
 
-        return;
+        await Delete("Loadout 3");
 
-        async ValueTask Delete(params string[] names)
+        list.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task StressTest()
+    {
+        using var disposable = Loadout
+            .ObserveAll(Connection)
+            .Transform(loadout => loadout.Name)
+            .Bind(out var list)
+            .Subscribe();
+
+        var stress = Enumerable.Range(start: 0, count: 10_000).Select(i => $"Loadout {i}").ToArray();
+        await Add(stress);
+
+        list.Should().ContainInOrder(stress);
+
+        await Delete(stress);
+
+        list.Should().BeEmpty();
+    }
+
+    private async ValueTask Add(params string[] names)
+    {
+        using var tx = Connection.BeginTransaction();
+
+        foreach (var name in names)
         {
-            var db = Connection.Db;
-            using var tx = Connection.BeginTransaction();
-
-            foreach (var name in names)
+            _ = new Loadout.New(tx)
             {
-                var entities = Loadout.FindByName(db, name);
-                entities.Should().ContainSingle();
-
-                tx.Delete(entities.First(), recursive: false);
-            }
-
-            await tx.Commit();
+                Name = name,
+            };
         }
 
-        async ValueTask Add(params string[] names)
+
+        await tx.Commit();
+    }
+
+    private async ValueTask Delete(params string[] names)
+    {
+        var db = Connection.Db;
+        using var tx = Connection.BeginTransaction();
+
+        foreach (var name in names)
         {
-            using var tx = Connection.BeginTransaction();
+            var entities = Loadout.FindByName(db, name);
+            entities.Should().ContainSingle();
 
-            foreach (var name in names)
-            {
-                _ = new Loadout.New(tx)
-                {
-                    Name = name,
-                };
-            }
-
-
-            await tx.Commit();
+            tx.Delete(entities.First(), recursive: false);
         }
+
+        await tx.Commit();
     }
 }
