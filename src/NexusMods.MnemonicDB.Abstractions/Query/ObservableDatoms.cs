@@ -1,13 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Reactive.Linq;
+using System.Runtime.InteropServices;
 using DynamicData;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using ObservableCollections;
+using R3;
 
 namespace NexusMods.MnemonicDB.Abstractions.Query;
 
@@ -30,6 +34,50 @@ public static class ObservableDatoms
             .Take(1)
             .Select(_ => constructorFn())
             .Switch();
+    }
+
+    public static ObservableHashSet<Datom> GetObservableSetForSlice(this IConnection connection, SliceDescriptor descriptor)
+    {
+        var comparator = PartialComparator(descriptor.Index);
+        var equality = (IEqualityComparer<Datom>)comparator;
+
+        // TODO: pass equality comparer (https://github.com/Cysharp/ObservableCollections/pull/55)
+        var set = new ObservableHashSet<Datom>();
+
+        var addsBuffer = new List<Datom>();
+        var removesBuffer = new List<Datom>();
+
+        connection.Revisions
+            .ToObservable()
+            .Where(rev => rev.RecentlyAdded.Count > 0)
+            .Synchronize(gate: set)
+            .Subscribe((descriptor, set, addsBuffer, removesBuffer), static (revision, state) =>
+            {
+                var (descriptor, set, addsBuffer, removesBuffer) = state;
+
+                // ReSharper disable once ForeachCanBePartlyConvertedToQueryUsingAnotherGetEnumerator
+                foreach (var datom in revision.RecentlyAdded)
+                {
+                    if (!descriptor.Includes(datom)) continue;
+
+                    if (datom.IsRetract)
+                    {
+                        removesBuffer.Add(datom);
+                    }
+                    else
+                    {
+                        addsBuffer.Add(datom);
+                    }
+                }
+
+                set.RemoveRange(CollectionsMarshal.AsSpan(removesBuffer));
+                set.AddRange(CollectionsMarshal.AsSpan(addsBuffer));
+
+                addsBuffer.Clear();
+                removesBuffer.Clear();
+            });
+
+        return set;
     }
 
     /// <summary>
