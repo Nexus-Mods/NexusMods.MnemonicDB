@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
+using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.TestModel;
 
 namespace NexusMods.MnemonicDB.Benchmarks.Benchmarks;
@@ -11,7 +12,7 @@ public class ObserveAllBenchmarks : ABenchmark
 {
     private string[] _names = [];
 
-    [Params(10, 100, 1_000, 10_000)]
+    [Params(100, 1_000, 10_000)]
     public int N { get; set; }
 
     [GlobalSetup]
@@ -19,6 +20,19 @@ public class ObserveAllBenchmarks : ABenchmark
     {
         await InitializeAsync();
         _names = Enumerable.Range(start: 0, count: N).Select(i => $"Loadout {i}").ToArray();
+    }
+
+    [IterationCleanup]
+    public void IterationCleanup()
+    {
+        using var tx = Connection.BeginTransaction();
+
+        foreach (var entity in Loadout.All(Connection.Db))
+        {
+            tx.Delete(entity, recursive: false);
+        }
+
+        tx.Commit().GetAwaiter().GetResult();
     }
 
     [Benchmark]
