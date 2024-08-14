@@ -1,4 +1,5 @@
 using DynamicData;
+using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.TestModel;
 
@@ -7,6 +8,19 @@ namespace NexusMods.MnemonicDB.Tests;
 public class ObservableTests : AMnemonicDBTest
 {
     public ObservableTests(IServiceProvider provider) : base(provider) { }
+
+    [Fact]
+    public async Task TestObservableHashSet()
+    {
+        var set = Connection.GetObservableSetForSlice(SliceDescriptor.Create(Loadout.PrimaryAttribute, Connection.Registry));
+        var loadouts = set.CreateView(datom => Loadout.Load(Connection.Db, datom.E).Name);
+
+        loadouts.Should().BeEmpty();
+
+        await Add("Loadout 1");
+
+        loadouts.Should().ContainSingle().Which.View.Should().Be("Loadout 1");
+    }
 
     [Fact]
     public async Task TestObserveAll()
