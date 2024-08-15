@@ -89,6 +89,25 @@ public static class ObservableDatoms
     {
         return conn.Revisions.DelayUntilFirstValue(() => conn.ObserveDatoms(SliceDescriptor.Create(attribute, conn.Registry)));
     }
+    
+    /// <summary>
+    /// Converts a set of observed datoms to a set of observed entity ids, assumes that there will be no datoms with
+    /// duplicate entity ids.
+    /// </summary>
+    /// <param name="source"></param>
+    /// <returns></returns>
+    public static IObservable<IChangeSet<Datom, EntityId>> AsEntityIds(this IObservable<IChangeSet<Datom, DatomKey>> source)
+    {
+        return source.Select(changes =>
+        {
+            var newChanges = new ChangeSet<Datom, EntityId>();
+            foreach (var change in changes)
+            {
+                newChanges.Add(new Change<Datom, EntityId>(change.Reason, change.Key.E, change.Current));
+            }
+            return newChanges;
+        });
+    }
 
     private static IChangeSet<Datom, DatomKey> Diff(IAttributeRegistry registry, IndexSegment updates, SliceDescriptor descriptor)
     {

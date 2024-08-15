@@ -25,6 +25,16 @@ public readonly struct DatomKey : IEqualityComparer<DatomKey>
         _valueMemory = valueMemory;
     }
     
+    /// <summary>
+    /// The entity id of the datom.
+    /// </summary>
+    public EntityId E => _eid;
+    
+    /// <summary>
+    /// The attribute of the datom.
+    /// </summary>
+    public IAttribute A => _attribute;
+    
     /// <inheritdoc />
     public bool Equals(DatomKey x, DatomKey y)
     {
