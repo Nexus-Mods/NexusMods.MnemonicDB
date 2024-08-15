@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Exceptions;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -194,9 +195,26 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     public bool IsReference => LowLevelType == ValueTags.Reference;
 
     /// <inheritdoc />
-    public IReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, RegistryId registryId)
+    IReadDatom IAttribute.Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, RegistryId registryId)
     {
         return new ReadDatom(in prefix, ReadValue(valueSpan, prefix.ValueTag, registryId), this);
+    }
+    
+    /// <summary>
+    /// Resolves the value from the given value span into a high-level ReadDatom
+    /// </summary>
+    public ReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, RegistryId registryId)
+    {
+        return new ReadDatom(in prefix, ReadValue(valueSpan, prefix.ValueTag, registryId), this);
+    }
+
+    /// <summary>
+    /// Resolves the low-level Datom into a high-level ReadDatom
+    /// </summary>
+    public ReadDatom Resolve(in Datom datom, RegistryId id)
+    {
+        var prefix = datom.Prefix;
+        return new ReadDatom(in prefix, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, id), this);
     }
 
     /// <summary>

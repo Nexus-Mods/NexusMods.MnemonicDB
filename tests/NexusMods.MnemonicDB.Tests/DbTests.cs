@@ -1,10 +1,15 @@
-﻿using System.Reactive.Linq;
+﻿using System.Diagnostics;
+using System.Reactive.Linq;
+using System.Security.Cryptography.X509Certificates;
 using DynamicData;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
@@ -621,9 +626,9 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         // Setup the subscription
         using var _ = Connection.ObserveDatoms(slice)
             // Snapshot the values each time
-            .QueryWhenChanged(datoms => datoms.Select(d => d.Resolved.ObjectValue.ToString()!).ToArray())
+            .QueryWhenChanged(datoms => datoms.Items.Select(d => d.Resolved.ObjectValue.ToString()!).ToArray())
             // Add the changes to the list
-            .Subscribe(x => changes.Add(x));
+            .Subscribe(x => changes.Add(x.Order().ToArray()));
 
         // Rename a mod
         using var tx = Connection.BeginTransaction();
@@ -644,20 +649,183 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     }
 
     [Fact]
+    public async Task ObserveLargeDatomChanges()
+    {
+        var list = Connection.ObserveDatoms(Loadout.Name)
+            .Select(f => f)
+            .AsObservableCache();
+
+        using var tx = Connection.BeginTransaction();
+        for (var i = 0; i < 10000; i++)
+        {
+            _ = new Loadout.New(tx)
+            {
+                Name = $"Test Loadout {i}"
+            };
+        }
+
+        var sw = Stopwatch.StartNew();
+        Logger.LogInformation("BEEEEE");
+        await tx.Commit();
+
+        var allLoadouts = Loadout.All(Connection.Db).Count;
+        sw.ElapsedMilliseconds.Should().BeLessThan(5000, "the ObserveDatoms algorithm isn't stupidly slow");
+
+        list.Count.Should().Be(10000);
+        
+        
+        using var tx2 = Connection.BeginTransaction();
+
+        var loadout = list.Items.Skip(10).First();
+        
+        tx2.Add(loadout.E, Loadout.Name, "Test Loadout 10 Updated");
+        await tx2.Commit();
+        
+        list.Items.First(datom => datom.E == loadout.E).Resolved.ObjectValue.Should().Be("Test Loadout 10 Updated");
+        allLoadouts.Should().Be(10000);
+    }
+
+    [Fact]
+    public async Task CanQueryTwoAttributesAtOnce()
+    {
+        using var tx = Connection.BeginTransaction();
+        var loadout = new Loadout.New(tx)
+        {
+            Name = "Test Loadout"
+        };
+
+        var uniqueId = Guid.NewGuid().ToString();
+        
+        for (var i = 0; i < 10; i++)
+        {
+            _ = new Mod.New(tx)
+            {
+                Name = i % 2 == 0 ? "_" : uniqueId,
+                Source = new Uri("http://test.com"),
+                LoadoutId = loadout
+            };
+        }
+
+        var result = await tx.Commit();
+        var loadoutId = result[loadout.Id];
+
+        var db = Connection.Db;
+
+        var matchingSet = Mod.FindByLoadout(db, loadoutId)
+            .Where(m => m.Name == uniqueId)
+            .Select(m => m.Id)
+            .ToHashSet();
+
+        var queryBoth = db.Datoms((Mod.Name, uniqueId), (Mod.Loadout, loadoutId))
+            .ToHashSet();
+        
+        var found = queryBoth.ToHashSet();
+        
+        found.Should().BeEquivalentTo(matchingSet);
+    }
+    
+    [Fact]
+    public async Task CanQueryThreeAttributesAtOnce()
+    {
+        using var tx = Connection.BeginTransaction();
+        var loadout = new Loadout.New(tx)
+        {
+            Name = "Test Loadout"
+        };
+
+        var uniqueId = Guid.NewGuid().ToString();
+        
+        for (var i = 0; i < 10; i++)
+        {
+            _ = new Mod.New(tx)
+            {
+                Name = uniqueId,
+                Source = new Uri("http://test.com"),
+                IsMarked = i % 2 == 0,
+                LoadoutId = loadout
+            };
+        }
+
+        var result = await tx.Commit();
+        var loadoutId = result[loadout.Id];
+
+        var db = Connection.Db;
+
+        var matchingSet = Mod.FindByLoadout(db, loadoutId)
+            .Where(m => m.Name == uniqueId && m.IsMarked)
+            .Select(m => m.Id)
+            .ToHashSet();
+
+        var queryBoth = db.Datoms(
+                (Mod.Name, uniqueId), 
+                (Mod.Loadout, loadoutId),
+                (Mod.Marked, Null.Instance))
+            .ToHashSet();
+        
+        var found = queryBoth.ToHashSet();
+        
+        found.Should().BeEquivalentTo(matchingSet);
+    }
+    
+    [Fact]
+    public async Task CanQueryFourAttributesAtOnce()
+    {
+        using var tx = Connection.BeginTransaction();
+        var loadout = new Loadout.New(tx)
+        {
+            Name = "Test Loadout"
+        };
+
+        var uniqueId = Guid.NewGuid().ToString();
+        
+        for (var i = 0; i < 10; i++)
+        {
+            _ = new Mod.New(tx)
+            {
+                Name = uniqueId,
+                Source = new Uri("http://test.com"),
+                IsMarked = i % 2 == 0,
+                LoadoutId = loadout
+            };
+        }
+
+        var result = await tx.Commit();
+        var loadoutId = result[loadout.Id];
+
+        var db = Connection.Db;
+
+        var matchingSet = Mod.FindByLoadout(db, loadoutId)
+            .Where(m => m.Name == uniqueId && m.IsMarked)
+            .Select(m => m.Id)
+            .ToHashSet();
+
+        var queryBoth = db.Datoms(
+                (Mod.Name, uniqueId), 
+                (Mod.Loadout, loadoutId),
+                (Mod.Marked, Null.Instance),
+                (Mod.Name, uniqueId))
+            .ToHashSet();
+        
+        var found = queryBoth.ToHashSet();
+        
+        found.Should().BeEquivalentTo(matchingSet);
+    }
+
+    [Fact]
     public async Task CanGetInitialDbStateFromObservable()
     {
         var attrs = await Connection.ObserveDatoms(AttributeDefinition.UniqueId).FirstAsync();
-        attrs.TotalChanges.Should().BeGreaterThan(0);
+        attrs.Adds.Should().BeGreaterThan(0);
 
         
         attrs = await Connection.ObserveDatoms(AttributeDefinition.UniqueId).FirstAsync();
-        attrs.TotalChanges.Should().BeGreaterThan(0);
+        attrs.Adds.Should().BeGreaterThan(0);
 
     }
 
     /// <summary>
     /// Test for a flickering bug in UI users, where datoms that are changed result in a `add` and a `remove` operation
-    /// causing the UI to flicker, instead we want to issue changes on a ScalarAttribute as a refresh/change
+    /// causing the UI to flicker, instead we want to issue changes on a ScalarAttribute as a replace operation.
     /// </summary>
     [Fact]
     public async Task CanObserveIndexChangesWithoutFlickering()
@@ -665,7 +833,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         var loadout = await InsertExampleData();
         
-        List<IChangeSet<Datom>> changes = new();
+        List<IChangeSet<Datom, DatomKey>> changes = new();
 
         // Define the slice to observe
         var slice = SliceDescriptor.Create(Mod.Name, Connection.Db.Registry);
@@ -695,7 +863,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         {
             Added = change.Adds,
             Removed = change.Removes,
-            Refreshes = change.Refreshes
+            Updates = change.Updates
         });
         
         await Verify(changesProcessed);
@@ -947,14 +1115,15 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         firstDisp.Dispose();
         
-        var secondDisp = refObs.Subscribe(mods.Add);
-        
+        using var secondDisp = refObs.Subscribe(mods.Add);
         {
             var tx2 = Connection.BeginTransaction();
             tx2.Add(modRO.Id, Mod.Name, "Test Mod 3");
             await tx2.Commit();
         }
         
-        await Verify(mods.Distinct().Select(m => m.Name));
+        // Distinct, because re-subscribing to the same observable will result in the same object being added
+        // when it set the initial value
+        await Verify(mods.Select(m => m.Name).Distinct());
     }
 }

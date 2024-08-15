@@ -121,7 +121,7 @@ internal class Db : IDb
     {
         return Datoms(SliceDescriptor.Create(attribute, value, _registry));
     }
-
+    
     public IndexSegment Datoms(ReferenceAttribute attribute, EntityId value)
     {
         return Datoms(SliceDescriptor.Create(attribute, value, _registry));

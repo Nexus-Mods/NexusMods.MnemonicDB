@@ -56,7 +56,7 @@ public readonly struct IndexSegment : IReadOnlyList<Datom>
     /// <summary>
     /// All the lower values
     /// </summary>
-    private ReadOnlySpan<ulong> Lowers => _data.Span.SliceFast(_rowCount * sizeof(ulong), _rowCount * sizeof(ulong)).CastFast<byte, ulong>();
+    public ReadOnlySpan<ulong> Lowers => _data.Span.SliceFast(_rowCount * sizeof(ulong), _rowCount * sizeof(ulong)).CastFast<byte, ulong>();
 
     /// <summary>
     /// All the offsets

@@ -3,7 +3,7 @@
     Added: 3
   },
   {
-    Refreshes: 1
+    Updates: 1
   },
   {
     Added: 1

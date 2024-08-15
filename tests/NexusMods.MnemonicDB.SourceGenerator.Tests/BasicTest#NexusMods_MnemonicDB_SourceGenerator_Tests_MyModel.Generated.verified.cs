@@ -83,7 +83,7 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
     /// <summary>
     /// Observe all models of this type from the database
     /// </summary>
-    public static IObservable<DynamicData.IChangeSet<ReadOnly>> ObserveAll(IConnection conn)
+    public static IObservable<DynamicData.IChangeSet<ReadOnly, DatomKey>> ObserveAll(IConnection conn)
     {
         return conn.ObserveDatoms(PrimaryAttribute)
             .Transform(d => Load(conn.Db, d.E));

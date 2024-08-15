@@ -5,14 +5,14 @@
     Mod3 - Updated
   ],
   [
-    Test Mod 1,
-    Mod2 - Updated,
-    Mod3 - Updated
-  ],
-  [
-    Test Mod 1,
     Mod2 - Updated,
     Mod3 - Updated,
+    Test Mod 1
+  ],
+  [
+    Mod2 - Updated,
+    Mod3 - Updated,
+    Test Mod 1,
     Test Mod 2
   ],
   [

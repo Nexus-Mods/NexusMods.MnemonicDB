@@ -69,7 +69,7 @@ public interface IDb : IEquatable<IDb>
     /// Finds all the datoms that have the given attribute with the given value.
     /// </summary>
     IndexSegment Datoms<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value);
-
+    
     /// <summary>
     /// Finds all the datoms that have the given attribute with the given value.
     /// </summary>

@@ -55,7 +55,12 @@ public readonly struct Datom
     /// The valuespan of the datom
     /// </summary>
     public ReadOnlySpan<byte> ValueSpan => _valueBlob.Span;
-
+    
+    /// <summary>
+    /// The value memory of the datom
+    /// </summary>
+    public ReadOnlyMemory<byte> ValueMemory => _valueBlob;
+    
     /// <summary>
     /// Resolves this datom into the IReadDatom form
     /// </summary>
