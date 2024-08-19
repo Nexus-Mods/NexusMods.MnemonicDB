@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.9.79 - 19/08/2024
+* Fix a bug with `Tuple<T1, T2, T3>` attributes when the first member is a reference type. This caused temporary IDs to not
+be resolved correctly when the temporary ID was resolved
+
 ### 0.9.78 - 15/08/2024
 * `Model.ObserveAll` now returns `IObservable<IChangeSet<ReadOnly, EntityId>>` instead of `IObservable<IChangeSet<ReadOnly, DatomKey>>` which makes it
 easier to use in projects without polluting the code with `DatomKey` references. `Connection.ObserveDatoms` still returns `IObservable<IChangeSet<Datom, DatomKey>>`

@@ -45,6 +45,7 @@ public class TupleAttribute<T1HighLevel, T1LowLevel, T2HighLevel, T2LowLevel> : 
         throw new NotSupportedException("You must override this method to support low-level conversion.");
     }
 
+    /// <inheritdoc />
     public override void Remap(Func<EntityId, EntityId> remapper, Span<byte> valueSpan)
     {
         if (_tag1 == ValueTags.Reference)
@@ -55,7 +56,7 @@ public class TupleAttribute<T1HighLevel, T1LowLevel, T2HighLevel, T2LowLevel> : 
         }
         else if (_tag2 == ValueTags.Reference)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException("This attribute does not support remapping of the second element.");
         }
     }
 
@@ -122,17 +123,18 @@ public class TupleAttribute<T1HighLevel, T1LowLevel, T2HighLevel, T2LowLevel, T3
         throw new NotSupportedException("You must override this method to support low-level conversion.");
     }
 
+    /// <inheritdoc />
     public override void Remap(Func<EntityId, EntityId> remapper, Span<byte> valueSpan)
     {
         if (_tag1 == ValueTags.Reference)
         {
-            var entityId = MemoryMarshal.Read<EntityId>(valueSpan.SliceFast(2));
+            var entityId = MemoryMarshal.Read<EntityId>(valueSpan.SliceFast(3));
             var newEntityId = remapper(entityId);
-            MemoryMarshal.Write(valueSpan.SliceFast(2), newEntityId);
+            MemoryMarshal.Write(valueSpan.SliceFast(3), newEntityId);
         }
-        else if (_tag2 == ValueTags.Reference)
+        if (_tag2 == ValueTags.Reference || _tag3 == ValueTags.Reference)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException("This attribute does not support remapping of the second or third element.");
         }
     }
 
