@@ -7,11 +7,11 @@ namespace NexusMods.MnemonicDB.TestModel.Analyzers;
 /// </summary>
 public class AttributesAnalyzer : IAnalyzer<HashSet<IAttribute>>
 {
-    public object Analyze(IDb db)
+    public object Analyze(IDb? dbOld, IDb dbNew)
     {
         var hashSet = new HashSet<IAttribute>();
-        var registry = db.Registry;
-        foreach (var datom in db.RecentlyAdded)
+        var registry = dbNew.Registry;
+        foreach (var datom in dbNew.RecentlyAdded)
         {
             hashSet.Add(registry.GetAttribute(datom.A));
         }

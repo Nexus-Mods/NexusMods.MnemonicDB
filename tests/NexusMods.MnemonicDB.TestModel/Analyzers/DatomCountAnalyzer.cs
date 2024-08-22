@@ -7,8 +7,8 @@ namespace NexusMods.MnemonicDB.TestModel.Analyzers;
 /// </summary>
 public class DatomCountAnalyzer : IAnalyzer<int>
 {
-    public object Analyze(IDb db)
+    public object Analyze(IDb? dbOld, IDb dbNew)
     {
-        return db.RecentlyAdded.Count;
+        return dbNew.RecentlyAdded.Count;
     }
 }

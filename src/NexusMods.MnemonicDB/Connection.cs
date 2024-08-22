@@ -48,14 +48,14 @@ public class Connection : IConnection
     /// </summary>
     private IObservable<Db> ProcessUpdate(IObservable<IDb> dbStream)
     {
-        TxId? prev = null;
+        IDb? prev = null;
 
         return Observable.Create((IObserver<Db> observer) =>
         {
             return dbStream.Subscribe(nextItem =>
             {
                 
-                if (prev != null && prev.Value >= nextItem.BasisTxId)
+                if (prev != null && prev.BasisTxId >= nextItem.BasisTxId)
                     return;
 
                 var db = (Db)nextItem;
@@ -65,7 +65,7 @@ public class Connection : IConnection
                 {
                     try
                     {
-                        var result = analyzer.Analyze(nextItem);
+                        var result = analyzer.Analyze(prev, nextItem);
                         db.AnalyzerData.Add(analyzer.GetType(), result);
                     }
                     catch (Exception ex)
@@ -75,7 +75,7 @@ public class Connection : IConnection
                 }
                 
                 observer.OnNext((Db)nextItem);
-                prev = nextItem.BasisTxId;
+                prev = nextItem;
             }, observer.OnError, observer.OnCompleted);
         });
     }

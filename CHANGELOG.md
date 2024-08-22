@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.80 - 22/08/2024
+* `IAnalyzer` gets both the new database and the old database as arguments. This allows for looking up the previous state of entities for retractions
+
 ### 0.9.79 - 19/08/2024
 * Fix a bug with `Tuple<T1, T2, T3>` attributes when the first member is a reference type. This caused temporary IDs to not
 be resolved correctly when the temporary ID was resolved

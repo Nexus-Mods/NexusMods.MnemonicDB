@@ -9,7 +9,7 @@ public interface IAnalyzer
     /// <summary>
     /// Analyze the database and produce a result.
     /// </summary>
-    public object Analyze(IDb db);
+    public object Analyze(IDb? dbOld, IDb dbNew);
 }
 
 /// <summary>
