@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -243,8 +244,8 @@ public class ModelAnalyzer
     }
 
     private bool TryGetAttributeTypes(IFieldSymbol fieldSymbol,
-        out INamedTypeSymbol? highLevel,
-        out INamedTypeSymbol? lowLevel,
+        out ITypeSymbol? highLevel,
+        out ITypeSymbol? lowLevel,
         out AttributeFlags flags)
     {
         var type = fieldSymbol.Type;
@@ -267,13 +268,16 @@ public class ModelAnalyzer
 
                 if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _attributeTypeSymbol))
                 {
-                    highLevel = (namedTypeSymbol.TypeArguments[0] as INamedTypeSymbol)!;
+                    Debug.Assert(namedTypeSymbol.TypeArguments.Length == 2);
+
+                    highLevel = namedTypeSymbol.TypeArguments[0];
                     if (SymbolEqualityComparer.Default.Equals(highLevel, _entityIdTypeSymbol))
                         flags |= AttributeFlags.Reference;
 
-                    lowLevel = (namedTypeSymbol.TypeArguments[1] as INamedTypeSymbol)!;
+                    lowLevel = namedTypeSymbol.TypeArguments[1];
                     return true;
                 }
+
                 type = namedTypeSymbol.BaseType;
             }
             else
