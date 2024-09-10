@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.81 - 19/09/2024
+* Fix a bug the source generators when trying to use HashedBlobAttributes
+
 ### 0.9.80 - 22/08/2024
 * `IAnalyzer` gets both the new database and the old database as arguments. This allows for looking up the previous state of entities for retractions
 
