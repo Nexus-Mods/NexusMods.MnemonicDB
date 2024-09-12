@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +12,9 @@ using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.Storage;
+using R3;
+using Observable = System.Reactive.Linq.Observable;
+using ObservableExtensions = R3.ObservableExtensions;
 
 namespace NexusMods.MnemonicDB;
 
@@ -25,7 +27,7 @@ public class Connection : IConnection
     private readonly Dictionary<Symbol, IAttribute> _declaredAttributes;
     private readonly ILogger<Connection> _logger;
 
-    private BehaviorSubject<IDb> _dbStream;
+    private R3.BehaviorSubject<IDb> _dbStream;
     private IDisposable? _dbStreamDisposable;
     private readonly IAnalyzer[] _analyzers;
 
@@ -38,7 +40,7 @@ public class Connection : IConnection
         _logger = logger;
         _declaredAttributes = declaredAttributes.ToDictionary(a => a.Id);
         _store = store;
-        _dbStream = new BehaviorSubject<IDb>(default!);
+        _dbStream = new R3.BehaviorSubject<IDb>(default!);
         _analyzers = analyzers.ToArray();
         Bootstrap();
     }
@@ -46,11 +48,11 @@ public class Connection : IConnection
     /// <summary>
     /// Scrubs the transaction stream so that we only ever move forward and never repeat transactions
     /// </summary>
-    private IObservable<Db> ProcessUpdate(IObservable<IDb> dbStream)
+    private R3.Observable<Db> ProcessUpdate(R3.Observable<IDb> dbStream)
     {
         IDb? prev = null;
 
-        return Observable.Create((IObserver<Db> observer) =>
+        return R3.Observable.Create((Observer<Db> observer) =>
         {
             return dbStream.Subscribe(nextItem =>
             {
@@ -76,7 +78,7 @@ public class Connection : IConnection
                 
                 observer.OnNext((Db)nextItem);
                 prev = nextItem;
-            }, observer.OnError, observer.OnCompleted);
+            }, observer.OnCompleted);
         });
     }
 
@@ -134,7 +136,7 @@ public class Connection : IConnection
         {
             if (_dbStream == default!)
                 ThrowNullDb();
-            return _dbStream!;
+            return ObservableExtensions.AsSystemObservable(_dbStream!);
         }
     }
 
@@ -198,7 +200,7 @@ public class Connection : IConnection
             AddMissingAttributes(_declaredAttributes.Values);
 
             _dbStreamDisposable = ProcessUpdate(_store.TxLog)
-                .Subscribe(_dbStream);
+                .Subscribe(itm => _dbStream.OnNext(itm));
         }
         catch (Exception ex)
         {
