@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reactive.Subjects;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,6 +17,7 @@ using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.Storage.DatomStorageStructures;
+using R3;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Storage;
@@ -158,7 +158,7 @@ public class DatomStore : IDatomStore
     }
     
     /// <inheritdoc />
-    public IObservable<IDb> TxLog
+    public Observable<IDb> TxLog
     {
         get
         {

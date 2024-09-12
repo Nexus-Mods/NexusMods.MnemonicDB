@@ -1,6 +1,10 @@
 ## Changelog
 
-### 0.9.81 - 19/09/2024
+### 0.9.82 - 12/09/2024
+* Fix a O(n) issue caused by Rx storing observers in a ImmutableList inside a `BehaviorSubject`. Switched to using R3 internally. Over 
+time Rx's uses will be replaced with R3 to avoid these and several other issues
+
+### 0.9.81 - 9/09/2024
 * Fix a bug the source generators when trying to use HashedBlobAttributes
 
 ### 0.9.80 - 22/08/2024

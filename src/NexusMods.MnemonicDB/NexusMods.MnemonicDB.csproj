@@ -7,6 +7,7 @@
         <PackageReference Include="DynamicData" Version="8.4.1"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1"/>
         <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.6" />
+        <PackageReference Include="R3" Version="1.2.8" />
         <PackageReference Include="Reloaded.Memory" Version="9.4.1"/>
         <PackageReference Include="RocksDB" Version="8.11.3.46984" />
         <PackageReference Include="System.Reactive" Version="6.0.1" />

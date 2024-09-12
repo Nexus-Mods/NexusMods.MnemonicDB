@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
+using R3;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -17,7 +17,7 @@ public interface IDatomStore : IDisposable
     ///     An observable of the transaction log, for getting the latest changes to the store. This observable
     /// will always start with the most recent value, so there is no reason to use `StartWith` or `Replay` on it.
     /// </summary>
-    public IObservable<IDb> TxLog { get; }
+    public Observable<IDb> TxLog { get; }
 
     /// <summary>
     ///     Gets the latest transaction id found in the log.
