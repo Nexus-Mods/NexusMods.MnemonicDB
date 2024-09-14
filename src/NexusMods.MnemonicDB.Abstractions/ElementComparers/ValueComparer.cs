@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
@@ -10,7 +11,7 @@ namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 /// <summary>
 ///     Compares values and assumes that some previous comparator will guarantee that the values are of the same attribute.
 /// </summary>
-public class ValueComparer : IElementComparer
+public sealed class ValueComparer : IElementComparer
 {
     #region Constants
     private static readonly Encoding Utf8Encoding = Encoding.UTF8;
@@ -29,6 +30,7 @@ public class ValueComparer : IElementComparer
     }
 
     /// <inheritdoc />
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
     {
         var typeA = ((KeyPrefix*)aPtr)->ValueTag;
@@ -76,6 +78,7 @@ public class ValueComparer : IElementComparer
     /// <summary>
     ///     Performs a highly optimized, sort between two value pointers.
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static unsafe int CompareValues(ValueTags typeA, byte* aVal, int aLen, ValueTags typeB, byte* bVal, int bLen)
     {
         if (aLen == 0 || bLen == 0)
@@ -240,32 +243,28 @@ public class ValueComparer : IElementComparer
         throw new InvalidOperationException($"Invalid comparison for type {typeA}"); 
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private static unsafe int CompareBlobInternal(byte* aVal, int aLen, byte* bVal, int bLen)
     {
         return new Span<byte>(aVal, aLen)
             .SequenceCompareTo(new Span<byte>(bVal, bLen));
     }
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private static unsafe int CompareAscii(byte* aVal, int aLen, byte* bVal, int bLen)
     {
         return new Span<byte>(aVal + sizeof(uint), aLen - sizeof(uint))
             .SequenceCompareTo(new Span<byte>(bVal + sizeof(uint), bLen - sizeof(uint)));
     }
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private static unsafe int CompareUtf8(byte* aVal, int aLen, byte* bVal, int bLen)
     {
         return new Span<byte>(aVal + sizeof(uint), aLen - sizeof(uint))
             .SequenceCompareTo(new Span<byte>(bVal + sizeof(uint), bLen - sizeof(uint)));
     }
 
-    private static unsafe int CompareUtf8Insensitive(byte* aVal, int aLen, byte* bVal, int bLen)
-    {
-        var strA = Utf8Encoding.GetString(aVal + sizeof(uint), aLen - sizeof(uint));
-        var strB = Utf8Encoding.GetString(bVal + sizeof(uint), bLen - sizeof(uint));
-
-        return string.Compare(strA, strB, StringComparison.InvariantCultureIgnoreCase);
-    }
-
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private static unsafe int CompareInternal<T>(byte* aVal, byte* bVal)
     where T : unmanaged, IComparable<T>
     {

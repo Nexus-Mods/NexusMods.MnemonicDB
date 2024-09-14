@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using TransparentValueObjects;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -55,7 +56,12 @@ public readonly partial struct PartitionId
     /// <summary>
     /// Encode a partition id and entity id pair
     /// </summary>
-    public EntityId MakeEntityId(ulong id) => EntityId.From(((ulong)Value << 56) | (id & 0x00FFFFFFFFFFFFFF));
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public EntityId MakeEntityId(ulong id)
+    {
+        var e = ((ulong)Value << 56) | (id & 0x00FFFFFFFFFFFFFF);
+        return Unsafe.As<ulong, EntityId>(ref e);
+    }
 
     /// <summary>
     /// Returns true if the given id is in this partition

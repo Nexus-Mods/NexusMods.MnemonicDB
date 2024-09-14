@@ -72,10 +72,14 @@ public readonly record struct KeyPrefix
     /// </summary>
     public EntityId E
     {
-        get => (EntityId)((_lower & 0xFF00000000000000) | ((_lower >> 8) & 0x0000FFFFFFFFFFFF));
+        get
+        {
+            var val = _lower & 0xFF00000000000000 | ((_lower >> 8) & 0x0000FFFFFFFFFFFF);
+            return Unsafe.As<ulong, EntityId>(ref val);
+        }
         init => _lower = (_lower & 0xFF) | ((ulong)value & 0xFF00000000000000) | (((ulong)value & 0x0000FFFFFFFFFFFF) << 8);
     }
-
+    
     /// <summary>
     ///     True if this is a retraction
     /// </summary>
@@ -99,7 +103,11 @@ public readonly record struct KeyPrefix
     /// </summary>
     public AttributeId A
     {
-        get => (AttributeId)(_upper >> 48);
+        get
+        {
+            var val = (ushort)(_upper >> 48);
+            return Unsafe.As<ushort, AttributeId>(ref val);
+        }
         init => _upper = (_upper & 0x0000FFFFFFFFFFFF) | ((ulong)value << 48);
     }
 
@@ -109,7 +117,11 @@ public readonly record struct KeyPrefix
     /// </summary>
     public TxId T
     {
-        get => TxId.From(PartitionId.Transactions.MakeEntityId(_upper & 0x0000FFFFFFFFFFFF).Value);
+        get
+        {
+            var id = PartitionId.Transactions.MakeEntityId(_upper & 0x0000FFFFFFFFFFFF).Value;
+            return Unsafe.As<ulong, TxId>(ref id);
+        }
         init => _upper = (_upper & 0xFFFF000000000000) | ((ulong)value & 0x0000FFFFFFFFFFFF);
     }
 
