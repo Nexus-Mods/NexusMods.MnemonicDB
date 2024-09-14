@@ -50,8 +50,10 @@ public class IndexStore<TComparator>(string handleName, IndexType type) : IRocks
         Roots.Add((_nameDelegate, _destructorDelegate, _comparatorDelegate));
 
         _comparator =
-            Native.Instance.rocksdb_comparator_create(IntPtr.Zero, _destructorDelegate, _comparatorDelegate,
-                _nameDelegate);
+            Native.Instance.rocksdb_comparator_create(IntPtr.Zero, 
+                NativeComparators.GetDestructorPtr(), 
+                NativeComparators.GetNativeFnPtr(type), 
+                NativeComparators.GetNamePtr(type));
         _options.SetComparator(_comparator);
 
         columnFamilies.Add(handleName, _options);

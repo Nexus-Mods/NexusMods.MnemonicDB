@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
@@ -18,6 +19,7 @@ public interface IElementComparer
     /// <summary>
     /// Compares two elements of a datom from the given pointers
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static abstract unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen);
 
     /// <summary>

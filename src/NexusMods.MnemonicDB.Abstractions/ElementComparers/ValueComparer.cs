@@ -99,7 +99,7 @@ public class ValueComparer : IElementComparer
             ValueTags.Float64 => CompareInternal<double>(aVal, bVal),
             ValueTags.Ascii => CompareAscii(aVal, aLen, bVal, bLen),
             ValueTags.Utf8 => CompareUtf8(aVal, aLen, bVal, bLen),
-            ValueTags.Utf8Insensitive => CompareUtf8Insensitive(aVal, aLen, bVal, bLen),
+            ValueTags.Utf8Insensitive => Utf8Comparer.Utf8CaseInsensitiveCompare(aVal, aLen, bVal, bLen),
             ValueTags.Blob => CompareBlobInternal(aVal, aLen, bVal, bLen),
             // HashedBlob is a special case, we compare the hashes not the blobs
             ValueTags.HashedBlob => CompareInternal<ulong>(aVal, bVal),

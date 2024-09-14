@@ -14,8 +14,7 @@ using NexusMods.Paths;
 var host = Host.CreateDefaultBuilder()
     .ConfigureServices(s =>
     {
-        s.AddMnemonicDBStorage()
-            .AddMnemonicDB()
+        s .AddMnemonicDB()
             .AddRocksDbBackend()
             .AddTestModel()
             .AddSingleton<DatomStoreSettings>(_ => new DatomStoreSettings
@@ -34,7 +33,6 @@ var host = Host.CreateDefaultBuilder()
 var services = host.Services;
 
 var connection = services.GetRequiredService<IConnection>();
-await ((IHostedService)connection).StartAsync(CancellationToken.None);
 
 ulong batchSize = 1024;
 ulong datomCount = 1_000_000_000;

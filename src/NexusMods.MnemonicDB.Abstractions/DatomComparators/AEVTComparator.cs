@@ -8,7 +8,7 @@ namespace NexusMods.MnemonicDB.Abstractions.DatomComparators;
 /// The AEVT Comparator.
 /// </summary>
 /// <typeparam name="TRegistry"></typeparam>
-public class AEVTComparator : ADatomComparator<
+public sealed class AEVTComparator : ADatomComparator<
     AComparer,
     EComparer,
     ValueComparer,
