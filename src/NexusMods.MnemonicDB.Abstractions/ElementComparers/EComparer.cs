@@ -8,7 +8,7 @@ namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 /// <summary>
 /// Compares the E part of the key.
 /// </summary>
-public class EComparer : IElementComparer
+public sealed class EComparer : IElementComparer
 {
     /// <inheritdoc />
     public static unsafe int Compare(KeyPrefix* aPrefix, byte* aPtr, int aLen, KeyPrefix* bPrefix, byte* bPtr, int bLen)

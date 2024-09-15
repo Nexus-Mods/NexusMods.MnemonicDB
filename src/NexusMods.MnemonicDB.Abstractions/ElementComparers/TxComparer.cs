@@ -9,7 +9,7 @@ namespace NexusMods.MnemonicDB.Storage.Abstractions.ElementComparers;
 /// <summary>
 /// Compares the Tx part of the key.
 /// </summary>
-public class TxComparer : IElementComparer
+public sealed class TxComparer : IElementComparer
 {
     /// <inheritdoc />
     public static unsafe int Compare(KeyPrefix* aPrefix, byte* aPtr, int aLen, KeyPrefix* bPrefix, byte* bPtr, int bLen)

@@ -7,7 +7,7 @@ namespace NexusMods.MnemonicDB.Abstractions.DatomComparators;
 /// <summary>
 /// The TxLog Comparator.
 /// </summary>
-public class TxLogComparator : ADatomComparator<
+public sealed class TxLogComparator : ADatomComparator<
     TxComparer,
     EComparer,
     AComparer,

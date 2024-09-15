@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -14,6 +15,8 @@ public abstract unsafe class ADatomComparator<TA, TB, TC, TD> : IDatomComparator
     where TC : IElementComparer
     where TD : IElementComparer
 {
+    
+
     /// <inheritdoc />
     public static int Compare(KeyPrefix* aPrefix, byte* aPtr, int aLen, KeyPrefix* bPrefix, byte* bPtr, int bLen)
     {
@@ -30,6 +33,7 @@ public abstract unsafe class ADatomComparator<TA, TB, TC, TD> : IDatomComparator
     }
 
     /// <inheritdoc />
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
     {
         var cmp = TA.Compare(aPtr, aLen, bPtr, bLen);
