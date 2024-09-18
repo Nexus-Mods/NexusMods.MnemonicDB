@@ -595,6 +595,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx3.Delete(loadout.Id, true);
         var result3 = await tx3.Commit();
 
+        await Task.Delay(1000);
         loadoutNames.Count.Should().Be(4, "All revisions should be loaded");
 
         loadoutNames.Should().BeEquivalentTo(["Test Loadout", "Update 1", "Update 2", "DONE"]);
@@ -665,8 +666,9 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         }
 
         var sw = Stopwatch.StartNew();
-        Logger.LogInformation("BEEEEE");
         await tx.Commit();
+
+        await Task.Delay(100);
 
         var allLoadouts = Loadout.All(Connection.Db).Count;
         sw.ElapsedMilliseconds.Should().BeLessThan(5000, "the ObserveDatoms algorithm isn't stupidly slow");
@@ -680,6 +682,8 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         tx2.Add(loadout.E, Loadout.Name, "Test Loadout 10 Updated");
         await tx2.Commit();
+        
+        await Task.Delay(100);
         
         list.Items.First(datom => datom.E == loadout.E).Resolved.ObjectValue.Should().Be("Test Loadout 10 Updated");
         allLoadouts.Should().Be(10000);

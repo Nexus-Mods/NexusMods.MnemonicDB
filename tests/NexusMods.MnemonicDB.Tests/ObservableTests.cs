@@ -21,7 +21,7 @@ public class ObservableTests : AMnemonicDBTest
         list.Should().BeEmpty();
 
         await Add("Loadout 1");
-
+        
         list.Should().ContainSingle(static name => name.Equals("Loadout 1"));
 
         await Add("Loadout 2");
@@ -61,6 +61,7 @@ public class ObservableTests : AMnemonicDBTest
 
         await Delete(stress);
 
+        await Task.Delay(100);
         list.Should().BeEmpty();
     }
 
@@ -78,6 +79,7 @@ public class ObservableTests : AMnemonicDBTest
 
 
         await tx.Commit();
+        await Task.Delay(100);
     }
 
     private async ValueTask Delete(params string[] names)
@@ -94,5 +96,6 @@ public class ObservableTests : AMnemonicDBTest
         }
 
         await tx.Commit();
+        await Task.Delay(100);
     }
 }

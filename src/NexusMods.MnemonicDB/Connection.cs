@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Subjects;
 using System.Threading;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
@@ -28,8 +29,10 @@ public class Connection : IConnection
     private readonly ILogger<Connection> _logger;
 
     private R3.BehaviorSubject<IDb> _dbStream;
+    private Channel<IDb> _dbChannel;
     private IDisposable? _dbStreamDisposable;
     private readonly IAnalyzer[] _analyzers;
+    private Task _queueDisposable = default!;
 
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
@@ -42,6 +45,7 @@ public class Connection : IConnection
         _store = store;
         _dbStream = new R3.BehaviorSubject<IDb>(default!);
         _analyzers = analyzers.ToArray();
+        _dbChannel = Channel.CreateUnbounded<IDb>();
         Bootstrap();
     }
 
@@ -197,10 +201,12 @@ public class Connection : IConnection
     {
         try
         {
+            StartQueue(CancellationToken.None);
             AddMissingAttributes(_declaredAttributes.Values);
 
+            var writer = _dbChannel.Writer;
             _dbStreamDisposable = ProcessUpdate(_store.TxLog)
-                .Subscribe(itm => _dbStream.OnNext(itm));
+                .Subscribe(db => writer.TryWrite(db)); 
         }
         catch (Exception ex)
         {
@@ -208,10 +214,22 @@ public class Connection : IConnection
         }
     }
 
-    /// <inheritdoc />
-    public Task StopAsync(CancellationToken cancellationToken)
+    private void StartQueue(CancellationToken token)
     {
-        _dbStreamDisposable?.Dispose();
-        return Task.CompletedTask;
+        var reader = _dbChannel.Reader;
+        _queueDisposable = Task.Run(async () =>
+        {
+            await foreach (var db in reader.ReadAllAsync(token))
+            {
+                try
+                {
+                    _dbStream.OnNext(db);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to process db update");
+                }
+            }
+        }, token);
     }
 }
