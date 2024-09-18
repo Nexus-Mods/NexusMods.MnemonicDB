@@ -17,7 +17,7 @@ namespace NexusMods.MnemonicDB;
 /// id, this requires merging two indexes together, and then the deduplication of the merged index (retractions
 /// removing assertions).
 /// </summary>
-internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeRegistry registry) : ISnapshot
+internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeCache attributeCache) : ISnapshot
 {
     public IndexSegment Datoms(SliceDescriptor descriptor)
     {
@@ -26,7 +26,7 @@ internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeRegistry re
         var history = inner.Datoms(descriptor with {Index = descriptor.Index.HistoryVariant()});
         var comparatorFn = descriptor.Index.GetComparator();
 
-        using var builder = new IndexSegmentBuilder(registry);
+        using var builder = new IndexSegmentBuilder(attributeCache);
 
         var merged = current.Merge(history,
             (dCurrent, dHistory) => comparatorFn.CompareInstance(dCurrent, dHistory));
@@ -49,7 +49,7 @@ internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeRegistry re
         var history = inner.DatomsChunked(descriptor with {Index = descriptor.Index.HistoryVariant()}, chunkSize).SelectMany(c => c);
         var comparatorFn = descriptor.Index.GetComparator();
 
-        using var builder = new IndexSegmentBuilder(registry);
+        using var builder = new IndexSegmentBuilder(attributeCache);
 
         var merged = current.Merge(history,
             (dCurrent, dHistory) => comparatorFn.CompareInstance(dCurrent, dHistory));
@@ -109,13 +109,13 @@ internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeRegistry re
                 continue;
             }
 
-            yield return new Datom(lastDatom.WrittenMemory, registry);
+            yield return new Datom(lastDatom.WrittenMemory);
             lastDatom.Reset();
             lastDatom.Write(entry);
         }
         if (havePrevious)
         {
-            yield return new Datom(lastDatom.WrittenMemory, registry);
+            yield return new Datom(lastDatom.WrittenMemory);
         }
     }
 

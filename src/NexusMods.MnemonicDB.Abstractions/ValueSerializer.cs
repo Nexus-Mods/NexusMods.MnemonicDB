@@ -143,12 +143,12 @@ public partial class Attribute<TValueType, TLowLevelType>
     }
     
     
-    public virtual TValueType ReadValue(ReadOnlySpan<byte> span, ValueTags tag, RegistryId registryId)
+    public virtual TValueType ReadValue(ReadOnlySpan<byte> span, ValueTags tag, AttributeResolver resolver)
     {
         return LowLevelType switch
         {
             ValueTags.Null => NullFromLowLevel(),
-            ValueTags.UInt8 => FromLowLevel(ReadUnmanaged<byte>(span, out _), tag, registryId),
+            ValueTags.UInt8 => FromLowLevel(ReadUnmanaged<byte>(span, out _), tag, resolver),
             ValueTags.UInt16 => FromLowLevel(ReadUnmanaged<ushort>(span, out _), tag, registryId),
             ValueTags.UInt32 => FromLowLevel(ReadUnmanaged<uint>(span, out _), tag, registryId),
             ValueTags.UInt64 => FromLowLevel(ReadUnmanaged<ulong>(span, out _), tag, registryId),
@@ -241,11 +241,11 @@ public partial class Attribute<TValueType, TLowLevelType>
     /// <summary>
     /// Write a datom for this attribute to the given writer
     /// </summary>
-    public virtual void Write<TWriter>(EntityId entityId, RegistryId registryId, TValueType value, TxId txId, bool isRetract, TWriter writer)
+    public virtual void Write<TWriter>(EntityId entityId, AttributeCache cache, TValueType value, TxId txId, bool isRetract, TWriter writer)
         where TWriter : IBufferWriter<byte>
     {
         Debug.Assert(LowLevelType != ValueTags.Blob, "Blobs should overwrite this method and throw when ToLowLevel is called");
-        var prefix = new KeyPrefix(entityId, GetDbId(registryId), txId, isRetract, LowLevelType);
+        var prefix = new KeyPrefix(entityId, cache.GetAttributeId(Id), txId, isRetract, LowLevelType);
         var span = writer.GetSpan(KeyPrefix.Size);
         MemoryMarshal.Write(span, prefix);
         writer.Advance(KeyPrefix.Size);

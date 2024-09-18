@@ -10,11 +10,11 @@ namespace NexusMods.MnemonicDB.Storage.InMemoryBackend;
 public class Snapshot : ISnapshot
 {
     private readonly ImmutableSortedSet<byte[]>[] _indexes;
-    private readonly AttributeRegistry _registry;
+    private readonly AttributeCache _attributeCache;
 
-    public Snapshot(ImmutableSortedSet<byte[]>[] indexes, AttributeRegistry registry)
+    public Snapshot(ImmutableSortedSet<byte[]>[] indexes, AttributeCache attributeCache)
     {
-        _registry = registry;
+        _attributeCache = attributeCache;
         _indexes = indexes;
     }
 
@@ -54,7 +54,7 @@ public class Snapshot : ISnapshot
             (lowerExact, upperExact) = (upperExact, lowerExact);
         }
 
-        using var segmentBuilder = new IndexSegmentBuilder(_registry);
+        using var segmentBuilder = new IndexSegmentBuilder(_attributeCache);
 
         if (descriptor.IsReverse)
         {
@@ -101,7 +101,7 @@ public class Snapshot : ISnapshot
             reverse = true;
         }
 
-        using var segmentBuilder = new IndexSegmentBuilder(_registry);
+        using var segmentBuilder = new IndexSegmentBuilder(_attributeCache);
         var index = _indexes[(int)descriptor.Index];
 
         if (!reverse)

@@ -14,7 +14,7 @@ public class CardinalityAttribute(string ns, string name) : ScalarAttribute<Card
     }
 
     /// <inheritdoc />
-    protected override Cardinality FromLowLevel(byte value, ValueTags tags, RegistryId registryId)
+    protected override Cardinality FromLowLevel(byte value, ValueTags tags, AttributeResolver resolver)
     {
         return (Cardinality)value;
     }

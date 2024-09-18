@@ -7,7 +7,7 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 /// <summary>
 /// A subview of an IndexSegment that returns a specific value type
 /// </summary>
-public struct Values<TValueType, TLowLevelType>(IndexSegment segment, int start, int end, Attribute<TValueType, TLowLevelType> attribute) :
+public struct Values<TValueType, TLowLevelType>(IndexSegment segment, int start, int end, Attribute<TValueType, TLowLevelType> attribute, AttributeResolver resolver) :
     IEnumerable<TValueType>, IIndexSegment<TValueType>
 {
     /// <summary>
@@ -18,7 +18,7 @@ public struct Values<TValueType, TLowLevelType>(IndexSegment segment, int start,
         get
         {
             var datom = segment[idx + start];
-            return attribute.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, segment.RegistryId);
+            return attribute.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver);
         }
     }
 

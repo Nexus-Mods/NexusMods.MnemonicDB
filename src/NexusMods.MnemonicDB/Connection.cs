@@ -37,6 +37,8 @@ public class Connection : IConnection
     public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAttribute> declaredAttributes, IEnumerable<IAnalyzer> analyzers)
     {
         ServiceProvider = provider;
+        AttributeCache = store.AttributeCache;
+        AttributeResolver = new AttributeResolver();
         _logger = logger;
         _declaredAttributes = declaredAttributes.ToDictionary(a => a.Id);
         _store = store;
@@ -99,7 +101,10 @@ public class Connection : IConnection
     }
 
     /// <inheritdoc />
-    public IAttributeRegistry Registry => _store.Registry;
+    public AttributeResolver AttributeResolver { get; }
+
+    /// <inheritdoc />
+    public AttributeCache AttributeCache { get; }
 
     private static void ThrowNullDb()
     {
@@ -113,7 +118,7 @@ public class Connection : IConnection
     /// <inheritdoc />
     public IDb AsOf(TxId txId)
     {
-        var snapshot = new AsOfSnapshot(_store.GetSnapshot(), txId, (AttributeRegistry)_store.Registry);
+        var snapshot = new AsOfSnapshot(_store.GetSnapshot(), txId, );
         return new Db(snapshot, txId, (AttributeRegistry)_store.Registry)
         {
             Connection = this
@@ -123,7 +128,7 @@ public class Connection : IConnection
     /// <inheritdoc />
     public ITransaction BeginTransaction()
     {
-        return new Transaction(this, _store.Registry);
+        return new Transaction(this);
     }
 
     /// <inheritdoc />

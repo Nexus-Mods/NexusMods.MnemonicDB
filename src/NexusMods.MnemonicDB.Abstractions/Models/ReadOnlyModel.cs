@@ -35,9 +35,10 @@ public readonly struct ReadOnlyModel : IHasIdAndIndexSegment, IEnumerable<IReadD
     public IEnumerator<IReadDatom> GetEnumerator()
     {
         var segment = IndexSegment;
+        var resolver = Db.Connection.AttributeResolver;
         for (var i = 0; i < segment.Count; i++)
         {
-            yield return segment[i].Resolved;
+            yield return resolver.Resolve(segment[i]);
         }
     }
 

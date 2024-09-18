@@ -8,7 +8,7 @@ using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-internal class Snapshot(Backend backend, AttributeRegistry registry) : ISnapshot
+internal class Snapshot(Backend backend, AttributeCache registry) : ISnapshot
 {
     private readonly RocksDbSharp.Snapshot _snapshot = backend.Db!.CreateSnapshot();
 

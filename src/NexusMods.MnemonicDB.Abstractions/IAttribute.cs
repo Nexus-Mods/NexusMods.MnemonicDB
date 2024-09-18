@@ -69,7 +69,7 @@ public interface IAttribute
     /// <summary>
     ///     Converts the given values into a typed datom
     /// </summary>
-    IReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, RegistryId registryId);
+    IReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, AttributeResolver resolver);
     
     /// <summary>
     /// Adds the value to the transaction on the given entity/attribute, assumes the value is of the correct type

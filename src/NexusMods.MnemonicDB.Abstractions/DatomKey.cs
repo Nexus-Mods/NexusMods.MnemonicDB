@@ -12,16 +12,16 @@ namespace NexusMods.MnemonicDB.Abstractions;
 public readonly struct DatomKey : IEqualityComparer<DatomKey>
 {
     private readonly EntityId _eid;
-    private readonly IAttribute _attribute;
+    private readonly AttributeId _attributeId;
     private readonly ReadOnlyMemory<byte> _valueMemory;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DatomKey"/> struct.
     /// </summary>
-    public DatomKey(EntityId eid, IAttribute attribute, ReadOnlyMemory<byte> valueMemory)
+    public DatomKey(EntityId eid, AttributeId attributeId, ReadOnlyMemory<byte> valueMemory)
     {
         _eid = eid;
-        _attribute = attribute;
+        _attributeId = attributeId;
         _valueMemory = valueMemory;
     }
     
@@ -33,7 +33,7 @@ public readonly struct DatomKey : IEqualityComparer<DatomKey>
     /// <summary>
     /// The attribute of the datom.
     /// </summary>
-    public IAttribute A => _attribute;
+    public AttributeId A => _attributeId;
     
     /// <inheritdoc />
     public bool Equals(DatomKey x, DatomKey y)
@@ -41,7 +41,7 @@ public readonly struct DatomKey : IEqualityComparer<DatomKey>
         if (x._eid != y._eid)
             return false;
 
-        if (x._attribute != y._attribute)
+        if (x._attributeId != y._attributeId)
             return false;
 
         if (x._valueMemory.IsEmpty && y._valueMemory.IsEmpty)
@@ -55,7 +55,7 @@ public readonly struct DatomKey : IEqualityComparer<DatomKey>
     {
         var hash = new HashCode();
         hash.Add(obj._eid);
-        hash.Add(obj._attribute);
+        hash.Add(obj._attributeId);
         hash.AddBytes(obj._valueMemory.Span);
         return hash.ToHashCode();
     }
@@ -63,8 +63,8 @@ public readonly struct DatomKey : IEqualityComparer<DatomKey>
     public override string ToString()
     {
         if (_valueMemory.IsEmpty)
-            return $"({_eid}, {_attribute})";
-        return $"({_eid}, {_attribute}, {ToHexString(_valueMemory)})";
+            return $"({_eid}, {_attributeId})";
+        return $"({_eid}, {_attributeId}, {ToHexString(_valueMemory)})";
     }
     
     private static string ToHexString(ReadOnlyMemory<byte> memory)

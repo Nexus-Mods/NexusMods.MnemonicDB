@@ -13,14 +13,12 @@ public readonly struct Datom
 {
     private readonly KeyPrefix _prefix;
     private readonly ReadOnlyMemory<byte> _valueBlob;
-    private readonly IAttributeRegistry _registry;
 
     /// <summary>
     /// Create a new datom from the given prefix and value
     /// </summary>
-    public Datom(in KeyPrefix prefix, ReadOnlyMemory<byte> value, IAttributeRegistry registry)
+    public Datom(in KeyPrefix prefix, ReadOnlyMemory<byte> value)
     {
-        _registry = registry;
         _prefix = prefix;
         _valueBlob = value;
     }
@@ -28,9 +26,8 @@ public readonly struct Datom
     /// <summary>
     /// Create a new datom from the given datom memory span and registry
     /// </summary>
-    public Datom(ReadOnlyMemory<byte> datom, IAttributeRegistry registry)
+    public Datom(ReadOnlyMemory<byte> datom)
     {
-        _registry = registry;
         _prefix = KeyPrefix.Read(datom.Span);
         _valueBlob = datom[KeyPrefix.Size..];
     }
@@ -62,11 +59,6 @@ public readonly struct Datom
     public ReadOnlyMemory<byte> ValueMemory => _valueBlob;
     
     /// <summary>
-    /// Resolves this datom into the IReadDatom form
-    /// </summary>
-    public IReadDatom Resolved => _registry.Resolve(_prefix, _valueBlob.Span);
-    
-    /// <summary>
     /// EntityId of the datom
     /// </summary>
     public EntityId E => Prefix.E;
@@ -91,7 +83,7 @@ public readonly struct Datom
     /// </summary>
     public Datom Clone()
     {
-        return new Datom(_prefix, _valueBlob.ToArray(), _registry);
+        return new Datom(_prefix, _valueBlob.ToArray());
     }
 
     /// <summary>
@@ -102,7 +94,7 @@ public readonly struct Datom
     /// <inheritdoc />
     public override string ToString()
     {
-        return Resolved.ToString()!;
+        throw new NotImplementedException();
     }
 
     /// <summary>
@@ -111,25 +103,20 @@ public readonly struct Datom
     /// </summary>
     public int Compare(Datom other, IndexType indexType)
     {
-        switch (indexType)
+        return indexType switch
         {
-            case IndexType.TxLog:
-                return DatomComparators.TxLogComparator.Compare(this, other);
-            case IndexType.EAVTCurrent:
-            case IndexType.EAVTHistory:
-                return DatomComparators.EAVTComparator.Compare(this, other);
-            case IndexType.AEVTCurrent:
-            case IndexType.AEVTHistory:
-                return DatomComparators.AEVTComparator.Compare(this, other);
-            case IndexType.AVETCurrent:
-            case IndexType.AVETHistory:
-                return DatomComparators.AVETComparator.Compare(this, other);
-            case IndexType.VAETCurrent:
-            case IndexType.VAETHistory:
-                return DatomComparators.VAETComparator.Compare(this, other);
-            default:
-                throw new ArgumentOutOfRangeException(nameof(indexType), indexType, "Unknown index type");
-        }
+            IndexType.TxLog => DatomComparators.TxLogComparator.Compare(this, other),
+            IndexType.EAVTCurrent or IndexType.EAVTHistory => DatomComparators.EAVTComparator.Compare(this, other),
+            IndexType.AEVTCurrent or IndexType.AEVTHistory => DatomComparators.AEVTComparator.Compare(this, other),
+            IndexType.AVETCurrent or IndexType.AVETHistory => DatomComparators.AVETComparator.Compare(this, other),
+            IndexType.VAETCurrent or IndexType.VAETHistory => DatomComparators.VAETComparator.Compare(this, other),
+            _ => ThrowArgumentOutOfRange(indexType)
+        };
+    }
+    
+    private static int ThrowArgumentOutOfRange(IndexType indexType)
+    {
+        throw new ArgumentOutOfRangeException(nameof(indexType), indexType, "Unknown index type");
     }
 
     /// <summary>
@@ -138,6 +125,6 @@ public readonly struct Datom
     /// <returns></returns>
     public Datom Retract()
     {
-        return new Datom(_prefix with {IsRetract = true, T = TxId.Tmp}, _valueBlob, _registry);
+        return new Datom(_prefix with {IsRetract = true, T = TxId.Tmp}, _valueBlob);
     }
 }

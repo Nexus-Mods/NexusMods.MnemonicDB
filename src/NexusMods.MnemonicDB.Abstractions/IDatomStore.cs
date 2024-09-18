@@ -27,7 +27,7 @@ public interface IDatomStore : IDisposable
     /// <summary>
     /// The Attribute Registry for this store
     /// </summary>
-    IAttributeRegistry Registry { get; }
+    AttributeCache Registry { get; }
 
     /// <summary>
     ///     Transacts (adds) the given datoms into the store.

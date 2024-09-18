@@ -14,16 +14,14 @@ public readonly struct IndexSegmentBuilder : IDisposable
 {
     private readonly List<int> _offsets;
     private readonly PooledMemoryBufferWriter _data;
-    private readonly RegistryId _registryId;
-    private readonly IAttributeRegistry _registry;
+    private readonly AttributeCache _attributeCache;
 
     /// <summary>
     /// Create a new index segment builder
     /// </summary>
-    public IndexSegmentBuilder(IAttributeRegistry registry, int capacity = 1024)
+    public IndexSegmentBuilder(AttributeCache attributeCache, int capacity = 1024)
     {
-        _registry = registry;
-        _registryId = registry.Id;
+        _attributeCache = attributeCache;
         _offsets = new List<int>();
         _data = new PooledMemoryBufferWriter(capacity);
     }
@@ -72,7 +70,7 @@ public readonly struct IndexSegmentBuilder : IDisposable
     public void Add<TValue, TLowLevelType>(EntityId entityId, Attribute<TValue, TLowLevelType> attribute, TValue value, TxId txId, bool isRetract)
     {
         _offsets.Add(_data.Length);
-        attribute.Write(entityId, _registryId, value, txId, isRetract, _data);
+        attribute.Write(entityId, _attributeCache, value, txId, isRetract, _data);
     }
 
     /// <summary>
@@ -81,7 +79,7 @@ public readonly struct IndexSegmentBuilder : IDisposable
     public void Add<TValue, TLowLevelType>(EntityId entityId, Attribute<TValue, TLowLevelType> attribute, TValue value)
     {
         _offsets.Add(_data.Length);
-        attribute.Write(entityId, _registryId, value, TxId.Tmp, false, _data);
+        attribute.Write(entityId, _attributeCache, value, TxId.Tmp, false, _data);
     }
 
     /// <summary>
@@ -90,7 +88,7 @@ public readonly struct IndexSegmentBuilder : IDisposable
     public void Add<TValue, TLowLevelType>(EntityId entityId, Attribute<TValue, TLowLevelType> attribute, TValue value, bool isRetract)
     {
         _offsets.Add(_data.Length);
-        attribute.Write(entityId, _registryId, value, TxId.Tmp, isRetract, _data);
+        attribute.Write(entityId, _attributeCache, value, TxId.Tmp, isRetract, _data);
     }
 
     /// <summary>
@@ -109,7 +107,7 @@ public readonly struct IndexSegmentBuilder : IDisposable
     public IndexSegment Build()
     {
         _offsets.Add(_data.Length);
-        return new IndexSegment(_data.GetWrittenSpan(), _offsets.ToArray(), _registry);
+        return new IndexSegment(_data.GetWrittenSpan(), _offsets.ToArray(), _attributeCache);
     }
 
     /// <inheritdoc />

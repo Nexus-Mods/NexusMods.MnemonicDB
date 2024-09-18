@@ -16,7 +16,6 @@ namespace NexusMods.MnemonicDB;
 
 internal class Db : IDb
 {
-    private readonly AttributeRegistry _registry;
     private readonly IndexSegmentCache _cache;
     private readonly RegistryId _registryId;
     
@@ -27,26 +26,25 @@ internal class Db : IDb
     /// </summary>
     private IConnection? _connection;
     public ISnapshot Snapshot { get; }
-    public IAttributeRegistry Registry => _registry;
+    public AttributeCache AttributeCache { get; }
 
     public IndexSegment RecentlyAdded { get; }
     
     internal Dictionary<Type, object> AnalyzerData { get; } = new();
 
-    public Db(ISnapshot snapshot, TxId txId, AttributeRegistry registry)
+    public Db(ISnapshot snapshot, TxId txId, AttributeCache attributeCache)
     {
         Debug.Assert(snapshot != null, $"{nameof(snapshot)} cannot be null");
-        _registryId = registry.Id;
-        _registry = registry;
+        AttributeCache = attributeCache;
         _cache = new IndexSegmentCache();
         Snapshot = snapshot;
         BasisTxId = txId;
-        RecentlyAdded = snapshot.Datoms(SliceDescriptor.Create(txId, registry));
+        RecentlyAdded = snapshot.Datoms(SliceDescriptor.Create(txId));
     }
 
-    private Db(ISnapshot snapshot, TxId txId, AttributeRegistry registry, RegistryId registryId, IConnection connection, IndexSegmentCache newCache, IndexSegment recentlyAdded)
+    private Db(ISnapshot snapshot, TxId txId, AttributeCache attributeCache, RegistryId registryId, IConnection connection, IndexSegmentCache newCache, IndexSegment recentlyAdded)
     {
-        _registry = registry;
+        AttributeCache = attributeCache;
         _registryId = registryId;
         _cache = newCache;
         _connection = connection;
@@ -61,8 +59,8 @@ internal class Db : IDb
     /// </summary>
     internal Db WithNext(StoreResult storeResult, TxId txId)
     {
-        var newCache = _cache.ForkAndEvict(storeResult, _registry, out var newDatoms);
-        return new Db(storeResult.Snapshot, txId, _registry, _registryId, _connection!, newCache, newDatoms);
+        var newCache = _cache.ForkAndEvict(storeResult, AttributeCache, out var newDatoms);
+        return new Db(storeResult.Snapshot, txId, AttributeCache, _registryId, _connection!, newCache, newDatoms);
     }
 
     private IndexSegment EntityDatoms(IDb db, EntityId id)
@@ -72,7 +70,7 @@ internal class Db : IDb
 
     private static IndexSegment ReverseDatoms(IDb db, (EntityId, AttributeId) key)
     {
-        return db.Snapshot.Datoms(SliceDescriptor.Create(key.Item2, key.Item1, db.Registry));
+        return db.Snapshot.Datoms(SliceDescriptor.Create(key.Item2, key.Item1));
     }
 
     public TxId BasisTxId { get; }
@@ -119,12 +117,12 @@ internal class Db : IDb
 
     public IndexSegment Datoms<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value)
     {
-        return Datoms(SliceDescriptor.Create(attribute, value, _registry));
+        return Datoms(SliceDescriptor.Create(attribute, value, AttributeCache));
     }
     
     public IndexSegment Datoms(ReferenceAttribute attribute, EntityId value)
     {
-        return Datoms(SliceDescriptor.Create(attribute, value, _registry));
+        return Datoms(SliceDescriptor.Create(attribute, value, AttributeCache));
     }
 
     public IndexSegment Datoms(EntityId entityId)
@@ -134,7 +132,7 @@ internal class Db : IDb
     
     public IndexSegment Datoms(IAttribute attribute)
     {
-        return Snapshot.Datoms(SliceDescriptor.Create(attribute, _registry));
+        return Snapshot.Datoms(SliceDescriptor.Create(attribute, AttributeCache));
     }
 
     public IndexSegment Datoms(SliceDescriptor sliceDescriptor)
@@ -144,7 +142,7 @@ internal class Db : IDb
 
     public IndexSegment Datoms(TxId txId)
     {
-        return Snapshot.Datoms(SliceDescriptor.Create(txId, _registry));
+        return Snapshot.Datoms(SliceDescriptor.Create(txId));
     }
 
     public bool Equals(IDb? other)

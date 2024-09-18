@@ -51,7 +51,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(byte value, ValueTags tags, RegistryId registryId)
+    protected virtual TValueType FromLowLevel(byte value, ValueTags tags, AttributeResolver resolver)
     {
         throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
@@ -59,7 +59,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(ushort value, ValueTags tags, RegistryId registryId)
+    protected virtual TValueType FromLowLevel(ushort value, ValueTags tags, AttributeResolver resolver)
     {
         throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
@@ -67,7 +67,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(uint value, ValueTags tags, RegistryId registryId)
+    protected virtual TValueType FromLowLevel(uint value, ValueTags tags, AttributeResolver resolver)
     {
         throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
@@ -76,7 +76,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(string value, ValueTags tag, RegistryId registryId)
+    protected virtual TValueType FromLowLevel(string value, ValueTags tag, AttributeResolver resolver)
     {
         throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
@@ -84,7 +84,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(ReadOnlySpan<byte> value, ValueTags tag, RegistryId registryId)
+    protected virtual TValueType FromLowLevel(ReadOnlySpan<byte> value, ValueTags tag, AttributeResolver resolver)
     {
         throw new NotSupportedException("Unsupported low-level type " + tag + " on attribute " + Id);
     }
@@ -93,7 +93,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(ulong value, ValueTags tags, RegistryId registryId)
+    protected virtual TValueType FromLowLevel(ulong value, ValueTags tags, AttributeResolver resolver)
     {
         throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
@@ -102,7 +102,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(UInt128 value, ValueTags tags, RegistryId registryId)
+    protected virtual TValueType FromLowLevel(UInt128 value, ValueTags tags, AttributeResolver resolver)
     {
         throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
@@ -110,7 +110,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(short value, ValueTags tags, RegistryId registryId)
+    protected virtual TValueType FromLowLevel(short value, ValueTags tags, AttributeResolver resolver)
     {
         throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
@@ -118,7 +118,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(int value, ValueTags tags, RegistryId registryId)
+    protected virtual TValueType FromLowLevel(int value, ValueTags tags, AttributeResolver resolver)
     {
         throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
@@ -126,7 +126,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(long value, ValueTags tags, RegistryId registryId)
+    protected virtual TValueType FromLowLevel(long value, ValueTags tags, AttributeResolver resolver)
     {
         throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
@@ -134,7 +134,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(Int128 value, ValueTags tags, RegistryId registryId)
+    protected virtual TValueType FromLowLevel(Int128 value, ValueTags tags, AttributeResolver resolver)
     {
         throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
@@ -142,7 +142,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(float value, ValueTags tags, RegistryId registryId)
+    protected virtual TValueType FromLowLevel(float value, ValueTags tags, AttributeResolver resolver)
     {
         throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
@@ -150,7 +150,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// <summary>
     /// Converts a low-level value to a high-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(double value, ValueTags tags, RegistryId registryId)
+    protected virtual TValueType FromLowLevel(double value, ValueTags tags, AttributeResolver resolver)
     {
         throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
     }
@@ -195,26 +195,26 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     public bool IsReference => LowLevelType == ValueTags.Reference;
 
     /// <inheritdoc />
-    IReadDatom IAttribute.Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, RegistryId registryId)
+    IReadDatom IAttribute.Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, AttributeResolver resolver)
     {
-        return new ReadDatom(in prefix, ReadValue(valueSpan, prefix.ValueTag, registryId), this);
+        return new ReadDatom(in prefix, ReadValue(valueSpan, prefix.ValueTag, resolver), this);
     }
     
     /// <summary>
     /// Resolves the value from the given value span into a high-level ReadDatom
     /// </summary>
-    public ReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, RegistryId registryId)
+    public ReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, AttributeResolver resolver)
     {
-        return new ReadDatom(in prefix, ReadValue(valueSpan, prefix.ValueTag, registryId), this);
+        return new ReadDatom(in prefix, ReadValue(valueSpan, prefix.ValueTag, resolver), this);
     }
 
     /// <summary>
     /// Resolves the low-level Datom into a high-level ReadDatom
     /// </summary>
-    public ReadDatom Resolve(in Datom datom, RegistryId id)
+    public ReadDatom Resolve(in Datom datom, AttributeResolver resolver)
     {
         var prefix = datom.Prefix;
-        return new ReadDatom(in prefix, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, id), this);
+        return new ReadDatom(in prefix, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver), this);
     }
 
     /// <summary>

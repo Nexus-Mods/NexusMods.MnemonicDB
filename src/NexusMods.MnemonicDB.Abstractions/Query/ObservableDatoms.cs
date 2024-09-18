@@ -53,7 +53,7 @@ public static class ObservableDatoms
 
             if (idx == 0)
                 return Setup(rev, descriptor);
-            return Diff(conn.Registry, rev.RecentlyAdded, descriptor);
+            return Diff(conn.AttributeCache, rev.RecentlyAdded, descriptor);
         });
     }
 
@@ -62,7 +62,7 @@ public static class ObservableDatoms
     /// </summary>
     public static IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(this IConnection conn, EntityId id)
     {
-        return conn.ObserveDatoms(SliceDescriptor.Create(id, conn.Registry));
+        return conn.ObserveDatoms(SliceDescriptor.Create(id));
     }
 
     /// <summary>
@@ -70,8 +70,8 @@ public static class ObservableDatoms
     /// </summary>
     public static IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(this IConnection conn, EntityId id, IAttribute attribute)
     {
-
-        return conn.Revisions.DelayUntilFirstValue(() => conn.ObserveDatoms(SliceDescriptor.Create(id, attribute.GetDbId(conn.Registry.Id), conn.Registry)));
+        var aid = conn.AttributeCache.GetAttributeId(attribute.Id);
+        return conn.Revisions.DelayUntilFirstValue(() => conn.ObserveDatoms(SliceDescriptor.Create(id, aid)));
     }
 
     /// <summary>
@@ -79,7 +79,7 @@ public static class ObservableDatoms
     /// </summary>
     public static IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(this IConnection conn, ReferenceAttribute attribute, EntityId id)
     {
-        return conn.Revisions.DelayUntilFirstValue(() => conn.ObserveDatoms(SliceDescriptor.Create(attribute, id, conn.Registry)));
+        return conn.Revisions.DelayUntilFirstValue(() => conn.ObserveDatoms(SliceDescriptor.Create(attribute, id, conn.AttributeCache)));
     }
 
     /// <summary>
@@ -87,7 +87,7 @@ public static class ObservableDatoms
     /// </summary>
     public static IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(this IConnection conn, IAttribute attribute)
     {
-        return conn.Revisions.DelayUntilFirstValue(() => conn.ObserveDatoms(SliceDescriptor.Create(attribute, conn.Registry)));
+        return conn.Revisions.DelayUntilFirstValue(() => conn.ObserveDatoms(SliceDescriptor.Create(attribute, conn.AttributeCache)));
     }
     
     /// <summary>
@@ -109,24 +109,23 @@ public static class ObservableDatoms
         });
     }
 
-    private static IChangeSet<Datom, DatomKey> Diff(IAttributeRegistry registry, IndexSegment updates, SliceDescriptor descriptor)
+    private static IChangeSet<Datom, DatomKey> Diff(AttributeCache cache, IndexSegment updates, SliceDescriptor descriptor)
     {
         var changes = new ChangeSet<Datom, DatomKey>();
         
         AttributeId previousAid = default;
-        IAttribute attr = default!;
-        bool isMany = false;
+
         
         for (int i = 0; i < updates.Count; i++) 
         {
             var datom = updates[i];
             if (!descriptor.Includes(datom))
                 continue;
-            UpdateAttrCache(registry, datom.A, ref previousAid, ref attr, ref isMany);
+            var isMany = cache.IsCardinalityMany(datom.A);
+            var attr = datom.A;
             if (datom.IsRetract)
             {
-
-
+                
                 // If the attribute is cardinality many, we can just remove the datom
                 if (isMany)
                 {
@@ -166,17 +165,13 @@ public static class ObservableDatoms
     private static ChangeSet<Datom, DatomKey> Setup(IDb db, SliceDescriptor descriptor)
     {
         var datoms = db.Datoms(descriptor);
-        var registry = db.Registry;
+        var cache = db.AttributeCache;
         var changes = new ChangeSet<Datom, DatomKey>();
-        
-        AttributeId previousAid = default;
-        IAttribute attr = default!;
-        bool isMany = false;
         
         foreach (var datom in datoms)
         {
-            UpdateAttrCache(registry, datom.A, ref previousAid, ref attr, ref isMany);
-            changes.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, attr, isMany), datom));
+            var isMany = cache.IsCardinalityMany(datom.A);
+            changes.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, datom.A, isMany), datom));
         }
 
         if (changes.Count == 0)
@@ -185,9 +180,9 @@ public static class ObservableDatoms
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static DatomKey CreateKey(Datom datom, IAttribute attribute, bool isMany = false)
+    private static DatomKey CreateKey(Datom datom, AttributeId attrId, bool isMany = false)
     {
-        return new DatomKey(datom.E, attribute, isMany ? datom.ValueMemory : Memory<byte>.Empty);
+        return new DatomKey(datom.E, attrId, isMany ? datom.ValueMemory : Memory<byte>.Empty);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
