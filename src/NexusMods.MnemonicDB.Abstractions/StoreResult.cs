@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Collections.Generic;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -15,7 +16,7 @@ public class StoreResult
     /// <summary>
     /// The remaps that were created during the transaction.
     /// </summary>
-    public required Dictionary<EntityId, EntityId> Remaps { get; init; }
+    public required FrozenDictionary<EntityId, EntityId> Remaps { get; init; }
 
     /// <summary>
     /// The snapshot of the store after the transaction.

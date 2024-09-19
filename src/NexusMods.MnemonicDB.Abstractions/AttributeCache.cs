@@ -15,7 +15,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 public sealed class AttributeCache
 {
     private Dictionary<Symbol, AttributeId> _attributeIdsBySymbol = new();
-    private readonly BitArray _isCardinalityMany;
+    private BitArray _isCardinalityMany;
     private BitArray _isReference;
     private BitArray _isIndexed;
     private Symbol[] _symbols;
@@ -90,6 +90,15 @@ public sealed class AttributeCache
             }
         }
         _isNoHistory = newIsNoHistory;
+
+        var isCardinalityMany = db.Datoms(AttributeDefinition.Cardinality);
+        var newIsCardinalityMany = new BitArray(maxIndex);
+        foreach (var datom in isCardinalityMany)
+        {
+            var id = datom.E.Value;
+            newIsCardinalityMany[(int)id] = AttributeDefinition.Cardinality.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, null!) == Cardinality.Many;
+        }
+        _isCardinalityMany = newIsCardinalityMany;
 
     }
 

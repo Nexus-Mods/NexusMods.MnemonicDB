@@ -178,16 +178,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     {
         Cache[id.Value] = attributeId;
     }
-
-    /// <inheritdoc />
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public AttributeId GetDbId(RegistryId id)
-    {
-        var aid = Cache[id.Value];
-        Debug.Assert(aid.Value != 0, $"Attribute ID is 0 for {Id}, was it registered?");
-        return aid;
-    }
-
+    
     /// <inheritdoc />
     public Type ValueType => typeof(TValueType);
 

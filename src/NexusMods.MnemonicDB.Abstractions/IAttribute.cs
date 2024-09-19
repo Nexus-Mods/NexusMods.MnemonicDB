@@ -33,12 +33,7 @@ public interface IAttribute
     ///     in the datastore
     /// </summary>
     public Symbol Id { get; }
-
-    /// <summary>
-    /// Gets the unique id of the attribute for the given registry
-    /// </summary>
-    public AttributeId GetDbId(RegistryId id);
-
+    
     /// <summary>
     /// Sets the unique id of the attribute for the given registry
     /// </summary>

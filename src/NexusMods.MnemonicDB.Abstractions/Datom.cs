@@ -94,7 +94,23 @@ public readonly struct Datom
     /// <inheritdoc />
     public override string ToString()
     {
-        throw new NotImplementedException();
+        return $"[E: {E}, A: {A}, T: {T}, IsRetract: {IsRetract}, Value: {ValueSpan.Length}]";
+    }
+
+    /// <summary>
+    /// Returns the resolved version of this datom
+    /// </summary>
+    public IReadDatom Resolved(AttributeResolver resolver)
+    {
+        return resolver.Resolve(this);
+    }
+    
+    /// <summary>
+    /// Returns the resolved version of this datom
+    /// </summary>
+    public IReadDatom Resolved(IConnection conn)
+    {
+        return conn.AttributeResolver.Resolve(this);
     }
 
     /// <summary>

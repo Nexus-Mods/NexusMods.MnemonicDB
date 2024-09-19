@@ -86,7 +86,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         foreach (var txId in txEs)
         {
             var db = Connection.AsOf(txId);
-            var resolved = db.Datoms(modId).Resolved();
+            var resolved = db.Datoms(modId).Resolved(Connection);
             await VerifyTable(resolved).UseTextForParameters("mod data_" + txId.Value);
         }
     }
@@ -213,7 +213,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         {
             // Only Txes we care about
             if (update.RecentlyAdded.Any(d => d.E == realId))
-                updates.Add(update.RecentlyAdded.Select(d => d.Resolved).ToArray());
+                updates.Add(update.RecentlyAdded.Resolved(Connection).ToArray());
         });
 
         for (var idx = 0; idx < 4; idx++)
@@ -621,14 +621,19 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         List<string[]> changes = new();
 
         // Define the slice to observe
-        var slice = SliceDescriptor.Create(Mod.Name, Connection.Db.Registry);
+        var slice = SliceDescriptor.Create(Mod.Name, AttributeCache);
 
+        var resolver = Connection.AttributeResolver;
         // Setup the subscription
         using var _ = Connection.ObserveDatoms(slice)
             // Snapshot the values each time
-            .QueryWhenChanged(datoms => datoms.Items.Select(d => d.Resolved.ObjectValue.ToString()!).ToArray())
+            .QueryWhenChanged(datoms => datoms.Items.Select(d => resolver.Resolve(d)).ToArray())
             // Add the changes to the list
-            .Subscribe(x => changes.Add(x.Order().ToArray()));
+            .Subscribe(x =>
+            {
+                var data = x.Select(o => o.ObjectValue.ToString()!).Order().ToArray();
+                changes.Add(data);
+            });
 
         // Rename a mod
         using var tx = Connection.BeginTransaction();
@@ -681,7 +686,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx2.Add(loadout.E, Loadout.Name, "Test Loadout 10 Updated");
         await tx2.Commit();
         
-        list.Items.First(datom => datom.E == loadout.E).Resolved.ObjectValue.Should().Be("Test Loadout 10 Updated");
+        list.Items.First(datom => datom.E == loadout.E).Resolved(Connection.AttributeResolver).ObjectValue.Should().Be("Test Loadout 10 Updated");
         allLoadouts.Should().Be(10000);
     }
 
@@ -836,7 +841,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         List<IChangeSet<Datom, DatomKey>> changes = new();
 
         // Define the slice to observe
-        var slice = SliceDescriptor.Create(Mod.Name, Connection.Db.Registry);
+        var slice = SliceDescriptor.Create(Mod.Name, AttributeCache);
 
         // Setup the subscription
         using var _ = Connection.ObserveDatoms(slice)
@@ -899,7 +904,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         // If the above is working correctly we'll only have one entityId for the client, if it's wrong, the
         // one of the parents may have a different entityId
-        await VerifyTable(result.Db.Datoms(result.NewTx).Resolved());
+        await VerifyTable(result.Db.Datoms(result.NewTx).Resolved(Connection));
     }
     
     [Fact]
@@ -933,7 +938,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         // If the above is working correctly we'll only have one entityId for the client, if it's wrong, the
         // one of the parents may have a different entityId
-        await VerifyTable(result.Db.Datoms(result.NewTx).Resolved());
+        await VerifyTable(result.Db.Datoms(result.NewTx).Resolved(Connection));
     }
 
 
@@ -983,8 +988,8 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         var result = await tx.Commit();
 
-        var avet = Connection.Db.Datoms(SliceDescriptor.Create(File.TuplePath, (EntityId.From(0), ""), (EntityId.MaxValueNoPartition, ""), Connection.Db.Registry));
-        await VerifyTable(avet.Resolved());
+        var avet = Connection.Db.Datoms(SliceDescriptor.Create(File.TuplePath, (EntityId.From(0), ""), (EntityId.MaxValueNoPartition, ""), AttributeCache));
+        await VerifyTable(avet.Resolved(Connection));
     }
     
     [Fact]
@@ -1002,7 +1007,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var results = await tx.Commit();
         
-        await VerifyTable(results.Db.Datoms(File.TupleTest).Resolved());
+        await VerifyTable(results.Db.Datoms(File.TupleTest).Resolved(Connection));
     }
 
     [Fact]
@@ -1029,7 +1034,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var countData = Connection.Db.AnalyzerData<DatomCountAnalyzer, int>();
         countData.Should().Be(result.Db.RecentlyAdded.Count);
         
-        var attrs = Connection.Db.AnalyzerData<AttributesAnalyzer, HashSet<IAttribute>>();
+        var attrs = Connection.Db.AnalyzerData<AttributesAnalyzer, HashSet<Symbol>>();
         attrs.Should().NotBeEmpty();
     }
 

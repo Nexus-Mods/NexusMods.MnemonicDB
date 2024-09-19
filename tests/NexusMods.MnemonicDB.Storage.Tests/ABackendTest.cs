@@ -153,7 +153,7 @@ public abstract class ABackendTest<TStoreType>(
 
         {
 
-            using var segment = new IndexSegmentBuilder();
+            using var segment = new IndexSegmentBuilder(AttributeCache);
 
             segment.Add(id1, File.Path, "/foo/bar");
             segment.Add(id1, File.Hash, Hash.From(0xDEADBEEF));
@@ -184,7 +184,7 @@ public abstract class ABackendTest<TStoreType>(
         collectionId = tx.Remaps[collectionId];
 
         {
-            using var segment = new IndexSegmentBuilder();
+            using var segment = new IndexSegmentBuilder(AttributeCache);
             segment.Add(id2, File.Path, "/foo/qux");
             segment.Add(id1, File.ModId, modId2);
             segment.Add(collectionId, Collection.ModIds, modId2, true);
@@ -211,7 +211,7 @@ public abstract class ABackendTest<TStoreType>(
         StoreResult tx1, tx2;
 
         {
-            using var segment = new IndexSegmentBuilder();
+            using var segment = new IndexSegmentBuilder(AttributeCache);
 
             segment.Add(id, File.Path, "/foo/bar");
             segment.Add(id, File.Hash, Hash.From(0xDEADBEEF));
@@ -225,7 +225,7 @@ public abstract class ABackendTest<TStoreType>(
         modId = tx1.Remaps[modId];
 
         {
-            using var segment = new IndexSegmentBuilder();
+            using var segment = new IndexSegmentBuilder(AttributeCache);
 
             segment.Add(id, File.Path, "/foo/bar", true);
             segment.Add(id, File.Hash, Hash.From(0xDEADBEEF), true);

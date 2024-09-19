@@ -284,4 +284,16 @@ public readonly struct IndexSegment : IReadOnlyList<Datom>
         /// <inheritdoc/>
         public void Dispose() { }
     }
+
+    /// <summary>
+    /// Returns the datoms in this segment as resolved datoms
+    /// </summary>
+    public IEnumerable<IReadDatom> Resolved(IConnection connection)
+    {
+        var resolver = connection.AttributeResolver;
+        foreach (var datom in this)
+        {
+            yield return resolver.Resolve(datom);
+        }
+    }
 }

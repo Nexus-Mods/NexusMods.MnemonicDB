@@ -99,7 +99,8 @@ internal class Db : IDb
 
     public EntityIds GetBackRefs(ReferenceAttribute attribute, EntityId id)
     {
-        var segment = _cache.GetReverse(attribute.GetDbId(_registryId), id, this);
+        var aid = _connection!.AttributeCache.GetAttributeId(attribute.Id);
+        var segment = _cache.GetReverse(aid, id, this);
         return new EntityIds(segment, 0, segment.Count);
     }
     

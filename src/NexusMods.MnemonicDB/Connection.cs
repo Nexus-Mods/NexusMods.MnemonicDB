@@ -38,7 +38,7 @@ public class Connection : IConnection
     {
         ServiceProvider = provider;
         AttributeCache = store.AttributeCache;
-        AttributeResolver = new AttributeResolver();
+        AttributeResolver = new AttributeResolver(provider, AttributeCache);
         _logger = logger;
         _declaredAttributes = declaredAttributes.ToDictionary(a => a.Id);
         _store = store;
