@@ -25,9 +25,9 @@ public interface IDatomStore : IDisposable
     public TxId AsOfTxId { get; }
 
     /// <summary>
-    /// The Attribute Registry for this store
+    /// The Attribute Cache the store is using.
     /// </summary>
-    AttributeCache Registry { get; }
+    AttributeCache AttributeCache { get; }
 
     /// <summary>
     ///     Transacts (adds) the given datoms into the store.

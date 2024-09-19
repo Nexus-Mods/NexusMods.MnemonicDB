@@ -23,7 +23,7 @@ public class MarkerAttribute(string ns, string name) : Attribute<Null, Null>(Val
     public bool Contains(IHasIdAndIndexSegment entity)
     {
         var segment = entity.IndexSegment;
-        var dbId = Cache[segment.RegistryId.Value];
+        var dbId = entity.Db.Connection.AttributeCache.GetAttributeId(Id);
         for (var i = 0; i < segment.Count; i++)
         {
             var datom = segment[i];

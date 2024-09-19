@@ -51,6 +51,11 @@ public class DatomStore : IDatomStore
     private IDb? _currentDb = null;
 
     private static readonly TimeSpan TransactionTimeout = TimeSpan.FromMinutes(120);
+    
+    /// <summary>
+    /// Used to remap temporary entity ids to real entity ids, this is cleared after each transaction
+    /// </summary>
+    private Dictionary<EntityId, EntityId> _remaps = new();
 
     /// <summary>
     /// Cache for the next entity/tx/attribute ids
@@ -109,7 +114,10 @@ public class DatomStore : IDatomStore
     
     /// <inheritdoc />
     public TxId AsOfTxId => _asOfTx;
-    
+
+    /// <inheritdoc />
+    public AttributeCache AttributeCache => _attributeCache;
+
     /// <inheritdoc />
     public async Task<(StoreResult, IDb)> TransactAsync(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null)
     {
@@ -265,7 +273,7 @@ public class DatomStore : IDatomStore
         try
         {
             var snapshot = _backend.GetSnapshot();
-            var lastTx = TxId.From(_nextIdCache.LastEntityInPartition(snapshot, PartitionId.Transactions, _attributeCache).Value);
+            var lastTx = TxId.From(_nextIdCache.LastEntityInPartition(snapshot, PartitionId.Transactions).Value);
 
             if (lastTx.Value == TxId.MinValue)
             {
@@ -309,23 +317,23 @@ public class DatomStore : IDatomStore
 
     #region Internals
 
-    private EntityId MaybeRemap(ISnapshot snapshot, EntityId id, Dictionary<EntityId, EntityId> remaps, TxId thisTx)
+    private EntityId Remap(ISnapshot snapshot, EntityId id, TxId thisTx)
     {
         if (id.Partition == PartitionId.Temp)
         {
-            if (!remaps.TryGetValue(id, out var newId))
+            if (!_remaps.TryGetValue(id, out var newId))
             {
                 if (id.Value == PartitionId.Temp.MinValue)
                 {
                     var remapTo = EntityId.From(thisTx.Value);
-                    remaps.Add(id, remapTo);
+                    _remaps.Add(id, remapTo);
                     return remapTo;
                 }
                 else
                 {
                     var partitionId = PartitionId.From((byte)(id.Value >> 40 & 0xFF));
-                    var assignedId = _nextIdCache.NextId(snapshot, partitionId, _attributeCache);
-                    remaps.Add(id, assignedId);
+                    var assignedId = _nextIdCache.NextId(snapshot, partitionId);
+                    _remaps.Add(id, assignedId);
                     return assignedId;
                 }
             }
@@ -340,16 +348,15 @@ public class DatomStore : IDatomStore
     private void Log(PendingTransaction pendingTransaction, out StoreResult result)
     {
         var currentSnapshot = _currentSnapshot ?? _backend.GetSnapshot();
-        var thisTx = TxId.From(_nextIdCache.NextId(currentSnapshot, PartitionId.Transactions, _attributeCache).Value);
-
-        var remaps = new Dictionary<EntityId, EntityId>();
-        var remapFn = (Func<EntityId, EntityId>)(id => MaybeRemap(currentSnapshot, id, remaps, thisTx));
+        _remaps.Clear();
+        var thisTx = TxId.From(_nextIdCache.NextId(currentSnapshot, PartitionId.Transactions).Value);
+        
         using var batch = _backend.CreateBatch();
 
         var swPrepare = Stopwatch.StartNew();
 
-
-
+        _remaps = new Dictionary<EntityId, EntityId>();
+        
         var secondaryBuilder = new IndexSegmentBuilder(_attributeCache);
         var txId = EntityId.From(thisTx.Value);
         secondaryBuilder.Add(txId, MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp, DateTime.UtcNow);
@@ -384,7 +391,7 @@ public class DatomStore : IDatomStore
             var currentPrefix = datom.Prefix;
             var attrId = currentPrefix.A;
 
-            var newE = isRemapped ? remapFn(currentPrefix.E) : currentPrefix.E;
+            var newE = isRemapped ? Remap(currentPrefix.E) : currentPrefix.E;
             var keyPrefix = currentPrefix with {E = newE, T = thisTx};
 
             {
@@ -392,7 +399,7 @@ public class DatomStore : IDatomStore
                 var valueSpan = datom.ValueSpan;
                 var span = _writer.GetSpan(valueSpan.Length);
                 valueSpan.CopyTo(span);
-                attr.Remap(remapFn, span);
+                Remap(span);
                 _writer.Advance(valueSpan.Length);
             }
 
@@ -404,17 +411,17 @@ public class DatomStore : IDatomStore
                 continue;
             }
 
-            switch (GetPreviousState(isRemapped, attr, currentSnapshot, newSpan))
+            switch (GetPreviousState(isRemapped, attrId, currentSnapshot, newSpan))
             {
                 case PrevState.Duplicate:
                     continue;
                 case PrevState.NotExists:
-                    ProcessAssert(batch, attr, newSpan);
+                    ProcessAssert(batch, attrId, newSpan);
                     break;
                 case PrevState.Exists:
                     SwitchPrevToRetraction(thisTx);
-                    ProcessRetract(batch, attr, _retractWriter.GetWrittenSpan(), currentSnapshot);
-                    ProcessAssert(batch, attr, newSpan);
+                    ProcessRetract(batch, attrId, _retractWriter.GetWrittenSpan(), currentSnapshot);
+                    ProcessAssert(batch, attrId, newSpan);
                     break;
             }
 
@@ -437,9 +444,14 @@ public class DatomStore : IDatomStore
         result = new StoreResult
         {
             AssignedTxId = thisTx,
-            Remaps = remaps,
+            Remaps = _remaps,
             Snapshot = _currentSnapshot
         };
+    }
+    
+    private void Remap(Span<byte> valueSpan)
+    {
+        
     }
 
     /// <summary>
@@ -532,14 +544,14 @@ public class DatomStore : IDatomStore
         }
     }
 
-    private void ProcessAssert(IWriteBatch batch, IAttribute attribute, ReadOnlySpan<byte> datom)
+    private void ProcessAssert(IWriteBatch batch, AttributeId attributeId, ReadOnlySpan<byte> datom)
     {
         _txLog.Put(batch, datom);
         _eavtCurrent.Put(batch, datom);
         _aevtCurrent.Put(batch, datom);
-        if (attribute.IsReference)
+        if (_attributeCache.IsReference(attributeId))
             _vaetCurrent.Put(batch, datom);
-        if (attribute.IsIndexed)
+        if (_attributeCache.IsIndexed(attributeId))
             _avetCurrent.Put(batch, datom);
     }
 

@@ -22,7 +22,7 @@ public class TupleAttribute<T1HighLevel, T1LowLevel, T2HighLevel, T2LowLevel> : 
     }
 
     /// <inheritdoc />
-    public override (T1HighLevel, T2HighLevel) ReadValue(ReadOnlySpan<byte> span, ValueTags tag, RegistryId registryId)
+    public override (T1HighLevel, T2HighLevel) ReadValue(ReadOnlySpan<byte> span, ValueTags tag, AttributeResolver resolver)
     {
         if (tag != ValueTags.Tuple2)
             throw new ArgumentException($"Expected tag {ValueTags.Tuple2}, but got {tag}");
@@ -33,8 +33,8 @@ public class TupleAttribute<T1HighLevel, T1LowLevel, T2HighLevel, T2LowLevel> : 
         if (type1 != (byte)_tag1 || type2 != (byte)_tag2)
             throw new ArgumentException($"Expected tag {_tag1} and {_tag2}, but got {type1} and {type2}");
 
-        var valA = ReadValue<T1LowLevel>(span.SliceFast(2), _tag1, registryId, out var sizeA);
-        var valB = ReadValue<T2LowLevel>(span.SliceFast(2 + sizeA), _tag2, registryId, out _);
+        var valA = ReadValue<T1LowLevel>(span.SliceFast(2), _tag1, resolver, out var sizeA);
+        var valB = ReadValue<T2LowLevel>(span.SliceFast(2 + sizeA), _tag2, resolver, out _);
         
         return FromLowLevel((valA, valB));
     }
@@ -98,7 +98,7 @@ public class TupleAttribute<T1HighLevel, T1LowLevel, T2HighLevel, T2LowLevel, T3
     }
 
     /// <inheritdoc />
-    public override (T1HighLevel, T2HighLevel, T3HighLevel) ReadValue(ReadOnlySpan<byte> span, ValueTags tag, RegistryId registryId)
+    public override (T1HighLevel, T2HighLevel, T3HighLevel) ReadValue(ReadOnlySpan<byte> span, ValueTags tag, AttributeResolver resolver)
     {
         if (tag != ValueTags.Tuple3)
             throw new ArgumentException($"Expected tag {ValueTags.Tuple3}, but got {tag}");
@@ -110,9 +110,9 @@ public class TupleAttribute<T1HighLevel, T1LowLevel, T2HighLevel, T2LowLevel, T3
         if (type1 != (byte)_tag1 || type2 != (byte)_tag2 || type3 != (byte)_tag3)
             throw new ArgumentException($"Expected tag ({_tag1}, {_tag2}, {_tag3}), but got ({type1}, {type2}, {type3})");
 
-        var valA = ReadValue<T1LowLevel>(span.SliceFast(3), _tag1, registryId, out var sizeA);
-        var valB = ReadValue<T2LowLevel>(span.SliceFast(3 + sizeA), _tag2, registryId, out var sizeB);
-        var valC = ReadValue<T3LowLevel>(span.SliceFast(3 + sizeA + sizeB), _tag3, registryId, out _);
+        var valA = ReadValue<T1LowLevel>(span.SliceFast(3), _tag1, resolver, out var sizeA);
+        var valB = ReadValue<T2LowLevel>(span.SliceFast(3 + sizeA), _tag2, resolver, out var sizeB);
+        var valC = ReadValue<T3LowLevel>(span.SliceFast(3 + sizeA + sizeB), _tag3, resolver, out _);
         
         return FromLowLevel((valA, valB, valC));
     }

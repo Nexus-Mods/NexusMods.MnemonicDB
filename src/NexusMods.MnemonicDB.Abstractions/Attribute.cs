@@ -292,17 +292,10 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// </summary>
     protected IServiceProvider GetServiceProvider(RegistryId registryId)
     {
+        throw new NotImplementedException();
         return AttributeRegistryRegistry.Registries[registryId.Value]!.ServiceProvider;
     }
     
-    /// <summary>
-    /// Gets the registry for the given registry id
-    /// </summary>
-    protected IAttributeRegistry GetRegistry(RegistryId registryId)
-    {
-        return AttributeRegistryRegistry.Registries[registryId.Value]!;
-    }
-
     /// <summary>
     ///     Typed datom for this attribute
     /// </summary>

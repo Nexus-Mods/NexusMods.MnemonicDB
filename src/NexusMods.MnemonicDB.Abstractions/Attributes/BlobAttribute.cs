@@ -13,9 +13,9 @@ public abstract class BlobAttribute<TValue>(string ns, string name) : ScalarAttr
     where TValue : notnull
 {
     /// <inheritdoc />
-    public override void Write<TWriter>(EntityId entityId, RegistryId registryId, TValue value, TxId txId, bool isRetract, TWriter writer)
+    public override void Write<TWriter>(EntityId entityId, AttributeCache cache, TValue value, TxId txId, bool isRetract, TWriter writer)
     {
-        WritePrefix(entityId, registryId, txId, isRetract, writer);
+        WritePrefix(entityId, cache, txId, isRetract, writer);
         WriteValue(value, writer);
     }
 

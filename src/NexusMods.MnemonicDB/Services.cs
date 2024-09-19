@@ -30,7 +30,6 @@ public static class Services
     {
         services.AddAttributeDefinitionModel()
                 .AddTransactionModel()
-                .AddSingleton<AttributeRegistry>()
                 .AddSingleton<IDatomStore, DatomStore>()
                 .AddSingleton<DatomStore>(s => (DatomStore)s.GetRequiredService<IDatomStore>());
         return services;

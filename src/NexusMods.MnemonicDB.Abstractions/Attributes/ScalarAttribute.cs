@@ -26,12 +26,12 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
     public TValue Get(IHasIdAndIndexSegment entity)
     {
         var segment = entity.IndexSegment;
-        var dbId = Cache[segment.RegistryId.Value];
+        var dbId = entity.Db.AttributeCache.GetAttributeId(Id);
         for (var i = 0; i < segment.Count; i++)
         {
             var datom = segment[i];
             if (datom.A != dbId) continue;
-            return ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, segment.RegistryId);
+            return ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, entity.Db.Connection.AttributeResolver);
         }
 
         if (DefaultValue.HasValue)
@@ -48,12 +48,12 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
     protected TValue Get(IHasEntityIdAndDb entity)
     {
         var segment = entity.Db.Get(entity.Id);
-        var dbId = Cache[segment.RegistryId.Value];
+        var dbId = entity.Db.AttributeCache.GetAttributeId(Id);
         for (var i = 0; i < segment.Count; i++)
         {
             var datom = segment[i];
             if (datom.A != dbId) continue;
-            return ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, segment.RegistryId);
+            return ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, entity.Db.Connection.AttributeResolver);
         }
 
         if (DefaultValue.HasValue)
@@ -82,12 +82,12 @@ public abstract class ScalarAttribute<TValue, TLowLevel>(ValueTags tag, string n
     public bool TryGet(IHasIdAndIndexSegment entity, out TValue value)
     {
         var segment = entity.IndexSegment;
-        var dbId = Cache[segment.RegistryId.Value];
+        var dbId = entity.Db.AttributeCache.GetAttributeId(Id);
         for (var i = 0; i < segment.Count; i++)
         {
             var datom = segment[i];
             if (datom.A != dbId) continue;
-            value = ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, segment.RegistryId);
+            value = ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, entity.Db.Connection.AttributeResolver);
             return true;
         }
 

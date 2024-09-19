@@ -19,7 +19,7 @@ public abstract class CollectionAttribute<TValue, TLowLevel>(ValueTags tag, stri
     public Values<TValue, TLowLevel> Get(IHasIdAndIndexSegment ent)
     {
         var segment = ent.IndexSegment;
-        var dbId = Cache[segment.RegistryId.Value];
+        var dbId = ent.Db.AttributeCache.GetAttributeId(Id);
         for (var i = 0; i < segment.Count; i++)
         {
             var datom = segment[i];
@@ -30,9 +30,9 @@ public abstract class CollectionAttribute<TValue, TLowLevel>(ValueTags tag, stri
             {
                 i++;
             }
-            return new Values<TValue, TLowLevel>(segment, start, i, this);
+            return new Values<TValue, TLowLevel>(segment, start, i, this, ent.Db.Connection.AttributeResolver);
         }
-        return new Values<TValue, TLowLevel>(segment, 0, 0, this);
+        return new Values<TValue, TLowLevel>(segment, 0, 0, this, ent.Db.Connection.AttributeResolver);
     }
     
     /// <summary>
@@ -42,7 +42,7 @@ public abstract class CollectionAttribute<TValue, TLowLevel>(ValueTags tag, stri
     protected Values<TValue, TLowLevel> Get(IHasEntityIdAndDb ent)
     {
         var segment = ent.Db.Get(ent.Id);
-        var dbId = Cache[segment.RegistryId.Value];
+        var dbId = ent.Db.AttributeCache.GetAttributeId(Id);
         for (var i = 0; i < segment.Count; i++)
         {
             var datom = segment[i];
@@ -53,9 +53,9 @@ public abstract class CollectionAttribute<TValue, TLowLevel>(ValueTags tag, stri
             {
                 i++;
             }
-            return new Values<TValue, TLowLevel>(segment, start, i, this);
+            return new Values<TValue, TLowLevel>(segment, start, i, this, ent.Db.Connection.AttributeResolver);
         }
-        return new Values<TValue, TLowLevel>(segment, 0, 0, this);
+        return new Values<TValue, TLowLevel>(segment, 0, 0, this, ent.Db.Connection.AttributeResolver);
     }
 
     /// <summary>

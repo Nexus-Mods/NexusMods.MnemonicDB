@@ -118,8 +118,8 @@ public class Connection : IConnection
     /// <inheritdoc />
     public IDb AsOf(TxId txId)
     {
-        var snapshot = new AsOfSnapshot(_store.GetSnapshot(), txId, );
-        return new Db(snapshot, txId, (AttributeRegistry)_store.Registry)
+        var snapshot = new AsOfSnapshot(_store.GetSnapshot(), txId, AttributeCache);
+        return new Db(snapshot, txId, AttributeCache)
         {
             Connection = this
         };
@@ -156,7 +156,8 @@ public class Connection : IConnection
         if (missing.Length == 0)
         {
             // Nothing new to assert, so just add the new data to the registry
-            _store.Registry.Populate(existing.Values.ToArray());
+            throw new NotImplementedException();
+            //_store.Registry.Populate(existing.Values.ToArray());
         }
 
         var newAttrs = new List<DbAttribute>();
@@ -175,7 +176,7 @@ public class Connection : IConnection
 
     private IEnumerable<DbAttribute> ExistingAttributes()
     {
-        var db = new Db(_store.GetSnapshot(), TxId, (AttributeRegistry)_store.Registry)
+        var db = new Db(_store.GetSnapshot(), TxId, AttributeCache)
         {
             Connection = this
         };
