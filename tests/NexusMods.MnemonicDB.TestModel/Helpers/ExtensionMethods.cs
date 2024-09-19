@@ -52,7 +52,8 @@ public static class ExtensionMethods
                 case ValueTags.Ascii:
                 {
                     var size = MemoryMarshal.Read<uint>(datom.ValueSpan);
-                    sb.Append(Encoding.ASCII.GetString(datom.ValueSpan.Slice(sizeof(uint), (int)size)));
+                    var str = Encoding.ASCII.GetString(datom.ValueSpan.Slice(sizeof(uint), (int)size));
+                    sb.Append(TruncateOrPad(str, 48));
                     break;
                 }
 

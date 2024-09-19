@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -14,9 +16,10 @@ public sealed class AttributeCache
 {
     private Dictionary<Symbol, AttributeId> _attributeIdsBySymbol = new();
     private readonly BitArray _isCardinalityMany;
-    private readonly BitArray _isReference;
-    private readonly BitArray _isIndexed;
-    private readonly Symbol[] _symbols;
+    private BitArray _isReference;
+    private BitArray _isIndexed;
+    private Symbol[] _symbols;
+    private BitArray _isNoHistory;
 
     public AttributeCache()
     {
@@ -24,6 +27,7 @@ public sealed class AttributeCache
         _isCardinalityMany = new BitArray(maxId);
         _isReference = new BitArray(maxId);
         _isIndexed = new BitArray(maxId);
+        _isNoHistory = new BitArray(maxId);
         _symbols = new Symbol[maxId];
 
         foreach (var kv in AttributeDefinition.HardcodedIds)
@@ -39,9 +43,54 @@ public sealed class AttributeCache
     /// Resets the cache, causing it to re-query the database for the latest definitions.
     /// </summary>
     /// <param name="idb"></param>
-    public void Reset(IDb idb)
+    public void Reset(IDb db)
     {
-        throw new System.NotImplementedException();
+        var symbols = db.Datoms(AttributeDefinition.UniqueId);
+        var maxIndex = (int)symbols.MaxBy(static x => x.E.Value).E.Value + 1;
+
+        var newSymbols = new Symbol[maxIndex];
+        foreach (var datom in symbols)
+        {
+            var id = datom.E.Value;
+            var symbol = AttributeDefinition.UniqueId.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, null!);
+            newSymbols[id] = symbol;
+            _attributeIdsBySymbol[symbol] = AttributeId.From((ushort)id);
+        }
+        _symbols = newSymbols;
+        
+        var types = db.Datoms(AttributeDefinition.ValueType);
+        var newTypes = new ValueTags[maxIndex];
+        var newIsReference = new BitArray(maxIndex);
+        foreach (var datom in types)
+        {
+            var id = datom.E.Value;
+            var type = AttributeDefinition.ValueType.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, null!);
+            newTypes[id] = type;
+            newIsReference[(int)id] = type == ValueTags.Reference;
+        }
+        _isReference = newIsReference;
+
+        var isIndexed = db.Datoms(AttributeDefinition.Indexed);
+        var newIsIndexed = new BitArray(maxIndex);
+        foreach (var datom in isIndexed)
+        {
+            var id = datom.E.Value;
+            newIsIndexed[(int)id] = true;
+        }
+        _isIndexed = newIsIndexed;
+        
+        var isNoHistory = db.Datoms(AttributeDefinition.NoHistory);
+        var newIsNoHistory = new BitArray(maxIndex);
+        if (isNoHistory.Any())
+        {
+            foreach (var datom in isNoHistory)
+            {
+                var id = datom.E.Value;
+                newIsNoHistory[(int)id] = true;
+            }
+        }
+        _isNoHistory = newIsNoHistory;
+
     }
 
     /// <summary>
@@ -65,7 +114,7 @@ public sealed class AttributeCache
     /// </summary>
     public bool IsNoHistory(AttributeId attrId)
     {
-        throw new System.NotImplementedException();
+        return _isNoHistory[attrId.Value];
     }
 
     /// <summary>
@@ -85,6 +134,9 @@ public sealed class AttributeCache
         return _attributeIdsBySymbol[attribute];
     }
 
+    /// <summary>
+    /// Get the symbol for the given attribute id
+    /// </summary>
     public Symbol GetSymbol(AttributeId id)
     {
         return _symbols[id.Value];

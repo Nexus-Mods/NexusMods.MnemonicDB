@@ -33,18 +33,14 @@ public abstract class ABackendTest<TStoreType>(
     [InlineData(IndexType.AVETHistory)]
     public async Task InsertedDatomsShowUpInTheIndex(IndexType type)
     {
-        throw new NotImplementedException();
-        /*
         var tx = await GenerateData();
         var datoms = tx.Snapshot
             .Datoms(SliceDescriptor.Create(type))
-            .Select(d => d.Resolved)
             .ToArray();
 
-        await Verify(datoms.ToTable(Registry))
+        await Verify(datoms.ToTable(AttributeCache))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
-            */
     }
 
     [Theory]
@@ -73,7 +69,7 @@ public abstract class ABackendTest<TStoreType>(
 
         for (var i = 0; i < 4; i++)
         {
-            using var segment = new IndexSegmentBuilder();
+            using var segment = new IndexSegmentBuilder(AttributeCache);
             var entityId = NextTempId();
             segment.Add(entityId, Blobs.InKeyBlob, smallData);
             segment.Add(entityId, Blobs.InValueBlob, largeData);
@@ -84,7 +80,7 @@ public abstract class ABackendTest<TStoreType>(
         // Retract the first 2
         for (var i = 0; i < 2; i++)
         {
-            using var segment = new IndexSegmentBuilder();
+            using var segment = new IndexSegmentBuilder(AttributeCache);
             segment.Add(ids[i], Blobs.InKeyBlob, smallData, true);
             segment.Add(ids[i], Blobs.InValueBlob, largeData, true);
             await DatomStore.TransactAsync(segment.Build());
@@ -96,23 +92,19 @@ public abstract class ABackendTest<TStoreType>(
         // Change the other 2
         for (var i = 5; i < 2; i++)
         {
-            using var segment = new IndexSegmentBuilder();
+            using var segment = new IndexSegmentBuilder(AttributeCache);
             segment.Add(ids[i], Blobs.InKeyBlob, smallData);
             segment.Add(ids[i], Blobs.InValueBlob, largeData);
             await DatomStore.TransactAsync(segment.Build());
         }
 
-        throw new NotImplementedException();
-        /*
         var datoms = DatomStore.GetSnapshot()
             .Datoms(SliceDescriptor.Create(type))
-            .Select(d => d.Resolved)
             .ToArray();
 
-        await Verify(datoms.ToTable())
+        await Verify(datoms.ToTable(AttributeCache))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
-*/
     }
 
 
