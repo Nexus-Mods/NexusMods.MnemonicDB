@@ -6,6 +6,7 @@ using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.MnemonicDB.TestModel.Helpers;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.MnemonicDB.TestModel.Analyzers;
 using NexusMods.Paths;
@@ -18,7 +19,7 @@ public class AMnemonicDBTest : IDisposable
 {
     private readonly IAttribute[] _attributes;
     protected readonly IServiceProvider Provider;
-    private AttributeRegistry _registry;
+    private AttributeCache _attributeCache;
     private Backend _backend;
 
     private DatomStore _store;
@@ -32,16 +33,16 @@ public class AMnemonicDBTest : IDisposable
         Provider = provider;
         _attributes = provider.GetRequiredService<IEnumerable<IAttribute>>().ToArray();
 
-        _registry = new AttributeRegistry(provider, _attributes);
+        _attributeCache = new AttributeCache();
 
         Config = new DatomStoreSettings
         {
             Path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory)
                 .Combine("tests_MnemonicDB" + Guid.NewGuid())
         };
-        _backend = new Backend(_registry);
+        _backend = new Backend(_attributeCache);
 
-        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
+        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), _attributeCache, Config, _backend);
 
         _analyzers =
         new IAnalyzer[]{
@@ -68,9 +69,9 @@ public class AMnemonicDBTest : IDisposable
         return VerifyTable(models.SelectMany(e => e));
     }
 
-    protected SettingsTask VerifyTable(IEnumerable<IReadDatom> datoms)
+    protected SettingsTask VerifyTable(IEnumerable<Datom> datoms)
     {
-        return Verify(datoms.ToTable(_registry));
+        return Verify(datoms.ToTable(_attributeCache));
     }
 
     protected async Task<Loadout.ReadOnly> InsertExampleData()
@@ -122,22 +123,20 @@ public class AMnemonicDBTest : IDisposable
 
     public void Dispose()
     {
-        _registry.Dispose();
         _store.Dispose();
     }
 
 
     protected async Task RestartDatomStore()
     {
-        _registry.Dispose();
         _store.Dispose();
         _backend.Dispose();
 
         GC.Collect();
 
-        _backend = new Backend(_registry);
-        _registry = new AttributeRegistry(Provider, _attributes);
-        _store = new DatomStore(Provider.GetRequiredService<ILogger<DatomStore>>(), _registry, Config, _backend);
+        _backend = new Backend(_attributeCache);
+        _attributeCache = new AttributeCache();
+        _store = new DatomStore(Provider.GetRequiredService<ILogger<DatomStore>>(), _attributeCache, Config, _backend);
 
         Connection = new Connection(Provider.GetRequiredService<ILogger<Connection>>(), _store, Provider, _attributes, _analyzers);
     }

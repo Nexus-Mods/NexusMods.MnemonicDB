@@ -19,7 +19,6 @@ public class Startup
             .AddTestModel()
             .AddSingleton<IAttribute>(Blobs.InKeyBlob)
             .AddSingleton<IAttribute>(Blobs.InValueBlob)
-            .AddSingleton<AttributeRegistry>()
             .AddSingleton<Backend>()
             .AddLogging(builder => builder.AddXunitOutput().SetMinimumLevel(LogLevel.Debug));
     }

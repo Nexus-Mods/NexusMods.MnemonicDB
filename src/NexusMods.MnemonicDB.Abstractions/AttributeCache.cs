@@ -1,3 +1,9 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
+
 namespace NexusMods.MnemonicDB.Abstractions;
 
 /// <summary>
@@ -6,6 +12,29 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// </summary>
 public sealed class AttributeCache
 {
+    private Dictionary<Symbol, AttributeId> _attributeIdsBySymbol = new();
+    private readonly BitArray _isCardinalityMany;
+    private readonly BitArray _isReference;
+    private readonly BitArray _isIndexed;
+    private readonly Symbol[] _symbols;
+
+    public AttributeCache()
+    {
+        var maxId = AttributeDefinition.HardcodedIds.Values.Max() + 1;
+        _isCardinalityMany = new BitArray(maxId);
+        _isReference = new BitArray(maxId);
+        _isIndexed = new BitArray(maxId);
+        _symbols = new Symbol[maxId];
+
+        foreach (var kv in AttributeDefinition.HardcodedIds)
+        {
+            _attributeIdsBySymbol[kv.Key.Id] = AttributeId.From(kv.Value);
+            _isIndexed[kv.Value] = kv.Key.IsIndexed;
+            _symbols[kv.Value] = kv.Key.Id;
+        }
+         
+    }
+    
     /// <summary>
     /// Resets the cache, causing it to re-query the database for the latest definitions.
     /// </summary>
@@ -20,7 +49,7 @@ public sealed class AttributeCache
     /// </summary>
     public bool IsReference(AttributeId attrId)
     {
-        throw new System.NotImplementedException();
+        return _isReference[attrId.Value];
     }
 
     /// <summary>
@@ -28,7 +57,7 @@ public sealed class AttributeCache
     /// </summary>
     public bool IsIndexed(AttributeId attrId)
     {
-        throw new System.NotImplementedException();
+        return _isIndexed[attrId.Value];
     }
 
     /// <summary>
@@ -44,14 +73,20 @@ public sealed class AttributeCache
     /// </summary>
     public bool IsCardinalityMany(AttributeId attrId)
     {
-        throw new System.NotImplementedException();
+        return _isCardinalityMany[attrId.Value];
     }
 
     /// <summary>
     /// Get the AttributeId (DB attribute id) for the given attribute name
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public AttributeId GetAttributeId(Symbol attribute)
     {
-        throw new System.NotImplementedException();
+        return _attributeIdsBySymbol[attribute];
+    }
+
+    public Symbol GetSymbol(AttributeId id)
+    {
+        return _symbols[id.Value];
     }
 }

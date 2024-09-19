@@ -16,7 +16,7 @@ public class Blobs
 
 public class TestBlobAttribute(string ns, string name) : BlobAttribute<byte[]>(ns, name)
 {
-    protected override byte[] FromLowLevel(ReadOnlySpan<byte> value, ValueTags tag, RegistryId registryId)
+    protected override byte[] FromLowLevel(ReadOnlySpan<byte> value, ValueTags tag, AttributeResolver resolver)
         => value.ToArray();
 
     protected override void WriteValue<TWriter>(byte[] value, TWriter writer)
@@ -27,7 +27,7 @@ public class TestBlobAttribute(string ns, string name) : BlobAttribute<byte[]>(n
 
 public class TestHashedBlobAttribute(string ns, string name) : HashedBlobAttribute<byte[]>(ns, name)
 {
-    protected override byte[] FromLowLevel(ReadOnlySpan<byte> value, ValueTags tag, RegistryId registryId) => value.ToArray();
+    protected override byte[] FromLowLevel(ReadOnlySpan<byte> value, ValueTags tag, AttributeResolver resolver) => value.ToArray();
 
     protected override void WriteValue<TWriter>(byte[] value, TWriter writer)
     {

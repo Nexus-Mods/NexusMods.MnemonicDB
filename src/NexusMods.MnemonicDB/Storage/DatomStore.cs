@@ -391,7 +391,7 @@ public class DatomStore : IDatomStore
             var currentPrefix = datom.Prefix;
             var attrId = currentPrefix.A;
 
-            var newE = isRemapped ? Remap(currentPrefix.E) : currentPrefix.E;
+            var newE = isRemapped ? Remap(currentSnapshot, currentPrefix.E, thisTx) : currentPrefix.E;
             var keyPrefix = currentPrefix with {E = newE, T = thisTx};
 
             {

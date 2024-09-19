@@ -12,8 +12,8 @@ public class AbsolutePathAttribute(string ns, string name) : ScalarAttribute<Abs
     {
         return value.ToString();
     }
-    protected override AbsolutePath FromLowLevel(string value, ValueTags tag, RegistryId registryId)
+    protected override AbsolutePath FromLowLevel(string value, ValueTags tag, AttributeResolver resolver)
     {
-        return GetServiceProvider(registryId).GetRequiredService<IFileSystem>().FromUnsanitizedFullPath(value);
+        return resolver.ServiceProvider.GetRequiredService<IFileSystem>().FromUnsanitizedFullPath(value);
     }
 }

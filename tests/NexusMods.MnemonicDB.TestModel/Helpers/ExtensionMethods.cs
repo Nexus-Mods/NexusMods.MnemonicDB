@@ -1,28 +1,16 @@
 ﻿using System.IO.Hashing;
+using System.Runtime.InteropServices;
 using System.Text;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.TestModel.Helpers;
 
 public static class ExtensionMethods
 {
-    public static IEnumerable<ObjectTuple> ToObjectDatoms(this IEnumerable<IReadDatom> datoms,
-        IAttributeRegistry registry)
-    {
-        foreach (var datom in datoms)
-        {
-            yield return new ObjectTuple
-            {
-                E = datom.E,
-                A = datom.A.Id.Name,
-                V = datom.ObjectValue,
-                T = datom.T
-            };
-        }
-    }
-
-    public static string ToTable(this IEnumerable<IReadDatom> datoms, IAttributeRegistry registry)
+    public static string ToTable(this IEnumerable<Datom> datoms, AttributeCache cache)
     {
         string TruncateOrPad(string val, int length)
         {
@@ -42,8 +30,9 @@ public static class ExtensionMethods
         {
             var isRetract = datom.IsRetract;
 
-            var symColumn = TruncateOrPad(datom.A.Id.Name, 24);
-            var attrId = datom.A.GetDbId(registry.Id).Value.ToString("X4");
+            var aName = cache.GetSymbol(datom.A);
+            var symColumn = TruncateOrPad(aName.Name, 24);
+            var attrId = datom.A.Value.ToString("X4");
 
             sb.Append(isRetract ? "-" : "+");
             sb.Append(" | ");
@@ -54,24 +43,32 @@ public static class ExtensionMethods
 
 
 
-            switch (datom.ObjectValue)
+            switch (datom.Prefix.ValueTag)
             {
-                case EntityId eid:
-                    sb.Append(eid.Value.ToString("X16").PadRight(48));
+                case ValueTags.Reference:
+                    var val = MemoryMarshal.Read<EntityId>(datom.ValueSpan);
+                    sb.Append(val.Value.ToString("X16").PadRight(48));
                     break;
-                case ulong ul:
+                case ValueTags.Ascii:
+                {
+                    var size = MemoryMarshal.Read<uint>(datom.ValueSpan);
+                    sb.Append(Encoding.ASCII.GetString(datom.ValueSpan.Slice(sizeof(uint), (int)size)));
+                    break;
+                }
+
+                case ValueTags.UInt64:
+                    var ul = MemoryMarshal.Read<ulong>(datom.ValueSpan);
                     sb.Append(ul.ToString("X16").PadRight(48));
                     break;
-                case byte[] byteArray:
-                    var code = XxHash3.HashToUInt64(byteArray);
+                case ValueTags.Blob:
+                    var code = XxHash3.HashToUInt64(datom.ValueSpan);
                     var hash = code.ToString("X16");
-                    sb.Append($"Blob 0x{hash} {byteArray.Length} bytes".PadRight(48));
-                    break;
-                case DateTime dateTime:
-                    sb.Append($"DateTime : {dateTimeCount++}".PadRight(48));
+                    sb.Append($"Blob 0x{hash} {datom.ValueSpan.Length} bytes".PadRight(48));
                     break;
                 default:
-                    sb.Append(TruncateOrPad(datom.ObjectValue.ToString()!, 48));
+                    var otherCode = XxHash3.HashToUInt64(datom.ValueSpan);
+                    var otherHash = otherCode.ToString("X16");
+                    sb.Append($"Other 0x{otherHash} {datom.ValueSpan.Length} bytes".PadRight(48));
                     break;
             }
 

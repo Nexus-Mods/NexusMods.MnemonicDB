@@ -1,3 +1,4 @@
+using System;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -12,4 +13,9 @@ public sealed class AttributeResolver
     {
         throw new System.NotImplementedException();
     }
+    
+    /// <summary>
+    /// Gets the service object of the specified type.
+    /// </summary>
+    public IServiceProvider ServiceProvider => throw new System.NotImplementedException();
 }

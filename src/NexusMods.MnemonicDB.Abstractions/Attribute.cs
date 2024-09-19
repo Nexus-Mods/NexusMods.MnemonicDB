@@ -293,7 +293,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     protected IServiceProvider GetServiceProvider(RegistryId registryId)
     {
         throw new NotImplementedException();
-        return AttributeRegistryRegistry.Registries[registryId.Value]!.ServiceProvider;
+        //return AttributeRegistryRegistry.Registries[registryId.Value]!.ServiceProvider;
     }
     
     /// <summary>

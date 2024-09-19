@@ -184,14 +184,4 @@ public static class ObservableDatoms
     {
         return new DatomKey(datom.E, attrId, isMany ? datom.ValueMemory : Memory<byte>.Empty);
     }
-    
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void UpdateAttrCache(IAttributeRegistry registry, AttributeId aid, ref AttributeId cachedAid, ref IAttribute attr, ref bool isMany)
-    {
-        if (cachedAid == aid)
-            return;
-        cachedAid = aid;
-        attr = registry.GetAttribute(aid);
-        isMany = attr.Cardinalty == Cardinality.Many;
-    }
 }
