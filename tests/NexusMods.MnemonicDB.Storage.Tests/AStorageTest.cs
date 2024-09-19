@@ -19,17 +19,16 @@ public abstract class AStorageTest : IDisposable
     private readonly AbsolutePath _path;
     private readonly IServiceProvider _provider;
     protected readonly DatomStoreSettings DatomStoreSettings;
-    protected readonly AttributeCache AttributeCache;
+    protected AttributeCache AttributeCache => DatomStore.AttributeCache;
 
     protected readonly ILogger Logger;
 
     private ulong _tempId = 1;
     protected IDatomStore DatomStore;
 
-    protected AStorageTest(IServiceProvider provider, Func<AttributeCache, IStoreBackend>? backendFn = null)
+    protected AStorageTest(IServiceProvider provider, Func<IStoreBackend>? backendFn = null)
     {
         _provider = provider;
-        AttributeCache = new AttributeCache();
         
         _path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("tests_datomstore" + Guid.NewGuid());
 
@@ -38,11 +37,10 @@ public abstract class AStorageTest : IDisposable
             Path = _path
         };
 
-        backendFn ??= registry => new Backend(registry);
+        backendFn ??= () => new Backend();
 
 
-        DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), AttributeCache, DatomStoreSettings,
-            backendFn(AttributeCache));
+        DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), DatomStoreSettings, backendFn());
         
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
         
@@ -59,7 +57,7 @@ public abstract class AStorageTest : IDisposable
         AddAttr(segmentBuilder, Collection.ModIds, AttributeId.From(29));
         AddAttr(segmentBuilder, Blobs.InKeyBlob, AttributeId.From(30));
         AddAttr(segmentBuilder, Blobs.InValueBlob, AttributeId.From(31));
-        var (result, db) = DatomStore.Transact(segmentBuilder.Build());
+        var (_, db) = DatomStore.Transact(segmentBuilder.Build());
         AttributeCache.Reset(db);
     }
 

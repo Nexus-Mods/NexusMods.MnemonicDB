@@ -17,7 +17,7 @@ namespace NexusMods.MnemonicDB.Storage.Tests;
 
 public abstract class ABackendTest<TStoreType>(
     IServiceProvider provider,
-    Func<AttributeCache, IStoreBackend> backendFn)
+    Func<IStoreBackend> backendFn)
     : AStorageTest(provider, backendFn)
     where TStoreType : IStoreBackend
 {

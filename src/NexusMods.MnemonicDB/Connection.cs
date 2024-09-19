@@ -162,7 +162,7 @@ public class Connection : IConnection
         
         var attrId = existing.Select(sym => AttributeCache.GetAttributeId(sym)).Max().Value;
         using var builder = new IndexSegmentBuilder(AttributeCache);
-        foreach (var attr in missing)
+        foreach (var attr in missing.OrderBy(e => e.Id.Id))
         {
             var id = EntityId.From(++attrId);
             builder.Add(id, AttributeDefinition.UniqueId, attr.Id);

@@ -17,12 +17,14 @@ public class Backend : IStoreBackend
     private readonly AttributeCache _attributeCache;
     private readonly IndexStore[] _stores;
 
-    public Backend(AttributeCache attributeCache)
+    public Backend()
     {
-        _attributeCache = attributeCache;
+        _attributeCache = new AttributeCache();
         _stores = new IndexStore[Enum.GetValues<IndexType>().Select(i => (int)i).Max() + 1];
         _indexes = new IIndex[Enum.GetValues<IndexType>().Select(i => (int)i).Max() + 1];
     }
+
+    public AttributeCache AttributeCache => _attributeCache;
 
     public IWriteBatch CreateBatch()
     {

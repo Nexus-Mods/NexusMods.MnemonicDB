@@ -21,7 +21,7 @@ public class AMnemonicDBTest : IDisposable
 {
     private readonly IAttribute[] _attributes;
     protected readonly IServiceProvider Provider;
-    protected AttributeCache AttributeCache;
+    protected AttributeCache AttributeCache => _store.AttributeCache;
     private Backend _backend;
 
     private DatomStore _store;
@@ -35,16 +35,14 @@ public class AMnemonicDBTest : IDisposable
         Provider = provider;
         _attributes = provider.GetRequiredService<IEnumerable<IAttribute>>().ToArray();
 
-        AttributeCache = new AttributeCache();
-
         Config = new DatomStoreSettings
         {
             Path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory)
                 .Combine("tests_MnemonicDB" + Guid.NewGuid())
         };
-        _backend = new Backend(AttributeCache);
+        _backend = new Backend();
 
-        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), AttributeCache, Config, _backend);
+        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), Config, _backend);
 
         _analyzers =
         [
@@ -97,13 +95,12 @@ public class AMnemonicDBTest : IDisposable
             var isRetract = datom.IsRetract;
 
             var symColumn = TruncateOrPad(datom.A.Id.Name, 24);
-            var attrId = cache.GetAttributeId(datom.A.Id).Value.ToString("X4");
 
             sb.Append(isRetract ? "-" : "+");
             sb.Append(" | ");
             sb.Append(datom.E.Value.ToString("X16"));
             sb.Append(" | ");
-            sb.Append($"({attrId}) {symColumn}");
+            sb.Append(symColumn);
             sb.Append(" | ");
 
 
@@ -198,9 +195,8 @@ public class AMnemonicDBTest : IDisposable
 
         GC.Collect();
 
-        _backend = new Backend(AttributeCache);
-        AttributeCache = new AttributeCache();
-        _store = new DatomStore(Provider.GetRequiredService<ILogger<DatomStore>>(), AttributeCache, Config, _backend);
+        _backend = new Backend();
+        _store = new DatomStore(Provider.GetRequiredService<ILogger<DatomStore>>(), Config, _backend);
 
         Connection = new Connection(Provider.GetRequiredService<ILogger<Connection>>(), _store, Provider, _analyzers);
     }

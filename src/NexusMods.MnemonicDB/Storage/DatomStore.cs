@@ -74,9 +74,9 @@ public class DatomStore : IDatomStore
     /// <summary>
     /// DI constructor
     /// </summary>
-    public DatomStore(ILogger<DatomStore> logger, AttributeCache attributeCache, DatomStoreSettings settings,
-        IStoreBackend backend)
+    public DatomStore(ILogger<DatomStore> logger, DatomStoreSettings settings, IStoreBackend backend)
     {
+        _attributeCache = backend.AttributeCache;
         _pendingTransactions = new BlockingCollection<PendingTransaction>(new ConcurrentQueue<PendingTransaction>());
 
         _backend = backend;
@@ -87,7 +87,6 @@ public class DatomStore : IDatomStore
 
         _logger = logger;
         _settings = settings;
-        _attributeCache = attributeCache;
 
         _backend.DeclareEAVT(IndexType.EAVTCurrent);
         _backend.DeclareEAVT(IndexType.EAVTHistory);
@@ -460,6 +459,22 @@ public class DatomStore : IDatomStore
                 var newId = Remap(oldId);
                 MemoryMarshal.Write(valueSpan, newId);
                 break;
+            case ValueTags.Tuple2:
+            {
+                var tag1 = (ValueTags)valueSpan[0];
+                var tag2 = (ValueTags)valueSpan[1];
+                if (tag1 == ValueTags.Reference)
+                {
+                    var entityId = MemoryMarshal.Read<EntityId>(valueSpan.SliceFast(2));
+                    var newEntityId = Remap(entityId);
+                    MemoryMarshal.Write(valueSpan.SliceFast(2), newEntityId);
+                }
+                if (tag2 == ValueTags.Reference)
+                {
+                    throw new NotSupportedException("This attribute does not support remapping of the second element.");
+                }
+                break;
+            }
         }
         
     }
