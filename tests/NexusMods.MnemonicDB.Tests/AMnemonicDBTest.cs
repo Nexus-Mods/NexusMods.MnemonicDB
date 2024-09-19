@@ -52,7 +52,7 @@ public class AMnemonicDBTest : IDisposable
             new AttributesAnalyzer()
         ];
         
-        Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, provider, _attributes, _analyzers);
+        Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, provider, _analyzers);
 
         Logger = provider.GetRequiredService<ILogger<AMnemonicDBTest>>();
     }
@@ -202,7 +202,7 @@ public class AMnemonicDBTest : IDisposable
         AttributeCache = new AttributeCache();
         _store = new DatomStore(Provider.GetRequiredService<ILogger<DatomStore>>(), AttributeCache, Config, _backend);
 
-        Connection = new Connection(Provider.GetRequiredService<ILogger<Connection>>(), _store, Provider, _attributes, _analyzers);
+        Connection = new Connection(Provider.GetRequiredService<ILogger<Connection>>(), _store, Provider, _analyzers);
     }
 
 }

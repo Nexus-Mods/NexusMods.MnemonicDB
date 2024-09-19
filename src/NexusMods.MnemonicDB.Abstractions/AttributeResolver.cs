@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Frozen;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
@@ -45,4 +46,9 @@ public sealed class AttributeResolver
     /// Gets the service object of the specified type.
     /// </summary>
     public IServiceProvider ServiceProvider { get; }
+    
+    /// <summary>
+    /// The defined attributes as seen in the DI container
+    /// </summary>
+    public IEnumerable<IAttribute> DefinedAttributes => _attrsById.Values;
 }

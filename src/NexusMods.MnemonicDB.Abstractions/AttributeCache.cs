@@ -38,7 +38,12 @@ public sealed class AttributeCache
         }
          
     }
-    
+
+    /// <summary>
+    /// All the defined attribute ids
+    /// </summary>
+    public IEnumerable<Symbol> AllAttributeIds => _attributeIdsBySymbol.Keys;
+
     /// <summary>
     /// Resets the cache, causing it to re-query the database for the latest definitions.
     /// </summary>
