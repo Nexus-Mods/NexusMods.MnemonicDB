@@ -17,7 +17,6 @@ namespace NexusMods.MnemonicDB;
 internal class Db : IDb
 {
     private readonly IndexSegmentCache _cache;
-    private readonly RegistryId _registryId;
     
     /// <summary>
     /// The connection is used by several methods to navigate the graph of objects of Db, Connection, Datom Store, and
@@ -42,10 +41,9 @@ internal class Db : IDb
         RecentlyAdded = snapshot.Datoms(SliceDescriptor.Create(txId));
     }
 
-    private Db(ISnapshot snapshot, TxId txId, AttributeCache attributeCache, RegistryId registryId, IConnection connection, IndexSegmentCache newCache, IndexSegment recentlyAdded)
+    private Db(ISnapshot snapshot, TxId txId, AttributeCache attributeCache, IConnection connection, IndexSegmentCache newCache, IndexSegment recentlyAdded)
     {
         AttributeCache = attributeCache;
-        _registryId = registryId;
         _cache = newCache;
         _connection = connection;
         Snapshot = snapshot;
@@ -60,7 +58,7 @@ internal class Db : IDb
     internal Db WithNext(StoreResult storeResult, TxId txId)
     {
         var newCache = _cache.ForkAndEvict(storeResult, AttributeCache, out var newDatoms);
-        return new Db(storeResult.Snapshot, txId, AttributeCache, _registryId, _connection!, newCache, newDatoms);
+        return new Db(storeResult.Snapshot, txId, AttributeCache, _connection!, newCache, newDatoms);
     }
 
     private IndexSegment EntityDatoms(IDb db, EntityId id)

@@ -25,9 +25,6 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
 
     private static Encoding Utf8Encoding = Encoding.UTF8;
 
-
-    protected RegistryId.InlineCache Cache;
-
     protected Attribute(
         ValueTags lowLevelType,
         string ns,
@@ -174,12 +171,6 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     public virtual bool DeclaredOptional { get; protected init; }
 
     /// <inheritdoc />
-    public void SetDbId(RegistryId id, AttributeId attributeId)
-    {
-        Cache[id.Value] = attributeId;
-    }
-    
-    /// <inheritdoc />
     public Type ValueType => typeof(TValueType);
 
     /// <inheritdoc />
@@ -277,15 +268,6 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     {
         return Id.ToString();
     }
-
-    /// <summary>
-    /// Gets a service provider thats specific to this registry defined by the registry id
-    /// </summary>
-    protected IServiceProvider GetServiceProvider(RegistryId registryId)
-    {
-        throw new NotImplementedException();
-        //return AttributeRegistryRegistry.Registries[registryId.Value]!.ServiceProvider;
-    }
     
     /// <summary>
     ///     Typed datom for this attribute
@@ -343,9 +325,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
 
         /// <inheritdoc />
         public Type ValueType => typeof(TValueType);
-
-        public KeyPrefix prefix { get; init; }
-
+        
         /// <inheritdoc />
         public override string ToString()
         {
@@ -364,11 +344,6 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
         public int HashCodeByValue()
         {
             return HashCode.Combine(A, E, V);
-        }
-
-        public void Deconstruct(out KeyPrefix prefix)
-        {
-            prefix = this.prefix;
         }
     }
 }

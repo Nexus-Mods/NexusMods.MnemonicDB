@@ -35,13 +35,6 @@ public interface IAttribute
     public Symbol Id { get; }
     
     /// <summary>
-    /// Sets the unique id of the attribute for the given registry
-    /// </summary>
-    /// <param name="id"></param>
-    /// <param name="attributeId"></param>
-    public void SetDbId(RegistryId id, AttributeId attributeId);
-
-    /// <summary>
     ///    True if the attribute is indexed, false if it is not.
     /// </summary>
     bool IsIndexed { get; }
