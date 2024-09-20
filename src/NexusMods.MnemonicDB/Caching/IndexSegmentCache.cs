@@ -163,9 +163,9 @@ public class CacheRoot
     /// <summary>
     /// Evict cache entries for datoms in the given transaction log.
     /// </summary>
-    public CacheRoot EvictNew(StoreResult result, IAttributeRegistry registry, out IndexSegment newDatoms)
+    public CacheRoot EvictNew(StoreResult result, out IndexSegment newDatoms)
     {
-        newDatoms = result.Snapshot.Datoms(SliceDescriptor.Create(result.AssignedTxId, registry));
+        newDatoms = result.Snapshot.Datoms(SliceDescriptor.Create(result.AssignedTxId));
         
         var editable = _entries.ToBuilder();
         foreach (var datom in newDatoms)
@@ -221,7 +221,7 @@ public class IndexSegmentCache
         if (_root.TryGetValue(key, out var segment))
             return segment;
 
-        segment = db.Snapshot.Datoms(SliceDescriptor.Create(entityId, db.Registry));
+        segment = db.Snapshot.Datoms(SliceDescriptor.Create(entityId));
         UpdateEntry(key, segment);
         return segment;
     }
@@ -235,7 +235,7 @@ public class IndexSegmentCache
         if (_root.TryGetValue(key, out var segment))
             return segment;
         
-        segment = db.Snapshot.Datoms(SliceDescriptor.Create(attributeId, entityId, db.Registry));
+        segment = db.Snapshot.Datoms(SliceDescriptor.Create(attributeId, entityId));
         UpdateEntry(key, segment);
         return segment;
     }
@@ -249,7 +249,7 @@ public class IndexSegmentCache
         if (_root.TryGetValue(key, out var segment))
             return segment;
         
-        segment = db.Snapshot.Datoms(SliceDescriptor.CreateReferenceTo(entityId, db.Registry));
+        segment = db.Snapshot.Datoms(SliceDescriptor.CreateReferenceTo(entityId));
         UpdateEntry(key, segment);
         return segment;
     }
@@ -257,9 +257,9 @@ public class IndexSegmentCache
     /// <summary>
     /// Creates a copy of the cache with the given datoms evicted, and the new datoms added.
     /// </summary>
-    public IndexSegmentCache ForkAndEvict(StoreResult result, IAttributeRegistry registry, out IndexSegment newDatoms)
+    public IndexSegmentCache ForkAndEvict(StoreResult result, AttributeCache attributeCache, out IndexSegment newDatoms)
     {
-        var newRoot = _root.EvictNew(result, registry, out newDatoms);
+        var newRoot = _root.EvictNew(result, out newDatoms);
         return new IndexSegmentCache {  _root = newRoot };
     }
     

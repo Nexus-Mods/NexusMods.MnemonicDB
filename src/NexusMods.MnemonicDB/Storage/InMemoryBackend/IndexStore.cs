@@ -8,11 +8,9 @@ namespace NexusMods.MnemonicDB.Storage.InMemoryBackend;
 
 public class IndexStore : IIndexStore
 {
-    private readonly AttributeRegistry _registry;
 
-    public IndexStore(IndexType type, AttributeRegistry registry)
+    public IndexStore(IndexType type)
     {
-        _registry = registry;
         Type = type;
         Set = ImmutableSortedSet<byte[]>.Empty;
     }

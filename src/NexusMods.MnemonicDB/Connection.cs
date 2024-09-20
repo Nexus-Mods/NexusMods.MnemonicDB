@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Query;
@@ -24,7 +25,6 @@ namespace NexusMods.MnemonicDB;
 public class Connection : IConnection
 {
     private readonly IDatomStore _store;
-    private readonly Dictionary<Symbol, IAttribute> _declaredAttributes;
     private readonly ILogger<Connection> _logger;
 
     private R3.BehaviorSubject<IDb> _dbStream;
@@ -34,11 +34,12 @@ public class Connection : IConnection
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAttribute> declaredAttributes, IEnumerable<IAnalyzer> analyzers)
+    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers)
     {
         ServiceProvider = provider;
+        AttributeCache = store.AttributeCache;
+        AttributeResolver = new AttributeResolver(provider, AttributeCache);
         _logger = logger;
-        _declaredAttributes = declaredAttributes.ToDictionary(a => a.Id);
         _store = store;
         _dbStream = new R3.BehaviorSubject<IDb>(default!);
         _analyzers = analyzers.ToArray();
@@ -99,7 +100,10 @@ public class Connection : IConnection
     }
 
     /// <inheritdoc />
-    public IAttributeRegistry Registry => _store.Registry;
+    public AttributeResolver AttributeResolver { get; }
+
+    /// <inheritdoc />
+    public AttributeCache AttributeCache { get; }
 
     private static void ThrowNullDb()
     {
@@ -113,8 +117,8 @@ public class Connection : IConnection
     /// <inheritdoc />
     public IDb AsOf(TxId txId)
     {
-        var snapshot = new AsOfSnapshot(_store.GetSnapshot(), txId, (AttributeRegistry)_store.Registry);
-        return new Db(snapshot, txId, (AttributeRegistry)_store.Registry)
+        var snapshot = new AsOfSnapshot(_store.GetSnapshot(), txId, AttributeCache);
+        return new Db(snapshot, txId, AttributeCache)
         {
             Connection = this
         };
@@ -123,7 +127,7 @@ public class Connection : IConnection
     /// <inheritdoc />
     public ITransaction BeginTransaction()
     {
-        return new Transaction(this, _store.Registry);
+        return new Transaction(this);
     }
 
     /// <inheritdoc />
@@ -140,46 +144,40 @@ public class Connection : IConnection
         }
     }
 
-    private void AddMissingAttributes(IEnumerable<IAttribute> declaredAttributes)
+    private void AddMissingAttributes()
     {
-        var existing = ExistingAttributes().ToDictionary(a => a.UniqueId);
+        var declaredAttributes = AttributeResolver.DefinedAttributes;
+        var existing = AttributeCache.AllAttributeIds.ToHashSet();
+        
         if (existing.Count == 0)
             throw new AggregateException(
                 "No attributes found in the database, something went wrong, as it should have been bootstrapped by now");
 
-        var missing = declaredAttributes.Where(a => !existing.ContainsKey(a.Id)).ToArray();
+        var missing = declaredAttributes.Where(a => !existing.Contains(a.Id)).ToArray();
         if (missing.Length == 0)
         {
-            // Nothing new to assert, so just add the new data to the registry
-            _store.Registry.Populate(existing.Values.ToArray());
+            // No changes to make to the schema, we can return early
+            return;
+        }
+        
+        var attrId = existing.Select(sym => AttributeCache.GetAttributeId(sym)).Max().Value;
+        using var builder = new IndexSegmentBuilder(AttributeCache);
+        foreach (var attr in missing.OrderBy(e => e.Id.Id))
+        {
+            var id = EntityId.From(++attrId);
+            builder.Add(id, AttributeDefinition.UniqueId, attr.Id);
+            builder.Add(id, AttributeDefinition.ValueType, attr.LowLevelType);
+            if (attr.IsIndexed)
+                builder.Add(id, AttributeDefinition.Indexed, Null.Instance);
+            builder.Add(id, AttributeDefinition.Cardinality, attr.Cardinalty);
+            if (attr.NoHistory)
+                builder.Add(id, AttributeDefinition.NoHistory, Null.Instance);
+            if (attr.DeclaredOptional)
+                builder.Add(id, AttributeDefinition.Optional, Null.Instance);
         }
 
-        var newAttrs = new List<DbAttribute>();
-
-        var attrId = existing.Values.Max(a => a.AttrEntityId).Value;
-        foreach (var attr in missing)
-        {
-            var id = ++attrId;
-
-            var uniqueId = attr.Id;
-            newAttrs.Add(new DbAttribute(uniqueId, AttributeId.From(id), attr.LowLevelType, attr));
-        }
-
-        _store.RegisterAttributes(newAttrs);
-    }
-
-    private IEnumerable<DbAttribute> ExistingAttributes()
-    {
-        var db = new Db(_store.GetSnapshot(), TxId, (AttributeRegistry)_store.Registry)
-        {
-            Connection = this
-        };
-
-        foreach (var attribute in AttributeDefinition.All(db))
-        {
-            var declared = _declaredAttributes[attribute.UniqueId];
-            yield return new DbAttribute(attribute.UniqueId, AttributeId.From((ushort)attribute.Id.Value), attribute.ValueType, declared);
-        }
+        var (_, db) = _store.Transact(builder.Build());
+        AttributeCache.Reset(db);
     }
 
     internal async Task<ICommitResult> Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions)
@@ -197,7 +195,14 @@ public class Connection : IConnection
     {
         try
         {
-            AddMissingAttributes(_declaredAttributes.Values);
+            var initialSnapshot = _store.GetSnapshot();
+            var initialDb = new Db(initialSnapshot, TxId, AttributeCache)
+            {
+                Connection = this
+            };
+            AttributeCache.Reset(initialDb);
+            
+            AddMissingAttributes();
 
             _dbStreamDisposable = ProcessUpdate(_store.TxLog)
                 .Subscribe(itm => _dbStream.OnNext(itm));

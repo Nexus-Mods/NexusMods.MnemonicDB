@@ -14,9 +14,9 @@ using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 namespace NexusMods.MnemonicDB;
 
 /// <inheritdoc />
-internal class Transaction(Connection connection, IAttributeRegistry registry) : ITransaction
+internal class Transaction(Connection connection) : ITransaction
 {
-    private readonly IndexSegmentBuilder _datoms = new(registry);
+    private readonly IndexSegmentBuilder _datoms = new(connection.AttributeCache);
     private HashSet<ITxFunction>? _txFunctions; // No reason to create the hashset if we don't need it
     private List<ITemporaryEntity>? _tempEntities;
     private ulong _tempId = PartitionId.Temp.MakeEntityId(1).Value;

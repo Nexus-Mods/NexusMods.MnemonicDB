@@ -17,7 +17,7 @@ namespace NexusMods.MnemonicDB.Storage.Tests;
 
 public abstract class ABackendTest<TStoreType>(
     IServiceProvider provider,
-    Func<AttributeRegistry, IStoreBackend> backendFn)
+    Func<IStoreBackend> backendFn)
     : AStorageTest(provider, backendFn)
     where TStoreType : IStoreBackend
 {
@@ -35,11 +35,10 @@ public abstract class ABackendTest<TStoreType>(
     {
         var tx = await GenerateData();
         var datoms = tx.Snapshot
-            .Datoms(SliceDescriptor.Create(type, Registry))
-            .Select(d => d.Resolved)
+            .Datoms(SliceDescriptor.Create(type))
             .ToArray();
 
-        await Verify(datoms.ToTable(Registry))
+        await Verify(datoms.ToTable(AttributeCache))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }
@@ -70,7 +69,7 @@ public abstract class ABackendTest<TStoreType>(
 
         for (var i = 0; i < 4; i++)
         {
-            using var segment = new IndexSegmentBuilder(Registry);
+            using var segment = new IndexSegmentBuilder(AttributeCache);
             var entityId = NextTempId();
             segment.Add(entityId, Blobs.InKeyBlob, smallData);
             segment.Add(entityId, Blobs.InValueBlob, largeData);
@@ -81,7 +80,7 @@ public abstract class ABackendTest<TStoreType>(
         // Retract the first 2
         for (var i = 0; i < 2; i++)
         {
-            using var segment = new IndexSegmentBuilder(Registry);
+            using var segment = new IndexSegmentBuilder(AttributeCache);
             segment.Add(ids[i], Blobs.InKeyBlob, smallData, true);
             segment.Add(ids[i], Blobs.InValueBlob, largeData, true);
             await DatomStore.TransactAsync(segment.Build());
@@ -93,21 +92,19 @@ public abstract class ABackendTest<TStoreType>(
         // Change the other 2
         for (var i = 5; i < 2; i++)
         {
-            using var segment = new IndexSegmentBuilder(Registry);
+            using var segment = new IndexSegmentBuilder(AttributeCache);
             segment.Add(ids[i], Blobs.InKeyBlob, smallData);
             segment.Add(ids[i], Blobs.InValueBlob, largeData);
             await DatomStore.TransactAsync(segment.Build());
         }
 
         var datoms = DatomStore.GetSnapshot()
-            .Datoms(SliceDescriptor.Create(type, Registry))
-            .Select(d => d.Resolved)
+            .Datoms(SliceDescriptor.Create(type))
             .ToArray();
 
-        await Verify(datoms.ToTable(Registry))
+        await Verify(datoms.ToTable(AttributeCache))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
-
     }
 
 
@@ -123,15 +120,14 @@ public abstract class ABackendTest<TStoreType>(
     public async Task HistoricalQueriesReturnAllDataSorted(IndexType type)
     {
         var tx = await GenerateData();
-        var current = tx.Snapshot.Datoms(SliceDescriptor.Create(type.CurrentVariant(), Registry));
-        var history = tx.Snapshot.Datoms(SliceDescriptor.Create(type.HistoryVariant(), Registry));
+        var current = tx.Snapshot.Datoms(SliceDescriptor.Create(type.CurrentVariant()));
+        var history = tx.Snapshot.Datoms(SliceDescriptor.Create(type.HistoryVariant()));
         var comparer = type.GetComparator();
         var merged = current
             .Merge(history, CompareDatoms(comparer))
-            .Select(d => d.Resolved)
             .ToArray();
 
-        await Verify(merged.ToTable(Registry))
+        await Verify(merged.ToTable(AttributeCache))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }
@@ -157,7 +153,7 @@ public abstract class ABackendTest<TStoreType>(
 
         {
 
-            using var segment = new IndexSegmentBuilder(Registry);
+            using var segment = new IndexSegmentBuilder(AttributeCache);
 
             segment.Add(id1, File.Path, "/foo/bar");
             segment.Add(id1, File.Hash, Hash.From(0xDEADBEEF));
@@ -188,7 +184,7 @@ public abstract class ABackendTest<TStoreType>(
         collectionId = tx.Remaps[collectionId];
 
         {
-            using var segment = new IndexSegmentBuilder(Registry);
+            using var segment = new IndexSegmentBuilder(AttributeCache);
             segment.Add(id2, File.Path, "/foo/qux");
             segment.Add(id1, File.ModId, modId2);
             segment.Add(collectionId, Collection.ModIds, modId2, true);
@@ -215,7 +211,7 @@ public abstract class ABackendTest<TStoreType>(
         StoreResult tx1, tx2;
 
         {
-            using var segment = new IndexSegmentBuilder(Registry);
+            using var segment = new IndexSegmentBuilder(AttributeCache);
 
             segment.Add(id, File.Path, "/foo/bar");
             segment.Add(id, File.Hash, Hash.From(0xDEADBEEF));
@@ -229,7 +225,7 @@ public abstract class ABackendTest<TStoreType>(
         modId = tx1.Remaps[modId];
 
         {
-            using var segment = new IndexSegmentBuilder(Registry);
+            using var segment = new IndexSegmentBuilder(AttributeCache);
 
             segment.Add(id, File.Path, "/foo/bar", true);
             segment.Add(id, File.Hash, Hash.From(0xDEADBEEF), true);
@@ -242,10 +238,9 @@ public abstract class ABackendTest<TStoreType>(
 
 
         var datoms = tx2.Snapshot
-            .Datoms(SliceDescriptor.Create(type, Registry))
-            .Select(d => d.Resolved)
+            .Datoms(SliceDescriptor.Create(type))
             .ToArray();
-        await Verify(datoms.ToTable(Registry))
+        await Verify(datoms.ToTable(AttributeCache))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }
@@ -254,10 +249,9 @@ public abstract class ABackendTest<TStoreType>(
     [Fact]
     public async Task CanLoadExistingAttributes()
     {
-        var attrs = DatomStore.GetSnapshot().Datoms(SliceDescriptor.Create(AttributeDefinition.UniqueId, Registry))
-            .Select(d => d.Resolved)
+        var attrs = DatomStore.GetSnapshot().Datoms(SliceDescriptor.Create(AttributeDefinition.UniqueId, AttributeCache))
             .ToArray();
 
-        await Verify(attrs.ToTable(Registry));
+        await Verify(attrs.ToTable(AttributeCache));
     }
 }

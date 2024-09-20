@@ -14,15 +14,17 @@ public class Backend : IStoreBackend
 {
     private readonly IIndex[] _indexes;
 
-    private readonly AttributeRegistry _registry;
+    private readonly AttributeCache _attributeCache;
     private readonly IndexStore[] _stores;
 
-    public Backend(AttributeRegistry registry)
+    public Backend()
     {
-        _registry = registry;
+        _attributeCache = new AttributeCache();
         _stores = new IndexStore[Enum.GetValues<IndexType>().Select(i => (int)i).Max() + 1];
         _indexes = new IIndex[Enum.GetValues<IndexType>().Select(i => (int)i).Max() + 1];
     }
+
+    public AttributeCache AttributeCache => _attributeCache;
 
     public IWriteBatch CreateBatch()
     {
@@ -34,7 +36,7 @@ public class Backend : IStoreBackend
     public void DeclareIndex<TComparator>(IndexType name)
         where TComparator : IDatomComparator
     {
-        var store = new IndexStore(name, _registry);
+        var store = new IndexStore(name);
         _stores[(int)name] = store;
         var index = new Index<TComparator>(store);
         store.Init(index);
@@ -50,7 +52,7 @@ public class Backend : IStoreBackend
     {
         return new Snapshot(_indexes
                 .Select(i => i == null ? ImmutableSortedSet<byte[]>.Empty : ((IInMemoryIndex)i).Set).ToArray(),
-            _registry);
+            _attributeCache);
     }
 
     public void Dispose() { }

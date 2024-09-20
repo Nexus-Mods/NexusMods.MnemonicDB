@@ -15,14 +15,14 @@ public class IndexSegmentABenchmarks
 
     public IndexSegmentABenchmarks()
     {
-        var registry = new AttributeRegistry(null!, []);
-        using var builder = new IndexSegmentBuilder(registry);
+        var cache = new AttributeCache();
+        using var builder = new IndexSegmentBuilder(cache);
 
         for (int a = 1; a < 100; a++)
         {
             var prefix = new KeyPrefix(EntityId.From(42), AttributeId.From((ushort)a), TxId.From(42), false,
                 ValueTags.Null);
-            builder.Add(new Datom(prefix, ReadOnlyMemory<byte>.Empty, registry));
+            builder.Add(new Datom(prefix, ReadOnlyMemory<byte>.Empty));
         }
 
         _index = builder.Build();

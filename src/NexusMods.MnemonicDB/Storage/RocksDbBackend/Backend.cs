@@ -8,12 +8,20 @@ using IWriteBatch = NexusMods.MnemonicDB.Storage.Abstractions.IWriteBatch;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-public class Backend(AttributeRegistry registry) : IStoreBackend
+public class Backend : IStoreBackend
 {
     private readonly ColumnFamilies _columnFamilies = new();
     private readonly Dictionary<IndexType, IRocksDbIndex> _indexes = new();
     internal readonly Dictionary<IndexType, IRocksDBIndexStore> Stores = new();
     internal RocksDb? Db = null!;
+    private readonly AttributeCache _attributeCache;
+
+    public Backend()
+    {
+        _attributeCache = new AttributeCache();
+    }
+
+    public AttributeCache AttributeCache => _attributeCache;
 
     public IWriteBatch CreateBatch()
     {
@@ -37,7 +45,7 @@ public class Backend(AttributeRegistry registry) : IStoreBackend
 
     public ISnapshot GetSnapshot()
     {
-        return new Snapshot(this, registry);
+        return new Snapshot(this, _attributeCache);
     }
 
     public void Init(AbsolutePath location)

@@ -36,10 +36,10 @@ public interface IDb : IEquatable<IDb>
     ISnapshot Snapshot { get; }
 
     /// <summary>
-    /// The registry that this database is based on.
+    /// The attribute cache for this database.
     /// </summary>
-    IAttributeRegistry Registry { get; }
-
+    AttributeCache AttributeCache { get; }
+    
     /// <summary>
     /// Gets the index segment for the given entity id.
     /// </summary>

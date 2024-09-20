@@ -30,11 +30,16 @@ public interface IConnection
     ///     Gets the current database.
     /// </summary>
     public IDb Db { get; }
-
+    
     /// <summary>
-    /// The attribute registry for this connection
+    /// The associated attribute resolver.
     /// </summary>
-    public IAttributeRegistry Registry { get; }
+    AttributeResolver AttributeResolver { get; }
+    
+    /// <summary>
+    /// The attribute cache for this connection.
+    /// </summary>
+    AttributeCache AttributeCache { get; }
 
     /// <summary>
     ///     Gets the most recent transaction id.

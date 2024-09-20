@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -34,7 +35,7 @@ public class DatomStore : IDatomStore
     private readonly IIndex _eavtHistory;
     private readonly ILogger<DatomStore> _logger;
     private readonly PooledMemoryBufferWriter _retractWriter;
-    private readonly AttributeRegistry _registry;
+    private readonly AttributeCache _attributeCache;
     private readonly DatomStoreSettings _settings;
 
     private readonly BlockingCollection<PendingTransaction> _pendingTransactions;
@@ -51,6 +52,11 @@ public class DatomStore : IDatomStore
     private IDb? _currentDb = null;
 
     private static readonly TimeSpan TransactionTimeout = TimeSpan.FromMinutes(120);
+    
+    /// <summary>
+    /// Used to remap temporary entity ids to real entity ids, this is cleared after each transaction
+    /// </summary>
+    private Dictionary<EntityId, EntityId> _remaps = new();
 
     /// <summary>
     /// Cache for the next entity/tx/attribute ids
@@ -63,13 +69,14 @@ public class DatomStore : IDatomStore
     private Thread? _loggerThread;
 
     private CancellationTokenSource _shutdownToken = new();
+    private TxId _thisTx;
 
     /// <summary>
     /// DI constructor
     /// </summary>
-    public DatomStore(ILogger<DatomStore> logger, AttributeRegistry registry, DatomStoreSettings settings,
-        IStoreBackend backend)
+    public DatomStore(ILogger<DatomStore> logger, DatomStoreSettings settings, IStoreBackend backend)
     {
+        _attributeCache = backend.AttributeCache;
         _pendingTransactions = new BlockingCollection<PendingTransaction>(new ConcurrentQueue<PendingTransaction>());
 
         _backend = backend;
@@ -80,7 +87,6 @@ public class DatomStore : IDatomStore
 
         _logger = logger;
         _settings = settings;
-        _registry = registry;
 
         _backend.DeclareEAVT(IndexType.EAVTCurrent);
         _backend.DeclareEAVT(IndexType.EAVTHistory);
@@ -103,9 +109,7 @@ public class DatomStore : IDatomStore
         _vaetHistory = _backend.GetIndex(IndexType.VAETHistory);
         _avetCurrent = _backend.GetIndex(IndexType.AVETCurrent);
         _avetHistory = _backend.GetIndex(IndexType.AVETHistory);
-
-        registry.Populate(AttributeDefinition.HardcodedDbAttributes);
-
+        
         Bootstrap();
     }
     
@@ -113,7 +117,7 @@ public class DatomStore : IDatomStore
     public TxId AsOfTxId => _asOfTx;
 
     /// <inheritdoc />
-    public IAttributeRegistry Registry => _registry;
+    public AttributeCache AttributeCache => _attributeCache;
 
     /// <inheritdoc />
     public async Task<(StoreResult, IDb)> TransactAsync(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null)
@@ -171,16 +175,16 @@ public class DatomStore : IDatomStore
     /// <inheritdoc />
     public void RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
     {
-        var datoms = new IndexSegmentBuilder(_registry);
+        var datoms = new IndexSegmentBuilder(_attributeCache);
         var newAttrsArray = newAttrs.ToArray();
 
         var internalTx = new InternalTransaction(null!, datoms);
         foreach (var attribute in newAttrsArray)
             AttributeDefinition.Insert(internalTx, attribute.Attribute, attribute.AttrEntityId.Value);
         internalTx.ProcessTemporaryEntities();
-        Transact(datoms.Build());
-
-        _registry.Populate(newAttrsArray);
+        var (result, idb) = Transact(datoms.Build());
+        
+        _attributeCache.Reset(idb);
     }
 
     /// <inheritdoc />
@@ -218,7 +222,7 @@ public class DatomStore : IDatomStore
                     {
                         var storeResult = new StoreResult
                         {
-                            Remaps = new Dictionary<EntityId, EntityId>(),
+                            Remaps = new Dictionary<EntityId, EntityId>().ToFrozenDictionary(),
                             AssignedTxId = _nextIdCache.AsOfTxId,
                             Snapshot = _backend.GetSnapshot(),
                         };
@@ -270,12 +274,12 @@ public class DatomStore : IDatomStore
         try
         {
             var snapshot = _backend.GetSnapshot();
-            var lastTx = TxId.From(_nextIdCache.LastEntityInPartition(snapshot, PartitionId.Transactions, _registry).Value);
+            var lastTx = TxId.From(_nextIdCache.LastEntityInPartition(snapshot, PartitionId.Transactions).Value);
 
             if (lastTx.Value == TxId.MinValue)
             {
                 _logger.LogInformation("Bootstrapping the datom store no existing state found");
-                using var builder = new IndexSegmentBuilder(_registry);
+                using var builder = new IndexSegmentBuilder(_attributeCache);
                 var internalTx = new InternalTransaction(null!, builder);
                 AttributeDefinition.AddInitial(internalTx);
                 internalTx.ProcessTemporaryEntities();
@@ -302,7 +306,7 @@ public class DatomStore : IDatomStore
             throw;
         }
         
-        _currentDb = new Db(_currentSnapshot, _asOfTx, _registry);
+        _currentDb = new Db(_currentSnapshot, _asOfTx, _attributeCache);
         _updatesSubject = new BehaviorSubject<IDb>(_currentDb);
         _loggerThread = new Thread(ConsumeTransactions)
         {
@@ -314,23 +318,23 @@ public class DatomStore : IDatomStore
 
     #region Internals
 
-    private EntityId MaybeRemap(ISnapshot snapshot, EntityId id, Dictionary<EntityId, EntityId> remaps, TxId thisTx)
+    private EntityId Remap(EntityId id)
     {
         if (id.Partition == PartitionId.Temp)
         {
-            if (!remaps.TryGetValue(id, out var newId))
+            if (!_remaps.TryGetValue(id, out var newId))
             {
                 if (id.Value == PartitionId.Temp.MinValue)
                 {
-                    var remapTo = EntityId.From(thisTx.Value);
-                    remaps.Add(id, remapTo);
+                    var remapTo = EntityId.From(_thisTx.Value);
+                    _remaps.Add(id, remapTo);
                     return remapTo;
                 }
                 else
                 {
                     var partitionId = PartitionId.From((byte)(id.Value >> 40 & 0xFF));
-                    var assignedId = _nextIdCache.NextId(snapshot, partitionId, _registry);
-                    remaps.Add(id, assignedId);
+                    var assignedId = _nextIdCache.NextId(_currentSnapshot!, partitionId);
+                    _remaps.Add(id, assignedId);
                     return assignedId;
                 }
             }
@@ -345,18 +349,17 @@ public class DatomStore : IDatomStore
     private void Log(PendingTransaction pendingTransaction, out StoreResult result)
     {
         var currentSnapshot = _currentSnapshot ?? _backend.GetSnapshot();
-        var thisTx = TxId.From(_nextIdCache.NextId(currentSnapshot, PartitionId.Transactions, _registry).Value);
-
-        var remaps = new Dictionary<EntityId, EntityId>();
-        var remapFn = (Func<EntityId, EntityId>)(id => MaybeRemap(currentSnapshot, id, remaps, thisTx));
+        _remaps.Clear();
+        _thisTx = TxId.From(_nextIdCache.NextId(currentSnapshot, PartitionId.Transactions).Value);
+        
         using var batch = _backend.CreateBatch();
 
         var swPrepare = Stopwatch.StartNew();
 
-
-
-        var secondaryBuilder = new IndexSegmentBuilder(_registry);
-        var txId = EntityId.From(thisTx.Value);
+        _remaps = new Dictionary<EntityId, EntityId>();
+        
+        var secondaryBuilder = new IndexSegmentBuilder(_attributeCache);
+        var txId = EntityId.From(_thisTx.Value);
         secondaryBuilder.Add(txId, MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp, DateTime.UtcNow);
 
         if (pendingTransaction.TxFunctions != null)
@@ -385,19 +388,19 @@ public class DatomStore : IDatomStore
             _writer.Reset();
 
             var isRemapped = datom.E.InPartition(PartitionId.Temp);
-            var attr = _registry.GetAttribute(datom.A);
 
             var currentPrefix = datom.Prefix;
+            var attrId = currentPrefix.A;
 
-            var newE = isRemapped ? remapFn(currentPrefix.E) : currentPrefix.E;
-            var keyPrefix = currentPrefix with {E = newE, T = thisTx};
+            var newE = isRemapped ? Remap(currentPrefix.E) : currentPrefix.E;
+            var keyPrefix = currentPrefix with {E = newE, T = _thisTx};
 
             {
                 _writer.WriteMarshal(keyPrefix);
                 var valueSpan = datom.ValueSpan;
                 var span = _writer.GetSpan(valueSpan.Length);
                 valueSpan.CopyTo(span);
-                attr.Remap(remapFn, span);
+                Remap(in keyPrefix, span);
                 _writer.Advance(valueSpan.Length);
             }
 
@@ -405,21 +408,21 @@ public class DatomStore : IDatomStore
 
             if (keyPrefix.IsRetract)
             {
-                ProcessRetract(batch, attr, newSpan, currentSnapshot);
+                ProcessRetract(batch, attrId, newSpan, currentSnapshot);
                 continue;
             }
 
-            switch (GetPreviousState(isRemapped, attr, currentSnapshot, newSpan))
+            switch (GetPreviousState(isRemapped, attrId, currentSnapshot, newSpan))
             {
                 case PrevState.Duplicate:
                     continue;
                 case PrevState.NotExists:
-                    ProcessAssert(batch, attr, newSpan);
+                    ProcessAssert(batch, attrId, newSpan);
                     break;
                 case PrevState.Exists:
-                    SwitchPrevToRetraction(thisTx);
-                    ProcessRetract(batch, attr, _retractWriter.GetWrittenSpan(), currentSnapshot);
-                    ProcessAssert(batch, attr, newSpan);
+                    SwitchPrevToRetraction();
+                    ProcessRetract(batch, attrId, _retractWriter.GetWrittenSpan(), currentSnapshot);
+                    ProcessAssert(batch, attrId, newSpan);
                     break;
             }
 
@@ -430,21 +433,50 @@ public class DatomStore : IDatomStore
 
         if (_logger.IsEnabled(LogLevel.Debug))
             _logger.LogDebug("{TxId} ({Count} datoms, {Size}) prepared in {Elapsed}ms, written in {WriteElapsed}ms",
-                thisTx,
+                _thisTx,
                 pendingTransaction.Data.Count + secondaryData.Count,
                 pendingTransaction.Data.DataSize + secondaryData.DataSize,
                 swPrepare.ElapsedMilliseconds - swWrite.ElapsedMilliseconds,
                 swWrite.ElapsedMilliseconds);
 
-        _asOfTx = thisTx;
+        _asOfTx = _thisTx;
 
         _currentSnapshot = _backend.GetSnapshot();
         result = new StoreResult
         {
-            AssignedTxId = thisTx,
-            Remaps = remaps,
+            AssignedTxId = _thisTx,
+            Remaps = _remaps.ToFrozenDictionary(),
             Snapshot = _currentSnapshot
         };
+    }
+    
+    private void Remap(in KeyPrefix prefix, Span<byte> valueSpan)
+    {
+        switch (prefix.ValueTag)
+        {
+            case ValueTags.Reference:
+                var oldId = MemoryMarshal.Read<EntityId>(valueSpan);
+                var newId = Remap(oldId);
+                MemoryMarshal.Write(valueSpan, newId);
+                break;
+            case ValueTags.Tuple2:
+            {
+                var tag1 = (ValueTags)valueSpan[0];
+                var tag2 = (ValueTags)valueSpan[1];
+                if (tag1 == ValueTags.Reference)
+                {
+                    var entityId = MemoryMarshal.Read<EntityId>(valueSpan.SliceFast(2));
+                    var newEntityId = Remap(entityId);
+                    MemoryMarshal.Write(valueSpan.SliceFast(2), newEntityId);
+                }
+                if (tag2 == ValueTags.Reference)
+                {
+                    throw new NotSupportedException("This attribute does not support remapping of the second element.");
+                }
+                break;
+            }
+        }
+        
     }
 
     /// <summary>
@@ -452,14 +484,14 @@ public class DatomStore : IDatomStore
     /// </summary>
     /// <param name="thisTx"></param>
     /// <exception cref="NotImplementedException"></exception>
-    private void SwitchPrevToRetraction(TxId thisTx)
+    private void SwitchPrevToRetraction()
     {
         var prevKey = MemoryMarshal.Read<KeyPrefix>(_retractWriter.GetWrittenSpan());
-        prevKey = prevKey with {T = thisTx, IsRetract = true};
+        prevKey = prevKey with {T = _thisTx, IsRetract = true};
         MemoryMarshal.Write(_retractWriter.GetWrittenSpanWritable(), prevKey);
     }
 
-    private void ProcessRetract(IWriteBatch batch, IAttribute attribute, ReadOnlySpan<byte> datom, ISnapshot iterator)
+    private void ProcessRetract(IWriteBatch batch, AttributeId attrId, ReadOnlySpan<byte> datom, ISnapshot iterator)
     {
         _prevWriter.Reset();
         _prevWriter.Write(datom);
@@ -468,11 +500,11 @@ public class DatomStore : IDatomStore
         prevKey = prevKey with {T = TxId.MinValue, IsRetract = false};
         MemoryMarshal.Write(_prevWriter.GetWrittenSpanWritable(), prevKey);
 
-        var low = new Datom(_prevWriter.GetWrittenSpan().ToArray(), Registry);
+        var low = new Datom(_prevWriter.GetWrittenSpan().ToArray());
 
         prevKey = prevKey with {T = TxId.MaxValue, IsRetract = false};
         MemoryMarshal.Write(_prevWriter.GetWrittenSpanWritable(), prevKey);
-        var high = new Datom(_prevWriter.GetWrittenSpan().ToArray(), Registry);
+        var high = new Datom(_prevWriter.GetWrittenSpan().ToArray());
 
         var sliceDescriptor = new SliceDescriptor
         {
@@ -507,13 +539,14 @@ public class DatomStore : IDatomStore
 
         _eavtCurrent.Delete(batch, prevDatom);
         _aevtCurrent.Delete(batch, prevDatom);
-        if (attribute.IsReference)
+        if (_attributeCache.IsReference(attrId))
             _vaetCurrent.Delete(batch, prevDatom);
-        if (attribute.IsIndexed)
+        if (_attributeCache.IsIndexed(attrId))
             _avetCurrent.Delete(batch, prevDatom);
 
         _txLog.Put(batch, datom);
-        if (attribute.NoHistory) return;
+        if (_attributeCache.IsNoHistory(attrId))
+            return;
 
         // Move the datom to the history index and also record the retraction
         _eavtHistory.Put(batch, prevDatom);
@@ -523,27 +556,27 @@ public class DatomStore : IDatomStore
         _aevtHistory.Put(batch, prevDatom);
         _aevtHistory.Put(batch, datom);
 
-        if (attribute.IsReference)
+        if (_attributeCache.IsReference(attrId))
         {
             _vaetHistory.Put(batch, prevDatom);
             _vaetHistory.Put(batch, datom);
         }
 
-        if (attribute.IsIndexed)
+        if (_attributeCache.IsIndexed(attrId))
         {
             _avetHistory.Put(batch, prevDatom);
             _avetHistory.Put(batch, datom);
         }
     }
 
-    private void ProcessAssert(IWriteBatch batch, IAttribute attribute, ReadOnlySpan<byte> datom)
+    private void ProcessAssert(IWriteBatch batch, AttributeId attributeId, ReadOnlySpan<byte> datom)
     {
         _txLog.Put(batch, datom);
         _eavtCurrent.Put(batch, datom);
         _aevtCurrent.Put(batch, datom);
-        if (attribute.IsReference)
+        if (_attributeCache.IsReference(attributeId))
             _vaetCurrent.Put(batch, datom);
-        if (attribute.IsIndexed)
+        if (_attributeCache.IsIndexed(attributeId))
             _avetCurrent.Put(batch, datom);
     }
 
@@ -554,15 +587,15 @@ public class DatomStore : IDatomStore
         Duplicate
     }
 
-    private unsafe PrevState GetPreviousState(bool isRemapped, IAttribute attribute, ISnapshot snapshot, ReadOnlySpan<byte> span)
+    private unsafe PrevState GetPreviousState(bool isRemapped, AttributeId attrId, ISnapshot snapshot, ReadOnlySpan<byte> span)
     {
         if (isRemapped) return PrevState.NotExists;
 
         var keyPrefix = MemoryMarshal.Read<KeyPrefix>(span);
 
-        if (attribute.Cardinalty == Cardinality.Many)
+        if (_attributeCache.IsCardinalityMany(attrId))
         {
-            var sliceDescriptor = SliceDescriptor.Exact(IndexType.EAVTCurrent, span, _registry);
+            var sliceDescriptor = SliceDescriptor.Exact(IndexType.EAVTCurrent, span);
             var found = snapshot.Datoms(sliceDescriptor)
                 .FirstOrDefault();
             if (!found.Valid) return PrevState.NotExists;
@@ -581,7 +614,7 @@ public class DatomStore : IDatomStore
         else
         {
 
-            var descriptor = SliceDescriptor.Create(keyPrefix.E, keyPrefix.A, _registry);
+            var descriptor = SliceDescriptor.Create(keyPrefix.E, keyPrefix.A);
 
             var datom = snapshot.Datoms(descriptor)
                 .FirstOrDefault();

@@ -5,17 +5,16 @@ namespace NexusMods.MnemonicDB.TestModel.Analyzers;
 /// <summary>
 /// Records all the attributes in each transaction
 /// </summary>
-public class AttributesAnalyzer : IAnalyzer<HashSet<IAttribute>>
+public class AttributesAnalyzer : IAnalyzer<HashSet<Symbol>>
 {
     public object Analyze(IDb? dbOld, IDb dbNew)
     {
-        var hashSet = new HashSet<IAttribute>();
-        var registry = dbNew.Registry;
+        var hashSet = new HashSet<Symbol>();
+        var cache = dbNew.AttributeCache;
         foreach (var datom in dbNew.RecentlyAdded)
         {
-            hashSet.Add(registry.GetAttribute(datom.A));
+            hashSet.Add(cache.GetSymbol(datom.A));
         }
-
         return hashSet;
     }
 }

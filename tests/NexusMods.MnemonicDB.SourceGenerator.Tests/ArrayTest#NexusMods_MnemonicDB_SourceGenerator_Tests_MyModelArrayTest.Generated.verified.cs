@@ -223,9 +223,10 @@ public partial class MyModelArrayTest : __MODELS__.IModelFactory<MyModelArrayTes
            /// <inheritdoc />
            public IEnumerator<IReadDatom> GetEnumerator()
            {
+               var resolver = Db.Connection.AttributeResolver;
                for (var i = 0; i < IndexSegment.Count; i++)
                {
-                   yield return IndexSegment[i].Resolved;
+                   yield return resolver.Resolve(IndexSegment[i]);
                }
            }
 

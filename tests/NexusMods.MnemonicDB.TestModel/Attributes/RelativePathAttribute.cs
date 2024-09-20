@@ -13,7 +13,7 @@ public class RelativePathAttribute(string ns, string name) :
         return value.Path;
     }
 
-    protected override RelativePath FromLowLevel(string lowLevelType, ValueTags tags, RegistryId registryId)
+    protected override RelativePath FromLowLevel(string lowLevelType, ValueTags tags, AttributeResolver resolver)
     {
         return new RelativePath(lowLevelType);
     }

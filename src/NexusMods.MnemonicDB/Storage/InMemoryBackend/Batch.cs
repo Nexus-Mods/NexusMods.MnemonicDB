@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using IWriteBatch = NexusMods.MnemonicDB.Storage.Abstractions.IWriteBatch;
 
@@ -29,7 +31,7 @@ public class Batch(IndexStore[] stores) : IWriteBatch
     {
         if (store is not IndexStore indexStore)
             throw new ArgumentException("Invalid store type", nameof(store));
-
+        
         if (!_datoms.TryGetValue(indexStore.Type, out var datoms))
         {
             datoms = new List<(bool IsDelete, byte[] Data)>();

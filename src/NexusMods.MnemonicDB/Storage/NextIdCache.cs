@@ -22,12 +22,12 @@ public struct NextIdCache
     /// <summary>
     /// Gets the next id for the given partition
     /// </summary>
-    public EntityId NextId(ISnapshot snapshot, PartitionId partitionId, IAttributeRegistry registry)
+    public EntityId NextId(ISnapshot snapshot, PartitionId partitionId)
     {
         var partition = partitionId.Value;
         if (this[partition] == 0)
         {
-            var lastEnt = LastEntityInPartition(snapshot, partitionId, registry);
+            var lastEnt = LastEntityInPartition(snapshot, partitionId);
             this[partition] = lastEnt.Value;
         }
 
@@ -38,7 +38,7 @@ public struct NextIdCache
     /// <summary>
     /// Gets the last recorded entity in the partition in the snapshot
     /// </summary>
-    public EntityId LastEntityInPartition(ISnapshot snapshot, PartitionId partitionId, IAttributeRegistry registry)
+    public EntityId LastEntityInPartition(ISnapshot snapshot, PartitionId partitionId)
     {
         var partition = partitionId.Value;
         if (this[partition] != 0)
@@ -46,7 +46,7 @@ public struct NextIdCache
             return partitionId.MakeEntityId(this[partition]);
         }
 
-        var descriptor = SliceDescriptor.Create(partitionId.MakeEntityId(ulong.MaxValue), partitionId.MakeEntityId(0), registry);
+        var descriptor = SliceDescriptor.Create(partitionId.MakeEntityId(ulong.MaxValue), partitionId.MakeEntityId(0));
 
         var lastEnt = snapshot.DatomsChunked(descriptor, 1)
             .SelectMany(c => c)

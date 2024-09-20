@@ -10,10 +10,10 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 public abstract class HashedBlobAttribute<TValue>(string ns, string name) : ScalarAttribute<TValue, byte[]>(ValueTags.HashedBlob, ns, name) 
     where TValue : notnull
 {
-    public override void Write<TWriter>(EntityId entityId, RegistryId registryId, TValue value, TxId txId, bool isRetract, TWriter writer)
+    public override void Write<TWriter>(EntityId entityId, AttributeCache attributeCache, TValue value, TxId txId, bool isRetract, TWriter writer)
     {
         using var innerWriter = new PooledMemoryBufferWriter();
-        WritePrefix(entityId, registryId, txId, isRetract, writer);
+        WritePrefix(entityId, attributeCache, txId, isRetract, writer);
 
         WriteValue(value, innerWriter);
         var valueSpan = innerWriter.GetWrittenSpan();
@@ -36,7 +36,7 @@ public abstract class HashedBlobAttribute<TValue>(string ns, string name) : Scal
     /// <summary>
     /// Overwrite this method to read the value from the reader
     /// </summary>
-    protected abstract override TValue FromLowLevel(ReadOnlySpan<byte> value, ValueTags tags, RegistryId registryId);
+    protected abstract override TValue FromLowLevel(ReadOnlySpan<byte> value, ValueTags tags, AttributeResolver resolver);
 
     /// <summary>
     /// Overwrite this method to write the value to the writer

@@ -33,19 +33,7 @@ public interface IAttribute
     ///     in the datastore
     /// </summary>
     public Symbol Id { get; }
-
-    /// <summary>
-    /// Gets the unique id of the attribute for the given registry
-    /// </summary>
-    public AttributeId GetDbId(RegistryId id);
-
-    /// <summary>
-    /// Sets the unique id of the attribute for the given registry
-    /// </summary>
-    /// <param name="id"></param>
-    /// <param name="attributeId"></param>
-    public void SetDbId(RegistryId id, AttributeId attributeId);
-
+    
     /// <summary>
     ///    True if the attribute is indexed, false if it is not.
     /// </summary>
@@ -69,7 +57,7 @@ public interface IAttribute
     /// <summary>
     ///     Converts the given values into a typed datom
     /// </summary>
-    IReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, RegistryId registryId);
+    IReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, AttributeResolver resolver);
     
     /// <summary>
     /// Adds the value to the transaction on the given entity/attribute, assumes the value is of the correct type

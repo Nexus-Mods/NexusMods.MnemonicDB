@@ -9,6 +9,11 @@ namespace NexusMods.MnemonicDB.Storage.Abstractions;
 
 public interface IStoreBackend : IDisposable
 {
+    /// <summary>
+    /// Returns the attribute cache for this store, this cache should be shared across
+    /// the datom store, the connection, and the db instances
+    /// </summary>
+    public AttributeCache AttributeCache { get; }
     public IWriteBatch CreateBatch();
 
     public void Init(AbsolutePath location);

@@ -12,7 +12,7 @@ public class ReferenceAttribute(string ns, string name) : ScalarAttribute<Entity
     protected override ulong ToLowLevel(EntityId value) => value.Value;
 
     /// <inheritdoc />
-    protected override EntityId FromLowLevel(ulong lowLevelType, ValueTags tags, RegistryId registryId) 
+    protected override EntityId FromLowLevel(ulong lowLevelType, ValueTags tags, AttributeResolver resolver)
         => EntityId.From(lowLevelType);
 }
 

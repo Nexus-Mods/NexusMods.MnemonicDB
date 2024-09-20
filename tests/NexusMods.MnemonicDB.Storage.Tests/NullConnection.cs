@@ -6,7 +6,8 @@ namespace NexusMods.MnemonicDB.Storage.Tests;
 public class NullConnection : IConnection
 {
     public IDb Db => throw new NotSupportedException();
-    public IAttributeRegistry Registry => throw new NotSupportedException();
+    public AttributeResolver AttributeResolver => throw new NotSupportedException();
+    public AttributeCache AttributeCache => throw new NotSupportedException();
     public TxId TxId => throw new NotSupportedException();
     public IObservable<IDb> Revisions => throw new NotSupportedException();
     public IServiceProvider ServiceProvider => throw new NotSupportedException();

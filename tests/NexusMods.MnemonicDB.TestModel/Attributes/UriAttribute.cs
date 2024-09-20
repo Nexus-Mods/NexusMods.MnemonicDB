@@ -11,7 +11,7 @@ public class UriAttribute(string ns, string name) : ScalarAttribute<Uri, string>
         return value.ToString();
     }
 
-    protected override Uri FromLowLevel(string lowLevelValue, ValueTags tags, RegistryId registryId)
+    protected override Uri FromLowLevel(string lowLevelValue, ValueTags tags, AttributeResolver resolver)
     {
         return new Uri(lowLevelValue);
     }

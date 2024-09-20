@@ -16,7 +16,7 @@ public class IndexSegmentEBenchmarks
 
     public IndexSegmentEBenchmarks()
     {
-        var registry = new AttributeRegistry(null!, []);
+        var registry = new AttributeCache(); 
         using var builder = new IndexSegmentBuilder(registry);
 
         for (var e = 1; e < 100; e++)
@@ -24,7 +24,7 @@ public class IndexSegmentEBenchmarks
             for (var a = 0; a < 20; a++)
             {
                 builder.Add(new Datom(new KeyPrefix(EntityId.From((ulong)e), AttributeId.From((ushort)a), TxId.From((ulong)(e + a)), false,
-                    ValueTags.Null), ReadOnlyMemory<byte>.Empty, registry));
+                    ValueTags.Null), ReadOnlyMemory<byte>.Empty));
             }
         }
 

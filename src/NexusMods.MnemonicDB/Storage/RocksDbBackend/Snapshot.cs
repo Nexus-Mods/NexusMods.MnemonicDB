@@ -8,7 +8,7 @@ using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-internal class Snapshot(Backend backend, AttributeRegistry registry) : ISnapshot
+internal class Snapshot(Backend backend, AttributeCache attributeCache) : ISnapshot
 {
     private readonly RocksDbSharp.Snapshot _snapshot = backend.Db!.CreateSnapshot();
 
@@ -23,7 +23,7 @@ internal class Snapshot(Backend backend, AttributeRegistry registry) : ISnapshot
             .SetIterateLowerBound(from.ToArray())
             .SetIterateUpperBound(to.ToArray());
 
-        using var builder = new IndexSegmentBuilder(registry);
+        using var builder = new IndexSegmentBuilder(attributeCache);
 
         using var iterator = backend.Db!.NewIterator(backend.Stores[descriptor.Index].Handle, options);
         if (reverse)
@@ -68,7 +68,7 @@ internal class Snapshot(Backend backend, AttributeRegistry registry) : ISnapshot
             .SetIterateLowerBound(from.ToArray())
             .SetIterateUpperBound(to.ToArray());
 
-        using var builder = new IndexSegmentBuilder(registry);
+        using var builder = new IndexSegmentBuilder(attributeCache);
 
         using var iterator = backend.Db!.NewIterator(backend.Stores[descriptor.Index].Handle, options);
         if (reverse)

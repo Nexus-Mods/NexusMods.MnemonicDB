@@ -1,5 +1,13 @@
 ## Changelog
 
+### 0.9.83 - 20/09/2024
+* Optimized the interface with RocksDB used all throughout the library. Results in a 30% speedup on search operations
+inside RocksDB.
+* Removed the IAttributeRegistry and all associated IDs and implementations. Functionality is now split into two sub-modules
+  * AttributeCache - sealed class that is created by the backend store and is purely based on the database schema, used by most of the system
+  * AttributeResolver - DI dependant code that the frontend of the system uses to resolve DB datoms to C# attributes. Used very rarely
+* It is now possible for most DB operations to be run completely ignorant of the C# attribute definitions.  
+
 ### 0.9.82 - 12/09/2024
 * Fix a O(n) issue caused by Rx storing observers in a ImmutableList inside a `BehaviorSubject`. Switched to using R3 internally. Over 
 time Rx's uses will be replaced with R3 to avoid these and several other issues

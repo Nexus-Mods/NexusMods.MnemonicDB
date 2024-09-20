@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
 namespace NexusMods.MnemonicDB.Abstractions.TxFunctions;
@@ -46,6 +47,7 @@ public static class ExtensionMethods
         HashSet<EntityId> seen = [];
         Stack<EntityId> remain = new();
         remain.Push(eid);
+        var cache = db.AttributeCache;
 
         while (remain.Count > 0)
         {
@@ -60,16 +62,15 @@ public static class ExtensionMethods
                 if (!seen.Add(reference.E))
                     continue;
 
-                var resolved = reference.Resolved;
                 // If recursive, add it to the list of entities to delete
-                if (ShouldRecursiveDelete(db, resolved))
+                if (ShouldRecursiveDelete(db, cache, reference))
                 {
                     remain.Push(reference.E);
                 }
                 else
                 {
                     // Otherwise, just delete the reference
-                    resolved.Retract(tx);
+                    tx.Add(reference.Retract());
                 }
             }
         }
@@ -79,15 +80,13 @@ public static class ExtensionMethods
     /// Decide if the entity that contains the given datom should be deleted recursively if this
     /// datom needs to be removed.
     /// </summary>
-    private static bool ShouldRecursiveDelete(IDb db, IReadDatom referenceDatom)
+    private static bool ShouldRecursiveDelete(IDb db, AttributeCache cache, Datom referenceDatom)
     {
         // If the reference is not a collection, then we can delete the whole thing as it's a child of this entity
-        if (referenceDatom.A.Cardinalty != Cardinality.Many)
-            return true;
-
         // We can get more detailed, but for now we assume that if the reference is a collection, we should not delete it
         // because it's likely a root of some other system.
-        return false;
+        return !cache.IsCardinalityMany(referenceDatom.A);
+        
     }
 
     private static void DeleteThisOnly(ITransaction tx, IDb db, EntityId eid)

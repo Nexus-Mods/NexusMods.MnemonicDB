@@ -22,16 +22,16 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 [PublicAPI]
 public readonly struct IndexSegment : IReadOnlyList<Datom>
 {
-    private readonly IAttributeRegistry _registry;
+    private readonly AttributeCache _attributeCache;
     private readonly int _rowCount;
     private readonly ReadOnlyMemory<byte> _data;
 
     /// <summary>
     /// Construct a new index segment from the given data and offsets
     /// </summary>
-    public IndexSegment(ReadOnlySpan<byte> data, ReadOnlySpan<int> offsets, IAttributeRegistry registry)
+    public IndexSegment(ReadOnlySpan<byte> data, ReadOnlySpan<int> offsets, AttributeCache attributeCache)
     {
-        _registry = registry;
+        _attributeCache = attributeCache;
 
         if (data.Length == 0)
         {
@@ -117,12 +117,7 @@ public readonly struct IndexSegment : IReadOnlyList<Datom>
     /// The number of datoms in this segment
     /// </summary>
     public int Count => _rowCount;
-
-    /// <summary>
-    /// The assigned registry id
-    /// </summary>
-    public RegistryId RegistryId => _registry.Id;
-
+    
     /// <summary>
     /// Get the datom of the given index
     /// </summary>
@@ -136,7 +131,7 @@ public readonly struct IndexSegment : IReadOnlyList<Datom>
 
             var valueSlice = _data.Slice(fromOffset, toOffset - fromOffset);
 
-            return new Datom(new KeyPrefix(Uppers[idx], Lowers[idx]), valueSlice, _registry);
+            return new Datom(new KeyPrefix(Uppers[idx], Lowers[idx]), valueSlice);
         }
     }
 
@@ -145,7 +140,7 @@ public readonly struct IndexSegment : IReadOnlyList<Datom>
     /// </summary>
     public bool Contains(IAttribute attribute)
     {
-        var id = attribute.GetDbId(_registry.Id);
+        var id = _attributeCache.GetAttributeId(attribute.Id);
         foreach (var datom in this)
             if (datom.A == id)
                 return true;
@@ -162,22 +157,13 @@ public readonly struct IndexSegment : IReadOnlyList<Datom>
 
     /// <inheritdoc />
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-    /// <summary>
-    /// Resolves all the datoms in this segment
-    /// </summary>
-    public IEnumerable<IReadDatom> Resolved()
-    {
-        return this.Select(d => d.Resolved);
-    }
-
-
+    
     /// <summary>
     /// Create a new index segment from the given datoms
     /// </summary>
-    public static IndexSegment From(IAttributeRegistry registry, IReadOnlyCollection<Datom> datoms)
+    public static IndexSegment From(AttributeCache attributeCache, IReadOnlyCollection<Datom> datoms)
     {
-        using var builder = new IndexSegmentBuilder(registry, datoms.Count);
+        using var builder = new IndexSegmentBuilder(attributeCache, datoms.Count);
         builder.Add(datoms);
         return builder.Build();
     }
@@ -297,5 +283,17 @@ public readonly struct IndexSegment : IReadOnlyList<Datom>
 
         /// <inheritdoc/>
         public void Dispose() { }
+    }
+
+    /// <summary>
+    /// Returns the datoms in this segment as resolved datoms
+    /// </summary>
+    public IEnumerable<IReadDatom> Resolved(IConnection connection)
+    {
+        var resolver = connection.AttributeResolver;
+        foreach (var datom in this)
+        {
+            yield return resolver.Resolve(datom);
+        }
     }
 }
