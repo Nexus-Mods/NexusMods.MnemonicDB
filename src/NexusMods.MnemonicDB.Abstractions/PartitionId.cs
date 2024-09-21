@@ -51,7 +51,20 @@ public readonly partial struct PartitionId
     public EntityId MaxValue => EntityId.From(((ulong)Value << 56) | 0x00FFFFFFFFFFFFFF);
 
     /// <inheritdoc />
-    public override string ToString() => $"PartId:{Value:x}";
+    public override string ToString()
+    {
+        if (Value == Attribute)
+            return $"PartId:({Attribute.Value:x})Attribute";
+        if (Value == Transactions)
+            return $"PartId:({Transactions.Value:x})Transactions";
+        if (Value == Entity)
+            return $"PartId:({Entity.Value:x})Entity";
+        if (Value == Temp)
+            return $"PartId:({Temp.Value:x})Temp";
+        if (Value > Temp)
+            return $"PartId:({Value:x})User";
+        return $"PartId:{Value:x}";
+    }
 
     /// <summary>
     /// Encode a partition id and entity id pair

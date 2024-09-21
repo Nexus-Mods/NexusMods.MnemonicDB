@@ -52,6 +52,11 @@ public class DatomStore : IDatomStore
     private IDb? _currentDb = null;
 
     private static readonly TimeSpan TransactionTimeout = TimeSpan.FromMinutes(120);
+
+    /// <summary>
+    /// Cached function to remap temporary entity ids to real entity ids
+    /// </summary>
+    private readonly Func<EntityId, EntityId> _remapFunc;
     
     /// <summary>
     /// Used to remap temporary entity ids to real entity ids, this is cleared after each transaction
@@ -76,6 +81,7 @@ public class DatomStore : IDatomStore
     /// </summary>
     public DatomStore(ILogger<DatomStore> logger, DatomStoreSettings settings, IStoreBackend backend)
     {
+        _remapFunc = Remap;
         _attributeCache = backend.AttributeCache;
         _pendingTransactions = new BlockingCollection<PendingTransaction>(new ConcurrentQueue<PendingTransaction>());
 
@@ -400,7 +406,7 @@ public class DatomStore : IDatomStore
                 var valueSpan = datom.ValueSpan;
                 var span = _writer.GetSpan(valueSpan.Length);
                 valueSpan.CopyTo(span);
-                Remap(in keyPrefix, span);
+                ValueHelpers.Remap(_remapFunc, in keyPrefix, span);
                 _writer.Advance(valueSpan.Length);
             }
 
@@ -450,35 +456,6 @@ public class DatomStore : IDatomStore
         };
     }
     
-    private void Remap(in KeyPrefix prefix, Span<byte> valueSpan)
-    {
-        switch (prefix.ValueTag)
-        {
-            case ValueTags.Reference:
-                var oldId = MemoryMarshal.Read<EntityId>(valueSpan);
-                var newId = Remap(oldId);
-                MemoryMarshal.Write(valueSpan, newId);
-                break;
-            case ValueTags.Tuple2:
-            {
-                var tag1 = (ValueTags)valueSpan[0];
-                var tag2 = (ValueTags)valueSpan[1];
-                if (tag1 == ValueTags.Reference)
-                {
-                    var entityId = MemoryMarshal.Read<EntityId>(valueSpan.SliceFast(2));
-                    var newEntityId = Remap(entityId);
-                    MemoryMarshal.Write(valueSpan.SliceFast(2), newEntityId);
-                }
-                if (tag2 == ValueTags.Reference)
-                {
-                    throw new NotSupportedException("This attribute does not support remapping of the second element.");
-                }
-                break;
-            }
-        }
-        
-    }
-
     /// <summary>
     /// Updates the data in _prevWriter to be a retraction of the data in that write.
     /// </summary>
