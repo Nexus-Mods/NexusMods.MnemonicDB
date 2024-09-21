@@ -15,6 +15,7 @@ using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.MnemonicDB.TestModel.Analyzers;
+using NexusMods.MnemonicDB.TestModel.Attributes;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.File;
 
@@ -1002,12 +1003,17 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         foreach (var c in new[]{1, 2, 3})
         {
             var tmpId = tx.TempId();
-            tx.Add(tmpId, File.TupleTest, (a, b, c.ToString()));
+            tx.Add(tmpId, File.TupleTest, (tmpId, b, c.ToString()));
         }
 
         var results = await tx.Commit();
+
+        var resolved = results.Db.Datoms(File.TupleTest).Resolved(Connection).ToArray();
+
+        resolved.Select(v => ((Tuple3TestAttribute.ReadDatom)v).V.Item1)
+            .Should().AllSatisfy(id => id.Partition.Should().NotBe(PartitionId.Temp));
         
-        await VerifyTable(results.Db.Datoms(File.TupleTest).Resolved(Connection));
+        await VerifyTable(resolved);
     }
 
     [Fact]

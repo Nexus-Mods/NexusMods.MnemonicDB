@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.9.84 - 20/09/2024
+* Fixed a bug with Tuple3 values that had a reference in the first position.
+* Added a user accessible remap function for values
+
 ### 0.9.83 - 20/09/2024
 * Optimized the interface with RocksDB used all throughout the library. Results in a 30% speedup on search operations
 inside RocksDB.

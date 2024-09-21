@@ -20,5 +20,5 @@ public partial class File : IModelDefinition
     /// <summary>
     /// Tuple3 test
     /// </summary>
-    public static readonly Int3Attribute TupleTest = new(Namespace, nameof(TupleTest)) { IsIndexed = true, IsOptional = true};
+    public static readonly Tuple3TestAttribute TupleTest = new(Namespace, nameof(TupleTest)) { IsIndexed = true, IsOptional = true};
 }
