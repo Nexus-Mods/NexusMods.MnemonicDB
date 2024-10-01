@@ -7,8 +7,10 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using ObservableExtensions = R3.ObservableExtensions;
 
@@ -113,6 +115,15 @@ public class Connection : IConnection
     }
 
     /// <inheritdoc />
+    public IDb History()
+    {
+        return new Db(new HistorySnapshot(_store.GetSnapshot(), TxId, AttributeCache), TxId, AttributeCache)
+        {
+            Connection = this
+        };
+    }
+
+    /// <inheritdoc />
     public ITransaction BeginTransaction()
     {
         return new Transaction(this);
@@ -120,6 +131,51 @@ public class Connection : IConnection
 
     /// <inheritdoc />
     public IAnalyzer[] Analyzers => _analyzers;
+
+
+    /// <inheritdoc />
+    public async Task<ulong> Excise(EntityId[] entityIds)
+    {
+        // Retract all datoms for the given entity ids
+        var contextDb = Db;
+        
+        List<Datom> datomsToRemove = new();
+        foreach (var entityId in entityIds)
+        {
+            var segment = contextDb.Datoms(entityId);
+            datomsToRemove.AddRange(segment);
+        }
+
+        {
+            using var tx = BeginTransaction();
+            foreach (var datom in datomsToRemove)
+            {
+                tx.Add(datom.Retract());
+            }
+            var results = await tx.Commit();
+            contextDb = results.Db;
+        }
+        
+        // Now delete all the datoms from all indexes
+        datomsToRemove.Clear();
+        
+        foreach (var entityId in entityIds)
+        {
+            var segment = contextDb.Datoms(SliceDescriptor.Create(IndexType.EAVTHistory, entityId));
+            datomsToRemove.AddRange(segment);
+        }
+        
+        await _store.Excise(datomsToRemove);
+
+        {
+            using var tx = BeginTransaction();
+            tx.Add((EntityId)tx.ThisTxId.Value, Abstractions.BuiltInEntities.Transaction.ExcisedDatoms, (ulong)datomsToRemove.Count);
+            await tx.Commit();
+        }
+        
+        
+        return (ulong)datomsToRemove.Count;
+    }
 
     /// <inheritdoc />
     public IObservable<IDb> Revisions => _dbStream;
