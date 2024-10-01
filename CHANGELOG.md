@@ -1,5 +1,11 @@
 ## Changelog
 
+### 0.9.89 - 01/10/2024
+* Added support for historical databases. These are instances of `IDb` that contain all datoms, inserted, retracted, and historical.
+Can be useful for analytics or viewing the changes of an entity over time
+* Added excision support to the database that will allow for complete removal of datoms, including historical datoms.
+
+
 ### 0.9.86 - 01/10/2024
 * Swapped out `R3`'s behavior subject for a custom implementation that is lock-free
 * Reworked how updates are propagated through the system. Thanks to the nature of TxIds we can detect gaps in the sequence of updates
