@@ -18,7 +18,6 @@ using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.Storage.DatomStorageStructures;
-using R3;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Storage;
@@ -40,7 +39,7 @@ public class DatomStore : IDatomStore
 
     private readonly BlockingCollection<PendingTransaction> _pendingTransactions;
     private readonly IIndex _txLog;
-    private BehaviorSubject<IDb>? _updatesSubject;
+    private DbStream _dbStream;
     private readonly IIndex _vaetCurrent;
     private readonly IIndex _vaetHistory;
     private readonly PooledMemoryBufferWriter _writer;
@@ -82,6 +81,7 @@ public class DatomStore : IDatomStore
     public DatomStore(ILogger<DatomStore> logger, DatomStoreSettings settings, IStoreBackend backend)
     {
         _remapFunc = Remap;
+        _dbStream = new DbStream();
         _attributeCache = backend.AttributeCache;
         _pendingTransactions = new BlockingCollection<PendingTransaction>(new ConcurrentQueue<PendingTransaction>());
 
@@ -168,13 +168,11 @@ public class DatomStore : IDatomStore
     }
     
     /// <inheritdoc />
-    public Observable<IDb> TxLog
+    public IObservable<IDb> TxLog
     {
         get
         {
-            if (_updatesSubject == null)
-                throw new InvalidOperationException("The store is not yet started");
-            return _updatesSubject;
+            return _dbStream;
         }
     }
 
@@ -206,7 +204,7 @@ public class DatomStore : IDatomStore
         _pendingTransactions.CompleteAdding();
         _shutdownToken.Cancel();
         _loggerThread?.Join();
-        _updatesSubject?.Dispose();
+        _dbStream.Dispose();
         _writer.Dispose();
         _retractWriter.Dispose();
     }
@@ -268,7 +266,7 @@ public class DatomStore : IDatomStore
     private void FinishTransaction(StoreResult result, PendingTransaction pendingTransaction)
     {
         _currentDb = ((Db)_currentDb!).WithNext(result, result.AssignedTxId);
-        _updatesSubject?.OnNext(_currentDb!);
+        _dbStream.OnNext(_currentDb);
         pendingTransaction.Complete(result, _currentDb);
     }
 
@@ -313,7 +311,7 @@ public class DatomStore : IDatomStore
         }
         
         _currentDb = new Db(_currentSnapshot, _asOfTx, _attributeCache);
-        _updatesSubject = new BehaviorSubject<IDb>(_currentDb);
+        _dbStream.OnNext(_currentDb);
         _loggerThread = new Thread(ConsumeTransactions)
         {
             IsBackground = true,

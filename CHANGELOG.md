@@ -1,5 +1,11 @@
 ## Changelog
 
+### 0.9.86 - 01/10/2024
+* Swapped out `R3`'s behavior subject for a custom implementation that is lock-free
+* Reworked how updates are propagated through the system. Thanks to the nature of TxIds we can detect gaps in the sequence of updates
+and fill in missing results with `AsOf` queries. This allows us to remove the locks used during subscription and greatly reduce the
+possibility of deadlocks.
+
 ### 0.9.84 - 20/09/2024
 * Fixed a bug with Tuple3 values that had a reference in the first position.
 * Added a user accessible remap function for values

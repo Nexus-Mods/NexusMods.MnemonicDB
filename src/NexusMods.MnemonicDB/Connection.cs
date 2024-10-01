@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Subjects;
+using System.Reactive.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -9,12 +9,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
-using NexusMods.MnemonicDB.Storage;
-using R3;
-using Observable = System.Reactive.Linq.Observable;
 using ObservableExtensions = R3.ObservableExtensions;
 
 namespace NexusMods.MnemonicDB;
@@ -27,7 +22,7 @@ public class Connection : IConnection
     private readonly IDatomStore _store;
     private readonly ILogger<Connection> _logger;
 
-    private R3.BehaviorSubject<IDb> _dbStream;
+    private DbStream _dbStream;
     private IDisposable? _dbStreamDisposable;
     private readonly IAnalyzer[] _analyzers;
 
@@ -41,7 +36,7 @@ public class Connection : IConnection
         AttributeResolver = new AttributeResolver(provider, AttributeCache);
         _logger = logger;
         _store = store;
-        _dbStream = new R3.BehaviorSubject<IDb>(default!);
+        _dbStream = new DbStream();
         _analyzers = analyzers.ToArray();
         Bootstrap();
     }
@@ -49,37 +44,30 @@ public class Connection : IConnection
     /// <summary>
     /// Scrubs the transaction stream so that we only ever move forward and never repeat transactions
     /// </summary>
-    private R3.Observable<Db> ProcessUpdate(R3.Observable<IDb> dbStream)
+    private IObservable<IDb> ProcessUpdates(IObservable<IDb> dbStream)
     {
         IDb? prev = null;
 
-        return R3.Observable.Create((Observer<Db> observer) =>
+        return dbStream.Select(idb =>
         {
-            return dbStream.Subscribe(nextItem =>
+            var db = (Db)idb;
+            db.Connection = this;
+                
+            foreach (var analyzer in _analyzers)
             {
-                
-                if (prev != null && prev.BasisTxId >= nextItem.BasisTxId)
-                    return;
-
-                var db = (Db)nextItem;
-                db.Connection = this;
-                
-                foreach (var analyzer in _analyzers)
+                try
                 {
-                    try
-                    {
-                        var result = analyzer.Analyze(prev, nextItem);
-                        db.AnalyzerData.Add(analyzer.GetType(), result);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to analyze with {Analyzer}", analyzer.GetType().Name);
-                    }
+                    var result = analyzer.Analyze(prev, idb);
+                    db.AnalyzerData.Add(analyzer.GetType(), result);
                 }
-                
-                observer.OnNext((Db)nextItem);
-                prev = nextItem;
-            }, observer.OnCompleted);
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to analyze with {Analyzer}", analyzer.GetType().Name);
+                }
+            }
+            prev = idb;
+
+            return idb;
         });
     }
 
@@ -95,7 +83,7 @@ public class Connection : IConnection
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
             if (val == null)
                 ThrowNullDb();
-            return val!.Value;
+            return _dbStream.Current;
         }
     }
 
@@ -134,15 +122,7 @@ public class Connection : IConnection
     public IAnalyzer[] Analyzers => _analyzers;
 
     /// <inheritdoc />
-    public IObservable<IDb> Revisions
-    {
-        get
-        {
-            if (_dbStream == default!)
-                ThrowNullDb();
-            return ObservableExtensions.AsSystemObservable(_dbStream!);
-        }
-    }
+    public IObservable<IDb> Revisions => _dbStream;
 
     private void AddMissingAttributes()
     {
@@ -204,7 +184,7 @@ public class Connection : IConnection
             
             AddMissingAttributes();
 
-            _dbStreamDisposable = ProcessUpdate(_store.TxLog)
+            _dbStreamDisposable = ProcessUpdates(_store.TxLog)
                 .Subscribe(itm => _dbStream.OnNext(itm));
         }
         catch (Exception ex)
