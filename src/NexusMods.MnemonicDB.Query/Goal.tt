@@ -1,0 +1,100 @@
+<#@ template language="C#" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ assembly name="System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" #>
+<#@ import namespace="System.Linq" #>
+
+namespace NexusMods.MnemonicDB.Query;
+using NexusMods.MnemonicDB.Abstractions;
+using System;
+
+<# int MAX_ARITY = 6; 
+
+string GenericArgType(int i) => $"TArg{i}";
+string GenericArgTypeList(int i) => string.Join(", ", Enumerable.Range(1, i).Select(x => GenericArgType(x)));
+string GenericArgList(int i) => string.Join(", ", Enumerable.Range(1, i).Select(x => GenericArgType(x) + $" Arg{x}"));
+string ArgNames(int i) => string.Join(", ", Enumerable.Range(1, i).Select(x => $"Arg{x}"));
+string TermArgList(int i) => string.Join(", ", Enumerable.Range(1, i).Select(x => $"Term<TArg{x}> Arg{x}"));
+
+
+#>
+
+public interface IFact
+{
+   Symbol Predicate { get; }
+   int Arity { get; }
+}
+
+public static class Fact
+{
+<# for (int i = 1; i <= MAX_ARITY; i++) { #>
+
+    public static Fact<<#= GenericArgTypeList(i) #>> Create<<#= GenericArgTypeList(i)#>>(Symbol predicate, <#= GenericArgList(i) #>)
+<# for (int j = 1; j <= i; j++) { #>
+    where <#= GenericArgType(j) #> : IEquatable<<#= GenericArgType(j) #>> 
+<# } #>
+    {
+        return new Fact<<#= GenericArgTypeList(i) #>>(predicate, <#= ArgNames(i) #>);
+    }
+<# } #>
+}
+
+<# for (int i = 1; i <= MAX_ARITY; i++) { #>
+
+public readonly record struct Fact<<#= GenericArgTypeList(i) #>>(Symbol Predicate, <#= GenericArgList(i) #>) : IFact
+<# for (int j = 1; j <= i; j++) { #>
+    where <#= GenericArgType(j) #> : IEquatable<<#= GenericArgType(j) #>> 
+<# } #>
+{
+    public int Arity => <#= i #>;
+
+    public override string ToString()
+    {
+        return $"{Predicate}({string.Join(", ", new object[] { <#= ArgNames(i) #> })})";
+    }
+}
+
+<# } #>
+
+public interface IGoal
+{
+   Symbol Predicate { get; }
+   int Arity { get; }
+}
+
+public static class Goal
+{
+<# for (int i = 1; i <= MAX_ARITY; i++) { #>
+
+    public static Goal<<#= GenericArgTypeList(i) #>> Create<<#= GenericArgTypeList(i)#>>(Symbol predicate, <#= TermArgList(i) #>)
+<# for (int j = 1; j <= i; j++) { #>
+    where <#= GenericArgType(j) #> : IEquatable<<#= GenericArgType(j) #>> 
+<# } #>
+    {
+        return new Goal<<#= GenericArgTypeList(i) #>>(predicate, <#= ArgNames(i) #>);
+    }
+<# } #>
+}
+
+<# for (int i = 1; i <= MAX_ARITY; i++) { #>
+
+public readonly record struct Goal<<#= GenericArgTypeList(i) #>>(Symbol Predicate, <#= TermArgList(i) #>) : IGoal
+<# for (int j = 1; j <= i; j++) { #>
+    where <#= GenericArgType(j) #> : IEquatable<<#= GenericArgType(j) #>> 
+<# } #>
+{
+    public int Arity => <#= i #>;
+
+    public bool Matches(Fact<<#= GenericArgTypeList(i) #>> fact)
+    {
+        if (!ReferenceEquals(Predicate, fact.Predicate))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+}
+
+<# } #>

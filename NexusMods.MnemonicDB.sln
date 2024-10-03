@@ -45,6 +45,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.MnemonicDB.Source
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.MnemonicDB.Query", "src\NexusMods.MnemonicDB.Query\NexusMods.MnemonicDB.Query.csproj", "{BBA92730-7D9B-4B1E-9226-671C15C5DE45}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.MnemonicDB.Query.Tests", "tests\NexusMods.MnemonicDB.Query.Tests\NexusMods.MnemonicDB.Query.Tests.csproj", "{31047E19-C068-41C8-80D9-764541B6ABF9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,6 +63,7 @@ Global
 		{0EE4BFCE-9E72-4BCC-B179-416E16136A1E} = {0377EBE6-F147-4233-86AD-32C821B9567E}
 		{DE72D2FD-16A5-477B-AF40-70E59F88B551} = {6ED01F9D-5E12-4EB2-9601-64A2ADC719DE}
 		{BBA92730-7D9B-4B1E-9226-671C15C5DE45} = {0377EBE6-F147-4233-86AD-32C821B9567E}
+		{31047E19-C068-41C8-80D9-764541B6ABF9} = {6ED01F9D-5E12-4EB2-9601-64A2ADC719DE}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{A92DED3D-BC67-4E04-9A06-9A1B302B3070}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -103,5 +106,9 @@ Global
 		{BBA92730-7D9B-4B1E-9226-671C15C5DE45}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BBA92730-7D9B-4B1E-9226-671C15C5DE45}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BBA92730-7D9B-4B1E-9226-671C15C5DE45}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31047E19-C068-41C8-80D9-764541B6ABF9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31047E19-C068-41C8-80D9-764541B6ABF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31047E19-C068-41C8-80D9-764541B6ABF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31047E19-C068-41C8-80D9-764541B6ABF9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

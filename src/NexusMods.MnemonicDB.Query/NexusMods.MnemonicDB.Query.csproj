@@ -6,4 +6,21 @@
         <Nullable>enable</Nullable>
     </PropertyGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\NexusMods.MnemonicDB.Abstractions\NexusMods.MnemonicDB.Abstractions.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Goal.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>Goal.cs</LastGenOutput>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Goal.cs">
+        <DependentUpon>Goal.tt</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
 </Project>
