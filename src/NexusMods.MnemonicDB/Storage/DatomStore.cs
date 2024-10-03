@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -22,7 +23,7 @@ using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Storage;
 
-public class DatomStore : IDatomStore
+public partial class DatomStore : IDatomStore
 {
     private readonly IIndex _aevtCurrent;
     private readonly IIndex _aevtHistory;
@@ -78,7 +79,7 @@ public class DatomStore : IDatomStore
     /// <summary>
     /// DI constructor
     /// </summary>
-    public DatomStore(ILogger<DatomStore> logger, DatomStoreSettings settings, IStoreBackend backend)
+    public DatomStore(ILogger<DatomStore> logger, DatomStoreSettings settings, IStoreBackend backend, bool bootstrap = true)
     {
         _remapFunc = Remap;
         _dbStream = new DbStream();
@@ -116,7 +117,8 @@ public class DatomStore : IDatomStore
         _avetCurrent = _backend.GetIndex(IndexType.AVETCurrent);
         _avetHistory = _backend.GetIndex(IndexType.AVETHistory);
         
-        Bootstrap();
+        if (bootstrap) 
+            Bootstrap();
     }
     
     /// <inheritdoc />
@@ -619,5 +621,6 @@ public class DatomStore : IDatomStore
 
 
     #endregion
+
 
 }

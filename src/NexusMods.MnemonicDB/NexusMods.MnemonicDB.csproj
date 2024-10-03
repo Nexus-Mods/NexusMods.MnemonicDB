@@ -18,6 +18,9 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Remove="SourceGenerationContext.cs"/>
+        <Compile Update="Storage\ImportExport.cs">
+          <DependentUpon>DatomStore.cs</DependentUpon>
+        </Compile>
     </ItemGroup>
     <Import Project="$([MSBuild]::GetPathOfFileAbove('NuGet.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
 </Project>

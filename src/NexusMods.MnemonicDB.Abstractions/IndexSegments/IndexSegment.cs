@@ -47,7 +47,22 @@ public readonly struct IndexSegment : IReadOnlyList<Datom>
 
         ReprocessData(_rowCount, data, offsets, memory.Span);
     }
+    
+    /// <summary>
+    /// Create an index segment from raw data
+    /// </summary>
+    public IndexSegment(int rowCount, ReadOnlyMemory<byte> data, AttributeCache attributeCache)
+    {
+        _attributeCache = attributeCache;
+        _data = data;
+        _rowCount = rowCount;
+    }
 
+    /// <summary>
+    /// Gets read-only access to the data in this segment
+    /// </summary>
+    public ReadOnlyMemory<byte> Data => _data;
+    
     /// <summary>
     /// All the upper values
     /// </summary>
