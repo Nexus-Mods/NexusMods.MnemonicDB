@@ -11,6 +11,8 @@ public class NullConnection : IConnection
     public TxId TxId => throw new NotSupportedException();
     public IObservable<IDb> Revisions => throw new NotSupportedException();
     public IServiceProvider ServiceProvider => throw new NotSupportedException();
+    public IDatomStore DatomStore => throw new NotSupportedException();
+
     public IDb AsOf(TxId txId)
     {
         throw new NotSupportedException();

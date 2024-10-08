@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
@@ -26,6 +27,17 @@ public interface IDatomStore : IDisposable
     /// The Attribute Cache the store is using.
     /// </summary>
     AttributeCache AttributeCache { get; }
+
+    /// <summary>
+    /// Exports the database (including all indexes) to the given stream
+    /// </summary>
+    public Task ExportAsync(Stream stream);
+    
+    /// <summary>
+    /// Imports the database (including all indexes) from the given stream.
+    /// Any existing data will be deleted before importing.
+    /// </summary>
+    public Task ImportAsync(Stream stream);
 
     /// <summary>
     ///     Transacts (adds) the given datoms into the store.
