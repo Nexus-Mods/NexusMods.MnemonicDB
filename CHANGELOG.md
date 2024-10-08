@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.87 - 08/10/2024
+* Added import/export functionality for the database.
+
 ### 0.9.86 - 01/10/2024
 * Swapped out `R3`'s behavior subject for a custom implementation that is lock-free
 * Reworked how updates are propagated through the system. Thanks to the nature of TxIds we can detect gaps in the sequence of updates
