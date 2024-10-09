@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
@@ -60,4 +61,9 @@ public interface IDatomStore : IDisposable
     ///     Create a snapshot of the current state of the store.
     /// </summary>
     ISnapshot GetSnapshot();
+
+    /// <summary>
+    /// Deletes these datoms from any of the indexes they are in.
+    /// </summary>
+    ValueTask Excise(List<Datom> datomsToRemove);
 }

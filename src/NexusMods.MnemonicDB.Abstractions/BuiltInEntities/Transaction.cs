@@ -1,4 +1,5 @@
-﻿using NexusMods.MnemonicDB.Abstractions.Models;
+﻿using NexusMods.MnemonicDB.Abstractions.Attributes;
+using NexusMods.MnemonicDB.Abstractions.Models;
 using TimestampAttribute = NexusMods.MnemonicDB.Abstractions.Attributes.TimestampAttribute;
 
 namespace NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
@@ -15,4 +16,9 @@ public partial class Transaction : IModelDefinition
     /// The timestamp when the transaction was committed.
     /// </summary>
     public static readonly TimestampAttribute Timestamp = new(Namespace, "Timestamp");
+    
+    /// <summary>
+    /// If this database is associated with a excision, this attribute will contain the number of datoms that were excised.
+    /// </summary>
+    public static readonly ULongAttribute ExcisedDatoms = new(Namespace, "ExcisedDatoms") { IsOptional = true };
 }

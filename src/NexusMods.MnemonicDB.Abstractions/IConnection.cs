@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
@@ -67,6 +68,11 @@ public interface IConnection
     public IDb AsOf(TxId txId);
 
     /// <summary>
+    /// Returns a snapshot of the database that contains all current and historical datoms.
+    /// </summary>
+    public IDb History();
+
+    /// <summary>
     ///     Starts a new transaction.
     /// </summary>
     /// <returns></returns>
@@ -76,4 +82,10 @@ public interface IConnection
     /// The analyzers that are available for this connection
     /// </summary>
     public IAnalyzer[] Analyzers { get; }
+    
+    /// <summary>
+    /// Deletes the entities with the given ids, also deleting them from any historical indexes. Returns the total number
+    /// of datoms that were excised.
+    /// </summary>
+    public Task<ulong> Excise(EntityId[] entityIds);
 }

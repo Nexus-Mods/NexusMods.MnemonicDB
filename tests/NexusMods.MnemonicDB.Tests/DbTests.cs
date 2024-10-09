@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Hashing.xxHash64;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
@@ -1136,5 +1137,62 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         // Distinct, because re-subscribing to the same observable will result in the same object being added
         // when it set the initial value
         await Verify(mods.Select(m => m.Name).Distinct());
+    }
+    
+    [Fact]
+    public async Task CanExciseEntities()
+    {
+        using var tx = Connection.BeginTransaction();
+        var l1 = new Loadout.New(tx)
+        {
+            Name = "Test Loadout 1"
+        };
+        
+        var l2 = new Loadout.New(tx)
+        {
+            Name = "Test Loadout 2"
+        };
+        
+        var results = await tx.Commit();
+        
+        var l1RO = results.Remap(l1);
+        var l2RO = results.Remap(l2);
+
+        {
+            using var tx2 = Connection.BeginTransaction();
+            tx2.Add(l2RO, Loadout.Name, "Test Loadout 2 Updated");
+            await tx2.Commit();
+        }
+        l2RO = l2RO.Rebase();
+        
+        l1RO.Name.Should().Be("Test Loadout 1");
+        l2RO.Name.Should().Be("Test Loadout 2 Updated");
+
+
+        var history = Connection.History();
+
+        history.Datoms(l2RO.Id)
+            .Resolved(Connection)
+            .OfType<StringAttribute.ReadDatom>()
+            .Select(d => (!d.IsRetract, d.V))
+            .Should()
+            .BeEquivalentTo([
+                (true, "Test Loadout 2"),
+                (false, "Test Loadout 2"),
+                (true, "Test Loadout 2 Updated")
+            ]);
+        
+        await Connection.Excise([l2RO.Id]);
+        
+        history = Connection.History();
+
+        history.Datoms(l2RO.Id)
+            .Should()
+            .BeEmpty();
+
+        history.Datoms(l1RO.Id)
+            .Should()
+            .NotBeEmpty();
+
     }
 }

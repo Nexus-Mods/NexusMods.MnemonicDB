@@ -335,4 +335,19 @@ public readonly struct SliceDescriptor
         return new Datom(data);
     }
 
+    /// <summary>
+    /// Creates a slice descriptor for the given entity range. IndexType must be either EAVTCurrent or EAVTHistory
+    /// </summary>
+    public static SliceDescriptor Create(IndexType indexType, EntityId eid)
+    {
+        if (indexType is not IndexType.EAVTCurrent and not IndexType.EAVTHistory)
+            throw new ArgumentException("IndexType must be EAVTCurrent or EAVTHistory", nameof(indexType));
+        
+        return new SliceDescriptor
+        {
+            Index = indexType,
+            From = Datom(eid, AttributeId.Min, TxId.MinValue, false),
+            To = Datom(eid, AttributeId.Max, TxId.MaxValue, false)
+        };
+    }
 }

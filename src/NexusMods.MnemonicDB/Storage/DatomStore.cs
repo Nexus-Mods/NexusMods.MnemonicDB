@@ -200,6 +200,21 @@ public partial class DatomStore : IDatomStore
         return _currentSnapshot!;
     }
 
+    public async ValueTask Excise(List<Datom> datomsToRemove)
+    {
+        var batch = _backend.CreateBatch();
+        foreach (var datom in datomsToRemove)
+        {
+            _eavtHistory.Delete(batch, datom);
+            _aevtHistory.Delete(batch, datom);
+            _vaetHistory.Delete(batch, datom);
+            _avetHistory.Delete(batch, datom);
+            _txLog.Delete(batch, datom);
+        }
+        batch.Commit();
+        
+    }
+
     /// <inheritdoc />
     public void Dispose()
     {
