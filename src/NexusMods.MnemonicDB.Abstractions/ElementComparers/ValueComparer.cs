@@ -102,7 +102,7 @@ public sealed class ValueComparer : IElementComparer
             ValueTags.Float64 => CompareInternal<double>(aVal, bVal),
             ValueTags.Ascii => CompareAscii(aVal, aLen, bVal, bLen),
             ValueTags.Utf8 => CompareUtf8(aVal, aLen, bVal, bLen),
-            ValueTags.Utf8Insensitive => Utf8Comparer.Utf8CaseInsensitiveCompare(aVal, aLen, bVal, bLen),
+            ValueTags.Utf8Insensitive => CompareUtf8Insensitive(aVal, aLen, bVal, bLen),
             ValueTags.Blob => CompareBlobInternal(aVal, aLen, bVal, bLen),
             // HashedBlob is a special case, we compare the hashes not the blobs
             ValueTags.HashedBlob => CompareInternal<ulong>(aVal, bVal),
@@ -111,6 +111,16 @@ public sealed class ValueComparer : IElementComparer
             ValueTags.Tuple3 => CompareTuples3(aVal, aLen, bVal, bLen),
             _ => ThrowInvalidCompare(typeA)
         };
+    }
+
+    private static unsafe int CompareUtf8Insensitive(byte* aVal, int aLen, byte* bVal, int bLen)
+    {
+        var aValOffset = aVal + sizeof(uint);
+        var bValOffset = bVal + sizeof(uint);
+        
+        var aLenOffset = aLen - sizeof(uint);
+        var bLenOffset = bLen - sizeof(uint);
+        return Utf8Comparer.Utf8CaseInsensitiveCompare(aValOffset, aLenOffset, bValOffset, bLenOffset);
     }
 
     private static unsafe int CompareTuples2(byte* aVal, int aLen, byte* bVal, int bLen)

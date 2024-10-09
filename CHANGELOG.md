@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.89 - 09/10/2024
+* Fixed a bug with case-insensitive string comparisons in the database. This would cause an "Invalid UTF-8" exception to be thrown
+
 ### 0.9.88 - 09/10/2024
 * Added support for historical databases. These are instances of `IDb` that contain all datoms, inserted, retracted, and historical.
 Can be useful for analytics or viewing the changes of an entity over time

@@ -132,6 +132,20 @@ public abstract class ABackendTest<TStoreType>(
             .UseParameters(type);
     }
 
+    [Fact]
+    public async Task CaseInsenstiveUTF8DoesntCrashTheComparator()
+    {
+        using var segment = new IndexSegmentBuilder(AttributeCache);
+        var id1 = NextTempId();
+        var id2 = NextTempId();
+        var id3 = NextTempId();
+        segment.Add(id1, File.Path, "/foo/bar");
+        segment.Add(id2, File.Path, "/foo/bar");
+        segment.Add(id3, File.Path, "/foo/bar");
+        
+        var (tx, _) = await DatomStore.TransactAsync(segment.Build());
+    }
+
     private static Func<Datom, Datom, int> CompareDatoms(IDatomComparator comparer)
     {
         return (a, b) => comparer.CompareInstance(a, b);

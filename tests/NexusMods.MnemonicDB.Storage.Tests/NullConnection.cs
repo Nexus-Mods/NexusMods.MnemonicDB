@@ -18,10 +18,19 @@ public class NullConnection : IConnection
         throw new NotSupportedException();
     }
 
+    public IDb History()
+    {
+        throw new NotImplementedException();
+    }
+
     public ITransaction BeginTransaction()
     {
         throw new NotSupportedException();
     }
 
     public IAnalyzer[] Analyzers => throw new NotSupportedException();
+    public Task<ulong> Excise(EntityId[] entityIds)
+    {
+        throw new NotImplementedException();
+    }
 }
