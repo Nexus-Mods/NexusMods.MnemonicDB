@@ -36,10 +36,24 @@ public readonly struct SliceDescriptor
     public bool IsReverse => From.Compare(To, Index) > 0;
 
     /// <summary>
+    /// Returns this descriptor with a reversed iteration order.
+    /// </summary>
+    public SliceDescriptor Reversed()
+    {
+        return new SliceDescriptor
+        {
+            Index = Index,
+            From = To,
+            To = From
+        };
+    }
+
+    /// <summary>
     /// Returns true if the datom is within the slice, false otherwise.
     /// </summary>
     public bool Includes(in Datom datom)
     {
+        
         return Index switch
         {
             IndexType.TxLog => DatomComparators.TxLogComparator.Compare(From, datom) <= 0 &&
@@ -50,6 +64,9 @@ public readonly struct SliceDescriptor
             IndexType.AEVTCurrent or IndexType.AEVTHistory =>
                 DatomComparators.AEVTComparator.Compare(From, datom) <= 0 &&
                 DatomComparators.AEVTComparator.Compare(datom, To) < 0,
+            IndexType.AVETCurrent or IndexType.AVETHistory =>
+                DatomComparators.AVETComparator.Compare(From, datom) <= 0 &&
+                DatomComparators.AVETComparator.Compare(datom, To) < 0,
             IndexType.VAETCurrent or IndexType.VAETHistory =>
                 DatomComparators.VAETComparator.Compare(From, datom) <= 0 &&
                 DatomComparators.VAETComparator.Compare(datom, To) < 0,

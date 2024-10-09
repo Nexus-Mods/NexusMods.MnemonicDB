@@ -105,6 +105,7 @@ internal class Snapshot(Backend backend, AttributeCache attributeCache) : ISnaps
             else
                 iterator.Next();
         }
-        yield return builder.Build();
+        if (builder.Count > 0) 
+            yield return builder.Build();
     }
 }

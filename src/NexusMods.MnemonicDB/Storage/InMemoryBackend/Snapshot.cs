@@ -2,6 +2,7 @@
 using System.Collections.Immutable;
 using System.Linq;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
 
@@ -23,111 +24,98 @@ public class Snapshot : ISnapshot
     /// <inheritdoc />
     public IndexSegment Datoms(SliceDescriptor descriptor)
     {
-        var thisIndex = _indexes[(int)descriptor.Index];
-        if (thisIndex.Count == 0)
-            return new IndexSegment();
+        var index = _indexes[(int)descriptor.Index];
+        var isReverse = descriptor.IsReverse;
+        int increment = 1;
+        int startIndex;
 
-        var idxLower = thisIndex.IndexOf(descriptor.From.ToArray());
-        var idxUpper = thisIndex.IndexOf(descriptor.To.ToArray());
-        bool upperExact = true;
-        bool lowerExact = true;
-
-        if (idxLower < 0)
+        if (!isReverse)
         {
-            idxLower = ~idxLower;
-            lowerExact = false;
-        }
-
-        if (idxUpper < 0)
-        {
-            idxUpper = ~idxUpper;
-            upperExact = false;
-        }
-
-        var lower = idxLower;
-        var upper = idxUpper;
-
-        if (descriptor.IsReverse)
-        {
-            lower = idxUpper;
-            upper = idxLower;
-            (lowerExact, upperExact) = (upperExact, lowerExact);
-        }
-
-        using var segmentBuilder = new IndexSegmentBuilder(_attributeCache);
-
-        if (descriptor.IsReverse)
-        {
-            if (!lowerExact)
-                lower++;
-            for (var i = upper; i >= lower; i--)
-            {
-                segmentBuilder.Add(thisIndex.ElementAt(i));
-            }
+            var indexOf = index.IndexOf(descriptor.From.ToArray());
+            if (indexOf >= 0)
+                startIndex = indexOf;
+            else
+                startIndex = ~indexOf;
         }
         else
         {
-            if (!upperExact)
-                upper--;
-            for (var i = lower; i <= upper; i++)
-            {
-                segmentBuilder.Add(thisIndex.ElementAt(i));
-            }
+            increment = -1;
+            var indexOf = index.IndexOf(descriptor.From.ToArray());
+            if (indexOf >= 0)
+                startIndex = indexOf;
+            else
+                startIndex = (~indexOf) - 1;
         }
+        
+        using var segmentBuilder = new IndexSegmentBuilder(_attributeCache);
 
+        while (true)
+        {
+            if (startIndex < 0 || startIndex >= index.Count)
+                break;
+            
+            var current = index.ElementAt(startIndex);
+            var datom = new Datom(current);
+            if (!descriptor.Includes(in datom))
+                break;
+            
+            segmentBuilder.Add(current);
+            startIndex += increment;
+
+        } 
         return segmentBuilder.Build();
     }
 
     /// <inheritdoc />
     public IEnumerable<IndexSegment> DatomsChunked(SliceDescriptor descriptor, int chunkSize)
     {
-        var idxLower = _indexes[(int)descriptor.Index].IndexOf(descriptor.From.ToArray());
-        var idxUpper = _indexes[(int)descriptor.Index].IndexOf(descriptor.To.ToArray());
-
-        if (idxLower < 0)
-            idxLower = ~idxLower;
-
-        if (idxUpper < 0)
-            idxUpper = ~idxUpper;
-
-        var lower = idxLower;
-        var upper = idxUpper;
-        var reverse = false;
-
-        if (idxLower > idxUpper)
-        {
-            lower = idxUpper;
-            upper = idxLower;
-            reverse = true;
-        }
-
-        using var segmentBuilder = new IndexSegmentBuilder(_attributeCache);
         var index = _indexes[(int)descriptor.Index];
+        var isReverse = descriptor.IsReverse;
+        var includesDescriptor = descriptor;
+        int increment = 1;
+        int startIndex;
 
-        if (!reverse)
+        if (!isReverse)
         {
-            for (var i = lower; i < upper; i++)
-            {
-                segmentBuilder.Add(index.ElementAt(i));
-                if (segmentBuilder.Count == chunkSize)
-                {
-                    yield return segmentBuilder.Build();
-                    segmentBuilder.Reset();
-                }
-            }
+            var indexOf = index.IndexOf(descriptor.From.ToArray());
+            if (indexOf >= 0)
+                startIndex = indexOf;
+            else
+                startIndex = ~indexOf;
         }
         else
         {
-            for (var i = upper; i > lower; i--)
+            includesDescriptor = descriptor.Reversed();
+            increment = -1;
+            var indexOf = index.IndexOf(descriptor.From.ToArray());
+            if (indexOf >= 0)
+                startIndex = indexOf;
+            else
+                startIndex = (~indexOf) - 1;
+        }
+        
+        using var segmentBuilder = new IndexSegmentBuilder(_attributeCache);
+
+        while (true)
+        {
+            if (startIndex < 0 || startIndex >= index.Count)
+                break;
+            
+            var current = index.ElementAt(startIndex);
+            var datom = new Datom(current);
+            if (!includesDescriptor.Includes(in datom))
+                break;
+            
+            segmentBuilder.Add(current);
+            startIndex += increment;
+            
+            if (segmentBuilder.Count == chunkSize)
             {
-                segmentBuilder.Add(index.ElementAt(i));
-                if (segmentBuilder.Count == chunkSize)
-                {
-                    yield return segmentBuilder.Build();
-                    segmentBuilder.Reset();
-                }
+                yield return segmentBuilder.Build();
+                segmentBuilder.Reset();
             }
         }
-        yield return segmentBuilder.Build();
+        if (segmentBuilder.Count > 0) 
+            yield return segmentBuilder.Build();
     }
 }

@@ -77,6 +77,9 @@ public class Connection : IConnection
     public IServiceProvider ServiceProvider { get; set; }
 
     /// <inheritdoc />
+    public IDatomStore DatomStore => _store;
+
+    /// <inheritdoc />
     public IDb Db
     {
         get

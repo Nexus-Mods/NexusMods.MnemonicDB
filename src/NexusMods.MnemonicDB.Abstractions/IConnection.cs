@@ -56,6 +56,11 @@ public interface IConnection
     /// A service provider that entities can use to resolve their values
     /// </summary>
     public IServiceProvider ServiceProvider { get; }
+    
+    /// <summary>
+    /// Gets the datom store that this connection uses to store data.
+    /// </summary>
+    public IDatomStore DatomStore { get; }
 
     /// <summary>
     /// Returns a snapshot of the database as of the given transaction id.

@@ -9,7 +9,7 @@ namespace NexusMods.MnemonicDB.Abstractions.DatomIterators;
 /// Represents a raw (unparsed) datom from an index. Most of the time this datom is only valid for the
 /// lifetime of the current iteration. It is not safe to store this datom for later use.
 /// </summary>
-public readonly struct Datom
+public readonly struct Datom : IEquatable<Datom>
 {
     private readonly KeyPrefix _prefix;
     private readonly ReadOnlyMemory<byte> _valueBlob;
@@ -42,6 +42,7 @@ public readonly struct Datom
         _valueBlob.Span.CopyTo(array.AsSpan(KeyPrefix.Size));
         return array;
     }
+    
 
     /// <summary>
     /// The KeyPrefix of the datom
@@ -142,5 +143,23 @@ public readonly struct Datom
     public Datom Retract()
     {
         return new Datom(_prefix with {IsRetract = true, T = TxId.Tmp}, _valueBlob);
+    }
+
+    /// <inheritdoc />
+    public bool Equals(Datom other)
+    {
+        return _prefix.Equals(other._prefix) && _valueBlob.Span.SequenceEqual(other._valueBlob.Span);
+    }
+
+    /// <inheritdoc />
+    public override bool Equals(object? obj)
+    {
+        return obj is Datom other && Equals(other);
+    }
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(_prefix.GetHashCode());
     }
 }
