@@ -1,6 +1,6 @@
 ## Changelog
 
-### 0.9.89 - 09/10/2024
+### 0.9.88 - 09/10/2024
 * Added support for historical databases. These are instances of `IDb` that contain all datoms, inserted, retracted, and historical.
 Can be useful for analytics or viewing the changes of an entity over time
 * Added excision support to the database that will allow for complete removal of datoms, including historical datoms.
