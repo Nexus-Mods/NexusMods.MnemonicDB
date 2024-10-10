@@ -18,13 +18,8 @@ namespace NexusMods.MnemonicDB.Abstractions;
 ///     Interface for a specific attribute
 /// </summary>
 /// <typeparam name="TValueType"></typeparam>
-public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<TValueType>
+public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueType>
 {
-    private const int MaxStackAlloc = 128;
-    private static Encoding AsciiEncoding = Encoding.ASCII;
-
-    private static Encoding Utf8Encoding = Encoding.UTF8;
-
     protected Attribute(
         ValueTag lowLevelType,
         string ns,
@@ -135,23 +130,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     {
         return entity.IndexSegment.Contains(this);
     }
-
-    /// <inheritdoc />
-    public virtual void Remap(Func<EntityId, EntityId> remapper, Span<byte> valueSpan)
-    {
-        if (LowLevelType == ValueTag.Reference)
-        {
-            var id = MemoryMarshal.Read<EntityId>(valueSpan);
-            var newId = remapper(id);
-            MemoryMarshal.Write(valueSpan, newId);
-        }
-    }
-
-    private void ThrowKeyNotFoundException(EntityId id)
-    {
-        throw new KeyNotFoundException($"Attribute {Id} not found on entity {id}");
-    }
-
+    
     /// <summary>
     /// Adds a datom to the active transaction for this entity that adds the given value to this attribute
     /// </summary>
@@ -193,6 +172,9 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// </summary>
     public readonly record struct ReadDatom : IReadDatom
     {
+        /// <summary>
+        /// The key prefix for this datom, contains the E, A, T, IsRetract and ValueTag values for this datom
+        /// </summary>
         public readonly KeyPrefix Prefix;
 
         /// <summary>

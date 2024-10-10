@@ -67,12 +67,7 @@ public interface IAttribute
     /// <summary>
     ///     Returns true if the attribute is in the given entity
     /// </summary>
-    bool IsIn(IDb db, EntityId id);
-    
-    /// <summary>
-    /// Remap any entity ids in the value span (inplace)
-    /// </summary>
-    public void Remap(Func<EntityId, EntityId> remapper, Span<byte> valueSpan);
+    bool IsIn<T>(T entity) where T : IHasIdAndIndexSegment;
 }
 
 
