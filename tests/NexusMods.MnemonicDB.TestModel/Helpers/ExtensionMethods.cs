@@ -73,16 +73,18 @@ public static class ExtensionMethods
                     break;
                 case ValueTag.Blob:
                 {
-                    var code = XxHash3.HashToUInt64(datom.ValueSpan);
+                    var value = ValueTag.Blob.Read<Memory<byte>>(datom.ValueSpan);
+                    var code = XxHash3.HashToUInt64(value.Span);
                     var hash = code.ToString("X16");
-                    sb.Append($"{datom.Prefix.ValueTag} 0x{hash} {datom.ValueSpan.Length} bytes".PadRight(48));
+                    sb.Append($"{datom.Prefix.ValueTag} 0x{hash} {value.Length} bytes".PadRight(48));
                     break;
                 }
                 case ValueTag.HashedBlob:
                 {
-                    var code = XxHash3.HashToUInt64(datom.ValueSpan[sizeof(ulong)..]);
+                    var value = ValueTag.HashedBlob.Read<Memory<byte>>(datom.ValueSpan);
+                    var code = XxHash3.HashToUInt64(value.Span);
                     var hash = code.ToString("X16");
-                    sb.Append($"{datom.Prefix.ValueTag} 0x{hash} {datom.ValueSpan.Length} bytes".PadRight(48));
+                    sb.Append($"{datom.Prefix.ValueTag} 0x{hash} {value.Length} bytes".PadRight(48));
                     break;
                 }
                 case ValueTag.Null:

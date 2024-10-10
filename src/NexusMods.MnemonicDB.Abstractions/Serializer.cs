@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.IO.Hashing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -18,7 +19,15 @@ using Tuple2_UShort_Utf8I = (ushort, string);
 /// </summary>
 public static class Serializer
 {
+    /// <summary>
+    /// The size of the portion of a hashed blob datom that is stored in the key vs the value
+    /// </summary>
+    public const int HashedBlobPrefixSize = KeyPrefix.Size + sizeof(uint) + sizeof(ulong);
     
+    /// <summary>
+    /// The portion of the value span that is the key of a hashed blob
+    /// </summary>
+    public const int HashedBlobHeaderSize = sizeof(uint) + sizeof(ulong);
     
     #region Encoders
     private static readonly Encoding ASCII = Encoding.ASCII;
@@ -85,8 +94,8 @@ public static class Serializer
     
     private static Memory<byte> ReadHashedBlob(ReadOnlySpan<byte> span)
     {
+        const int hashSize = sizeof(ulong);
         var length = MemoryMarshal.Read<uint>(span);
-        var hashSize = sizeof(ulong);
         return span.SliceFast(sizeof(uint) + hashSize, (int)length).ToArray();
     }
 
@@ -149,7 +158,7 @@ public static class Serializer
             case double v:
                 WriteUnmanaged(v, writer);
                 break;
-            case string v when tag == ValueTag.Ascii:
+            case string v when tag is ValueTag.Ascii:
                 WriteAscii(v, writer);
                 break;
             case string v when tag is ValueTag.Utf8 or ValueTag.Utf8Insensitive:
@@ -171,7 +180,7 @@ public static class Serializer
                 WriteTuple2_UShort_Utf8I(v, writer);
                 break;
             default:
-                throw new ArgumentOutOfRangeException(nameof(tag), tag, "Unknown tag or mismatched value type");
+                throw new ArgumentOutOfRangeException(nameof(value), value, "Unknown value type of type " + value!.GetType());
         }
     }
 
@@ -209,11 +218,13 @@ public static class Serializer
         where TWriter : IBufferWriter<byte>
     {
         var length = (uint)value.Length;
-        var hash = value.Span.XxHash64();
-        var span = writer.GetSpan(sizeof(uint) + sizeof(ulong) + value.Length);
+        var hash = XxHash3.HashToUInt64(value.Span);
+        var fullSize = sizeof(uint) + sizeof(ulong) + value.Length;
+        var span = writer.GetSpan(fullSize);
         MemoryMarshal.Write(span, length);
         MemoryMarshal.Write(span.SliceFast(sizeof(uint)), hash);
         value.Span.CopyTo(span.SliceFast(sizeof(uint) + sizeof(ulong)));
+        writer.Advance(fullSize);
     }
 
     private static void WriteTuple3_Ref_UShort_Utf8I<TWriter>((EntityId, ushort, string) value, TWriter writer)
@@ -276,6 +287,9 @@ public static class Serializer
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static unsafe int Compare(this ValueTag tag, byte* aVal, int aLen, byte* bVal, int bLen)
     {
+        if (aLen == 0 && bLen == 0)
+            return aLen.CompareTo(bLen);
+        
         return tag switch
         {
             ValueTag.Null => 0,

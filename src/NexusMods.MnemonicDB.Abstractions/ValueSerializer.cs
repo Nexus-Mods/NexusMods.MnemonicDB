@@ -26,7 +26,7 @@ public partial class Attribute<TValueType, TLowLevelType>
         var span = writer.GetSpan(KeyPrefix.Size);
         MemoryMarshal.Write(span, prefix);
         writer.Advance(KeyPrefix.Size);
-        LowLevelType.Write(value, writer);
+        LowLevelType.Write(ToLowLevel(value), writer);
     }
 
     /// <summary>
