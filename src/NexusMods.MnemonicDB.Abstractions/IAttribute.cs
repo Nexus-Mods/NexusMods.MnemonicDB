@@ -21,7 +21,7 @@ public interface IAttribute
     /// <summary>
     /// The low-level (MnemonicDB) type of the value.
     /// </summary>
-    public ValueTags LowLevelType { get; }
+    public ValueTag LowLevelType { get; }
 
     /// <summary>
     ///     True if the attribute's value is a reference to another entity, false if it is a value type.

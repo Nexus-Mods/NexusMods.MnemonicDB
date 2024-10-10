@@ -5,13 +5,12 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 /// <summary>
 /// An attribute that encodes a symbol.
 /// </summary>
-public class SymbolAttribute(string ns, string name) : ScalarAttribute<Symbol, string>(ValueTags.Ascii, ns, name)
+public class SymbolAttribute(string ns, string name) : ScalarAttribute<Symbol, string>(ValueTag.Ascii, ns, name)
 {
     /// <inheritdoc />
     protected override string ToLowLevel(Symbol value) => value.Id;
 
     /// <inheritdoc />
-    protected override Symbol FromLowLevel(string value, ValueTags tags, AttributeResolver resolver)
-        => Symbol.InternPreSanitized(value);
+    protected override Symbol FromLowLevel(string value, AttributeResolver resolver) => Symbol.InternPreSanitized(value);
 }
 

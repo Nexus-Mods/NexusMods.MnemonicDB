@@ -26,7 +26,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     private static Encoding Utf8Encoding = Encoding.UTF8;
 
     protected Attribute(
-        ValueTags lowLevelType,
+        ValueTag lowLevelType,
         string ns,
         string name,
         bool isIndexed = false,
@@ -44,116 +44,14 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// Converts a high-level value to a low-level value
     /// </summary>
     protected abstract TLowLevelType ToLowLevel(TValueType value);
-
+    
     /// <summary>
-    /// Converts a low-level value to a high-level value
+    /// Converts a high-level value to a low-level value
     /// </summary>
-    protected virtual TValueType FromLowLevel(byte value, ValueTags tags, AttributeResolver resolver)
-    {
-        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
-    }
-
-    /// <summary>
-    /// Converts a low-level value to a high-level value
-    /// </summary>
-    protected virtual TValueType FromLowLevel(ushort value, ValueTags tags, AttributeResolver resolver)
-    {
-        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
-    }
-
-    /// <summary>
-    /// Converts a low-level value to a high-level value
-    /// </summary>
-    protected virtual TValueType FromLowLevel(uint value, ValueTags tags, AttributeResolver resolver)
-    {
-        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
-    }
-
-
-    /// <summary>
-    /// Converts a low-level value to a high-level value
-    /// </summary>
-    protected virtual TValueType FromLowLevel(string value, ValueTags tag, AttributeResolver resolver)
-    {
-        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
-    }
-
-    /// <summary>
-    /// Converts a low-level value to a high-level value
-    /// </summary>
-    protected virtual TValueType FromLowLevel(ReadOnlySpan<byte> value, ValueTags tag, AttributeResolver resolver)
-    {
-        throw new NotSupportedException("Unsupported low-level type " + tag + " on attribute " + Id);
-    }
-
-
-    /// <summary>
-    /// Converts a low-level value to a high-level value
-    /// </summary>
-    protected virtual TValueType FromLowLevel(ulong value, ValueTags tags, AttributeResolver resolver)
-    {
-        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
-    }
-
-
-    /// <summary>
-    /// Converts a low-level value to a high-level value
-    /// </summary>
-    protected virtual TValueType FromLowLevel(UInt128 value, ValueTags tags, AttributeResolver resolver)
-    {
-        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
-    }
-
-    /// <summary>
-    /// Converts a low-level value to a high-level value
-    /// </summary>
-    protected virtual TValueType FromLowLevel(short value, ValueTags tags, AttributeResolver resolver)
-    {
-        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
-    }
-
-    /// <summary>
-    /// Converts a low-level value to a high-level value
-    /// </summary>
-    protected virtual TValueType FromLowLevel(int value, ValueTags tags, AttributeResolver resolver)
-    {
-        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
-    }
-
-    /// <summary>
-    /// Converts a low-level value to a high-level value
-    /// </summary>
-    protected virtual TValueType FromLowLevel(long value, ValueTags tags, AttributeResolver resolver)
-    {
-        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
-    }
-
-    /// <summary>
-    /// Converts a low-level value to a high-level value
-    /// </summary>
-    protected virtual TValueType FromLowLevel(Int128 value, ValueTags tags, AttributeResolver resolver)
-    {
-        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
-    }
-
-    /// <summary>
-    /// Converts a low-level value to a high-level value
-    /// </summary>
-    protected virtual TValueType FromLowLevel(float value, ValueTags tags, AttributeResolver resolver)
-    {
-        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
-    }
-
-    /// <summary>
-    /// Converts a low-level value to a high-level value
-    /// </summary>
-    protected virtual TValueType FromLowLevel(double value, ValueTags tags, AttributeResolver resolver)
-    {
-        throw new NotSupportedException("Unsupported low-level type " + value + " on attribute " + Id);
-    }
-
+    protected abstract TValueType FromLowLevel(TLowLevelType value, AttributeResolver resolver);
+    
     /// <inheritdoc />
-    public ValueTags LowLevelType { get; }
+    public ValueTag LowLevelType { get; }
 
     /// <inheritdoc />
     public Symbol Id { get; }
@@ -174,7 +72,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     public Type ValueType => typeof(TValueType);
 
     /// <inheritdoc />
-    public bool IsReference => LowLevelType == ValueTags.Reference;
+    public bool IsReference => LowLevelType == ValueTag.Reference;
 
     /// <inheritdoc />
     IReadDatom IAttribute.Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, AttributeResolver resolver)
@@ -220,7 +118,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType> : IAttribute<
     /// <inheritdoc />
     public virtual void Remap(Func<EntityId, EntityId> remapper, Span<byte> valueSpan)
     {
-        if (LowLevelType == ValueTags.Reference)
+        if (LowLevelType == ValueTag.Reference)
         {
             var id = MemoryMarshal.Read<EntityId>(valueSpan);
             var newId = remapper(id);

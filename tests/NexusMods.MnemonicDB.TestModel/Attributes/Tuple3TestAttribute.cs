@@ -1,18 +1,15 @@
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.TestModel.Attributes;
 
-public class Tuple3TestAttribute(string ns, string name) : TupleAttribute<EntityId, ulong, int, int, string, string>(ValueTags.Reference, ValueTags.Int32, ValueTags.Ascii, ns, name)
+public sealed class Tuple3TestAttribute(string ns, string name) : ScalarAttribute<(EntityId, ushort, RelativePath), (EntityId, ushort, string)>(ValueTag.Tuple3_Ref_UShort_Utf8I, ns, name)
 {
-    protected override (EntityId, int, string) FromLowLevel((ulong, int, string) value)
-    {
-        return (EntityId.From(value.Item1), value.Item2, value.Item3);
-    }
+    protected override (EntityId, ushort, string) ToLowLevel((EntityId, ushort, RelativePath) value) 
+        => (value.Item1, value.Item2, value.Item3.Path);
 
-    protected override (ulong, int, string) ToLowLevel((EntityId, int, string) value)
-    {
-        return (value.Item1.Value, value.Item2, value.Item3);
-    }
+    protected override (EntityId, ushort, RelativePath) FromLowLevel((EntityId, ushort, string) value, AttributeResolver resolver) 
+        => (value.Item1, value.Item2, new(value.Item3));
 }

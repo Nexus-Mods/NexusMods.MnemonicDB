@@ -173,7 +173,7 @@ public class CacheRoot
             var eavtKey = CacheKey.Create(IndexType.EAVTCurrent, datom.E);
             editable.Remove(eavtKey);
             
-            if (datom.Prefix.ValueTag != ValueTags.Reference)
+            if (datom.Prefix.ValueTag != ValueTag.Reference)
                 continue;
             
             var vaetKey = CacheKey.Create(IndexType.VAETCurrent, datom.A, MemoryMarshal.Read<EntityId>(datom.ValueSpan));

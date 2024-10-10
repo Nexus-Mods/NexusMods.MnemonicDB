@@ -9,13 +9,13 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 /// </summary>
 /// <param name="ns"></param>
 /// <param name="name"></param>
-public class MarkerAttribute(string ns, string name) : Attribute<Null, Null>(ValueTags.Null, ns, name)
+public class MarkerAttribute(string ns, string name) : Attribute<Null, Null>(ValueTag.Null, ns, name)
 {
     /// <inheritdoc />
-    protected override Null ToLowLevel(Null value)
-    {
-        return value;
-    }
+    protected override Null ToLowLevel(Null value) => value;
+
+    /// <inheritdoc />
+    protected override Null FromLowLevel(Null value, AttributeResolver resolver) => value;
 
     /// <summary>
     /// Returns true if the entity contains the attribute.

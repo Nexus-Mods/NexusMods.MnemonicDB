@@ -20,7 +20,7 @@ public class Batch(RocksDb db) : IWriteBatch
         _batch.Dispose();
     }
 
-    private ValueTags Tag(ReadOnlySpan<byte> key)
+    private ValueTag Tag(ReadOnlySpan<byte> key)
     {
         var prefix = MemoryMarshal.Read<KeyPrefix>(key);
         return prefix.ValueTag;
@@ -30,7 +30,7 @@ public class Batch(RocksDb db) : IWriteBatch
     public void Add(IIndexStore store, ReadOnlySpan<byte> key)
     {
         var outOfBandData = ReadOnlySpan<byte>.Empty;
-        if (Tag(key) == ValueTags.HashedBlob)
+        if (Tag(key) == ValueTag.HashedBlob)
         {
             outOfBandData = key.SliceFast(KeyPrefix.Size + sizeof(ulong));
             key = key.SliceFast(0, KeyPrefix.Size + sizeof(ulong));
@@ -42,7 +42,7 @@ public class Batch(RocksDb db) : IWriteBatch
     /// <inheritdoc />
     public void Add(IIndexStore store, in Datom datom)
     {
-        if (datom.Prefix.ValueTag == ValueTags.HashedBlob)
+        if (datom.Prefix.ValueTag == ValueTag.HashedBlob)
         {
             var outOfBandData = datom.ValueSpan.SliceFast(sizeof(ulong));
             Span<byte> keySpan = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
@@ -74,7 +74,7 @@ public class Batch(RocksDb db) : IWriteBatch
     /// <inheritdoc />
     public void Delete(IIndexStore store, ReadOnlySpan<byte> key)
     {
-        if (Tag(key) == ValueTags.HashedBlob)
+        if (Tag(key) == ValueTag.HashedBlob)
         {
             key = key.SliceFast(0, KeyPrefix.Size + sizeof(ulong));
         }
@@ -85,7 +85,7 @@ public class Batch(RocksDb db) : IWriteBatch
     /// <inheritdoc />
     public void Delete(IIndexStore store, in Datom datom)
     {
-        if (datom.Prefix.ValueTag == ValueTags.HashedBlob)
+        if (datom.Prefix.ValueTag == ValueTag.HashedBlob)
         {
            Span<byte> keySpan = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
 

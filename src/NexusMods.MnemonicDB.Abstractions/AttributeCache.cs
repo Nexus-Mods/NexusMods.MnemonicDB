@@ -64,14 +64,14 @@ public sealed class AttributeCache
         _symbols = newSymbols;
         
         var types = db.Datoms(AttributeDefinition.ValueType);
-        var newTypes = new ValueTags[maxIndex];
+        var newTypes = new ValueTag[maxIndex];
         var newIsReference = new BitArray(maxIndex);
         foreach (var datom in types)
         {
             var id = datom.E.Value;
             var type = AttributeDefinition.ValueType.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, null!);
             newTypes[id] = type;
-            newIsReference[(int)id] = type == ValueTags.Reference;
+            newIsReference[(int)id] = type == ValueTag.Reference;
         }
         _isReference = newIsReference;
 

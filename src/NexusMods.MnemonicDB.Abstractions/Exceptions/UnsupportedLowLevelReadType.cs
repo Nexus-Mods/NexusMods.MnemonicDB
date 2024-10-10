@@ -3,7 +3,7 @@ using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
 namespace NexusMods.MnemonicDB.Abstractions.Exceptions;
 
-public class UnsupportedLowLevelReadType(ValueTags tag) : Exception($"Unsupported low-level read type: {tag}")
+public class UnsupportedLowLevelReadType(ValueTag tag) : Exception($"Unsupported low-level read type: {tag}")
 {
 
 }

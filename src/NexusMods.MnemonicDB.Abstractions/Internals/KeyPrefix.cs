@@ -61,7 +61,7 @@ public readonly record struct KeyPrefix
     /// <summary>
     /// Creates a new KeyPrefix with the given values
     /// </summary>
-    public KeyPrefix(EntityId id, AttributeId attributeId, TxId txId, bool isRetract, ValueTags tags)
+    public KeyPrefix(EntityId id, AttributeId attributeId, TxId txId, bool isRetract, ValueTag tags)
     {
         _upper = ((ulong)attributeId << 48) | ((ulong)txId & 0x0000FFFFFFFFFFFF);
         _lower = ((ulong)id & 0xFF00000000000000) | (((ulong)id & 0x0000FFFFFFFFFFFF) << 8) | (isRetract ? 1UL : 0UL) | ((ulong)tags << 1);
@@ -92,9 +92,9 @@ public readonly record struct KeyPrefix
     /// <summary>
     ///  The value tag of the datom, which defines the actual value type of the datom
     /// </summary>
-    public ValueTags ValueTag
+    public ValueTag ValueTag
     {
-        get => (ValueTags)((_lower >> 1) & 0x7F);
+        get => (ValueTag)((_lower >> 1) & 0x7F);
         init => _lower = (_lower & 0xFF00000000000001) | ((ulong)value << 1);
     }
 

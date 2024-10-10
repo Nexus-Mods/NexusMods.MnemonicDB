@@ -9,4 +9,4 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// <param name="UniqueId"></param>
 /// <param name="AttrEntityId"></param>
 /// <param name="LowLevelType"></param>
-public record DbAttribute(Symbol UniqueId, AttributeId AttrEntityId, ValueTags LowLevelType, IAttribute Attribute);
+public record DbAttribute(Symbol UniqueId, AttributeId AttrEntityId, ValueTag LowLevelType, IAttribute Attribute);

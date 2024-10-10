@@ -50,13 +50,13 @@ public static class ExtensionMethods
 
             switch (datom.Prefix.ValueTag)
             {
-                case ValueTags.Reference:
+                case ValueTag.Reference:
                 {
                     var val = MemoryMarshal.Read<EntityId>(datom.ValueSpan);
                     sb.Append(val.Value.ToString("X16").PadRight(48));
                     break;
                 }
-                case ValueTags.Ascii:
+                case ValueTag.Ascii:
                 {
                     var size = MemoryMarshal.Read<uint>(datom.ValueSpan);
                     var str = Encoding.ASCII.GetString(datom.ValueSpan.Slice(sizeof(uint), (int)size));
@@ -64,95 +64,95 @@ public static class ExtensionMethods
                     break;
                 }
 
-                case ValueTags.Int64 when datom.A == timestampId:
+                case ValueTag.Int64 when datom.A == timestampId:
                     sb.Append($"DateTime : {dateTimeCount++}".PadRight(48));
                     break;
-                case ValueTags.UInt64:
+                case ValueTag.UInt64:
                     var ul = MemoryMarshal.Read<ulong>(datom.ValueSpan);
                     sb.Append(("0x" + ul.ToString("X16")).PadRight(48));
                     break;
-                case ValueTags.Blob:
+                case ValueTag.Blob:
                 {
                     var code = XxHash3.HashToUInt64(datom.ValueSpan);
                     var hash = code.ToString("X16");
                     sb.Append($"{datom.Prefix.ValueTag} 0x{hash} {datom.ValueSpan.Length} bytes".PadRight(48));
                     break;
                 }
-                case ValueTags.HashedBlob:
+                case ValueTag.HashedBlob:
                 {
                     var code = XxHash3.HashToUInt64(datom.ValueSpan[sizeof(ulong)..]);
                     var hash = code.ToString("X16");
                     sb.Append($"{datom.Prefix.ValueTag} 0x{hash} {datom.ValueSpan.Length} bytes".PadRight(48));
                     break;
                 }
-                case ValueTags.Null:
+                case ValueTag.Null:
                     sb.Append(" ".PadRight(48));
                     break;
-                case ValueTags.UInt8 when datom.A == valueTagId:
-                    var tag = MemoryMarshal.Read<ValueTags>(datom.ValueSpan);
+                case ValueTag.UInt8 when datom.A == valueTagId:
+                    var tag = MemoryMarshal.Read<ValueTag>(datom.ValueSpan);
                     sb.Append($"{tag}".PadRight(48));
                     break;
-                case ValueTags.UInt8:
+                case ValueTag.UInt8:
                     sb.Append(MemoryMarshal.Read<byte>(datom.ValueSpan).ToString().PadRight(48));
                     break;
-                case ValueTags.UInt16:
+                case ValueTag.UInt16:
                     sb.Append(MemoryMarshal.Read<ushort>(datom.ValueSpan).ToString().PadRight(48));
                     break;
-                case ValueTags.Utf8:
+                case ValueTag.Utf8:
                 {
                     var str = Encoding.UTF8.GetString(datom.ValueSpan[sizeof(int)..]);
                     sb.Append(TruncateOrPad(str, 48));
                     break;
                 }
-                case ValueTags.Utf8Insensitive:
+                case ValueTag.Utf8Insensitive:
                 {
                     var str = Encoding.UTF8.GetString(datom.ValueSpan[sizeof(int)..]);
                     sb.Append(TruncateOrPad(str, 48));
                     break;
                 }
-                case ValueTags.UInt32:
+                case ValueTag.UInt32:
                 {
                     var val = MemoryMarshal.Read<uint>(datom.ValueSpan);
                     sb.Append(val.ToString().PadRight(48));
                     break;
                 }
-                case ValueTags.UInt128:
+                case ValueTag.UInt128:
                 {
                     var val = MemoryMarshal.Read<ulong>(datom.ValueSpan);
                     sb.Append(val.ToString("X16").PadRight(48));
                     break;
                 }
-                case ValueTags.Int16:
+                case ValueTag.Int16:
                 {
                     var val = MemoryMarshal.Read<short>(datom.ValueSpan);
                     sb.Append(val.ToString().PadRight(48));
                     break;
                 }
-                case ValueTags.Int32:
+                case ValueTag.Int32:
                 {
                     var val = MemoryMarshal.Read<int>(datom.ValueSpan);
                     sb.Append(val.ToString().PadRight(48));
                     break;
                 }
-                case ValueTags.Int64:
+                case ValueTag.Int64:
                 {
                     var val = MemoryMarshal.Read<long>(datom.ValueSpan);
                     sb.Append(val.ToString().PadRight(48));
                     break;
                 }
-                case ValueTags.Int128:
+                case ValueTag.Int128:
                 {
                     var val = MemoryMarshal.Read<long>(datom.ValueSpan);
                     sb.Append(val.ToString("X16").PadRight(48));
                     break;
                 }
-                case ValueTags.Float32:
+                case ValueTag.Float32:
                 {
                     var val = MemoryMarshal.Read<float>(datom.ValueSpan);
                     sb.Append(val.ToString().PadRight(48));
                     break;
                 }
-                case ValueTags.Float64:
+                case ValueTag.Float64:
                 {
                     var val = MemoryMarshal.Read<double>(datom.ValueSpan);
                     sb.Append(val.ToString().PadRight(48));
