@@ -5,7 +5,17 @@
         <IsPackable>false</IsPackable>
         <IsTestProject>true</IsTestProject>
     </PropertyGroup>
-    
+
+    <ItemGroup>
+        <PackageReference Include="Moq" Version="4.*" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AutoFixture" Version="4.*" />
+        <PackageReference Include="AutoFixture.AutoMoq" Version="4.*" />
+        <PackageReference Include="AutoFixture.Xunit2" Version="4.*" />
+    </ItemGroup>
+
     <ItemGroup>
         <PackageReference Include="FluentAssertions" Version="6.*" />
         <PackageReference Include="FluentAssertions.OneOf" Version="0.0.5" />
@@ -16,8 +26,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="xunit" Version="2.9.*" />
-        <PackageReference Include="xunit.runner.visualstudio" Version="2.8.*">
+        <PackageReference Include="xunit" Version="2.4.*" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.*">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
