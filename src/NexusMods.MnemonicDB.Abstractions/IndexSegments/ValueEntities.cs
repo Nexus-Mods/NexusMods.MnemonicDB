@@ -10,7 +10,7 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 public readonly struct ValueEntities<TModel> : IReadOnlyCollection<TModel>
     where TModel : IReadOnlyModel<TModel>
 {
-    private readonly Values<EntityId, ulong> _values;
+    private readonly Values<EntityId, EntityId> _values;
 
     /// <summary>
     /// The database the models are read from
@@ -20,7 +20,7 @@ public readonly struct ValueEntities<TModel> : IReadOnlyCollection<TModel>
     /// <summary>
     /// Creates a new ValueEntities, from the given values, database, and entity id
     /// </summary>
-    public ValueEntities(Values<EntityId, ulong> values, IDb db)
+    public ValueEntities(Values<EntityId, EntityId> values, IDb db)
     {
         _values = values;
         Db = db;

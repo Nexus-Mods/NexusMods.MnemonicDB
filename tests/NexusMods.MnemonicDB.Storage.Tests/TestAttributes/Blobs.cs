@@ -14,23 +14,16 @@ public class Blobs
 }
 
 
-public class TestBlobAttribute(string ns, string name) : BlobAttribute<byte[]>(ns, name)
+public sealed class TestBlobAttribute(string ns, string name) : ScalarAttribute<Memory<byte>, Memory<byte>>(ValueTag.Blob, ns, name)
 {
-    protected override byte[] FromLowLevel(ReadOnlySpan<byte> value, ValueTag tag, AttributeResolver resolver)
-        => value.ToArray();
+    protected override Memory<byte> ToLowLevel(Memory<byte> value) => value;
 
-    protected override void WriteValue<TWriter>(byte[] value, TWriter writer)
-    {
-        writer.Write(value);
-    }
+    protected override Memory<byte> FromLowLevel(Memory<byte> value, AttributeResolver resolver) => value;
 }
 
-public class TestHashedBlobAttribute(string ns, string name) : HashedBlobAttribute<byte[]>(ns, name)
+public class TestHashedBlobAttribute(string ns, string name) : ScalarAttribute<Memory<byte>, Memory<byte>>(ValueTag.HashedBlob, ns, name)
 {
-    protected override byte[] FromLowLevel(ReadOnlySpan<byte> value, ValueTag tag, AttributeResolver resolver) => value.ToArray();
+    protected override Memory<byte> ToLowLevel(Memory<byte> value) => value;
 
-    protected override void WriteValue<TWriter>(byte[] value, TWriter writer)
-    {
-        writer.Write(value);
-    }
+    protected override Memory<byte> FromLowLevel(Memory<byte> value, AttributeResolver resolver) => value;
 }

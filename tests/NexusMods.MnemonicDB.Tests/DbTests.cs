@@ -967,7 +967,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             Hash = Hash.From(0xDEADBEEF),
             Size = Size.From(1),
             ModId = mod.Id,
-            TuplePath = (loadout1, "1")
+            LocationPath = (LocationId.Game, "1")
         };
         
         var fileB = new File.New(tx)
@@ -976,7 +976,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             Hash = Hash.From(0xDEADBEEF),
             Size = Size.From(1),
             ModId = mod.Id,
-            TuplePath = (loadout1, "2")
+            LocationPath = (LocationId.Preferences, "2")
         };
         
         var fileC = new File.New(tx)
@@ -985,12 +985,12 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             Hash = Hash.From(0xDEADBEEF),
             Size = Size.From(1),
             ModId = mod.Id,
-            TuplePath = (PartitionId.Attribute.MakeEntityId(1), "3")
+            LocationPath = (LocationId.Game, "3")
         };
         
         var result = await tx.Commit();
 
-        var avet = Connection.Db.Datoms(SliceDescriptor.Create(File.TuplePath, (EntityId.From(0), ""), (EntityId.MaxValueNoPartition, ""), AttributeCache));
+        var avet = Connection.Db.Datoms(SliceDescriptor.Create(File.LocationPath, (LocationId.From(0), ""), (LocationId.From(ushort.MaxValue), ""), AttributeCache));
         await VerifyTable(avet.Resolved(Connection));
     }
     
@@ -1004,14 +1004,14 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         foreach (var c in new[]{1, 2, 3})
         {
             var tmpId = tx.TempId();
-            tx.Add(tmpId, File.TupleTest, (tmpId, b, c.ToString()));
+            tx.Add(tmpId, File.TupleTest, (tmpId, LocationId.Game, c.ToString()));
         }
 
         var results = await tx.Commit();
 
         var resolved = results.Db.Datoms(File.TupleTest).Resolved(Connection).ToArray();
 
-        resolved.Select(v => ((Tuple3TestAttribute.ReadDatom)v).V.Item1)
+        resolved.Select(v => ((ReferenceLocationPath.ReadDatom)v).V.Item1)
             .Should().AllSatisfy(id => id.Partition.Should().NotBe(PartitionId.Temp));
         
         await VerifyTable(resolved);
