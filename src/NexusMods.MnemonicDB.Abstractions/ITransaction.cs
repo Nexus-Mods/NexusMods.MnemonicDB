@@ -37,8 +37,7 @@ public interface ITransaction : IDisposable
     ///     Adds a new datom to the transaction
     /// </summary>
     void Add<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val, bool isRetract = false);
-
-
+    
     /// <summary>
     ///     Adds datoms for adding the given ids to the transaction under the given attribute
     /// </summary>

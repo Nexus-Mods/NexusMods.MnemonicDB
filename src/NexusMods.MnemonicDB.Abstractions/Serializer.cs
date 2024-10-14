@@ -189,8 +189,8 @@ public static class Serializer
     {
         var length = (uint)value.Length;
         var span = writer.GetSpan(sizeof(uint) + value.Length);
-        MemoryMarshal.Write(span, ref length);
-        ASCII.GetBytes(value, span.Slice(sizeof(uint)));
+        MemoryMarshal.Write(span, length);
+        ASCII.GetBytes(value, span.SliceFast(sizeof(uint)));
         writer.Advance(sizeof(uint) + value.Length);
     }
 
@@ -199,8 +199,8 @@ public static class Serializer
     {
         var length = (uint)value.Length;
         var span = writer.GetSpan(sizeof(uint) + value.Length);
-        MemoryMarshal.Write(span, ref length);
-        UTF8.GetBytes(value, span.Slice(sizeof(uint)));
+        MemoryMarshal.Write(span, length);
+        UTF8.GetBytes(value, span.SliceFast(sizeof(uint)));
         writer.Advance(sizeof(uint) + value.Length);
     }
 
@@ -209,8 +209,8 @@ public static class Serializer
     {
         var length = (uint)value.Length;
         var span = writer.GetSpan(sizeof(uint) + value.Length);
-        MemoryMarshal.Write(span, ref length);
-        value.Span.CopyTo(span.Slice(sizeof(uint)));
+        MemoryMarshal.Write(span, length);
+        value.Span.CopyTo(span.SliceFast(sizeof(uint)));
         writer.Advance(sizeof(uint) + value.Length);
     }
 

@@ -29,7 +29,7 @@ public class NullConnection : IConnection
     }
 
     public IAnalyzer[] Analyzers => throw new NotSupportedException();
-    public Task<ulong> Excise(EntityId[] entityIds)
+    public Task<ICommitResult> Excise(EntityId[] entityIds)
     {
         throw new NotImplementedException();
     }
