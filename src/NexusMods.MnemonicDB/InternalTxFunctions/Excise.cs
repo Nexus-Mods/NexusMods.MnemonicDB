@@ -1,8 +1,6 @@
-using System;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
-using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.Storage;
 
 namespace NexusMods.MnemonicDB.InternalTxFunctions;
@@ -16,11 +14,10 @@ internal class Excise(EntityId[]  ids) : AInternalFn
 {
     public override void Execute(DatomStore store)
     {
-        // Retract all datoms for the given entity ids
-        var snapshot = store.GetSnapshot();
-
-        using IndexSegmentBuilder currentDatomsBuilder = new IndexSegmentBuilder(store.AttributeCache);
-        using IndexSegmentBuilder historyDatomsBuilder = new IndexSegmentBuilder(store.AttributeCache);
+        // Find all datoms for the given entity ids
+        var snapshot = store.CurrentSnapshot;
+        using var currentDatomsBuilder = new IndexSegmentBuilder(store.AttributeCache);
+        using var historyDatomsBuilder = new IndexSegmentBuilder(store.AttributeCache);
         foreach (var entityId in ids)
         {
             // All Current datoms
@@ -32,10 +29,14 @@ internal class Excise(EntityId[]  ids) : AInternalFn
             historyDatomsBuilder.Add(segment);
         }
         
+        // Build the datoms
         var currentDatoms = currentDatomsBuilder.Build();
         var historyDatoms = historyDatomsBuilder.Build();
         
+        // Start the batch
         var batch = store.Backend.CreateBatch();
+        
+        // Delete all datoms in the history and current segments
         foreach (var datom in historyDatoms)
         {
             store.EAVTHistory.Delete(batch, datom);
@@ -55,6 +56,7 @@ internal class Excise(EntityId[]  ids) : AInternalFn
         }
         batch.Commit();
 
+        // Push through a marker transaction to make sure all indexes are updated
         {
             using var builder = new IndexSegmentBuilder(store.AttributeCache);
             var txId = EntityId.From(PartitionId.Temp.MakeEntityId(0).Value);
