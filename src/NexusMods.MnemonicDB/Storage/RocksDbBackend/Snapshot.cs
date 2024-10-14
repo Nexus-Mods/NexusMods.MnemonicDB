@@ -41,7 +41,7 @@ internal class Snapshot(Backend backend, AttributeCache attributeCache) : ISnaps
             if (writer.Length >= KeyPrefix.Size)
             {
                 var prefix = KeyPrefix.Read(writer.GetWrittenSpan());
-                if (prefix.ValueTag == ValueTags.HashedBlob)
+                if (prefix.ValueTag == ValueTag.HashedBlob)
                 {
                     writer.Write(iterator.GetValueSpan());
                 }
@@ -86,7 +86,7 @@ internal class Snapshot(Backend backend, AttributeCache attributeCache) : ISnaps
             if (writer.Length >= KeyPrefix.Size)
             {
                 var prefix = KeyPrefix.Read(writer.GetWrittenSpan());
-                if (prefix.ValueTag == ValueTags.HashedBlob)
+                if (prefix.ValueTag == ValueTag.HashedBlob)
                 {
                     writer.Write(iterator.GetValueSpan());
                 }

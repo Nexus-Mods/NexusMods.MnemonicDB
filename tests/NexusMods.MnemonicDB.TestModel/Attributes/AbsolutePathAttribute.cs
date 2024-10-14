@@ -6,14 +6,11 @@ using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.TestModel.Attributes;
 
-public class AbsolutePathAttribute(string ns, string name) : ScalarAttribute<AbsolutePath, string>(ValueTags.Utf8, ns, name)
+public sealed class AbsolutePathAttribute(string ns, string name) : ScalarAttribute<AbsolutePath, string>(ValueTag.Utf8, ns, name)
 { 
-    protected override string ToLowLevel(AbsolutePath value)
-    {
-        return value.ToString();
-    }
-    protected override AbsolutePath FromLowLevel(string value, ValueTags tag, AttributeResolver resolver)
-    {
-        return resolver.ServiceProvider.GetRequiredService<IFileSystem>().FromUnsanitizedFullPath(value);
-    }
+    protected override string ToLowLevel(AbsolutePath value) 
+        => value.ToString();
+
+    protected override AbsolutePath FromLowLevel(string value, AttributeResolver resolver) 
+        => resolver.ServiceProvider.GetRequiredService<IFileSystem>().FromUnsanitizedFullPath(value);
 }

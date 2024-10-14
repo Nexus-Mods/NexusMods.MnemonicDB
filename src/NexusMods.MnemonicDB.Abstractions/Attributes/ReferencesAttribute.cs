@@ -6,20 +6,17 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 /// <summary>
 /// Represents a collection of references to other entities.
 /// </summary>
-public class ReferencesAttribute(string ns, string name) : CollectionAttribute<EntityId, ulong>(ValueTags.Reference, ns, name)
+public class ReferencesAttribute(string ns, string name) : CollectionAttribute<EntityId, EntityId>(ValueTag.Reference, ns, name)
 {
     /// <inheritdoc />
-    protected override ulong ToLowLevel(EntityId value) => value.Value;
+    protected override EntityId ToLowLevel(EntityId value) => value;
 
     /// <inheritdoc />
-    protected override EntityId FromLowLevel(ulong value, ValueTags tags, AttributeResolver resolver)
-        => EntityId.From(value);
+    protected override EntityId FromLowLevel(EntityId value, AttributeResolver resolver) => value;
 }
 
 /// <summary>
 /// A typesafe reference attribute, that references entities of type T.
 /// </summary>
-public class ReferencesAttribute<T>(string ns, string name) : ReferencesAttribute(ns, name)
-where T : IModelDefinition
-{
-}
+public sealed class ReferencesAttribute<T>(string ns, string name) : ReferencesAttribute(ns, name)
+where T : IModelDefinition;

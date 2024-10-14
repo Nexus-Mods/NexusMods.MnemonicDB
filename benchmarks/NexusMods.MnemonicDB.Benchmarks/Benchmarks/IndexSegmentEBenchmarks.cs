@@ -24,7 +24,7 @@ public class IndexSegmentEBenchmarks
             for (var a = 0; a < 20; a++)
             {
                 builder.Add(new Datom(new KeyPrefix(EntityId.From((ulong)e), AttributeId.From((ushort)a), TxId.From((ulong)(e + a)), false,
-                    ValueTags.Null), ReadOnlyMemory<byte>.Empty));
+                    ValueTag.Null), ReadOnlyMemory<byte>.Empty));
             }
         }
 

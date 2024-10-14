@@ -15,10 +15,10 @@ public partial class File : IModelDefinition
     /// <summary>
     /// A combination of the loadout 
     /// </summary>
-    public static readonly TuplePath TuplePath = new(Namespace, nameof(TuplePath)) {IsIndexed = true, IsOptional = true};
+    public static readonly LocationPath LocationPath = new(Namespace, nameof(LocationPath)) {IsIndexed = true, IsOptional = true};
     
     /// <summary>
     /// Tuple3 test
     /// </summary>
-    public static readonly Tuple3TestAttribute TupleTest = new(Namespace, nameof(TupleTest)) { IsIndexed = true, IsOptional = true};
+    public static readonly ReferenceLocationPath TupleTest = new(Namespace, nameof(TupleTest)) { IsIndexed = true, IsOptional = true};
 }

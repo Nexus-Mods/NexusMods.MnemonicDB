@@ -1,6 +1,12 @@
-﻿namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
+﻿// ReSharper disable InconsistentNaming
+namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
-public enum ValueTags : byte
+/// <summary>
+/// Value tags are used to determine the type of values. Most of the values
+/// are primitives, but a few specific tuple types are supported, mostly for
+/// use in the Nexus Mods app.
+/// </summary>
+public enum ValueTag : byte
 {
     /// <summary>
     /// Null value, no data
@@ -79,37 +85,12 @@ public enum ValueTags : byte
     Reference = 17,
     
     /// <summary>
-    /// A tuple of two values
+    /// A tuple of three values: a reference, an unsigned 16-bit integer, and a UTF-8 (case insensitive) string
     /// </summary>
-    Tuple2 = 18,
+    Tuple3_Ref_UShort_Utf8I = 64,
     
     /// <summary>
-    /// A tuple of three values
+    /// A tuple of two values: an unsigned 16-bit integer and a UTF-8 (case insensitive) string
     /// </summary>
-    Tuple3 = 19,
-    
-    /// <summary>
-    /// A tuple of four values
-    /// </summary>
-    Tuple4 = 20,
-    
-    /// <summary>
-    /// A tuple of five values
-    /// </summary>
-    Tuple5 = 21,
-    
-    /// <summary>
-    /// A tuple of six values
-    /// </summary>
-    Tuple6 = 22,
-    
-    /// <summary>
-    /// A tuple of seven values
-    /// </summary>
-    Tuple7 = 23,
-    
-    /// <summary>
-    /// A tuple of eight values
-    /// </summary>
-    Tuple8 = 24,
+    Tuple2_UShort_Utf8I = 65,
 }

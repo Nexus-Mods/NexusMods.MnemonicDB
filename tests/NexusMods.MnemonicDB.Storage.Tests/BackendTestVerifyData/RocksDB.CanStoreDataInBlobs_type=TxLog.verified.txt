@@ -70,19 +70,19 @@
 + | 0100000000000002 | (0008) Timestamp                | DateTime : 1                                     | 0100000000000002
 + | 0100000000000003 | (0008) Timestamp                | DateTime : 2                                     | 0100000000000003
 + | 0200000000000001 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000003
-+ | 0200000000000001 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777224 bytes     | 0100000000000003
++ | 0200000000000001 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | 0100000000000003
 + | 0100000000000004 | (0008) Timestamp                | DateTime : 3                                     | 0100000000000004
 + | 0200000000000002 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000004
-+ | 0200000000000002 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777224 bytes     | 0100000000000004
++ | 0200000000000002 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | 0100000000000004
 + | 0100000000000005 | (0008) Timestamp                | DateTime : 4                                     | 0100000000000005
 + | 0200000000000003 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000005
-+ | 0200000000000003 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777224 bytes     | 0100000000000005
++ | 0200000000000003 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | 0100000000000005
 + | 0100000000000006 | (0008) Timestamp                | DateTime : 5                                     | 0100000000000006
 + | 0200000000000004 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000006
-+ | 0200000000000004 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777224 bytes     | 0100000000000006
++ | 0200000000000004 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | 0100000000000006
 + | 0100000000000007 | (0008) Timestamp                | DateTime : 6                                     | 0100000000000007
 - | 0200000000000001 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000007
-- | 0200000000000001 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777224 bytes     | 0100000000000007
+- | 0200000000000001 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | 0100000000000007
 + | 0100000000000008 | (0008) Timestamp                | DateTime : 7                                     | 0100000000000008
 - | 0200000000000002 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000008
-- | 0200000000000002 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777224 bytes     | 0100000000000008
+- | 0200000000000002 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | 0100000000000008

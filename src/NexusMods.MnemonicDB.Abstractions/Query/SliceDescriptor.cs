@@ -257,14 +257,14 @@ public readonly struct SliceDescriptor
             var from = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + sizeof(ulong));
             from.AsSpan().Clear();
 
-            var fromPrefix = new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false, ValueTags.Reference);
+            var fromPrefix = new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false, ValueTag.Reference);
             MemoryMarshal.Write(from, fromPrefix);
 
 
             var to = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + sizeof(ulong));
             to.AsSpan().Fill(byte.MaxValue);
 
-            var toPrefix = new KeyPrefix(EntityId.MaxValueNoPartition, AttributeId.Max, TxId.MaxValue, true, ValueTags.Reference);
+            var toPrefix = new KeyPrefix(EntityId.MaxValueNoPartition, AttributeId.Max, TxId.MaxValue, true, ValueTag.Reference);
             MemoryMarshal.Write(to, toPrefix);
 
             return new SliceDescriptor
@@ -295,7 +295,7 @@ public readonly struct SliceDescriptor
     /// </summary>
     public static Datom Datom(EntityId e, AttributeId a, TxId id, bool isRetract)
     {
-        KeyPrefix prefix = new(e, a, id, isRetract, ValueTags.Null);
+        KeyPrefix prefix = new(e, a, id, isRetract, ValueTag.Null);
         return new Datom(prefix, ReadOnlyMemory<byte>.Empty);
     }
 
@@ -329,7 +329,7 @@ public readonly struct SliceDescriptor
     {
         var data = new Memory<byte>(GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + sizeof(ulong)));
         var span = data.Span;
-        var prefix = new KeyPrefix(e, a, id, isRetract, ValueTags.Reference);
+        var prefix = new KeyPrefix(e, a, id, isRetract, ValueTag.Reference);
         MemoryMarshal.Write(span, prefix);
         MemoryMarshal.Write(span.SliceFast(KeyPrefix.Size), value);
         return new Datom(data);

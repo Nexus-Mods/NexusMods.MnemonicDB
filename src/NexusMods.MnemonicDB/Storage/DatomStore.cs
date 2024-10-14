@@ -421,7 +421,7 @@ public partial class DatomStore : IDatomStore
                 var valueSpan = datom.ValueSpan;
                 var span = _writer.GetSpan(valueSpan.Length);
                 valueSpan.CopyTo(span);
-                ValueHelpers.Remap(_remapFunc, in keyPrefix, span);
+                keyPrefix.ValueTag.Remap(span, _remapFunc);
                 _writer.Advance(valueSpan.Length);
             }
 
@@ -523,7 +523,7 @@ public partial class DatomStore : IDatomStore
             fixed (byte* bTmp = datom.SliceFast(sizeof(KeyPrefix)))
             {
                 var valueTag = prevDatom.Prefix.ValueTag;
-                var cmp = ValueComparer.CompareValues(prevDatom.Prefix.ValueTag, aTmp, prevDatom.ValueSpan.Length, otherPrefix.ValueTag, bTmp, datom.Length - sizeof(KeyPrefix));
+                var cmp = Serializer.Compare(prevDatom.Prefix.ValueTag, aTmp, prevDatom.ValueSpan.Length, otherPrefix.ValueTag, bTmp, datom.Length - sizeof(KeyPrefix));
                 Debug.Assert(cmp == 0, "Values should match");
             }
         }
@@ -599,7 +599,7 @@ public partial class DatomStore : IDatomStore
             fixed (byte* a = aSpan)
             fixed (byte* b = bSpan)
             {
-                var cmp = ValueComparer.CompareValues(found.Prefix.ValueTag, a, aSpan.Length, keyPrefix.ValueTag, b, bSpan.Length);
+                var cmp = Serializer.Compare(found.Prefix.ValueTag, a, aSpan.Length, keyPrefix.ValueTag, b, bSpan.Length);
                 return cmp == 0 ? PrevState.Duplicate : PrevState.NotExists;
             }
         }
@@ -622,7 +622,7 @@ public partial class DatomStore : IDatomStore
             fixed (byte* a = aSpan)
             fixed (byte* b = bSpan)
             {
-                var cmp = ValueComparer.CompareValues(datom.Prefix.ValueTag, a, aSpan.Length, bPrefix.ValueTag, b, bSpan.Length);
+                var cmp = Serializer.Compare(datom.Prefix.ValueTag, a, aSpan.Length, bPrefix.ValueTag, b, bSpan.Length);
                 if (cmp == 0) return PrevState.Duplicate;
             }
 

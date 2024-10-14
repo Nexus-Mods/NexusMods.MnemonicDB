@@ -5,12 +5,11 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 /// <summary>
 /// An attribute that represents a value tag value
 /// </summary>
-public class ValuesTagAttribute(string ns, string name) : ScalarAttribute<ValueTags, byte>(ValueTags.UInt8, ns, name)
+public sealed class ValuesTagAttribute(string ns, string name) : ScalarAttribute<ValueTag, byte>(ValueTag.UInt8, ns, name)
 {
     /// <inheritdoc />
-    protected override byte ToLowLevel(ValueTags value) => (byte)value;
+    protected override byte ToLowLevel(ValueTag value) => (byte)value;
 
     /// <inheritdoc />
-    protected override ValueTags FromLowLevel(byte lowLevelType, ValueTags tags, AttributeResolver resolver)
-        => (ValueTags)lowLevelType;
+    protected override ValueTag FromLowLevel(byte value, AttributeResolver resolver) => (ValueTag)value;
 }

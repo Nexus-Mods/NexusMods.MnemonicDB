@@ -21,7 +21,7 @@ public interface IAttribute
     /// <summary>
     /// The low-level (MnemonicDB) type of the value.
     /// </summary>
-    public ValueTags LowLevelType { get; }
+    public ValueTag LowLevelType { get; }
 
     /// <summary>
     ///     True if the attribute's value is a reference to another entity, false if it is a value type.
@@ -67,12 +67,7 @@ public interface IAttribute
     /// <summary>
     ///     Returns true if the attribute is in the given entity
     /// </summary>
-    bool IsIn(IDb db, EntityId id);
-    
-    /// <summary>
-    /// Remap any entity ids in the value span (inplace)
-    /// </summary>
-    public void Remap(Func<EntityId, EntityId> remapper, Span<byte> valueSpan);
+    bool IsIn<T>(T entity) where T : IHasIdAndIndexSegment;
 }
 
 

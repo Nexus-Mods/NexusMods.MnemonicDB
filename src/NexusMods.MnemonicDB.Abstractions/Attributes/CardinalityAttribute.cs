@@ -5,17 +5,11 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 /// <summary>
 /// Used to mark the cardinality of an attribute in the database
 /// </summary>
-public class CardinalityAttribute(string ns, string name) : ScalarAttribute<Cardinality, byte>(ValueTags.UInt8, ns, name)
+public sealed class CardinalityAttribute(string ns, string name) : ScalarAttribute<Cardinality, byte>(ValueTag.UInt8, ns, name)
 {
     /// <inheritdoc />
-    protected override byte ToLowLevel(Cardinality value)
-    {
-        return (byte)value;
-    }
+    protected override byte ToLowLevel(Cardinality value) => (byte)value;
 
     /// <inheritdoc />
-    protected override Cardinality FromLowLevel(byte value, ValueTags tags, AttributeResolver resolver)
-    {
-        return (Cardinality)value;
-    }
+    protected override Cardinality FromLowLevel(byte value, AttributeResolver resolver) => (Cardinality)value;
 }

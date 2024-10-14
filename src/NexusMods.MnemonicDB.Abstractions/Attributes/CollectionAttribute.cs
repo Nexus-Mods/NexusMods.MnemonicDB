@@ -9,7 +9,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 /// <summary>
 /// An attribute that represents a collection of values
 /// </summary>
-public abstract class CollectionAttribute<TValue, TLowLevel>(ValueTags tag, string ns, string name)
+public abstract class CollectionAttribute<TValue, TLowLevel>(ValueTag tag, string ns, string name)
     : Attribute<TValue, TLowLevel>(tag, ns, name, cardinality: Cardinality.Many)
 {
 

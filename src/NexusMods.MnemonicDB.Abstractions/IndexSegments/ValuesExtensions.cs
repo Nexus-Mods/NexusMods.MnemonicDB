@@ -19,7 +19,7 @@ public static class ValuesExtensions
     /// <summary>
     /// Returns a view of the values as models whose ids are the given id
     /// </summary>
-    public static ValueEntities<TModel> AsModels<TModel>(this Values<EntityId, ulong> values, IDb db)
+    public static ValueEntities<TModel> AsModels<TModel>(this Values<EntityId, EntityId> values, IDb db)
         where TModel : IReadOnlyModel<TModel>
     {
         return new ValueEntities<TModel>(values, db);
