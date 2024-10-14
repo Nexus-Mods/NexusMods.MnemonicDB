@@ -3,7 +3,7 @@
 This is a simple, fast, and type-safe in-process temporal database for .NET applications. It borrows heavily from
 [Datomic](https://www.datomic.com/), [Datahike](https://github.com/replikativ/datahike) and heavily leverages
 [RocksDB](https://rocksdb.org/) for storage. Performance wise, on modern desktop hardware it can write roughly
-210K tuples per second sustained, and read roughly 1M tuples per second sustained, this includes the overhead
+500kK tuples per second sustained, and read roughly 1M tuples per second sustained, this includes the overhead
 of maintaining the indexes.
 
 ## Documentation
