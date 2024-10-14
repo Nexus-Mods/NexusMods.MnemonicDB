@@ -144,43 +144,7 @@ public class Connection : IConnection
 
     /// <inheritdoc />
     public IObservable<IDb> Revisions => _dbStream;
-
-    private void AddMissingAttributes()
-    {
-        var declaredAttributes = AttributeResolver.DefinedAttributes;
-        var existing = AttributeCache.AllAttributeIds.ToHashSet();
-        
-        if (existing.Count == 0)
-            throw new AggregateException(
-                "No attributes found in the database, something went wrong, as it should have been bootstrapped by now");
-
-        var missing = declaredAttributes.Where(a => !existing.Contains(a.Id)).ToArray();
-        if (missing.Length == 0)
-        {
-            // No changes to make to the schema, we can return early
-            return;
-        }
-        
-        var attrId = existing.Select(sym => AttributeCache.GetAttributeId(sym)).Max().Value;
-        using var builder = new IndexSegmentBuilder(AttributeCache);
-        foreach (var attr in missing.OrderBy(e => e.Id.Id))
-        {
-            var id = EntityId.From(++attrId);
-            builder.Add(id, AttributeDefinition.UniqueId, attr.Id);
-            builder.Add(id, AttributeDefinition.ValueType, attr.LowLevelType);
-            if (attr.IsIndexed)
-                builder.Add(id, AttributeDefinition.Indexed, Null.Instance);
-            builder.Add(id, AttributeDefinition.Cardinality, attr.Cardinalty);
-            if (attr.NoHistory)
-                builder.Add(id, AttributeDefinition.NoHistory, Null.Instance);
-            if (attr.DeclaredOptional)
-                builder.Add(id, AttributeDefinition.Optional, Null.Instance);
-        }
-
-        var (_, db) = _store.Transact(new IndexSegmentTransaction(builder.Build()));
-        AttributeCache.Reset(db);
-    }
-
+    
     internal async Task<ICommitResult> Transact(IInternalTxFunction fn)
     {
         StoreResult newTx;
@@ -203,8 +167,9 @@ public class Connection : IConnection
             };
             AttributeCache.Reset(initialDb);
             
-            AddMissingAttributes();
-
+            var declaredAttributes = AttributeResolver.DefinedAttributes.OrderBy(a => a.Id.Id).ToArray();
+            _store.Transact(new SchemaMigration(declaredAttributes));
+            
             _dbStreamDisposable = ProcessUpdates(_store.TxLog)
                 .Subscribe(itm => _dbStream.OnNext(itm));
         }

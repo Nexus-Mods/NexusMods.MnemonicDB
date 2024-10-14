@@ -162,11 +162,11 @@ public readonly struct SliceDescriptor
     /// Creates a slice descriptor for the given attribute from the current AEVT index
     /// reverse lookup.
     /// </summary>
-    public static SliceDescriptor Create(AttributeId referenceAttribute)
+    public static SliceDescriptor Create(AttributeId referenceAttribute, IndexType indexType = IndexType.AEVTCurrent)
     {
         return new SliceDescriptor
         {
-            Index = IndexType.AEVTCurrent,
+            Index = indexType,
             From = Datom(EntityId.MinValueNoPartition, referenceAttribute, TxId.MinValue, false),
             To = Datom(EntityId.MaxValueNoPartition, referenceAttribute, TxId.MaxValue, false)
         };

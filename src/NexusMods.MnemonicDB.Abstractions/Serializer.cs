@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO.Hashing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -394,6 +395,25 @@ public static class Serializer
                 return;
         }
     }
+    #endregion
+
+    #region ValueConversion
+    
+    public static void ConvertValue<TWriter>(this ValueTag srcTag, ReadOnlySpan<byte> srcSpan, ValueTag destTag, TWriter destWriter)
+        where TWriter : IBufferWriter<byte>
+    {
+
+        switch (srcTag, destTag)
+        {
+            case (ValueTag.UInt8, ValueTag.UInt16):
+                WriteUnmanaged((ushort)MemoryMarshal.Read<byte>(srcSpan), destWriter);
+                break;
+            
+            default:
+                throw new NotSupportedException("Conversion not supported from " + srcTag + " to " + destTag);
+        }
+    }
+
     #endregion
 
 }

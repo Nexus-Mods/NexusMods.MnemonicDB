@@ -396,7 +396,7 @@ public sealed partial class DatomStore : IDatomStore
     /// <summary>
     /// Log a single datom, this is the inner loop of the transaction processing
     /// </summary>
-    private void LogDatom(in Datom datom, IWriteBatch batch)
+    internal void LogDatom(in Datom datom, IWriteBatch batch)
     {
         _writer.Reset();
 

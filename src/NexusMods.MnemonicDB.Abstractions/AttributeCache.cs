@@ -19,6 +19,7 @@ public sealed class AttributeCache
     private BitArray _isReference;
     private BitArray _isIndexed;
     private Symbol[] _symbols;
+    private ValueTag[] _valueTags;
     private BitArray _isNoHistory;
 
     public AttributeCache()
@@ -29,12 +30,14 @@ public sealed class AttributeCache
         _isIndexed = new BitArray(maxId);
         _isNoHistory = new BitArray(maxId);
         _symbols = new Symbol[maxId];
+        _valueTags = new ValueTag[maxId];
 
         foreach (var kv in AttributeDefinition.HardcodedIds)
         {
             _attributeIdsBySymbol[kv.Key.Id] = AttributeId.From(kv.Value);
             _isIndexed[kv.Value] = kv.Key.IsIndexed;
             _symbols[kv.Value] = kv.Key.Id;
+            _valueTags[kv.Value] = kv.Key.LowLevelType;
         }
          
     }
@@ -104,7 +107,16 @@ public sealed class AttributeCache
             newIsCardinalityMany[(int)id] = AttributeDefinition.Cardinality.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, null!) == Cardinality.Many;
         }
         _isCardinalityMany = newIsCardinalityMany;
-
+        
+        var valueTags = db.Datoms(AttributeDefinition.ValueType);
+        var newValueTags = new ValueTag[maxIndex];
+        foreach (var datom in valueTags)
+        {
+            var id = datom.E.Value;
+            var type = AttributeDefinition.ValueType.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, null!);
+            newValueTags[id] = type;
+        }
+        _valueTags = newValueTags;
     }
 
     /// <summary>
@@ -154,5 +166,29 @@ public sealed class AttributeCache
     public Symbol GetSymbol(AttributeId id)
     {
         return _symbols[id.Value];
+    }
+
+    /// <summary>
+    /// Returns true if the attribute is defined in the database.
+    /// </summary>
+    public bool Has(Symbol attribute)
+    {
+        return _attributeIdsBySymbol.ContainsKey(attribute);
+    }
+    
+    /// <summary>
+    /// Try to get the AttributeId for the given attribute name
+    /// </summary>
+    public bool TryGetAttributeId(Symbol attribute, out AttributeId id)
+    {
+        return _attributeIdsBySymbol.TryGetValue(attribute, out id);
+    }
+
+    /// <summary>
+    /// Return the value tag type for the given attribute id
+    /// </summary>
+    public ValueTag GetValueTag(AttributeId aid)
+    {
+        return _valueTags[aid.Value];
     }
 }
