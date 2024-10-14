@@ -242,7 +242,7 @@ public sealed partial class DatomStore : IDatomStore
     {
         _currentDb = ((Db)_currentDb!).WithNext(result, result.AssignedTxId);
         _dbStream.OnNext(_currentDb);
-        pendingTransaction.Complete(result, _currentDb);
+        Task.Run(() => pendingTransaction.Complete(result, _currentDb));
     }
 
     /// <summary>
