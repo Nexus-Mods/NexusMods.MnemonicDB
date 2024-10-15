@@ -403,14 +403,27 @@ public static class Serializer
         where TWriter : IBufferWriter<byte>
     {
 
-        switch (srcTag, destTag)
+        try
         {
-            case (ValueTag.UInt8, ValueTag.UInt16):
-                WriteUnmanaged((ushort)MemoryMarshal.Read<byte>(srcSpan), destWriter);
-                break;
-            
-            default:
-                throw new NotSupportedException("Conversion not supported from " + srcTag + " to " + destTag);
+            switch (srcTag, destTag)
+            {
+                case (ValueTag.UInt8, ValueTag.UInt16):
+                    WriteUnmanaged((ushort)MemoryMarshal.Read<byte>(srcSpan), destWriter);
+                    break;
+                case (ValueTag.Utf8, ValueTag.UInt64):
+                {
+                    var val = srcTag.Read<string>(srcSpan);
+                    WriteUnmanaged(Convert.ToUInt64(val), destWriter);
+                    break;
+                }
+
+                default:
+                    throw new NotSupportedException("Conversion not supported from " + srcTag + " to " + destTag);
+            }
+        }
+        catch (Exception e)
+        {
+            throw new InvalidOperationException($"Failed to convert ({srcTag.Read<object>(srcSpan)}) value from " + srcTag + " to " + destTag, e);
         }
     }
 
