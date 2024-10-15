@@ -20,7 +20,7 @@ public class NullConnection : IConnection
 
     public IDb History()
     {
-        throw new NotImplementedException();
+        throw new NotSupportedException();
     }
 
     public ITransaction BeginTransaction()
@@ -29,8 +29,13 @@ public class NullConnection : IConnection
     }
 
     public IAnalyzer[] Analyzers => throw new NotSupportedException();
-    public Task<ulong> Excise(EntityId[] entityIds)
+    public Task<ICommitResult> Excise(EntityId[] entityIds)
     {
-        throw new NotImplementedException();
+        throw new NotSupportedException();
+    }
+
+    public Task UpdateSchema(params IAttribute[] attribute)
+    {
+        throw new NotSupportedException();
     }
 }

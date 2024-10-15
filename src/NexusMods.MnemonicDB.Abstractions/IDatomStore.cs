@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -39,31 +36,20 @@ public interface IDatomStore : IDisposable
     /// Any existing data will be deleted before importing.
     /// </summary>
     public Task ImportAsync(Stream stream);
-
+    
     /// <summary>
-    ///     Transacts (adds) the given datoms into the store.
+    ///    Transacts (adds) the given datoms into the store.
     /// </summary>
-    public Task<(StoreResult, IDb)> TransactAsync(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null);
-
-
+    public (StoreResult, IDb) Transact(IndexSegment segment);
+    
+    
     /// <summary>
-    ///     Transacts (adds) the given datoms into the store.
+    ///   Transacts (adds) the given datoms into the store.
     /// </summary>
-    public (StoreResult, IDb) Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null);
-
-    /// <summary>
-    ///     Registers new attributes with the store.
-    /// </summary>
-    /// <param name="newAttrs"></param>
-    void RegisterAttributes(IEnumerable<DbAttribute> newAttrs);
-
+    public Task<(StoreResult, IDb)> TransactAsync(IndexSegment segment);
+    
     /// <summary>
     ///     Create a snapshot of the current state of the store.
     /// </summary>
     ISnapshot GetSnapshot();
-
-    /// <summary>
-    /// Deletes these datoms from any of the indexes they are in.
-    /// </summary>
-    ValueTask Excise(List<Datom> datomsToRemove);
 }

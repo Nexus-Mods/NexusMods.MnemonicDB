@@ -7,12 +7,10 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Query;
-using NexusMods.MnemonicDB.Abstractions.TxFunctions;
-using ObservableExtensions = R3.ObservableExtensions;
+using NexusMods.MnemonicDB.InternalTxFunctions;
+using NexusMods.MnemonicDB.Storage;
 
 namespace NexusMods.MnemonicDB;
 
@@ -21,7 +19,7 @@ namespace NexusMods.MnemonicDB;
 /// </summary>
 public class Connection : IConnection
 {
-    private readonly IDatomStore _store;
+    private readonly DatomStore _store;
     private readonly ILogger<Connection> _logger;
 
     private DbStream _dbStream;
@@ -37,7 +35,7 @@ public class Connection : IConnection
         AttributeCache = store.AttributeCache;
         AttributeResolver = new AttributeResolver(provider, AttributeCache);
         _logger = logger;
-        _store = store;
+        _store = (DatomStore)store;
         _dbStream = new DbStream();
         _analyzers = analyzers.ToArray();
         Bootstrap();
@@ -137,94 +135,28 @@ public class Connection : IConnection
 
 
     /// <inheritdoc />
-    public async Task<ulong> Excise(EntityId[] entityIds)
+    public async Task<ICommitResult> Excise(EntityId[] entityIds)
     {
-        // Retract all datoms for the given entity ids
-        var contextDb = Db;
-        
-        List<Datom> datomsToRemove = new();
-        foreach (var entityId in entityIds)
-        {
-            var segment = contextDb.Datoms(entityId);
-            datomsToRemove.AddRange(segment);
-        }
+        var tx = new Transaction(this);
+        tx.Set(new Excise(entityIds));
+        return await tx.Commit();
+    }
 
-        {
-            using var tx = BeginTransaction();
-            foreach (var datom in datomsToRemove)
-            {
-                tx.Add(datom.Retract());
-            }
-            var results = await tx.Commit();
-            contextDb = results.Db;
-        }
-        
-        // Now delete all the datoms from all indexes
-        datomsToRemove.Clear();
-        
-        foreach (var entityId in entityIds)
-        {
-            var segment = contextDb.Datoms(SliceDescriptor.Create(IndexType.EAVTHistory, entityId));
-            datomsToRemove.AddRange(segment);
-        }
-        
-        await _store.Excise(datomsToRemove);
-
-        {
-            using var tx = BeginTransaction();
-            tx.Add((EntityId)tx.ThisTxId.Value, Abstractions.BuiltInEntities.Transaction.ExcisedDatoms, (ulong)datomsToRemove.Count);
-            await tx.Commit();
-        }
-        
-        
-        return (ulong)datomsToRemove.Count;
+    /// <inheritdoc />
+    public Task UpdateSchema(params IAttribute[] attribute)
+    {
+        return Transact(new SchemaMigration(attribute));
     }
 
     /// <inheritdoc />
     public IObservable<IDb> Revisions => _dbStream;
-
-    private void AddMissingAttributes()
-    {
-        var declaredAttributes = AttributeResolver.DefinedAttributes;
-        var existing = AttributeCache.AllAttributeIds.ToHashSet();
-        
-        if (existing.Count == 0)
-            throw new AggregateException(
-                "No attributes found in the database, something went wrong, as it should have been bootstrapped by now");
-
-        var missing = declaredAttributes.Where(a => !existing.Contains(a.Id)).ToArray();
-        if (missing.Length == 0)
-        {
-            // No changes to make to the schema, we can return early
-            return;
-        }
-        
-        var attrId = existing.Select(sym => AttributeCache.GetAttributeId(sym)).Max().Value;
-        using var builder = new IndexSegmentBuilder(AttributeCache);
-        foreach (var attr in missing.OrderBy(e => e.Id.Id))
-        {
-            var id = EntityId.From(++attrId);
-            builder.Add(id, AttributeDefinition.UniqueId, attr.Id);
-            builder.Add(id, AttributeDefinition.ValueType, attr.LowLevelType);
-            if (attr.IsIndexed)
-                builder.Add(id, AttributeDefinition.Indexed, Null.Instance);
-            builder.Add(id, AttributeDefinition.Cardinality, attr.Cardinalty);
-            if (attr.NoHistory)
-                builder.Add(id, AttributeDefinition.NoHistory, Null.Instance);
-            if (attr.DeclaredOptional)
-                builder.Add(id, AttributeDefinition.Optional, Null.Instance);
-        }
-
-        var (_, db) = _store.Transact(builder.Build());
-        AttributeCache.Reset(db);
-    }
-
-    internal async Task<ICommitResult> Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions)
+    
+    internal async Task<ICommitResult> Transact(IInternalTxFunction fn)
     {
         StoreResult newTx;
         IDb newDb;
 
-        (newTx, newDb) = await _store.TransactAsync(datoms, txFunctions);
+        (newTx, newDb) = await _store.TransactAsync(fn);
         ((Db)newDb).Connection = this;
         var result = new CommitResult(newDb, newTx.Remaps);
         return result;
@@ -241,8 +173,9 @@ public class Connection : IConnection
             };
             AttributeCache.Reset(initialDb);
             
-            AddMissingAttributes();
-
+            var declaredAttributes = AttributeResolver.DefinedAttributes.OrderBy(a => a.Id.Id).ToArray();
+            _store.Transact(new SchemaMigration(declaredAttributes));
+            
             _dbStreamDisposable = ProcessUpdates(_store.TxLog)
                 .Subscribe(itm => _dbStream.OnNext(itm));
         }

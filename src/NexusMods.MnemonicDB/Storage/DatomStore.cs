@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -16,33 +15,33 @@ using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Query;
-using NexusMods.MnemonicDB.Abstractions.TxFunctions;
+using NexusMods.MnemonicDB.InternalTxFunctions;
 using NexusMods.MnemonicDB.Storage.Abstractions;
-using NexusMods.MnemonicDB.Storage.DatomStorageStructures;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Storage;
 
-public partial class DatomStore : IDatomStore
+public sealed partial class DatomStore : IDatomStore
 {
-    private readonly IIndex _aevtCurrent;
-    private readonly IIndex _aevtHistory;
-    private readonly IIndex _avetCurrent;
-    private readonly IIndex _avetHistory;
-    private readonly IStoreBackend _backend;
-    private ISnapshot? _currentSnapshot;
-    private readonly IIndex _eavtCurrent;
-    private readonly IIndex _eavtHistory;
-    private readonly ILogger<DatomStore> _logger;
+    internal readonly IIndex AEVTCurrent;
+    internal readonly IIndex AEVTHistory;
+    internal readonly IIndex AVETCurrent;
+    internal readonly IIndex AVETHistory;
+    internal readonly IIndex EAVTCurrent;
+    internal readonly IIndex EAVTHistory;
+    internal readonly IIndex VAETCurrent;
+    internal readonly IIndex VAETHistory;
+    internal readonly IIndex TxLogIndex;
+    internal readonly IStoreBackend Backend;
+    internal ISnapshot CurrentSnapshot;
+    
+    internal readonly ILogger<DatomStore> Logger;
     private readonly PooledMemoryBufferWriter _retractWriter;
     private readonly AttributeCache _attributeCache;
     private readonly DatomStoreSettings _settings;
 
-    private readonly BlockingCollection<PendingTransaction> _pendingTransactions;
-    private readonly IIndex _txLog;
+    private readonly BlockingCollection<IInternalTxFunctionImpl> _pendingTransactions;
     private DbStream _dbStream;
-    private readonly IIndex _vaetCurrent;
-    private readonly IIndex _vaetHistory;
     private readonly PooledMemoryBufferWriter _writer;
     private readonly PooledMemoryBufferWriter _prevWriter;
     private TxId _asOfTx = TxId.MinValue;
@@ -75,48 +74,55 @@ public partial class DatomStore : IDatomStore
 
     private CancellationTokenSource _shutdownToken = new();
     private TxId _thisTx;
+    
+    /// <summary>
+    /// Scratch spaced to create new datoms while processing transactions
+    /// </summary>
+    private readonly Memory<byte> _txScratchSpace;
 
     /// <summary>
     /// DI constructor
     /// </summary>
     public DatomStore(ILogger<DatomStore> logger, DatomStoreSettings settings, IStoreBackend backend, bool bootstrap = true)
     {
+        CurrentSnapshot = default!;
+        _txScratchSpace = new Memory<byte>(new byte[1024]);
         _remapFunc = Remap;
         _dbStream = new DbStream();
         _attributeCache = backend.AttributeCache;
-        _pendingTransactions = new BlockingCollection<PendingTransaction>(new ConcurrentQueue<PendingTransaction>());
+        _pendingTransactions = new BlockingCollection<IInternalTxFunctionImpl>(new ConcurrentQueue<IInternalTxFunctionImpl>());
 
-        _backend = backend;
+        Backend = backend;
         _writer = new PooledMemoryBufferWriter();
         _retractWriter = new PooledMemoryBufferWriter();
         _prevWriter = new PooledMemoryBufferWriter();
 
 
-        _logger = logger;
+        Logger = logger;
         _settings = settings;
-
-        _backend.DeclareEAVT(IndexType.EAVTCurrent);
-        _backend.DeclareEAVT(IndexType.EAVTHistory);
-        _backend.DeclareAEVT(IndexType.AEVTCurrent);
-        _backend.DeclareAEVT(IndexType.AEVTHistory);
-        _backend.DeclareVAET(IndexType.VAETCurrent);
-        _backend.DeclareVAET(IndexType.VAETHistory);
-        _backend.DeclareAVET(IndexType.AVETCurrent);
-        _backend.DeclareAVET(IndexType.AVETHistory);
-        _backend.DeclareTxLog(IndexType.TxLog);
-
-        _backend.Init(settings.Path);
-
-        _txLog = _backend.GetIndex(IndexType.TxLog);
-        _eavtCurrent = _backend.GetIndex(IndexType.EAVTCurrent);
-        _eavtHistory = _backend.GetIndex(IndexType.EAVTHistory);
-        _aevtCurrent = _backend.GetIndex(IndexType.AEVTCurrent);
-        _aevtHistory = _backend.GetIndex(IndexType.AEVTHistory);
-        _vaetCurrent = _backend.GetIndex(IndexType.VAETCurrent);
-        _vaetHistory = _backend.GetIndex(IndexType.VAETHistory);
-        _avetCurrent = _backend.GetIndex(IndexType.AVETCurrent);
-        _avetHistory = _backend.GetIndex(IndexType.AVETHistory);
         
+        Backend.DeclareEAVT(IndexType.EAVTCurrent);
+        Backend.DeclareEAVT(IndexType.EAVTHistory);
+        Backend.DeclareAEVT(IndexType.AEVTCurrent);
+        Backend.DeclareAEVT(IndexType.AEVTHistory);
+        Backend.DeclareVAET(IndexType.VAETCurrent);
+        Backend.DeclareVAET(IndexType.VAETHistory);
+        Backend.DeclareAVET(IndexType.AVETCurrent);
+        Backend.DeclareAVET(IndexType.AVETHistory);
+        Backend.DeclareTxLog(IndexType.TxLog);
+
+        Backend.Init(settings.Path);
+
+        TxLogIndex = Backend.GetIndex(IndexType.TxLog);
+        EAVTCurrent = Backend.GetIndex(IndexType.EAVTCurrent);
+        EAVTHistory = Backend.GetIndex(IndexType.EAVTHistory);
+        AEVTCurrent = Backend.GetIndex(IndexType.AEVTCurrent);
+        AEVTHistory = Backend.GetIndex(IndexType.AEVTHistory);
+        VAETCurrent = Backend.GetIndex(IndexType.VAETCurrent);
+        VAETHistory = Backend.GetIndex(IndexType.VAETHistory);
+        AVETCurrent = Backend.GetIndex(IndexType.AVETCurrent);
+        AVETHistory = Backend.GetIndex(IndexType.AVETHistory);
+
         if (bootstrap) 
             Bootstrap();
     }
@@ -128,93 +134,58 @@ public partial class DatomStore : IDatomStore
     public AttributeCache AttributeCache => _attributeCache;
 
     /// <inheritdoc />
-    public async Task<(StoreResult, IDb)> TransactAsync(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null)
+    public async Task<(StoreResult, IDb)> TransactAsync(IInternalTxFunction fn)
     {
+        var casted = (IInternalTxFunctionImpl)fn;
+        _pendingTransactions.Add(casted);
 
-        var pending = new PendingTransaction
-        {
-            Data = datoms,
-            TxFunctions = txFunctions
-        };
-        _pendingTransactions.Add(pending);
-
-        var task = pending.CompletionSource.Task;
+        var task = casted.Task;
         if (await Task.WhenAny(task, Task.Delay(TransactionTimeout)) == task)
         {
             return await task;
         }
-        _logger.LogError("Transaction didn't complete after {Timeout}", TransactionTimeout);
+        Logger.LogError("Transaction didn't complete after {Timeout}", TransactionTimeout);
         throw new TimeoutException($"Transaction didn't complete after {TransactionTimeout}");
 
     }
 
     /// <inheritdoc />
-    public (StoreResult, IDb) Transact(IndexSegment datoms, HashSet<ITxFunction>? txFunctions = null)
+    public (StoreResult, IDb) Transact(IInternalTxFunction fn)
     {
+        var casted = (IInternalTxFunctionImpl)fn;
+        _pendingTransactions.Add(casted);
 
-        var pending = new PendingTransaction
-        {
-            Data = datoms,
-            TxFunctions = txFunctions
-        };
-        _pendingTransactions.Add(pending);
-
-        var task = pending.CompletionSource.Task;
+        var task = casted.Task;
         if (Task.WhenAny(task, Task.Delay(TransactionTimeout)).Result == task)
         {
             return task.Result;
         }
-        _logger.LogError("Transaction didn't complete after {Timeout}", TransactionTimeout);
+        Logger.LogError("Transaction didn't complete after {Timeout}", TransactionTimeout);
         throw new TimeoutException($"Transaction didn't complete after {TransactionTimeout}");
 
     }
     
     /// <inheritdoc />
-    public IObservable<IDb> TxLog
+    public IObservable<IDb> TxLog => _dbStream;
+
+    /// <inheritdoc />
+    public (StoreResult, IDb) Transact(IndexSegment segment)
     {
-        get
-        {
-            return _dbStream;
-        }
+        return Transact(new IndexSegmentTransaction(segment));
     }
 
     /// <inheritdoc />
-    public void RegisterAttributes(IEnumerable<DbAttribute> newAttrs)
+    public Task<(StoreResult, IDb)> TransactAsync(IndexSegment segment)
     {
-        var datoms = new IndexSegmentBuilder(_attributeCache);
-        var newAttrsArray = newAttrs.ToArray();
-
-        var internalTx = new InternalTransaction(null!, datoms);
-        foreach (var attribute in newAttrsArray)
-            AttributeDefinition.Insert(internalTx, attribute.Attribute, attribute.AttrEntityId.Value);
-        internalTx.ProcessTemporaryEntities();
-        var (result, idb) = Transact(datoms.Build());
-        
-        _attributeCache.Reset(idb);
+        return TransactAsync(new IndexSegmentTransaction(segment));
     }
 
     /// <inheritdoc />
     public ISnapshot GetSnapshot()
     {
-        Debug.Assert(_currentSnapshot != null, "Current snapshot should not be null, this should never happen");
-        return _currentSnapshot!;
+        return CurrentSnapshot!;
     }
-
-    public async ValueTask Excise(List<Datom> datomsToRemove)
-    {
-        var batch = _backend.CreateBatch();
-        foreach (var datom in datomsToRemove)
-        {
-            _eavtHistory.Delete(batch, datom);
-            _aevtHistory.Delete(batch, datom);
-            _vaetHistory.Delete(batch, datom);
-            _avetHistory.Delete(batch, datom);
-            _txLog.Delete(batch, datom);
-        }
-        batch.Commit();
-        
-    }
-
+    
     /// <inheritdoc />
     public void Dispose()
     {
@@ -228,63 +199,50 @@ public partial class DatomStore : IDatomStore
 
     private void ConsumeTransactions()
     {
-        var debugEnabled = _logger.IsEnabled(LogLevel.Debug);
+        var debugEnabled = Logger.IsEnabled(LogLevel.Debug);
 
         try
         {
             while (!_pendingTransactions.IsCompleted && !_shutdownToken.Token.IsCancellationRequested)
             {
-                if (!_pendingTransactions.TryTake(out var pendingTransaction, -1))
+                if (!_pendingTransactions.TryTake(out var txFn, -1))
                     continue;
                 try
                 {
-                    // Sync transactions have no data, and are used to verify that the store is up to date.
-                    if (!pendingTransaction.Data.Valid && pendingTransaction.TxFunctions == null)
-                    {
-                        var storeResult = new StoreResult
-                        {
-                            Remaps = new Dictionary<EntityId, EntityId>().ToFrozenDictionary(),
-                            AssignedTxId = _nextIdCache.AsOfTxId,
-                            Snapshot = _backend.GetSnapshot(),
-                        };
-                        pendingTransaction.Complete(storeResult, _currentDb!);
-                        continue;
-                    }
-
-                    Log(pendingTransaction, out var result);
+                    var result = Log(txFn);
 
                     if (debugEnabled)
                     {
                         var sw = Stopwatch.StartNew();
-                        FinishTransaction(result, pendingTransaction);
-                        _logger.LogDebug("Transaction {TxId} post-processed in {Elapsed}ms", result.AssignedTxId, sw.ElapsedMilliseconds);
+                        FinishTransaction(result, txFn);
+                        Logger.LogDebug("Transaction {TxId} post-processed in {Elapsed}ms", result.AssignedTxId, sw.ElapsedMilliseconds);
                     }
                     else
                     {
-                        FinishTransaction(result, pendingTransaction);
+                        FinishTransaction(result, txFn);
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "While commiting transaction");
-                    pendingTransaction.CompletionSource.TrySetException(ex);
+                    Logger.LogError(ex, "While commiting transaction");
+                    txFn.SetException(ex);
                 }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Transaction consumer crashed");
+            Logger.LogError(ex, "Transaction consumer crashed");
         }
     }
 
     /// <summary>
     /// Given the new store result, process the new database state, complete the transaction and notify the observers
     /// </summary>
-    private void FinishTransaction(StoreResult result, PendingTransaction pendingTransaction)
+    private void FinishTransaction(StoreResult result, IInternalTxFunctionImpl pendingTransaction)
     {
         _currentDb = ((Db)_currentDb!).WithNext(result, result.AssignedTxId);
         _dbStream.OnNext(_currentDb);
-        pendingTransaction.Complete(result, _currentDb);
+        Task.Run(() => pendingTransaction.Complete(result, _currentDb));
     }
 
     /// <summary>
@@ -294,40 +252,34 @@ public partial class DatomStore : IDatomStore
     {
         try
         {
-            var snapshot = _backend.GetSnapshot();
-            var lastTx = TxId.From(_nextIdCache.LastEntityInPartition(snapshot, PartitionId.Transactions).Value);
+            CurrentSnapshot = Backend.GetSnapshot();
+            var lastTx = TxId.From(_nextIdCache.LastEntityInPartition(CurrentSnapshot, PartitionId.Transactions).Value);
 
             if (lastTx.Value == TxId.MinValue)
             {
-                _logger.LogInformation("Bootstrapping the datom store no existing state found");
+                Logger.LogInformation("Bootstrapping the datom store no existing state found");
                 using var builder = new IndexSegmentBuilder(_attributeCache);
                 var internalTx = new InternalTransaction(null!, builder);
                 AttributeDefinition.AddInitial(internalTx);
                 internalTx.ProcessTemporaryEntities();
-                var pending = new PendingTransaction
-                {
-                    Data = builder.Build(),
-                    TxFunctions = null
-                };
                 // Call directly into `Log` as the transaction channel is not yet set up
-                Log(pending, out _);
-                _currentSnapshot = _backend.GetSnapshot();
+                Log(new IndexSegmentTransaction(builder.Build()));
+                CurrentSnapshot = Backend.GetSnapshot();
             }
             else
             {
-                _logger.LogInformation("Bootstrapping the datom store, existing state found, last tx: {LastTx}",
+                Logger.LogInformation("Bootstrapping the datom store, existing state found, last tx: {LastTx}",
                     lastTx.Value.ToString("x"));
                 _asOfTx = TxId.From(lastTx.Value);
-                _currentSnapshot = snapshot;
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to bootstrap the datom store");
+            Logger.LogError(ex, "Failed to bootstrap the datom store");
             throw;
         }
         
-        _currentDb = new Db(_currentSnapshot, _asOfTx, _attributeCache);
+        _currentDb = new Db(CurrentSnapshot, _asOfTx, _attributeCache);
         _dbStream.OnNext(_currentDb);
         _loggerThread = new Thread(ConsumeTransactions)
         {
@@ -354,7 +306,7 @@ public partial class DatomStore : IDatomStore
                 else
                 {
                     var partitionId = PartitionId.From((byte)(id.Value >> 40 & 0xFF));
-                    var assignedId = _nextIdCache.NextId(_currentSnapshot!, partitionId);
+                    var assignedId = _nextIdCache.NextId(CurrentSnapshot!, partitionId);
                     _remaps.Add(id, assignedId);
                     return assignedId;
                 }
@@ -367,115 +319,155 @@ public partial class DatomStore : IDatomStore
     }
 
 
-    private void Log(PendingTransaction pendingTransaction, out StoreResult result)
+    private StoreResult Log(IInternalTxFunctionImpl pendingTransaction)
     {
-        var currentSnapshot = _currentSnapshot ?? _backend.GetSnapshot();
-        _remaps.Clear();
-        _thisTx = TxId.From(_nextIdCache.NextId(currentSnapshot, PartitionId.Transactions).Value);
+        _thisTx = TxId.From(_nextIdCache.NextId(CurrentSnapshot, PartitionId.Transactions).Value);
         
-        using var batch = _backend.CreateBatch();
-
-        var swPrepare = Stopwatch.StartNew();
-
         _remaps = new Dictionary<EntityId, EntityId>();
         
-        var secondaryBuilder = new IndexSegmentBuilder(_attributeCache);
-        var txId = EntityId.From(_thisTx.Value);
-        secondaryBuilder.Add(txId, MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp, DateTime.UtcNow);
-
-        if (pendingTransaction.TxFunctions != null)
-        {
-            try
-            {
-                var db = _currentDb!;
-                var tx = new InternalTransaction(db, secondaryBuilder);
-                foreach (var fn in pendingTransaction.TxFunctions)
-                {
-                    fn.Apply(tx, db);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to apply transaction functions");
-                throw;
-            }
-        }
-
-        var secondaryData = secondaryBuilder.Build();
-        var datoms = pendingTransaction.Data.Concat(secondaryData);
-
-        foreach (var datom in datoms)
-        {
-            _writer.Reset();
-
-            var isRemapped = datom.E.InPartition(PartitionId.Temp);
-
-            var currentPrefix = datom.Prefix;
-            var attrId = currentPrefix.A;
-
-            var newE = isRemapped ? Remap(currentPrefix.E) : currentPrefix.E;
-            var keyPrefix = currentPrefix with {E = newE, T = _thisTx};
-
-            {
-                _writer.WriteMarshal(keyPrefix);
-                var valueSpan = datom.ValueSpan;
-                var span = _writer.GetSpan(valueSpan.Length);
-                valueSpan.CopyTo(span);
-                keyPrefix.ValueTag.Remap(span, _remapFunc);
-                _writer.Advance(valueSpan.Length);
-            }
-
-            var newSpan = _writer.GetWrittenSpan();
-
-            if (keyPrefix.IsRetract)
-            {
-                ProcessRetract(batch, attrId, newSpan, currentSnapshot);
-                continue;
-            }
-
-            switch (GetPreviousState(isRemapped, attrId, currentSnapshot, newSpan))
-            {
-                case PrevState.Duplicate:
-                    continue;
-                case PrevState.NotExists:
-                    ProcessAssert(batch, attrId, newSpan);
-                    break;
-                case PrevState.Exists:
-                    SwitchPrevToRetraction();
-                    ProcessRetract(batch, attrId, _retractWriter.GetWrittenSpan(), currentSnapshot);
-                    ProcessAssert(batch, attrId, newSpan);
-                    break;
-            }
-
-        }
-
-        var swWrite = Stopwatch.StartNew();
-        batch.Commit();
-
-        if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("{TxId} ({Count} datoms, {Size}) prepared in {Elapsed}ms, written in {WriteElapsed}ms",
-                _thisTx,
-                pendingTransaction.Data.Count + secondaryData.Count,
-                pendingTransaction.Data.DataSize + secondaryData.DataSize,
-                swPrepare.ElapsedMilliseconds - swWrite.ElapsedMilliseconds,
-                swWrite.ElapsedMilliseconds);
-
-        _asOfTx = _thisTx;
-
-        _currentSnapshot = _backend.GetSnapshot();
-        result = new StoreResult
+        pendingTransaction.Execute(this);
+        
+        return new StoreResult
         {
             AssignedTxId = _thisTx,
             Remaps = _remaps.ToFrozenDictionary(),
-            Snapshot = _currentSnapshot
+            Snapshot = CurrentSnapshot
         };
     }
+
+    internal void LogDatoms<TSource>(TSource datoms, bool advanceTx = true, bool enableStats = false) 
+        where TSource : IEnumerable<Datom>
+    {
+        var swPrepare = Stopwatch.StartNew();
+        _remaps.Clear();
+        using var batch = Backend.CreateBatch();
+
+        var datomCount = 0;
+        var dataSize = 0;
+        foreach (var datom in datoms)
+        {
+            if (enableStats)
+            {
+                datomCount++;
+                dataSize += datom.ValueSpan.Length + KeyPrefix.Size;
+            }
+            LogDatom(in datom, batch);
+        }
+
+        if (advanceTx) 
+            LogTx(batch);
+        
+        batch.Commit();
+        var swWrite = Stopwatch.StartNew();
+        
+        // Print statistics if requested
+        if (enableStats)
+        {
+            Logger.LogDebug("{TxId} ({Count} datoms, {Size}) prepared in {Elapsed}ms, written in {WriteElapsed}ms",
+                _thisTx,
+                datomCount,
+                dataSize,
+                swPrepare.ElapsedMilliseconds - swWrite.ElapsedMilliseconds,
+                swWrite.ElapsedMilliseconds);
+        }
+
+        // Advance the TX counter, if requested (default)
+        if (advanceTx)
+            _asOfTx = _thisTx;
+        
+        // Update the snapshot
+        CurrentSnapshot = Backend.GetSnapshot();
+    }
+
+    /// <summary>
+    /// Log a collection of datoms to the store using the given batch. If advanceTx is true, the transaction will be advanced
+    /// and this specific transaction will be considered as committed, use this in combination with other log methods
+    /// to build up a single write batch and finish off with this method. 
+    /// </summary>
+    internal void LogDatoms<TSource>(IWriteBatch batch, TSource datoms,  bool advanceTx = false)
+        where TSource : IEnumerable<Datom>
+    {
+        foreach (var datom in datoms)
+            LogDatom(in datom, batch);
+        
+        if (advanceTx) 
+            LogTx(batch);
+        
+        batch.Commit();
+        
+        // Advance the TX counter, if requested (not default)
+        if (advanceTx)
+            _asOfTx = _thisTx;
+        
+        // Update the snapshot
+        CurrentSnapshot = Backend.GetSnapshot();
+    }
     
+
+    /// <summary>
+    /// Logs the transaction entity to the batch
+    /// </summary>
+    /// <param name="batch"></param>
+    /// <exception cref="NotImplementedException"></exception>
+    private void LogTx(IWriteBatch batch)
+    {
+        MemoryMarshal.Write(_txScratchSpace.Span, DateTime.UtcNow.ToFileTimeUtc());
+        var id = EntityId.From(_thisTx.Value);
+        var keyPrefix = new KeyPrefix(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), _thisTx, false, ValueTag.Int64);
+        var datom = new Datom(keyPrefix, _txScratchSpace[..sizeof(long)]);
+        LogDatom(in datom, batch);
+    }
+
+    /// <summary>
+    /// Log a single datom, this is the inner loop of the transaction processing
+    /// </summary>
+    internal void LogDatom(in Datom datom, IWriteBatch batch)
+    {
+        _writer.Reset();
+
+        var isRemapped = datom.E.InPartition(PartitionId.Temp);
+
+        var currentPrefix = datom.Prefix;
+        var attrId = currentPrefix.A;
+
+        var newE = isRemapped ? Remap(currentPrefix.E) : currentPrefix.E;
+        var keyPrefix = currentPrefix with {E = newE, T = _thisTx};
+
+        {
+            _writer.WriteMarshal(keyPrefix);
+            var valueSpan = datom.ValueSpan;
+            var span = _writer.GetSpan(valueSpan.Length);
+            valueSpan.CopyTo(span);
+            keyPrefix.ValueTag.Remap(span, _remapFunc);
+            _writer.Advance(valueSpan.Length);
+        }
+
+        var newSpan = _writer.GetWrittenSpan();
+
+        if (keyPrefix.IsRetract)
+        {
+            ProcessRetract(batch, attrId, newSpan, CurrentSnapshot!);
+            return;
+        }
+
+        switch (GetPreviousState(isRemapped, attrId, CurrentSnapshot!, newSpan))
+        {
+            case PrevState.Duplicate:
+                return;
+            case PrevState.NotExists:
+                ProcessAssert(batch, attrId, newSpan);
+                break;
+            case PrevState.Exists:
+                SwitchPrevToRetraction();
+                ProcessRetract(batch, attrId, _retractWriter.GetWrittenSpan(), CurrentSnapshot!);
+                ProcessAssert(batch, attrId, newSpan);
+                break;
+        }
+    }
+
     /// <summary>
     /// Updates the data in _prevWriter to be a retraction of the data in that write.
     /// </summary>
-    /// <param name="thisTx"></param>
-    /// <exception cref="NotImplementedException"></exception>
     private void SwitchPrevToRetraction()
     {
         var prevKey = MemoryMarshal.Read<KeyPrefix>(_retractWriter.GetWrittenSpan());
@@ -510,68 +502,79 @@ public partial class DatomStore : IDatomStore
             .FirstOrDefault();
 
         #if DEBUG
-        unsafe
-        {
-            Debug.Assert(prevDatom.Valid, "Previous datom should exist");
-            var debugKey = prevDatom.Prefix;
-
-            var otherPrefix = MemoryMarshal.Read<KeyPrefix>(datom);
-            Debug.Assert(debugKey.E == otherPrefix.E, "Entity should match");
-            Debug.Assert(debugKey.A == otherPrefix.A, "Attribute should match");
-
-            fixed (byte* aTmp = prevDatom.ValueSpan)
-            fixed (byte* bTmp = datom.SliceFast(sizeof(KeyPrefix)))
-            {
-                var valueTag = prevDatom.Prefix.ValueTag;
-                var cmp = Serializer.Compare(prevDatom.Prefix.ValueTag, aTmp, prevDatom.ValueSpan.Length, otherPrefix.ValueTag, bTmp, datom.Length - sizeof(KeyPrefix));
-                Debug.Assert(cmp == 0, "Values should match");
-            }
-        }
+            // In debug mode, we perform additional checks to make sure the retraction found a datom to retract
+            // The only time this fails is if the datom lookup functions `.Datoms()` are broken
+            RetractionSantiyCheck(datom, prevDatom);
         #endif
 
-        _eavtCurrent.Delete(batch, prevDatom);
-        _aevtCurrent.Delete(batch, prevDatom);
+        // Delete the datom from the current indexes
+        EAVTCurrent.Delete(batch, prevDatom);
+        AEVTCurrent.Delete(batch, prevDatom);
         if (_attributeCache.IsReference(attrId))
-            _vaetCurrent.Delete(batch, prevDatom);
+            VAETCurrent.Delete(batch, prevDatom);
         if (_attributeCache.IsIndexed(attrId))
-            _avetCurrent.Delete(batch, prevDatom);
-
-        _txLog.Put(batch, datom);
+            AVETCurrent.Delete(batch, prevDatom);
+        
+        // Put the retraction in the log
+        TxLogIndex.Put(batch, datom);
+        
+        // If the attribute is a no history attribute, we don't need to put the retraction in the history indexes
+        // so we can skip the rest of the processing
         if (_attributeCache.IsNoHistory(attrId))
             return;
 
         // Move the datom to the history index and also record the retraction
-        _eavtHistory.Put(batch, prevDatom);
-        _eavtHistory.Put(batch, datom);
+        EAVTHistory.Put(batch, prevDatom);
+        EAVTHistory.Put(batch, datom);
 
         // Move the datom to the history index and also record the retraction
-        _aevtHistory.Put(batch, prevDatom);
-        _aevtHistory.Put(batch, datom);
+        AEVTHistory.Put(batch, prevDatom);
+        AEVTHistory.Put(batch, datom);
 
         if (_attributeCache.IsReference(attrId))
         {
-            _vaetHistory.Put(batch, prevDatom);
-            _vaetHistory.Put(batch, datom);
+            VAETHistory.Put(batch, prevDatom);
+            VAETHistory.Put(batch, datom);
         }
 
         if (_attributeCache.IsIndexed(attrId))
         {
-            _avetHistory.Put(batch, prevDatom);
-            _avetHistory.Put(batch, datom);
+            AVETHistory.Put(batch, prevDatom);
+            AVETHistory.Put(batch, datom);
+        }
+    }
+
+    private static unsafe void RetractionSantiyCheck(ReadOnlySpan<byte> datom, Datom prevDatom)
+    {
+        Debug.Assert(prevDatom.Valid, "Previous datom should exist");
+        var debugKey = prevDatom.Prefix;
+
+        var otherPrefix = MemoryMarshal.Read<KeyPrefix>(datom);
+        Debug.Assert(debugKey.E == otherPrefix.E, "Entity should match");
+        Debug.Assert(debugKey.A == otherPrefix.A, "Attribute should match");
+
+        fixed (byte* aTmp = prevDatom.ValueSpan)
+        fixed (byte* bTmp = datom.SliceFast(sizeof(KeyPrefix)))
+        {
+            var cmp = Serializer.Compare(prevDatom.Prefix.ValueTag, aTmp, prevDatom.ValueSpan.Length, otherPrefix.ValueTag, bTmp, datom.Length - sizeof(KeyPrefix));
+            Debug.Assert(cmp == 0, "Values should match");
         }
     }
 
     private void ProcessAssert(IWriteBatch batch, AttributeId attributeId, ReadOnlySpan<byte> datom)
     {
-        _txLog.Put(batch, datom);
-        _eavtCurrent.Put(batch, datom);
-        _aevtCurrent.Put(batch, datom);
+        TxLogIndex.Put(batch, datom);
+        EAVTCurrent.Put(batch, datom);
+        AEVTCurrent.Put(batch, datom);
         if (_attributeCache.IsReference(attributeId))
-            _vaetCurrent.Put(batch, datom);
+            VAETCurrent.Put(batch, datom);
         if (_attributeCache.IsIndexed(attributeId))
-            _avetCurrent.Put(batch, datom);
+            AVETCurrent.Put(batch, datom);
     }
 
+    /// <summary>
+    /// Used to communicate the state of a given datom
+    /// </summary>
     enum PrevState
     {
         Exists,

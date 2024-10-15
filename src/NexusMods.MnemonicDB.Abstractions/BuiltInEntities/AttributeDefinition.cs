@@ -84,13 +84,7 @@ public partial class AttributeDefinition : IModelDefinition
         { Documentation, 7 },
         { Transaction.Timestamp, 8}
     };
-
-    /// <summary>
-    /// All hardcoded attributes as a DbAttribute enumerable
-    /// </summary>
-    public static IEnumerable<DbAttribute> HardcodedDbAttributes => HardcodedIds.Select(a =>
-        new DbAttribute(a.Key.Id, AttributeId.From(a.Value), a.Key.LowLevelType, a.Key));
-
+    
     /// <summary>
     /// Adds the initial set of attributes to the transaction, these will be created when the transaction is committed.
     /// </summary>

@@ -95,7 +95,7 @@ public readonly record struct KeyPrefix
     public ValueTag ValueTag
     {
         get => (ValueTag)((_lower >> 1) & 0x7F);
-        init => _lower = (_lower & 0xFF00000000000001) | ((ulong)value << 1);
+        init => _lower = (_lower & 0xFFFFFFFFFFFFFF01) | ((ulong)value << 1);
     }
 
     /// <summary>

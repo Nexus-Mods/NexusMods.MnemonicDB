@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
+using NexusMods.MnemonicDB.Storage.Abstractions;
 
 namespace NexusMods.MnemonicDB.Storage;
 
@@ -35,7 +36,7 @@ public partial class DatomStore
         binaryWriter.Write(FourCC);
         binaryWriter.Write((ushort)1);
 
-        var snapshot = _backend.GetSnapshot();
+        var snapshot = CurrentSnapshot;
         
         foreach (var indexType in Enum.GetValues<IndexType>())
         {
@@ -52,7 +53,7 @@ public partial class DatomStore
                 exportedDatoms += chunk.Count;
             }
         }
-        _logger.LogInformation("Exported {0} datoms", exportedDatoms);
+        Logger.LogInformation("Exported {0} datoms", exportedDatoms);
     }
 
     public async Task ImportAsync(Stream stream)
@@ -68,45 +69,52 @@ public partial class DatomStore
         if (version != 1)
             throw new InvalidDataException("Invalid file version");
 
-        while (stream.Position < stream.Length)
+        try
         {
-            var indexType = (IndexType)binaryReader.ReadByte();
-            var datomCount = binaryReader.ReadUInt32();
-            var chunkSize = binaryReader.ReadUInt32();
-            var data = binaryReader.ReadBytes((int)chunkSize);
-            var segment = new IndexSegment((int)datomCount, data.AsMemory(), _backend.AttributeCache);
-            
-            using var batch = _backend.CreateBatch();
-            var index = _backend.GetIndex(indexType);
-            
-            foreach (var datom in segment) 
-                index.Put(batch, datom);
-            
-            batch.Commit();
-            importedCount += (int)datomCount;
+            while (true)
+            {
+                var indexType = (IndexType)binaryReader.ReadByte();
+                var datomCount = binaryReader.ReadUInt32();
+                var chunkSize = binaryReader.ReadUInt32();
+                var data = binaryReader.ReadBytes((int)chunkSize);
+                var segment = new IndexSegment((int)datomCount, data.AsMemory(), AttributeCache);
+
+                using var batch = Backend.CreateBatch();
+                var index = Backend.GetIndex(indexType);
+
+                foreach (var datom in segment)
+                    index.Put(batch, datom);
+
+                batch.Commit();
+                importedCount += (int)datomCount;
+            }
         }
-        
-        _logger.LogInformation("Imported {0} datoms", importedCount);
+        catch (EndOfStreamException)
+        {
+            // End of stream
+        }
+
+        Logger.LogInformation("Imported {0} datoms", importedCount);
         _nextIdCache.ResetCaches();
         Bootstrap();
     }
 
     private void CleanStore()
     { 
-        int datomCount = 0;
-        var snapshot = _backend.GetSnapshot();
-        using var batch = _backend.CreateBatch();
+        var datomCount = 0;
+        var snapshot = Backend.GetSnapshot();
+        using var batch = Backend.CreateBatch();
         foreach (var index in Enum.GetValues<IndexType>())
         {
             var slice = SliceDescriptor.Create(index);
             var datoms = snapshot.Datoms(slice);
             foreach (var datom in datoms)
             {
-                _backend.GetIndex(index).Delete(batch, datom);
+                Backend.GetIndex(index).Delete(batch, datom);
                 datomCount++;
             }
         }
         batch.Commit();
-        _logger.LogInformation("Cleaned {0} datoms", datomCount);
+        Logger.LogInformation("Cleaned {0} datoms", datomCount);
     }
 }

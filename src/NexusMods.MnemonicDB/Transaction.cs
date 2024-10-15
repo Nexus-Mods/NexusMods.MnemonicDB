@@ -10,6 +10,7 @@ using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
+using NexusMods.MnemonicDB.InternalTxFunctions;
 
 namespace NexusMods.MnemonicDB;
 
@@ -22,6 +23,7 @@ internal class Transaction(Connection connection) : ITransaction
     private ulong _tempId = PartitionId.Temp.MakeEntityId(1).Value;
     private bool _committed;
     private readonly object _lock = new();
+    private IInternalTxFunction? _internalTxFunction;
 
     /// <inhertdoc />
     public EntityId TempId(PartitionId entityPartition)
@@ -84,6 +86,14 @@ internal class Transaction(Connection connection) : ITransaction
         }
     }
 
+    /// <summary>
+    /// Sets the internal transaction function to the given function.
+    /// </summary>
+    public void Set(IInternalTxFunction fn)
+    {
+        _internalTxFunction = fn;
+    }
+
     public void Attach(ITemporaryEntity entity)
     {
         lock (_lock)
@@ -133,7 +143,15 @@ internal class Transaction(Connection connection) : ITransaction
             // Build the datoms block here, so that future calls to add won't modify this while we're building
             built = _datoms.Build();
         }
-        return await connection.Transact(built, _txFunctions);
+        
+        if (_internalTxFunction is not null)
+            return await connection.Transact(_internalTxFunction);
+
+        if (_txFunctions is not null) 
+            return await connection.Transact(new CompoundTransaction(built, _txFunctions!) { Connection = connection });
+        
+        return await connection.Transact(new IndexSegmentTransaction(built));
+
     }
 
     /// <inheritdoc />

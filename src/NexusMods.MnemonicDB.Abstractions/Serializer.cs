@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Collections.Generic;
 using System.IO.Hashing;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -189,8 +190,8 @@ public static class Serializer
     {
         var length = (uint)value.Length;
         var span = writer.GetSpan(sizeof(uint) + value.Length);
-        MemoryMarshal.Write(span, ref length);
-        ASCII.GetBytes(value, span.Slice(sizeof(uint)));
+        MemoryMarshal.Write(span, length);
+        ASCII.GetBytes(value, span.SliceFast(sizeof(uint)));
         writer.Advance(sizeof(uint) + value.Length);
     }
 
@@ -199,8 +200,8 @@ public static class Serializer
     {
         var length = (uint)value.Length;
         var span = writer.GetSpan(sizeof(uint) + value.Length);
-        MemoryMarshal.Write(span, ref length);
-        UTF8.GetBytes(value, span.Slice(sizeof(uint)));
+        MemoryMarshal.Write(span, length);
+        UTF8.GetBytes(value, span.SliceFast(sizeof(uint)));
         writer.Advance(sizeof(uint) + value.Length);
     }
 
@@ -209,8 +210,8 @@ public static class Serializer
     {
         var length = (uint)value.Length;
         var span = writer.GetSpan(sizeof(uint) + value.Length);
-        MemoryMarshal.Write(span, ref length);
-        value.Span.CopyTo(span.Slice(sizeof(uint)));
+        MemoryMarshal.Write(span, length);
+        value.Span.CopyTo(span.SliceFast(sizeof(uint)));
         writer.Advance(sizeof(uint) + value.Length);
     }
 
@@ -394,6 +395,38 @@ public static class Serializer
                 return;
         }
     }
+    #endregion
+
+    #region ValueConversion
+    
+    public static void ConvertValue<TWriter>(this ValueTag srcTag, ReadOnlySpan<byte> srcSpan, ValueTag destTag, TWriter destWriter)
+        where TWriter : IBufferWriter<byte>
+    {
+
+        try
+        {
+            switch (srcTag, destTag)
+            {
+                case (ValueTag.UInt8, ValueTag.UInt16):
+                    WriteUnmanaged((ushort)MemoryMarshal.Read<byte>(srcSpan), destWriter);
+                    break;
+                case (ValueTag.Utf8, ValueTag.UInt64):
+                {
+                    var val = srcTag.Read<string>(srcSpan);
+                    WriteUnmanaged(Convert.ToUInt64(val), destWriter);
+                    break;
+                }
+
+                default:
+                    throw new NotSupportedException("Conversion not supported from " + srcTag + " to " + destTag);
+            }
+        }
+        catch (Exception e)
+        {
+            throw new InvalidOperationException($"Failed to convert ({srcTag.Read<object>(srcSpan)}) value from " + srcTag + " to " + destTag, e);
+        }
+    }
+
     #endregion
 
 }

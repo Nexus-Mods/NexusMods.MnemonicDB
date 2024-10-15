@@ -95,7 +95,7 @@ public readonly struct Datom : IEquatable<Datom>
     /// <inheritdoc />
     public override string ToString()
     {
-        return $"[E: {E}, A: {A}, T: {T}, IsRetract: {IsRetract}, Value: {ValueSpan.Length}]";
+        return $"[E: {E}, A: {A}, T: {T}, IsRetract: {IsRetract}, Value: {Prefix.ValueTag.Read<object>(ValueSpan)}]";
     }
 
     /// <summary>

@@ -1,5 +1,13 @@
 ## Changelog
 
+### 0.9.90 - 15/10/2024
+* Reworked serialization of Tuple attributes. The result more efficient (in space and time) but limited in the number and types of elements that can be stored in a Tuple.
+* Reworked the internals of the DatomStore to support more types of specialized transactions such as Excision
+* Implemented a basic form of schema migration.
+ * Indexes can be added and removed
+ * Attributes can be added and removed (removed attributes are ignored)
+ * Attribute types can be changed (in a very limited fashion, to be expanded in the future)
+
 ### 0.9.89 - 09/10/2024
 * Fixed a bug with case-insensitive string comparisons in the database. This would cause an "Invalid UTF-8" exception to be thrown
 

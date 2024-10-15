@@ -110,6 +110,10 @@ public readonly struct SliceDescriptor
     /// </summary>
     public static SliceDescriptor Create<THighLevel, TLowLevel>(Attribute<THighLevel, TLowLevel> attr, THighLevel value, AttributeCache attributeCache)
     {
+        var id = attributeCache.GetAttributeId(attr.Id);
+        if (attributeCache.GetValueTag(id) != ValueTag.Reference && !attributeCache.IsIndexed(id))
+            throw new InvalidOperationException($"Attribute {attr.Id} must be indexed or a reference");
+        
         return new SliceDescriptor
         {
             Index = attr.IsReference ? IndexType.VAETCurrent : IndexType.AVETCurrent,
@@ -162,11 +166,11 @@ public readonly struct SliceDescriptor
     /// Creates a slice descriptor for the given attribute from the current AEVT index
     /// reverse lookup.
     /// </summary>
-    public static SliceDescriptor Create(AttributeId referenceAttribute)
+    public static SliceDescriptor Create(AttributeId referenceAttribute, IndexType indexType = IndexType.AEVTCurrent)
     {
         return new SliceDescriptor
         {
-            Index = IndexType.AEVTCurrent,
+            Index = indexType,
             From = Datom(EntityId.MinValueNoPartition, referenceAttribute, TxId.MinValue, false),
             To = Datom(EntityId.MaxValueNoPartition, referenceAttribute, TxId.MaxValue, false)
         };
