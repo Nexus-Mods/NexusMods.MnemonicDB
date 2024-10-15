@@ -110,6 +110,10 @@ public readonly struct SliceDescriptor
     /// </summary>
     public static SliceDescriptor Create<THighLevel, TLowLevel>(Attribute<THighLevel, TLowLevel> attr, THighLevel value, AttributeCache attributeCache)
     {
+        var id = attributeCache.GetAttributeId(attr.Id);
+        if (attributeCache.GetValueTag(id) != ValueTag.Reference && !attributeCache.IsIndexed(id))
+            throw new InvalidOperationException($"Attribute {attr.Id} must be indexed or a reference");
+        
         return new SliceDescriptor
         {
             Index = attr.IsReference ? IndexType.VAETCurrent : IndexType.AVETCurrent,

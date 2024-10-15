@@ -1,4 +1,5 @@
-﻿using System.IO.Hashing;
+﻿using System.IO.Compression;
+using System.IO.Hashing;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -53,6 +54,15 @@ public class AMnemonicDBTest : IDisposable
         Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, provider, _analyzers);
 
         Logger = provider.GetRequiredService<ILogger<AMnemonicDBTest>>();
+    }
+
+    protected async Task LoadDatamodel(RelativePath name)
+    {
+        var fullPath = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("Resources").Combine(name);
+
+        await using var stream = fullPath.Read();
+        await using var decompressStream = new DeflateStream(stream, CompressionMode.Decompress);
+        await _store.ImportAsync(decompressStream);
     }
 
     protected DatomStoreSettings Config { get; set; }

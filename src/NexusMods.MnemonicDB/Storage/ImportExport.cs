@@ -69,24 +69,31 @@ public partial class DatomStore
         if (version != 1)
             throw new InvalidDataException("Invalid file version");
 
-        while (stream.Position < stream.Length)
+        try
         {
-            var indexType = (IndexType)binaryReader.ReadByte();
-            var datomCount = binaryReader.ReadUInt32();
-            var chunkSize = binaryReader.ReadUInt32();
-            var data = binaryReader.ReadBytes((int)chunkSize);
-            var segment = new IndexSegment((int)datomCount, data.AsMemory(), AttributeCache);
-            
-            using var batch = Backend.CreateBatch();
-            var index = Backend.GetIndex(indexType);
-            
-            foreach (var datom in segment) 
-                index.Put(batch, datom);
-            
-            batch.Commit();
-            importedCount += (int)datomCount;
+            while (true)
+            {
+                var indexType = (IndexType)binaryReader.ReadByte();
+                var datomCount = binaryReader.ReadUInt32();
+                var chunkSize = binaryReader.ReadUInt32();
+                var data = binaryReader.ReadBytes((int)chunkSize);
+                var segment = new IndexSegment((int)datomCount, data.AsMemory(), AttributeCache);
+
+                using var batch = Backend.CreateBatch();
+                var index = Backend.GetIndex(indexType);
+
+                foreach (var datom in segment)
+                    index.Put(batch, datom);
+
+                batch.Commit();
+                importedCount += (int)datomCount;
+            }
         }
-        
+        catch (EndOfStreamException)
+        {
+            // End of stream
+        }
+
         Logger.LogInformation("Imported {0} datoms", importedCount);
         _nextIdCache.ResetCaches();
         Bootstrap();

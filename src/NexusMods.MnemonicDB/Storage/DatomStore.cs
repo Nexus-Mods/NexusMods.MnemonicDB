@@ -380,6 +380,31 @@ public sealed partial class DatomStore : IDatomStore
     }
 
     /// <summary>
+    /// Log a collection of datoms to the store using the given batch. If advanceTx is true, the transaction will be advanced
+    /// and this specific transaction will be considered as committed, use this in combination with other log methods
+    /// to build up a single write batch and finish off with this method. 
+    /// </summary>
+    internal void LogDatoms<TSource>(IWriteBatch batch, TSource datoms,  bool advanceTx = false)
+        where TSource : IEnumerable<Datom>
+    {
+        foreach (var datom in datoms)
+            LogDatom(in datom, batch);
+        
+        if (advanceTx) 
+            LogTx(batch);
+        
+        batch.Commit();
+        
+        // Advance the TX counter, if requested (not default)
+        if (advanceTx)
+            _asOfTx = _thisTx;
+        
+        // Update the snapshot
+        CurrentSnapshot = Backend.GetSnapshot();
+    }
+    
+
+    /// <summary>
     /// Logs the transaction entity to the batch
     /// </summary>
     /// <param name="batch"></param>

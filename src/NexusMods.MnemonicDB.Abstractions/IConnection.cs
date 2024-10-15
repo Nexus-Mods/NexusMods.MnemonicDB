@@ -72,4 +72,9 @@ public interface IConnection
     /// of datoms that were excised.
     /// </summary>
     public Task<ICommitResult> Excise(EntityId[] entityIds);
+
+    /// <summary>
+    /// Update the database's schema with the given attributes.
+    /// </summary>
+    public Task UpdateSchema(params IAttribute[] attribute);
 }

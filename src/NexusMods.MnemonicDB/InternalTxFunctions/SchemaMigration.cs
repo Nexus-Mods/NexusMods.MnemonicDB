@@ -67,7 +67,7 @@ internal class SchemaMigration : AInternalFn
             return;
         
         var built = builder.Build();
-        store.LogDatoms(built);
+        store.LogDatoms(batch, built, advanceTx: true);
         store.AttributeCache.Reset(new Db(store.CurrentSnapshot, store.AsOfTxId, store.AttributeCache));
     }
 
@@ -103,6 +103,12 @@ internal class SchemaMigration : AInternalFn
         {
             store.AVETHistory.Put(batch, datom);
         }
+        
+        using var builder = new IndexSegmentBuilder(store.AttributeCache);
+        builder.Add(EntityId.From(id.Value), AttributeDefinition.Indexed, Null.Instance);
+        var built = builder.Build();
+        
+        store.LogDatoms(batch, built);
     }
 
     /// <summary>
@@ -119,6 +125,12 @@ internal class SchemaMigration : AInternalFn
         {
             store.AVETHistory.Delete(batch, datom);
         }
+        
+        using var builder = new IndexSegmentBuilder(store.AttributeCache);
+        builder.Add(EntityId.From(id.Value), AttributeDefinition.Indexed, Null.Instance, true);
+        var built = builder.Build();
+        
+        store.LogDatoms(batch, built);
     }
 
     internal static void ConvertValuesTo(DatomStore store, bool isIndexed, AttributeId id, IWriteBatch batch, ValueTag newTagType)

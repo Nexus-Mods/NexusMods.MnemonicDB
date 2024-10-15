@@ -143,6 +143,12 @@ public class Connection : IConnection
     }
 
     /// <inheritdoc />
+    public Task UpdateSchema(params IAttribute[] attribute)
+    {
+        return Transact(new SchemaMigration(attribute));
+    }
+
+    /// <inheritdoc />
     public IObservable<IDb> Revisions => _dbStream;
     
     internal async Task<ICommitResult> Transact(IInternalTxFunction fn)
