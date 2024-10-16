@@ -128,7 +128,7 @@ public class AMnemonicDBTest : IDisposable
                     var hash = code.ToString("X16");
                     sb.Append($"Blob 0x{hash} {byteArray.Length} bytes".PadRight(48));
                     break;
-                case DateTime dateTime:
+                case DateTimeOffset:
                     sb.Append($"DateTime : {dateTimeCount++}".PadRight(48));
                     break;
                 default:

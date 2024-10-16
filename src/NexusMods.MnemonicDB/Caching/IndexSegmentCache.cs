@@ -63,10 +63,17 @@ public struct CacheValue : IEquatable<CacheValue>
     public long LastAccessed;
     public readonly IndexSegment Segment;
     
-    public CacheValue(long lastAccessed, IndexSegment segment)
+    public CacheValue(IndexSegment segment)
     {
-        LastAccessed = lastAccessed;
+        LastAccessed = CreateLastAccessed();
         Segment = segment;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static long CreateLastAccessed(TimeProvider? timeProvider = null)
+    {
+        timeProvider ??= TimeProvider.System;
+        return timeProvider.GetTimestamp();
     }
 
     /// <summary>
@@ -74,7 +81,7 @@ public struct CacheValue : IEquatable<CacheValue>
     /// </summary>
     public void Hit()
     {
-        LastAccessed = DateTime.UtcNow.Ticks;
+        LastAccessed = CreateLastAccessed();
     }
 
     /// <inheritdoc />
@@ -133,7 +140,7 @@ public class CacheRoot
     /// </summary>
     public CacheRoot With(CacheKey key, IndexSegment segment, IndexSegmentCache cache)
     {
-        var newEntries = _entries.SetItem(key, new CacheValue(DateTime.UtcNow.Ticks, segment));
+        var newEntries = _entries.SetItem(key, new CacheValue(segment));
         if (newEntries.Count > cache._entryCapacity)
         {
             newEntries = PurgeEntries(newEntries, newEntries.Count / 10);
