@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.91 - 15/10/2024
+* Attempt to fix an issue with Nuget and package resolution
+
 ### 0.9.90 - 15/10/2024
 * Reworked serialization of Tuple attributes. The result more efficient (in space and time) but limited in the number and types of elements that can be stored in a Tuple.
 * Reworked the internals of the DatomStore to support more types of specialized transactions such as Excision
