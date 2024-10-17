@@ -57,4 +57,5 @@ public class AnalyzedAttribute
     public INamedTypeSymbol ReferenceType { get; set; } = null!;
     public HashSet<string> Markers { get; set; } = new();
     public string Comments { get; set; } = "";
+    public ITypeSymbol SerializerType { get; set; } = null!;
 }

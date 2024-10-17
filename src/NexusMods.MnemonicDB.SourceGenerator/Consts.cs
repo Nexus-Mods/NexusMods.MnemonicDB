@@ -10,7 +10,7 @@ public static class Consts
 
 
     public const string AttributeTypeFullName =
-        "NexusMods.MnemonicDB.Abstractions.Attribute`2";
+        "NexusMods.MnemonicDB.Abstractions.Attribute`3";
 
     public const string ReferenceAttributeFullName =
         "NexusMods.MnemonicDB.Abstractions.Attributes.ReferenceAttribute`1";

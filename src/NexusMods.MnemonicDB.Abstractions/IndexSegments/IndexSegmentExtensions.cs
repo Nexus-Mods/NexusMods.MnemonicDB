@@ -141,9 +141,9 @@ public static class IndexSegmentExtensions
     /// Finds all the entity ids that have both of the given attributes with the given values. Assumes that all the
     /// attributes are indexed or references.
     /// </summary>
-    public static List<EntityId> Datoms<TValueA, TLowLevelA, TValueB, TLowLevelB>(this IDb db,
-        (Attribute<TValueA, TLowLevelA> attributeA, TValueA valueA) pairA,
-        (Attribute<TValueB, TLowLevelB> attributeB, TValueB valueB) pairB)
+    public static List<EntityId> Datoms<TValueA, TValueB>(this IDb db,
+        (IWritableAttribute<TValueA> attributeA, TValueA valueA) pairA,
+        (IWritableAttribute<TValueB> attributeB, TValueB valueB) pairB)
     {
         var setA = db.Datoms(pairA.attributeA, pairA.valueA);
         var setB = db.Datoms(pairB.attributeB, pairB.valueB);
@@ -154,10 +154,10 @@ public static class IndexSegmentExtensions
     /// Finds all the entity ids that have all three of the given attributes with the given values. Assumes that all
     /// the attributes are indexed or references.
     /// </summary>
-    public static List<EntityId> Datoms<TValueA, TLowLevelA, TValueB, TLowLevelB, TValueC, TLowLevelC>(this IDb db,
-        (Attribute<TValueA, TLowLevelA> attributeA, TValueA valueA) pairA,
-        (Attribute<TValueB, TLowLevelB> attributeB, TValueB valueB) pairB,
-        (Attribute<TValueC, TLowLevelC> attributeC, TValueC valueC) pairC)
+    public static List<EntityId> Datoms<TValueA, TValueB, TValueC>(this IDb db,
+        (IWritableAttribute<TValueA> attributeA, TValueA valueA) pairA,
+        (IWritableAttribute<TValueB> attributeB, TValueB valueB) pairB,
+        (IWritableAttribute<TValueC> attributeC, TValueC valueC) pairC)
     {
         var setA = db.Datoms(pairA.attributeA, pairA.valueA);
         var setB = db.Datoms(pairB.attributeB, pairB.valueB);
@@ -169,11 +169,11 @@ public static class IndexSegmentExtensions
     /// Finds all the entity ids that have all four of the given attributes with the given values. Assumes that all
     /// the attributes are indexed or references.
     /// </summary>
-    public static List<EntityId> Datoms<TValueA, TLowLevelA, TValueB, TLowLevelB, TValueC, TLowLevelC, TValueD, TLowLevelD>(this IDb db,
-        (Attribute<TValueA, TLowLevelA> attributeA, TValueA valueA) pairA,
-        (Attribute<TValueB, TLowLevelB> attributeB, TValueB valueB) pairB,
-        (Attribute<TValueC, TLowLevelC> attributeC, TValueC valueC) pairC,
-        (Attribute<TValueD, TLowLevelD> attributeD, TValueD valueD) pairD)
+    public static List<EntityId> Datoms<TValueA, TValueB, TValueC, TValueD>(this IDb db,
+        (IWritableAttribute<TValueA> attributeA, TValueA valueA) pairA,
+        (IWritableAttribute<TValueB> attributeB, TValueB valueB) pairB,
+        (IWritableAttribute<TValueC> attributeC, TValueC valueC) pairC,
+        (IWritableAttribute<TValueD> attributeD, TValueD valueD) pairD)
     {
         var setA = db.Datoms(pairA.attributeA, pairA.valueA);
         var setB = db.Datoms(pairB.attributeB, pairB.valueB);

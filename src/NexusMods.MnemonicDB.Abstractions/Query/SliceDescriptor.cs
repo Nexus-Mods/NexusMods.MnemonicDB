@@ -108,7 +108,7 @@ public readonly struct SliceDescriptor
     /// <summary>
     /// Creates a slice descriptor for the given attribute in the current AVET index
     /// </summary>
-    public static SliceDescriptor Create<THighLevel, TLowLevel>(Attribute<THighLevel, TLowLevel> attr, THighLevel value, AttributeCache attributeCache)
+    public static SliceDescriptor Create<THighLevel>(IWritableAttribute<THighLevel> attr, THighLevel value, AttributeCache attributeCache)
     {
         var id = attributeCache.GetAttributeId(attr.Id);
         if (attributeCache.GetValueTag(id) != ValueTag.Reference && !attributeCache.IsIndexed(id))
@@ -125,7 +125,7 @@ public readonly struct SliceDescriptor
     /// <summary>
     /// Creates a slice descriptor for the given attribute in the current AVET index for the given range
     /// </summary>
-    public static SliceDescriptor Create<THighLevel, TLowLevel>(Attribute<THighLevel, TLowLevel> attr, THighLevel fromValue, THighLevel toValue, AttributeCache attributeCache)
+    public static SliceDescriptor Create<THighLevel>(IWritableAttribute<THighLevel> attr, THighLevel fromValue, THighLevel toValue, AttributeCache attributeCache)
     {
         return new SliceDescriptor
         {
@@ -306,7 +306,7 @@ public readonly struct SliceDescriptor
     /// <summary>
     /// Creates a with a value from the given attribute and value
     /// </summary>
-    public static Datom Datom<THighLevel, TLowLevel>(EntityId e, Attribute<THighLevel, TLowLevel> a, THighLevel value, TxId tx, bool isRetract, AttributeCache attributeCache)
+    public static Datom Datom<THighLevel>(EntityId e, IWritableAttribute<THighLevel> a, THighLevel value, TxId tx, bool isRetract, AttributeCache attributeCache)
     {
         using var pooled = new PooledMemoryBufferWriter();
         a.Write(e, attributeCache, value, tx, isRetract, pooled);

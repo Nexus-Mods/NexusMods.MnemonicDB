@@ -1,0 +1,95 @@
+<#@ template language="C#" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+    using System;
+    using System.Buffers;
+    using System.Runtime.CompilerServices;
+    using System.Runtime.InteropServices;
+    using NexusMods.MnemonicDB.Abstractions;
+    using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+namespace NexusMods.MnemonicDB.Abstractions.ValueSerializers;
+<#
+
+var valueTypes = new Dictionary<string, string>
+{
+    {"byte", "UInt8"},
+    {"ushort", "UInt16"},
+    {"uint", "UInt32"},
+    {"ulong", "UInt64"},
+    {"UInt128", "UInt128"},
+    {"short", "Int16"},
+    {"int", "Int32"},
+    {"long", "Int64"},
+    {"Int128", "Int128"},
+    {"float", "Float32"},
+    {"double", "Float64"},
+};
+#>
+
+<#
+foreach (var kvp in valueTypes)
+{
+    var native = kvp.Key;
+    var name = kvp.Value;
+#>
+
+/// <summary>
+/// The serializer for the <#=name#> type
+/// </summary>
+public sealed class <#= name #>Serializer : IValueSerializer<<#=native#>>
+{
+    /// <inheritdoc />
+    public static ValueTag ValueTag => ValueTag.<#=name#>;
+
+    /// <inheritdoc />
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        return Read(a).CompareTo(Read(b));
+    }
+
+    /// <inheritdoc />
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public unsafe static int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
+    {
+        return (*((<#=native#>*)aPtr)).CompareTo(*((<#=native#>*)bPtr));
+    }
+
+
+    /// <inheritdoc />
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static <#=native#> Read(ReadOnlySpan<byte> span)
+    {
+        return MemoryMarshal.Read<<#=native#>>(span);
+    }
+
+    /// <inheritdoc />
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static unsafe <#=native#> Read(byte* ptr, int len)
+    {
+        return *((<#=native#>*)ptr);
+    }
+
+    /// <inheritdoc />
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void Write<TWriter>(<#=native#> value, TWriter writer) where TWriter : IBufferWriter<byte>
+    {
+        unsafe {
+            var span = writer.GetSpan(sizeof(<#=native#>));
+            MemoryMarshal.Write(span, value);
+            writer.Advance(sizeof(<#=native#>));
+        }
+    }
+
+    /// <inheritdoc />
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static void Remap(Span<byte> span, Func<EntityId, EntityId> remapFn)
+    {
+        // No-op
+    }
+
+}
+
+<#
+}
+#>

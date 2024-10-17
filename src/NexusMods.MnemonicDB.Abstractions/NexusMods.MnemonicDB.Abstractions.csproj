@@ -16,5 +16,20 @@
         <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.SourceGenerator\NexusMods.MnemonicDB.SourceGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Update="ValueSerializers\ValueSerializers.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>ValueSerializers.cs</LastGenOutput>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="ValueSerializers\ValueSerializers.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>ValueSerializers.tt</DependentUpon>
+      </Compile>
+    </ItemGroup>
+
     <Import Project="$([MSBuild]::GetPathOfFileAbove('NuGet.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
 </Project>

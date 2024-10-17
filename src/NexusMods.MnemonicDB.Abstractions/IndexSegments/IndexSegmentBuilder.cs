@@ -72,7 +72,8 @@ public readonly struct IndexSegmentBuilder : IDisposable
     /// <summary>
     /// Add a datom to the segment
     /// </summary>
-    public void Add<TValue, TLowLevelType>(EntityId entityId, Attribute<TValue, TLowLevelType> attribute, TValue value, TxId txId, bool isRetract)
+    public void Add<TValue, TAttribute>(EntityId entityId, TAttribute attribute, TValue value, TxId txId, bool isRetract)
+    where TAttribute : IWritableAttribute<TValue>
     {
         _offsets.Add(_data.Length);
         attribute.Write(entityId, _attributeCache, value, txId, isRetract, _data);
@@ -81,7 +82,8 @@ public readonly struct IndexSegmentBuilder : IDisposable
     /// <summary>
     /// Adds an assert datom to the segment for the tmp transaction
     /// </summary>
-    public void Add<TValue, TLowLevelType>(EntityId entityId, Attribute<TValue, TLowLevelType> attribute, TValue value)
+    public void Add<TValue, TAttribute>(EntityId entityId, TAttribute attribute, TValue value)
+        where TAttribute : IWritableAttribute<TValue>
     {
         _offsets.Add(_data.Length);
         attribute.Write(entityId, _attributeCache, value, TxId.Tmp, false, _data);
@@ -90,7 +92,8 @@ public readonly struct IndexSegmentBuilder : IDisposable
     /// <summary>
     /// Adds a datom to the segment for the tmp transaction, with the given assert flag
     /// </summary>
-    public void Add<TValue, TLowLevelType>(EntityId entityId, Attribute<TValue, TLowLevelType> attribute, TValue value, bool isRetract)
+    public void Add<TValue, TAttribute>(EntityId entityId, TAttribute attribute, TValue value, bool isRetract)
+    where TAttribute : IWritableAttribute<TValue>
     {
         _offsets.Add(_data.Length);
         attribute.Write(entityId, _attributeCache, value, TxId.Tmp, isRetract, _data);

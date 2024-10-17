@@ -8,6 +8,7 @@ using System.Text;
 using NexusMods.Hashing.xxHash64;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -294,17 +295,17 @@ public static class Serializer
         return tag switch
         {
             ValueTag.Null => 0,
-            ValueTag.UInt8 => (*aVal).CompareTo(*bVal),
-            ValueTag.UInt16 => (*(ushort*)aVal).CompareTo(*(ushort*)bVal),
-            ValueTag.UInt32 => (*(uint*)aVal).CompareTo(*(uint*)bVal),
-            ValueTag.UInt64 => (*(ulong*)aVal).CompareTo(*(ulong*)bVal),
-            ValueTag.UInt128 => (*(UInt128*)aVal).CompareTo(*(UInt128*)bVal),
-            ValueTag.Int16 => (*(short*)aVal).CompareTo(*(short*)bVal),
-            ValueTag.Int32 => (*(int*)aVal).CompareTo(*(int*)bVal),
-            ValueTag.Int64 => (*(long*)aVal).CompareTo(*(long*)bVal),
-            ValueTag.Int128 => (*(Int128*)aVal).CompareTo(*(Int128*)bVal),
-            ValueTag.Float32 => (*(float*)aVal).CompareTo(*(float*)bVal),
-            ValueTag.Float64 => (*(double*)aVal).CompareTo(*(double*)bVal),
+            ValueTag.UInt8 => UInt8Serializer.Compare(aVal, aLen, bVal, bLen),
+            ValueTag.UInt16 => UInt16Serializer.Compare(aVal, aLen, bVal, bLen),
+            ValueTag.UInt32 => UInt32Serializer.Compare(aVal, aLen, bVal, bLen),
+            ValueTag.UInt64 => UInt64Serializer.Compare(aVal, aLen, bVal, bLen),
+            ValueTag.UInt128 => UInt128Serializer.Compare(aVal, aLen, bVal, bLen),
+            ValueTag.Int16 => Int16Serializer.Compare(aVal, aLen, bVal, bLen),
+            ValueTag.Int32 => Int32Serializer.Compare(aVal, aLen, bVal, bLen),
+            ValueTag.Int64 => Int64Serializer.Compare(aVal, aLen, bVal, bLen),
+            ValueTag.Int128 => Int128Serializer.Compare(aVal, aLen, bVal, bLen),
+            ValueTag.Float32 => Float32Serializer.Compare(aVal, aLen, bVal, bLen),
+            ValueTag.Float64 => Float64Serializer.Compare(aVal, aLen, bVal, bLen),
             ValueTag.Ascii => CompareAscii(aVal, aLen, bVal, bLen),
             ValueTag.Utf8 => CompareUtf8(aVal, aLen, bVal, bLen),
             ValueTag.Utf8Insensitive => CompareUtf8(aVal, aLen, bVal, bLen),

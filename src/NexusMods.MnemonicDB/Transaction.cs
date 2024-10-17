@@ -40,7 +40,8 @@ internal class Transaction(Connection connection) : ITransaction
         return TempId(PartitionId.Entity);
     }
 
-    public void Add<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val, bool isRetract = false)
+    public void Add<TVal, TAttribute>(EntityId entityId, TAttribute attribute, TVal val, bool isRetract = false) 
+        where TAttribute : IWritableAttribute<TVal>
     {
         lock (_lock)
         {

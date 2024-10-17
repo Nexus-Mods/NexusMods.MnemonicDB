@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
@@ -70,16 +71,26 @@ public interface IAttribute
     bool IsIn<T>(T entity) where T : IHasIdAndIndexSegment;
 }
 
-
 /// <summary>
-/// An attribute that has a specific value type
+/// An interface for attributes that can write a given high level type to a buffer
 /// </summary>
-/// <typeparam name="TValueType"></typeparam>
-public interface IAttribute<TValueType> : IAttribute
+public interface IWritableAttribute<in THighLevelType> : IAttribute
 {
     /// <summary>
-    /// Adds the value to the transaction on the given entity/attribute
+    /// Write the given datom parts to the buffer
     /// </summary>
-    public void Add(ITransaction tx, EntityId entityId, TValueType value, bool isRetract);
-    
+    public void Write<TWriter>(EntityId entityId, AttributeCache cache, THighLevelType value, TxId txId, bool isRetract, TWriter writer) 
+        where TWriter : IBufferWriter<byte>;
+}
+
+
+/// <summary>
+/// A readable attribute that has the given type as its value
+/// </summary>
+public interface IReadableAttribute<out T> : IAttribute
+{
+    /// <summary>
+    /// Reads the high level value from the given span
+    /// </summary>
+    public T ReadValue(ReadOnlySpan<byte> span, ValueTag tag, AttributeResolver resolver);
 }

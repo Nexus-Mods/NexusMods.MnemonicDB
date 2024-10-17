@@ -1,11 +1,11 @@
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
-using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.TestModel.Attributes;
 
-public sealed class LocationPath(string ns, string name) : ScalarAttribute<(LocationId, RelativePath), (ushort, string)>(ValueTag.Tuple2_UShort_Utf8I, ns, name)
+public sealed class LocationPath(string ns, string name) : ScalarAttribute<(LocationId, RelativePath), (ushort, string), Tuple2_UShort_Utf8I_Serializer>(ns, name)
 {
     protected override (ushort, string) ToLowLevel((LocationId, RelativePath) value) 
         => (value.Item1.Value, value.Item2.Path);

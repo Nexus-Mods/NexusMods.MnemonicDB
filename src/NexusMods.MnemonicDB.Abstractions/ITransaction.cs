@@ -36,7 +36,8 @@ public interface ITransaction : IDisposable
     /// <summary>
     ///     Adds a new datom to the transaction
     /// </summary>
-    void Add<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val, bool isRetract = false);
+    void Add<TVal, TAttribute>(EntityId entityId, TAttribute attribute, TVal val, bool isRetract = false) 
+        where TAttribute : IWritableAttribute<TVal>;
     
     /// <summary>
     ///     Adds datoms for adding the given ids to the transaction under the given attribute
@@ -59,7 +60,8 @@ public interface ITransaction : IDisposable
     /// <summary>
     ///     Adds a new datom to the transaction, that retracts the value for the given attribute
     /// </summary>
-    void Retract<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val)
+    void Retract<TVal, TAttribute>(EntityId entityId, TAttribute attribute, TVal val)
+    where TAttribute : IWritableAttribute<TVal>
         => Add(entityId, attribute, val, isRetract: true);
 
     /// <summary>
