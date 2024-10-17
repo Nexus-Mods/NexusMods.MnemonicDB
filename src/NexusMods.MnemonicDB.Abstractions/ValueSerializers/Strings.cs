@@ -24,6 +24,7 @@ public class Utf8Serializer : IValueSerializer<string>
         return a.SequenceCompareTo(b);
     }
 
+    /// <inheritdoc />
     public static unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
     {
         return new ReadOnlySpan<byte>(aPtr, aLen).SequenceCompareTo(new ReadOnlySpan<byte>(bPtr, bLen));
@@ -108,7 +109,7 @@ public class Utf8InsensitiveSerializer : IValueSerializer<string>
     private static readonly Encoding Encoding = Encoding.UTF8;
 
     /// <inheritdoc />
-    public static ValueTag ValueTag => ValueTag.Ascii;
+    public static ValueTag ValueTag => ValueTag.Utf8Insensitive;
     
     /// <inheritdoc />
     public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)

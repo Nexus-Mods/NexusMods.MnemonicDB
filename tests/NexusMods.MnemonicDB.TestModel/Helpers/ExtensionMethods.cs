@@ -45,7 +45,6 @@ public static class ExtensionMethods
             sb.Append(" | ");
             sb.Append($"({attrId}) {symColumn}");
             sb.Append(" | ");
-            
 
 
             switch (datom.Prefix.ValueTag)
@@ -58,8 +57,7 @@ public static class ExtensionMethods
                 }
                 case ValueTag.Ascii:
                 {
-                    var size = MemoryMarshal.Read<uint>(datom.ValueSpan);
-                    var str = Encoding.ASCII.GetString(datom.ValueSpan.Slice(sizeof(uint), (int)size));
+                    var str = Encoding.ASCII.GetString(datom.ValueSpan);
                     sb.Append(TruncateOrPad(str, 48));
                     break;
                 }
@@ -102,13 +100,13 @@ public static class ExtensionMethods
                     break;
                 case ValueTag.Utf8:
                 {
-                    var str = Encoding.UTF8.GetString(datom.ValueSpan[sizeof(int)..]);
+                    var str = Encoding.UTF8.GetString(datom.ValueSpan);
                     sb.Append(TruncateOrPad(str, 48));
                     break;
                 }
                 case ValueTag.Utf8Insensitive:
                 {
-                    var str = Encoding.UTF8.GetString(datom.ValueSpan[sizeof(int)..]);
+                    var str = Encoding.UTF8.GetString(datom.ValueSpan);
                     sb.Append(TruncateOrPad(str, 48));
                     break;
                 }

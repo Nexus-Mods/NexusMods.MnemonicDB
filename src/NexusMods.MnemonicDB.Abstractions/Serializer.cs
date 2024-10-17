@@ -113,8 +113,11 @@ public static class Serializer
             case string v when tag is ValueTag.Ascii:
                 AsciiSerializer.Write(v, writer);
                 break;
-            case string v when tag is ValueTag.Utf8 or ValueTag.Utf8Insensitive:
+            case string v when tag is ValueTag.Utf8:
                 Utf8Serializer.Write(v, writer);
+                break;
+            case string v when tag is ValueTag.Utf8Insensitive:
+                Utf8InsensitiveSerializer.Write(v, writer);
                 break;
             case Memory<byte> v when tag == ValueTag.Blob:
                 BlobSerializer.Write(v, writer);
@@ -191,7 +194,7 @@ public static class Serializer
             ValueTag.Float64 => Float64Serializer.Compare(aVal, aLen, bVal, bLen),
             ValueTag.Ascii => AsciiSerializer.Compare(aVal, aLen, bVal, bLen),
             ValueTag.Utf8 => Utf8Serializer.Compare(aVal, aLen, bVal, bLen),
-            ValueTag.Utf8Insensitive => Utf8Serializer.Compare(aVal, aLen, bVal, bLen),
+            ValueTag.Utf8Insensitive => Utf8InsensitiveSerializer.Compare(aVal, aLen, bVal, bLen),
             ValueTag.Blob => BlobSerializer.Compare(aVal, aLen, bVal, bLen),
             ValueTag.HashedBlob => HashedBlobSerializer.Compare(aVal, aLen, bVal, bLen),
             ValueTag.Reference => EntityIdSerializer.Compare(aVal, aLen, bVal, bLen),

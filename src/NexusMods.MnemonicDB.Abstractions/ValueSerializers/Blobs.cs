@@ -87,6 +87,7 @@ public sealed class HashedBlobSerializer : IValueSerializer<Memory<byte>>
         var hash = XxHash3.HashToUInt64(value.Span);
         MemoryMarshal.Write(span, hash);
         value.Span.CopyTo(span.SliceFast(sizeof(ulong)));
+        writer.Advance(sizeof(ulong) + value.Length);
     }
 
     /// <inheritdoc />

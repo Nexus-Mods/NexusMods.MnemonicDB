@@ -34,9 +34,9 @@ public class Batch(RocksDb db) : IWriteBatch
         if (Tag(key) == ValueTag.HashedBlob)
         {
             // Put the blob in the out-of-band data
-            outOfBandData = key.SliceFast(KeyPrefix.Size + sizeof(uint) + sizeof(ulong));
+            outOfBandData = key.SliceFast(Serializer.HashedBlobPrefixSize);
             // Put the prefix, the hash and the length in the key
-            key = key.SliceFast(0, KeyPrefix.Size + sizeof(uint) + sizeof(ulong));
+            key = key.SliceFast(0, Serializer.HashedBlobPrefixSize);
         }
 
         _batch.Put(key, outOfBandData, ((IRocksDBIndexStore)store).Handle);
@@ -47,7 +47,7 @@ public class Batch(RocksDb db) : IWriteBatch
     {
         if (datom.Prefix.ValueTag == ValueTag.HashedBlob)
         {
-            var outOfBandData = datom.ValueSpan.SliceFast(Serializer.HashedBlobPrefixSize);
+            var outOfBandData = datom.ValueSpan.SliceFast(Serializer.HashedBlobHeaderSize);
             Span<byte> keySpan = stackalloc byte[Serializer.HashedBlobPrefixSize];
 
             MemoryMarshal.Write(keySpan, datom.Prefix);
