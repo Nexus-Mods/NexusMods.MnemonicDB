@@ -81,8 +81,8 @@ public abstract class ABackendTest<TStoreType>(
         for (var i = 0; i < 2; i++)
         {
             using var segment = new IndexSegmentBuilder(AttributeCache);
-            segment.Add(ids[i], Blobs.InKeyBlob, smallData, true);
-            segment.Add(ids[i], Blobs.InValueBlob, largeData, true);
+            segment.Add(ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true);
+            segment.Add(ids[i], Blobs.InValueBlob, largeData.AsMemory(), true);
             await DatomStore.TransactAsync(segment.Build());
         }
 

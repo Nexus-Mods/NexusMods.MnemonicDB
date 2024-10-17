@@ -90,6 +90,17 @@ public readonly struct IndexSegmentBuilder : IDisposable
     }
 
     /// <summary>
+    /// Adds an assert datom to the segment for the tmp transaction
+    /// </summary>
+    public void Add<TValue, TLowLevel, TSerializer>(EntityId entityId,
+        Attribute<TValue, TLowLevel, TSerializer> attribute, TValue value, bool isRetract = false)
+        where TSerializer : IValueSerializer<TLowLevel>
+    {
+        _offsets.Add(_data.Length);
+        attribute.Write(entityId, _attributeCache, value, TxId.Tmp, false, _data);
+    }
+
+    /// <summary>
     /// Adds a datom to the segment for the tmp transaction, with the given assert flag
     /// </summary>
     public void Add<TValue, TAttribute>(EntityId entityId, TAttribute attribute, TValue value, bool isRetract)

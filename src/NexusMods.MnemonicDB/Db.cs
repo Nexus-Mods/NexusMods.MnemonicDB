@@ -119,11 +119,6 @@ internal class Db : IDb
         return Datoms(SliceDescriptor.Create(attribute, value, AttributeCache));
     }
     
-    public IndexSegment Datoms(ReferenceAttribute attribute, EntityId value)
-    {
-        return Datoms(SliceDescriptor.Create(attribute, value, AttributeCache));
-    }
-
     public IndexSegment Datoms(EntityId entityId)
     {
         return _cache.Get(entityId, this);

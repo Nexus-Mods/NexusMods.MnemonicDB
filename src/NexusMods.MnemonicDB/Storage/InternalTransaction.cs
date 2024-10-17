@@ -43,6 +43,11 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
         datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
     }
 
+    public void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false) where TSerializer : IValueSerializer<TLowLevel>
+    {
+        datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
+    }
+
     public void Add(EntityId entityId, ReferencesAttribute attribute, IEnumerable<EntityId> ids)
     {
         throw new NotSupportedException();

@@ -208,6 +208,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
             if ({{= attr.ContextualName}}.Value != 0) {
                 tx.Add(Id, {{= attr.FieldName}}, {{= attr.ContextualName}}.Value, false);
             }
+            {{elif attr.IsReference}}
+            tx.Add(Id, {{= attr.FieldName}}, {{= attr.ContextualName}}.Value, false);
             {{else}}
             tx.Add(Id, {{= attr.FieldName}}, {{= attr.ContextualName}}, false);
 
@@ -360,10 +362,10 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 
            {{each attr in model.Attributes}}
            {{if attr.IsCollection && attr.IsReference && !attr.IsMarker}}
-           public __SEGMENTS__.Values<__ABSTRACTIONS__.EntityId, __ABSTRACTIONS__.EntityId> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
+           public __SEGMENTS__.Values<__ABSTRACTIONS__.EntityId> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
            public __SEGMENTS__.ValueEntities<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => __SEGMENTS__.ValuesExtensions.AsModels<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly>({{= attr.FieldName}}.Get(this), Db);
            {{elif attr.IsCollection}}
-           public __SEGMENTS__.Values<{{=attr.HighLevelType.ToDisplayString()}}, {{=attr.LowLevelType.ToDisplayString()}}> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
+           public __SEGMENTS__.Values<{{=attr.HighLevelType.ToDisplayString()}}> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
            {{elif attr.IsMarker}}
            public bool Is{{= attr.ContextualName}} => {{= attr.FieldName}}.Contains(this);
            {{elif attr.IsReference}}
