@@ -25,22 +25,7 @@ public class Batch(IndexStore[] stores) : IWriteBatch
             store.Commit(datoms);
         }
     }
-
-    /// <inheritdoc />
-    public void Add(IIndexStore store, ReadOnlySpan<byte> key)
-    {
-        if (store is not IndexStore indexStore)
-            throw new ArgumentException("Invalid store type", nameof(store));
-        
-        if (!_datoms.TryGetValue(indexStore.Type, out var datoms))
-        {
-            datoms = new List<(bool IsDelete, byte[] Data)>();
-            _datoms.Add(indexStore.Type, datoms);
-        }
-
-        datoms.Add((false, key.ToArray()));
-    }
-
+    
     /// <inheritdoc />
     public void Add(IIndexStore store, in Datom datom)
     {
@@ -55,23 +40,7 @@ public class Batch(IndexStore[] stores) : IWriteBatch
 
         datoms.Add((false, datom.ToArray()));
     }
-
-
-    /// <inheritdoc />
-    public void Delete(IIndexStore store, ReadOnlySpan<byte> key)
-    {
-        if (store is not IndexStore indexStore)
-            throw new ArgumentException("Invalid store type", nameof(store));
-
-        if (!_datoms.TryGetValue(indexStore.Type, out var datoms))
-        {
-            datoms = new List<(bool IsDelete, byte[] Data)>();
-            _datoms.Add(indexStore.Type, datoms);
-        }
-
-        datoms.Add((true, key.ToArray()));
-    }
-
+    
     /// <inheritdoc />
     public void Delete(IIndexStore store, in Datom datom)
     {

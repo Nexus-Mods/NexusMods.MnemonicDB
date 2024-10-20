@@ -14,17 +14,7 @@ public interface IIndex
     void Delete(IWriteBatch batch, in Datom datom);
 
     /// <summary>
-    /// Add the delete to the batch
-    /// </summary>
-    void Delete(IWriteBatch batch, ReadOnlySpan<byte> span);
-
-    /// <summary>
     /// Add a put to the batch
     /// </summary>
     void Put(IWriteBatch batch, in Datom datom);
-
-    /// <summary>
-    /// Add a put to the batch
-    /// </summary>
-    void Put(IWriteBatch batch, ReadOnlySpan<byte> span);
 }

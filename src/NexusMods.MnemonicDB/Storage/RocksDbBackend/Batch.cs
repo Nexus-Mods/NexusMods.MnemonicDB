@@ -26,22 +26,7 @@ public class Batch(RocksDb db) : IWriteBatch
         var prefix = MemoryMarshal.Read<KeyPrefix>(key);
         return prefix.ValueTag;
     }
-
-    /// <inheritdoc />
-    public void Add(IIndexStore store, ReadOnlySpan<byte> key)
-    {
-        var outOfBandData = ReadOnlySpan<byte>.Empty;
-        if (Tag(key) == ValueTag.HashedBlob)
-        {
-            // Put the blob in the out-of-band data
-            outOfBandData = key.SliceFast(Serializer.HashedBlobPrefixSize);
-            // Put the prefix, the hash and the length in the key
-            key = key.SliceFast(0, Serializer.HashedBlobPrefixSize);
-        }
-
-        _batch.Put(key, outOfBandData, ((IRocksDBIndexStore)store).Handle);
-    }
-
+    
     /// <inheritdoc />
     public void Add(IIndexStore store, in Datom datom)
     {
@@ -73,18 +58,7 @@ public class Batch(RocksDb db) : IWriteBatch
             _batch.Put(keySpan, ReadOnlySpan<byte>.Empty, ((IRocksDBIndexStore)store).Handle);
         }
     }
-
-    /// <inheritdoc />
-    public void Delete(IIndexStore store, ReadOnlySpan<byte> key)
-    {
-        if (Tag(key) == ValueTag.HashedBlob)
-        {
-            key = key.SliceFast(0, Serializer.HashedBlobPrefixSize);
-        }
-
-        _batch.Delete(key, ((IRocksDBIndexStore)store).Handle);
-    }
-
+    
     /// <inheritdoc />
     public void Delete(IIndexStore store, in Datom datom)
     {

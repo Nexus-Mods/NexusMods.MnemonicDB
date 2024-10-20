@@ -12,24 +12,12 @@ public interface IWriteBatch : IDisposable
     /// Commit the batch to the storage
     /// </summary>
     public void Commit();
-
-    /// <summary>
-    /// Add a datom to the batch
-    /// </summary>
-    /// <param name="store"></param>
-    /// <param name="key"></param>
-    public void Add(IIndexStore store, ReadOnlySpan<byte> datom);
-
+    
     /// <summary>
     /// Add a datom to the batch
     /// </summary>
     public void Add(IIndexStore store, in Datom datom);
-
-    /// <summary>
-    /// Add a delete to the batch
-    /// </summary>
-    public void Delete(IIndexStore store, ReadOnlySpan<byte> key);
-
+    
     /// <summary>
     /// Add a delete to the batch
     /// </summary>

@@ -15,19 +15,7 @@ public abstract class AIndex<TComparator, TIndexStore>(TIndexStore store) : IInd
     }
 
     /// <inheritdoc />
-    public void Put(IWriteBatch batch, ReadOnlySpan<byte> datom)
-    {
-        batch.Add(store, datom);
-    }
-
-    /// <inheritdoc />
     public void Delete(IWriteBatch batch, in Datom datom)
-    {
-        batch.Delete(store, datom);
-    }
-
-    /// <inheritdoc />
-    public void Delete(IWriteBatch batch, ReadOnlySpan<byte> datom)
     {
         batch.Delete(store, datom);
     }
