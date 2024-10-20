@@ -442,7 +442,7 @@ public sealed partial class DatomStore : IDatomStore
             _writer.Advance(valueSpan.Length);
         }
 
-        var newSpan = _writer.GetWrittenSpan();
+        var newSpan = _writer.AsDatom();
 
         if (keyPrefix.IsRetract)
         {
@@ -459,7 +459,7 @@ public sealed partial class DatomStore : IDatomStore
                 break;
             case PrevState.Exists:
                 SwitchPrevToRetraction();
-                ProcessRetract(batch, attrId, _retractWriter.GetWrittenSpan(), CurrentSnapshot!);
+                ProcessRetract(batch, attrId, _retractWriter.AsDatom(), CurrentSnapshot!);
                 ProcessAssert(batch, attrId, newSpan);
                 break;
         }
@@ -475,7 +475,7 @@ public sealed partial class DatomStore : IDatomStore
         MemoryMarshal.Write(_retractWriter.GetWrittenSpanWritable(), prevKey);
     }
 
-    private void ProcessRetract(IWriteBatch batch, AttributeId attrId, ReadOnlySpan<byte> datom, ISnapshot iterator)
+    private void ProcessRetract(IWriteBatch batch, AttributeId attrId, Datom datom, ISnapshot iterator)
     {
         _prevWriter.Reset();
         _prevWriter.Write(datom);
@@ -544,24 +544,24 @@ public sealed partial class DatomStore : IDatomStore
         }
     }
 
-    private static unsafe void RetractionSantiyCheck(ReadOnlySpan<byte> datom, Datom prevDatom)
+    private static unsafe void RetractionSantiyCheck(Datom datom, Datom prevDatom)
     {
         Debug.Assert(prevDatom.Valid, "Previous datom should exist");
         var debugKey = prevDatom.Prefix;
 
-        var otherPrefix = MemoryMarshal.Read<KeyPrefix>(datom);
+        var otherPrefix = datom.Prefix;
         Debug.Assert(debugKey.E == otherPrefix.E, "Entity should match");
         Debug.Assert(debugKey.A == otherPrefix.A, "Attribute should match");
 
         fixed (byte* aTmp = prevDatom.ValueSpan)
-        fixed (byte* bTmp = datom.SliceFast(sizeof(KeyPrefix)))
+        fixed (byte* bTmp = datom.ValueSpan)
         {
-            var cmp = Serializer.Compare(prevDatom.Prefix.ValueTag, aTmp, prevDatom.ValueSpan.Length, otherPrefix.ValueTag, bTmp, datom.Length - sizeof(KeyPrefix));
+            var cmp = Serializer.Compare(prevDatom.Prefix.ValueTag, aTmp, prevDatom.ValueSpan.Length, otherPrefix.ValueTag, bTmp, datom.ValueSpan.Length);
             Debug.Assert(cmp == 0, "Values should match");
         }
     }
 
-    private void ProcessAssert(IWriteBatch batch, AttributeId attributeId, ReadOnlySpan<byte> datom)
+    private void ProcessAssert(IWriteBatch batch, AttributeId attributeId, Datom datom)
     {
         TxLogIndex.Put(batch, datom);
         EAVTCurrent.Put(batch, datom);
@@ -582,11 +582,11 @@ public sealed partial class DatomStore : IDatomStore
         Duplicate
     }
 
-    private unsafe PrevState GetPreviousState(bool isRemapped, AttributeId attrId, ISnapshot snapshot, ReadOnlySpan<byte> span)
+    private unsafe PrevState GetPreviousState(bool isRemapped, AttributeId attrId, ISnapshot snapshot, Datom span)
     {
         if (isRemapped) return PrevState.NotExists;
 
-        var keyPrefix = MemoryMarshal.Read<KeyPrefix>(span);
+        var keyPrefix = span.Prefix;
 
         if (_attributeCache.IsCardinalityMany(attrId))
         {
@@ -598,11 +598,10 @@ public sealed partial class DatomStore : IDatomStore
                 return PrevState.NotExists;
 
             var aSpan = found.ValueSpan;
-            var bSpan = span.SliceFast(sizeof(KeyPrefix));
             fixed (byte* a = aSpan)
-            fixed (byte* b = bSpan)
+            fixed (byte* b = span.ValueSpan)
             {
-                var cmp = Serializer.Compare(found.Prefix.ValueTag, a, aSpan.Length, keyPrefix.ValueTag, b, bSpan.Length);
+                var cmp = Serializer.Compare(found.Prefix.ValueTag, a, aSpan.Length, keyPrefix.ValueTag, b, span.ValueSpan.Length);
                 return cmp == 0 ? PrevState.Duplicate : PrevState.NotExists;
             }
         }
@@ -620,8 +619,8 @@ public sealed partial class DatomStore : IDatomStore
                 return PrevState.NotExists;
 
             var aSpan = datom.ValueSpan;
-            var bSpan = span.SliceFast(sizeof(KeyPrefix));
-            var bPrefix = MemoryMarshal.Read<KeyPrefix>(span);
+            var bSpan = span.ValueSpan;
+            var bPrefix = span.Prefix;
             fixed (byte* a = aSpan)
             fixed (byte* b = bSpan)
             {

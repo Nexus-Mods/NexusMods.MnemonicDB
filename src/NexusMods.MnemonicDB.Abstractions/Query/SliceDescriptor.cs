@@ -207,15 +207,13 @@ public readonly struct SliceDescriptor
     /// <summary>
     /// Creates a slice descriptor for the given exactly from the given index
     /// </summary>
-    public static SliceDescriptor Exact(IndexType index, ReadOnlySpan<byte> span)
+    public static SliceDescriptor Exact(IndexType index, Datom datom)
     {
-        var from = span.ToArray();
-        var to = span.ToArray();
         return new SliceDescriptor
         {
             Index = index,
-            From = new Datom(from),
-            To = new Datom(to)
+            From = datom,
+            To = datom,
         };
     }
 
