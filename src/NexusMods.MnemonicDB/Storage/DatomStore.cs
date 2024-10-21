@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -72,7 +73,7 @@ public sealed partial class DatomStore : IDatomStore
     /// </summary>
     private Thread? _loggerThread;
 
-    private CancellationTokenSource _shutdownToken = new();
+    private readonly CancellationTokenSource _shutdownToken = new();
     private TxId _thisTx;
     
     /// <summary>
@@ -80,12 +81,20 @@ public sealed partial class DatomStore : IDatomStore
     /// </summary>
     private readonly Memory<byte> _txScratchSpace;
 
+    private readonly TimeProvider _timeProvider;
+
     /// <summary>
     /// DI constructor
     /// </summary>
-    public DatomStore(ILogger<DatomStore> logger, DatomStoreSettings settings, IStoreBackend backend, bool bootstrap = true)
+    public DatomStore(
+        ILogger<DatomStore> logger,
+        DatomStoreSettings settings,
+        IStoreBackend backend,
+        TimeProvider? timeProvider = null,
+        bool bootstrap = true)
     {
         CurrentSnapshot = default!;
+        _timeProvider = timeProvider ?? TimeProvider.System;
         _txScratchSpace = new Memory<byte>(new byte[1024]);
         _remapFunc = Remap;
         _dbStream = new DbStream();
@@ -97,10 +106,9 @@ public sealed partial class DatomStore : IDatomStore
         _retractWriter = new PooledMemoryBufferWriter();
         _prevWriter = new PooledMemoryBufferWriter();
 
-
         Logger = logger;
         _settings = settings;
-        
+
         Backend.DeclareEAVT(IndexType.EAVTCurrent);
         Backend.DeclareEAVT(IndexType.EAVTHistory);
         Backend.DeclareAEVT(IndexType.AEVTCurrent);
@@ -123,8 +131,7 @@ public sealed partial class DatomStore : IDatomStore
         AVETCurrent = Backend.GetIndex(IndexType.AVETCurrent);
         AVETHistory = Backend.GetIndex(IndexType.AVETHistory);
 
-        if (bootstrap) 
-            Bootstrap();
+        if (bootstrap) Bootstrap();
     }
     
     /// <inheritdoc />
@@ -411,7 +418,7 @@ public sealed partial class DatomStore : IDatomStore
     /// <exception cref="NotImplementedException"></exception>
     private void LogTx(IWriteBatch batch)
     {
-        MemoryMarshal.Write(_txScratchSpace.Span, DateTime.UtcNow.ToFileTimeUtc());
+        MemoryMarshal.Write(_txScratchSpace.Span, _timeProvider.GetTimestamp());
         var id = EntityId.From(_thisTx.Value);
         var keyPrefix = new KeyPrefix(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), _thisTx, false, ValueTag.Int64);
         var datom = new Datom(keyPrefix, _txScratchSpace[..sizeof(long)]);
