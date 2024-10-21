@@ -47,7 +47,11 @@ public readonly struct Datom : IEquatable<Datom>
     /// <summary>
     /// The KeyPrefix of the datom
     /// </summary>
-    public KeyPrefix Prefix => _prefix;
+    public KeyPrefix Prefix
+    {
+        get => _prefix;
+        init => _prefix = value;
+    }
 
     /// <summary>
     /// The valuespan of the datom
@@ -95,7 +99,9 @@ public readonly struct Datom : IEquatable<Datom>
     /// <inheritdoc />
     public override string ToString()
     {
-        return $"[E: {E}, A: {A}, T: {T}, IsRetract: {IsRetract}, Value: {Prefix.ValueTag.Read<object>(ValueSpan)}]";
+        if (_prefix.Index == IndexType.None) 
+            return $"[E: {E}, A: {A}, T: {T}, IsRetract: {IsRetract}, Value: {Prefix.ValueTag.Read<object>(ValueSpan)}]";
+        return $"[Index: {_prefix.Index}, E: {E}, A: {A}, T: {T}, IsRetract: {IsRetract}, Value: {Prefix.ValueTag.Read<object>(ValueSpan)}]";
     }
 
     /// <summary>
@@ -118,22 +124,14 @@ public readonly struct Datom : IEquatable<Datom>
     /// Returns -1 if this datom is less than the other, 0 if they are equal, and 1 if this datom is greater than the other.
     /// in relation to the given index type.
     /// </summary>
-    public int Compare(Datom other, IndexType indexType)
-    {
-        return indexType switch
-        {
-            IndexType.TxLog => DatomComparators.TxLogComparator.Compare(this, other),
-            IndexType.EAVTCurrent or IndexType.EAVTHistory => DatomComparators.EAVTComparator.Compare(this, other),
-            IndexType.AEVTCurrent or IndexType.AEVTHistory => DatomComparators.AEVTComparator.Compare(this, other),
-            IndexType.AVETCurrent or IndexType.AVETHistory => DatomComparators.AVETComparator.Compare(this, other),
-            IndexType.VAETCurrent or IndexType.VAETHistory => DatomComparators.VAETComparator.Compare(this, other),
-            _ => ThrowArgumentOutOfRange(indexType)
-        };
-    }
+    public int Compare(Datom other) => GlobalComparer.Compare(in this, in other);
     
-    private static int ThrowArgumentOutOfRange(IndexType indexType)
+    /// <summary>
+    /// Return a copy of this datom with the given index set as the index
+    /// </summary>
+    public Datom WithIndex(IndexType index)
     {
-        throw new ArgumentOutOfRangeException(nameof(indexType), indexType, "Unknown index type");
+        return new Datom(_prefix with {Index = index}, _valueBlob);
     }
 
     /// <summary>

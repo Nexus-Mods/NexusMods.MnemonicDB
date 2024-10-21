@@ -61,11 +61,23 @@ public readonly record struct KeyPrefix
     /// <summary>
     /// Creates a new KeyPrefix with the given values
     /// </summary>
-    public KeyPrefix(EntityId id, AttributeId attributeId, TxId txId, bool isRetract, ValueTag tags)
+    public KeyPrefix(EntityId id, AttributeId attributeId, TxId txId, bool isRetract, ValueTag tags, IndexType index = IndexType.None)
     {
-        _upper = ((ulong)attributeId << 48) | ((ulong)txId & 0x0000FFFFFFFFFFFF);
+        _upper = ((ulong)attributeId << 48) | ((ulong)txId & 0x000000FFFFFFFFFF) | ((ulong)index << 40);
         _lower = ((ulong)id & 0xFF00000000000000) | (((ulong)id & 0x0000FFFFFFFFFFFF) << 8) | (isRetract ? 1UL : 0UL) | ((ulong)tags << 1);
     }
+
+    /// <summary>
+    /// The index this datom is stored in. This will be 0 (None)
+    /// for most datoms seen by the user, but the backend datomstore
+    /// will use this field for the various sorted indexes.
+    /// </summary>
+    public IndexType Index
+    {
+        get => (IndexType)((_upper >> 40) & 0xFF);
+        init => _upper = (_upper & 0xFFFF00FFFFFFFFFF) | ((ulong)value << 40);
+    }
+    
 
     /// <summary>
     ///     The EntityId
@@ -119,10 +131,10 @@ public readonly record struct KeyPrefix
     {
         get
         {
-            var id = PartitionId.Transactions.MakeEntityId(_upper & 0x0000FFFFFFFFFFFF).Value;
+            var id = PartitionId.Transactions.MakeEntityId(_upper & 0x000000FFFFFFFFFF).Value;
             return Unsafe.As<ulong, TxId>(ref id);
         }
-        init => _upper = (_upper & 0xFFFF000000000000) | ((ulong)value & 0x0000FFFFFFFFFFFF);
+        init => _upper = (_upper & 0xFFFFFF0000000000) | ((ulong)value & 0x000000FFFFFFFFFF);
     }
 
     /// <inheritdoc />

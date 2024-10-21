@@ -17,10 +17,10 @@ public interface IWriteBatch : IDisposable
     /// <summary>
     /// Add a datom to the batch
     /// </summary>
-    public void Add(IndexType store, in Datom datom);
+    public void Add(IndexType store, Datom datom);
     
     /// <summary>
     /// Add a delete operation to the batch
     /// </summary>
-    public void Delete(IndexType store, in Datom datom);
+    public void Delete(IndexType store, Datom datom);
 }

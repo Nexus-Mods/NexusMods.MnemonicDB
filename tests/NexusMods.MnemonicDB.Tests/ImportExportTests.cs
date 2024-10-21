@@ -30,6 +30,9 @@ public class ImportExportTests(IServiceProvider provider) : AMnemonicDBTest(prov
         
         foreach (var index in Enum.GetValues<IndexType>())
         {
+            if (index == IndexType.None)
+                continue;
+            
             var slice = SliceDescriptor.Create(index);
             var setA = Connection.DatomStore.GetSnapshot().Datoms(slice);
             var setB = datomStore.GetSnapshot().Datoms(slice);

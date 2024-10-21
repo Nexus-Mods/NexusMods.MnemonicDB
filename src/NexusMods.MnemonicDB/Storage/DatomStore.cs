@@ -463,9 +463,8 @@ public sealed partial class DatomStore : IDatomStore
 
         var sliceDescriptor = new SliceDescriptor
         {
-            Index = EAVTCurrent,
-            From = low,
-            To = high
+            From = low.WithIndex(EAVTCurrent),
+            To = high.WithIndex(EAVTCurrent),
         };
 
         var prevDatom = iterator.Datoms(sliceDescriptor)

@@ -32,13 +32,7 @@ public class Snapshot : ISnapshot
         var increment = 1;
         int startIndex;
         
-        var fromIDatom = new IndexDatom
-        {
-            Index = descriptor.Index,
-            Datom = descriptor.From
-        };
-        
-        var indexOf = _index.IndexOf(fromIDatom.ToArray());
+        var indexOf = _index.IndexOf(descriptor.From.ToArray());
         if (!isReverse)
         {
             if (indexOf >= 0)
@@ -63,8 +57,8 @@ public class Snapshot : ISnapshot
                 break;
             
             var current = _index.ElementAt(startIndex);
-            var datom = new Datom(current.AsMemory()[1..]);
-            if ((IndexType)current[0] != descriptor.Index || !descriptor.Includes(in datom))
+            var datom = new Datom(current);
+            if (!descriptor.Includes(in datom))
                 break;
             
             segmentBuilder.Add(datom);
@@ -82,13 +76,7 @@ public class Snapshot : ISnapshot
         var increment = 1;
         int startIndex;
         
-        var fromIDatom = new IndexDatom
-        {
-            Index = descriptor.Index,
-            Datom = descriptor.From
-        };
-        
-        var indexOf = _index.IndexOf(fromIDatom.ToArray());
+        var indexOf = _index.IndexOf(descriptor.From.ToArray());
         if (!isReverse)
         {
             if (indexOf >= 0)
@@ -98,6 +86,7 @@ public class Snapshot : ISnapshot
         }
         else
         {
+            includesDescriptor = includesDescriptor.Reversed();
             increment = -1;
             if (indexOf >= 0)
                 startIndex = indexOf;
@@ -113,7 +102,7 @@ public class Snapshot : ISnapshot
                 break;
             
             var current = _index.ElementAt(startIndex);
-            var datom = new Datom(current.AsMemory()[1..]);
+            var datom = new Datom(current);
             if (!includesDescriptor.Includes(in datom))
                 break;
             

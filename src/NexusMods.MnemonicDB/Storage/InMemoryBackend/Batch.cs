@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using Microsoft.CSharp.RuntimeBinder;
+﻿using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Storage.Abstractions;
 using IWriteBatch = NexusMods.MnemonicDB.Storage.Abstractions.IWriteBatch;
 
 namespace NexusMods.MnemonicDB.Storage.InMemoryBackend;
@@ -35,24 +30,16 @@ internal class Batch(Backend backend) : IWriteBatch
     }
     
     /// <inheritdoc />
-    public void Add(IndexType index, in Datom datom)
+    public void Add(IndexType index, Datom datom)
     {
-        var iDatom = new IndexDatom
-        {
-            Index = index,
-            Datom = datom,
-        };
-        _datoms.Add((false, iDatom.ToArray()));
+        datom = datom with { Prefix = datom.Prefix with { Index = index } };
+        _datoms.Add((false, datom.ToArray()));
     }
     
     /// <inheritdoc />
-    public void Delete(IndexType index, in Datom datom)
+    public void Delete(IndexType index, Datom datom)
     {
-        var iDatom = new IndexDatom
-        {
-            Index = index,
-            Datom = datom,
-        };
-        _datoms.Add((true, iDatom.ToArray()));
+        datom = datom with { Prefix = datom.Prefix with { Index = index } };
+        _datoms.Add((true, datom.ToArray()));
     }
 }

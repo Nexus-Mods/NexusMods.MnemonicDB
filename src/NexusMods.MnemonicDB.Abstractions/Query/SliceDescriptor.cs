@@ -15,11 +15,6 @@ namespace NexusMods.MnemonicDB.Abstractions.Query;
 public readonly struct SliceDescriptor
 {
     /// <summary>
-    /// The index to query, the `From` and `To` should be within the same index.
-    /// </summary>
-    public required IndexType Index { get; init; }
-
-    /// <summary>
     /// The lower bound of the slice, inclusive.
     /// </summary>
     public required Datom From { get; init; }
@@ -33,7 +28,29 @@ public readonly struct SliceDescriptor
     /// True if the slice is in reverse order, false otherwise. Reverse order means that a DB query
     /// with this slice will sort the results in descending order.
     /// </summary>
-    public bool IsReverse => From.Compare(To, Index) > 0;
+    public bool IsReverse => From.Compare(To) > 0;
+
+    /// <summary>
+    /// Sets the index of both datoms in the slice
+    /// </summary>
+    public IndexType Index
+    {
+        get
+        {
+            if (From.Prefix.Index != To.Prefix.Index)
+                throw new InvalidOperationException("From and To datoms must have the same index");
+            return From.Prefix.Index;
+        }
+    }
+    
+    /// <summary>
+    /// Return a copy of this slice descriptor with the given index set on each datom.
+    /// </summary>
+    public SliceDescriptor WithIndex(IndexType index) => new()
+    {
+        From = From.WithIndex(index),
+        To = To.WithIndex(index)
+    };
 
     /// <summary>
     /// Returns this descriptor with a reversed iteration order.
@@ -42,7 +59,6 @@ public readonly struct SliceDescriptor
     {
         return new SliceDescriptor
         {
-            Index = Index,
             From = To,
             To = From
         };
@@ -53,31 +69,18 @@ public readonly struct SliceDescriptor
     /// </summary>
     public bool Includes(in Datom datom)
     {
-        
-        return Index switch
-        {
-            IndexType.TxLog => DatomComparators.TxLogComparator.Compare(From, datom) <= 0 &&
-                               DatomComparators.TxLogComparator.Compare(datom, To) < 0,
-            IndexType.EAVTCurrent or IndexType.EAVTHistory =>
-                DatomComparators.EAVTComparator.Compare(From, datom) <= 0 &&
-                DatomComparators.EAVTComparator.Compare(datom, To) < 0,
-            IndexType.AEVTCurrent or IndexType.AEVTHistory =>
-                DatomComparators.AEVTComparator.Compare(From, datom) <= 0 &&
-                DatomComparators.AEVTComparator.Compare(datom, To) < 0,
-            IndexType.AVETCurrent or IndexType.AVETHistory =>
-                DatomComparators.AVETComparator.Compare(From, datom) <= 0 &&
-                DatomComparators.AVETComparator.Compare(datom, To) < 0,
-            IndexType.VAETCurrent or IndexType.VAETHistory =>
-                DatomComparators.VAETComparator.Compare(From, datom) <= 0 &&
-                DatomComparators.VAETComparator.Compare(datom, To) < 0,
-            _ => throw new ArgumentOutOfRangeException(nameof(Index), Index, "Unknown index type")
-        };
+        return GlobalComparer.Compare(From, datom) <= 0 &&
+               GlobalComparer.Compare(datom, To) < 0;
     }
 
     /// <summary>
     /// Creates a slice descriptor from the to and from datoms
     /// </summary>
-    public static SliceDescriptor Create(IndexType index, Datom from, Datom to) => new() { Index = index, From = from, To = to };
+    public static SliceDescriptor Create(IndexType index, Datom from, Datom to) => new()
+    {
+        From = from.WithIndex(index), 
+        To = to.WithIndex(index)
+    };
 
     /// <summary>
     /// Creates a slice descriptor for the given entity in the current EAVT index
@@ -86,9 +89,8 @@ public readonly struct SliceDescriptor
     {
         return new SliceDescriptor
         {
-            Index = IndexType.EAVTCurrent,
-            From = Datom(e, AttributeId.Min, TxId.MinValue, false),
-            To = Datom(e, AttributeId.Max, TxId.MaxValue, false)
+            From = Datom(e, AttributeId.Min, TxId.MinValue, false, IndexType.EAVTCurrent),
+            To = Datom(e, AttributeId.Max, TxId.MaxValue, false, IndexType.EAVTCurrent)
         };
     }
 
@@ -99,9 +101,8 @@ public readonly struct SliceDescriptor
     {
         return new SliceDescriptor
         {
-            Index = IndexType.TxLog,
-            From = Datom(EntityId.MinValueNoPartition, AttributeId.Min, tx, false),
-            To = Datom(EntityId.MaxValueNoPartition, AttributeId.Max, tx, false)
+            From = Datom(EntityId.MinValueNoPartition, AttributeId.Min, tx, false, IndexType.TxLog),
+            To = Datom(EntityId.MaxValueNoPartition, AttributeId.Max, tx, false, IndexType.TxLog)
         };
     }
 
@@ -114,11 +115,11 @@ public readonly struct SliceDescriptor
         if (attributeCache.GetValueTag(id) != ValueTag.Reference && !attributeCache.IsIndexed(id))
             throw new InvalidOperationException($"Attribute {attr.Id} must be indexed or a reference");
         
+        var index = attr.IsReference ? IndexType.VAETCurrent : IndexType.AVETCurrent;
         return new SliceDescriptor
         {
-            Index = attr.IsReference ? IndexType.VAETCurrent : IndexType.AVETCurrent,
-            From = Datom(EntityId.MinValueNoPartition, attr, value, TxId.MinValue, false, attributeCache),
-            To = Datom(EntityId.MaxValueNoPartition, attr, value, TxId.MaxValue, false, attributeCache)
+            From = Datom(EntityId.MinValueNoPartition, attr, value, TxId.MinValue, false, attributeCache, index),
+            To = Datom(EntityId.MaxValueNoPartition, attr, value, TxId.MaxValue, false, attributeCache, index)
         };
     }
     
@@ -129,9 +130,8 @@ public readonly struct SliceDescriptor
     {
         return new SliceDescriptor
         {
-            Index = IndexType.AVETCurrent,
-            From = Datom(EntityId.MinValueNoPartition, attr, fromValue, TxId.MinValue, false, attributeCache),
-            To = Datom(EntityId.MaxValueNoPartition, attr, toValue, TxId.MaxValue, false, attributeCache)
+            From = Datom(EntityId.MinValueNoPartition, attr, fromValue, TxId.MinValue, false, attributeCache, IndexType.AVETCurrent),
+            To = Datom(EntityId.MaxValueNoPartition, attr, toValue, TxId.MaxValue, false, attributeCache, IndexType.AVETCurrent)
         };
     }
 
@@ -142,9 +142,8 @@ public readonly struct SliceDescriptor
     {
         return new SliceDescriptor
         {
-            Index = IndexType.VAETCurrent,
-            From = Datom(EntityId.MinValueNoPartition, attr, value, TxId.MinValue, false, attributeCache),
-            To = Datom(EntityId.MaxValueNoPartition, attr, value, TxId.MaxValue, false, attributeCache)
+            From = Datom(EntityId.MinValueNoPartition, attr, value, TxId.MinValue, false, attributeCache, IndexType.VAETCurrent),
+            To = Datom(EntityId.MaxValueNoPartition, attr, value, TxId.MaxValue, false, attributeCache, IndexType.VAETCurrent)
         };
     }
 
@@ -156,9 +155,8 @@ public readonly struct SliceDescriptor
     {
         return new SliceDescriptor
         {
-            Index = IndexType.VAETCurrent,
-            From = Datom(EntityId.MinValueNoPartition, referenceAttribute, pointingTo, TxId.MinValue, false),
-            To = Datom(EntityId.MaxValueNoPartition, referenceAttribute, pointingTo, TxId.MaxValue, false)
+            From = Datom(EntityId.MinValueNoPartition, referenceAttribute, pointingTo, TxId.MinValue, false, IndexType.VAETCurrent),
+            To = Datom(EntityId.MaxValueNoPartition, referenceAttribute, pointingTo, TxId.MaxValue, false, IndexType.VAETCurrent)
         };
     }
 
@@ -170,9 +168,8 @@ public readonly struct SliceDescriptor
     {
         return new SliceDescriptor
         {
-            Index = indexType,
-            From = Datom(EntityId.MinValueNoPartition, referenceAttribute, TxId.MinValue, false),
-            To = Datom(EntityId.MaxValueNoPartition, referenceAttribute, TxId.MaxValue, false)
+            From = Datom(EntityId.MinValueNoPartition, referenceAttribute, TxId.MinValue, false, indexType),
+            To = Datom(EntityId.MaxValueNoPartition, referenceAttribute, TxId.MaxValue, false, indexType)
         };
     }
 
@@ -184,26 +181,11 @@ public readonly struct SliceDescriptor
     {
         return new SliceDescriptor
         {
-            Index = IndexType.EAVTCurrent,
-            From = Datom(e, a, TxId.MinValue, false),
-            To = Datom(e, AttributeId.From((ushort)(a.Value + 1)), TxId.MaxValue, false)
+            From = Datom(e, a, TxId.MinValue, false, IndexType.EAVTCurrent),
+            To = Datom(e, AttributeId.From((ushort)(a.Value + 1)), TxId.MaxValue, false, IndexType.EAVTCurrent)
         };
     }
-
-    /// <summary>
-    /// Creates a slice descriptor that points only to the specific attribute
-    /// </summary>
-    public static SliceDescriptor Create(IndexType index, ReadOnlySpan<byte> span)
-    {
-        var array = span.ToArray();
-        return new SliceDescriptor
-        {
-            Index = index,
-            From = new Datom(array),
-            To = new Datom(array)
-        };
-    }
-
+    
     /// <summary>
     /// Creates a slice descriptor for the given exactly from the given index
     /// </summary>
@@ -211,9 +193,8 @@ public readonly struct SliceDescriptor
     {
         return new SliceDescriptor
         {
-            Index = index,
-            From = datom,
-            To = datom,
+            From = datom.WithIndex(index),
+            To = datom.WithIndex(index)
         };
     }
 
@@ -226,9 +207,8 @@ public readonly struct SliceDescriptor
         var attrId = attributeCache.GetAttributeId(attr.Id);
         return new SliceDescriptor
         {
-            Index = IndexType.AEVTCurrent,
-            From = Datom(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false),
-            To = Datom(EntityId.MaxValueNoPartition, attrId, TxId.MaxValue, false)
+            From = Datom(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false, IndexType.AEVTCurrent),
+            To = Datom(EntityId.MaxValueNoPartition, attrId, TxId.MaxValue, false, IndexType.AEVTCurrent)
         };
     }
 
@@ -240,9 +220,8 @@ public readonly struct SliceDescriptor
     {
         return new SliceDescriptor
         {
-            Index = IndexType.VAETCurrent,
-            From = Datom(EntityId.MinValueNoPartition, AttributeId.Min, pointingTo, TxId.MinValue, false),
-            To = Datom(EntityId.MaxValueNoPartition, AttributeId.Max, pointingTo, TxId.MaxValue, false)
+            From = Datom(EntityId.MinValueNoPartition, AttributeId.Min, pointingTo, TxId.MinValue, false, IndexType.VAETCurrent),
+            To = Datom(EntityId.MaxValueNoPartition, AttributeId.Max, pointingTo, TxId.MaxValue, false, IndexType.VAETCurrent)
         };
     }
 
@@ -271,9 +250,8 @@ public readonly struct SliceDescriptor
 
             return new SliceDescriptor
             {
-                Index = index,
-                From = new Datom(from),
-                To = new Datom(to)
+                From = new Datom(from).WithIndex(index),
+                To = new Datom(to).WithIndex(index)
             };
         }
         else
@@ -284,9 +262,8 @@ public readonly struct SliceDescriptor
             to.AsSpan().Fill(byte.MaxValue);
             return new SliceDescriptor
             {
-                Index = index,
-                From = new Datom(from),
-                To = new Datom(to)
+                From = new Datom(from).WithIndex(index),
+                To = new Datom(to).WithIndex(index)
             };
         }
 
@@ -295,20 +272,22 @@ public readonly struct SliceDescriptor
     /// <summary>
     /// Creates a datom with no value from the given parts
     /// </summary>
-    public static Datom Datom(EntityId e, AttributeId a, TxId id, bool isRetract)
+    public static Datom Datom(EntityId e, AttributeId a, TxId id, bool isRetract, IndexType indexType = IndexType.None)
     {
-        KeyPrefix prefix = new(e, a, id, isRetract, ValueTag.Null);
+        KeyPrefix prefix = new(e, a, id, isRetract, ValueTag.Null, indexType);
         return new Datom(prefix, ReadOnlyMemory<byte>.Empty);
     }
 
     /// <summary>
     /// Creates a with a value from the given attribute and value
     /// </summary>
-    public static Datom Datom<THighLevel>(EntityId e, IWritableAttribute<THighLevel> a, THighLevel value, TxId tx, bool isRetract, AttributeCache attributeCache)
+    public static Datom Datom<THighLevel>(EntityId e, IWritableAttribute<THighLevel> a, THighLevel value, TxId tx, bool isRetract, AttributeCache attributeCache, 
+        IndexType indexType = IndexType.None)
     {
+        // TODO: optimize this
         using var pooled = new PooledMemoryBufferWriter();
         a.Write(e, attributeCache, value, tx, isRetract, pooled);
-        return new Datom(pooled.WrittenMemory.ToArray());
+        return new Datom(pooled.WrittenMemory.ToArray()).WithIndex(indexType);
     }
 
     /// <summary>
@@ -318,20 +297,19 @@ public readonly struct SliceDescriptor
     {
         return new SliceDescriptor
         {
-            Index = IndexType.EAVTCurrent,
-            From = Datom(from, AttributeId.Min, TxId.MinValue, false),
-            To = Datom(to, AttributeId.Max, TxId.MaxValue, false)
+            From = Datom(from, AttributeId.Min, TxId.MinValue, false, IndexType.EAVTCurrent),
+            To = Datom(to, AttributeId.Max, TxId.MaxValue, false, IndexType.EAVTCurrent)
         };
     }
 
     /// <summary>
     /// Creates a datom with no value from the given parts
     /// </summary>
-    public static Datom Datom(EntityId e, AttributeId a, EntityId value, TxId id, bool isRetract)
+    public static Datom Datom(EntityId e, AttributeId a, EntityId value, TxId id, bool isRetract, IndexType indexType = IndexType.None)
     {
         var data = new Memory<byte>(GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + sizeof(ulong)));
         var span = data.Span;
-        var prefix = new KeyPrefix(e, a, id, isRetract, ValueTag.Reference);
+        var prefix = new KeyPrefix(e, a, id, isRetract, ValueTag.Reference, indexType);
         MemoryMarshal.Write(span, prefix);
         MemoryMarshal.Write(span.SliceFast(KeyPrefix.Size), value);
         return new Datom(data);
@@ -347,9 +325,8 @@ public readonly struct SliceDescriptor
         
         return new SliceDescriptor
         {
-            Index = indexType,
-            From = Datom(eid, AttributeId.Min, TxId.MinValue, false),
-            To = Datom(eid, AttributeId.Max, TxId.MaxValue, false)
+            From = Datom(eid, AttributeId.Min, TxId.MinValue, false, indexType),
+            To = Datom(eid, AttributeId.Max, TxId.MaxValue, false, indexType)
         };
     }
 }

@@ -4,7 +4,6 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Storage.Abstractions;
 using Reloaded.Memory.Extensions;
 using RocksDbSharp;
 using IWriteBatch = NexusMods.MnemonicDB.Storage.Abstractions.IWriteBatch;
@@ -23,8 +22,9 @@ public class Batch(RocksDb db) : IWriteBatch
     
     
     /// <inheritdoc />
-    public void Add(IndexType store, in Datom datom)
+    public void Add(IndexType store, Datom datom)
     {
+        datom = datom with { Prefix = datom.Prefix with { Index = store } };
         if (datom.Prefix.ValueTag == ValueTag.HashedBlob)
         {
             var outOfBandData = datom.ValueSpan.SliceFast(Serializer.HashedBlobHeaderSize);
@@ -55,8 +55,9 @@ public class Batch(RocksDb db) : IWriteBatch
     }
     
     /// <inheritdoc />
-    public void Delete(IndexType store, in Datom datom)
+    public void Delete(IndexType store, Datom datom)
     {
+        datom = datom with { Prefix = datom.Prefix with { Index = store } };
         if (datom.Prefix.ValueTag == ValueTag.HashedBlob)
         {
            Span<byte> keySpan = stackalloc byte[Serializer.HashedBlobPrefixSize];

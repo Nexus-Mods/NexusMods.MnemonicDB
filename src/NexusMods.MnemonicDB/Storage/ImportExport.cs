@@ -40,6 +40,9 @@ public partial class DatomStore
         
         foreach (var indexType in Enum.GetValues<IndexType>())
         {
+            if (indexType == IndexType.None)
+                continue;
+            
             var slice = SliceDescriptor.Create(indexType);
             var chunks = snapshot.DatomsChunked(slice, ChunkSize);
 
@@ -105,6 +108,9 @@ public partial class DatomStore
         using var batch = Backend.CreateBatch();
         foreach (var index in Enum.GetValues<IndexType>())
         {
+            if (index == IndexType.None)
+                continue;
+            
             var slice = SliceDescriptor.Create(index);
             var datoms = snapshot.Datoms(slice);
             foreach (var datom in datoms)

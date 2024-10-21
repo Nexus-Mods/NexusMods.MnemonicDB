@@ -57,7 +57,9 @@ public struct NextIdCache
             return partitionId.MakeEntityId(this[partition]);
         }
 
-        var descriptor = SliceDescriptor.Create(partitionId.MakeEntityId(0), partitionId.MakeEntityId(ulong.MaxValue)).Reversed();
+        var descriptor = SliceDescriptor.Create(partitionId.MakeEntityId(0), 
+            partitionId.MakeEntityId(ulong.MaxValue))
+            .Reversed();
 
         var lastEnt = snapshot.DatomsChunked(descriptor, 1)
             .SelectMany(c => c)

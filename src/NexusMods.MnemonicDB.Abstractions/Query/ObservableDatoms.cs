@@ -115,10 +115,12 @@ public static class ObservableDatoms
         
         AttributeId previousAid = default;
 
+        var index = descriptor.Index;
+
         
         for (int i = 0; i < updates.Count; i++) 
         {
-            var datom = updates[i];
+            var datom = updates[i].WithIndex(index);
             if (!descriptor.Includes(datom))
                 continue;
             var isMany = cache.IsCardinalityMany(datom.A);
