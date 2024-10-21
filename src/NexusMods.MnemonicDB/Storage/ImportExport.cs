@@ -73,17 +73,16 @@ public partial class DatomStore
         {
             while (true)
             {
-                var indexType = (IndexType)binaryReader.ReadByte();
+                var index = (IndexType)binaryReader.ReadByte();
                 var datomCount = binaryReader.ReadUInt32();
                 var chunkSize = binaryReader.ReadUInt32();
                 var data = binaryReader.ReadBytes((int)chunkSize);
                 var segment = new IndexSegment((int)datomCount, data.AsMemory(), AttributeCache);
 
                 using var batch = Backend.CreateBatch();
-                var index = Backend.GetIndex(indexType);
 
                 foreach (var datom in segment)
-                    index.Put(batch, datom);
+                    batch.Add(index, datom);
 
                 batch.Commit();
                 importedCount += (int)datomCount;
@@ -110,7 +109,7 @@ public partial class DatomStore
             var datoms = snapshot.Datoms(slice);
             foreach (var datom in datoms)
             {
-                Backend.GetIndex(index).Delete(batch, datom);
+                batch.Delete(index, datom);
                 datomCount++;
             }
         }

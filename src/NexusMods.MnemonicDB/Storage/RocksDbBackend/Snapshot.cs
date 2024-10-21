@@ -25,7 +25,7 @@ internal class Snapshot(Backend backend, AttributeCache attributeCache) : ISnaps
 
         using var builder = new IndexSegmentBuilder(attributeCache);
 
-        using var iterator = backend.Db!.NewIterator(backend.Stores[descriptor.Index].Handle, options);
+        using var iterator = backend.Db!.NewIterator(null, options);
         if (reverse)
             iterator.SeekToLast();
         else
@@ -70,7 +70,7 @@ internal class Snapshot(Backend backend, AttributeCache attributeCache) : ISnaps
 
         using var builder = new IndexSegmentBuilder(attributeCache);
 
-        using var iterator = backend.Db!.NewIterator(backend.Stores[descriptor.Index].Handle, options);
+        using var iterator = backend.Db!.NewIterator(null, options);
         if (reverse)
             iterator.SeekToLast();
         else

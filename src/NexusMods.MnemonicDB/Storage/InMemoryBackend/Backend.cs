@@ -10,49 +10,36 @@ using IWriteBatch = NexusMods.MnemonicDB.Storage.Abstractions.IWriteBatch;
 
 namespace NexusMods.MnemonicDB.Storage.InMemoryBackend;
 
+using IndexData = ImmutableSortedSet<byte[]>;
+
 public class Backend : IStoreBackend
 {
-    private readonly IIndex[] _indexes;
-
+    private IndexData _index;
     private readonly AttributeCache _attributeCache;
-    private readonly IndexStore[] _stores;
 
     public Backend()
     {
         _attributeCache = new AttributeCache();
-        _stores = new IndexStore[Enum.GetValues<IndexType>().Select(i => (int)i).Max() + 1];
-        _indexes = new IIndex[Enum.GetValues<IndexType>().Select(i => (int)i).Max() + 1];
+        _index = IndexData.Empty.WithComparer(new GlobalComparer());
     }
 
     public AttributeCache AttributeCache => _attributeCache;
 
     public IWriteBatch CreateBatch()
     {
-        return new Batch(_stores);
+        return new Batch(this);
+    }
+    
+    internal void Alter(Func<IndexData, IndexData> alter)
+    {
+        _index = alter(_index);
     }
 
     public void Init(AbsolutePath location) { }
-
-    public void DeclareIndex<TComparator>(IndexType name)
-        where TComparator : IDatomComparator
-    {
-        var store = new IndexStore(name);
-        _stores[(int)name] = store;
-        var index = new Index<TComparator>(store);
-        store.Init(index);
-        _indexes[(int)name] = index;
-    }
-
-    public IIndex GetIndex(IndexType name)
-    {
-        return _indexes[(int)name];
-    }
-
+    
     public ISnapshot GetSnapshot()
     {
-        return new Snapshot(_indexes
-                .Select(i => i == null ? ImmutableSortedSet<byte[]>.Empty : ((IInMemoryIndex)i).Set).ToArray(),
-            _attributeCache);
+        return new Snapshot(_index, AttributeCache);
     }
 
     public void Dispose() { }

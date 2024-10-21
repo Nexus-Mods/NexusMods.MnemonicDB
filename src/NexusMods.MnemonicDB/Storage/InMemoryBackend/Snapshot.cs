@@ -1,22 +1,26 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
+using NexusMods.MnemonicDB.Storage.Abstractions;
 
 namespace NexusMods.MnemonicDB.Storage.InMemoryBackend;
 
+using IndexData = ImmutableSortedSet<byte[]>;
+
 public class Snapshot : ISnapshot
 {
-    private readonly ImmutableSortedSet<byte[]>[] _indexes;
+    private readonly IndexData _index;
     private readonly AttributeCache _attributeCache;
 
-    public Snapshot(ImmutableSortedSet<byte[]>[] indexes, AttributeCache attributeCache)
+    public Snapshot(IndexData index, AttributeCache attributeCache)
     {
         _attributeCache = attributeCache;
-        _indexes = indexes;
+        _index = index;
     }
 
     public void Dispose() { }
@@ -24,14 +28,19 @@ public class Snapshot : ISnapshot
     /// <inheritdoc />
     public IndexSegment Datoms(SliceDescriptor descriptor)
     {
-        var index = _indexes[(int)descriptor.Index];
         var isReverse = descriptor.IsReverse;
-        int increment = 1;
+        var increment = 1;
         int startIndex;
-
+        
+        var fromIDatom = new IndexDatom
+        {
+            Index = descriptor.Index,
+            Datom = descriptor.From
+        };
+        
+        var indexOf = _index.IndexOf(fromIDatom.ToArray());
         if (!isReverse)
         {
-            var indexOf = index.IndexOf(descriptor.From.ToArray());
             if (indexOf >= 0)
                 startIndex = indexOf;
             else
@@ -40,7 +49,6 @@ public class Snapshot : ISnapshot
         else
         {
             increment = -1;
-            var indexOf = index.IndexOf(descriptor.From.ToArray());
             if (indexOf >= 0)
                 startIndex = indexOf;
             else
@@ -51,15 +59,15 @@ public class Snapshot : ISnapshot
 
         while (true)
         {
-            if (startIndex < 0 || startIndex >= index.Count)
+            if (startIndex < 0 || startIndex >= _index.Count)
                 break;
             
-            var current = index.ElementAt(startIndex);
-            var datom = new Datom(current);
-            if (!descriptor.Includes(in datom))
+            var current = _index.ElementAt(startIndex);
+            var datom = new Datom(current.AsMemory()[1..]);
+            if ((IndexType)current[0] != descriptor.Index || !descriptor.Includes(in datom))
                 break;
             
-            segmentBuilder.Add(current);
+            segmentBuilder.Add(datom);
             startIndex += increment;
 
         } 
@@ -69,15 +77,20 @@ public class Snapshot : ISnapshot
     /// <inheritdoc />
     public IEnumerable<IndexSegment> DatomsChunked(SliceDescriptor descriptor, int chunkSize)
     {
-        var index = _indexes[(int)descriptor.Index];
         var isReverse = descriptor.IsReverse;
         var includesDescriptor = descriptor;
-        int increment = 1;
+        var increment = 1;
         int startIndex;
-
+        
+        var fromIDatom = new IndexDatom
+        {
+            Index = descriptor.Index,
+            Datom = descriptor.From
+        };
+        
+        var indexOf = _index.IndexOf(fromIDatom.ToArray());
         if (!isReverse)
         {
-            var indexOf = index.IndexOf(descriptor.From.ToArray());
             if (indexOf >= 0)
                 startIndex = indexOf;
             else
@@ -85,9 +98,7 @@ public class Snapshot : ISnapshot
         }
         else
         {
-            includesDescriptor = descriptor.Reversed();
             increment = -1;
-            var indexOf = index.IndexOf(descriptor.From.ToArray());
             if (indexOf >= 0)
                 startIndex = indexOf;
             else
@@ -98,11 +109,11 @@ public class Snapshot : ISnapshot
 
         while (true)
         {
-            if (startIndex < 0 || startIndex >= index.Count)
+            if (startIndex < 0 || startIndex >= _index.Count)
                 break;
             
-            var current = index.ElementAt(startIndex);
-            var datom = new Datom(current);
+            var current = _index.ElementAt(startIndex);
+            var datom = new Datom(current.AsMemory()[1..]);
             if (!includesDescriptor.Includes(in datom))
                 break;
             

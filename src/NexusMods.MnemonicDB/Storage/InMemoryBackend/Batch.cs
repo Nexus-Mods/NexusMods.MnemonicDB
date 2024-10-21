@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using Microsoft.CSharp.RuntimeBinder;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -9,9 +10,9 @@ using IWriteBatch = NexusMods.MnemonicDB.Storage.Abstractions.IWriteBatch;
 
 namespace NexusMods.MnemonicDB.Storage.InMemoryBackend;
 
-public class Batch(IndexStore[] stores) : IWriteBatch
+internal class Batch(Backend backend) : IWriteBatch
 {
-    private readonly Dictionary<IndexType, List<(bool IsDelete, byte[] Data)>> _datoms = new();
+    private readonly List<(bool IsDelete, byte[] Data)> _datoms = [];
 
     /// <inheritdoc />
     public void Dispose() { }
@@ -19,40 +20,39 @@ public class Batch(IndexStore[] stores) : IWriteBatch
     /// <inheritdoc />
     public void Commit()
     {
-        foreach (var (index, datoms) in _datoms)
+        backend.Alter(oldSet =>
         {
-            var store = stores[(int)index];
-            store.Commit(datoms);
-        }
+            var set = oldSet.ToBuilder();
+            foreach (var (isDelete, data) in _datoms)
+            {
+                if (isDelete)
+                    set.Remove(data);
+                else
+                    set.Add(data);
+            }
+            return set.ToImmutable();
+        });
     }
     
     /// <inheritdoc />
-    public void Add(IIndexStore store, in Datom datom)
+    public void Add(IndexType index, in Datom datom)
     {
-        if (store is not IndexStore indexStore)
-            throw new ArgumentException("Invalid store type", nameof(store));
-
-        if (!_datoms.TryGetValue(indexStore.Type, out var datoms))
+        var iDatom = new IndexDatom
         {
-            datoms = new List<(bool IsDelete, byte[] Data)>();
-            _datoms.Add(indexStore.Type, datoms);
-        }
-
-        datoms.Add((false, datom.ToArray()));
+            Index = index,
+            Datom = datom,
+        };
+        _datoms.Add((false, iDatom.ToArray()));
     }
     
     /// <inheritdoc />
-    public void Delete(IIndexStore store, in Datom datom)
+    public void Delete(IndexType index, in Datom datom)
     {
-        if (store is not IndexStore indexStore)
-            throw new ArgumentException("Invalid store type", nameof(store));
-
-        if (!_datoms.TryGetValue(indexStore.Type, out var datoms))
+        var iDatom = new IndexDatom
         {
-            datoms = new List<(bool IsDelete, byte[] Data)>();
-            _datoms.Add(indexStore.Type, datoms);
-        }
-
-        datoms.Add((true, datom.ToArray()));
+            Index = index,
+            Datom = datom,
+        };
+        _datoms.Add((true, iDatom.ToArray()));
     }
 }

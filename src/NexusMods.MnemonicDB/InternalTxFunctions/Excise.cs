@@ -2,6 +2,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage;
+using static NexusMods.MnemonicDB.Abstractions.IndexType;
 
 namespace NexusMods.MnemonicDB.InternalTxFunctions;
 
@@ -25,7 +26,7 @@ internal class Excise(EntityId[]  ids) : AInternalFn
             currentDatomsBuilder.Add(segment);
             
             // All History datoms
-            segment = snapshot.Datoms(SliceDescriptor.Create(IndexType.EAVTHistory, entityId));
+            segment = snapshot.Datoms(SliceDescriptor.Create(EAVTHistory, entityId));
             historyDatomsBuilder.Add(segment);
         }
         
@@ -39,20 +40,20 @@ internal class Excise(EntityId[]  ids) : AInternalFn
         // Delete all datoms in the history and current segments
         foreach (var datom in historyDatoms)
         {
-            store.EAVTHistory.Delete(batch, datom);
-            store.AEVTHistory.Delete(batch, datom);
-            store.VAETHistory.Delete(batch, datom);
-            store.AVETHistory.Delete(batch, datom);
-            store.TxLogIndex.Delete(batch, datom);
+            batch.Delete(EAVTHistory, datom);
+            batch.Delete(AEVTHistory, datom);
+            batch.Delete(VAETHistory, datom);
+            batch.Delete(AVETHistory, datom);
+            batch.Delete(TxLog, datom);
         }
 
         foreach (var datom in currentDatoms)
         {
-            store.EAVTCurrent.Delete(batch, datom);
-            store.AEVTCurrent.Delete(batch, datom);
-            store.VAETCurrent.Delete(batch, datom);
-            store.AVETCurrent.Delete(batch, datom);
-            store.TxLogIndex.Delete(batch, datom);
+            batch.Delete(EAVTCurrent, datom);
+            batch.Delete(AEVTCurrent, datom);
+            batch.Delete(VAETCurrent, datom);
+            batch.Delete(AVETCurrent, datom);
+            batch.Delete(TxLog, datom);
         }
         batch.Commit();
 
