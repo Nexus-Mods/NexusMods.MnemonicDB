@@ -1,12 +1,13 @@
 ﻿using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 
 namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 
 /// <summary>
 /// Represents a collection of references to other entities.
 /// </summary>
-public class ReferencesAttribute(string ns, string name) : CollectionAttribute<EntityId, EntityId>(ValueTag.Reference, ns, name)
+public class ReferencesAttribute(string ns, string name) : CollectionAttribute<EntityId, EntityId, EntityIdSerializer>(ns, name)
 {
     /// <inheritdoc />
     protected override EntityId ToLowLevel(EntityId value) => value;

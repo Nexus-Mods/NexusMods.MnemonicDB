@@ -26,8 +26,7 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
     {
         return TempId(PartitionId.Entity);
     }
-
-
+    
     /// <inhertdoc />
     public EntityId TempId(PartitionId partition)
     {
@@ -38,7 +37,13 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
     }
 
     /// <inheritdoc />
-    public void Add<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val, bool isRetract = false)
+    public void Add<TVal, TAttribute>(EntityId entityId, TAttribute attribute, TVal val, bool isRetract = false) 
+        where TAttribute : IWritableAttribute<TVal>
+    {
+        datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
+    }
+
+    public void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false) where TSerializer : IValueSerializer<TLowLevel>
     {
         datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
     }

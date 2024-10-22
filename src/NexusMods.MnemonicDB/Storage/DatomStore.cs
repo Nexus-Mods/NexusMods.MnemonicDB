@@ -19,20 +19,12 @@ using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.InternalTxFunctions;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using Reloaded.Memory.Extensions;
+using static NexusMods.MnemonicDB.Abstractions.IndexType;
 
 namespace NexusMods.MnemonicDB.Storage;
 
 public sealed partial class DatomStore : IDatomStore
 {
-    internal readonly IIndex AEVTCurrent;
-    internal readonly IIndex AEVTHistory;
-    internal readonly IIndex AVETCurrent;
-    internal readonly IIndex AVETHistory;
-    internal readonly IIndex EAVTCurrent;
-    internal readonly IIndex EAVTHistory;
-    internal readonly IIndex VAETCurrent;
-    internal readonly IIndex VAETHistory;
-    internal readonly IIndex TxLogIndex;
     internal readonly IStoreBackend Backend;
     internal ISnapshot CurrentSnapshot;
     
@@ -108,28 +100,8 @@ public sealed partial class DatomStore : IDatomStore
 
         Logger = logger;
         _settings = settings;
-
-        Backend.DeclareEAVT(IndexType.EAVTCurrent);
-        Backend.DeclareEAVT(IndexType.EAVTHistory);
-        Backend.DeclareAEVT(IndexType.AEVTCurrent);
-        Backend.DeclareAEVT(IndexType.AEVTHistory);
-        Backend.DeclareVAET(IndexType.VAETCurrent);
-        Backend.DeclareVAET(IndexType.VAETHistory);
-        Backend.DeclareAVET(IndexType.AVETCurrent);
-        Backend.DeclareAVET(IndexType.AVETHistory);
-        Backend.DeclareTxLog(IndexType.TxLog);
-
+        
         Backend.Init(settings.Path);
-
-        TxLogIndex = Backend.GetIndex(IndexType.TxLog);
-        EAVTCurrent = Backend.GetIndex(IndexType.EAVTCurrent);
-        EAVTHistory = Backend.GetIndex(IndexType.EAVTHistory);
-        AEVTCurrent = Backend.GetIndex(IndexType.AEVTCurrent);
-        AEVTHistory = Backend.GetIndex(IndexType.AEVTHistory);
-        VAETCurrent = Backend.GetIndex(IndexType.VAETCurrent);
-        VAETHistory = Backend.GetIndex(IndexType.VAETHistory);
-        AVETCurrent = Backend.GetIndex(IndexType.AVETCurrent);
-        AVETHistory = Backend.GetIndex(IndexType.AVETHistory);
 
         if (bootstrap) Bootstrap();
     }
@@ -449,7 +421,7 @@ public sealed partial class DatomStore : IDatomStore
             _writer.Advance(valueSpan.Length);
         }
 
-        var newSpan = _writer.GetWrittenSpan();
+        var newSpan = _writer.AsDatom();
 
         if (keyPrefix.IsRetract)
         {
@@ -466,7 +438,7 @@ public sealed partial class DatomStore : IDatomStore
                 break;
             case PrevState.Exists:
                 SwitchPrevToRetraction();
-                ProcessRetract(batch, attrId, _retractWriter.GetWrittenSpan(), CurrentSnapshot!);
+                ProcessRetract(batch, attrId, _retractWriter.AsDatom(), CurrentSnapshot!);
                 ProcessAssert(batch, attrId, newSpan);
                 break;
         }
@@ -482,7 +454,7 @@ public sealed partial class DatomStore : IDatomStore
         MemoryMarshal.Write(_retractWriter.GetWrittenSpanWritable(), prevKey);
     }
 
-    private void ProcessRetract(IWriteBatch batch, AttributeId attrId, ReadOnlySpan<byte> datom, ISnapshot iterator)
+    private void ProcessRetract(IWriteBatch batch, AttributeId attrId, Datom datom, ISnapshot iterator)
     {
         _prevWriter.Reset();
         _prevWriter.Write(datom);
@@ -499,9 +471,8 @@ public sealed partial class DatomStore : IDatomStore
 
         var sliceDescriptor = new SliceDescriptor
         {
-            Index = IndexType.EAVTCurrent,
-            From = low,
-            To = high
+            From = low.WithIndex(EAVTCurrent),
+            To = high.WithIndex(EAVTCurrent),
         };
 
         var prevDatom = iterator.Datoms(sliceDescriptor)
@@ -515,15 +486,15 @@ public sealed partial class DatomStore : IDatomStore
         #endif
 
         // Delete the datom from the current indexes
-        EAVTCurrent.Delete(batch, prevDatom);
-        AEVTCurrent.Delete(batch, prevDatom);
+        batch.Delete(EAVTCurrent, prevDatom);
+        batch.Delete(AEVTCurrent, prevDatom);
         if (_attributeCache.IsReference(attrId))
-            VAETCurrent.Delete(batch, prevDatom);
+            batch.Delete(VAETCurrent, prevDatom);
         if (_attributeCache.IsIndexed(attrId))
-            AVETCurrent.Delete(batch, prevDatom);
+            batch.Delete(AVETCurrent, prevDatom);
         
         // Put the retraction in the log
-        TxLogIndex.Put(batch, datom);
+        batch.Add(IndexType.TxLog, datom);
         
         // If the attribute is a no history attribute, we don't need to put the retraction in the history indexes
         // so we can skip the rest of the processing
@@ -531,52 +502,52 @@ public sealed partial class DatomStore : IDatomStore
             return;
 
         // Move the datom to the history index and also record the retraction
-        EAVTHistory.Put(batch, prevDatom);
-        EAVTHistory.Put(batch, datom);
+        batch.Add(EAVTHistory, prevDatom);
+        batch.Add(EAVTHistory, datom);
 
         // Move the datom to the history index and also record the retraction
-        AEVTHistory.Put(batch, prevDatom);
-        AEVTHistory.Put(batch, datom);
+        batch.Add(AEVTHistory, prevDatom);
+        batch.Add(AEVTHistory, datom);
 
         if (_attributeCache.IsReference(attrId))
         {
-            VAETHistory.Put(batch, prevDatom);
-            VAETHistory.Put(batch, datom);
+            batch.Add(VAETHistory, prevDatom);
+            batch.Add(VAETHistory, datom);
         }
 
         if (_attributeCache.IsIndexed(attrId))
         {
-            AVETHistory.Put(batch, prevDatom);
-            AVETHistory.Put(batch, datom);
+            batch.Add(AVETHistory, prevDatom);
+            batch.Add(AVETHistory, datom);
         }
     }
 
-    private static unsafe void RetractionSantiyCheck(ReadOnlySpan<byte> datom, Datom prevDatom)
+    private static unsafe void RetractionSantiyCheck(Datom datom, Datom prevDatom)
     {
         Debug.Assert(prevDatom.Valid, "Previous datom should exist");
         var debugKey = prevDatom.Prefix;
 
-        var otherPrefix = MemoryMarshal.Read<KeyPrefix>(datom);
+        var otherPrefix = datom.Prefix;
         Debug.Assert(debugKey.E == otherPrefix.E, "Entity should match");
         Debug.Assert(debugKey.A == otherPrefix.A, "Attribute should match");
 
         fixed (byte* aTmp = prevDatom.ValueSpan)
-        fixed (byte* bTmp = datom.SliceFast(sizeof(KeyPrefix)))
+        fixed (byte* bTmp = datom.ValueSpan)
         {
-            var cmp = Serializer.Compare(prevDatom.Prefix.ValueTag, aTmp, prevDatom.ValueSpan.Length, otherPrefix.ValueTag, bTmp, datom.Length - sizeof(KeyPrefix));
+            var cmp = Serializer.Compare(prevDatom.Prefix.ValueTag, aTmp, prevDatom.ValueSpan.Length, otherPrefix.ValueTag, bTmp, datom.ValueSpan.Length);
             Debug.Assert(cmp == 0, "Values should match");
         }
     }
 
-    private void ProcessAssert(IWriteBatch batch, AttributeId attributeId, ReadOnlySpan<byte> datom)
+    private void ProcessAssert(IWriteBatch batch, AttributeId attributeId, Datom datom)
     {
-        TxLogIndex.Put(batch, datom);
-        EAVTCurrent.Put(batch, datom);
-        AEVTCurrent.Put(batch, datom);
+        batch.Add(IndexType.TxLog, datom);
+        batch.Add(EAVTCurrent, datom);
+        batch.Add(AEVTCurrent, datom);
         if (_attributeCache.IsReference(attributeId))
-            VAETCurrent.Put(batch, datom);
+            batch.Add(VAETCurrent, datom);
         if (_attributeCache.IsIndexed(attributeId))
-            AVETCurrent.Put(batch, datom);
+            batch.Add(AVETCurrent, datom);
     }
 
     /// <summary>
@@ -589,15 +560,15 @@ public sealed partial class DatomStore : IDatomStore
         Duplicate
     }
 
-    private unsafe PrevState GetPreviousState(bool isRemapped, AttributeId attrId, ISnapshot snapshot, ReadOnlySpan<byte> span)
+    private unsafe PrevState GetPreviousState(bool isRemapped, AttributeId attrId, ISnapshot snapshot, Datom span)
     {
         if (isRemapped) return PrevState.NotExists;
 
-        var keyPrefix = MemoryMarshal.Read<KeyPrefix>(span);
+        var keyPrefix = span.Prefix;
 
         if (_attributeCache.IsCardinalityMany(attrId))
         {
-            var sliceDescriptor = SliceDescriptor.Exact(IndexType.EAVTCurrent, span);
+            var sliceDescriptor = SliceDescriptor.Exact(EAVTCurrent, span);
             var found = snapshot.Datoms(sliceDescriptor)
                 .FirstOrDefault();
             if (!found.Valid) return PrevState.NotExists;
@@ -605,11 +576,10 @@ public sealed partial class DatomStore : IDatomStore
                 return PrevState.NotExists;
 
             var aSpan = found.ValueSpan;
-            var bSpan = span.SliceFast(sizeof(KeyPrefix));
             fixed (byte* a = aSpan)
-            fixed (byte* b = bSpan)
+            fixed (byte* b = span.ValueSpan)
             {
-                var cmp = Serializer.Compare(found.Prefix.ValueTag, a, aSpan.Length, keyPrefix.ValueTag, b, bSpan.Length);
+                var cmp = Serializer.Compare(found.Prefix.ValueTag, a, aSpan.Length, keyPrefix.ValueTag, b, span.ValueSpan.Length);
                 return cmp == 0 ? PrevState.Duplicate : PrevState.NotExists;
             }
         }
@@ -627,8 +597,8 @@ public sealed partial class DatomStore : IDatomStore
                 return PrevState.NotExists;
 
             var aSpan = datom.ValueSpan;
-            var bSpan = span.SliceFast(sizeof(KeyPrefix));
-            var bPrefix = MemoryMarshal.Read<KeyPrefix>(span);
+            var bSpan = span.ValueSpan;
+            var bPrefix = span.Prefix;
             fixed (byte* a = aSpan)
             fixed (byte* b = bSpan)
             {

@@ -16,8 +16,8 @@ internal class HistorySnapshot(ISnapshot inner, TxId asOfTxId, AttributeCache at
     public IndexSegment Datoms(SliceDescriptor descriptor)
     {
         // TODO: stop using IEnumerable and use IndexSegment directly
-        var current = inner.Datoms(descriptor with {Index = descriptor.Index.CurrentVariant()});
-        var history = inner.Datoms(descriptor with {Index = descriptor.Index.HistoryVariant()});
+        var current = inner.Datoms(descriptor.WithIndex(descriptor.Index.CurrentVariant()));
+        var history = inner.Datoms(descriptor.WithIndex(descriptor.Index.HistoryVariant()));
         var comparatorFn = descriptor.Index.GetComparator();
 
         using var builder = new IndexSegmentBuilder(attributeCache);
@@ -36,8 +36,8 @@ internal class HistorySnapshot(ISnapshot inner, TxId asOfTxId, AttributeCache at
     public IEnumerable<IndexSegment> DatomsChunked(SliceDescriptor descriptor, int chunkSize)
     {
         // TODO: stop using IEnumerable and use IndexSegment directly
-        var current = inner.DatomsChunked(descriptor with {Index = descriptor.Index.CurrentVariant()}, chunkSize).SelectMany(c => c);
-        var history = inner.DatomsChunked(descriptor with {Index = descriptor.Index.HistoryVariant()}, chunkSize).SelectMany(c => c);
+        var current = inner.DatomsChunked(descriptor.WithIndex(descriptor.Index.CurrentVariant()), chunkSize).SelectMany(c => c);
+        var history = inner.DatomsChunked(descriptor.WithIndex(descriptor.Index.HistoryVariant()), chunkSize).SelectMany(c => c);
         var comparatorFn = descriptor.Index.GetComparator();
 
         using var builder = new IndexSegmentBuilder(attributeCache);

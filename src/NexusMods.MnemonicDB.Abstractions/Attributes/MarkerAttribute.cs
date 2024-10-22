@@ -1,5 +1,6 @@
 ﻿using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 
 namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 
@@ -9,7 +10,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 /// </summary>
 /// <param name="ns"></param>
 /// <param name="name"></param>
-public class MarkerAttribute(string ns, string name) : Attribute<Null, Null>(ValueTag.Null, ns, name)
+public class MarkerAttribute(string ns, string name) : Attribute<Null, Null, NullSerializer>(ns, name)
 {
     /// <inheritdoc />
     protected override Null ToLowLevel(Null value) => value;

@@ -7,6 +7,9 @@ namespace NexusMods.MnemonicDB.Abstractions;
 
 public enum IndexType : byte
 {
+    // No specified index, default for datoms
+    None = 0,
+    
     // Transaction log, the final source of truth, used
     // for replaying the database
     TxLog = 1,

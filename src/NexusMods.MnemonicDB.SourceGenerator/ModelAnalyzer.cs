@@ -130,7 +130,7 @@ public class ModelAnalyzer
                 };
                 BackReferences.Add(analyzedAttribute);
             }
-            else if (TryGetAttributeTypes(fieldSymbol, out var highLevel, out var lowLevel, out var flags))
+            else if (TryGetAttributeTypes(fieldSymbol, out var highLevel, out var lowLevel, out var serializer, out var flags))
             {
                 var markers = GetInitializerData(fieldSymbol);
                 var comments = GetComments(fieldSymbol);
@@ -142,6 +142,7 @@ public class ModelAnalyzer
                     AttributeType = (fieldSymbol.Type as INamedTypeSymbol)!,
                     HighLevelType = highLevel!,
                     LowLevelType = lowLevel!,
+                    SerializerType = serializer!,
                     Markers = markers,
                     Comments = comments
                 };
@@ -246,11 +247,13 @@ public class ModelAnalyzer
     private bool TryGetAttributeTypes(IFieldSymbol fieldSymbol,
         out ITypeSymbol? highLevel,
         out ITypeSymbol? lowLevel,
+        out ITypeSymbol? serializer,
         out AttributeFlags flags)
     {
         var type = fieldSymbol.Type;
         highLevel = null;
         lowLevel = null;
+        serializer = null;
         flags = 0;
 
         while (true)
@@ -268,13 +271,16 @@ public class ModelAnalyzer
 
                 if (SymbolEqualityComparer.Default.Equals(type.OriginalDefinition, _attributeTypeSymbol))
                 {
-                    Debug.Assert(namedTypeSymbol.TypeArguments.Length == 2);
+                    Debug.Assert(namedTypeSymbol.TypeArguments.Length == 3);
 
                     highLevel = namedTypeSymbol.TypeArguments[0];
                     if (SymbolEqualityComparer.Default.Equals(highLevel, _entityIdTypeSymbol))
                         flags |= AttributeFlags.Reference;
 
                     lowLevel = namedTypeSymbol.TypeArguments[1];
+                    
+                    serializer = namedTypeSymbol.TypeArguments[2];
+                    
                     return true;
                 }
 

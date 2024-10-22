@@ -1,4 +1,5 @@
 ﻿using System;
+using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 
 namespace NexusMods.MnemonicDB.Storage.Abstractions;
@@ -12,26 +13,14 @@ public interface IWriteBatch : IDisposable
     /// Commit the batch to the storage
     /// </summary>
     public void Commit();
-
+    
     /// <summary>
     /// Add a datom to the batch
     /// </summary>
-    /// <param name="store"></param>
-    /// <param name="key"></param>
-    public void Add(IIndexStore store, ReadOnlySpan<byte> datom);
-
+    public void Add(IndexType store, Datom datom);
+    
     /// <summary>
-    /// Add a datom to the batch
+    /// Add a delete operation to the batch
     /// </summary>
-    public void Add(IIndexStore store, in Datom datom);
-
-    /// <summary>
-    /// Add a delete to the batch
-    /// </summary>
-    public void Delete(IIndexStore store, ReadOnlySpan<byte> key);
-
-    /// <summary>
-    /// Add a delete to the batch
-    /// </summary>
-    public void Delete(IIndexStore store, in Datom datom);
+    public void Delete(IndexType store, Datom datom);
 }

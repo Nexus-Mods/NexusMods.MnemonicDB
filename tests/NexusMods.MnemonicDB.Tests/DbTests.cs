@@ -1,11 +1,10 @@
 ﻿using System.Diagnostics;
 using System.Reactive.Linq;
-using System.Security.Cryptography.X509Certificates;
 using DynamicData;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.Hashing.xxHash64;
+using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
@@ -361,50 +360,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         entityLoadout
             .Should().BeEquivalentTo(loadout);
     }
-
-    [Fact]
-    public async Task CanCreateTempEntities()
-    {
-        var loadoutOther = new TempEntity
-        {
-            { Loadout.Name, "Loadout Other" }
-        };
-
-        var loadout = new TempEntity
-        {
-            { Loadout.Name, "Test Loadout" },
-            { Mod.LoadoutId, loadoutOther},
-        };
-
-        using var tx = Connection.BeginTransaction();
-        loadout.AddTo(tx);
-        var result = await tx.Commit();
-
-        var loaded = Loadout.Load(result.Db, result[loadout.Id!.Value]);
-        loaded.Name.Should().Be("Test Loadout");
-
-        loadout.GetFirst(Loadout.Name).Should().Be("Test Loadout");
-
-        Mod.LoadoutId.Get(loaded).Should().Be(result[loadoutOther.Id!.Value], "Sub entity should be added to the transaction");
-    }
-
-    [Fact]
-    public async Task CanWorkWithMarkerAttributes()
-    {
-        var mod = new TempEntity
-        {
-            { Mod.Name, "Test Mod" },
-            Mod.Marked,
-        };
-
-        using var tx = Connection.BeginTransaction();
-        mod.AddTo(tx);
-        var result = await tx.Commit();
-
-        var reloaded = Mod.Load(result.Db, result[mod.Id!.Value]);
-        reloaded.IsMarked.Should().BeTrue();
-
-    }
+    
 
     [Fact]
     public async Task CanExecuteTxFunctions()

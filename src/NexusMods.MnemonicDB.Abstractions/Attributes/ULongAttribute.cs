@@ -1,11 +1,11 @@
-using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 
 namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 
 /// <summary>
 /// UInt64 attribute (ulong)
 /// </summary>
-public sealed class ULongAttribute(string ns, string name) : ScalarAttribute<ulong, ulong>(ValueTag.UInt64, ns, name)
+public sealed class ULongAttribute(string ns, string name) : ScalarAttribute<ulong, ulong, UInt64Serializer>(ns, name)
 {
     /// <inheritdoc />
     protected override ulong ToLowLevel(ulong value) => value;

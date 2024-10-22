@@ -1,7 +1,7 @@
 ﻿using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.TestModel.Helpers;
-using NexusMods.Hashing.xxHash64;
+using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
@@ -81,8 +81,8 @@ public abstract class ABackendTest<TStoreType>(
         for (var i = 0; i < 2; i++)
         {
             using var segment = new IndexSegmentBuilder(AttributeCache);
-            segment.Add(ids[i], Blobs.InKeyBlob, smallData, true);
-            segment.Add(ids[i], Blobs.InValueBlob, largeData, true);
+            segment.Add(ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true);
+            segment.Add(ids[i], Blobs.InValueBlob, largeData.AsMemory(), true);
             await DatomStore.TransactAsync(segment.Build());
         }
 

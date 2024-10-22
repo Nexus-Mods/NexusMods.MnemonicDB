@@ -1,7 +1,7 @@
 using System.Linq;
 using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
-using NexusMods.Hashing.xxHash64;
+using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;

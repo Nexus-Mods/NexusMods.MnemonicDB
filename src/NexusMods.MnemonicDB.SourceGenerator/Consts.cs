@@ -10,7 +10,7 @@ public static class Consts
 
 
     public const string AttributeTypeFullName =
-        "NexusMods.MnemonicDB.Abstractions.Attribute`2";
+        "NexusMods.MnemonicDB.Abstractions.Attribute`3";
 
     public const string ReferenceAttributeFullName =
         "NexusMods.MnemonicDB.Abstractions.Attributes.ReferenceAttribute`1";
@@ -22,10 +22,10 @@ public static class Consts
         "NexusMods.MnemonicDB.Abstractions.Attributes.BackReferenceAttribute`1";
 
     public const string ScalarAttributeFullName =
-        "NexusMods.MnemonicDB.Abstractions.Attributes.ScalarAttribute`2";
+        "NexusMods.MnemonicDB.Abstractions.Attributes.ScalarAttribute`3";
 
     public const string CollectionAttributeFullName =
-        "NexusMods.MnemonicDB.Abstractions.Attributes.CollectionAttribute`2";
+        "NexusMods.MnemonicDB.Abstractions.Attributes.CollectionAttribute`3";
 
     public const string MarkerAttributeFullName =
         "NexusMods.MnemonicDB.Abstractions.Attributes.MarkerAttribute";

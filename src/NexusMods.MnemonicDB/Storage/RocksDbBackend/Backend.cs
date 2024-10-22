@@ -1,6 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.Paths;
 using RocksDbSharp;
@@ -10,11 +9,9 @@ namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
 public class Backend : IStoreBackend
 {
-    private readonly ColumnFamilies _columnFamilies = new();
-    private readonly Dictionary<IndexType, IRocksDbIndex> _indexes = new();
-    internal readonly Dictionary<IndexType, IRocksDBIndexStore> Stores = new();
     internal RocksDb? Db = null!;
     private readonly AttributeCache _attributeCache;
+    private IntPtr _comparator;
 
     public Backend()
     {
@@ -27,22 +24,7 @@ public class Backend : IStoreBackend
     {
         return new Batch(Db!);
     }
-
-    public void DeclareIndex<TComparator>(IndexType name)
-        where TComparator : IDatomComparator
-    {
-        var indexStore = new IndexStore<TComparator>(name.ToString(), name);
-        Stores.Add(name, indexStore);
-
-        var index = new Index<TComparator>(indexStore);
-        _indexes.Add(name, index);
-    }
-
-    public IIndex GetIndex(IndexType name)
-    {
-        return (IIndex)_indexes[name];
-    }
-
+    
     public ISnapshot GetSnapshot()
     {
         return new Snapshot(this, _attributeCache);
@@ -50,20 +32,19 @@ public class Backend : IStoreBackend
 
     public void Init(AbsolutePath location)
     {
+
+        _comparator = Native.Instance.rocksdb_comparator_create(IntPtr.Zero, 
+            NativeComparators.GetDestructorPtr(),
+            NativeComparators.GetNativeFnPtr(),
+            NativeComparators.GetNamePtr());
+
         var options = new DbOptions()
             .SetCreateIfMissing()
             .SetCreateMissingColumnFamilies()
-            .SetCompression(Compression.Lz4);
-
-        foreach (var (name, store) in Stores)
-        {
-            var index = _indexes[name];
-            store.SetupColumnFamily((IIndex)index, _columnFamilies);
-        }
-
-        Db = RocksDb.Open(options, location.ToString(), _columnFamilies);
-
-        foreach (var (name, store) in Stores) store.PostOpenSetup(Db);
+            .SetCompression(Compression.Lz4)
+            .SetComparator(_comparator);
+        
+        Db = RocksDb.Open(options, location.ToString());
     }
 
     public void Dispose()

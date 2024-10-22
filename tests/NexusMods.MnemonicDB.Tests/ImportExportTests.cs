@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using NexusMods.Hashing.xxHash64;
+using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage;
@@ -30,6 +30,9 @@ public class ImportExportTests(IServiceProvider provider) : AMnemonicDBTest(prov
         
         foreach (var index in Enum.GetValues<IndexType>())
         {
+            if (index == IndexType.None)
+                continue;
+            
             var slice = SliceDescriptor.Create(index);
             var setA = Connection.DatomStore.GetSnapshot().Datoms(slice);
             var setB = datomStore.GetSnapshot().Datoms(slice);

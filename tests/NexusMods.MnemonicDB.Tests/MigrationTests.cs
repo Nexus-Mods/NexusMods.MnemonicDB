@@ -1,9 +1,5 @@
-using System.Net;
-using NexusMods.Hashing.xxHash64;
-using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.MnemonicDB.TestModel.Attributes;
 using NexusMods.Paths;

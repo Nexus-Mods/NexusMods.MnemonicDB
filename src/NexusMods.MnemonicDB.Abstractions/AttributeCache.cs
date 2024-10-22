@@ -50,7 +50,6 @@ public sealed class AttributeCache
     /// <summary>
     /// Resets the cache, causing it to re-query the database for the latest definitions.
     /// </summary>
-    /// <param name="idb"></param>
     public void Reset(IDb db)
     {
         var symbols = db.Datoms(AttributeDefinition.UniqueId);

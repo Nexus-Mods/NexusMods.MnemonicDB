@@ -4,16 +4,12 @@ using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
-using NexusMods.MnemonicDB.TestModel.Helpers;
-using NexusMods.Hashing.xxHash64;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.MnemonicDB.TestModel.Analyzers;
 using NexusMods.Paths;
-using Xunit.Sdk;
 using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;

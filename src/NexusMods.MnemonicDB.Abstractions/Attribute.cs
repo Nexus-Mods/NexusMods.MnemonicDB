@@ -1,34 +1,30 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
-using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.Exceptions;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
-using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
 /// <summary>
 ///     Interface for a specific attribute
 /// </summary>
-/// <typeparam name="TValueType"></typeparam>
-public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueType>
+public abstract class Attribute<TValueType, TLowLevelType, TSerializer> : 
+      IWritableAttribute<TValueType>,
+      IReadableAttribute<TValueType>
+      where TSerializer : IValueSerializer<TLowLevelType>
 {
     protected Attribute(
-        ValueTag lowLevelType,
         string ns,
         string name,
         bool isIndexed = false,
         bool noHistory = false,
         Cardinality cardinality = Cardinality.One)
     {
-        LowLevelType = lowLevelType;
+        
         Id = Symbol.Intern(ns, name);
         Cardinalty = cardinality;
         IsIndexed = isIndexed;
@@ -44,9 +40,9 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
     /// Converts a high-level value to a low-level value
     /// </summary>
     protected abstract TValueType FromLowLevel(TLowLevelType value, AttributeResolver resolver);
-    
+
     /// <inheritdoc />
-    public ValueTag LowLevelType { get; }
+    public ValueTag LowLevelType => TSerializer.ValueTag;
 
     /// <inheritdoc />
     public Symbol Id { get; }
@@ -92,12 +88,20 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
         return new ReadDatom(in prefix, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver), this);
     }
     
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private void AssertTag(ValueTag tag)
+    {
+        if (tag != LowLevelType)
+            throw new InvalidCastException($"Invalid value tag for attribute {Id.Name}");
+    }
+    
     /// <summary>
     /// Reads the high level value from the given span
     /// </summary>
     public TValueType ReadValue(ReadOnlySpan<byte> span, ValueTag tag, AttributeResolver resolver)
     {
-        return FromLowLevel(tag.Read<TLowLevelType>(span), resolver);
+        AssertTag(tag);
+        return FromLowLevel(TSerializer.Read(span), resolver);
     }
     
     /// <summary>
@@ -180,7 +184,7 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
         /// <summary>
         ///     Typed datom for this attribute
         /// </summary>
-        public ReadDatom(in KeyPrefix prefix, TValueType v, Attribute<TValueType, TLowLevelType> a)
+        public ReadDatom(in KeyPrefix prefix, TValueType v, Attribute<TValueType, TLowLevelType, TSerializer> a)
         {
             Prefix = prefix;
             TypedAttribute = a;
@@ -190,7 +194,7 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
         /// <summary>
         /// The typed attribute for this datom
         /// </summary>
-        public readonly Attribute<TValueType, TLowLevelType> TypedAttribute;
+        public readonly Attribute<TValueType, TLowLevelType, TSerializer> TypedAttribute;
         
         /// <summary>
         /// The abstract attribute for this datom
@@ -218,7 +222,7 @@ public abstract class Attribute<TValueType, TLowLevelType> : IAttribute<TValueTy
         /// <inheritdoc />
         public void Retract(ITransaction tx)
         {
-            tx.Add(E, (Attribute<TValueType, TLowLevelType>)A, V, true);
+            tx.Add(E, (Attribute<TValueType, TLowLevelType, TSerializer>)A, V, true);
         }
 
         /// <inheritdoc />

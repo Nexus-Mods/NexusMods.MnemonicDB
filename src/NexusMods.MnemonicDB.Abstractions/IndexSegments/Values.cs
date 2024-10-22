@@ -7,8 +7,8 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 /// <summary>
 /// A subview of an IndexSegment that returns a specific value type
 /// </summary>
-public struct Values<TValueType, TLowLevelType>(IndexSegment segment, int start, int end, Attribute<TValueType, TLowLevelType> attribute, AttributeResolver resolver) :
-    IEnumerable<TValueType>, IIndexSegment<TValueType>
+public readonly struct Values<TValueType>(IndexSegment segment, int start, int end, IReadableAttribute<TValueType> attribute, AttributeResolver resolver) :
+    IEnumerable<TValueType>, IIndexSegment<TValueType> 
 {
     /// <summary>
     /// Gets the value at the given location

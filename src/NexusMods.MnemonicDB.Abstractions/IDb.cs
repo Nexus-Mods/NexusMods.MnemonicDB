@@ -68,12 +68,7 @@ public interface IDb : IEquatable<IDb>
     /// <summary>
     /// Finds all the datoms that have the given attribute with the given value.
     /// </summary>
-    IndexSegment Datoms<TValue, TLowLevel>(Attribute<TValue, TLowLevel> attribute, TValue value);
-    
-    /// <summary>
-    /// Finds all the datoms that have the given attribute with the given value.
-    /// </summary>
-    IndexSegment Datoms(ReferenceAttribute attribute, EntityId value);
+    IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value);
     
     /// <summary>
     /// Gets all the back references for this entity that are through the given attribute.

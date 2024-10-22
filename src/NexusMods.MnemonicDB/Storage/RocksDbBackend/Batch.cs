@@ -4,7 +4,6 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Storage.Abstractions;
 using Reloaded.Memory.Extensions;
 using RocksDbSharp;
 using IWriteBatch = NexusMods.MnemonicDB.Storage.Abstractions.IWriteBatch;
@@ -20,39 +19,20 @@ public class Batch(RocksDb db) : IWriteBatch
     {
         _batch.Dispose();
     }
-
-    private ValueTag Tag(ReadOnlySpan<byte> key)
-    {
-        var prefix = MemoryMarshal.Read<KeyPrefix>(key);
-        return prefix.ValueTag;
-    }
-
+    
+    
     /// <inheritdoc />
-    public void Add(IIndexStore store, ReadOnlySpan<byte> key)
+    public void Add(IndexType store, Datom datom)
     {
-        var outOfBandData = ReadOnlySpan<byte>.Empty;
-        if (Tag(key) == ValueTag.HashedBlob)
-        {
-            // Put the blob in the out-of-band data
-            outOfBandData = key.SliceFast(KeyPrefix.Size + sizeof(uint) + sizeof(ulong));
-            // Put the prefix, the hash and the length in the key
-            key = key.SliceFast(0, KeyPrefix.Size + sizeof(uint) + sizeof(ulong));
-        }
-
-        _batch.Put(key, outOfBandData, ((IRocksDBIndexStore)store).Handle);
-    }
-
-    /// <inheritdoc />
-    public void Add(IIndexStore store, in Datom datom)
-    {
+        datom = datom with { Prefix = datom.Prefix with { Index = store } };
         if (datom.Prefix.ValueTag == ValueTag.HashedBlob)
         {
-            var outOfBandData = datom.ValueSpan.SliceFast(Serializer.HashedBlobPrefixSize);
+            var outOfBandData = datom.ValueSpan.SliceFast(Serializer.HashedBlobHeaderSize);
             Span<byte> keySpan = stackalloc byte[Serializer.HashedBlobPrefixSize];
 
             MemoryMarshal.Write(keySpan, datom.Prefix);
             datom.ValueSpan.SliceFast(0, Serializer.HashedBlobHeaderSize).CopyTo(keySpan.SliceFast(KeyPrefix.Size));
-            _batch.Put(keySpan, outOfBandData, ((IRocksDBIndexStore)store).Handle);
+            _batch.Put(keySpan, outOfBandData);
         }
         else if (datom.ValueSpan.Length < 256)
         {
@@ -61,7 +41,7 @@ public class Batch(RocksDb db) : IWriteBatch
             MemoryMarshal.Write(keySpan, datom.Prefix);
             datom.ValueSpan.CopyTo(keySpan.SliceFast(KeyPrefix.Size));
 
-            _batch.Put(keySpan, ReadOnlySpan<byte>.Empty, ((IRocksDBIndexStore)store).Handle);
+            _batch.Put(keySpan, ReadOnlySpan<byte>.Empty);
         }
         else
         {
@@ -70,31 +50,21 @@ public class Batch(RocksDb db) : IWriteBatch
             MemoryMarshal.Write(keySpan, datom.Prefix);
             datom.ValueSpan.CopyTo(keySpan[KeyPrefix.Size..]);
 
-            _batch.Put(keySpan, ReadOnlySpan<byte>.Empty, ((IRocksDBIndexStore)store).Handle);
+            _batch.Put(keySpan, ReadOnlySpan<byte>.Empty);
         }
     }
-
+    
     /// <inheritdoc />
-    public void Delete(IIndexStore store, ReadOnlySpan<byte> key)
+    public void Delete(IndexType store, Datom datom)
     {
-        if (Tag(key) == ValueTag.HashedBlob)
-        {
-            key = key.SliceFast(0, Serializer.HashedBlobPrefixSize);
-        }
-
-        _batch.Delete(key, ((IRocksDBIndexStore)store).Handle);
-    }
-
-    /// <inheritdoc />
-    public void Delete(IIndexStore store, in Datom datom)
-    {
+        datom = datom with { Prefix = datom.Prefix with { Index = store } };
         if (datom.Prefix.ValueTag == ValueTag.HashedBlob)
         {
            Span<byte> keySpan = stackalloc byte[Serializer.HashedBlobPrefixSize];
 
             MemoryMarshal.Write(keySpan, datom.Prefix);
             datom.ValueSpan.SliceFast(0, Serializer.HashedBlobHeaderSize).CopyTo(keySpan.SliceFast(KeyPrefix.Size));
-            _batch.Delete(keySpan, ((IRocksDBIndexStore)store).Handle);
+            _batch.Delete(keySpan);
         }
         else if (datom.ValueSpan.Length < 256)
         {
@@ -103,7 +73,7 @@ public class Batch(RocksDb db) : IWriteBatch
             MemoryMarshal.Write(keySpan, datom.Prefix);
             datom.ValueSpan.CopyTo(keySpan.SliceFast(KeyPrefix.Size));
 
-            _batch.Delete(keySpan, ((IRocksDBIndexStore)store).Handle);
+            _batch.Delete(keySpan);
         }
         else
         {
@@ -112,7 +82,7 @@ public class Batch(RocksDb db) : IWriteBatch
             MemoryMarshal.Write(keySpan, datom.Prefix);
             datom.ValueSpan.CopyTo(keySpan[KeyPrefix.Size..]);
 
-            _batch.Delete(keySpan, ((IRocksDBIndexStore)store).Handle);
+            _batch.Delete(keySpan);
         }
 
     }

@@ -128,6 +128,18 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
         return _data.Span.SliceFast(0, Length);
     }
 
+    /// <summary>
+    /// Assumes the data written to this writer is a datom, converts the contents to a Datom.
+    /// Note: this datom will share memory with this buffer, resetting the buffer will alter
+    /// the contents of the datom. 
+    /// </summary>
+    public Datom AsDatom()
+    {
+        var prefix = MemoryMarshal.Read<KeyPrefix>(_data.Span);
+        var valueSpan = _data.Slice(KeyPrefix.Size, Length - KeyPrefix.Size);
+        return new Datom(prefix, valueSpan);
+    }
+
 
     /// <summary>
     ///     Gets the written span, but allows it to be written to.

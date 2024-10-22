@@ -96,12 +96,12 @@ internal class SchemaMigration : AInternalFn
     {
         foreach (var datom in store.CurrentSnapshot.Datoms(SliceDescriptor.Create(id, IndexType.AEVTCurrent)))
         {
-            store.AVETCurrent.Put(batch, datom);
+            batch.Add(IndexType.AVETCurrent, datom);
         }
         
         foreach (var datom in store.CurrentSnapshot.Datoms(SliceDescriptor.Create(id, IndexType.AVETCurrent)))
         {
-            store.AVETHistory.Put(batch, datom);
+            batch.Add(IndexType.AVETHistory, datom);
         }
         
         using var builder = new IndexSegmentBuilder(store.AttributeCache);
@@ -118,12 +118,12 @@ internal class SchemaMigration : AInternalFn
     {
         foreach (var datom in store.CurrentSnapshot.Datoms(SliceDescriptor.Create(id, IndexType.AEVTCurrent)))
         {
-            store.AVETCurrent.Delete(batch, datom);
+            batch.Delete(IndexType.AVETCurrent, datom);
         }
         
         foreach (var datom in store.CurrentSnapshot.Datoms(SliceDescriptor.Create(id, IndexType.AVETCurrent)))
         {
-            store.AVETHistory.Delete(batch, datom);
+            batch.Delete(IndexType.AVETHistory, datom);
         }
         
         using var builder = new IndexSegmentBuilder(store.AttributeCache);
@@ -138,64 +138,65 @@ internal class SchemaMigration : AInternalFn
         using var writer = new PooledMemoryBufferWriter();
         foreach (var datom in store.CurrentSnapshot.Datoms(SliceDescriptor.Create(id, IndexType.AEVTCurrent)))
         {
-            store.EAVTCurrent.Delete(batch, datom);
-            store.AEVTCurrent.Delete(batch, datom);
-            store.TxLogIndex.Delete(batch, datom);
+            batch.Delete(IndexType.EAVTCurrent, datom);
+            batch.Delete(IndexType.AEVTCurrent, datom);
+            batch.Delete(IndexType.TxLog, datom);
+            
             
             var currentTag = datom.Prefix.ValueTag;
             
             // if it's a reference, delete it from the backref index 
             if (currentTag == ValueTag.Reference)
-                store.VAETCurrent.Delete(batch, datom);
+                batch.Delete(IndexType.VAETCurrent, datom);
             
             // Delete it from the Value index if it's not a reference
             if (isIndexed && currentTag != ValueTag.Reference)
-                store.AVETCurrent.Delete(batch, datom);
+                batch.Delete(IndexType.AVETCurrent, datom);
             
             // Convert the value to the new type
             var newDatom = ConvertValue(datom, writer, newTagType);
             
             // Put the converted datom back into the indexes
-            store.EAVTCurrent.Put(batch, newDatom);
-            store.AEVTCurrent.Put(batch, newDatom);
-            store.TxLogIndex.Put(batch, newDatom);
+            batch.Add(IndexType.EAVTCurrent, newDatom);
+            batch.Add(IndexType.AEVTCurrent, newDatom);
+            batch.Add(IndexType.TxLog, newDatom);
             
             if (newTagType == ValueTag.Reference)
-                store.VAETCurrent.Put(batch, newDatom);
+                batch.Add(IndexType.VAETCurrent, newDatom);
             
             if (isIndexed && newTagType != ValueTag.Reference)
-                store.AVETCurrent.Put(batch, newDatom);
+                batch.Add(IndexType.AVETCurrent, newDatom);
         }
         
         foreach (var datom in store.CurrentSnapshot.Datoms(SliceDescriptor.Create(id, IndexType.AEVTHistory)))
         {
-            store.EAVTHistory.Delete(batch, datom);
-            store.AEVTHistory.Delete(batch, datom);
-            store.TxLogIndex.Delete(batch, datom);
+            batch.Delete(IndexType.EAVTHistory, datom);
+            batch.Delete(IndexType.AEVTHistory, datom);
+            batch.Delete(IndexType.TxLog, datom);
             
             var currentTag = datom.Prefix.ValueTag;
             
             // if it's a reference, delete it from the backref index 
             if (currentTag == ValueTag.Reference)
-                store.VAETHistory.Delete(batch, datom);
+                batch.Delete(IndexType.VAETHistory, datom);
             
             // Delete it from the Value index if it's not a reference
             if (isIndexed && currentTag != ValueTag.Reference)
-                store.VAETHistory.Delete(batch, datom);
+                batch.Delete(IndexType.AEVTHistory, datom);
             
             // Convert the value to the new type
             var newDatom = ConvertValue(datom, writer, newTagType);
             
             // Put the converted datom back into the indexes
-            store.EAVTHistory.Put(batch, newDatom);
-            store.AEVTHistory.Put(batch, newDatom);
-            store.TxLogIndex.Put(batch, newDatom);
-            
+            batch.Add(IndexType.EAVTHistory, newDatom);
+            batch.Add(IndexType.AEVTHistory, newDatom);
+            batch.Add(IndexType.TxLog, newDatom);
+                        
             if (newTagType == ValueTag.Reference)
-                store.VAETHistory.Put(batch, newDatom);
+                batch.Add(IndexType.VAETHistory, newDatom);
             
             if (isIndexed && newTagType != ValueTag.Reference)
-                store.AVETHistory.Put(batch, newDatom);
+                batch.Add(IndexType.AVETHistory, newDatom);
         }
     }
 

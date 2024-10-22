@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
+using System.Text;
 using Microsoft.Extensions.Logging;
-using NexusMods.Hashing.xxHash64;
-using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
+using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.File;
@@ -52,7 +52,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
                     Path = name,
                     ModId = mod,
                     Size = Size.FromLong(name.Length),
-                    Hash = Hash.FromLong(name.XxHash64AsUtf8())
+                    Hash = HashAsUtf8(name)
                 };
 
                 files.Add(file);
@@ -142,7 +142,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
                     Path = name,
                     ModId = mod,
                     Size = Size.FromLong(name.Length),
-                    Hash = Hash.FromLong(name.XxHash64AsUtf8())
+                    Hash = HashAsUtf8(name)
                 };
 
                 files.Add(file);
@@ -164,7 +164,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
                 Path = name,
                 ModId = firstMod,
                 Size = Size.FromLong(name.Length),
-                Hash = Hash.FromLong(name.XxHash64AsUtf8())
+                Hash = HashAsUtf8(name)
             };
 
             files.Add(file);
@@ -231,4 +231,6 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         var remap = result.Remap(archiveFile);
         remap.AsFile().Path.Should().Be("bar");
     }
+
+    private static Hash HashAsUtf8(string value) => Hash.FromLong(Encoding.UTF8.GetBytes(value).xxHash3());
 }

@@ -40,7 +40,19 @@ internal class Transaction(Connection connection) : ITransaction
         return TempId(PartitionId.Entity);
     }
 
-    public void Add<TVal, TLowLevel>(EntityId entityId, Attribute<TVal, TLowLevel> attribute, TVal val, bool isRetract = false)
+    public void Add<TVal, TAttribute>(EntityId entityId, TAttribute attribute, TVal val, bool isRetract = false) 
+        where TAttribute : IWritableAttribute<TVal>
+    {
+        lock (_lock)
+        {
+            if (_committed)
+                throw new InvalidOperationException("Transaction has already been committed");
+
+            _datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
+        }
+    }
+
+    public void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false) where TSerializer : IValueSerializer<TLowLevel>
     {
         lock (_lock)
         {
