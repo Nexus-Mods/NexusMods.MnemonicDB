@@ -16,7 +16,12 @@ public sealed class Tuple2_UShort_Utf8I_Serializer : IValueSerializer<(ushort, s
     
     public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
-        throw new NotImplementedException();
+        var aUShort = MemoryMarshal.Read<ushort>(a);
+        var bUShort = MemoryMarshal.Read<ushort>(b);
+        var ushortComparison = aUShort.CompareTo(bUShort);
+        if (ushortComparison != 0) return ushortComparison;
+
+        return Utf8InsensitiveSerializer.Compare(a.SliceFast(sizeof(ushort)), b.SliceFast(sizeof(ushort)));
     }
 
     /// <inheritdoc />
@@ -27,9 +32,7 @@ public sealed class Tuple2_UShort_Utf8I_Serializer : IValueSerializer<(ushort, s
         var ushortComparison = aUShort.CompareTo(bUShort);
         if (ushortComparison != 0) return ushortComparison;
 
-        var aStr = Encoding.UTF8.GetString(aVal + sizeof(ushort), aLen - sizeof(ushort));
-        var bStr = Encoding.UTF8.GetString(bVal + sizeof(ushort), bLen - sizeof(ushort));
-        return string.Compare(aStr, bStr, StringComparison.Ordinal);    
+        return Utf8InsensitiveSerializer.Compare(aVal + sizeof(ushort), aLen - sizeof(ushort), bVal + sizeof(ushort), bLen - sizeof(ushort));  
     }
 
     /// <inheritdoc />
@@ -65,9 +68,19 @@ public sealed class Tuple3_Ref_UShort_Utf8I_Serializer : IValueSerializer<(Entit
     public static ValueTag ValueTag => ValueTag.Tuple3_Ref_UShort_Utf8I;
 
     /// <inheritdoc />
-    public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    public static unsafe int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
-        throw new NotImplementedException();
+        var aEntityId = MemoryMarshal.Read<EntityId>(a);
+        var bEntityId = MemoryMarshal.Read<EntityId>(b);
+        var entityIdComparison = aEntityId.CompareTo(bEntityId);
+        if (entityIdComparison != 0) return entityIdComparison;
+
+        var aUShort = MemoryMarshal.Read<ushort>(a.SliceFast(sizeof(EntityId)));
+        var bUShort = MemoryMarshal.Read<ushort>(b.SliceFast(sizeof(EntityId)));
+        var ushortComparison = aUShort.CompareTo(bUShort);
+        if (ushortComparison != 0) return ushortComparison;
+
+        return Utf8InsensitiveSerializer.Compare(a.SliceFast(sizeof(EntityId) + sizeof(ushort)), b.SliceFast(sizeof(EntityId) + sizeof(ushort)));
     }
 
     /// <inheritdoc />
@@ -83,9 +96,8 @@ public sealed class Tuple3_Ref_UShort_Utf8I_Serializer : IValueSerializer<(Entit
         var ushortComparison = aUShort.CompareTo(bUShort);
         if (ushortComparison != 0) return ushortComparison;
 
-        var aStr = Encoding.UTF8.GetString(aVal + sizeof(EntityId) + sizeof(ushort), aLen - sizeof(EntityId) - sizeof(ushort));
-        var bStr = Encoding.UTF8.GetString(bVal + sizeof(EntityId) + sizeof(ushort), bLen - sizeof(EntityId) - sizeof(ushort));
-        return string.Compare(aStr, bStr, StringComparison.Ordinal);
+        var offset = sizeof(EntityId) + sizeof(ushort);
+        return Utf8InsensitiveSerializer.Compare(aVal + offset, aLen - offset, bVal + offset, bLen - offset);
     }
 
     /// <inheritdoc />

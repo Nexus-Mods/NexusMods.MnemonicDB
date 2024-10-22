@@ -101,16 +101,6 @@ public sealed partial class DatomStore : IDatomStore
         Logger = logger;
         _settings = settings;
         
-        Backend.DeclareEAVT(IndexType.EAVTCurrent);
-        Backend.DeclareEAVT(IndexType.EAVTHistory);
-        Backend.DeclareAEVT(IndexType.AEVTCurrent);
-        Backend.DeclareAEVT(IndexType.AEVTHistory);
-        Backend.DeclareVAET(IndexType.VAETCurrent);
-        Backend.DeclareVAET(IndexType.VAETHistory);
-        Backend.DeclareAVET(IndexType.AVETCurrent);
-        Backend.DeclareAVET(IndexType.AVETHistory);
-        Backend.DeclareTxLog(IndexType.TxLog);
-
         Backend.Init(settings.Path);
 
         if (bootstrap) Bootstrap();

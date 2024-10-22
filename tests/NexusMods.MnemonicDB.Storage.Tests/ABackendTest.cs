@@ -1,7 +1,7 @@
 ﻿using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.TestModel.Helpers;
-using NexusMods.Hashing.xxHash64;
+using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;

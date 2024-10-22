@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.TestModel;
-using NexusMods.Hashing.xxHash64;
+using NexusMods.Hashing.xxHash3;
 using NexusMods.Paths;
 
 var host = Host.CreateDefaultBuilder()

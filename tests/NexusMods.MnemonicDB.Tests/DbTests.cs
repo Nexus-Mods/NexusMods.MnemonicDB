@@ -1,11 +1,10 @@
 ﻿using System.Diagnostics;
 using System.Reactive.Linq;
-using System.Security.Cryptography.X509Certificates;
 using DynamicData;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.Hashing.xxHash64;
+using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
