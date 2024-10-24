@@ -283,5 +283,12 @@ public class IndexSegmentCache
                 return;
         }
     }
-    
+
+    /// <summary>
+    /// Clears the cache.
+    /// </summary>
+    public void Clear()
+    {
+        _root = new CacheRoot(ImmutableDictionary<CacheKey, CacheValue>.Empty);
+    }
 }

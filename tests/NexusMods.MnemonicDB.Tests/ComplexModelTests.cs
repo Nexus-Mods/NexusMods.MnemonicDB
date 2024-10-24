@@ -173,7 +173,15 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         await extraTx.Commit();
 
         Logger.LogInformation("Restarting storage");
+        Connection.Db.RecentlyAdded.Should().NotBeEmpty("the last transaction added data");
+
+        var lastTxId = Connection.TxId;
         await RestartDatomStore();
+        
+        Connection.TxId.Should().Be(lastTxId, "the transaction id should be the same after a restart");
+        Connection.Db.BasisTxId.Should().Be(lastTxId, "the basis transaction id should be the same after a restart");
+        
+        Connection.Db.RecentlyAdded.Should().NotBeEmpty("the restarted database should populate the recently added");
         Logger.LogInformation("Storage restarted");
 
 

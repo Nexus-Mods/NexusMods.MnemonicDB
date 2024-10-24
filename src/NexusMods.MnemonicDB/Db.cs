@@ -114,6 +114,11 @@ internal class Db : IDb
         throw new KeyNotFoundException($"Analyzer {typeof(TAnalyzer).Name} not found");
     }
 
+    public void ClearIndexCache()
+    {
+        _cache.Clear();
+    }
+
     public IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)
     {
         return Datoms(SliceDescriptor.Create(attribute, value, AttributeCache));

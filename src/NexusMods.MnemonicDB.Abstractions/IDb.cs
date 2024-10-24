@@ -85,4 +85,9 @@ public interface IDb : IEquatable<IDb>
     /// </summary>
     TReturn AnalyzerData<TAnalyzer, TReturn>() 
         where TAnalyzer : IAnalyzer<TReturn>;
+    
+    /// <summary>
+    /// Clears the internal cache of the database.
+    /// </summary>
+    void ClearIndexCache();
 }

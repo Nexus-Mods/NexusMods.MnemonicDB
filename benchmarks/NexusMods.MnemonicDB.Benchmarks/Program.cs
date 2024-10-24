@@ -29,7 +29,7 @@ Console.WriteLine("Elapsed: " + sw.Elapsed + " Result: " + result);
 
 #else
 
-BenchmarkRunner.Run<ReadThenWriteBenchmarks>(config: DefaultConfig.Instance.WithOption(ConfigOptions.DisableOptimizationsValidator, true));
+BenchmarkRunner.Run<ColdStartBenchmarks>();
 #endif
 
 
