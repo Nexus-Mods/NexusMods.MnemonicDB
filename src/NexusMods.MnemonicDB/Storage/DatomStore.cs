@@ -103,7 +103,8 @@ public sealed partial class DatomStore : IDatomStore
         
         Backend.Init(settings.Path);
 
-        if (bootstrap) Bootstrap();
+        if (bootstrap) 
+            Bootstrap();
     }
     
     /// <inheritdoc />
@@ -308,7 +309,7 @@ public sealed partial class DatomStore : IDatomStore
         
         return new StoreResult
         {
-            AssignedTxId = _thisTx,
+            AssignedTxId = _asOfTx,
             Remaps = _remaps.ToFrozenDictionary(),
             Snapshot = CurrentSnapshot
         };
