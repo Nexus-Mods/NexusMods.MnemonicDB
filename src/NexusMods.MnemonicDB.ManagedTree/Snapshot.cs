@@ -7,9 +7,9 @@ namespace NexusMods.MnemonicDB.ManagedTree;
 public class Snapshot<T> : ISnapshot
 where T : ISpanComparer
 {
-    private readonly byte[][] _data;
+    private readonly WritableBlock _data;
 
-    public Snapshot(byte[][] data)
+    public Snapshot(WritableBlock data)
     {
         _data = data;
     }

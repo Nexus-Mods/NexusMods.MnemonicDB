@@ -6,10 +6,10 @@ namespace NexusMods.MnemonicDB.ManagedTree;
 public class Iterator<TCompare> : IIterator
 where TCompare : ISpanComparer
 {
-    private readonly byte[][] _data;
+    private readonly WritableBlock _data;
     private int _idx;
 
-    public Iterator(byte[][] data)
+    public Iterator(WritableBlock data)
     {
         _data = data;
         _idx = 0;
@@ -29,7 +29,7 @@ where TCompare : ISpanComparer
     public bool MoveNext()
     {
         var newIdx = _idx + 1;
-        if (newIdx < 0 || newIdx >= _data.Length) 
+        if (newIdx < 0 || newIdx >= _data.RowCount) 
             return false;
         _idx = newIdx;
         return true;
