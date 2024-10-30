@@ -1,6 +1,6 @@
 ## Changelog
 
-### 0.9.92 - 30/10/2024
+### 0.9.94 - 30/10/2024
 * Fix a regression in the GlobalCompare that was boxing an enum (resulting in a lot of allocations)
 
 ### 0.9.91 - 15/10/2024
