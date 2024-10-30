@@ -19,7 +19,7 @@ public sealed class GlobalComparer : IComparer<byte[]>
         var prefixA = (KeyPrefix*)aPtr;
         var prefixB = (KeyPrefix*)bPtr;
         
-        var cmp = prefixA->Index.CompareTo(prefixB->Index);
+        var cmp = ((byte)prefixA->Index).CompareTo((byte)prefixB->Index);
         if (cmp != 0)
             return cmp;
 
@@ -30,13 +30,13 @@ public sealed class GlobalComparer : IComparer<byte[]>
             IndexType.AEVTCurrent or IndexType.AEVTHistory => AEVTComparator.Compare(aPtr, aLen, bPtr, bLen),
             IndexType.AVETCurrent or IndexType.AVETHistory => AVETComparator.Compare(aPtr, aLen, bPtr, bLen),
             IndexType.VAETCurrent or IndexType.VAETHistory => VAETComparator.Compare(aPtr, aLen, bPtr, bLen),
-            _ => throw new ArgumentOutOfRangeException()
+            _ => ThrowArgumentOutOfRangeException()
         };
     }
 
     public static int Compare(in Datom a, in Datom b)
     {
-        var cmp = a.Prefix.Index.CompareTo(b.Prefix.Index);
+        var cmp = ((byte)a.Prefix.Index).CompareTo((byte)b.Prefix.Index);
         if (cmp != 0)
             return cmp;
         
@@ -47,8 +47,13 @@ public sealed class GlobalComparer : IComparer<byte[]>
             IndexType.AEVTCurrent or IndexType.AEVTHistory => AEVTComparator.Compare(a, b),
             IndexType.AVETCurrent or IndexType.AVETHistory => AVETComparator.Compare(a, b),
             IndexType.VAETCurrent or IndexType.VAETHistory => VAETComparator.Compare(a, b),
-            _ => throw new ArgumentOutOfRangeException()
+            _ => ThrowArgumentOutOfRangeException()
         };
+    }
+
+    private static int ThrowArgumentOutOfRangeException()
+    {
+        throw new ArgumentOutOfRangeException();
     }
 
     /// <inheritdoc />
