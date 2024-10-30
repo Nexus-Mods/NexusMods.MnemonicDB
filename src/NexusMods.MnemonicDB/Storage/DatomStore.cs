@@ -391,7 +391,7 @@ public sealed partial class DatomStore : IDatomStore
     /// <exception cref="NotImplementedException"></exception>
     private void LogTx(IWriteBatch batch)
     {
-        MemoryMarshal.Write(_txScratchSpace.Span, _timeProvider.GetTimestamp());
+        MemoryMarshal.Write(_txScratchSpace.Span, _timeProvider.GetUtcNow().ToUnixTimeMilliseconds());
         var id = EntityId.From(_thisTx.Value);
         var keyPrefix = new KeyPrefix(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), _thisTx, false, ValueTag.Int64);
         var datom = new Datom(keyPrefix, _txScratchSpace[..sizeof(long)]);

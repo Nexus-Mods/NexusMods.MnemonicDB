@@ -235,6 +235,27 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     }
 
     [Fact]
+    public async Task TimestampsArentBorked()
+    {
+        using var tx = Connection.BeginTransaction();
+        var loadout = new Loadout.New(tx)
+        {
+            Name = "Test Loadout"
+        };
+        
+        var result = await tx.Commit();
+        
+        var recentTimestamp = result.Db.RecentlyAdded
+            .Resolved(Connection)
+            .First(d => d.A == Transaction.Timestamp);
+        
+        recentTimestamp.ObjectValue.Should().BeOfType<DateTimeOffset>();
+        ((DateTimeOffset)recentTimestamp.ObjectValue).Should()
+            .BeAfter(DateTimeOffset.UtcNow.AddSeconds(-100))
+            .And.BeBefore(DateTimeOffset.UtcNow.AddSeconds(100));
+    }
+
+    [Fact]
     public async Task CanGetChildEntities()
     {
         var tx = Connection.BeginTransaction();

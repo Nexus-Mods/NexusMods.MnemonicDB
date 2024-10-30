@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.95 - 30/10/2024
+* Fix a regression with the switch to DateTimeOffset, we now store the correct timestamp in transaction attributes
+* 
 ### 0.9.94 - 30/10/2024
 * Fix a regression in the GlobalCompare that was boxing an enum (resulting in a lot of allocations)
 
