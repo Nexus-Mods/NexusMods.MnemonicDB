@@ -17,12 +17,16 @@ public class QueryEngineTests(IServiceProvider provider) : AMnemonicDBTest(provi
 
         var query =
             And(
+                [mod, Mod.Loadout, inserted.LoadoutId],
                 Datoms(mod, Mod.Loadout, inserted.LoadoutId),
                 Datoms(mod, Mod.Name, modName)
             );
 
         var db = Connection.Db;
-        var results = engine.QueryAll<string>(db, query, modName);
+        engine.QueryAll<string>(db, query, modName)
+            .ToArray()
+            .Should()
+            .BeEquivalentTo(["Mod1 - Updated", "Mod2 - Updated", "Mod3 - Updated"]);
     }
     
 }

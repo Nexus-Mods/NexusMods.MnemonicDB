@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using NexusMods.MnemonicDB.LogicEngine.Sources;
 using Metadata = System.Collections.Immutable.ImmutableDictionary<NexusMods.MnemonicDB.Abstractions.Symbol, object>;
 
 namespace NexusMods.MnemonicDB.LogicEngine;
@@ -8,8 +9,18 @@ namespace NexusMods.MnemonicDB.LogicEngine;
 public interface IPredicate : IHasMetadata
 {
     public IGoal Source { get; }
+    public object[] Args { get; }
+    
     public static IPredicate Create<TName>(params object[] args) where TName : IGoal, new() 
         => new Predicate<TName>(new TName(), args, Metadata.Empty);
+    
+}
+
+public enum ArgType
+{
+    Constant,
+    Variable,
+    Unbound
 }
 
 public record Predicate<T>(T Name, object[] Args, Metadata Metadata) : IPredicate
@@ -19,15 +30,14 @@ public record Predicate<T>(T Name, object[] Args, Metadata Metadata) : IPredicat
     
     public IGoal Source => Name;
     
-    /// <summary>
-    /// True if the argument at the given index is a constant, false if it is a variable bound or unbound.
-    /// </summary>
-    public bool IsConstant(int idx) => Args[idx] is not LVar;
-    
-    /// <summary>
-    /// True if the argument at the given index bound or a constant, false if it is unbound.
-    /// </summary>
-    public bool IsBound(int idx, ImmutableHashSet<LVar> bound) => IsConstant(idx) || (Args[idx] is LVar lvar && bound.Contains(lvar));
+    public ArgType GetArgType(int idx, ISet<LVar> boundVars)
+    {
+        if (Args[idx] is LVar lvar)
+        {
+            return boundVars.Contains(lvar) ? ArgType.Variable : ArgType.Unbound;
+        }
+        return ArgType.Constant;
+    }
     
     /// <summary>
     /// Gets the argument at the given index as a constant

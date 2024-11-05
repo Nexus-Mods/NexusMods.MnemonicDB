@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using DynamicData;
+using NexusMods.MnemonicDB.Abstractions;
+using LazyEnvStream = System.Collections.Generic.IEnumerable<System.Collections.Immutable.IImmutableDictionary<NexusMods.MnemonicDB.LogicEngine.LVar, object>>;
 
 namespace NexusMods.MnemonicDB.LogicEngine.Sources;
 
@@ -20,5 +23,23 @@ public class And : IGoal
         }
         
         return p.WithArgs(newChildren);
+    }
+
+    public LazyEnvStream Run(IPredicate predicate, LazyEnvStream envs)
+    {
+        var p = (Predicate<And>)predicate;
+        
+        var acc = envs;
+        foreach (var child in p.Args)
+        {
+            acc = ((IPredicate)child).Source.Run((IPredicate)child, acc);
+        }
+
+        return acc;
+    }
+
+    public IObservableList<IImmutableDictionary<LVar, object>> Observe(IConnection conn)
+    {
+        throw new NotImplementedException();
     }
 }
