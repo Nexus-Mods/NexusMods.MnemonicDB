@@ -1,19 +1,17 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using NexusMods.MnemonicDB.LogicEngine.Sources;
-using Metadata = System.Collections.Immutable.ImmutableDictionary<NexusMods.MnemonicDB.Abstractions.Symbol, object>;
+using NexusMods.MnemonicDB.Abstractions;
 
 namespace NexusMods.MnemonicDB.LogicEngine;
 
+using EnvironmentStream = IEnumerable<ImmutableDictionary<LVar, object>>;
 
-public interface IPredicate : IHasMetadata
+public abstract record Predicate
 {
-    public IGoal Source { get; }
-    public object[] Args { get; }
-    
-    public static IPredicate Create<TName>(params object[] args) where TName : IGoal, new() 
-        => new Predicate<TName>(new TName(), args, Metadata.Empty);
-    
+    public abstract Predicate Optimize(ref ImmutableHashSet<LVar> preBound, LVar extract);
+    public abstract EnvironmentStream Run(IDb db, Predicate query, EnvironmentStream o);
 }
 
 public enum ArgType
@@ -23,43 +21,30 @@ public enum ArgType
     Unbound
 }
 
-public record Predicate<T>(T Name, object[] Args, Metadata Metadata) : IPredicate
-    where T : IGoal, new()
+public abstract record Predicate<T1, T2, T3> : Predicate
 {
-    public override string ToString() => $"{Name}/{Args.Length}({string.Join(", ", Args)})";
+    public required Term<T1> Arg1 { get; init; }
+    public required Term<T2> Arg2 { get; init; }
+    public required Term<T3> Arg3 { get; init; }
     
-    public IGoal Source => Name;
-    
-    public ArgType GetArgType(int idx, ISet<LVar> boundVars)
+    protected static ArgType Resolve<T>(in Term<T> term, ISet<LVar> boundVars)
     {
-        if (Args[idx] is LVar lvar)
-        {
-            return boundVars.Contains(lvar) ? ArgType.Variable : ArgType.Unbound;
-        }
-        return ArgType.Constant;
+        if (term.IsValue) return ArgType.Constant;
+        return boundVars.Contains(term.LVar) ? ArgType.Variable : ArgType.Unbound;
     }
     
-    /// <summary>
-    /// Gets the argument at the given index as a constant
-    /// </summary>
-    /// <param name="idx"></param>
-    public object this[int idx] => Args[idx];
-
-    /// <summary>
-    /// Return a copy of this predicate with the given arguments.
-    /// </summary>
-    public IPredicate WithArgs(List<object> newChildren)
+    public override Predicate Optimize(ref ImmutableHashSet<LVar> preBound, LVar extract)
     {
-        return new Predicate<T>(Name, newChildren.ToArray(), Metadata);
+        return this;
     }
 
     /// <summary>
-    /// Return a copy of this predicate with the given name and the same arguments
-    /// and metadata.
+    /// Resolve the arguments of this predicate, given the set of bound variables, returning a tuple
+    /// of the resolved argument types.
     /// </summary>
-    public IPredicate WithName<TNew>()
-    where TNew : IGoal, new()
+    public (ArgType A1, ArgType A2, ArgType A3) Resolve(ISet<LVar> boundVars)
     {
-        return new Predicate<TNew>(new TNew(), Args, Metadata);
+        return (Resolve(Arg1, boundVars), Resolve(Arg2, boundVars), Resolve(Arg3, boundVars));
     }
 }
+

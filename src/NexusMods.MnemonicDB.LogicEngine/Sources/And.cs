@@ -1,45 +1,25 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using DynamicData;
+using System.Linq;
 using NexusMods.MnemonicDB.Abstractions;
-using LazyEnvStream = System.Collections.Generic.IEnumerable<System.Collections.Immutable.IImmutableDictionary<NexusMods.MnemonicDB.LogicEngine.LVar, object>>;
+using EnvironmentStream = System.Collections.Generic.IEnumerable<System.Collections.Immutable.ImmutableDictionary<NexusMods.MnemonicDB.LogicEngine.LVar, object>>;
 
 namespace NexusMods.MnemonicDB.LogicEngine.Sources;
 
-public class And : IGoal
+public record And(Predicate[] Children) : Predicate
 {
-    public IPredicate Optimize(IPredicate input, ref ImmutableHashSet<LVar> preBound, LVar extract)
+    public override Predicate Optimize(ref ImmutableHashSet<LVar> preBound, LVar extract)
     {
-        var p = (Predicate<And>)input;
-        var newChildren = new List<object>();
-        foreach (var child in p.Args)
+        var optimizedChildren = new List<Predicate>();
+        foreach (var child in Children)
         {
-            var childPredicate = child as IPredicate;
-            if (childPredicate is null)
-                throw new NotSupportedException("All children of an And must be predicates: " + child);
-            
-            newChildren.Add(childPredicate.Source.Optimize(childPredicate, ref preBound, extract));
+            optimizedChildren.Add(child.Optimize(ref preBound, extract));
         }
-        
-        return p.WithArgs(newChildren);
+        return new And(optimizedChildren.ToArray());
     }
 
-    public LazyEnvStream Run(IPredicate predicate, LazyEnvStream envs)
+    public override EnvironmentStream Run(IDb db, Predicate query, EnvironmentStream stream)
     {
-        var p = (Predicate<And>)predicate;
-        
-        var acc = envs;
-        foreach (var child in p.Args)
-        {
-            acc = ((IPredicate)child).Source.Run((IPredicate)child, acc);
-        }
-
-        return acc;
-    }
-
-    public IObservableList<IImmutableDictionary<LVar, object>> Observe(IConnection conn)
-    {
-        throw new NotImplementedException();
+        return Children.Aggregate(stream, (current, child) => child.Run(db, query, current));
     }
 }

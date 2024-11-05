@@ -211,8 +211,7 @@ public readonly struct SliceDescriptor
             To = Datom(EntityId.MaxValueNoPartition, attrId, TxId.MaxValue, false, IndexType.AEVTCurrent)
         };
     }
-
-
+    
     /// <summary>
     /// Creates a slice descriptor for datoms that reference the given entity via the VAET index
     /// </summary>

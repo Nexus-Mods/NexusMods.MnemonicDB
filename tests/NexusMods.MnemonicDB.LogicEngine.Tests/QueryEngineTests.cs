@@ -1,3 +1,4 @@
+using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.MnemonicDB.Tests;
 using static NexusMods.MnemonicDB.LogicEngine.QueryBuilder;
@@ -12,13 +13,12 @@ public class QueryEngineTests(IServiceProvider provider) : AMnemonicDBTest(provi
     {
         var inserted = await InsertExampleData();
         var engine = new QueryEngine();
-        var mod = LVar.Create("mod");
-        var modName = LVar.Create("modName");
+        var mod = LVar.Create<EntityId>("mod");
+        var modName = LVar.Create<string>("modName");
 
         var query =
             And(
-                [mod, Mod.Loadout, inserted.LoadoutId],
-                Datoms(mod, Mod.Loadout, inserted.LoadoutId),
+                Datoms(mod, Mod.Loadout, (EntityId)inserted.LoadoutId),
                 Datoms(mod, Mod.Name, modName)
             );
 

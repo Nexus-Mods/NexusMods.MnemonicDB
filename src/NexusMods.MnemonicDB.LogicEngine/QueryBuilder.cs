@@ -5,23 +5,30 @@ namespace NexusMods.MnemonicDB.LogicEngine;
 
 public static partial class QueryBuilder
 {
-    /// <summary>
-    /// The global DB context for a query
-    /// </summary>
-    public static readonly LVar GlobalDb = LVar.Create("db");
-    public static IPredicate Datoms<THighLevel>(LVar eLvar, IWritableAttribute<THighLevel> attr, THighLevel value)
-        where THighLevel : notnull
+    public static Predicate Datoms<TAttribute, THighLevel>(LVar<EntityId> eLvar, TAttribute attr, THighLevel value)
+        where TAttribute : IWritableAttribute<THighLevel>, IReadableAttribute<THighLevel>
     {
-        return IPredicate.Create<Datoms>(GlobalDb, eLvar, attr, value);
+        return new Datoms<TAttribute, THighLevel>
+        {
+            Arg1 = eLvar,
+            Arg2 = attr,
+            Arg3 = value
+        };
     }
     
-    public static IPredicate Datoms(LVar eLVar, IAttribute attr, LVar value)
+    public static Predicate Datoms<TAttribute, TValue>(LVar<EntityId> eLVar, TAttribute attr, LVar<TValue> value)
+    where TAttribute : IWritableAttribute<TValue>, IReadableAttribute<TValue>
     {
-        return IPredicate.Create<Datoms>(GlobalDb, eLVar, attr, value);
+        return new Datoms<TAttribute, TValue>
+        {
+            Arg1 = eLVar,
+            Arg2 = attr,
+            Arg3 = value
+        };
     }
     
-    public static IPredicate And(params IPredicate[] predicates)
+    public static Predicate And(params Predicate[] predicates)
     {
-        return IPredicate.Create<And>(predicates);
+        return new And(predicates);
     }
 }

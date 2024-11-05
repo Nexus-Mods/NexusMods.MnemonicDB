@@ -3,117 +3,88 @@ using System.Collections.Immutable;
 using DynamicData;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Query;
+using EnvironmentStream = System.Collections.Generic.IEnumerable<System.Collections.Immutable.ImmutableDictionary<NexusMods.MnemonicDB.LogicEngine.LVar, object>>;
 using LazyEnvStream = System.Collections.Generic.IEnumerable<System.Collections.Immutable.IImmutableDictionary<NexusMods.MnemonicDB.LogicEngine.LVar, object>>;
 
 namespace NexusMods.MnemonicDB.LogicEngine.Sources;
 
-public class Datoms : IGoal
+public record Datoms<TAttribute, TValueType> : Predicate<EntityId, TAttribute, TValueType> 
+    where TAttribute : IWritableAttribute<TValueType>, IReadableAttribute<TValueType>
 {
-    public IPredicate Optimize(IPredicate input, ref ImmutableHashSet<LVar> preBound, LVar extract)
+    
+    public override Predicate Optimize(ref ImmutableHashSet<LVar> preBound, LVar extract)
     {
-        var p = (Predicate<Datoms>)input;
-        var pattern = (p.GetArgType(0, preBound), p.GetArgType(1, preBound), p.GetArgType(2, preBound), p.GetArgType(3, preBound));
-        
+        var pattern = Resolve(preBound);
         switch (pattern)
         {
-            case (ArgType.Variable, ArgType.Unbound, ArgType.Constant, ArgType.Constant):
-                preBound = preBound.Add((LVar)p[0]);
-                return p.WithName<FindEByAV>();
-            case (ArgType.Variable, ArgType.Unbound, ArgType.Constant, ArgType.Unbound):
-                preBound = preBound.Add((LVar)p[0]);
-                return p.WithName<FindVByAE>();
-
+            case (ArgType.Unbound, ArgType.Constant, ArgType.Constant):
+                preBound = preBound.Add(Arg1.LVar);
+                return new FindEByAV<TAttribute, TValueType>
+                {
+                    Arg1 = Arg1,
+                    Arg2 = Arg2,
+                    Arg3 = Arg3
+                };
+            case (ArgType.Variable, ArgType.Constant, ArgType.Unbound):
+                preBound = preBound.Add(Arg3.LVar);
+                return new FindVByAE<TAttribute, TValueType>
+                {
+                    Arg1 = Arg1,
+                    Arg2 = Arg2,
+                    Arg3 = Arg3
+                };
             default:
                 throw new NotSupportedException("Unsupported pattern : " + pattern);
         }
     }
 
-    public LazyEnvStream Run(IPredicate predicate, LazyEnvStream envs)
+    public override EnvironmentStream Run(IDb db, Predicate query, EnvironmentStream o)
     {
         throw new NotSupportedException("Must optimize before running");
-    }
-
-    public IObservableList<IImmutableDictionary<LVar, object>> Observe(IConnection conn)
-    {
-        throw new NotSupportedException("Must optimize before observing");
     }
 }
 
 /// <summary>
-/// Find a entity by attribute and value
+/// Find an entityId by attribute and value
 /// </summary>
-public class FindEByAV : IGoal
+public record FindEByAV<TAttribute, TValueType> : Predicate<EntityId, TAttribute, TValueType> 
+    where TAttribute : IWritableAttribute<TValueType>, IReadableAttribute<TValueType>
 {
-    public IPredicate Optimize(IPredicate input, ref ImmutableHashSet<LVar> preBound, LVar extract)
+    public override EnvironmentStream Run(IDb db, Predicate query, EnvironmentStream o)
     {
-        return input;
-    }
-
-    public LazyEnvStream Run(IPredicate predicate, LazyEnvStream envs)
-    {
-        var p = (Predicate<FindEByAV>)predicate;
-        var eLVar = (LVar)p[1];
-        var aVal = (IAttribute)p[2];
-        var vVal = p[3];
-        
-        foreach (var env in envs)
+        var eLVar = Arg1.LVar;
+        var vValue = Arg3.Value;
+        var attr = Arg2.Value;
+        foreach (var env in o)
         {
-            var db = (IDb)env[QueryBuilder.GlobalDb];
-            var datoms = db.Datoms(aVal);
-            foreach (var datom in datoms)
+            foreach (var datom in db.Datoms(SliceDescriptor.Create(attr, vValue, db.AttributeCache)))
             {
-                var resolved = datom.Resolved(db.Connection);
-                if (resolved.ObjectValue.Equals(vVal))
-                {
-                    yield return env.Add(eLVar, resolved.E);
-                }
+                yield return env.Add(eLVar, datom.E);
             }
         }
-    }
-
-    public IObservableList<IImmutableDictionary<LVar, object>> Observe(IConnection conn)
-    {
-        throw new NotImplementedException();
-    }
-
-    public IObservableList<IImmutableDictionary<LVar, object>> Observe(IConnection conn, IPredicate predicate)
-    {
-        throw new NotImplementedException();
     }
 }
 
 /// <summary>
 /// Find a value by entity and attribute
 /// </summary>
-public class FindVByAE : IGoal
+public record FindVByAE<TAttribute, TValueType> : Predicate<EntityId, TAttribute, TValueType> 
+    where TAttribute : IWritableAttribute<TValueType>, IReadableAttribute<TValueType>
 {
-    public IPredicate Optimize(IPredicate input, ref ImmutableHashSet<LVar> preBound, LVar extract)
+    public override EnvironmentStream Run(IDb db, Predicate query, EnvironmentStream o)
     {
-        return input;
-    }
-
-    public LazyEnvStream Run(IPredicate predicate, LazyEnvStream envs)
-    {
-        var p = (Predicate<FindVByAE>)predicate;
-        var eLVar = (LVar)p[1];
-        var aVal = (IAttribute)p[2];
-        var vLVar = (LVar)p[3];
-
-        foreach (var env in envs)
+        var eLVar = Arg1.LVar;
+        var attr = Arg2.Value;
+        var aId = db.AttributeCache.GetAttributeId(Arg2.Value.Id);
+        var vLVar = Arg3.LVar;
+        var resolver = db.Connection.AttributeResolver;
+        foreach (var env in o)
         {
-            var e = (EntityId)env[eLVar];
-            var db = (IDb)env[QueryBuilder.GlobalDb];
-            var aId = db.AttributeCache.GetAttributeId(aVal.Id);
-            var datoms = db.Datoms(SliceDescriptor.Create(e, aId));
-            foreach (var datom in datoms)
-            { 
-                yield return env.Add(vLVar, datom.Resolved(db.Connection).ObjectValue);
+            var eVal = (EntityId)env[eLVar];
+            foreach (var datom in db.Datoms(SliceDescriptor.Create(eVal, aId)))
+            {
+                yield return env.Add(vLVar, attr.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver)!);  
             }
         }
-    }
-
-    public IObservableList<IImmutableDictionary<LVar, object>> Observe(IConnection conn)
-    {
-        throw new NotImplementedException();
     }
 }
