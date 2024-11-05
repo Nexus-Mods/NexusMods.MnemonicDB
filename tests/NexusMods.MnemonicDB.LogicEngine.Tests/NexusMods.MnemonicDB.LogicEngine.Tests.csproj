@@ -2,22 +2,25 @@
     <PropertyGroup>
         <!-- https://github.com/pengweiqhca/Xunit.DependencyInjection#how-to-disable-xunitdependencyinjection -->
         <EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>true</EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>
-        <RootNamespace>NexusMods.MnemonicDB.Tests</RootNamespace>
+        <RootNamespace>NexusMods.MnemonicDB.LogicEngine.Tests</RootNamespace>
     </PropertyGroup>
-
+    
     <ItemGroup>
-        <ProjectReference Include="..\..\src\NexusMods.MnemonicDB\NexusMods.MnemonicDB.csproj"/>
-        <ProjectReference Include="..\NexusMods.MnemonicDB.TestModel\NexusMods.MnemonicDB.TestModel.csproj"/>
+        <PackageReference Include="coverlet.collector" Version="6.0.0"/>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
+        <PackageReference Include="xunit" Version="2.5.3"/>
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3"/>
     </ItemGroup>
 
     <ItemGroup>
-      <None Update="DbTests.CanGetCommitUpdates.verified.txt">
-        <DependentUpon>DbTests.cs</DependentUpon>
-      </None>
-      <None Update="DbTests.CanFindEntitiesByAttribute.verified.txt">
-        <DependentUpon>DbTests.cs</DependentUpon>
-      </None>
-      <None Remove="DbTests.CanGetCommitUpdates_update_datom_0.received.txt" />
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.LogicEngine\NexusMods.MnemonicDB.LogicEngine.csproj" />
+        <ProjectReference Include="..\NexusMods.MnemonicDB.TestModel\NexusMods.MnemonicDB.TestModel.csproj" />
+        <ProjectReference Include="..\..\src\NexusMods.MnemonicDB\NexusMods.MnemonicDB.csproj" />
+        <ProjectReference Include="..\NexusMods.MnemonicDB.Tests\NexusMods.MnemonicDB.Tests.csproj" />
     </ItemGroup>
 
     <ItemGroup>
