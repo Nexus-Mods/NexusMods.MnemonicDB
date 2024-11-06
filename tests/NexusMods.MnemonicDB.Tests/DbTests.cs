@@ -540,8 +540,8 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         remapped.Contains(Mod.Description).Should().BeTrue();
         Mod.Description.TryGetValue(remapped, remapped.IndexSegment, out var foundDesc).Should().BeTrue();
         foundDesc.Should().Be("Test Description");
-        remapped.Description.Should().Be("Test Description");
-        
+        remapped.Description.Value.Should().Be("Test Description");
+
         var remapped2 = result.Remap(modWithoutDiscription);
         remapped2.Contains(Mod.Description).Should().BeFalse();
         Mod.Description.TryGetValue(remapped2, remapped2.IndexSegment, out var foundDesc2).Should().BeFalse();
@@ -1036,12 +1036,10 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             Name = "Test Loadout",
             GamePath = path
         };
-        
+
         var result = await tx.Commit();
-        
         var loadout = result.Remap(loadout1);
-        
-        loadout.GamePath.Should().Be(path);
+        loadout.GamePath.Value.Should().Be(path);
     }
 
     [Fact]
