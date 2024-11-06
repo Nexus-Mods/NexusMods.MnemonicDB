@@ -44,6 +44,15 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     }
 
     /// <summary>
+    /// Tries to get the value of the attribute from the entity.
+    /// </summary>
+    public bool TryGetValue<T>(T entity, [NotNullWhen(true)] out TValue? value)
+        where T : IHasIdAndIndexSegment
+    {
+        return TryGetValue(entity, segment: entity.IndexSegment, out value);
+    }
+
+    /// <summary>
     /// Gets the value of the attribute from the entity.
     /// </summary>
     public TValue Get<T>(T entity, IndexSegment segment)
@@ -85,7 +94,9 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     private TValue ThrowKeyNotfoundException(EntityId entityId)
     {
         throw new KeyNotFoundException($"Entity `{entityId}` doesn't have attribute {Id}");
+#pragma warning disable CS0162 // Unreachable code detected
         return default!;
+#pragma warning restore CS0162 // Unreachable code detected
     }
 
     /// <summary>
