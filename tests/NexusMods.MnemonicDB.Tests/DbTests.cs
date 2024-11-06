@@ -538,13 +538,13 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var remapped = result.Remap(modWithDescription);
         remapped.Contains(Mod.Description).Should().BeTrue();
-        Mod.Description.TryGet(remapped, out var foundDesc).Should().BeTrue();
+        Mod.Description.TryGetValue(remapped, remapped.IndexSegment, out var foundDesc).Should().BeTrue();
         foundDesc.Should().Be("Test Description");
         remapped.Description.Should().Be("Test Description");
         
         var remapped2 = result.Remap(modWithoutDiscription);
         remapped2.Contains(Mod.Description).Should().BeFalse();
-        Mod.Description.TryGet(remapped2, out var foundDesc2).Should().BeFalse();
+        Mod.Description.TryGetValue(remapped2, remapped2.IndexSegment, out var foundDesc2).Should().BeFalse();
     }
 
     [Fact]
