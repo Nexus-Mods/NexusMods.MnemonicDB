@@ -371,7 +371,11 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            {{elif attr.IsReference}}
            public {{= attr.ReferenceType.ToDisplayString()}}Id {{= attr.ContextualName}} => {{= attr.ReferenceType.ToDisplayString()}}Id.From({{= attr.FieldName}}.Get(this));
            {{else}}
+           {{if attr.IsOptional}}
+           public global::DynamicData.Kernel.Optional<{{= attr.HighLevelType.ToDisplayString()}}> {{= attr.ContextualName }} => {{= attr.FieldName}}.GetOptional(this);
+           {{else}}
            public {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
+           {{/if}}
            {{/if}}
 
 
