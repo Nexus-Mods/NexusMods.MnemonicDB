@@ -12,19 +12,17 @@ public class QueryEngineTests(IServiceProvider provider) : AMnemonicDBTest(provi
     public async Task CanQueryForChildren()
     {
         var inserted = await InsertExampleData();
-        var engine = new QueryEngine();
-        var mod = LVar.Create<EntityId>("mod");
-        var modName = LVar.Create<string>("modName");
 
-        var query =
-            And(
-                Datoms(mod, Mod.Loadout, (EntityId)inserted.LoadoutId),
-                Datoms(mod, Mod.Name, modName)
-            );
+        var query = Query.New<EntityId>(out var loadout)
+            .Declare<EntityId>(out var mod)
+            .Declare<string>(out var modName)
+            .Where(Datoms(mod, Mod.Loadout, loadout),
+                   Datoms(mod, Mod.Name, modName))
+            .Return(modName);
+        
 
         var db = Connection.Db;
-        engine.QueryAll<string>(db, query, modName)
-            .ToArray()
+        query.Run(db, inserted.Id)
             .Should()
             .BeEquivalentTo(["Mod1 - Updated", "Mod2 - Updated", "Mod3 - Updated"]);
     }

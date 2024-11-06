@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.LogicEngine.Sources;
 
 namespace NexusMods.MnemonicDB.LogicEngine;
 
