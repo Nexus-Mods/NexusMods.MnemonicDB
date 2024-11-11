@@ -39,6 +39,9 @@ public interface ITransaction : IDisposable
     void Add<TVal, TAttribute>(EntityId entityId, TAttribute attribute, TVal val, bool isRetract = false) 
         where TAttribute : IWritableAttribute<TVal>;
     
+    /// <summary>
+    ///    Adds a new datom to the transaction
+    /// </summary>
     void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false)
         where TSerializer : IValueSerializer<TLowLevel>;
     

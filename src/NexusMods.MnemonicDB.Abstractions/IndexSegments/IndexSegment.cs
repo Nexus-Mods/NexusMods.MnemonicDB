@@ -227,46 +227,7 @@ public readonly struct IndexSegment : IReadOnlyList<Datom>
         }
         return result; // Return the first occurrence found, or -1 if not found
     }
-
-    public int FindFirstAVX2(ulong find)
-    {
-        var targetVector = Vector256<ulong>.Zero.WithElement(0, find)
-            .WithElement(1, find)
-            .WithElement(2, find)
-            .WithElement(3, find);
-
-        var casted = MemoryMarshal.Cast<ulong, Vector256<ulong>>(Lowers);
-
-        for (var idx = 0; idx < casted.Length; idx += 1)
-        {
-            var lowers = casted[idx];
-
-            var maskHigh = Avx2.And(lowers, Vector256.Create(0x7F00000000000000UL));
-            var maskLow = Avx2.And(Avx2.ShiftRightLogical(lowers, 8), Vector256.Create(0x0000FFFFFFFFFFFFUL));
-            var ored = Avx2.Or(maskHigh, maskLow);
-
-            var comparison = Avx2.CompareEqual(ored, targetVector);
-
-            var mask = Avx2.MoveMask(comparison.As<ulong, byte>());
-            if (mask != 0)
-            {
-                var index = BitOperations.TrailingZeroCount(mask) / 8;
-                return idx * Vector256<ulong>.Count + index;
-            }
-        }
-
-        // Handle remaining elements
-        for (int i = (casted.Length * Vector256<ulong>.Count); i < Lowers.Length; i++)
-        {
-            if (Lowers[i] >= find)
-            {
-                return i;
-            }
-        }
-
-        return -1; // No value found that is greater than or equal to the target
-    }
-
+    
     /// <summary>
     /// Enumerator.
     /// </summary>

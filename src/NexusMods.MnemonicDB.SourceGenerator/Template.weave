@@ -274,7 +274,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 
         #region Attributes
         {{each attr in model.Attributes}}
-        {{= attr.Comments}}
+        
+        /// <inheritdoc cref="{{= model.Name}}.{{= attr.ContextualName}}" />
         {{if attr.IsReference && !attr.IsCollection}}
         public {{= attr.Prefix}} {{= attr.ReferenceType.ToDisplayString()}}Id {{= attr.ContextualName}} { get; set; }
         {{elif attr.IsCollection}}
@@ -305,6 +306,9 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            
            __SEGMENTS__.IndexSegment __MODELS__.IHasIdAndIndexSegment.IndexSegment => this.IndexSegment; 
 
+           /// <summary>
+           /// Constructs a new ReadOnly model of the entity from the given segment and id.
+           /// </summary>
            public ReadOnly(__ABSTRACTIONS__.IDb db, __SEGMENTS__.IndexSegment segment, __ABSTRACTIONS__.EntityId id) {
                Db = db;
                Id = id;
@@ -378,11 +382,13 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
                return false;
            }
 
+           /// <inheritdoc />
            public override string ToString()
            {
                return "{{= model.Name}}<" + Id + ">";
            }
 
+           /// <inheritdoc />
            public bool IsValid()
            {
                // This is true when the struct is a default value.
@@ -392,10 +398,14 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            }
 
            {{each include in model.Includes}}
+           /// <summary>
+           /// Tries convert this entity to a {{= include.Name}} entity, if the entity is not a {{= include.Name}} entity, it returns false.
+           /// </summary>
            public {{= include.ToDisplayString()}}.ReadOnly As{{= include.Name}}() => new {{= include.ToDisplayString()}}.ReadOnly(Db, Id);
            {{/each}}
 
            {{each attr in model.Attributes}}
+           /// <inheritdoc cref="{{= model.Name}}.{{= attr.ContextualName}}" />
            {{if attr.IsCollection && attr.IsReference && !attr.IsMarker}}
            public __SEGMENTS__.Values<__ABSTRACTIONS__.EntityId> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
            public __SEGMENTS__.ValueEntities<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => __SEGMENTS__.ValuesExtensions.AsModels<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly>({{= attr.FieldName}}.Get(this), Db);
@@ -435,6 +445,9 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
                return model.Id;
            }
 
+           /// <summary>
+           /// Implicit conversion from the model to the model id.
+           /// </summary>
            public static implicit operator {{= model.Name}}Id({{= model.Name}}.ReadOnly? model) {
                return {{= model.Name}}Id.From(model!.Value.Id);
            }
@@ -550,6 +563,10 @@ public readonly partial struct {{= model.Name}}Id : IEquatable<{{= model.Name}}I
 /// Extension methods for the {{= model.Name}} model.
 /// </summary>
 public static class {{= model.Name}}Extensions {
+
+    /// <summary>
+    /// Adds the {{= model.Name}} model to the service collection.
+    /// </summary>
     public static __DI__.IServiceCollection Add{{= model.Name}}Model(this __DI__.IServiceCollection services) {
         {{each attr in model.Attributes}}
         services.AddSingleton<__ABSTRACTIONS__.IAttribute>(_ => {{= attr.FieldName}});

@@ -13,6 +13,9 @@ using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions.Query;
 
+/// <summary>
+/// Extensions for observing datoms in the database
+/// </summary>
 public static class ObservableDatoms
 {
 

@@ -154,8 +154,14 @@ public readonly record struct KeyPrefix
 
     #region Constants
 
+    /// <summary>
+    /// The minimum key prefix possible
+    /// </summary>
     public static KeyPrefix Min => new(0, 0);
 
+    /// <summary>
+    /// The maximum key prefix possible
+    /// </summary>
     public static KeyPrefix Max => new(0, 0);
 
     /// <summary>

@@ -83,13 +83,4 @@ public class IndexSegmentEBenchmarks
         var find = EntityId.From((ulong)ToFind);
         return _index.FindFirst(find); // Return the first occurrence found, or -1 if not found
     }
-
-    [Benchmark]
-    public int FindBinarySearchReworkAVX2()
-    {
-        var find = EntityId.From((ulong)ToFind);
-        return _index.FindFirstAVX2(find.Value); // Return the first occurrence found, or -1 if not found
-    }
-
-
 }

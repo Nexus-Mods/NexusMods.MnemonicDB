@@ -80,7 +80,6 @@ where TModel : IReadOnlyModel<TModel>
     /// <summary>
     /// A wrapper around EntityIds that auto-creates the given ReadModel on-the-fly
     /// </summary>
-    /// <typeparam name="TModel"></typeparam>
     public Entities(EntityIds ids, IDb db)
     {
         _ids = ids;

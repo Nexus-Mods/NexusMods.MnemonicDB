@@ -62,9 +62,14 @@ public enum IndexType : byte
     AVETHistory
 }
 
-
+/// <summary>
+/// Extension methods for the IndexType enum
+/// </summary>
 public static class IndexTypeExtensions
 {
+    /// <summary>
+    /// Get a comparator for the given index type
+    /// </summary>
     public static IDatomComparator GetComparator(this IndexType type)
     {
         return type switch
