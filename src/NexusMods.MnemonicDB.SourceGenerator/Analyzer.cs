@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 namespace NexusMods.MnemonicDB.SourceGenerator;
 
 [Generator]
-public class ModelGenerator : ISourceGenerator
+internal class ModelGenerator : ISourceGenerator
 {
     public void Initialize(GeneratorInitializationContext context)
     {

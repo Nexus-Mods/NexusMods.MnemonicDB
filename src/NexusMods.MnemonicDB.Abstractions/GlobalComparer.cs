@@ -34,6 +34,9 @@ public sealed class GlobalComparer : IComparer<byte[]>
         };
     }
 
+    /// <summary>
+    /// Compare two datoms
+    /// </summary>
     public static int Compare(in Datom a, in Datom b)
     {
         var cmp = ((byte)a.Prefix.Index).CompareTo((byte)b.Prefix.Index);

@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace NexusMods.MnemonicDB.SourceGenerator;
 
-public class SyntaxReceiver : ISyntaxReceiver
+internal class SyntaxReceiver : ISyntaxReceiver
 {
     public ImmutableList<ClassDeclarationSyntax> CandidateClasses { get; private set; } =
         ImmutableList<ClassDeclarationSyntax>.Empty;

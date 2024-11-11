@@ -3,7 +3,7 @@
 namespace NexusMods.MnemonicDB.SourceGenerator;
 
 [Flags]
-public enum AttributeFlags
+internal enum AttributeFlags
 {
     Marker = 1,
     Scalar = 2,
