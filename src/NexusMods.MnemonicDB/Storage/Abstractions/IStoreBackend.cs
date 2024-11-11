@@ -7,6 +7,10 @@ using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.Storage.Abstractions;
 
+/// <summary>
+/// A store backend is the backing KV store of a datoms store. It is responsible for
+/// sorting, storing and snapshotting spans of data
+/// </summary>
 public interface IStoreBackend : IDisposable
 {
     /// <summary>
@@ -14,8 +18,15 @@ public interface IStoreBackend : IDisposable
     /// the datom store, the connection, and the db instances
     /// </summary>
     public AttributeCache AttributeCache { get; }
+    
+    /// <summary>
+    /// Create a new write batch
+    /// </summary>
     public IWriteBatch CreateBatch();
 
+    /// <summary>
+    /// Initialize the store backend with the given location
+    /// </summary>
     public void Init(AbsolutePath location);
 
     /// <summary>

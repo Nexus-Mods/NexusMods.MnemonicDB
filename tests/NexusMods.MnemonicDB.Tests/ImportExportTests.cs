@@ -22,7 +22,7 @@ public class ImportExportTests(IServiceProvider provider) : AMnemonicDBTest(prov
         
         Logger.LogInformation("Exported {0} bytes", ms.Length);
         
-        var datomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>()!,
+        var datomStore = new DatomStore(Provider.GetRequiredService<ILogger<DatomStore>>()!,
             Config, new Backend(), bootstrap: false);
         
         ms.Position = 0;

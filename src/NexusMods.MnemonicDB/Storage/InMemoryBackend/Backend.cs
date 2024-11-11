@@ -12,19 +12,26 @@ namespace NexusMods.MnemonicDB.Storage.InMemoryBackend;
 
 using IndexData = ImmutableSortedSet<byte[]>;
 
+/// <summary>
+/// The in-memory backend for the datoms store
+/// </summary>
 public class Backend : IStoreBackend
 {
     private IndexData _index;
-    private readonly AttributeCache _attributeCache;
 
+    /// <summary>
+    /// Default constructor
+    /// </summary>
     public Backend()
     {
-        _attributeCache = new AttributeCache();
+        AttributeCache = new AttributeCache();
         _index = IndexData.Empty.WithComparer(new GlobalComparer());
     }
 
-    public AttributeCache AttributeCache => _attributeCache;
+    /// <inheritdoc />
+    public AttributeCache AttributeCache { get; }
 
+    /// <inheritdoc />
     public IWriteBatch CreateBatch()
     {
         return new Batch(this);
@@ -35,12 +42,15 @@ public class Backend : IStoreBackend
         _index = alter(_index);
     }
 
+    /// <inheritdoc />
     public void Init(AbsolutePath location) { }
-    
+
+    /// <inheritdoc />
     public ISnapshot GetSnapshot()
     {
         return new Snapshot(_index, AttributeCache);
     }
 
+    /// <inheritdoc />
     public void Dispose() { }
 }

@@ -10,7 +10,7 @@ using IWriteBatch = NexusMods.MnemonicDB.Storage.Abstractions.IWriteBatch;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-public class Batch(RocksDb db) : IWriteBatch
+internal class Batch(RocksDb db) : IWriteBatch
 {
     private readonly WriteBatch _batch = new();
 

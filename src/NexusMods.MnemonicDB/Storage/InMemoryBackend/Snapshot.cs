@@ -1,18 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
-using NexusMods.MnemonicDB.Storage.Abstractions;
 
 namespace NexusMods.MnemonicDB.Storage.InMemoryBackend;
 
 using IndexData = ImmutableSortedSet<byte[]>;
 
-public class Snapshot : ISnapshot
+internal class Snapshot : ISnapshot
 {
     private readonly IndexData _index;
     private readonly AttributeCache _attributeCache;
@@ -22,9 +20,7 @@ public class Snapshot : ISnapshot
         _attributeCache = attributeCache;
         _index = index;
     }
-
-    public void Dispose() { }
-
+    
     /// <inheritdoc />
     public IndexSegment Datoms(SliceDescriptor descriptor)
     {
