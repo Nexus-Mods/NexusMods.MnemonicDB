@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis;
 
 namespace NexusMods.MnemonicDB.SourceGenerator;
 
-public class AnalyzedAttribute
+internal class AnalyzedAttribute
 {
     public string Name { get; set; } = "";
     public string FieldName { get; set; } = "";

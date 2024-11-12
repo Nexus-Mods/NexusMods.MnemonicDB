@@ -118,7 +118,7 @@ public class Connection : IConnection
     /// <inheritdoc />
     public IDb History()
     {
-        return new Db(new HistorySnapshot(_store.GetSnapshot(), TxId, AttributeCache), TxId, AttributeCache)
+        return new Db(new HistorySnapshot(_store.GetSnapshot(), AttributeCache), TxId, AttributeCache)
         {
             Connection = this
         };

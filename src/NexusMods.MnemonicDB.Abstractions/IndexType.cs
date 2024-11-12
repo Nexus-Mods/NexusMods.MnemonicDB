@@ -2,38 +2,74 @@
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+// ReSharper disable InconsistentNaming
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
+/// <summary>
+/// The type of indexes in the database
+/// </summary>
 public enum IndexType : byte
 {
-    // No specified index, default for datoms
+    /// <summary>
+    /// Default for datoms that are not part of an index
+    /// </summary>
     None = 0,
     
-    // Transaction log, the final source of truth, used
-    // for replaying the database
+    /// <summary>
+    /// Transaction log index
+    /// </summary>
     TxLog = 1,
 
-    // Primary index for looking up values on an entity
+    /// <summary>
+    /// Current row-level index
+    /// </summary>
     EAVTCurrent = 2,
+    
+    /// <summary>
+    /// History row-level index
+    /// </summary>
     EAVTHistory,
 
-    // Indexes for asking what entities have this attribute?
+    /// <summary>
+    /// Current column-level index
+    /// </summary>
     AEVTCurrent,
+    
+    /// <summary>
+    /// History column-level index
+    /// </summary>
     AEVTHistory,
 
-    // Backref index for asking "who references this entity?"
+    /// <summary>
+    ///  Current reverse reference index
+    /// </summary>
     VAETCurrent,
+    
+    /// <summary>
+    /// History reverse reference index
+    /// </summary>
     VAETHistory,
 
-    // Secondary index for asking "who has this value on this attribute?"
+    /// <summary>
+    /// Current indexed value index
+    /// </summary>
     AVETCurrent,
+    
+    /// <summary>
+    /// History indexed value index
+    /// </summary>
     AVETHistory
 }
 
-
+/// <summary>
+/// Extension methods for the IndexType enum
+/// </summary>
 public static class IndexTypeExtensions
 {
+    /// <summary>
+    /// Get a comparator for the given index type
+    /// </summary>
     public static IDatomComparator GetComparator(this IndexType type)
     {
         return type switch

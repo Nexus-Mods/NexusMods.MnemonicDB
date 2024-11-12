@@ -1,6 +1,6 @@
 ﻿namespace NexusMods.MnemonicDB.SourceGenerator;
 
-public static class Consts
+internal static class Consts
 {
     public const string IModelDefinitionFullName = "NexusMods.MnemonicDB.Abstractions.Models.IModelDefinition";
     public const string IModelDefinitionName = "IModelDefinition";

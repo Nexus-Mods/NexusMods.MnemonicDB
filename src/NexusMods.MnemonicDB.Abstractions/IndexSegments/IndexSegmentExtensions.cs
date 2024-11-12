@@ -2,6 +2,9 @@ using System.Collections.Generic;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
+/// <summary>
+/// Extensions for working with index segments
+/// </summary>
 public static class IndexSegmentExtensions
 {
     /// <summary>
@@ -88,7 +91,10 @@ public static class IndexSegmentExtensions
         return result;
     }
 
-
+    /// <summary>
+    /// Merges four index segments by entity id, returning a list of the entity ids found in all four segments. This is a
+    /// union operation, and assumes that the four segments ar ordered by entity id.
+    /// </summary>
     public static List<EntityId> MergeByEntityId(this IndexSegment setA, IndexSegment setB, IndexSegment setC, IndexSegment setD)
     {
         var lowerA = setA.Lowers;

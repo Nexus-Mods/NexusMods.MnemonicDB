@@ -13,6 +13,9 @@ using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions.Query;
 
+/// <summary>
+/// Extensions for observing datoms in the database
+/// </summary>
 public static class ObservableDatoms
 {
 
@@ -112,13 +115,9 @@ public static class ObservableDatoms
     private static IChangeSet<Datom, DatomKey> Diff(AttributeCache cache, IndexSegment updates, SliceDescriptor descriptor)
     {
         var changes = new ChangeSet<Datom, DatomKey>();
-        
-        AttributeId previousAid = default;
-
         var index = descriptor.Index;
-
         
-        for (int i = 0; i < updates.Count; i++) 
+        for (var i = 0; i < updates.Count; i++) 
         {
             var datom = updates[i].WithIndex(index);
             if (!descriptor.Includes(datom))

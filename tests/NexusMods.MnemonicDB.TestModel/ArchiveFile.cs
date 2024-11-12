@@ -10,10 +10,12 @@ namespace NexusMods.MnemonicDB.TestModel;
 public partial class ArchiveFile : IModelDefinition
 {
     private const string Namespace = "NexusMods.MnemonicDB.TestModel.ArchiveFile";
+    
     /// <summary>
     /// The path of the file in the archive
     /// </summary>
     public static readonly RelativePathAttribute Path = new(Namespace, nameof(Path)) { IsIndexed = true };
+    
     /// <summary>
     /// The hash of the file in the archive
     /// </summary>

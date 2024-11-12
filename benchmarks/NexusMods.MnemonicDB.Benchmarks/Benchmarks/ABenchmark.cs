@@ -19,6 +19,7 @@ public class ABenchmark : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        await Task.Yield();
         var builder = Host.CreateDefaultBuilder()
             .ConfigureServices(services =>
             {

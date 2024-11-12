@@ -4,14 +4,14 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="DynamicData" Version="8.4.1"/>
-        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.1"/>
-        <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.6" />
-        <PackageReference Include="Reloaded.Memory" Version="9.4.1"/>
-        <PackageReference Include="RocksDB" Version="8.11.3.46984" />
+        <PackageReference Include="DynamicData" Version="9.0.4" />
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2" />
+        <PackageReference Include="Microsoft.Extensions.ObjectPool" Version="8.0.10" />
+        <PackageReference Include="Reloaded.Memory" Version="9.4.2" />
+        <PackageReference Include="RocksDB" Version="9.4.0.50294" />
         <PackageReference Include="System.Reactive" Version="6.0.1" />
         <PackageReference Include="TransparentValueObjects" Version="1.0.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
-        <PackageReference Update="JetBrains.Annotations" Version="2023.3.0"/>
+        <PackageReference Update="JetBrains.Annotations" Version="2024.3.0" />
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\NexusMods.MnemonicDB.Abstractions\NexusMods.MnemonicDB.Abstractions.csproj"/>

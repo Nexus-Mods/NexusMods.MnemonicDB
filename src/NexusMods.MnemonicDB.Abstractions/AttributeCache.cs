@@ -22,6 +22,9 @@ public sealed class AttributeCache
     private ValueTag[] _valueTags;
     private BitArray _isNoHistory;
 
+    /// <summary>
+    /// Constructs a new cache, populated with the hardcoded attribute definitions
+    /// </summary>
     public AttributeCache()
     {
         var maxId = AttributeDefinition.HardcodedIds.Values.Max() + 1;

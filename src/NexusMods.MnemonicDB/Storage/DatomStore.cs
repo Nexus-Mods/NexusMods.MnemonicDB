@@ -23,6 +23,9 @@ using static NexusMods.MnemonicDB.Abstractions.IndexType;
 
 namespace NexusMods.MnemonicDB.Storage;
 
+/// <summary>
+/// Implementation of the datom store
+/// </summary>
 public sealed partial class DatomStore : IDatomStore
 {
     internal readonly IStoreBackend Backend;
@@ -34,14 +37,12 @@ public sealed partial class DatomStore : IDatomStore
     private readonly DatomStoreSettings _settings;
 
     private readonly BlockingCollection<IInternalTxFunctionImpl> _pendingTransactions;
-    private DbStream _dbStream;
+    private readonly DbStream _dbStream;
     private readonly PooledMemoryBufferWriter _writer;
     private readonly PooledMemoryBufferWriter _prevWriter;
     private TxId _asOfTx = TxId.MinValue;
-
-    private Task? _bootStrapTask = null;
     
-    private IDb? _currentDb = null;
+    private IDb? _currentDb;
 
     private static readonly TimeSpan TransactionTimeout = TimeSpan.FromMinutes(120);
 

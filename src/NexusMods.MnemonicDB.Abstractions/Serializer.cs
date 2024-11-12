@@ -223,6 +223,9 @@ public static class Serializer
 
     #region ValueConversion
     
+    /// <summary>
+    /// Convert the value from the source tag to the destination tag if possible, throws an exception if the conversion is not supported
+    /// </summary>
     public static void ConvertValue<TWriter>(this ValueTag srcTag, ReadOnlySpan<byte> srcSpan, ValueTag destTag, TWriter destWriter)
         where TWriter : IBufferWriter<byte>
     {

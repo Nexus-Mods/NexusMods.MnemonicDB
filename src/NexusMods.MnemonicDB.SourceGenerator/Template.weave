@@ -29,6 +29,10 @@ using __DI__ = Microsoft.Extensions.DependencyInjection;
 using __COMPARERS__ = NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
 
+/// <summary>
+/// The top level model definition for the {{= model.Name}} model. This class is rarely 
+/// used directly, instead, the ReadOnly struct or the New class should be used.
+/// </summary>
 {{= model.Comments}}
 public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}}, {{= model.Name}}.ReadOnly>
 {
@@ -45,6 +49,9 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 
     {{each attr in model.Attributes}}
     {{if attr.IsIndexed || attr.IsReference}}
+    /// <summary>
+    /// Finds all {{= model.Name}} entities with the given value for the {{= attr.Name}} attribute.
+    /// </summary>
     public static __SEGMENTS__.Entities<{{= model.Name}}.ReadOnly> FindBy{{= attr.Name}}(__ABSTRACTIONS__.IDb db, {{= attr.HighLevelType.ToDisplayString()}} value) {
         return db.Datoms({{= attr.FieldName}}, value).AsModels<{{= model.Name}}.ReadOnly>(db);
     }
@@ -137,11 +144,17 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     #endregion
 
 
+    /// <summary>
+    /// Constructs a new {{= model.Name}} model from the given entity id, used to provide a typed structured
+    /// way to interact with the entity before it is commited to the database.
+    /// </summary>
     public partial class New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
-
 
         {{if model.Includes.Count == 0}}
         
+        /// <summary>
+        /// Constructs a new {{= model.Name}} model from the given transaction with a generated temporary id.
+        /// </summary>
         public New(__ABSTRACTIONS__.ITransaction tx) : base() {
             Id = tx.TempId();
             tx.Attach(this);
@@ -149,12 +162,18 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         
         {{else}}
         
+        /// <summary>
+        /// Constructs a new {{= model.Name}} model from the given transaction with the given entity id.
+        /// </summary>
         public New(__ABSTRACTIONS__.ITransaction tx, out __ABSTRACTIONS__.EntityId id) : base() {
             Id = tx.TempId();
             id = Id;
             tx.Attach(this);
         }
         
+        /// <summary>
+        /// Constructs a new {{= model.Name}} model from the given transaction with the given entity partition for the generated temporary id.
+        /// </summary>
         public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.PartitionId partition, out __ABSTRACTIONS__.EntityId id) : base() {
             Id = tx.TempId(partition);
             id = Id;
@@ -163,12 +182,18 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         
         {{/if}}
 
+        /// <summary>
+        /// Constructs a new {{= model.Name}} model from the given transaction with the given entity id.
+        /// </summary>
         public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.EntityId eid) : base() {
             Id = eid;
             tx.Attach(this);
         }
 
         {{each include in model.Includes}}
+        /// <summary>
+        /// Gets the included entity of type {{= include.Name}} from the transaction.
+        /// </summary>
         public {{= include.ToDisplayString()}}.New Get{{=include.Name}}(__ABSTRACTIONS__.ITransaction tx) {
             if (!tx.TryGet<{{= include.ToDisplayString()}}.New>(Id, out var value))
                 throw new InvalidOperationException($"Unable to find {typeof({{= include.ToDisplayString()}}.New)} with ID {Id} in transaction!");
@@ -176,6 +201,9 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
             return value;
         }
 
+        /// <summary>
+        /// Sets the included entity of type {{= include.Name}} in the transaction.
+        /// </summary>
         public required {{= include.ToDisplayString()}}.New {{= include.Name}} {
             init {
                 if (Id != value.Id)
@@ -184,6 +212,9 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         }
         {{/each}}
 
+        /// <summary>
+        /// Adds this model to the given transaction.
+        /// </summary>
         public void AddTo(__ABSTRACTIONS__.ITransaction tx)
         {
             {{each attr in model.Attributes}}
@@ -243,7 +274,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 
         #region Attributes
         {{each attr in model.Attributes}}
-        {{= attr.Comments}}
+        
+        /// <inheritdoc cref="{{= model.Name}}.{{= attr.ContextualName}}" />
         {{if attr.IsReference && !attr.IsCollection}}
         public {{= attr.Prefix}} {{= attr.ReferenceType.ToDisplayString()}}Id {{= attr.ContextualName}} { get; set; }
         {{elif attr.IsCollection}}
@@ -259,6 +291,10 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         #endregion
     }
 
+    /// <summary>
+    /// The ReadOnly struct is a read-only version of the entity, it is used to access the entity
+    /// in a read context. It immutable and must be reloaded to get updated data when the entity changes.
+    /// </summary>
     {{= model.Comments}}
     public readonly partial struct ReadOnly :
         __MODELS__.IReadOnlyModel<{{= model.Name}}.ReadOnly> {
@@ -270,6 +306,9 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            
            __SEGMENTS__.IndexSegment __MODELS__.IHasIdAndIndexSegment.IndexSegment => this.IndexSegment; 
 
+           /// <summary>
+           /// Constructs a new ReadOnly model of the entity from the given segment and id.
+           /// </summary>
            public ReadOnly(__ABSTRACTIONS__.IDb db, __SEGMENTS__.IndexSegment segment, __ABSTRACTIONS__.EntityId id) {
                Db = db;
                Id = id;
@@ -343,11 +382,13 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
                return false;
            }
 
+           /// <inheritdoc />
            public override string ToString()
            {
                return "{{= model.Name}}<" + Id + ">";
            }
 
+           /// <inheritdoc />
            public bool IsValid()
            {
                // This is true when the struct is a default value.
@@ -357,10 +398,14 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            }
 
            {{each include in model.Includes}}
+           /// <summary>
+           /// Tries convert this entity to a {{= include.Name}} entity, if the entity is not a {{= include.Name}} entity, it returns false.
+           /// </summary>
            public {{= include.ToDisplayString()}}.ReadOnly As{{= include.Name}}() => new {{= include.ToDisplayString()}}.ReadOnly(Db, Id);
            {{/each}}
 
            {{each attr in model.Attributes}}
+           /// <inheritdoc cref="{{= model.Name}}.{{= attr.ContextualName}}" />
            {{if attr.IsCollection && attr.IsReference && !attr.IsMarker}}
            public __SEGMENTS__.Values<__ABSTRACTIONS__.EntityId> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
            public __SEGMENTS__.ValueEntities<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => __SEGMENTS__.ValuesExtensions.AsModels<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly>({{= attr.FieldName}}.Get(this), Db);
@@ -400,6 +445,9 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
                return model.Id;
            }
 
+           /// <summary>
+           /// Implicit conversion from the model to the model id.
+           /// </summary>
            public static implicit operator {{= model.Name}}Id({{= model.Name}}.ReadOnly? model) {
                return {{= model.Name}}Id.From(model!.Value.Id);
            }
@@ -412,8 +460,14 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 [global::System.Text.Json.Serialization.JsonConverter(typeof({{= model.Name}}Id.JsonConverter))]
 public readonly partial struct {{= model.Name}}Id : IEquatable<{{= model.Name}}Id>, IEquatable<__ABSTRACTIONS__.EntityId>
 {
+    /// <summary>
+    /// The generic EntityId value this typed id wraps.
+    /// </summary>
     public readonly __ABSTRACTIONS__.EntityId Value;
 
+    /// <summary>
+    /// Constructs a new {{= model.Name}}Id from the given entity id.
+    /// </summary>
     public {{= model.Name}}Id(__ABSTRACTIONS__.EntityId id) => Value = id;
 
     /// <summary>
@@ -426,41 +480,60 @@ public readonly partial struct {{= model.Name}}Id : IEquatable<{{= model.Name}}I
     /// </summary>
     public static {{= model.Name}}Id From(ulong id) => new {{= model.Name}}Id(__ABSTRACTIONS__.EntityId.From(id));
 
+    /// <summary>
+    /// Implicit conversion from the model id to the entity id.
+    /// </summary>
     public static implicit operator __ABSTRACTIONS__.EntityId({{= model.Name}}Id id) => id.Value;
+    
+    /// <summary>
+    /// Implicit conversion from the entity id to the model id.
+    /// </summary>
     public static implicit operator {{= model.Name}}Id(EntityId id) => {{= model.Name}}Id.From(id);
 
-
+    /// <summary>
+    /// Equality comparison between two {{= model.Name}}Id values.
+    /// </summary>
     public bool Equals({{= model.Name}}Id other)
     {
         return Value.Value == other.Value.Value;
     }
 
-
+    /// <summary>
+    /// Equality comparison between a {{= model.Name}}Id and an EntityId.
+    /// </summary>
     public bool Equals(__ABSTRACTIONS__.EntityId other)
     {
         return Value.Value == other.Value;
     }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         return "{{= model.Name}}Id:" + Value.Value.ToString("x");
     }
 
+    /// <inheritdoc />
     public static bool operator ==({{= model.Name}}Id left, {{= model.Name}}Id right) => left.Equals(right);
-
+    
+    /// <inheritdoc />
     public static bool operator !=({{= model.Name}}Id left, {{= model.Name}}Id right) => !left.Equals(right);
 
+    /// <inheritdoc />
     public override bool Equals(object? obj)
     {
         return obj is {{= model.Name}}Id id && Equals(id);
     }
 
+    /// <inheritdoc />
     public override int GetHashCode()
     {
         return Value.GetHashCode();
     }
 
-	public class JsonConverter : global::System.Text.Json.Serialization.JsonConverter<{{= model.Name}}Id>
+    /// <summary>
+    /// A JsonConverter for the {{= model.Name}}Id value object.
+    /// </summary>
+	internal class JsonConverter : global::System.Text.Json.Serialization.JsonConverter<{{= model.Name}}Id>
 	{
 	    private readonly global::System.Text.Json.Serialization.JsonConverter<__ABSTRACTIONS__.EntityId> _innerConverter = new __ABSTRACTIONS__.EntityId.JsonConverter();
 
@@ -486,8 +559,14 @@ public readonly partial struct {{= model.Name}}Id : IEquatable<{{= model.Name}}I
 	}
 }
 
-
+/// <summary>
+/// Extension methods for the {{= model.Name}} model.
+/// </summary>
 public static class {{= model.Name}}Extensions {
+
+    /// <summary>
+    /// Adds the {{= model.Name}} model to the service collection.
+    /// </summary>
     public static __DI__.IServiceCollection Add{{= model.Name}}Model(this __DI__.IServiceCollection services) {
         {{each attr in model.Attributes}}
         services.AddSingleton<__ABSTRACTIONS__.IAttribute>(_ => {{= attr.FieldName}});

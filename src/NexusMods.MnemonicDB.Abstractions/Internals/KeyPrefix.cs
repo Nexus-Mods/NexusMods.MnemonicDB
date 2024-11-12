@@ -6,18 +6,17 @@ using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 namespace NexusMods.MnemonicDB.Abstractions.Internals;
 
 /// <summary>
-///     The system encodes keys as a 16 byte prefix followed by the actual key data, the format
-///     of the value is defined by the IValueSerializer
-///         and the length is maintained by the datastore.
-///         This KeyPrefix then contains the other parts of the Datom: EntityId, AttributeId, TxId, and Flags.
-///         Encodes and decodes the prefix of a key, the format is:
-///         [AttributeId: 2bytes]
-///         [TxId: 6bytes]
-///         [EntityID + PartitionID: 7bytes]
-///         [IsRetract: 1 bit] [ValueTag: 7 bits]
-///         The Entity Id is created by taking the last 6 bytes of the id and combining it with
-///         the partition id. So the encoding logic looks like this:
-///         packed = (e & 0x00FFFFFFFFFFFFFF) >> 8 | (e & 0xFFFFFFFFFFFF) << 8
+/// Represents a key prefix used in the MnemonicDB system.
+/// The KeyPrefix is a fixed-size structure (16 bytes) that encodes various parameters:
+/// - Upper 8 bytes:
+///   - Bits 48-63: AttributeId (16 bits)
+///   - Bits 40-47: IndexType (8 bits)
+///   - Bits 0-39: TxId (40 bits)
+/// - Lower 8 bytes:
+///   - Bits 56-63: EntityId (8 bits)
+///   - Bits 8-55: EntityId (48 bits)
+///   - Bit 0: IsRetract (1 bit)
+///   - Bits 1-7: ValueTag (7 bits)
 /// </summary>
 [StructLayout(LayoutKind.Explicit, Size = Size)]
 public readonly record struct KeyPrefix
@@ -155,8 +154,14 @@ public readonly record struct KeyPrefix
 
     #region Constants
 
+    /// <summary>
+    /// The minimum key prefix possible
+    /// </summary>
     public static KeyPrefix Min => new(0, 0);
 
+    /// <summary>
+    /// The maximum key prefix possible
+    /// </summary>
     public static KeyPrefix Max => new(0, 0);
 
     /// <summary>

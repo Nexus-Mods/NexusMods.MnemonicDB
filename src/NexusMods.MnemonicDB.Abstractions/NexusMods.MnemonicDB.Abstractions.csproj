@@ -5,13 +5,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="DynamicData" Version="8.4.1"/>
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.1"/>
-        <PackageReference Include="NexusMods.Paths" Version="0.9.5" />
-        <PackageReference Include="R3" Version="1.2.8" />
+        <PackageReference Include="DynamicData" Version="9.0.4" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+        <PackageReference Include="NexusMods.Paths" Version="0.11.0" />
+        <PackageReference Include="R3" Version="1.2.9" />
         <PackageReference Include="System.IO.Hashing" Version="8.0.0" />
         <PackageReference Include="TransparentValueObjects" Version="1.0.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
-        <PackageReference Update="JetBrains.Annotations" Version="2023.3.0"/>
+        <PackageReference Update="JetBrains.Annotations" Version="2024.3.0" />
         <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.SourceGenerator\NexusMods.MnemonicDB.SourceGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 

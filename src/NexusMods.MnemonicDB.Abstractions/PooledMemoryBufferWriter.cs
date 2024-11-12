@@ -31,16 +31,21 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
     }
 
 
+    /// <summary>
+    /// Gets the written memory of this writer.
+    /// </summary>
     public ReadOnlyMemory<byte> WrittenMemory => _data.Slice(0, Length);
 
+    /// <summary>
+    /// Gets the written span of this writer, as a writable span.
+    /// </summary>
     public Span<byte> WrittenSpanWritable => _data.Span.SliceFast(0, Length);
 
     /// <summary>
     ///     Gets the written length of the data
     /// </summary>
     public int Length { get; private set; }
-
-
+    
     /// <inheritdoc />
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Advance(int count)
@@ -79,6 +84,7 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
         return _data.Span.SliceFast(Length, sizeHint);
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         _owner.Dispose();
@@ -101,6 +107,10 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
         Advance(span.Length);
     }
 
+    /// <summary>
+    /// Writes the given datom to the buffer.
+    /// </summary>
+    /// <param name="datom"></param>
     public void Write(in Datom datom)
     {
         var span = GetSpan(KeyPrefix.Size + datom.ValueSpan.Length);

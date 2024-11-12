@@ -11,7 +11,7 @@ namespace NexusMods.MnemonicDB;
 /// id, this requires merging two indexes together, and then the deduplication of the merged index (retractions
 /// removing assertions).
 /// </summary>
-internal class HistorySnapshot(ISnapshot inner, TxId asOfTxId, AttributeCache attributeCache) : ISnapshot
+internal class HistorySnapshot(ISnapshot inner, AttributeCache attributeCache) : ISnapshot
 {
     public IndexSegment Datoms(SliceDescriptor descriptor)
     {

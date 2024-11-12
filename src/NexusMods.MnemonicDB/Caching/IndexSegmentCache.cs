@@ -17,26 +17,48 @@ using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.Caching;
 
+/// <summary>
+/// A struct that holds enough information to uniquely identify a cache entry.
+/// </summary>
 [StructLayout(LayoutKind.Explicit, Size = 12)]
 public readonly struct CacheKey : IEquatable<CacheKey>
 {
+    /// <summary>
+    /// The type of index that the cache entry is for.
+    /// </summary>
     [FieldOffset(0)]
     public readonly IndexType IndexType;
     
+    /// <summary>
+    /// The attribute id that the cache entry is for.
+    /// </summary>
     [FieldOffset(1)]
     public readonly AttributeId AttributeId;
     
+    /// <summary>
+    /// The entity id that the cache entry is for.
+    /// </summary>
     [FieldOffset(4)]
     public readonly EntityId EntityId;
     
-    public CacheKey(IndexType indexType, AttributeId attributeId, EntityId entityId)
+    /// <summary>
+    /// Create a new cache key.
+    /// </summary>
+    private CacheKey(IndexType indexType, AttributeId attributeId, EntityId entityId)
     {
         IndexType = indexType;
         AttributeId = attributeId;
         EntityId = entityId;
     }
     
+    /// <summary>
+    /// Create a new cache key for the given index type, attribute id and entity id.
+    /// </summary>
     public static CacheKey Create(IndexType indexType, AttributeId attributeId, EntityId entityId) => new(indexType, attributeId, entityId);
+    
+    /// <summary>
+    /// Create a new cache key for the given index type and attribute id.
+    /// </summary>
     public static CacheKey Create(IndexType indexType, EntityId entityId) => new(indexType, AttributeId.From(0), entityId);
 
     /// <inheritdoc />
@@ -58,11 +80,25 @@ public readonly struct CacheKey : IEquatable<CacheKey>
     }
 }
 
+/// <summary>
+/// The value of a cache entry.
+/// </summary>
 public struct CacheValue : IEquatable<CacheValue>
 {
+    /// <summary>
+    /// The last time the cache entry was accessed.
+    /// </summary>
     public long LastAccessed;
+    
+    /// <summary>
+    /// The cached index segment.
+    /// </summary>
     public readonly IndexSegment Segment;
     
+    /// <summary>
+    /// Create a new cache value.
+    /// </summary>
+    /// <param name="segment"></param>
     public CacheValue(IndexSegment segment)
     {
         LastAccessed = CreateLastAccessed();
@@ -141,7 +177,7 @@ public class CacheRoot
     public CacheRoot With(CacheKey key, IndexSegment segment, IndexSegmentCache cache)
     {
         var newEntries = _entries.SetItem(key, new CacheValue(segment));
-        if (newEntries.Count > cache._entryCapacity)
+        if (newEntries.Count > cache.EntryCapacity)
         {
             newEntries = PurgeEntries(newEntries, newEntries.Count / 10);
         }
@@ -206,8 +242,7 @@ public class CacheRoot
 public class IndexSegmentCache
 {
     private CacheRoot _root;
-    internal readonly int _entryCapacity;
-    internal readonly Size _maxSize;
+    internal readonly int EntryCapacity;
 
     /// <summary>
     /// Create a new index segment cache.
@@ -215,7 +250,7 @@ public class IndexSegmentCache
     public IndexSegmentCache()
     {
         _root = new CacheRoot(ImmutableDictionary<CacheKey, CacheValue>.Empty);
-        _entryCapacity = 1_000_000;
+        EntryCapacity = 1_000_000;
     }
     
     /// <summary>
