@@ -14,6 +14,9 @@ internal static class Consts
 
     public const string ReferenceAttributeFullName =
         "NexusMods.MnemonicDB.Abstractions.Attributes.ReferenceAttribute`1";
+    
+    public const string ReferenceAbstractAttributeFullName =
+        "NexusMods.MnemonicDB.Abstractions.Attributes.ReferenceAttribute";
 
     public const string ReferecnesAttributeFullName =
         "NexusMods.MnemonicDB.Abstractions.Attributes.ReferencesAttribute`1";

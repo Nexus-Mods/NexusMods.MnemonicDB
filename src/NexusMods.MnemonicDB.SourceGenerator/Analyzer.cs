@@ -22,14 +22,22 @@ public class ModelGenerator : ISourceGenerator
     /// <inheritdoc />
     public void Execute(GeneratorExecutionContext context)
     {
+
         List<ModelAnalyzer> modelAnalyzers = new();
         foreach (var candidate in ((SyntaxReceiver)context.SyntaxReceiver!).CandidateClasses)
         {
-            var modelAnalyzer = new ModelAnalyzer(candidate, context);
-            if (!modelAnalyzer.Analyze())
-                break;
+            try
+            {
+                var modelAnalyzer = new ModelAnalyzer(candidate, context);
+                if (!modelAnalyzer.Analyze())
+                    continue;
 
-            modelAnalyzers.Add(modelAnalyzer);
+                modelAnalyzers.Add(modelAnalyzer);
+            }
+            catch (Exception e)
+            {
+                
+            }
         }
 
         foreach (var modelAnalyzer in modelAnalyzers)
@@ -40,7 +48,6 @@ public class ModelGenerator : ISourceGenerator
             var full = modelAnalyzer.Namespace.ToDisplayString().Replace(".", "_") + "_" + modelAnalyzer.Name;
             context.AddSource($"{full}.Generated.cs", writer.ToString());
         }
-        return;
 
     }
 }

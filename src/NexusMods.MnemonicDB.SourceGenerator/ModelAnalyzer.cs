@@ -25,6 +25,8 @@ internal class ModelAnalyzer
     private readonly INamedTypeSymbol _entityIdTypeSymbol;
     private readonly INamedTypeSymbol _referenceAttributeTypeSymbol;
     private readonly INamedTypeSymbol _referencesAttributeTypeSymbol;
+    private bool _hasErrors;
+    private readonly INamedTypeSymbol _referenceAttributeAbstractSymbol;
 
     #region OutputProperties
 
@@ -54,24 +56,44 @@ internal class ModelAnalyzer
         _scalarAttributeTypeSymbol = _compilation.GetTypeByMetadataName(Consts.ScalarAttributeFullName)!;
         _collectionAttributeTypeSymbol = _compilation.GetTypeByMetadataName(Consts.CollectionAttributeFullName)!;
         _referenceAttributeTypeSymbol = _compilation.GetTypeByMetadataName(Consts.ReferenceAttributeFullName)!;
+        _referenceAttributeAbstractSymbol = _compilation.GetTypeByMetadataName(Consts.ReferenceAbstractAttributeFullName)!;
         _referencesAttributeTypeSymbol = _compilation.GetTypeByMetadataName(Consts.ReferecnesAttributeFullName)!;
         _entityIdTypeSymbol = _compilation.GetTypeByMetadataName(Consts.EntityIdFullName)!;
+        _hasErrors = false;
     }
 
     public bool Analyze()
     {
         if (!InheritsFromModelDefinition())
+        {
+            _hasErrors = true;
             return false;
+        }
 
         Name = _classSymbol.Name;
         Namespace = _classSymbol.ContainingNamespace;
+
+        SanityCheckClass();
 
         AnalyzeAttributes();
         Includes = AnalyzeIncludes();
         Comments = AnalyzeComments();
 
-        return true;
+        return !_hasErrors;
+    }
 
+    private void SanityCheckClass()
+    {
+        var isPartial = _syntax.Modifiers.Any(SyntaxKind.PartialKeyword);
+        var notStatic = !_syntax.Modifiers.Any(SyntaxKind.StaticKeyword);
+        
+        if (!isPartial || !notStatic)
+        {
+            _context.ReportDiagnostic(Diagnostic.Create(
+                Diagnostics.InvalidModelClassDefinition, _syntax.GetLocation(), Name));
+            _hasErrors = true;
+        }
+        
     }
 
 
@@ -146,15 +168,31 @@ internal class ModelAnalyzer
                     Markers = markers,
                     Comments = comments
                 };
+                
+                if (SymbolEqualityComparer.Default.Equals(fieldSymbol.Type.OriginalDefinition, _referenceAttributeAbstractSymbol))
+                {
+                    _context.ReportDiagnostic(Diagnostic.Create(
+                        Diagnostics.ReferenceAttributeMustDefineReferencedModel, fieldSymbol.Locations[0],
+                        Name,
+                        fieldSymbol.Name));
+                    _hasErrors = true;
+                    continue;
+                }
 
                 if (SymbolEqualityComparer.Default.Equals(fieldSymbol.Type.OriginalDefinition, _referenceAttributeTypeSymbol))
-                {
                     analyzedAttribute.ReferenceType = ((fieldSymbol.Type as INamedTypeSymbol)!.TypeArguments[0] as INamedTypeSymbol)!;
-                }
 
                 if (SymbolEqualityComparer.Default.Equals(fieldSymbol.Type.OriginalDefinition, _referencesAttributeTypeSymbol))
                 {
-                    analyzedAttribute.ReferenceType = ((fieldSymbol.Type as INamedTypeSymbol)!.TypeArguments[0] as INamedTypeSymbol)!;
+                    if ((fieldSymbol.Type as INamedTypeSymbol)!.TypeArguments[0] is not INamedTypeSymbol referenceType)
+                    {
+                        _context.ReportDiagnostic(Diagnostic.Create(
+                            Diagnostics.ReferenceAttributeMustDefineReferencedModel, fieldSymbol.Locations[0],
+                            fieldSymbol.Name));
+                        _hasErrors = true;
+                        continue;
+                    }
+                    analyzedAttribute.ReferenceType = referenceType;
                 }
 
                 Attributes.Add(analyzedAttribute);

@@ -3,7 +3,7 @@
   "profiles": {
     "Generators": {
       "commandName": "DebugRoslynComponent",
-      "targetProject": "../../tests/NexusMods.MnemonicDB.TestModel/NexusMods.MnemonicDB.TestModel.csproj"
+      "targetProject": "../../src/NexusMods.MnemonicDB.Abstractions/NexusMods.MnemonicDB.Abstractions.csproj"
     }
   }
 }

@@ -10,7 +10,7 @@
         <PackageReference Include="Reloaded.Memory" Version="9.4.2" />
         <PackageReference Include="RocksDB" Version="9.4.0.50294" />
         <PackageReference Include="System.Reactive" Version="6.0.1" />
-        <PackageReference Include="TransparentValueObjects" Version="1.0.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
+        <PackageReference Include="TransparentValueObjects" Version="1.0.2" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
         <PackageReference Update="JetBrains.Annotations" Version="2024.3.0" />
     </ItemGroup>
     <ItemGroup>
