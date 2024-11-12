@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <!-- https://github.com/pengweiqhca/Xunit.DependencyInjection#how-to-disable-xunitdependencyinjection -->
+        <EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>true</EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>
+        <RootNamespace>NexusMods.MnemonicDB.QueryEngine.Tests</RootNamespace>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+    
+    <ItemGroup>
+        <Using Include="Xunit"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\NexusMods.MnemonicDB\NexusMods.MnemonicDB.csproj" />
+      <ProjectReference Include="..\NexusMods.MnemonicDB.LargeTestModel\NexusMods.MnemonicDB.LargeTestModel.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Update="Xunit.DependencyInjection" Version="9.6.0" />
+      <PackageReference Update="Xunit.DependencyInjection.Logging" Version="9.0.0" />
+      <PackageReference Update="Xunit.DependencyInjection.SkippableFact" Version="9.0.0" />
+      <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+      <PackageReference Update="GitHubActionsTestLogger" Version="2.4.1">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
+</Project>

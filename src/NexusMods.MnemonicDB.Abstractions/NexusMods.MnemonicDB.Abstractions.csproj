@@ -6,7 +6,7 @@
 
     <ItemGroup>
         <PackageReference Include="DynamicData" Version="9.0.4" />
-        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+        <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
         <PackageReference Include="NexusMods.Paths" Version="0.11.0" />
         <PackageReference Include="R3" Version="1.2.9" />
         <PackageReference Include="System.IO.Hashing" Version="8.0.0" />

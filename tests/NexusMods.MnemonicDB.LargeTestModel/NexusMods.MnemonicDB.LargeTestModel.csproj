@@ -1,0 +1,36 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.Abstractions\NexusMods.MnemonicDB.Abstractions.csproj" />
+      <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.SourceGenerator\NexusMods.MnemonicDB.SourceGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false"  />
+      <ProjectReference Include="..\NexusMods.MnemonicDB.TestModel\NexusMods.MnemonicDB.TestModel.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="SharpZipLib" Version="1.4.2" />
+      <PackageReference Update="Xunit.DependencyInjection" Version="9.6.0" />
+      <PackageReference Update="Xunit.DependencyInjection.Logging" Version="9.0.0" />
+      <PackageReference Update="Xunit.DependencyInjection.SkippableFact" Version="9.0.0" />
+      <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+      <PackageReference Update="GitHubActionsTestLogger" Version="2.4.1">
+        <PrivateAssets>all</PrivateAssets>
+        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Resources\large_modlist.json.bz2">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Resources\small_modlist.json.bz2">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+    </ItemGroup>
+
+</Project>
