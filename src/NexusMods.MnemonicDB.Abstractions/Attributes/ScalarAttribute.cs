@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using DynamicData.Kernel;
-using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
 namespace NexusMods.MnemonicDB.Abstractions.Attributes;
@@ -8,6 +8,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 /// <summary>
 /// An attribute that represents a scalar value, where there is a 1:1 ratio between the attribute and the value.
 /// </summary>
+[PublicAPI]
 public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns, string name) :
     Attribute<TValue, TLowLevel, TSerializer>(ns, name)
     where TSerializer : IValueSerializer<TLowLevel>

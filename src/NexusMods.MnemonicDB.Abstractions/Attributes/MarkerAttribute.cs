@@ -1,5 +1,5 @@
-﻿using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.Models;
+﻿using JetBrains.Annotations;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 
 namespace NexusMods.MnemonicDB.Abstractions.Attributes;
@@ -8,29 +8,12 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 /// An attribute that doesn't have a value, but is used to dispatch logic or to mark an entity
 /// as being of a certain type.
 /// </summary>
-/// <param name="ns"></param>
-/// <param name="name"></param>
-public class MarkerAttribute(string ns, string name) : Attribute<Null, Null, NullSerializer>(ns, name)
+[PublicAPI]
+public sealed class MarkerAttribute(string ns, string name) : ScalarAttribute<Null, Null, NullSerializer>(ns, name)
 {
     /// <inheritdoc />
     protected override Null ToLowLevel(Null value) => value;
 
     /// <inheritdoc />
     protected override Null FromLowLevel(Null value, AttributeResolver resolver) => value;
-
-    /// <summary>
-    /// Returns true if the entity contains the attribute.
-    /// </summary>
-    public bool Contains(IHasIdAndIndexSegment entity)
-    {
-        var segment = entity.IndexSegment;
-        var dbId = entity.Db.Connection.AttributeCache.GetAttributeId(Id);
-        for (var i = 0; i < segment.Count; i++)
-        {
-            var datom = segment[i];
-            if (datom.A != dbId) continue;
-            return true;
-        }
-        return false;
-    }
 }
