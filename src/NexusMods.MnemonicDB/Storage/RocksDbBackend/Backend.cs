@@ -7,29 +7,38 @@ using IWriteBatch = NexusMods.MnemonicDB.Storage.Abstractions.IWriteBatch;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
+/// <summary>
+/// Backend for the RocksDB storage engine.
+/// </summary>
 public class Backend : IStoreBackend
 {
     internal RocksDb? Db = null!;
-    private readonly AttributeCache _attributeCache;
     private IntPtr _comparator;
 
+    /// <summary>
+    /// Default constructor
+    /// </summary>
     public Backend()
     {
-        _attributeCache = new AttributeCache();
+        AttributeCache = new AttributeCache();
     }
 
-    public AttributeCache AttributeCache => _attributeCache;
+    /// <inheritdoc />
+    public AttributeCache AttributeCache { get; }
 
+    /// <inheritdoc />
     public IWriteBatch CreateBatch()
     {
         return new Batch(Db!);
     }
-    
+
+    /// <inheritdoc />
     public ISnapshot GetSnapshot()
     {
-        return new Snapshot(this, _attributeCache);
+        return new Snapshot(this, AttributeCache);
     }
 
+    /// <inheritdoc />
     public void Init(AbsolutePath location)
     {
 
@@ -47,6 +56,7 @@ public class Backend : IStoreBackend
         Db = RocksDb.Open(options, location.ToString());
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         Db?.Dispose();

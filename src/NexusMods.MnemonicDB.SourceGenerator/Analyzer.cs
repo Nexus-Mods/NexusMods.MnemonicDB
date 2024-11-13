@@ -7,14 +7,19 @@ using Microsoft.CodeAnalysis;
 
 namespace NexusMods.MnemonicDB.SourceGenerator;
 
+/// <summary>
+/// Generates the model classes from the given contexts
+/// </summary>
 [Generator]
 public class ModelGenerator : ISourceGenerator
 {
+    /// <inheritdoc />
     public void Initialize(GeneratorInitializationContext context)
     {
         context.RegisterForSyntaxNotifications(() => new SyntaxReceiver());
     }
 
+    /// <inheritdoc />
     public void Execute(GeneratorExecutionContext context)
     {
         List<ModelAnalyzer> modelAnalyzers = new();

@@ -3,7 +3,7 @@ using Microsoft.CodeAnalysis;
 
 namespace NexusMods.MnemonicDB.SourceGenerator;
 
-public class AnalyzedBackReferenceAttribute
+internal class AnalyzedBackReferenceAttribute
 {
     public string Name { get; set; } = "";
     public INamedTypeSymbol OtherModel { get; set; } = null!;

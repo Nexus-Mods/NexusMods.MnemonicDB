@@ -17,6 +17,11 @@ public abstract class Attribute<TValueType, TLowLevelType, TSerializer> :
       IReadableAttribute<TValueType>
       where TSerializer : IValueSerializer<TLowLevelType>
 {
+    
+    /// <summary>
+    /// Constructor used when subclassing, provides a few of the important flags
+    /// and the name of the attribute
+    /// </summary>
     protected Attribute(
         string ns,
         string name,

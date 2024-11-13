@@ -1,4 +1,5 @@
-﻿using NexusMods.MnemonicDB.Abstractions.Models;
+﻿using NexusMods.MnemonicDB.Abstractions.Attributes;
+using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.TestModel.Attributes;
 
 namespace NexusMods.MnemonicDB.TestModel;
@@ -10,10 +11,12 @@ namespace NexusMods.MnemonicDB.TestModel;
 public partial class ArchiveFile : IModelDefinition
 {
     private const string Namespace = "NexusMods.MnemonicDB.TestModel.ArchiveFile";
+    
     /// <summary>
     /// The path of the file in the archive
     /// </summary>
     public static readonly RelativePathAttribute Path = new(Namespace, nameof(Path)) { IsIndexed = true };
+    
     /// <summary>
     /// The hash of the file in the archive
     /// </summary>

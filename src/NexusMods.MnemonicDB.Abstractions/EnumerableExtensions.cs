@@ -4,6 +4,9 @@ using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
+/// <summary>
+/// Extensions for IEnumerable
+/// </summary>
 public static class EnumerableExtensions
 {
     /// <summary>

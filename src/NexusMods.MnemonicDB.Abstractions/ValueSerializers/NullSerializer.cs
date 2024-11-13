@@ -9,15 +9,14 @@ namespace NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 /// </summary>
 public class NullSerializer : IValueSerializer<Null>
 {
+    /// <inheritdoc />
     public static ValueTag ValueTag => ValueTag.Null;
     
     /// <inheritdoc />
     public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b) => 0;
 
-    public static unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
-    {
-        return 0;
-    }
+    /// <inheritdoc />
+    public static unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen) => 0;
 
     /// <inheritdoc />
     public static Null Read(ReadOnlySpan<byte> span)

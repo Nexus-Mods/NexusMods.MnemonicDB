@@ -7,6 +7,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage.Abstractions;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Storage;
 
@@ -31,6 +32,7 @@ public partial class DatomStore
     /// </summary>
     public async Task ExportAsync(Stream stream)
     {
+        await Task.Yield();
         var exportedDatoms = 0;
         var binaryWriter = new BinaryWriter(stream);
         binaryWriter.Write(FourCC);
@@ -59,8 +61,13 @@ public partial class DatomStore
         Logger.LogInformation("Exported {0} datoms", exportedDatoms);
     }
 
+    /// <summary>
+    /// Imports the database from the given stream, will delete all the data in the store before importing
+    /// the new data
+    /// </summary>
     public async Task ImportAsync(Stream stream)
     {
+        await Task.Yield();
         CleanStore();
         var importedCount = 0;
         var binaryReader = new BinaryReader(stream);

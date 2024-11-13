@@ -196,6 +196,7 @@ public class AMnemonicDBTest : IDisposable
 
     protected async Task RestartDatomStore()
     {
+        await Task.Yield();
         _store.Dispose();
         _backend.Dispose();
 

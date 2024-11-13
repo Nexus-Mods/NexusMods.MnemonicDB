@@ -16,6 +16,10 @@ public readonly struct IndexSegmentBuilder : IDisposable
     private readonly PooledMemoryBufferWriter _data;
     private readonly AttributeCache _attributeCache;
 
+    /// <summary>
+    /// Not supported, use the other constructor
+    /// </summary>
+    /// <exception cref="NotSupportedException"></exception>
     public IndexSegmentBuilder()
     {
         throw new NotSupportedException();

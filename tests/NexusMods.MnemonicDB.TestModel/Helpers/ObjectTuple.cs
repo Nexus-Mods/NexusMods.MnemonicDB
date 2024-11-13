@@ -15,13 +15,13 @@ public class ObjectTuple
 
 public class ObjectTupleWriter : JsonConverter<ObjectTuple>
 {
-    public override void WriteJson(JsonWriter writer, ObjectTuple value, JsonSerializer serializer)
+    public override void WriteJson(JsonWriter writer, ObjectTuple? value, JsonSerializer serializer)
     {
         var oldFormatting = writer.Formatting;
         writer.WriteStartArray();
         writer.Formatting = Formatting.None;
 
-        writer.WriteValue(value.E.Value.ToString("x"));
+        writer.WriteValue(value!.E.Value.ToString("x"));
 
         writer.WriteValue(" " + value.A);
 

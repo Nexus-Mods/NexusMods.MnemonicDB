@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace NexusMods.MnemonicDB.SourceGenerator;
 
-public class ModelAnalyzer
+internal class ModelAnalyzer
 {
     private readonly Compilation _compilation;
     private readonly GeneratorExecutionContext _context;
@@ -31,9 +31,9 @@ public class ModelAnalyzer
     public string Name { get; set; } = "";
     public INamespaceSymbol Namespace { get; set; } = null!;
 
-    public List<AnalyzedAttribute> Attributes { get; } = new();
+    internal List<AnalyzedAttribute> Attributes { get; } = new();
     
-    public List<AnalyzedBackReferenceAttribute> BackReferences { get; } = new();
+    internal List<AnalyzedBackReferenceAttribute> BackReferences { get; } = new();
 
     public List<INamedTypeSymbol> Includes { get; set; } = new();
     public string Comments { get; set; } = "";

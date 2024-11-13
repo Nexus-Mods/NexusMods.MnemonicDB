@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using Reloaded.Memory.Extensions;
+// ReSharper disable InconsistentNaming
 
 namespace NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 
@@ -12,8 +13,10 @@ namespace NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 /// </summary>
 public sealed class Tuple2_UShort_Utf8I_Serializer : IValueSerializer<(ushort, string)>
 {
+    /// <inheritdoc />
     public static ValueTag ValueTag => ValueTag.Tuple2_UShort_Utf8I;
-    
+
+    /// <inheritdoc />
     public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         var aUShort = MemoryMarshal.Read<ushort>(a);

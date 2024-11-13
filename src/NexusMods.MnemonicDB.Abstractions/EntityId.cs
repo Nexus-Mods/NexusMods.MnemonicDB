@@ -1,4 +1,7 @@
-﻿using TransparentValueObjects;
+﻿using System;
+using System.Globalization;
+using JetBrains.Annotations;
+using TransparentValueObjects;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -6,6 +9,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 ///     A unique identifier for an entity.
 /// </summary>
 [ValueObject<ulong>]
+[PublicAPI]
 public readonly partial struct EntityId : IAugmentWith<JsonAugment>
 {
     /// <summary>
@@ -37,5 +41,25 @@ public readonly partial struct EntityId : IAugmentWith<JsonAugment>
     public override string ToString()
     {
         return "EId:" + Value.ToString("X");
+    }
+
+    /// <summary>
+    /// Tries to parse a hex string as an entity ID.
+    /// </summary>
+    public static bool TryParseFromHex(ReadOnlySpan<char> input, out EntityId id)
+    {
+        const string prefix = "EId:";
+
+        if (input.StartsWith(prefix))
+            input = input[prefix.Length..];
+
+        if (ulong.TryParse(input, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var result))
+        {
+            id = EntityId.From(result);
+            return true;
+        }
+
+        id = default;
+        return false;
     }
 }

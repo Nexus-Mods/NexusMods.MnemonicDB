@@ -27,10 +27,6 @@ public static class DependencyInjectionExtensions
     ///     Assumes that the specified type is a static class with nested attribute classes, it registers all the nested
     ///     classes with the service collection.
     /// </summary>
-    /// <param name="services"></param>
-    /// <typeparam name="TAttributeCollection"></typeparam>
-    /// <returns></returns>
-    /// <exception cref="ArgumentException"></exception>
     public static IServiceCollection AddAttributeCollection(this IServiceCollection services,
         Type type)
     {

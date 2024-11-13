@@ -1,4 +1,7 @@
-﻿using NexusMods.MnemonicDB.Abstractions.Models;
+﻿using JetBrains.Annotations;
+using NexusMods.MnemonicDB.Abstractions.Models;
+// ReSharper disable UnusedTypeParameter
+#pragma warning disable CS9113 // Parameter is unread.
 
 namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 
@@ -6,7 +9,5 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 /// A meta attribute the expresses a backwards reference some other
 /// model has
 /// </summary>
-public class BackReferenceAttribute<TOtherModel>(ReferenceAttribute referenceAttribute)
-where TOtherModel : IModelDefinition
-{
-}
+[PublicAPI]
+public sealed class BackReferenceAttribute<TOtherModel>(ReferenceAttribute referenceAttribute) where TOtherModel : IModelDefinition { }

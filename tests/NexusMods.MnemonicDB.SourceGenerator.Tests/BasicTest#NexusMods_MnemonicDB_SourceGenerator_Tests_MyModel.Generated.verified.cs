@@ -26,6 +26,10 @@ using __DI__ = Microsoft.Extensions.DependencyInjection;
 using __COMPARERS__ = NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
 
+/// <summary>
+/// The top level model definition for the MyModel model. This class is rarely 
+/// used directly, instead, the ReadOnly struct or the New class should be used.
+/// </summary>
 
 public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnly>
 {
@@ -115,22 +119,34 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
     #endregion
 
 
+    /// <summary>
+    /// Constructs a new MyModel model from the given entity id, used to provide a typed structured
+    /// way to interact with the entity before it is commited to the database.
+    /// </summary>
     public partial class New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
 
-
     
+    /// <summary>
+    /// Constructs a new MyModel model from the given transaction with a generated temporary id.
+    /// </summary>
     public New(__ABSTRACTIONS__.ITransaction tx) : base() {
         Id = tx.TempId();
         tx.Attach(this);
     }
     
 
+        /// <summary>
+        /// Constructs a new MyModel model from the given transaction with the given entity id.
+        /// </summary>
         public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.EntityId eid) : base() {
             Id = eid;
             tx.Attach(this);
         }
 
 
+        /// <summary>
+        /// Adds this model to the given transaction.
+        /// </summary>
         public void AddTo(__ABSTRACTIONS__.ITransaction tx)
         {
             tx.Add(Id, NexusMods.MnemonicDB.SourceGenerator.Tests.MyModel.Name, Name, false);
@@ -162,10 +178,15 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
 
         #region Attributes
         
+        /// <inheritdoc cref="MyModel.Name" />
         public required string Name { get; set; }
         #endregion
     }
 
+    /// <summary>
+    /// The ReadOnly struct is a read-only version of the entity, it is used to access the entity
+    /// in a read context. It immutable and must be reloaded to get updated data when the entity changes.
+    /// </summary>
     
     public readonly partial struct ReadOnly :
         __MODELS__.IReadOnlyModel<MyModel.ReadOnly> {
@@ -177,6 +198,9 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
            
            __SEGMENTS__.IndexSegment __MODELS__.IHasIdAndIndexSegment.IndexSegment => this.IndexSegment; 
 
+           /// <summary>
+           /// Constructs a new ReadOnly model of the entity from the given segment and id.
+           /// </summary>
            public ReadOnly(__ABSTRACTIONS__.IDb db, __SEGMENTS__.IndexSegment segment, __ABSTRACTIONS__.EntityId id) {
                Db = db;
                Id = id;
@@ -250,11 +274,13 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
                return false;
            }
 
+           /// <inheritdoc />
            public override string ToString()
            {
                return "MyModel<" + Id + ">";
            }
 
+           /// <inheritdoc />
            public bool IsValid()
            {
                // This is true when the struct is a default value.
@@ -264,6 +290,7 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
            }
 
 
+           /// <inheritdoc cref="MyModel.Name" />
            public string Name => NexusMods.MnemonicDB.SourceGenerator.Tests.MyModel.Name.Get(this);
 
 
@@ -284,6 +311,9 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
                return model.Id;
            }
 
+           /// <summary>
+           /// Implicit conversion from the model to the model id.
+           /// </summary>
            public static implicit operator MyModelId(MyModel.ReadOnly? model) {
                return MyModelId.From(model!.Value.Id);
            }
@@ -296,8 +326,14 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
 [global::System.Text.Json.Serialization.JsonConverter(typeof(MyModelId.JsonConverter))]
 public readonly partial struct MyModelId : IEquatable<MyModelId>, IEquatable<__ABSTRACTIONS__.EntityId>
 {
+    /// <summary>
+    /// The generic EntityId value this typed id wraps.
+    /// </summary>
     public readonly __ABSTRACTIONS__.EntityId Value;
 
+    /// <summary>
+    /// Constructs a new MyModelId from the given entity id.
+    /// </summary>
     public MyModelId(__ABSTRACTIONS__.EntityId id) => Value = id;
 
     /// <summary>
@@ -310,41 +346,60 @@ public readonly partial struct MyModelId : IEquatable<MyModelId>, IEquatable<__A
     /// </summary>
     public static MyModelId From(ulong id) => new MyModelId(__ABSTRACTIONS__.EntityId.From(id));
 
+    /// <summary>
+    /// Implicit conversion from the model id to the entity id.
+    /// </summary>
     public static implicit operator __ABSTRACTIONS__.EntityId(MyModelId id) => id.Value;
+    
+    /// <summary>
+    /// Implicit conversion from the entity id to the model id.
+    /// </summary>
     public static implicit operator MyModelId(EntityId id) => MyModelId.From(id);
 
-
+    /// <summary>
+    /// Equality comparison between two MyModelId values.
+    /// </summary>
     public bool Equals(MyModelId other)
     {
         return Value.Value == other.Value.Value;
     }
 
-
+    /// <summary>
+    /// Equality comparison between a MyModelId and an EntityId.
+    /// </summary>
     public bool Equals(__ABSTRACTIONS__.EntityId other)
     {
         return Value.Value == other.Value;
     }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         return "MyModelId:" + Value.Value.ToString("x");
     }
 
+    /// <inheritdoc />
     public static bool operator ==(MyModelId left, MyModelId right) => left.Equals(right);
-
+    
+    /// <inheritdoc />
     public static bool operator !=(MyModelId left, MyModelId right) => !left.Equals(right);
 
+    /// <inheritdoc />
     public override bool Equals(object? obj)
     {
         return obj is MyModelId id && Equals(id);
     }
 
+    /// <inheritdoc />
     public override int GetHashCode()
     {
         return Value.GetHashCode();
     }
 
-	public class JsonConverter : global::System.Text.Json.Serialization.JsonConverter<MyModelId>
+    /// <summary>
+    /// A JsonConverter for the MyModelId value object.
+    /// </summary>
+	internal class JsonConverter : global::System.Text.Json.Serialization.JsonConverter<MyModelId>
 	{
 	    private readonly global::System.Text.Json.Serialization.JsonConverter<__ABSTRACTIONS__.EntityId> _innerConverter = new __ABSTRACTIONS__.EntityId.JsonConverter();
 
@@ -370,8 +425,14 @@ public readonly partial struct MyModelId : IEquatable<MyModelId>, IEquatable<__A
 	}
 }
 
-
+/// <summary>
+/// Extension methods for the MyModel model.
+/// </summary>
 public static class MyModelExtensions {
+
+    /// <summary>
+    /// Adds the MyModel model to the service collection.
+    /// </summary>
     public static __DI__.IServiceCollection AddMyModelModel(this __DI__.IServiceCollection services) {
         services.AddSingleton<__ABSTRACTIONS__.IAttribute>(_ => NexusMods.MnemonicDB.SourceGenerator.Tests.MyModel.Name);
         return services;

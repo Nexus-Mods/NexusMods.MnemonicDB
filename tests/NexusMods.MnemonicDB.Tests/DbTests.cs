@@ -182,7 +182,10 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         archiveReadModel.AsFile().ToArray().Should().BeEquivalentTo(readModel.ToArray(), "archive file should have the same base data as the file");
 
         readModel.TryGetAsArchiveFile(out var castedDown).Should().BeTrue();
+        
+#pragma warning disable CS0183 // 'is' expression's given expression is always of the provided type
         (castedDown is ArchiveFile.ReadOnly).Should().BeTrue();
+#pragma warning restore CS0183 // 'is' expression's given expression is always of the provided type
 
         var badCast = new File.ReadOnly(result.Db, EntityId.From(1));
         badCast.IsValid().Should().BeFalse("bad cast should not validate");

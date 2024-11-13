@@ -60,6 +60,7 @@ public readonly struct DatomKey : IEqualityComparer<DatomKey>
         return hash.ToHashCode();
     }
 
+    /// <inheritdoc />
     public override string ToString()
     {
         if (_valueMemory.IsEmpty)

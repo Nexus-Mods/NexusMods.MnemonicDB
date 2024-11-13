@@ -20,5 +20,5 @@ public partial class Transaction : IModelDefinition
     /// <summary>
     /// If this database is associated with a excision, this attribute will contain the number of datoms that were excised.
     /// </summary>
-    public static readonly ULongAttribute ExcisedDatoms = new(Namespace, "ExcisedDatoms") { IsOptional = true };
+    public static readonly UInt64Attribute ExcisedDatoms = new(Namespace, "ExcisedDatoms") { IsOptional = true };
 }

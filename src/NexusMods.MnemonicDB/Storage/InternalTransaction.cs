@@ -16,7 +16,6 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
 {
     private ulong _tempId = PartitionId.Temp.MakeEntityId(0).Value;
     private List<ITemporaryEntity>? _temporaryEntities = null;
-    private List<ITxFunction>? _txFunctions = null;
 
     /// <inheritdoc />
     public TxId ThisTxId => TxId.From(PartitionId.Temp.MakeEntityId(0).Value);
