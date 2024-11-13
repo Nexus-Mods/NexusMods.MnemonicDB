@@ -24,6 +24,14 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     }
 
     /// <summary>
+    /// True whether the index segment contains this attribute.
+    /// </summary>
+    public bool Contains<T>(T entity) where T : IHasIdAndIndexSegment
+    {
+        return entity.IndexSegment.Contains(this);
+    }
+
+    /// <summary>
     ///   Gets the value of the attribute from the entity.
     /// </summary>
     public TValue Get(IHasIdAndIndexSegment entity)
