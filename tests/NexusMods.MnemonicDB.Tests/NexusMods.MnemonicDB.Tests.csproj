@@ -21,33 +21,21 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Update="JetBrains.Annotations" Version="2024.3.0" />
-      <PackageReference Update="FluentAssertions" Version="6.12.2" />
-      <PackageReference Update="FluentAssertions.Analyzers" Version="0.34.1">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
-      <PackageReference Update="xunit" Version="2.9.2" />
-      <PackageReference Update="xunit.runner.visualstudio" Version="2.8.2">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
-      <PackageReference Update="Xunit.SkippableFact" Version="1.4.13" />
-      <PackageReference Update="Xunit.DependencyInjection" Version="9.6.0" />
-      <PackageReference Update="Xunit.DependencyInjection.Logging" Version="9.0.0" />
-      <PackageReference Update="Xunit.DependencyInjection.SkippableFact" Version="9.0.0" />
-      <PackageReference Update="NexusMods.Hashing.xxHash64" Version="2.0.2" />
-      <PackageReference Update="Verify" Version="25.2.0" />
-      <PackageReference Update="Verify.Xunit" Version="25.2.0" />
-      <PackageReference Update="Microsoft.NET.Test.Sdk" Version="17.11.1" />
-      <PackageReference Update="coverlet.collector" Version="6.0.2">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
-      <PackageReference Update="GitHubActionsTestLogger" Version="2.4.1">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
+      <PackageReference Update="JetBrains.Annotations"/>
+      <PackageReference Update="FluentAssertions"/>
+      <PackageReference Update="FluentAssertions.Analyzers"/>
+      <PackageReference Update="xunit"/>
+      <PackageReference Update="xunit.runner.visualstudio"/>
+      <PackageReference Update="Xunit.SkippableFact"/>
+      <PackageReference Update="Xunit.DependencyInjection"/>
+      <PackageReference Update="Xunit.DependencyInjection.Logging"/>
+      <PackageReference Update="Xunit.DependencyInjection.SkippableFact"/>
+      <PackageReference Update="NexusMods.Hashing.xxHash64" />
+      <PackageReference Update="Verify"/>
+      <PackageReference Update="Verify.Xunit"/>
+      <PackageReference Update="Microsoft.NET.Test.Sdk"/>
+      <PackageReference Update="coverlet.collector"/>
+      <PackageReference Update="GitHubActionsTestLogger"/>
     </ItemGroup>
 
 </Project>
