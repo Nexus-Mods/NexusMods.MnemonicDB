@@ -101,7 +101,7 @@ public class MigrationTests : AMnemonicDBTest
         var aid = cache.GetAttributeId(Mod.Description.Id);
         cache.IsIndexed(aid).Should().BeFalse();
         
-        var withIndex = new ULongAttribute(Mod.Description.Id.Namespace, Mod.Description.Id.Name) { IsIndexed = true, IsOptional = false };
+        var withIndex = new UInt64Attribute(Mod.Description.Id.Namespace, Mod.Description.Id.Name) { IsIndexed = true, IsOptional = false };
         var prevTxId = Connection.Db.BasisTxId;
 
         await Connection.UpdateSchema(withIndex);
@@ -117,7 +117,7 @@ public class MigrationTests : AMnemonicDBTest
     public async Task ConvertingValuesIncorrectlyFails()
     {
         await AddData();
-        var withIndex = new ULongAttribute(Mod.Source.Id.Namespace, Mod.Source.Id.Name) { IsIndexed = true, IsOptional = false };
+        var withIndex = new UInt64Attribute(Mod.Source.Id.Namespace, Mod.Source.Id.Name) { IsIndexed = true, IsOptional = false };
         var act = async () => await Connection.UpdateSchema(withIndex);
         await act.Should().ThrowAsync<InvalidOperationException>("Converting values for attribute Mod.Source from String to ULong where the source is a URI should fail");
     }

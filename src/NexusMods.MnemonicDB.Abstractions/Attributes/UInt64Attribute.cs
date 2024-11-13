@@ -1,11 +1,13 @@
+using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 
 namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 
 /// <summary>
-/// UInt64 attribute (ulong)
+/// An attribute that holds an uint64 value.
 /// </summary>
-public sealed class ULongAttribute(string ns, string name) : ScalarAttribute<ulong, ulong, UInt64Serializer>(ns, name)
+[PublicAPI]
+public sealed class UInt64Attribute(string ns, string name) : ScalarAttribute<ulong, ulong, UInt64Serializer>(ns, name)
 {
     /// <inheritdoc />
     protected override ulong ToLowLevel(ulong value) => value;
