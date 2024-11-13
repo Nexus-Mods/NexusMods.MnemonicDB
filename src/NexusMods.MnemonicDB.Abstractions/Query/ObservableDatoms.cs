@@ -1,24 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
 using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using DynamicData;
+using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
-using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions.Query;
 
 /// <summary>
 /// Extensions for observing datoms in the database
 /// </summary>
+[PublicAPI]
 public static class ObservableDatoms
 {
-
     /// <summary>
     /// Delays the creation of the IObservable until after the first value from the src is received. Once the first
     /// value arrives the ctor function will be called to create the observable. This is useful for situations where
@@ -92,7 +88,15 @@ public static class ObservableDatoms
     {
         return conn.Revisions.DelayUntilFirstValue(() => conn.ObserveDatoms(SliceDescriptor.Create(attribute, conn.AttributeCache)));
     }
-    
+
+    /// <summary>
+    /// Observe whether datoms for the descriptor exist at all.
+    /// </summary>
+    public static IObservable<bool> ObserveHasAnyDatoms(this IConnection connection, SliceDescriptor descriptor)
+    {
+        return connection.Revisions.Select(revision => revision.Datoms(descriptor).Count != 0);
+    }
+
     /// <summary>
     /// Converts a set of observed datoms to a set of observed entity ids, assumes that there will be no datoms with
     /// duplicate entity ids.
@@ -115,9 +119,10 @@ public static class ObservableDatoms
     private static IChangeSet<Datom, DatomKey> Diff(AttributeCache cache, IndexSegment updates, SliceDescriptor descriptor)
     {
         var changes = new ChangeSet<Datom, DatomKey>();
+
         var index = descriptor.Index;
         
-        for (var i = 0; i < updates.Count; i++) 
+        for (var i = 0; i < updates.Count; i++)
         {
             var datom = updates[i].WithIndex(index);
             if (!descriptor.Includes(datom))
