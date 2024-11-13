@@ -12,6 +12,8 @@
         <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
         <PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 
+        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+
         <!-- This is the URL to the main project, not the individual package. -->
         <PackageProjectUrl>https://github.com/Nexus-Mods/NexusMods.App</PackageProjectUrl>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -30,9 +32,5 @@
     <ItemGroup>
         <None Include="$(MSBuildThisFileDirectory)icon.png" Pack="true" PackagePath="assets" />
         <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="docs" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.*" PrivateAssets="all" />
     </ItemGroup>
 </Project>
