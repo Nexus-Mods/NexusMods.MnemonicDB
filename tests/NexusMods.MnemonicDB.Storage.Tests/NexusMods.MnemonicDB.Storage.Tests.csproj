@@ -6,17 +6,7 @@
         <RootNamespace>NexusMods.MnemonicDB.Storage.Tests</RootNamespace>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
-
-
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-
-        <IsPackable>false</IsPackable>
-        <IsTestProject>true</IsTestProject>
-    </PropertyGroup>
-
+    
     <ItemGroup>
         <ProjectReference Include="..\..\src\NexusMods.MnemonicDB\NexusMods.MnemonicDB.csproj" />
         <ProjectReference Include="..\NexusMods.MnemonicDB.TestModel\NexusMods.MnemonicDB.TestModel.csproj"/>

@@ -1,0 +1,9 @@
+<Project>
+    <ItemGroup>
+        <!-- Suppress advisories that are not relevant to this project. Be sure to include a reason for each suppression. -->
+        <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-7jgj-8wvc-jh57"  Reason="Only affects .NET Core platforms, not .NET 8+, and this project targets .NET 8+"/>
+        <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-8g4q-xg66-9fp4" Reason="Possible source of DoS, but this is a test project and does not accept input from untrusted sources."/>
+        <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-cmhx-cq75-c4mj" Reason="Possible source of DoS, but this is a test project and does not accept input from untrusted sources."/>
+        <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-hh2w-p6rv-4g7w" Reason="Possible source of DoS, but this is a test project and does not accept input from untrusted sources."/>
+    </ItemGroup>
+</Project>

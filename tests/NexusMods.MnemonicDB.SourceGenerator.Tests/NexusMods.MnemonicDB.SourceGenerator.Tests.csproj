@@ -1,9 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
+    
     <ItemGroup>
         <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.Abstractions\NexusMods.MnemonicDB.Abstractions.csproj" />
         <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.SourceGenerator\NexusMods.MnemonicDB.SourceGenerator.csproj" />
     </ItemGroup>
+    
     <ItemGroup>
+        <PackageReference Include="Verify"/>
         <PackageReference Include="Verify.SourceGenerators"/>
         <PackageReference Include="Verify.Xunit"/>
         <PackageReference Remove="Xunit.DependencyInjection"/>
