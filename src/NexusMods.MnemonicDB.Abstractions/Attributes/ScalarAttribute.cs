@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using DynamicData.Kernel;
 using JetBrains.Annotations;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
 namespace NexusMods.MnemonicDB.Abstractions.Attributes;
@@ -32,46 +34,60 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     }
 
     /// <summary>
-    ///   Gets the value of the attribute from the entity.
+    ///  Tries to get the value of the attribute from the entity.
     /// </summary>
-    public TValue Get(IHasIdAndIndexSegment entity)
+    public bool TryGetValue<T>(T entity, IndexSegment segment, [NotNullWhen(true)] out TValue? value)
+        where T : IHasEntityIdAndDb
+    {
+        var attributeId = entity.Db.AttributeCache.GetAttributeId(Id);
+        foreach (var datom in segment)
+        {
+            if (datom.A != attributeId) continue;
+            value = ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, entity.Db.Connection.AttributeResolver);
+            return true;
+        }
+
+        value = default!;
+        return false;
+    }
+
+    /// <summary>
+    /// Tries to get the value of the attribute from the entity.
+    /// </summary>
+    public bool TryGetValue<T>(T entity, [NotNullWhen(true)] out TValue? value)
+        where T : IHasIdAndIndexSegment
+    {
+        return TryGetValue(entity, segment: entity.IndexSegment, out value);
+    }
+
+    /// <summary>
+    /// Gets the value of the attribute from the entity.
+    /// </summary>
+    public TValue Get<T>(T entity, IndexSegment segment)
+        where T : IHasEntityIdAndDb
+    {
+        if (TryGetValue(entity, segment, out var value)) return value;
+        return ThrowKeyNotfoundException(entity.Id);
+    }
+
+    /// <summary>
+    /// Gets the value of the attribute from the entity.
+    /// </summary>
+    public TValue Get<T>(T entity)
+        where T : IHasIdAndIndexSegment
     {
         var segment = entity.IndexSegment;
-        var dbId = entity.Db.AttributeCache.GetAttributeId(Id);
-        for (var i = 0; i < segment.Count; i++)
-        {
-            var datom = segment[i];
-            if (datom.A != dbId) continue;
-            return ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, entity.Db.Connection.AttributeResolver);
-        }
-
-        if (DefaultValue.HasValue)
-            return DefaultValue.Value;
-
-        ThrowKeyNotfoundException(entity);
-        return default!;
+        return Get(entity, segment);
     }
-    
+
     /// <summary>
-    ///   Gets the value of the attribute from the entity, this performs a lookup in the database
-    /// so prefer using the overload with IHasIdAndIndexSegment if you already have the segment.
+    /// Gets the value of the attribute from the entity, <see cref="DefaultValue"/>, or <see cref="Optional{TValue}.None"/>.
     /// </summary>
-    protected TValue Get(IHasEntityIdAndDb entity)
+    public Optional<TValue> GetOptional<T>(T entity)
+        where T : IHasIdAndIndexSegment
     {
-        var segment = entity.Db.Get(entity.Id);
-        var dbId = entity.Db.AttributeCache.GetAttributeId(Id);
-        for (var i = 0; i < segment.Count; i++)
-        {
-            var datom = segment[i];
-            if (datom.A != dbId) continue;
-            return ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, entity.Db.Connection.AttributeResolver);
-        }
-
-        if (DefaultValue.HasValue)
-            return DefaultValue.Value;
-
-        ThrowKeyNotfoundException(entity);
-        return default!;
+        if (TryGetValue(entity, entity.IndexSegment, out var value)) return value;
+        return DefaultValue.HasValue ? DefaultValue : Optional<TValue>.None;
     }
 
     /// <summary>
@@ -79,37 +95,16 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     /// </summary>
     public void Retract(IAttachedEntity entityWithTx)
     {
-        Retract(entityWithTx, Get(entityWithTx));
+        Retract(entityWithTx, value: Get(entityWithTx, segment: entityWithTx.Db.Get(entityWithTx.Id)));
     }
 
-    private void ThrowKeyNotfoundException(IHasEntityIdAndDb entity)
+    [DoesNotReturn]
+    private TValue ThrowKeyNotfoundException(EntityId entityId)
     {
-        throw new KeyNotFoundException($"Entity {entity.Id} does not have attribute {Id}");
-    }
-
-    /// <summary>
-    ///   Try to get the value of the attribute from the entity.
-    /// </summary>
-    public bool TryGet(IHasIdAndIndexSegment entity, out TValue value)
-    {
-        var segment = entity.IndexSegment;
-        var dbId = entity.Db.AttributeCache.GetAttributeId(Id);
-        for (var i = 0; i < segment.Count; i++)
-        {
-            var datom = segment[i];
-            if (datom.A != dbId) continue;
-            value = ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, entity.Db.Connection.AttributeResolver);
-            return true;
-        }
-
-        if (DefaultValue.HasValue)
-        {
-            value = DefaultValue.Value;
-            return true;
-        }
-
-        value = default!;
-        return false;
+        throw new KeyNotFoundException($"Entity `{entityId}` doesn't have attribute {Id}");
+#pragma warning disable CS0162 // Unreachable code detected
+        return default!;
+#pragma warning restore CS0162 // Unreachable code detected
     }
 
     /// <summary>

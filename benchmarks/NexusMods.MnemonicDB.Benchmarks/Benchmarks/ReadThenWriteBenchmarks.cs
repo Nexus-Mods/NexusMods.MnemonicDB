@@ -61,7 +61,7 @@ public class ReadThenWriteBenchmarks : ABenchmark
         using var tx = Connection.BeginTransaction();
         var mod = Mod.Load(Connection.Db, _modId);
         var oldHash = mod.OptionalHash;
-        tx.Add(_modId, Mod.OptionalHash, Hash.From(oldHash.Value + 1));
+        tx.Add(_modId, Mod.OptionalHash, Hash.From((ulong)oldHash.Value + 1));
         var nextdb = await tx.Commit();
         
         var loadout = Loadout.Load(Connection.Db, mod.LoadoutId);
