@@ -7,6 +7,9 @@ using IWriteBatch = NexusMods.MnemonicDB.Storage.Abstractions.IWriteBatch;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
+/// <summary>
+/// Backend for the RocksDB storage engine.
+/// </summary>
 public class Backend : IStoreBackend
 {
     internal RocksDb? Db = null!;
