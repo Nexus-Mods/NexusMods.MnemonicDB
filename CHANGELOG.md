@@ -1,5 +1,11 @@
 ## Changelog
 
+### 0.9.96 - 14/11/2024
+* Update to .NET 9.0
+* Moved a lot of attributes from NexusMods.App into this codebase
+* Added attributes for a lot of primitive types. Int32, UInt64, etc.
+* Removed a lot of warnings from the library and source generated code
+
 ### 0.9.95 - 30/10/2024
 * Fix a regression with the switch to DateTimeOffset, we now store the correct timestamp in transaction attributes
 * 
