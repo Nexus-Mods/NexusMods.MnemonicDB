@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.97 - 14/11/2024
+* Fix a nuget packing bug with the source generators
+
 ### 0.9.96 - 14/11/2024
 * Update to .NET 9.0
 * Moved a lot of attributes from NexusMods.App into this codebase
