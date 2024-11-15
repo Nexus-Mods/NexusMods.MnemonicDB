@@ -6,6 +6,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Iterators;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage;
 using Reloaded.Memory.Extensions;
@@ -68,6 +69,11 @@ internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeCache attri
         }
 
         yield return builder.Build();
+    }
+
+    public unsafe void Fold<TFn, TDesc>(TDesc descriptor, ref TFn fn) where TFn : IFolder<RefDatom>, allows ref struct where TDesc : IRefSliceDescriptor, allows ref struct
+    {
+        throw new NotImplementedException();
     }
 
 

@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Iterators;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
@@ -31,6 +32,27 @@ public sealed class ValueComparer : IElementComparer
 
     /// <inheritdoc />
     public static int Compare(in Datom a, in Datom b)
+    {
+        var typeA = a.Prefix.ValueTag;
+        var typeB = b.Prefix.ValueTag;
+        
+        if (typeA != typeB)
+            return typeA.CompareTo(typeB);
+        
+        unsafe
+        {
+            fixed (byte* aPtr = a.ValueSpan)
+            {
+                fixed (byte* bPtr = b.ValueSpan)
+                {
+                    return typeA.Compare(aPtr, a.ValueSpan.Length, bPtr, b.ValueSpan.Length);
+                }
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public static int Compare(in RefDatom a, in RefDatom b)
     {
         var typeA = a.Prefix.ValueTag;
         var typeB = b.Prefix.ValueTag;

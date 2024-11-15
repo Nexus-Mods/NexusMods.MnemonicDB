@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Iterators;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using Reloaded.Memory.Extensions;
 
@@ -26,5 +27,13 @@ public interface ISnapshot
     /// Get the data specified by the given descriptor chunked into segments of datoms of the given size.
     /// </summary>
     IEnumerable<IndexSegment> DatomsChunked(SliceDescriptor descriptor, int chunkSize);
+
+
+    /// <summary>
+    /// Iterate over the datoms specified by the given descriptor, and apply the given function to each datom.
+    /// </summary>
+    public unsafe void Fold<TFn, TDesc>(TDesc descriptor, ref TFn fn)
+        where TDesc : IRefSliceDescriptor, allows ref struct
+        where TFn : IFolder<RefDatom>, allows ref struct;
 
 }

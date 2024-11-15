@@ -3,6 +3,7 @@
     <PropertyGroup>
         <RootNamespace>NexusMods.MnemonicDB</RootNamespace>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <LangVersion>13</LangVersion>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="DynamicData"/>

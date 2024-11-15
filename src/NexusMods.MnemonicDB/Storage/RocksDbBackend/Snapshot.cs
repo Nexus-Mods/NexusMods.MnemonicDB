@@ -1,16 +1,29 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Iterators;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-internal class Snapshot(Backend backend, AttributeCache attributeCache) : ISnapshot
+internal class Snapshot : ISnapshot
 {
-    private readonly RocksDbSharp.Snapshot _snapshot = backend.Db!.CreateSnapshot();
+    private readonly RocksDbSharp.Snapshot _snapshot;
+    private readonly ReadOptions _readOptions;
+    private readonly Backend _backend;
+    private readonly AttributeCache _attributeCache;
+
+    public Snapshot(Backend backend, AttributeCache attributeCache)
+    {
+        _backend = backend;
+        _attributeCache = attributeCache;
+        _snapshot = backend.Db!.CreateSnapshot();
+        _readOptions = new ReadOptions().SetSnapshot(_snapshot);
+    }
 
     public IndexSegment Datoms(SliceDescriptor descriptor)
     {
@@ -23,9 +36,9 @@ internal class Snapshot(Backend backend, AttributeCache attributeCache) : ISnaps
             .SetIterateLowerBound(from.ToArray())
             .SetIterateUpperBound(to.ToArray());
 
-        using var builder = new IndexSegmentBuilder(attributeCache);
+        using var builder = new IndexSegmentBuilder(_attributeCache);
 
-        using var iterator = backend.Db!.NewIterator(null, options);
+        using var iterator = _backend.Db!.NewIterator(null, options);
         if (reverse)
             iterator.SeekToLast();
         else
@@ -68,9 +81,9 @@ internal class Snapshot(Backend backend, AttributeCache attributeCache) : ISnaps
             .SetIterateLowerBound(from.ToArray())
             .SetIterateUpperBound(to.ToArray());
 
-        using var builder = new IndexSegmentBuilder(attributeCache);
+        using var builder = new IndexSegmentBuilder(_attributeCache);
 
-        using var iterator = backend.Db!.NewIterator(null, options);
+        using var iterator = _backend.Db!.NewIterator(null, options);
         if (reverse)
             iterator.SeekToLast();
         else
@@ -107,5 +120,29 @@ internal class Snapshot(Backend backend, AttributeCache attributeCache) : ISnaps
         }
         if (builder.Count > 0) 
             yield return builder.Build();
+    }
+
+    public unsafe void Fold<TFn, TDesc>(TDesc descriptor, ref TFn fn) 
+        where TDesc : IRefSliceDescriptor, allows ref struct 
+        where TFn : IFolder<RefDatom>, allows ref struct
+    {
+        using var iterator = _backend.Db!.NewIterator(null, _readOptions);
+        iterator.Seek(descriptor.LowerBound);
+        fn.Start();
+        var upperLimitSize = descriptor.UpperBound.Length;
+        fixed (byte* upperLimitPtr = descriptor.UpperBound)
+        {
+            while (iterator.Valid())
+            {
+                var keyPtr = Native.Instance.rocksdb_iter_key(iterator.Handle, out var keyLen);
+                if (GlobalComparer.Compare((byte*)keyPtr, (int)keyLen, upperLimitPtr, upperLimitSize) > 0)
+                    break;
+
+                var current = new RefDatom(iterator.GetKeySpan());
+                if (!fn.Add(current))
+                    break;
+                iterator.Next();
+            }
+        }
     }
 }

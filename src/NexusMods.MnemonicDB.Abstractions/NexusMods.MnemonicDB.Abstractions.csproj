@@ -2,6 +2,7 @@
     <PropertyGroup>
         <RootNamespace>NexusMods.MnemonicDB.Abstractions</RootNamespace>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <LangVersion>13</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>

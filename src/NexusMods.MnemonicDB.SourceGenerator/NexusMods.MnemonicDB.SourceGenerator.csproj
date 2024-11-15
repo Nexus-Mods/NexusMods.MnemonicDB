@@ -6,6 +6,7 @@
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <InternalsVisibleTo>NexusMods.MnemonicDB.SourceGenerator.Tests</InternalsVisibleTo>
+        <LangVersion>13</LangVersion>
     </PropertyGroup>
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp"/>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Iterators;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -38,6 +39,26 @@ public sealed class GlobalComparer : IComparer<byte[]>
     /// Compare two datoms
     /// </summary>
     public static int Compare(in Datom a, in Datom b)
+    {
+        var cmp = ((byte)a.Prefix.Index).CompareTo((byte)b.Prefix.Index);
+        if (cmp != 0)
+            return cmp;
+        
+        return a.Prefix.Index switch
+        {
+            IndexType.TxLog => TxLogComparator.Compare(a, b),
+            IndexType.EAVTCurrent or IndexType.EAVTHistory => EAVTComparator.Compare(a, b),
+            IndexType.AEVTCurrent or IndexType.AEVTHistory => AEVTComparator.Compare(a, b),
+            IndexType.AVETCurrent or IndexType.AVETHistory => AVETComparator.Compare(a, b),
+            IndexType.VAETCurrent or IndexType.VAETHistory => VAETComparator.Compare(a, b),
+            _ => ThrowArgumentOutOfRangeException()
+        };
+    }
+    
+    /// <summary>
+    /// Compare two datoms
+    /// </summary>
+    public static int Compare(in RefDatom a, in RefDatom b)
     {
         var cmp = ((byte)a.Prefix.Index).CompareTo((byte)b.Prefix.Index);
         if (cmp != 0)

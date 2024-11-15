@@ -1,6 +1,7 @@
 ﻿using System;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Iterators;
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
@@ -23,6 +24,12 @@ public sealed class AComparer : IElementComparer
 
     /// <inheritdoc />
     public static int Compare(in Datom a, in Datom b)
+    {
+        return a.A.CompareTo(b.A);
+    }
+
+    /// <inheritdoc />
+    public static int Compare(in RefDatom a, in RefDatom b)
     {
         return a.A.CompareTo(b.A);
     }

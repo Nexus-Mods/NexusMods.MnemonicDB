@@ -10,6 +10,8 @@ using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Iterators;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
@@ -327,6 +329,42 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         mod.ToString().Should().Be("Mod<EId:200000000000002>");
 
         await VerifyTable(mod);
+    }
+
+    private ref struct CounterFolder : IFolder<RefDatom>
+    {
+        public int Count;
+        public void Start()
+        {
+            Count = 0;
+        }
+
+        public bool Add(in RefDatom val)
+        {
+            Count++;
+            return true;
+        }
+
+        public void Finish()
+        {
+            
+        }
+    }
+    
+    [Fact]
+    public async Task CanGetDatomsFromIterator()
+    {
+        var loadout = await InsertExampleData();
+        var mod = loadout.Mods.First();
+
+        var counter = new CounterFolder();
+
+        var desc = new NullRefSliceDescriptor(
+            new KeyPrefix(mod.Id, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTCurrent),
+            new KeyPrefix(mod.Id, AttributeId.Max, TxId.MaxValue, false, ValueTag.Null, IndexType.EAVTCurrent));
+        Connection.Db.Snapshot.Fold(desc, ref counter);
+        
+        counter.Count.Should().Be(3, "we should have three datoms for the mod");
     }
 
     [Fact]

@@ -5,6 +5,7 @@
         <EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>true</EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>
         <RootNamespace>NexusMods.MnemonicDB.Storage.Tests</RootNamespace>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <LangVersion>13</LangVersion>
     </PropertyGroup>
     
     <ItemGroup>

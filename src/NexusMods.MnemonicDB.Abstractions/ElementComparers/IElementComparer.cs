@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Iterators;
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
@@ -26,6 +27,11 @@ public interface IElementComparer
     /// Compares the elements from two datoms.
     /// </summary>
     public static abstract int Compare(in Datom a, in Datom b);
+    
+    /// <summary>
+    /// Compares the elements from two datoms.
+    /// </summary>
+    public static abstract int Compare(in RefDatom a, in RefDatom b);
 
     /// <summary>
     /// Compare two datom spans

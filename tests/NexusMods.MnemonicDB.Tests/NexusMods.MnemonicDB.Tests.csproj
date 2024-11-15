@@ -3,6 +3,7 @@
         <!-- https://github.com/pengweiqhca/Xunit.DependencyInjection#how-to-disable-xunitdependencyinjection -->
         <EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>true</EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>
         <RootNamespace>NexusMods.MnemonicDB.Tests</RootNamespace>
+        <LangVersion>13</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>

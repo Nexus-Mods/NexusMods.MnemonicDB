@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Iterators;
 using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB;
@@ -56,5 +57,10 @@ internal class HistorySnapshot(ISnapshot inner, AttributeCache attributeCache) :
         }
 
         yield return builder.Build();
+    }
+
+    public unsafe void Fold<TFn, TDesc>(TDesc descriptor, ref TFn fn) where TFn : IFolder<RefDatom>, allows ref struct where TDesc : IRefSliceDescriptor, allows ref struct
+    {
+        throw new System.NotImplementedException();
     }
 }

@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Iterators;
 
 namespace NexusMods.MnemonicDB.Abstractions.DatomComparators;
 
@@ -50,6 +51,21 @@ public abstract unsafe class ADatomComparator<TA, TB, TC, TD> : IDatomComparator
 
     /// <inheritdoc />
     public static int Compare(in Datom a, in Datom b)
+    {
+        var cmp = TA.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        cmp = TB.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        cmp = TC.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        return TD.Compare(a, b);
+    }
+    
+    /// <inheritdoc />
+    public static int Compare(in RefDatom a, in RefDatom b)
     {
         var cmp = TA.Compare(a, b);
         if (cmp != 0) return cmp;
