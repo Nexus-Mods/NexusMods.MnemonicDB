@@ -32,8 +32,14 @@ public interface ISnapshot
     /// <summary>
     /// Iterate over the datoms specified by the given descriptor, and apply the given function to each datom.
     /// </summary>
-    public unsafe void Fold<TFn, TDesc>(TDesc descriptor, ref TFn fn)
+    public void Fold<TFn, TDesc>(TDesc descriptor, ref TFn fn)
         where TDesc : IRefSliceDescriptor, allows ref struct
         where TFn : IFolder<RefDatom>, allows ref struct;
+    
+    /// <summary>
+    /// Iterate over a set of datoms
+    /// </summary>
+    public IEnumerable<RefDatom> Datoms<TDesc>(TDesc descriptor)
+        where TDesc : IRefSliceDescriptor, allows ref struct;
 
 }

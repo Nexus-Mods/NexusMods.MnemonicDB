@@ -76,6 +76,11 @@ internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeCache attri
         throw new NotImplementedException();
     }
 
+    public IEnumerable<RefDatom> Datoms<TDesc>(TDesc descriptor) where TDesc : IRefSliceDescriptor, allows ref struct
+    {
+        throw new NotImplementedException();
+    }
+
 
     /// <summary>
     /// In a perfect situation this function can be fairly optimized. We simply take in a datom, but

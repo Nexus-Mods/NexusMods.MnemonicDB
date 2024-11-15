@@ -363,8 +363,11 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             new KeyPrefix(mod.Id, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTCurrent),
             new KeyPrefix(mod.Id, AttributeId.Max, TxId.MaxValue, false, ValueTag.Null, IndexType.EAVTCurrent));
         Connection.Db.Snapshot.Fold(desc, ref counter);
-        
+
         counter.Count.Should().Be(3, "we should have three datoms for the mod");
+
+        var r =  Connection.Db.Snapshot.Datoms(desc)
+            .Count();
     }
 
     [Fact]

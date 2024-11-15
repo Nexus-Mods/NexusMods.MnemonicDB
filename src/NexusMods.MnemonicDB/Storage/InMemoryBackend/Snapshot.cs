@@ -122,4 +122,9 @@ internal class Snapshot : ISnapshot
     {
         throw new System.NotImplementedException();
     }
+
+    public IEnumerable<RefDatom> Datoms<TDesc>(TDesc descriptor) where TDesc : IRefSliceDescriptor, allows ref struct
+    {
+        throw new System.NotImplementedException();
+    }
 }

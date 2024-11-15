@@ -63,4 +63,9 @@ internal class HistorySnapshot(ISnapshot inner, AttributeCache attributeCache) :
     {
         throw new System.NotImplementedException();
     }
+
+    public IEnumerable<RefDatom> Datoms<TDesc>(TDesc descriptor) where TDesc : IRefSliceDescriptor, allows ref struct
+    {
+        throw new System.NotImplementedException();
+    }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
@@ -143,6 +144,96 @@ internal class Snapshot : ISnapshot
                     break;
                 iterator.Next();
             }
+        }
+    }
+
+    public IEnumerable<RefDatom> Datoms<TDesc>(TDesc descriptor) where TDesc : IRefSliceDescriptor, allows ref struct
+    {
+        return new Enumerable(descriptor.LowerBound.ToArray(), descriptor.UpperBound.ToArray(), this);
+    }
+
+    private class Enumerable : IEnumerable<RefDatom>
+    {
+        private readonly Memory<byte> _from;
+        private readonly Memory<byte> _to;
+        private readonly Snapshot _snapshot;
+
+        public Enumerable(Memory<byte> from, Memory<byte> to, Snapshot snapshot)
+        {
+            _from = from;
+            _to = to;
+            _snapshot = snapshot;
+        }
+
+        public IEnumerator<RefDatom> GetEnumerator()
+        {
+            return new Enumerator(_from, _to, _snapshot);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }
+
+    private class Enumerator : IEnumerator<RefDatom>
+    {
+        private RocksDbSharp.Iterator? _iterator;
+        private readonly Memory<byte> _from;
+        private readonly Memory<byte> _to;
+        private readonly Snapshot _snapshot;
+        
+        public Enumerator(Memory<byte> from, Memory<byte> to, Snapshot snapshot)
+        {
+            _from = from;
+            _to = to;
+            _snapshot = snapshot;
+            _iterator = null;
+        }
+        
+        public unsafe bool MoveNext()
+        {
+            _iterator = _snapshot._backend.Db!.NewIterator(null, _snapshot._readOptions);
+            _iterator.Seek(_from.Span);
+
+            _iterator.Next();
+            if (!_iterator.Valid())
+                return false;
+            
+            var upperLimitSize = _to.Length;
+            fixed (byte* upperLimitPtr = _to.Span)
+            {
+                
+                var keyPtr = Native.Instance.rocksdb_iter_key(_iterator.Handle, out var keyLen);
+                if (GlobalComparer.Compare((byte*)keyPtr, (int)keyLen, upperLimitPtr, upperLimitSize) > 0)
+                    return false;
+            }
+
+            return true;
+        }
+
+        public void Reset()
+        {
+            throw new NotSupportedException();
+        }
+
+        RefDatom IEnumerator<RefDatom>.Current
+        {
+            get
+            {
+                unsafe
+                {
+                    var keyPtr = Native.Instance.rocksdb_iter_key(_iterator!.Handle, out var keyLen);
+                    return new RefDatom(new ReadOnlySpan<byte>((void*)keyPtr, (int)keyLen));
+                }
+            }
+        }
+
+        object? IEnumerator.Current => throw new NotSupportedException();
+
+        public void Dispose()
+        {
+            _iterator?.Dispose();
         }
     }
 }
