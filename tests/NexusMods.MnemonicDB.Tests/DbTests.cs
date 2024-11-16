@@ -1173,4 +1173,38 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             .NotBeEmpty();
 
     }
+
+    [Fact]
+    public async Task Test_ObserveHasAnyDatoms()
+    {
+        var hasAnyDatoms = false;
+
+        using var disposable = Connection
+            .ObserveHasAnyDatoms(SliceDescriptor.Create(Loadout.Name, Connection.AttributeCache))
+            .Subscribe(value => hasAnyDatoms = value);
+
+        hasAnyDatoms.Should().BeFalse();
+
+        EntityId entityId;
+        using (var tx = Connection.BeginTransaction())
+        {
+            var loadout = new Loadout.New(tx)
+            {
+                Name = "Test Loadout"
+            };
+
+            var result = await tx.Commit();
+            entityId = result.Remap(loadout).Id;
+        }
+
+        hasAnyDatoms.Should().BeTrue();
+
+        using (var tx = Connection.BeginTransaction())
+        {
+            tx.Delete(entityId, recursive: false);
+            await tx.Commit();
+        }
+
+        hasAnyDatoms.Should().BeFalse();
+    }
 }
