@@ -102,7 +102,7 @@ public abstract class CompiledQuery
         return mask;
     }
     
-    protected Predicate[] Optimize(List<LVar> startingEnv, List<Predicate> predicates)
+    protected Predicate[] Optimize(List<LVar> startingEnv, LVar exit, List<Predicate> predicates)
     {
         List<Predicate> optimized = new();
         var existing = startingEnv.ToImmutableArray();
@@ -112,6 +112,13 @@ public abstract class CompiledQuery
             var bound = predicate.Bind(existing);
             optimized.Add(bound);
             existing = bound.EnvironmentExit;
+        }
+
+        var required = new HashSet<LVar> { exit };
+        
+        for (int i = optimized.Count - 1 ; i >= 0; i--)
+        {
+            optimized[i] = optimized[i].Clean(required);
         }
 
         return optimized.ToArray();
@@ -154,7 +161,7 @@ public class CompiledQuery<T1, T2, TRet> : CompiledQuery
                 startingEnv.Add(_lvar2);
             }
 
-            compiledQuery = Optimize(startingEnv, _predicates);
+            compiledQuery = Optimize(startingEnv, _retVar, _predicates);
             _compiledQueries.Add(mask, compiledQuery);
         }
 

@@ -37,4 +37,24 @@ public abstract record Predicate
         };
     }
 
+    public Predicate Clean(HashSet<LVar> required)
+    {
+        var lvars = Terms.Where(t => t.Term.IsLVar)
+            .Select(t => t.Term.LVar)
+            .ToHashSet();
+
+
+        var newNode =  this with
+        {
+            EnvironmentEnter = [..EnvironmentEnter.Where(Inputs.Contains)],
+            EnvironmentExit = [..EnvironmentExit.Where(required.Contains)],
+        };
+        
+        
+        foreach (var lvar in lvars)
+            required.Add(lvar);
+
+        return newNode;
+
+    }
 }

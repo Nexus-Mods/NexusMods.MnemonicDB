@@ -17,8 +17,16 @@ public record ProjectTuple<T1, T2> : Predicate
         _out = o;
     }
 
-    public override IEnumerable<(string Name, ITerm Term)> Terms => throw new System.NotImplementedException();
-    
+    public override IEnumerable<(string Name, ITerm Term)> Terms
+    {
+        get
+        {
+            yield return (nameof(_a), new Term<T1>(_a));
+            yield return (nameof(_b), new Term<T2>(_b));
+            yield return (nameof(_out), new Term<(T1, T2)>(_out));
+        }
+    }
+
     public override IEnumerable<ImmutableDictionary<LVar, object>> Apply(IEnumerable<ImmutableDictionary<LVar, object>> envStream)
     {
         foreach (var env in envStream)
