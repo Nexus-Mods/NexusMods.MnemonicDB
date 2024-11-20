@@ -75,10 +75,12 @@ public class TableJoiner
                 if (dest == -1) continue;
                 _dest.AddFrom(this, src, dest);
             }
+            _dest.FinishRow();
         }
         
         public ITable FinishTable()
         {
+            _dest.Freeze();
             return _dest;
         }
 

@@ -15,11 +15,6 @@ public interface ITable
     public LVar[] Columns { get; }
     
     /// <summary>
-    /// The number of rows in this table
-    /// </summary>
-    public int Count { get; }
-    
-    /// <summary>
     /// Get the column with the given name
     /// </summary>
     public IColumn this[LVar column] { get; }

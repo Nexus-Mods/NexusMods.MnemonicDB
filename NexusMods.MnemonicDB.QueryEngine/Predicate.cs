@@ -82,7 +82,8 @@ public abstract record Predicate
             return (inputIdx, outputIdx);
         }).ToArray();
 
-        var newCopyColumns = Inputs.Where(i => newExit.Contains(i) && !Inputs.Contains(i))
+        var newCopyColumns = EnvironmentEnter
+            .Where(i => newExit.Contains(i) && !Inputs.Contains(i))
             .Select(i =>
             {
                 var inputIdx = newEnter.IndexOf(i);

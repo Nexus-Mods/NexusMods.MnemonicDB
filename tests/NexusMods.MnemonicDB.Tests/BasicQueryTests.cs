@@ -8,7 +8,7 @@ public class BasicQueryTests
     [Fact]
     public void CanUnpivot()
     {
-        var q = new Query<IEnumerable<int>, IEnumerable<int>>(out var a, out var b)
+        var q = new Query<IEnumerable<int>, int>(out var a, out var b)
         {
             Unpivot(a, out var dest),
             Unpivot(a, out var dest2),

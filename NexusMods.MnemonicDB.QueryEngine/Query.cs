@@ -166,18 +166,21 @@ public class CompiledQuery<T1, T2, TRet> : CompiledQuery
             _compiledQueries.Add(mask, compiledQuery);
         }
 
-        ITable startTable = new AppendableTable([_lvar1, _lvar2]);
+        var startTable = new AppendableTable([_lvar1, _lvar2]);
         if (t1.HasValue && !t2.HasValue)
         {
             ((IAppendableColumn<T1>)startTable[_lvar1]).Add(t1.Value);
+            startTable.FinishRow();
         }
         else throw new NotImplementedException();
+
+        var table = startTable.Freeze();
         foreach (var predicate in compiledQuery)
         {
-            startTable = predicate.Run(startTable);
+            table = predicate.Run(table);
         }
 
-        throw new NotImplementedException();
+        return (IColumn<TRet>)table[0];
     }
     
 }

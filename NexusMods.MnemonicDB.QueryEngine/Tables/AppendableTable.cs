@@ -18,8 +18,22 @@ public class AppendableTable : ITable
         }
     }
 
+    /// <summary>
+    /// Freeze the table, making it immutable
+    /// </summary>
+    public ITable Freeze()
+    {
+        return this;
+    }
+
+    public void FinishRow()
+    {
+        RowCount++;
+    }
+    
+    public int RowCount { get; private set; }
+
     public LVar[] Columns => _columnNames;
-    public int Count { get; }
 
     public IColumn this[LVar column]
     {
@@ -40,19 +54,19 @@ public class AppendableTable : ITable
     private class RowEnumerator : IRowEnumerator
     {
         private readonly AppendableTable _table;
-        private int _idx;
+        private int _rowIdx;
 
         internal RowEnumerator(AppendableTable table)
         {
             _table = table;
-            _idx = -1;
+            _rowIdx = -1;
         }
         
         public bool MoveNext()
         {
-            if (_idx < _table.Count)
+            if (_rowIdx + 1 < _table.RowCount)
             {
-                _idx++;
+                _rowIdx++;
                 return true;
             }
             return false;
@@ -72,9 +86,9 @@ public class AppendableTable : ITable
             return ((IColumn<T>)_table._columnData)[idx];
         }
 
-        public T Get<T>(int idx)
+        public T Get<T>(int column)
         {
-            return ((IColumn<T>)_table._columnData[idx])[idx];
+            return ((IColumn<T>)_table._columnData[column])[_rowIdx];
         }
     }
 
