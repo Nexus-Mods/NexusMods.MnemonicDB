@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using NexusMods.MnemonicDB.QueryEngine.Tables;
 
 namespace NexusMods.MnemonicDB.QueryEngine.Predicates;
 
@@ -25,6 +26,11 @@ public record ProjectTuple<T1, T2> : Predicate
             yield return (nameof(_b), new Term<T2>(_b));
             yield return (nameof(_out), new Term<(T1, T2)>(_out));
         }
+    }
+
+    public ITable Run(ITable src)
+    {
+        throw new NotImplementedException();
     }
 
     public override IEnumerable<ImmutableDictionary<LVar, object>> Apply(IEnumerable<ImmutableDictionary<LVar, object>> envStream)

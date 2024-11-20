@@ -7,10 +7,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Tables\" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\src\NexusMods.MnemonicDB.Abstractions\NexusMods.MnemonicDB.Abstractions.csproj" />
     </ItemGroup>
 

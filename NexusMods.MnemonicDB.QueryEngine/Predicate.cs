@@ -1,7 +1,9 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using NexusMods.MnemonicDB.Abstractions.Query;
+using NexusMods.MnemonicDB.QueryEngine.Tables;
 
 namespace NexusMods.MnemonicDB.QueryEngine;
 
@@ -23,6 +25,23 @@ public abstract record Predicate
     public ImmutableHashSet<LVar> Inputs { get; init; } = ImmutableHashSet<LVar>.Empty;
     public ImmutableHashSet<LVar> Outputs { get; init; } = ImmutableHashSet<LVar>.Empty;
     
+    public TableJoiner? Joiner { get; init; }
+    
+    /// <summary>
+    /// The src and dest columns to copy
+    /// </summary>
+    public (int Src, int Dest)[] CopyColumns { get; init; } = [];
+    
+    /// <summary>
+    /// The join columns on the output environment
+    /// </summary>
+    public (int Src, int Dest)[] KeyColumns { get; init; } = [];
+    
+    /// <summary>
+    /// The emitted columns
+    /// </summary>
+    public int[] EmitColumns { get; init; } = [];
+    
     public Predicate Bind(ImmutableArray<LVar> existing)
     {
         var lvars = Terms.Where(t => t.Term.IsLVar)
@@ -43,18 +62,45 @@ public abstract record Predicate
             .Select(t => t.Term.LVar)
             .ToHashSet();
 
+        var newEnter = EnvironmentEnter
+            .Where(i => Inputs.Contains(i) || required.Contains(i))
+            .ToImmutableArray();
+        var newExit = EnvironmentExit
+            .Where(i => required.Contains(i) || Outputs.Contains(i))
+            .ToImmutableArray();
+
+        // The indexes of the columns that are net-new
+        var newNewColumns = newExit.Select((v, idx) => (v, idx))
+            .Where(t => !newEnter.Contains(t.v))
+            .Select(e => e.idx)
+            .ToArray();
+
+        var newKeyColumns = Inputs.Select(i =>
+        {
+            var inputIdx = newEnter.IndexOf(i);
+            var outputIdx = newExit.IndexOf(i);
+            return (inputIdx, outputIdx);
+        }).ToArray();
+
+        var newCopyColumns = Inputs.Where(i => newExit.Contains(i) && !Inputs.Contains(i))
+            .Select(i =>
+            {
+                var inputIdx = newEnter.IndexOf(i);
+                var outputIdx = newExit.IndexOf(i);
+                return (inputIdx, outputIdx);
+            }).ToArray();
 
         var newNode =  this with
         {
-            EnvironmentEnter = [..EnvironmentEnter.Where(Inputs.Contains)],
-            EnvironmentExit = [..EnvironmentExit.Where(required.Contains)],
+            Joiner = new TableJoiner(newEnter.ToArray(), newCopyColumns, newKeyColumns, newNewColumns, newExit.ToArray()),
+            CopyColumns = newCopyColumns,
+            KeyColumns = newKeyColumns,
+            EmitColumns = newNewColumns,
+            EnvironmentEnter = newEnter,
+            EnvironmentExit = newExit,
         };
-        
-        
         foreach (var lvar in lvars)
             required.Add(lvar);
-
         return newNode;
-
     }
 }

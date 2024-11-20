@@ -168,13 +168,11 @@ public class CompiledQuery<T1, T2, TRet> : CompiledQuery
         if (t1.HasValue)
         {
             env = env.Add(_lvar1, t1.Value);
-            mask |= 1;
         }
 
         if (t2.HasValue)
         {
             env = env.Add(_lvar2, t2.Value);
-            mask |= 2;
         }
         
         var envStream = (IEnumerable<ImmutableDictionary<LVar, object>>)[env];
