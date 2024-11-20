@@ -35,24 +35,56 @@ public class TableJoiner
     public ref struct JoinerEnumerator
     {
         private readonly ITable _src;
+        private IRowEnumerator? _srcEnumerator;
+        private readonly AppendableTable _dest;
+        private readonly TableJoiner _joiner;
+
         public JoinerEnumerator(TableJoiner tableJoiner, ITable src)
         {
             _src = src;
+            _joiner = tableJoiner;
+            _dest = new AppendableTable(tableJoiner._outputColumns);
         }
-
+        
+        /// <summary>
+        /// Gets the value of the column at the given index from the source table
+        /// </summary>
+        public T Get<T>(int column)
+        {
+            return _srcEnumerator!.Get<T>(column);
+        }
+        
         public bool MoveNext()
         {
-            throw new NotImplementedException();
+            if (_srcEnumerator == null)
+            {
+                _srcEnumerator = _src.EnumerateRows();
+            }
+            return _srcEnumerator.MoveNext();
         }
 
         public void FinishRow()
         {
-            
+            foreach (var (src, dest) in _joiner._copyColumns)
+            {
+                if (dest == -1) continue;
+                _dest.AddFrom(this, src, dest);
+            }
+            foreach (var (src, dest) in _joiner._joinColumns)
+            {
+                if (dest == -1) continue;
+                _dest.AddFrom(this, src, dest);
+            }
         }
         
         public ITable FinishTable()
         {
-            throw new NotImplementedException();
+            return _dest;
+        }
+
+        public void Add<T>(int emitColumn, T dest)
+        {
+            ((IAppendableColumn<T>)_dest[emitColumn]).Add(dest);
         }
     }
 }

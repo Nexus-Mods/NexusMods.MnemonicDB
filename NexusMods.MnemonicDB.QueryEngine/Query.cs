@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using DynamicData.Kernel;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.QueryEngine.Predicates;
+using NexusMods.MnemonicDB.QueryEngine.Tables;
 
 namespace NexusMods.MnemonicDB.QueryEngine;
 
@@ -165,30 +166,18 @@ public class CompiledQuery<T1, T2, TRet> : CompiledQuery
             _compiledQueries.Add(mask, compiledQuery);
         }
 
-        if (t1.HasValue)
+        ITable startTable = new AppendableTable([_lvar1, _lvar2]);
+        if (t1.HasValue && !t2.HasValue)
         {
-            env = env.Add(_lvar1, t1.Value);
+            ((IAppendableColumn<T1>)startTable[_lvar1]).Add(t1.Value);
+        }
+        else throw new NotImplementedException();
+        foreach (var predicate in compiledQuery)
+        {
+            startTable = predicate.Run(startTable);
         }
 
-        if (t2.HasValue)
-        {
-            env = env.Add(_lvar2, t2.Value);
-        }
-        
-        var envStream = (IEnumerable<ImmutableDictionary<LVar, object>>)[env];
-        foreach (var predicate in _predicates)
-        {
-            envStream = predicate.Apply(envStream);
-        }
-
-        foreach (var result in envStream)
-        {
-            if (!result.TryGetValue(_retVar, out var value))
-            {
-                continue;
-            }
-            yield return (TRet)value;
-        }
+        throw new NotImplementedException();
     }
     
 }

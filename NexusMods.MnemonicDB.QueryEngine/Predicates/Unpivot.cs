@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using NexusMods.MnemonicDB.QueryEngine.Tables;
 
 namespace NexusMods.MnemonicDB.QueryEngine.Predicates;
 
@@ -49,5 +51,20 @@ public record Unpivot<T> : Predicate
                 yield return env.Add(Destination.LVar, val!);
             }
         }
+    }
+
+    public override ITable Run(ITable input)
+    {
+        var e = Joiner!.GetEnumerator(input);
+        while (e.MoveNext())
+        {
+            var src = e.Get<IEnumerable<T>>(KeyColumns[0].Src);
+            foreach (var dest in src)
+            {
+                e.Add(EmitColumns[0], dest);
+                e.FinishRow();
+            }
+        }
+        return e.FinishTable();
     }
 }

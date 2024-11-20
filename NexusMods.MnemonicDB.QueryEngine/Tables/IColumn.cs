@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using NexusMods.MnemonicDB.QueryEngine.Tables;
 
 namespace NexusMods.MnemonicDB.QueryEngine;
 

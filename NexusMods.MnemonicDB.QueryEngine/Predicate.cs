@@ -103,4 +103,9 @@ public abstract record Predicate
             required.Add(lvar);
         return newNode;
     }
+
+    /// <summary>
+    /// Run the predicate returning a new table
+    /// </summary>
+    public abstract ITable Run(ITable input);
 }

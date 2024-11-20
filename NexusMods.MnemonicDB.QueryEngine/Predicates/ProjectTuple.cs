@@ -28,9 +28,17 @@ public record ProjectTuple<T1, T2> : Predicate
         }
     }
 
-    public ITable Run(ITable src)
+    public override ITable Run(ITable src)
     {
-        throw new NotImplementedException();
+        var e = Joiner!.GetEnumerator(src);
+        while(e.MoveNext())
+        {
+            var a = e.Get<T1>(KeyColumns[0].Src);
+            var b = e.Get<T2>(KeyColumns[1].Src);
+            e.Add(EmitColumns[0], (a, b));
+            e.FinishRow();
+        }
+        return e.FinishTable();
     }
 
     public override IEnumerable<ImmutableDictionary<LVar, object>> Apply(IEnumerable<ImmutableDictionary<LVar, object>> envStream)

@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using NexusMods.MnemonicDB.QueryEngine.Tables;
 
 namespace NexusMods.MnemonicDB.QueryEngine;
 
@@ -43,6 +44,11 @@ public abstract class LVar : IEquatable<LVar>
 
     /// <inheritdoc />
     public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);
+
+    /// <summary>
+    /// Create a default column for this variable
+    /// </summary>
+    public abstract IColumn MakeColumn();
 }
 
 /// <summary>
@@ -75,5 +81,11 @@ public class LVar<T> : LVar, IEquatable<LVar<T>>
 
     /// <inheritdoc />
     public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);
+
+    /// <inheritdoc />
+    public override IColumn MakeColumn()
+    {
+        return new ListColumn<T>();
+    }
 }
 
