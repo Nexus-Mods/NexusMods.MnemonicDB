@@ -2,12 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Data;
 using System.Runtime.CompilerServices;
 using DynamicData.Kernel;
-using NexusMods.MnemonicDB.Abstractions.Query.Predicates;
+using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.QueryEngine.Predicates;
 
-namespace NexusMods.MnemonicDB.Abstractions.Query;
+namespace NexusMods.MnemonicDB.QueryEngine;
 
 public abstract class AQuery<T> : IEnumerable<Predicate>
 {

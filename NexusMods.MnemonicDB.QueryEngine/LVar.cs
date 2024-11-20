@@ -2,7 +2,7 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
-namespace NexusMods.MnemonicDB.Abstractions.Query;
+namespace NexusMods.MnemonicDB.QueryEngine;
 
 /// <summary>
 /// A logic variable, that can be used to represent values in a query.
@@ -75,10 +75,5 @@ public class LVar<T> : LVar, IEquatable<LVar<T>>
 
     /// <inheritdoc />
     public override int GetHashCode() => RuntimeHelpers.GetHashCode(this);
-    
-    /// <summary>
-    /// Implicit conversion from a tracked value to a logic variable (for use in queries)
-    /// </summary>
-    public static implicit operator LVar<T>(TrackingDynamicObject.TrackedValue tv) => tv.AsLVar<T>();
 }
 

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
-namespace NexusMods.MnemonicDB.Abstractions.Query.Predicates;
+namespace NexusMods.MnemonicDB.QueryEngine.Predicates;
 
 public record ProjectTuple<T1, T2> : Predicate
 {

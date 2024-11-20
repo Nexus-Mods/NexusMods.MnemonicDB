@@ -1,9 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using NexusMods.MnemonicDB.Abstractions.Query;
 
-namespace NexusMods.MnemonicDB.Abstractions.Query;
+namespace NexusMods.MnemonicDB.QueryEngine;
 
 /// <summary>
 /// An abstract predicate. A Predicate is a logical statement, a bit like a function

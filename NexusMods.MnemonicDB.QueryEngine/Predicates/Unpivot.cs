@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 
-namespace NexusMods.MnemonicDB.Abstractions.Query.Predicates;
+namespace NexusMods.MnemonicDB.QueryEngine.Predicates;
 
 /// <summary>
 /// Unpivots a collection of values into a single lvar, esentially flattening the collection

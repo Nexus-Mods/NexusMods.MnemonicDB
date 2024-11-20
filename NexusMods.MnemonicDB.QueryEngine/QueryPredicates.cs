@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-using NexusMods.MnemonicDB.Abstractions.Query.Predicates;
+using NexusMods.MnemonicDB.QueryEngine.Predicates;
 
-namespace NexusMods.MnemonicDB.Abstractions.Query;
+namespace NexusMods.MnemonicDB.QueryEngine;
 
 /// <summary>
 /// A class that contains constructors for common predicates, allowing this
@@ -48,9 +48,7 @@ public static class QueryPredicates
         lvarOut = LVar.Create<TRet>();
         throw new NotImplementedException();
     }
-
-    public static dynamic Environment() => new TrackingDynamicObject();
-
+    
     public static void With<T>(out LVar<T> val)
     {
         val = LVar.Create<T>();

@@ -1,12 +1,9 @@
-using DynamicData.Kernel;
-using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.Query;
-using NexusMods.MnemonicDB.TestModel;
-using static NexusMods.MnemonicDB.Abstractions.Query.QueryPredicates;
+using NexusMods.MnemonicDB.QueryEngine;
+using static NexusMods.MnemonicDB.QueryEngine.QueryPredicates;
 
 namespace NexusMods.MnemonicDB.Tests;
 
-public partial class BasicQueryTests
+public class BasicQueryTests
 {
     [Fact]
     public void CanUnpivot()

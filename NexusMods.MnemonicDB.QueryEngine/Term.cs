@@ -1,6 +1,6 @@
 using System;
 
-namespace NexusMods.MnemonicDB.Abstractions.Query;
+namespace NexusMods.MnemonicDB.QueryEngine;
 
 /// <summary>
 /// An interface for terms in a query
