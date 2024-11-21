@@ -1,4 +1,6 @@
+using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.QueryEngine;
+using NexusMods.MnemonicDB.TestModel;
 using static NexusMods.MnemonicDB.QueryEngine.QueryPredicates;
 
 namespace NexusMods.MnemonicDB.Tests;
@@ -8,10 +10,13 @@ public class BasicQueryTests
     [Fact]
     public void CanUnpivot()
     {
+        LVar<EntityId> e = LVar.Create<EntityId>();
+        LVar<string> name = LVar.Create<string>();
         var q = new Query<IEnumerable<int>, IEnumerable<int>>(out var a, out var b)
         {
             Unpivot(a, out var dest1),
             Unpivot(b, out var dest2),
+            {e, Loadout.Name, name},
             Unify(dest1, dest2),
         }.Return(dest1);
 

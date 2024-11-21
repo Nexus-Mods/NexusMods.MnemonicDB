@@ -22,15 +22,17 @@ public abstract class AQuery<T> : IEnumerable<Predicate>
         _predicates.Add(predicate);
     }
     
-    public void Add<TVal>(Term<EntityId> e, IWritableAttribute<TVal> val, Term<TVal> value)
-    {
-        throw new NotImplementedException();
-    }
-    
     public void Add<T1, T2>((LVar<T1> a, LVar<T2> b) tuple, out LVar<(T1, T2)> o)
     {
         o = LVar.Create<(T1, T2)>();
         Add(new ProjectTuple<T1, T2>(tuple.a, tuple.b, o));
+    }
+    
+    public void Add<TAttribute, TValue>(Term<EntityId> e, TAttribute a, Term<TValue> v)
+    where TAttribute : IWritableAttribute<TValue> 
+    where TValue : notnull
+    {
+        Add(new Datoms<TAttribute, TValue>(e, a, v));
     }
     
     public IEnumerator<Predicate> GetEnumerator()
