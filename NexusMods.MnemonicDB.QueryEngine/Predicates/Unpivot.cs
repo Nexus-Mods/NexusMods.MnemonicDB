@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using JetBrains.Annotations;
 using NexusMods.MnemonicDB.QueryEngine.Tables;
 
 namespace NexusMods.MnemonicDB.QueryEngine.Predicates;
@@ -53,15 +54,16 @@ public record Unpivot<T> : Predicate
         }
     }
 
-    public override ITable Run(ITable input)
+    [UsedImplicitly]
+    private ITable Run_IO(ITable input, int srcIdx, int destIdx)
     {
         var e = Joiner!.GetEnumerator(input);
         while (e.MoveNext())
         {
-            var src = e.Get<IEnumerable<T>>(KeyColumns[0].Src);
+            var src = e.Get<IEnumerable<T>>(srcIdx);
             foreach (var dest in src)
             {
-                e.Add(EmitColumns[0], dest);
+                e.Add(destIdx, dest);
                 e.FinishRow();
             }
         }

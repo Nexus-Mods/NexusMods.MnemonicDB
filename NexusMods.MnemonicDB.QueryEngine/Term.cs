@@ -26,6 +26,11 @@ public interface ITerm
     /// Get the abstract LVar of the term if it is an LVar
     /// </summary>
     public LVar LVar { get; }
+
+    /// <summary>
+    /// Gets the value of the term as an object
+    /// </summary>
+    object ObjectValue { get; }
 }
 
 /// <summary>
@@ -69,6 +74,9 @@ public struct Term<T> : ITerm
     public bool IsValue => _lvar == null;
 
     LVar ITerm.LVar => LVar;
+    
+    
+    public object ObjectValue => Value!;
 
     /// <summary>
     /// Gets the LVar of the term

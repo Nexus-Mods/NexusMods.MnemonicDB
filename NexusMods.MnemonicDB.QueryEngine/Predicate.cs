@@ -2,6 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
+using DynamicData;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.QueryEngine.Tables;
 
@@ -24,6 +27,10 @@ public abstract record Predicate
     public ImmutableArray<LVar> EnvironmentExit { get; init; }= ImmutableArray<LVar>.Empty;
     public ImmutableHashSet<LVar> Inputs { get; init; } = ImmutableHashSet<LVar>.Empty;
     public ImmutableHashSet<LVar> Outputs { get; init; } = ImmutableHashSet<LVar>.Empty;
+    
+    private Func<ITable, ITable>? _runFn = null;
+
+    public Func<ITable, ITable> RunFn => _runFn!;
     
     public TableJoiner? Joiner { get; init; }
     
@@ -100,13 +107,54 @@ public abstract record Predicate
             EnvironmentEnter = newEnter,
             EnvironmentExit = newExit,
         };
+        
+        newNode._runFn = newNode.MakeRunFn();
+        
         foreach (var lvar in lvars)
             required.Add(lvar);
         return newNode;
     }
 
-    /// <summary>
-    /// Run the predicate returning a new table
-    /// </summary>
-    public abstract ITable Run(ITable input);
+    private Func<ITable, ITable> MakeRunFn()
+    {
+        char GetTermSig(ITerm term)
+        {
+            if (term.IsValue)
+                return 'C';
+            if (Inputs.Contains(term.LVar))
+                return 'I';
+            return 'O';
+        }
+        
+        var sig = "Run_" + string.Join("", Terms.Select(t => GetTermSig(t.Term)));
+
+        var method = GetType()
+            .GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            .FirstOrDefault(m => m.Name == sig);
+        
+        if (method == null)
+            throw new Exception($"The predicate {GetType().Name} does not have a method named {sig} which it requires to execute this query");
+        
+        List<Expression> args = [Expression.Parameter(typeof(ITable))];
+
+        foreach (var t in Terms)
+        {
+            if (t.Term.IsValue)
+                args.Add(Expression.Constant(t.Term.ObjectValue));
+            else if (Inputs.Contains(t.Term.LVar))
+            {
+                var idx = EnvironmentEnter.IndexOf(t.Term.LVar);
+                args.Add(Expression.Constant(idx));
+            }
+            else
+            {
+                var idx = EnvironmentExit.IndexOf(t.Term.LVar);
+                args.Add(Expression.Constant(idx));
+            }
+        }
+        var call = Expression.Call(Expression.Constant(this), method, args);
+        var lambda = Expression.Lambda<Func<ITable, ITable>>(call, args.Take(1).Cast<ParameterExpression>().ToArray());
+
+        return lambda.Compile();
+    }
 }

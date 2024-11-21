@@ -28,7 +28,8 @@ public record ProjectTuple<T1, T2> : Predicate
         }
     }
 
-    public override ITable Run(ITable src)
+    
+    public ITable Run(ITable src)
     {
         var e = Joiner!.GetEnumerator(src);
         while(e.MoveNext())

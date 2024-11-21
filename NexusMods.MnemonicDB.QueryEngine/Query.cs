@@ -146,8 +146,6 @@ public class CompiledQuery<T1, T2, TRet> : CompiledQuery
     
     public IEnumerable<TRet> Run(Optional<T1> t1 = default, Optional<T2> t2 = default)
     {
-        var env = ImmutableDictionary<LVar, object>.Empty;
-        
         var mask = CalculateMask(t1.HasValue, t2.HasValue);
         if (!_compiledQueries.TryGetValue(mask, out var compiledQuery))
         {
@@ -172,12 +170,18 @@ public class CompiledQuery<T1, T2, TRet> : CompiledQuery
             ((IAppendableColumn<T1>)startTable[_lvar1]).Add(t1.Value);
             startTable.FinishRow();
         }
+        if (t1.HasValue && t2.HasValue)
+        {
+            ((IAppendableColumn<T1>)startTable[_lvar1]).Add(t1.Value);
+            ((IAppendableColumn<T2>)startTable[_lvar2]).Add(t2.Value);
+            startTable.FinishRow();
+        }
         else throw new NotImplementedException();
 
         var table = startTable.Freeze();
         foreach (var predicate in compiledQuery)
         {
-            table = predicate.Run(table);
+            table = predicate.RunFn(table);
         }
 
         return (IColumn<TRet>)table[0];

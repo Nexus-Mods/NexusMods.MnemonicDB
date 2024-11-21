@@ -37,6 +37,12 @@ public static class QueryPredicates
         return new Unpivot<T>(src, dest);
     }
     
+    /// <summary>
+    /// Removes any results where the two LVars do not have the same value
+    /// </summary>
+    public static Predicate Unify<T>(LVar<T> a, LVar<T> b) where T : IEquatable<T> 
+        => new Unify<T>(a, b);
+    
     public static Predicate ProjectTuple<T1, T2>(LVar<T1> a, LVar<T2> b, out LVar<(T1, T2)> o)
     {
         o = LVar.Create<(T1, T2)>();
