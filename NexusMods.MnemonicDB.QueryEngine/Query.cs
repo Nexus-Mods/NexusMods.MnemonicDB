@@ -2,13 +2,15 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using DynamicData.Kernel;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.QueryEngine.Facts;
+using NexusMods.MnemonicDB.QueryEngine.Ops;
 using NexusMods.MnemonicDB.QueryEngine.Predicates;
-using NexusMods.MnemonicDB.QueryEngine.Tables;
 
 namespace NexusMods.MnemonicDB.QueryEngine;
 
@@ -35,18 +37,6 @@ public abstract class AQuery<T> : IEnumerable<Predicate>
         where TOther : IModelDefinition
     {
         Add(new Datoms<ReferenceAttribute<TOther>, EntityId>(e, a, v));
-    }
-    
-    public IEnumerable<IReadOnlyDictionary<LVar, object>> RunBody(IDb db, IEnumerable<Predicate> predicates)
-    {
-        ITable table = EmptyTable.Instance;
-        foreach (var predicate in predicates)
-        {
-            table = predicate.Evaluate(db, table);
-        }
-
-        throw new NotImplementedException();
-        //return table;
     }
     
     public IEnumerator<Predicate> GetEnumerator()
@@ -86,13 +76,41 @@ public class Query<T1, T2> : AQuery<Query<T1, T2>> where T2 : notnull where T1 :
         _lvar2 = lvar2 = NamedLVar<T2>(name2);
     }
     
-    public IEnumerable<(T1, T2)> Table(IDb db)
+    public Func<IDb, IEnumerable<(T1, T2)>> TableFn()
     {
-        var results = RunBody(db, _predicates);
-        foreach (var result in results)
+        AnnotatePredicates();
+
+        IOp acc = new EvaluatePredicate
         {
-            yield return ((T1)result[_lvar1], (T2)result[_lvar2]);
+            Predicate = _predicates.First()
+        };
+        foreach (var predicate in _predicates.Skip(1))
+        {
+            acc = new HashJoin
+            {
+                Left = acc,
+                Right = new EvaluatePredicate
+                {
+                    Predicate = predicate
+                }
+            }.Prepare();
         }
+
+        return db =>
+        {
+            var results = acc.Execute(db);
+            throw new NotImplementedException();
+        };
+    }
+
+    private void AnnotatePredicates()
+    {
+        var env = new HashSet<LVar>();
+        foreach (var predicate in _predicates)
+        {
+            predicate.Annotate(env);
+        }
+        
     }
 }
 

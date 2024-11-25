@@ -1,0 +1,53 @@
+<#@ template language="C#" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Linq" #>
+
+using System;
+namespace NexusMods.MnemonicDB.QueryEngine.Facts;
+
+<#
+    int maxFactLength = 8;
+
+    for (int i = 1; i < maxFactLength; i++)
+    {
+        var idxEnum = Enumerable.Range(0, i);
+        var tList = string.Join(", ", idxEnum.Select(x => $"T{x}"));
+        
+        var argList = string.Join(", ", idxEnum.Select(x => $"T{x} Item{x}"));
+        #>
+public readonly record struct Fact<<#= tList #>>(<#=argList#>) : IFact
+<#
+for (var j = 0; j < i; j++)
+{
+    #>
+    where T<#= j #> : notnull
+<#
+}
+#>
+
+{
+    public int Arity => <#= i #>;
+
+    public int GetHashCode(int i)
+    {
+        return i switch
+        {
+
+<#
+for (var j = 0; j < i; j++)
+{
+#>
+            <#= j #> => Item<#= j #>.GetHashCode(),
+<#
+}
+#>
+            _ => throw new ArgumentOutOfRangeException(nameof(i)),
+        };
+    }
+    
+}
+
+<#
+    }
+#>

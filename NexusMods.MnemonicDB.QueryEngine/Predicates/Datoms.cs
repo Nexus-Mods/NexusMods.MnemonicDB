@@ -1,7 +1,8 @@
+using System;
 using System.Collections.Generic;
-using System.Linq;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.QueryEngine.Tables;
+using NexusMods.MnemonicDB.Abstractions.Query;
+using NexusMods.MnemonicDB.QueryEngine.Facts;
 
 namespace NexusMods.MnemonicDB.QueryEngine.Predicates;
 
@@ -16,17 +17,48 @@ where TValue : notnull
 
     protected override ITable Evaluate(IDb db, LVar<EntityId> item1LVar, TAttribute item2Value, LVar<TValue> item3LVar)
     {
-        var appender = new AppendableTable([item1LVar, item3LVar]);
-        var eRows = (IAppendableColumn<EntityId>)appender[0];
-        var vRows = (IAppendableColumn<TValue>)appender[1];
-        foreach (var datom in db.Datoms(item2Value))
+        var sliceDescriptor = SliceDescriptor.Create(item2Value, db.AttributeCache);
+        return new ResultTable(db, sliceDescriptor, item1LVar, item2Value, item3LVar);
+    }
+
+    private class ResultTable : ITable<Fact<EntityId, TValue>>
+    {
+        private readonly IDb _db;
+        private readonly SliceDescriptor _sliceDescriptor;
+        private readonly LVar _elVar;
+        private readonly TAttribute _attr;
+        private readonly LVar _vlVar;
+
+        public ResultTable(IDb db, SliceDescriptor sliceDescriptor, LVar elVar, TAttribute attr, LVar vlVar)
         {
-            eRows.Add(datom.E);
-            var v = item2Value.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, db.Connection.AttributeResolver);
-            vRows.Add(v);
-            appender.FinishRow();
+            _db = db;
+            _sliceDescriptor = sliceDescriptor;
+            _elVar = elVar;
+            _attr = attr;
+            _vlVar = vlVar;
         }
-        return appender.Freeze();
+
+        public LVar[] Columns => [_elVar, _vlVar];
+        public Type FactType => typeof(Fact<EntityId, TValue>);
+
+        public IEnumerable<Fact<EntityId, TValue>> Facts
+        {
+            get
+            {
+                foreach (var datom in _db.Datoms(_sliceDescriptor))
+                {
+                    var v = _attr.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, _db.Connection.AttributeResolver);
+                    yield return new Fact<EntityId, TValue>(datom.E, v);
+                }
+            }
+        }
+    }
+
+    public override Type FactType => typeof(Fact<EntityId, TValue>);
+
+    public override ITable Evaluate(IDb db)
+    {
+        throw new NotImplementedException();
     }
 
     public override string ToString()

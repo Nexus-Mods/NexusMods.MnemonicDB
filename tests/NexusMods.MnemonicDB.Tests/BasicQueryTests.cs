@@ -33,7 +33,7 @@ public class BasicQueryTests(IServiceProvider provider) : AMnemonicDBTest(provid
             GC.Collect();
             var gcBefore = GC.GetTotalMemory(false);
             var sw = Stopwatch.StartNew();
-            var results = query.Table(Connection.Db)
+            var results = query.TableFn()(data.Db)
                 .Select(t => t.Item2)
                 .Aggregate(Size.Zero, (acc, size) => acc + size);
             var gcAfter = GC.GetTotalMemory(false);

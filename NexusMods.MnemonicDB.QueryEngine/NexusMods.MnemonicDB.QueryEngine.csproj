@@ -4,10 +4,26 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <LangVersion>13</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\src\NexusMods.MnemonicDB.Abstractions\NexusMods.MnemonicDB.Abstractions.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Update="Facts\Facts.tt">
+        <Generator>TextTemplatingFileGenerator</Generator>
+        <LastGenOutput>Facts.cs</LastGenOutput>
+      </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Compile Update="Facts\Facts.cs">
+        <AutoGen>True</AutoGen>
+        <DesignTime>True</DesignTime>
+        <DependentUpon>Facts.tt</DependentUpon>
+      </Compile>
     </ItemGroup>
 
 </Project>
