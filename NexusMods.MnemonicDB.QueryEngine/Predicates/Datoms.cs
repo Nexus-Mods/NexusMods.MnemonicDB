@@ -1,36 +1,36 @@
 using System.Collections.Generic;
-using System.Collections.Immutable;
+using System.Linq;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.QueryEngine.Tables;
 
 namespace NexusMods.MnemonicDB.QueryEngine.Predicates;
 
-public record Datoms<TAttribute, TValue> : Predicate
-where TAttribute : notnull
+public record Datoms<TAttribute, TValue> : Predicate<EntityId, TAttribute, TValue>
+where TAttribute : IWritableAttribute<TValue>, IReadableAttribute<TValue>
 where TValue : notnull
 {
-    private readonly Term<EntityId> _e;
-    private readonly Term<TAttribute> _a;
-    private readonly Term<TValue> _v;
-
-    public Datoms(Term<EntityId> e, Term<TAttribute> a, Term<TValue> v)
+    private static readonly Symbol LocalName = Symbol.Intern("datoms");
+    public Datoms(Term<EntityId> eTerm, TAttribute attr, Term<TValue> vTerm) : base(LocalName, eTerm, attr, vTerm)
     {
-        _e = e;
-        _a = a;
-        _v = v;
     }
 
-    public override IEnumerable<(string Name, ITerm Term)> Terms
+    protected override ITable Evaluate(IDb db, LVar<EntityId> item1LVar, TAttribute item2Value, LVar<TValue> item3LVar)
     {
-        get
+        var appender = new AppendableTable([item1LVar, item3LVar]);
+        var eRows = (IAppendableColumn<EntityId>)appender[0];
+        var vRows = (IAppendableColumn<TValue>)appender[1];
+        foreach (var datom in db.Datoms(item2Value))
         {
-            yield return (nameof(_e), _e);
-            yield return (nameof(_a), _a);
-            yield return (nameof(_v), _v);
+            eRows.Add(datom.E);
+            var v = item2Value.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, db.Connection.AttributeResolver);
+            vRows.Add(v);
+            appender.FinishRow();
         }
+        return appender.Freeze();
     }
 
-    public override IEnumerable<ImmutableDictionary<LVar, object>> Apply(IEnumerable<ImmutableDictionary<LVar, object>> envStream)
+    public override string ToString()
     {
-        throw new System.NotImplementedException();
+        return base.ToString();
     }
 }

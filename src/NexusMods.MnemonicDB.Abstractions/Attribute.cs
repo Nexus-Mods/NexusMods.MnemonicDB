@@ -179,7 +179,7 @@ public abstract class Attribute<TValueType, TLowLevelType, TSerializer> :
     /// <summary>
     ///     Typed datom for this attribute
     /// </summary>
-    public readonly record struct ReadDatom : IReadDatom
+    public readonly record struct ReadDatom : IReadDatom<TValueType>
     {
         /// <summary>
         /// The key prefix for this datom, contains the E, A, T, IsRetract and ValueTag values for this datom
@@ -255,5 +255,8 @@ public abstract class Attribute<TValueType, TLowLevelType, TSerializer> :
         {
             return HashCode.Combine(A, E, V);
         }
+
+        /// <inheritdoc />
+        public TValueType Value => V;
     }
 }

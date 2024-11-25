@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
+using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.QueryEngine.Predicates;
 
 namespace NexusMods.MnemonicDB.QueryEngine;
@@ -24,34 +27,40 @@ public static class QueryPredicates
         }
         return LVar.Create<TRet>(name);
     }
-    
-    /// <summary>
-    /// Unpivots a collection of values into a single lvar, essentially flattening the collection
-    /// </summary>
-    public static Predicate Unpivot<T>(Term<IEnumerable<T>> src, Term<T> dest) => new Unpivot<T>(src, dest);
-    
-    public static Predicate Unpivot<T>(LVar<IEnumerable<T>> src, out LVar<T> dest, 
-        [CallerArgumentExpression(nameof(dest))] string name = "")
-    {
-        dest = NamedLVar<T>(name);
-        return new Unpivot<T>(src, dest);
-    }
-    
-    /// <summary>
-    /// Removes any results where the two LVars do not have the same value
-    /// </summary>
-    public static Predicate Unify<T>(LVar<T> a, LVar<T> b) where T : IEquatable<T> 
-        => new Unify<T>(a, b);
-    
-    public static Predicate ProjectTuple<T1, T2>(LVar<T1> a, LVar<T2> b, out LVar<(T1, T2)> o)
-    {
-        o = LVar.Create<(T1, T2)>();
-        return new ProjectTuple<T1, T2>(a, b, o);
-    }
-    
+
     public static Predicate Project<T1, T2, TRet>(LVar<T1> lvar1, LVar<T2> lvar2, Func<T1, T2, TRet> func, out  LVar<TRet> lvarOut)
     {
         lvarOut = LVar.Create<TRet>();
+        throw new NotImplementedException();
+    }
+
+    public static Predicate Db<TAttr, TValue>(LVar<EntityId> e, TAttr attr, TValue tval)
+        where TAttr : IWritableAttribute<TValue>, IReadableAttribute<TValue>
+        where TValue : notnull
+    {
+        throw new NotImplementedException();
+    }
+
+    public static Predicate Db<TAttr, TValue>(LVar<EntityId> e, TAttr attr, LVar<TValue> tval)
+        where TAttr : IWritableAttribute<TValue>, IReadableAttribute<TValue>
+        where TValue : notnull
+    {
+        return new Datoms<TAttr, TValue>(e, attr, tval);
+    }
+
+    
+    /*
+    public static Predicate Db(LVar<EntityId> e, ReferenceAttribute a, EntityId v)
+    {
+        throw new NotImplementedException();
+    }*/
+
+
+    public static Predicate Db<TOtherModel>(LVar<EntityId> e, BackReferenceAttribute<TOtherModel> backref,
+        out LVar<EntityId> referer, [CallerMemberName] string name = "") 
+        where TOtherModel : IModelDefinition
+    {
+        referer = NamedLVar<EntityId>(name);
         throw new NotImplementedException();
     }
     

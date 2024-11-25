@@ -18,6 +18,11 @@ public interface IRowEnumerator
     public T Get<T>(LVar column);
     
     /// <summary>
+    /// Hash the cell at the current row and the given column
+    /// </summary>
+    public int GetHashCode(int idx);
+    
+    /// <summary>
     /// Get the value of the column at the current row
     /// </summary>
     public T Get<T>(int idx);

@@ -61,6 +61,42 @@ public class AMnemonicDBTest : IDisposable
         await _store.ImportAsync(decompressStream);
     }
 
+    protected async Task<Loadout.ReadOnly[]> InsertLoadouts(int loadouts = 1, int mods = 10, int files = 10)
+    {
+        var tx = Connection.BeginTransaction();
+        var loadoutsList = new List<Loadout.New>();
+        for (var i = 0; i < loadouts; i++)
+        {
+            var loadout = new Loadout.New(tx)
+            {
+                Name = $"Loadout {i}"
+            };
+            loadoutsList.Add(loadout);
+            for (var j = 0; j < mods; j++)
+            {
+                var mod = new Mod.New(tx)
+                {
+                    Name = $"Mod {j}",
+                    Source = new Uri($"http://somesite.com/mod{j}"),
+                    LoadoutId = loadout
+                };
+                for (var k = 0; k < files; k++)
+                {
+                    _ = new File.New(tx)
+                    {
+                        Path = $"File {k}",
+                        ModId = mod,
+                        Size = Size.From((ulong)k),
+                        Hash = Hash.From((ulong)(0xDEADBEEF + k))
+                    };
+                }
+            }
+        }
+
+        var result = await tx.Commit();
+        return loadoutsList.Select(l => result.Remap(l)).ToArray();
+    }
+
     protected DatomStoreSettings Config { get; set; }
 
     protected SettingsTask VerifyModel<T>(T model)

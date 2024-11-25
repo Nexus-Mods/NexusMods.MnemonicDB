@@ -1,29 +1,45 @@
+using System.Collections.Immutable;
+using System.Diagnostics;
+using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.QueryEngine;
 using NexusMods.MnemonicDB.TestModel;
+using NexusMods.Paths;
+using Xunit.Sdk;
 using static NexusMods.MnemonicDB.QueryEngine.QueryPredicates;
+using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
 
-public class BasicQueryTests
+public class BasicQueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 {
     [Fact]
-    public void CanUnpivot()
+    public async Task CanQueryDatoms()
     {
-        LVar<EntityId> e = LVar.Create<EntityId>();
-        LVar<string> name = LVar.Create<string>();
-        var q = new Query<IEnumerable<int>, IEnumerable<int>>(out var a, out var b)
+        var data = (await InsertLoadouts(1, 10, 100)).First();
+        
+        var mod = LVar.Create<EntityId>("mod");
+        var file = LVar.Create<EntityId>("file");
+
+        var query = new Query<EntityId, Size>(out var loadout, out var fileSize)
         {
-            Unpivot(a, out var dest1),
-            Unpivot(b, out var dest2),
-            {e, Loadout.Name, name},
-            Unify(dest1, dest2),
-        }.Return(dest1);
+            Db(mod, Mod.Loadout, loadout),
+            Db(file, File.Mod, mod),
+            Db(file, File.Size, fileSize)
+        };
 
-        var input1 = new[] { 1, 2, 3 };
-        var input2 = new[] { 2, 3, 4 };
-        q.Run(input1, input2).Should().BeEquivalentTo([1, 2, 3]);
-
+        for (int i = 0; i < 2; i++)
+        {
+            GC.Collect();
+            var gcBefore = GC.GetTotalMemory(false);
+            var sw = Stopwatch.StartNew();
+            var results = query.Table(Connection.Db)
+                .Select(t => t.Item2)
+                .Aggregate(Size.Zero, (acc, size) => acc + size);
+            var gcAfter = GC.GetTotalMemory(false);
+            Logger.LogInformation("Query took {ElapsedMilliseconds}ms and {MemoryDelta} bytes", sw.ElapsedMilliseconds, gcAfter - gcBefore);
+        }
+        //results.Count().Should().Be(100);
     }
     
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace NexusMods.MnemonicDB.QueryEngine.Tables;
 
-public class AppendableTable : ITable
+public class AppendableTable : IMaterializedTable
 {
     private readonly List<IColumn> _columnData;
     private readonly LVar[] _columnNames;
@@ -86,6 +86,11 @@ public class AppendableTable : ITable
             return ((IColumn<T>)_table._columnData)[idx];
         }
 
+        public int GetHashCode(int column)
+        {
+            return ((IMaterializedColumn)_table._columnData[column]).GetHashCode(_rowIdx);
+        }
+
         public T Get<T>(int column)
         {
             return ((IColumn<T>)_table._columnData[column])[_rowIdx];
@@ -96,4 +101,6 @@ public class AppendableTable : ITable
     {
         ((IAppendableColumn)_columnData[dest]).AddFrom(joinerEnumerator, src);
     }
+
+    public int Count => RowCount;
 }

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace NexusMods.MnemonicDB.QueryEngine.Tables;
 
-public class ListColumn<T> : IColumn<T>, IAppendableColumn<T>
+public class ListColumn<T> : IColumn<T>, IAppendableColumn<T>, IMaterializedColumn
 {
     private readonly List<T> _values;
     public Type Type => typeof(T);
@@ -21,6 +21,11 @@ public class ListColumn<T> : IColumn<T>, IAppendableColumn<T>
     IEnumerator IEnumerable.GetEnumerator()
     {
         return GetEnumerator();
+    }
+
+    public int GetHashCode(int row)
+    {
+        return _values[row]!.GetHashCode();
     }
 
     public int Count => _values.Count;

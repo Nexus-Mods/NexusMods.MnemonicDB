@@ -18,12 +18,12 @@ public class TableJoiner
     private readonly int[] _newRows;
     private readonly LVar[] _outputColumns;
 
-    public TableJoiner(LVar[] inputColumns, (int Src, int Dest)[] copyColumns, (int Src, int Dest)[] joinColumns, int[] newRows, LVar[] outputColumns)
+    public TableJoiner(LVar[] inputColumns, (int Src, int Dest)[] copyColumns, (int Src, int Dest)[] joinColumns, int[] newColumns, LVar[] outputColumns)
     {
         _inputColumns = inputColumns;
         _copyColumns = copyColumns;
         _joinColumns = joinColumns;
-        _newRows = newRows;
+        _newRows = newColumns;
         _outputColumns = outputColumns;
     }
     

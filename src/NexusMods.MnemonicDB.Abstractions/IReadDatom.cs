@@ -55,6 +55,17 @@ public interface IReadDatom
 }
 
 /// <summary>
+/// A read datom that contains a value of type V.
+/// </summary>
+public interface IReadDatom<out TV> : IReadDatom
+{
+    /// <summary>
+    /// Get the value of the datom.
+    /// </summary>
+    public TV Value { get; }
+}
+
+/// <summary>
 /// A wrapper around a datom that compares only on the EAV values
 /// </summary>
 public readonly struct ReadDatomKey : IEquatable<ReadDatomKey>
