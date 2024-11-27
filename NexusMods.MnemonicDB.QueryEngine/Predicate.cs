@@ -94,6 +94,15 @@ public abstract record Predicate<T1, T2, T3> : Predicate
         }
     }
 
+    public override ITable Evaluate(IDb db)
+    {
+        return (Item1.IsValue, Item2.IsValue, Item3.IsValue) switch
+        {
+            (false, true, false) => Evaluate(db, Item1.LVar, Item2.Value, Item3.LVar),
+            _ => throw new Exception($"Invalid state: ({Item1.IsValue}, {Item2.IsValue}, {Item3.IsValue})")
+        };
+    }
+
     protected virtual ITable Evaluate(IDb db, LVar<T1> item1LVar, T2 item2Value, LVar<T3> item3LVar)
     {
         throw new NotSupportedException($"Pattern of (LVar, Value, LVar) is not supported on this predicate: {Name.Name}");

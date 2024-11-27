@@ -49,6 +49,27 @@ public sealed class ValueComparer : IElementComparer
             }
         }
     }
+    
+    /// <inheritdoc />
+    public static int Compare(RefDatom a, RefDatom b)
+    {
+        var typeA = a.Prefix.ValueTag;
+        var typeB = b.Prefix.ValueTag;
+        
+        if (typeA != typeB)
+            return typeA.CompareTo(typeB);
+        
+        unsafe
+        {
+            fixed (byte* aPtr = a.ValueSpan)
+            {
+                fixed (byte* bPtr = b.ValueSpan)
+                {
+                    return typeA.Compare(aPtr, a.ValueSpan.Length, bPtr, b.ValueSpan.Length);
+                }
+            }
+        }
+    }
 
     /// <inheritdoc />
     public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)

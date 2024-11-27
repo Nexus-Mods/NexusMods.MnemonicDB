@@ -29,6 +29,7 @@ public readonly record struct Fact<T0, T1>(T0 Item0, T1 Item1) : IFact
 
     public int GetHashCode(int i)
     {
+        var v = (1, 2);
         return i switch
         {
 

@@ -27,6 +27,12 @@ public sealed class EComparer : IElementComparer
     {
         return a.E.CompareTo(b.E);
     }
+    
+    /// <inheritdoc />
+    public static int Compare(RefDatom a, RefDatom b)
+    {
+        return a.E.CompareTo(b.E);
+    }
 
     /// <inheritdoc />
     public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)

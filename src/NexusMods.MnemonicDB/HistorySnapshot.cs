@@ -57,4 +57,9 @@ internal class HistorySnapshot(ISnapshot inner, AttributeCache attributeCache) :
 
         yield return builder.Build();
     }
+
+    public IEnumerable<RefDatom> RefDatoms(SliceDescriptor descriptor)
+    {
+        throw new System.NotImplementedException();
+    }
 }

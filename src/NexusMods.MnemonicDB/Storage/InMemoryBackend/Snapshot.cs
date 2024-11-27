@@ -114,4 +114,9 @@ internal class Snapshot : ISnapshot
         if (segmentBuilder.Count > 0) 
             yield return segmentBuilder.Build();
     }
+
+    public IEnumerable<RefDatom> RefDatoms(SliceDescriptor descriptor)
+    {
+        throw new System.NotImplementedException();
+    }
 }

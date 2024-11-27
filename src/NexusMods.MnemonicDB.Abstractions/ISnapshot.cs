@@ -26,5 +26,11 @@ public interface ISnapshot
     /// Get the data specified by the given descriptor chunked into segments of datoms of the given size.
     /// </summary>
     IEnumerable<IndexSegment> DatomsChunked(SliceDescriptor descriptor, int chunkSize);
+    
+    /// <summary>
+    /// Get the data specified by the given descriptor as a IEnumerable of RefDatoms. These
+    /// datoms are only valid until the next call to .MoveNext() on the enumerator.
+    /// </summary>
+    IEnumerable<RefDatom> RefDatoms(SliceDescriptor descriptor);
 
 }

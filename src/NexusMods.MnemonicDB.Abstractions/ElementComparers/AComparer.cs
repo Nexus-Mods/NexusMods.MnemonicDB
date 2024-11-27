@@ -28,6 +28,12 @@ public sealed class AComparer : IElementComparer
     }
 
     /// <inheritdoc />
+    public static int Compare(RefDatom a, RefDatom b)
+    {
+        return a.A.CompareTo(b.A);
+    }
+
+    /// <inheritdoc />
     public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         var keyA = KeyPrefix.Read(a);

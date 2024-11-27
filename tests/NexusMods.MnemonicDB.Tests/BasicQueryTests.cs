@@ -16,25 +16,26 @@ public class BasicQueryTests(IServiceProvider provider) : AMnemonicDBTest(provid
     [Fact]
     public async Task CanQueryDatoms()
     {
-        var data = (await InsertLoadouts(1, 10, 100)).First();
+        var data = (await InsertLoadouts(1, 1000, 100)).First();
         
+        var loadout = LVar.Create<EntityId>("loadout");
         var mod = LVar.Create<EntityId>("mod");
         var file = LVar.Create<EntityId>("file");
+        var fileSize = LVar.Create<Size>("fileSize");
 
-        var query = new Query<EntityId, Size>(out var loadout, out var fileSize)
+        var query = new Query
         {
-            Db(mod, Mod.Loadout, loadout),
-            Db(file, File.Mod, mod),
-            Db(file, File.Size, fileSize)
-        };
+            {mod, Mod.Loadout, loadout},
+            {file, File.Mod, mod},
+            { file, File.Size, fileSize }
+        }.AsTableFn(loadout, fileSize);
 
-        for (int i = 0; i < 2; i++)
+        for (var i = 0; i < 10; i++)
         {
             GC.Collect();
             var gcBefore = GC.GetTotalMemory(false);
             var sw = Stopwatch.StartNew();
-            var results = query.TableFn()(data.Db)
-                .Select(t => t.Item2)
+            var results = query(data.Db).Select(t => t.Item1)
                 .Aggregate(Size.Zero, (acc, size) => acc + size);
             var gcAfter = GC.GetTotalMemory(false);
             Logger.LogInformation("Query took {ElapsedMilliseconds}ms and {MemoryDelta} bytes", sw.ElapsedMilliseconds, gcAfter - gcBefore);

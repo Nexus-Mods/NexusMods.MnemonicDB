@@ -43,6 +43,20 @@ public sealed class AttributeResolver
     }
 
     /// <summary>
+    /// Resolves a ref datom into a IReadDatom
+    /// </summary>
+    public IReadDatom Resolve(RefDatom datom)
+    {
+        var dbId = datom.A;
+        var symbol = _attributeCache.GetSymbol(dbId);
+        if (!_attrsById.TryGetValue(symbol, out var attr))
+        {
+            throw new InvalidOperationException($"Attribute {symbol} not found");
+        }
+        return attr.Resolve(datom.Prefix, datom.ValueSpan, this);
+    }
+
+    /// <summary>
     /// Gets the service object of the specified type.
     /// </summary>
     public IServiceProvider ServiceProvider { get; }

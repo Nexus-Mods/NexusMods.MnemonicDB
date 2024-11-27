@@ -62,6 +62,21 @@ public abstract unsafe class ADatomComparator<TA, TB, TC, TD> : IDatomComparator
 
         return TD.Compare(a, b);
     }
+    
+    /// <inheritdoc />
+    public static int Compare(RefDatom a, RefDatom b)
+    {
+        var cmp = TA.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        cmp = TB.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        cmp = TC.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        return TD.Compare(a, b);
+    }
 
     /// <inheritdoc />
     public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)

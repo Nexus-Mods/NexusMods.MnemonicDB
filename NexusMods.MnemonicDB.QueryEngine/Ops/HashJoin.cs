@@ -21,66 +21,80 @@ public class HashJoin
         var factOutput = IFact.TupleTypes[newLVars.Length]!
             .MakeGenericType(newLVars.Select(lv => lv.Type).ToArray());
         
-        var factLeft = leftOp.FactType;
-        var factRight = rightOp.FactType;
-        var leftJoinIdxs = joinColumns.Select(lv => Array.IndexOf(left, lv)).ToArray();
-        var rightJoinIdxs = joinColumns.Select(lv => Array.IndexOf(right, lv)).ToArray();
-
-        var hasherLeft = IFact.GetHasher<IFact>(leftJoinIdxs);
-        var hasherRight = IFact.GetHasher<IFact>(rightJoinIdxs);
-        
-        var klass = typeof(HashJoin<,,>).MakeGenericType(factLeft, factRight, factOutput);
+        var klass = typeof(HashJoin<,,>).MakeGenericType(leftOp.FactType, rightOp.FactType, factOutput);
 
         return (IOp)Activator.CreateInstance(klass, leftOp, rightOp)!;
     }
 }
 
-public class HashJoin<TLeftFact, TRightFact, TResultFact>(IOp left, IOp right, 
-    LVar[] resultColumns,
-    Func<TLeftFact, int> leftHasher, 
-    Func<TRightFact, int> rightHasher,
-    Func<TLeftFact, TRightFact, bool> equalCheck,
-    Func<TLeftFact, TRightFact, TResultFact> selectFn) : IOp
+public class HashJoin<TLeftFact, TRightFact, TResultFact> : IOp
     where TLeftFact : IFact where TRightFact : IFact where TResultFact : IFact
 {
+    private readonly Func<TLeftFact,int> _leftHasher;
+    private readonly Func<TRightFact,int> _rightHasher;
+    private readonly Func<TLeftFact,TRightFact,bool> _equals;
+    private readonly Func<TLeftFact,TRightFact,TResultFact> _merge;
+
+    public HashJoin(IOp left, IOp right)
+    {
+        Left = left;
+        Right = right;
+        
+        var joinLVars = left.LVars.Intersect(right.LVars).ToArray();
+        var copyLVars = left.LVars.Except(joinLVars).ToArray();
+        var newLVars = right.LVars.Except(joinLVars).ToArray();
+        LVars = joinLVars.Concat(copyLVars).Concat(newLVars).ToArray();
+
+        var leftIdxes = joinLVars.Select(lv => Array.IndexOf(left.LVars, lv)).ToArray();
+        _leftHasher = IFact.GetHasher<TLeftFact>(leftIdxes);
+        
+        var rightIdxes = joinLVars.Select(lv => Array.IndexOf(right.LVars, lv)).ToArray();
+        _rightHasher = IFact.GetHasher<TRightFact>(rightIdxes);
+        
+        _equals = IFact.GetEqual<TLeftFact, TRightFact>(leftIdxes, rightIdxes);
+        _merge = IFact.GetMerge<TLeftFact, TRightFact, TResultFact>(LVars, left.LVars, right.LVars);
+    }
+
     public required IOp Left { get; init; }
     public required IOp Right { get; init; }
-
+    
     public ITable Execute(IDb db)
     {
-        var leftHash = new Dictionary<int, List<TLeftFact>>();
-
+        var leftHash = new Dictionary<int, LinkedList<TLeftFact>>();
+        
         foreach (var fact in ((ITable<TLeftFact>)Left.Execute(db)).Facts)
         {
-            var hash = leftHasher(fact);
-            if (!leftHash.TryGetValue(hash, out var list))
+            var hash = _leftHasher(fact);
+            if (!leftHash.ContainsKey(hash))
             {
-                list = [];
-                leftHash[hash] = list;
+                leftHash[hash] = [];
             }
-            list.Add(fact);
+            leftHash[hash].AddFirst(fact);
         }
+        
         
         List<TResultFact> results = [];
         foreach (var fact in ((ITable<TRightFact>)Right.Execute(db)).Facts)
         {
-            var rightHash = rightHasher(fact);
-            if (!leftHash.TryGetValue(rightHash, out var leftFacts))
-                continue;
-
-            foreach (var leftFact in leftFacts)
+            var hash = _rightHasher(fact);
+            if (!leftHash.TryGetValue(hash, out var lefts))
             {
-                if (!equalCheck(leftFact, fact))
-                    continue;
-                
-                results.Add(selectFn(leftFact, fact));
+                continue;
+            }
+            
+            foreach (var leftFact in lefts)
+            {
+                if (_equals(leftFact, fact))
+                {
+                    results.Add(_merge(leftFact, fact));
+                }
             }
         }
-        return new ListTable<TResultFact>(resultColumns, results);
+        return new ListTable<TResultFact>(LVars, results);
     }
 
-    public LVar[] LVars { get; private set; } = [];
-    public Type FactType { get; private set; } = typeof(IFact);
+    public LVar[] LVars { get; }
+    public Type FactType => typeof(TResultFact);
 
 
 }

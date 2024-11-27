@@ -4,17 +4,19 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using DynamicData.Kernel;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.QueryEngine.AST;
 using NexusMods.MnemonicDB.QueryEngine.Facts;
 using NexusMods.MnemonicDB.QueryEngine.Ops;
 using NexusMods.MnemonicDB.QueryEngine.Predicates;
 
 namespace NexusMods.MnemonicDB.QueryEngine;
 
-public abstract class AQuery<T> : IEnumerable<Predicate>
+public class Query : IEnumerable<Predicate>
 {
     protected readonly List<Predicate> _predicates = [];
 
@@ -61,45 +63,61 @@ public abstract class AQuery<T> : IEnumerable<Predicate>
         }
         return LVar.Create<TRet>(name);
     }
-}
-
-public class Query<T1, T2> : AQuery<Query<T1, T2>> where T2 : notnull where T1 : notnull
-{
-    private readonly LVar<T1> _lvar1;
-    private readonly LVar<T2> _lvar2;
-
-    public Query(out LVar<T1> lvar1,  out LVar<T2> lvar2, 
-        [CallerArgumentExpression(nameof(lvar1))] string name1 = "", 
-        [CallerArgumentExpression(nameof(lvar2))] string name2 = "")
-    {
-        _lvar1 = lvar1 = NamedLVar<T1>(name1);
-        _lvar2 = lvar2 = NamedLVar<T2>(name2);
-    }
     
-    public Func<IDb, IEnumerable<(T1, T2)>> TableFn()
+    public Func<IDb, IEnumerable<Fact<T1, T2>>> AsTableFn<T1, T2>(LVar<T1> lvar1, LVar<T2> lvar2) 
+        where T1 : notnull
+        where T2 : notnull
     {
+        var ast = ToAST(_predicates, [lvar1, lvar2]);
         AnnotatePredicates();
 
         IOp acc = new EvaluatePredicate
         {
             Predicate = _predicates.First()
         };
+        
         foreach (var predicate in _predicates.Skip(1))
         {
-            acc = new HashJoin
+            acc = HashJoin.Create(acc, new EvaluatePredicate
             {
-                Left = acc,
-                Right = new EvaluatePredicate
-                {
-                    Predicate = predicate
-                }
-            }.Prepare();
+                Predicate = predicate
+            });
         }
+
+        acc = Op.Select(acc, [lvar1, lvar2]);
 
         return db =>
         {
-            var results = acc.Execute(db);
-            throw new NotImplementedException();
+            var table = acc.Execute(db);
+            return ((ITable<Fact<T1, T2>>)table).Facts;
+        };
+    }
+
+    /// <summary>
+    /// Converts a list of predicates into an unoptimized AST
+    /// </summary>
+    private static Node ToAST(List<Predicate> predicates, params LVar[] lvars)
+    {
+        Node node = new PredicateNode
+        { 
+            Predicate = predicates[0]
+        };
+        
+        foreach (var nextp in predicates.Skip(1))
+        {
+            node = new JoinNode
+            {
+                Children = [node, new PredicateNode
+                    {
+                        Predicate = nextp
+                    }],
+            };
+        }
+
+        return new SelectNode
+        {
+            SelectVars = lvars,
+            Children = [node]
         };
     }
 
@@ -110,42 +128,6 @@ public class Query<T1, T2> : AQuery<Query<T1, T2>> where T2 : notnull where T1 :
         {
             predicate.Annotate(env);
         }
-        
     }
 }
 
-public abstract class CompiledQuery
-{
-    protected Dictionary<int, Predicate[]> _compiledQueries = new();
-    protected int CalculateMask(params bool[] values)
-    {
-        var mask = 0;
-        for (var i = 0; i < values.Length; i++)
-        {
-            if (values[i])
-            {
-                mask |= 1 << i;
-            }
-        }
-
-        return mask;
-    }
-    
-}
-
-public class CompiledQuery<T1, T2, TRet> : CompiledQuery 
-    where T1 : notnull where T2 : notnull
-{
-    private readonly List<Predicate> _predicates;
-    private readonly LVar<TRet> _retVar;
-    private readonly LVar<T1> _lvar1;
-    private readonly LVar<T2> _lvar2;
-
-    public CompiledQuery(LVar<T1> lvar1, LVar<T2> lvar2, LVar<TRet> retVar, List<Predicate> predicates)
-    {
-        _lvar1 = lvar1;
-        _lvar2 = lvar2;
-        _predicates = predicates;
-        _retVar = retVar;
-    }
-}

@@ -45,7 +45,7 @@ where TValue : notnull
         {
             get
             {
-                foreach (var datom in _db.Datoms(_sliceDescriptor))
+                foreach (var datom in _db.Snapshot.RefDatoms(_sliceDescriptor))
                 {
                     var v = _attr.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, _db.Connection.AttributeResolver);
                     yield return new Fact<EntityId, TValue>(datom.E, v);
@@ -55,11 +55,7 @@ where TValue : notnull
     }
 
     public override Type FactType => typeof(Fact<EntityId, TValue>);
-
-    public override ITable Evaluate(IDb db)
-    {
-        throw new NotImplementedException();
-    }
+    
 
     public override string ToString()
     {

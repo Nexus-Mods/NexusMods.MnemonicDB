@@ -1,9 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Query;
+using Reloaded.Memory.Extensions;
 using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
@@ -108,4 +112,96 @@ internal class Snapshot(Backend backend, AttributeCache attributeCache) : ISnaps
         if (builder.Count > 0) 
             yield return builder.Build();
     }
+
+    public IEnumerable<RefDatom> RefDatoms(SliceDescriptor descriptor)
+    {
+        return new RefEnumerable(backend, this, descriptor);
+    }
+
+    private class RefEnumerable(Backend backend, Snapshot snapshot, SliceDescriptor sliceDescriptor) : IEnumerable<RefDatom>
+    {
+        public IEnumerator<RefDatom> GetEnumerator()
+        {
+            return new RefEnumerator(backend, snapshot, sliceDescriptor);
+        }
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+    }
+
+    private class RefEnumerator : IEnumerator<RefDatom>
+    {
+        private readonly Snapshot _snapshot;
+        private readonly SliceDescriptor _sliceDescriptor;
+        private readonly bool _reverse;
+        private readonly Datom _from;
+        private readonly Datom _to;
+        private readonly ReadOptions _options;
+        private RocksDbSharp.Iterator? _iterator;
+        private readonly Backend _backend;
+
+        public RefEnumerator(Backend backend, Snapshot snapshot, SliceDescriptor descriptor)
+        {
+            _backend = backend;
+            _snapshot = snapshot;
+            _sliceDescriptor = descriptor;
+            
+            _reverse = descriptor.IsReverse;
+            _from = _reverse ? descriptor.To : descriptor.From;
+            _to = _reverse ? descriptor.From : descriptor.To;
+
+            _options = new ReadOptions()
+                .SetSnapshot(snapshot._snapshot)
+                .SetIterateLowerBound(_from.ToArray())
+                .SetIterateUpperBound(_to.ToArray());
+        }
+
+        public void Dispose()
+        {
+            _iterator?.Dispose();
+        }
+
+        public bool MoveNext()
+        {
+            if (_iterator == null)
+            {
+                _iterator = _backend.Db!.NewIterator(null, _options);
+                if (_reverse)
+                    _iterator.SeekToLast();
+                else
+                    _iterator.SeekToFirst();
+            }
+            else
+            {
+                if (_reverse)
+                    _iterator.Prev();
+                else
+                    _iterator.Next();
+            }
+
+            return _iterator.Valid();
+        }
+
+        public void Reset()
+        {
+            throw new NotSupportedException();
+        }
+
+        RefDatom IEnumerator<RefDatom>.Current
+        {
+            get
+            {
+                var key = _iterator!.GetKeySpan();
+                var keyPrefix = KeyPrefix.Read(key);
+                if (keyPrefix.ValueTag == ValueTag.HashedBlob)
+                    throw new InvalidOperationException("RefDatom enumeration should only return RefDatoms");
+
+                return new RefDatom(keyPrefix, key.SliceFast(KeyPrefix.Size));
+            }
+        }
+
+        object? IEnumerator.Current => throw new NotSupportedException();
+    }
+    
 }

@@ -70,6 +70,11 @@ internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeCache attri
         yield return builder.Build();
     }
 
+    public IEnumerable<RefDatom> RefDatoms(SliceDescriptor descriptor)
+    {
+        throw new NotImplementedException();
+    }
+
 
     /// <summary>
     /// In a perfect situation this function can be fairly optimized. We simply take in a datom, but

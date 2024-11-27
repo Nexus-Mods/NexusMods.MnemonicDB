@@ -54,6 +54,27 @@ public sealed class GlobalComparer : IComparer<byte[]>
         };
     }
 
+    
+    /// <summary>
+    /// Compare two datoms
+    /// </summary>
+    public static int Compare(RefDatom a, RefDatom b)
+    {
+        var cmp = ((byte)a.Prefix.Index).CompareTo((byte)b.Prefix.Index);
+        if (cmp != 0)
+            return cmp;
+        
+        return a.Prefix.Index switch
+        {
+            IndexType.TxLog => TxLogComparator.Compare(a, b),
+            IndexType.EAVTCurrent or IndexType.EAVTHistory => EAVTComparator.Compare(a, b),
+            IndexType.AEVTCurrent or IndexType.AEVTHistory => AEVTComparator.Compare(a, b),
+            IndexType.AVETCurrent or IndexType.AVETHistory => AVETComparator.Compare(a, b),
+            IndexType.VAETCurrent or IndexType.VAETHistory => VAETComparator.Compare(a, b),
+            _ => ThrowArgumentOutOfRangeException()
+        };
+    }
+
     private static int ThrowArgumentOutOfRangeException()
     {
         throw new ArgumentOutOfRangeException();
