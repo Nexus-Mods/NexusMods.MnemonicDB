@@ -103,4 +103,10 @@ public interface IFact
         
         return Expression.Lambda<Func<TPrevFact, TResultFact>>(resultExpr, prevIntput).Compile();
     }
+
+    static Type GetFactType(LVar[] nodeEnvironmentExit)
+    {
+        var arity = nodeEnvironmentExit.Length;
+        return TupleTypes[arity]!.MakeGenericType(nodeEnvironmentExit.Select(lvar => lvar.Type).ToArray());
+    }
 }

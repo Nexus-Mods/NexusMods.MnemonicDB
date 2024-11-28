@@ -3,29 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.QueryEngine.AST;
 using NexusMods.MnemonicDB.QueryEngine.Facts;
 
 namespace NexusMods.MnemonicDB.QueryEngine.Ops;
-
-public class HashJoin
-{
-    public static IOp Create(IOp leftOp, IOp rightOp)
-    {
-        var left = leftOp.LVars;
-        var right = rightOp.LVars;
-        var joinColumns = left.Intersect(right).ToArray();
-        var copyColumns = left.Except(joinColumns).ToArray();
-        var newColumns = right.Except(joinColumns).ToArray();
-        
-        var newLVars = joinColumns.Concat(copyColumns).Concat(newColumns).ToArray();
-        var factOutput = IFact.TupleTypes[newLVars.Length]!
-            .MakeGenericType(newLVars.Select(lv => lv.Type).ToArray());
-        
-        var klass = typeof(HashJoin<,,>).MakeGenericType(leftOp.FactType, rightOp.FactType, factOutput);
-
-        return (IOp)Activator.CreateInstance(klass, leftOp, rightOp)!;
-    }
-}
 
 public class HashJoin<TLeftFact, TRightFact, TResultFact> : IOp
     where TLeftFact : IFact where TRightFact : IFact where TResultFact : IFact
@@ -34,25 +15,22 @@ public class HashJoin<TLeftFact, TRightFact, TResultFact> : IOp
     private readonly Func<TRightFact,int> _rightHasher;
     private readonly Func<TLeftFact,TRightFact,bool> _equals;
     private readonly Func<TLeftFact,TRightFact,TResultFact> _merge;
+    private readonly LVar[] _exitLVars;
 
-    public HashJoin(IOp left, IOp right)
+    public HashJoin(IOp left, IOp right, JoinNode ast)
     {
         Left = left;
         Right = right;
-        
-        var joinLVars = left.LVars.Intersect(right.LVars).ToArray();
-        var copyLVars = left.LVars.Except(joinLVars).ToArray();
-        var newLVars = right.LVars.Except(joinLVars).ToArray();
-        LVars = joinLVars.Concat(copyLVars).Concat(newLVars).ToArray();
+        _exitLVars = ast.EnvironmentExit;
 
-        var leftIdxes = joinLVars.Select(lv => Array.IndexOf(left.LVars, lv)).ToArray();
-        _leftHasher = IFact.GetHasher<TLeftFact>(leftIdxes);
+        var leftAst = ast.Children[0];
+        var rightAst = ast.Children[1];
         
-        var rightIdxes = joinLVars.Select(lv => Array.IndexOf(right.LVars, lv)).ToArray();
-        _rightHasher = IFact.GetHasher<TRightFact>(rightIdxes);
+        _leftHasher = IFact.GetHasher<TLeftFact>(ast.LeftIndices);
+        _rightHasher = IFact.GetHasher<TRightFact>(ast.RightIndices);
         
-        _equals = IFact.GetEqual<TLeftFact, TRightFact>(leftIdxes, rightIdxes);
-        _merge = IFact.GetMerge<TLeftFact, TRightFact, TResultFact>(LVars, left.LVars, right.LVars);
+        _equals = IFact.GetEqual<TLeftFact, TRightFact>(ast.LeftIndices, ast.RightIndices);
+        _merge = IFact.GetMerge<TLeftFact, TRightFact, TResultFact>(ast.EnvironmentExit, leftAst.EnvironmentExit, rightAst.EnvironmentExit);
     }
 
     public required IOp Left { get; init; }
@@ -90,11 +68,6 @@ public class HashJoin<TLeftFact, TRightFact, TResultFact> : IOp
                 }
             }
         }
-        return new ListTable<TResultFact>(LVars, results);
+        return new ListTable<TResultFact>(_exitLVars, results);
     }
-
-    public LVar[] LVars { get; }
-    public Type FactType => typeof(TResultFact);
-
-
 }

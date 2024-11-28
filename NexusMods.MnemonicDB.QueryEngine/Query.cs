@@ -68,27 +68,13 @@ public class Query : IEnumerable<Predicate>
         where T1 : notnull
         where T2 : notnull
     {
-        var ast = ToAST(_predicates, [lvar1, lvar2]);
-        AnnotatePredicates();
-
-        IOp acc = new EvaluatePredicate
-        {
-            Predicate = _predicates.First()
-        };
+        var op = ToAST(_predicates, lvar1, lvar2)
+            .Optimize()
+            .ToOp();
         
-        foreach (var predicate in _predicates.Skip(1))
-        {
-            acc = HashJoin.Create(acc, new EvaluatePredicate
-            {
-                Predicate = predicate
-            });
-        }
-
-        acc = Op.Select(acc, [lvar1, lvar2]);
-
         return db =>
         {
-            var table = acc.Execute(db);
+            var table = op.Execute(db);
             return ((ITable<Fact<T1, T2>>)table).Facts;
         };
     }
