@@ -18,7 +18,7 @@ namespace NexusMods.MnemonicDB.QueryEngine;
 
 public class Query : IEnumerable<Predicate>
 {
-    protected readonly List<Predicate> _predicates = [];
+    private readonly List<Predicate> _predicates = [];
 
     /// <summary>
     /// Adds a predicate to the query
@@ -39,6 +39,13 @@ public class Query : IEnumerable<Predicate>
         where TOther : IModelDefinition
     {
         Add(new Datoms<ReferenceAttribute<TOther>, EntityId>(e, a, v));
+    }
+    
+    public void Add<T1, T2>(Rule<Fact<T1, T2>> rule, LVar<T1> t1, LVar<T2> t2) 
+        where T1 : notnull
+        where T2 : notnull
+    {
+        Add(new RuleCall<T1, T2>(rule, t1, t2));
     }
     
     public IEnumerator<Predicate> GetEnumerator()
@@ -77,6 +84,20 @@ public class Query : IEnumerable<Predicate>
             var table = op.Execute(db);
             return ((ITable<Fact<T1, T2>>)table).Facts;
         };
+    }
+    
+    public void AsVariant<T1, T2>(Rule<Fact<T1, T2>> rule, LVar<T1> t1, LVar<T2> t2) 
+        where T1 : notnull
+        where T2 : notnull
+    {
+        var op = ToAST(_predicates, t1, t2)
+            .Optimize()
+            .ToOp();
+        
+        rule.Variants.Add(new RuleVariant<Fact<T1, T2>>
+        {
+            Op = op
+        });
     }
 
     /// <summary>

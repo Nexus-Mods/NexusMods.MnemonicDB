@@ -74,4 +74,70 @@ public static class QueryPredicates
         val1 = LVar.Create<T>();
         val2 = LVar.Create<T>();
     }
+    
+    public static void Declare<T>(out LVar<T> val, [CallerArgumentExpression(nameof(val))] string name = "")
+    {
+        val = NamedLVar<T>(name);
+    }
+    
+    public static void Declare<T>(out LVar<T> val1, out LVar<T> val2, 
+        [CallerArgumentExpression(nameof(val1))] string name1 = "", 
+        [CallerArgumentExpression(nameof(val2))] string name2 = "")
+    {
+        val1 = NamedLVar<T>(name1);
+        val2 = NamedLVar<T>(name2);
+    }
+    
+    public static void Declare<T>(out LVar<T> val1, out LVar<T> val2, out LVar<T> val3, 
+        [CallerArgumentExpression(nameof(val1))] string name1 = "", 
+        [CallerArgumentExpression(nameof(val2))] string name2 = "", 
+        [CallerArgumentExpression(nameof(val3))] string name3 = "")
+    {
+        val1 = NamedLVar<T>(name1);
+        val2 = NamedLVar<T>(name2);
+        val3 = NamedLVar<T>(name3);
+    }
+    
+    public static void Declare<T>(out LVar<T> val1, out LVar<T> val2, out LVar<T> val3, out LVar<T> val4, 
+        [CallerArgumentExpression(nameof(val1))] string name1 = "", 
+        [CallerArgumentExpression(nameof(val2))] string name2 = "", 
+        [CallerArgumentExpression(nameof(val3))] string name3 = "", 
+        [CallerArgumentExpression(nameof(val4))] string name4 = "")
+    {
+        val1 = NamedLVar<T>(name1);
+        val2 = NamedLVar<T>(name2);
+        val3 = NamedLVar<T>(name3);
+        val4 = NamedLVar<T>(name4);
+    }
+    
+    public static void Declare<T>(out LVar<T> val1, out LVar<T> val2, out LVar<T> val3, out LVar<T> val4, out LVar<T> val5, 
+        [CallerArgumentExpression(nameof(val1))] string name1 = "", 
+        [CallerArgumentExpression(nameof(val2))] string name2 = "", 
+        [CallerArgumentExpression(nameof(val3))] string name3 = "", 
+        [CallerArgumentExpression(nameof(val4))] string name4 = "", 
+        [CallerArgumentExpression(nameof(val5))] string name5 = "")
+    {
+        val1 = NamedLVar<T>(name1);
+        val2 = NamedLVar<T>(name2);
+        val3 = NamedLVar<T>(name3);
+        val4 = NamedLVar<T>(name4);
+        val5 = NamedLVar<T>(name5);
+    }
+    
+    public static void Declare<T>(out LVar<T> val1, out LVar<T> val2, out LVar<T> val3, out LVar<T> val4, out LVar<T> val5, out LVar<T> val6, 
+        [CallerArgumentExpression(nameof(val1))] string name1 = "", 
+        [CallerArgumentExpression(nameof(val2))] string name2 = "", 
+        [CallerArgumentExpression(nameof(val3))] string name3 = "", 
+        [CallerArgumentExpression(nameof(val4))] string name4 = "", 
+        [CallerArgumentExpression(nameof(val5))] string name5 = "", 
+        [CallerArgumentExpression(nameof(val6))] string name6 = "")
+    {
+        val1 = NamedLVar<T>(name1);
+        val2 = NamedLVar<T>(name2);
+        val3 = NamedLVar<T>(name3);
+        val4 = NamedLVar<T>(name4);
+        val5 = NamedLVar<T>(name5);
+        val6 = NamedLVar<T>(name6);
+    }
+    
 }

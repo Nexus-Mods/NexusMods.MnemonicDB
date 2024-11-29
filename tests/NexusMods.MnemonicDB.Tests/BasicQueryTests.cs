@@ -3,6 +3,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.QueryEngine;
+using NexusMods.MnemonicDB.QueryEngine.Facts;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 using Xunit.Sdk;
@@ -13,20 +14,30 @@ namespace NexusMods.MnemonicDB.Tests;
 
 public class BasicQueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 {
+    public static readonly Rule<Fact<EntityId, EntityId>> EnabledFiles = new();
+
+    static BasicQueryTests()
+    {
+        Declare<EntityId>(out var loadout, out var mod, out var file);
+        new Query
+            {
+                {mod, Mod.Loadout, loadout},
+                {file, File.Mod, mod},
+            }.AsVariant(EnabledFiles, loadout, file);
+    }
+    
+    
     [Fact]
     public async Task CanQueryDatoms()
     {
         var data = (await InsertLoadouts(1, 1000, 100)).First();
-        
-        var loadout = LVar.Create<EntityId>("loadout");
-        var mod = LVar.Create<EntityId>("mod");
-        var file = LVar.Create<EntityId>("file");
-        var fileSize = LVar.Create<Size>("fileSize");
 
+        Declare<EntityId>(out var loadout, out var mod, out var file);
+        Declare<Size>(out var fileSize);
+        
         var query = new Query
         {
-            {mod, Mod.Loadout, loadout},
-            {file, File.Mod, mod},
+            { EnabledFiles, loadout, file },
             { file, File.Size, fileSize }
         }.AsTableFn(loadout, fileSize);
 

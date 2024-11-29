@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
@@ -90,4 +91,9 @@ public interface IDb : IEquatable<IDb>
     /// Clears the internal cache of the database.
     /// </summary>
     void ClearIndexCache();
+    
+    /// <summary>
+    /// A generic cache for storing query results.
+    /// </summary>
+    public ConcurrentDictionary<object, object> DbCache { get; }
 }

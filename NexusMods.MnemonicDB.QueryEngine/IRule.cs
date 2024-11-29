@@ -1,18 +1,29 @@
+using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.QueryEngine.Facts;
+using NexusMods.MnemonicDB.QueryEngine.Ops;
 
 namespace NexusMods.MnemonicDB.QueryEngine;
 
-public abstract class Rule
+public abstract class ARule
 {
-    public abstract int Arity { get; }
-    
-    public abstract Symbol Name { get; }
+    public string Name { get; init; } = "";
 }
 
-public abstract class Rule<T1, T2>
+public record RuleVariant<TFact> where TFact : IFact
 {
+    /// <summary>
+    /// The variant's operation
+    /// </summary>
+    public IOp Op { get; init; } = default!;
 }
 
-public abstract class Rule<T1, T2, T3>
+public class Rule<TFact> : ARule 
+    where TFact : IFact
 {
+    /// <summary>
+    /// Variants are overloads of the rule. Think of these as `Or` conditions of the rule,
+    /// multiple variants are run in parallel (logically) and then their results are unioned.
+    /// </summary>
+    public List<RuleVariant<TFact>> Variants { get; init; } = [];
 }

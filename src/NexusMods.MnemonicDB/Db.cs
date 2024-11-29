@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
@@ -39,6 +40,7 @@ internal class Db : IDb
         Snapshot = snapshot;
         BasisTxId = txId;
         RecentlyAdded = snapshot.Datoms(SliceDescriptor.Create(txId));
+        DbCache = new ConcurrentDictionary<object, object>();
     }
 
     private Db(ISnapshot snapshot, TxId txId, AttributeCache attributeCache, IConnection connection, IndexSegmentCache newCache, IndexSegment recentlyAdded)
@@ -49,6 +51,7 @@ internal class Db : IDb
         Snapshot = snapshot;
         BasisTxId = txId;
         RecentlyAdded = recentlyAdded;
+        DbCache = new ConcurrentDictionary<object, object>();
     }
 
     /// <summary>
@@ -118,6 +121,8 @@ internal class Db : IDb
     {
         _cache.Clear();
     }
+
+    public ConcurrentDictionary<object, object> DbCache { get; }
 
     public IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)
     {
