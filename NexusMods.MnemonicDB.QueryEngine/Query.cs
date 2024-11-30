@@ -75,14 +75,14 @@ public class Query : IEnumerable<Predicate>
         where T1 : notnull
         where T2 : notnull
     {
-        var op = ToAST(_predicates, lvar1, lvar2)
+        var op = (IOp<Fact<T1, T2>>)ToAST(_predicates, lvar1, lvar2)
             .Optimize()
             .ToOp();
         
         return db =>
         {
             var table = op.Execute(db);
-            return ((ITable<Fact<T1, T2>>)table).Facts;
+            return table;
         };
     }
     

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.QueryEngine.Facts;
+using R3;
 
 namespace NexusMods.MnemonicDB.QueryEngine.Ops;
 
@@ -9,16 +10,18 @@ namespace NexusMods.MnemonicDB.QueryEngine.Ops;
 /// A operation that evaluates a predicate
 /// </summary>
 /// <param name="predicate"></param>
-public class EvaluatePredicate : IOp
+public class EvaluatePredicate<TFact> : IOp<TFact> 
+    where TFact : IFact
 {
     public required Predicate Predicate { get; init; }
 
-    public ITable Execute(IDb db)
+    public IObservable<FactDelta<TFact>> Observe(IConnection conn)
     {
-        return Predicate.Evaluate(db);
+        return Predicate.Observe<TFact>(conn);
     }
 
-    public LVar[] LVars => Predicate.LVars.ToArray();
-    
-    public Type FactType => Predicate.FactType;
+    public ITable<TFact> Execute(IDb db)
+    {
+        return Predicate.Evaluate<TFact>(db);
+    }
 }

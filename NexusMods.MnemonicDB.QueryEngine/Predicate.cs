@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.QueryEngine.Facts;
+using NexusMods.MnemonicDB.QueryEngine.Ops;
 
 namespace NexusMods.MnemonicDB.QueryEngine;
 
@@ -26,7 +27,11 @@ public abstract record Predicate
     public abstract Type FactType { get; }
     public abstract Symbol Name { get; }
 
-    public abstract ITable Evaluate(IDb db);
+    public abstract ITable<TFact> Evaluate<TFact>(IDb db) 
+        where TFact : IFact;
+    
+    public abstract IObservable<FactDelta<TFact>> Observe<TFact>(IConnection conn)
+        where TFact : IFact;
     
     public abstract IEnumerable<LVar> LVars { get; }
     
@@ -47,9 +52,13 @@ public abstract record Predicate
             AddedColumns = exit.Except(enter).ToArray()
         };
     }
+
+    public abstract IOp ToOp();
 }
 
-public abstract record Predicate<T1, T2> : Predicate
+public abstract record Predicate<T1, T2> : Predicate 
+    where T1 : notnull 
+    where T2 : notnull
 {
     public override int Arity => 2;
     public override Symbol Name { get; }
@@ -74,9 +83,17 @@ public abstract record Predicate<T1, T2> : Predicate
 
     public Term<T1> Item1 { get; set; }
     public Term<T2> Item2 { get; set; }
+
+    public override IOp ToOp()
+    {
+        return new EvaluatePredicate<Fact<T1, T2>> { Predicate = this };
+    }
 }
 
-public abstract record Predicate<T1, T2, T3> : Predicate
+public abstract record Predicate<T1, T2, T3> : Predicate 
+    where T1 : notnull
+    where T2 : notnull 
+    where T3 : notnull
 {
     public override int Arity => 3;
     public override Symbol Name { get; }
@@ -94,16 +111,33 @@ public abstract record Predicate<T1, T2, T3> : Predicate
         }
     }
 
-    public override ITable Evaluate(IDb db)
+    public override ITable<TFact> Evaluate<TFact>(IDb db)
     {
         return (Item1.IsValue, Item2.IsValue, Item3.IsValue) switch
         {
-            (false, true, false) => Evaluate(db, Item1.LVar, Item2.Value, Item3.LVar),
+            (false, true, false) => Evaluate<TFact>(db, Item1.LVar, Item2.Value, Item3.LVar),
             _ => throw new Exception($"Invalid state: ({Item1.IsValue}, {Item2.IsValue}, {Item3.IsValue})")
         };
     }
+    
+    protected virtual ITable<TFact> Evaluate<TFact>(IDb db, LVar<T1> item1LVar, T2 item2Value, LVar<T3> item3LVar) 
+        where TFact : IFact
+    {
+        throw new NotSupportedException($"Pattern of (LVar, Value, LVar) is not supported on this predicate: {Name.Name}");
+    }
 
-    protected virtual ITable Evaluate(IDb db, LVar<T1> item1LVar, T2 item2Value, LVar<T3> item3LVar)
+    
+    public override IObservable<FactDelta<TFact>> Observe<TFact>(IConnection conn)
+    {
+        return (Item1.IsValue, Item2.IsValue, Item3.IsValue) switch
+        {
+            (false, true, false) => Evaluate<TFact>(conn, Item1.LVar, Item2.Value, Item3.LVar),
+            _ => throw new Exception($"Invalid state: ({Item1.IsValue}, {Item2.IsValue}, {Item3.IsValue})")
+        };
+    }
+    
+    protected virtual IObservable<FactDelta<TFact>> Evaluate<TFact>(IConnection conn, LVar<T1> item1LVar, T2 item2Value, LVar<T3> item3LVar)
+        where TFact : IFact
     {
         throw new NotSupportedException($"Pattern of (LVar, Value, LVar) is not supported on this predicate: {Name.Name}");
     }
@@ -123,5 +157,14 @@ public abstract record Predicate<T1, T2, T3> : Predicate
     public override string ToString()
     {
         return $"{Name.Name}({Item1}, {Item2}, {Item3})";
+    }
+
+    public override IOp ToOp()
+    {
+        return (Item1.IsValue, Item2.IsValue, Item3.IsValue) switch
+        {
+            (false, true, false) => new EvaluatePredicate<Fact<T1, T3>> { Predicate = this },
+            _ => throw new Exception($"Invalid state: ({Item1.IsValue}, {Item2.IsValue}, {Item3.IsValue})")
+        };
     }
 }

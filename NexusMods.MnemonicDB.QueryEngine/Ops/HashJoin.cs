@@ -5,10 +5,11 @@ using System.Reflection;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.QueryEngine.AST;
 using NexusMods.MnemonicDB.QueryEngine.Facts;
+using R3;
 
 namespace NexusMods.MnemonicDB.QueryEngine.Ops;
 
-public class HashJoin<TLeftFact, TRightFact, TResultFact> : IOp
+public class HashJoin<TLeftFact, TRightFact, TResultFact> : IOp<TResultFact>
     where TLeftFact : IFact where TRightFact : IFact where TResultFact : IFact
 {
     private readonly Func<TLeftFact,int> _leftHasher;
@@ -19,8 +20,8 @@ public class HashJoin<TLeftFact, TRightFact, TResultFact> : IOp
 
     public HashJoin(IOp left, IOp right, JoinNode ast)
     {
-        Left = left;
-        Right = right;
+        Left = (IOp<TLeftFact>)left;
+        Right = (IOp<TRightFact>)right;
         _exitLVars = ast.EnvironmentExit;
 
         var leftAst = ast.Children[0];
@@ -33,14 +34,14 @@ public class HashJoin<TLeftFact, TRightFact, TResultFact> : IOp
         _merge = IFact.GetMerge<TLeftFact, TRightFact, TResultFact>(ast.EnvironmentExit, leftAst.EnvironmentExit, rightAst.EnvironmentExit);
     }
 
-    public required IOp Left { get; init; }
-    public required IOp Right { get; init; }
+    public required IOp<TLeftFact> Left { get; init; }
+    public required IOp<TRightFact> Right { get; init; }
     
-    public ITable Execute(IDb db)
+    public ITable<TResultFact> Execute(IDb db)
     {
         var leftHash = new Dictionary<int, LinkedList<TLeftFact>>();
         
-        foreach (var fact in ((ITable<TLeftFact>)Left.Execute(db)).Facts)
+        foreach (var fact in Left.Execute(db))
         {
             var hash = _leftHasher(fact);
             if (!leftHash.ContainsKey(hash))
@@ -52,7 +53,7 @@ public class HashJoin<TLeftFact, TRightFact, TResultFact> : IOp
         
         
         List<TResultFact> results = [];
-        foreach (var fact in ((ITable<TRightFact>)Right.Execute(db)).Facts)
+        foreach (var fact in Right.Execute(db))
         {
             var hash = _rightHasher(fact);
             if (!leftHash.TryGetValue(hash, out var lefts))
@@ -69,5 +70,10 @@ public class HashJoin<TLeftFact, TRightFact, TResultFact> : IOp
             }
         }
         return new ListTable<TResultFact>(_exitLVars, results);
+    }
+
+    public IObservable<FactDelta<TResultFact>> Observe(IConnection conn)
+    {
+        throw new NotImplementedException();
     }
 }

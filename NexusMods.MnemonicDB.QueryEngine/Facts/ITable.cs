@@ -19,12 +19,8 @@ public interface ITable
     }
 }
 
-public interface ITable<out TFact> : ITable 
+public interface ITable<out TFact> : ITable, IEnumerable<TFact>
     where TFact : IFact
 {
-    /// <summary>
-    /// The rows in the table which will be facts of a single type
-    /// </summary>
-    public IEnumerable<TFact> Facts { get; }
 }
 

@@ -11,9 +11,6 @@ public record PredicateNode : Node
 
     public override IOp ToOp()
     {
-        return new EvaluatePredicate
-        {
-            Predicate = Predicate
-        };
+        return this.Predicate.ToOp();
     }
 }

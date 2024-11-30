@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Query;
@@ -15,11 +16,13 @@ where TValue : notnull
     {
     }
 
-    protected override ITable Evaluate(IDb db, LVar<EntityId> item1LVar, TAttribute item2Value, LVar<TValue> item3LVar)
+    protected override ITable<TFact> Evaluate<TFact>(IDb db, LVar<EntityId> item1LVar, TAttribute item2Value, LVar<TValue> item3LVar)
     {
         var sliceDescriptor = SliceDescriptor.Create(item2Value, db.AttributeCache);
-        return new ResultTable(db, sliceDescriptor, item1LVar, item2Value, item3LVar);
+        return (ITable<TFact>)new ResultTable(db, sliceDescriptor, item1LVar, item2Value, item3LVar);
     }
+    
+
 
     private class ResultTable : ITable<Fact<EntityId, TValue>>
     {
@@ -40,23 +43,24 @@ where TValue : notnull
 
         public LVar[] Columns => [_elVar, _vlVar];
         public Type FactType => typeof(Fact<EntityId, TValue>);
-
-        public IEnumerable<Fact<EntityId, TValue>> Facts
+        
+        public IEnumerator<Fact<EntityId, TValue>> GetEnumerator()
         {
-            get
+            foreach (var datom in _db.Snapshot.RefDatoms(_sliceDescriptor))
             {
-                foreach (var datom in _db.Snapshot.RefDatoms(_sliceDescriptor))
-                {
-                    var v = _attr.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, _db.Connection.AttributeResolver);
-                    yield return new Fact<EntityId, TValue>(datom.E, v);
-                }
+                var v = _attr.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, _db.Connection.AttributeResolver);
+                yield return new Fact<EntityId, TValue>(datom.E, v);
             }
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 
     public override Type FactType => typeof(Fact<EntityId, TValue>);
     
-
     public override string ToString()
     {
         return base.ToString();

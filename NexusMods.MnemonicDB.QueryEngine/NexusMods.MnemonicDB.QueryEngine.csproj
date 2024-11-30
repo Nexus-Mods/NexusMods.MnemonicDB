@@ -26,4 +26,8 @@
       </Compile>
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="R3" Version="1.2.9" />
+    </ItemGroup>
+
 </Project>
