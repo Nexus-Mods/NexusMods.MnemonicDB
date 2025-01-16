@@ -1,5 +1,8 @@
+using DynamicData;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Storage.Tests;
 
@@ -35,6 +38,11 @@ public class NullConnection : IConnection
     }
 
     public Task UpdateSchema(params IAttribute[] attribute)
+    {
+        throw new NotSupportedException();
+    }
+
+    public IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(SliceDescriptor descriptor)
     {
         throw new NotSupportedException();
     }

@@ -9,7 +9,7 @@ namespace NexusMods.MnemonicDB.Abstractions.DatomIterators;
 /// Represents a raw (unparsed) datom from an index. Most of the time this datom is only valid for the
 /// lifetime of the current iteration. It is not safe to store this datom for later use.
 /// </summary>
-public readonly struct Datom : IEquatable<Datom>
+public readonly struct Datom : IEquatable<Datom>, IComparable<Datom>
 {
     private readonly KeyPrefix _prefix;
     private readonly ReadOnlyMemory<byte> _valueBlob;
@@ -159,5 +159,11 @@ public readonly struct Datom : IEquatable<Datom>
     public override int GetHashCode()
     {
         return HashCode.Combine(_prefix.GetHashCode());
+    }
+
+    /// <inheritdoc />
+    public int CompareTo(Datom other)
+    {
+        return Compare(other);
     }
 }

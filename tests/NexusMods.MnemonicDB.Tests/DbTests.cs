@@ -1171,6 +1171,66 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         history.Datoms(l1RO.Id)
             .Should()
             .NotBeEmpty();
+    }
 
+    [Fact]
+    public async Task CanHandleLargeNumbersOfSubscribers()
+    {
+        List<EntityId> mods = new();
+
+        using var tx = Connection.BeginTransaction();
+
+        // Create 10k mods
+        for (var i = 0; i < 10000; i++)
+        {
+            var tmpMod = new Mod.New(tx)
+            {
+                Name = "Test Mod " + i,
+                Source = new Uri("http://test.com"),
+                LoadoutId = EntityId.From(0)
+            };
+            mods.Add(tmpMod.Id);
+        }
+
+        var result = await tx.Commit();
+
+        // Update all the ids
+        for (var i = 0; i < 10000; i++)
+        {
+            mods[i] = result[mods[i]];
+        }
+
+        List<IDisposable> subs = [];
+
+        foreach (var id in mods)
+        {
+            subs.Add(Mod.Observe(Connection, id).Subscribe());
+        }
+
+        using var tx2 = Connection.BeginTransaction();
+
+        // Add a lot of new datoms
+        for (var i = 0; i < 10000; i++)
+        {
+
+            _ = new Mod.New(tx2)
+            {
+                Name = "Test Mod 10000",
+                Source = new Uri("http://test.com"),
+                LoadoutId = EntityId.From(0)
+            };
+        }
+
+
+        var sw = Stopwatch.StartNew();
+        await tx2.Commit();
+        Logger.LogInformation("Time to commit: " + sw.ElapsedMilliseconds);
+        
+        sw.Elapsed.Should().BeLessThan(TimeSpan.FromSeconds(10), "Should be able to handle a large number of non-overlapping subscribers");
+        
+        foreach (var sub in subs)
+        {
+            sub.Dispose();
+        }
     }
 }
