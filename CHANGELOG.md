@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.9.98 - 16/1/2025
+* Massively improve performance of the `ObserveDatoms` function. It is now ~200x faster than the previous version
+* Clean up the logging in the inner transacting loop, switch to high performance logging for those few critical messages
+
 ### 0.9.97 - 14/11/2024
 * Fix a nuget packing bug with the source generators
 
