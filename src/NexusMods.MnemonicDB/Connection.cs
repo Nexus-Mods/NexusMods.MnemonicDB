@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DynamicData;
@@ -157,12 +158,8 @@ public class Connection : IConnection
                     var reindex = datom.WithIndex(index);
                     foreach (var overlap in _datomObservers.Query(reindex))
                     {
-                        if (!_changeSets.TryGetValue(overlap, out var changeSet))
-                        {
-                            changeSet = [];
-                            _changeSets.Add(overlap, changeSet);
-                        }
-
+                        ref var changeSet = ref CollectionsMarshal.GetValueRefOrAddDefault(_changeSets, overlap, out _);
+                        changeSet ??= [];
                         changeSet.AddRange(_localChanges);
                     }
                 }
