@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using DynamicData;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -77,4 +80,10 @@ public interface IConnection
     /// Update the database's schema with the given attributes.
     /// </summary>
     public Task UpdateSchema(params IAttribute[] attribute);
+
+    /// <summary>
+    /// Observe a slice of the database, as datoms are added or removed from the database, the observer will be updated
+    /// with the changeset of datoms that have been added or removed.
+    /// </summary>
+    IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(SliceDescriptor descriptor);
 }

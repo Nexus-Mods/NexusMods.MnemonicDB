@@ -41,6 +41,7 @@ public static class ObservableDatoms
     /// Observe a slice of the database, as datoms are added or removed from the database, the observer will be updated
     /// with the changeset of datoms that have been added or removed.
     /// </summary>
+    /*
     public static IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(this IConnection conn, SliceDescriptor descriptor)
     {
         var lastTxId = TxId.From(0);
@@ -58,7 +59,7 @@ public static class ObservableDatoms
                 return Setup(rev, descriptor);
             return Diff(conn.AttributeCache, rev.RecentlyAdded, descriptor);
         });
-    }
+    }*/
 
     /// <summary>
     /// Observe all datoms for a given entity id
