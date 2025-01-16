@@ -180,8 +180,6 @@ public sealed partial class DatomStore : IDatomStore
 
     private void ConsumeTransactions()
     {
-        var debugEnabled = Logger.IsEnabled(LogLevel.Debug);
-
         try
         {
             while (!_pendingTransactions.IsCompleted && !_shutdownToken.Token.IsCancellationRequested)
@@ -192,16 +190,12 @@ public sealed partial class DatomStore : IDatomStore
                 {
                     var result = Log(txFn);
 
-                    if (debugEnabled)
-                    {
-                        var sw = Stopwatch.StartNew();
-                        FinishTransaction(result, txFn);
-                        Logger.LogDebug("Transaction {TxId} post-processed in {Elapsed}ms", result.AssignedTxId, sw.ElapsedMilliseconds);
-                    }
-                    else
-                    {
-                        FinishTransaction(result, txFn);
-                    }
+                    var sw = Stopwatch.StartNew();
+                    FinishTransaction(result, txFn);
+
+                    var elapsed = sw.Elapsed;
+                    if (elapsed >= HighPerformanceLogging.LoggingThreshold) HighPerformanceLogging.TransactionPostProcessedLong(Logger, result.AssignedTxId, elapsed);
+                    else HighPerformanceLogging.TransactionPostProcessed(Logger, result.AssignedTxId, elapsed.TotalMilliseconds);
                 }
                 catch (Exception ex)
                 {
