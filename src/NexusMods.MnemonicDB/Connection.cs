@@ -245,6 +245,14 @@ public class Connection : IConnection
     }
 
     /// <inheritdoc />
+    public async Task<ICommitResult> FlushAndCompact()
+    {
+        var tx = new Transaction(this);
+        tx.Set(new FlushAndCompact());
+        return await tx.Commit();
+    }
+
+    /// <inheritdoc />
     public Task UpdateSchema(params IAttribute[] attribute)
     {
         return Transact(new SchemaMigration(attribute));

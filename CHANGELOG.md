@@ -1,5 +1,10 @@
 ## Changelog
 
+### 0.9.99 - 21/1/2025
+* Provide a way to open a RocksDB backend in read-only mode
+* Default to zstd compression for RocksDB vs the previous snappy compression
+* Provide a `FlushAndCompact` method on the connection so that the user can manually trigger a compaction of the database
+
 ### 0.9.98 - 16/1/2025
 * Massively improve performance of the `ObserveDatoms` function. It is now ~200x faster than the previous version
 * Clean up the logging in the inner transacting loop, switch to high performance logging for those few critical messages

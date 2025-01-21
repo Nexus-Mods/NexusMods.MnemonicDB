@@ -52,5 +52,11 @@ public class Backend : IStoreBackend
     }
 
     /// <inheritdoc />
+    public void FlushAndCompact()
+    {
+        // No need to do anything
+    }
+
+    /// <inheritdoc />
     public void Dispose() { }
 }

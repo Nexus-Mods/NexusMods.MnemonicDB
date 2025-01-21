@@ -37,6 +37,11 @@ public class NullConnection : IConnection
         throw new NotSupportedException();
     }
 
+    public Task<ICommitResult> FlushAndCompact()
+    {
+        throw new NotSupportedException();
+    }
+
     public Task UpdateSchema(params IAttribute[] attribute)
     {
         throw new NotSupportedException();

@@ -1233,4 +1233,23 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             sub.Dispose();
         }
     }
+
+    [Fact]
+    public async Task CanFlushAndCompactTheDB()
+    {
+        var tx = Connection.BeginTransaction();
+
+        for (int i = 0; i < 1000; i++)
+        {
+            _ = new Mod.New(tx)
+            {
+                Name = "Test Mod " + i,
+                Source = new Uri("http://test.com"),
+                LoadoutId = EntityId.From(0)
+            };
+        }
+        await tx.Commit();
+
+        await Connection.FlushAndCompact();
+    }
 }
