@@ -75,6 +75,11 @@ public interface IConnection
     /// of datoms that were excised.
     /// </summary>
     public Task<ICommitResult> Excise(EntityId[] entityIds);
+    
+    /// <summary>
+    /// Flushes the in-memory transaction log to the database, and compacts the database to remove any unused space.
+    /// </summary>
+    public Task<ICommitResult> FlushAndCompact();
 
     /// <summary>
     /// Update the database's schema with the given attributes.
