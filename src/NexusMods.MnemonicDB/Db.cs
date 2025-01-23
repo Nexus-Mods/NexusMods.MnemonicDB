@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
+using NexusMods.Cascade;
+using NexusMods.Cascade.Abstractions;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
@@ -39,6 +42,10 @@ internal class Db : IDb
         Snapshot = snapshot;
         BasisTxId = txId;
         RecentlyAdded = snapshot.Datoms(SliceDescriptor.Create(txId));
+        
+        // Create the flow, and prime it
+        Flow = new Flow();
+        Flow.Update(static (ops, db) => ops.AddData(QueryInlets.Db, 1, new DbTransition(null, db)), this);
     }
 
     private Db(ISnapshot snapshot, TxId txId, AttributeCache attributeCache, IConnection connection, IndexSegmentCache newCache, IndexSegment recentlyAdded)
@@ -49,6 +56,10 @@ internal class Db : IDb
         Snapshot = snapshot;
         BasisTxId = txId;
         RecentlyAdded = recentlyAdded;
+        
+        // Create the flow, and prime it
+        Flow = new Flow();
+        Flow.Update(static (ops, db) => ops.AddData(QueryInlets.Db, 1, new DbTransition(null, db)), this);
     }
 
     /// <summary>
@@ -117,6 +128,18 @@ internal class Db : IDb
     public void ClearIndexCache()
     {
         _cache.Clear();
+    }
+
+    public Flow Flow { get; }
+    
+    public IReadOnlyCollection<T> Query<T>(IQuery<T> query) where T : notnull
+    {
+        return Flow.Query(query);
+    }
+
+    public ValueTask<IReadOnlyCollection<T>> QueryAsync<T>(IQuery<T> query) where T : notnull
+    {
+        throw new NotImplementedException();
     }
 
     public IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)

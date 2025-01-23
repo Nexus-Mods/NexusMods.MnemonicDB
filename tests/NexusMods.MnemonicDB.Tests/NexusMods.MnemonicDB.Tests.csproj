@@ -18,6 +18,9 @@
         <DependentUpon>DbTests.cs</DependentUpon>
       </None>
       <None Remove="DbTests.CanGetCommitUpdates_update_datom_0.received.txt" />
+      <None Update="Resources\SmallModlist.json.gz">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
     </ItemGroup>
 
     <ItemGroup>

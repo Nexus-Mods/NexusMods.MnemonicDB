@@ -27,6 +27,8 @@ using __MODELS__ = NexusMods.MnemonicDB.Abstractions.Models;
 using __SEGMENTS__ = NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using __DI__ = Microsoft.Extensions.DependencyInjection;
 using __COMPARERS__ = NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using __CASCADE__ = NexusMods.Cascade.Abstractions;
+using __QUERY__ = NexusMods.MnemonicDB.Abstractions.Query;
 
 
 /// <summary>
@@ -141,6 +143,13 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         return ids.Select(id => new {{= model.Name}}.ReadOnly(db, id));
     }
 
+    #endregion
+    
+    #region Query
+    
+    private static readonly __CASCADE__.IQuery<{{=model.Name}}Query> _queryAll = __QUERY__.Builders.All<{{=model.Name}}Query>();
+    public static __CASCADE__.IQuery<{{=model.Name}}Query> All() => _queryAll;
+    
     #endregion
 
 
@@ -456,6 +465,13 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
                return {{= model.Name}}Id.From(model!.Value.Id);
            }
         }
+        
+    public readonly partial struct {{=model.Name}}Query(__ABSTRACTIONS__.EntityId id) : __MODELS__.IQueryableEntity<{{= model.Name}}Query>
+    {
+        public static __ABSTRACTIONS__.IAttribute PrimaryAttribute => {{= model.Name}}.PrimaryAttribute;
+        
+        public static {{= model.Name}}Query Create(__ABSTRACTIONS__.EntityId id) => new (id);
+    }    
 }
 
 /// <summary>

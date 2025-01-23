@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using DynamicData;
+using NexusMods.Cascade;
+using NexusMods.Cascade.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
@@ -90,4 +94,20 @@ public interface IDb : IEquatable<IDb>
     /// Clears the internal cache of the database.
     /// </summary>
     void ClearIndexCache();
+    
+    /// <summary>
+    /// The dedicated cascade flow for this database.
+    /// </summary>
+    public Flow Flow { get; }
+
+    /// <summary>
+    /// Query this database with the given query (using the .Flow Cascade flow)
+    /// </summary>
+    public IReadOnlyCollection<T> Query<T>(IQuery<T> query) where T : notnull;
+    
+    /// <summary>
+    /// Query this database with the given query (using the .Flow Cascade flow), as using the
+    /// flow requies a lock prefer this method if you are in an async context.
+    /// </summary>
+    public ValueTask<IReadOnlyCollection<T>> QueryAsync<T>(IQuery<T> query) where T : notnull;
 }
