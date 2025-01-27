@@ -30,16 +30,14 @@ internal class Batch(Backend backend) : IWriteBatch
     }
     
     /// <inheritdoc />
-    public void Add(IndexType index, Datom datom)
+    public void Add(Datom datom)
     {
-        datom = datom with { Prefix = datom.Prefix with { Index = index } };
         _datoms.Add((false, datom.ToArray()));
     }
     
     /// <inheritdoc />
-    public void Delete(IndexType index, Datom datom)
+    public void Delete(Datom datom)
     {
-        datom = datom with { Prefix = datom.Prefix with { Index = index } };
         _datoms.Add((true, datom.ToArray()));
     }
 }

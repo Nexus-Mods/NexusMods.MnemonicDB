@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System.Buffers;
+using System.Diagnostics;
 using System.Reactive.Linq;
 using DynamicData;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,9 +11,11 @@ using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
+using NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.MnemonicDB.TestModel.Analyzers;
 using NexusMods.MnemonicDB.TestModel.Attributes;
@@ -1251,5 +1254,76 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await tx.Commit();
 
         await Connection.FlushAndCompact();
+    }
+
+    [Fact]
+    public async Task CanPerformDatomScanUpdate()
+    {
+        var tx = Connection.BeginTransaction();
+        
+        var loadout = new Loadout.New(tx)
+        {
+            Name = "Test Loadout"
+        };
+
+        _ = new Mod.New(tx)
+        {
+            Name = "Test Mod 1",
+            Source = new Uri("http://test.com"),
+            LoadoutId = loadout
+        };
+        
+        _ = new Mod.New(tx)
+        {
+            Name = "Test Mod 2",
+            Source = new Uri("http://test.com"),
+            LoadoutId = loadout
+        };
+        
+        _ = new Mod.New(tx)
+        {
+            Name = "Test Mod 3",
+            Source = new Uri("http://test.com"),
+            LoadoutId = loadout
+        };
+
+        var results = await tx.Commit();
+        
+        var loadoutRO = results.Remap(loadout);
+        
+        loadoutRO.Mods.Select(m => m.Name).Order().Should()
+            .BeEquivalentTo("Test Mod 1", "Test Mod 2", "Test Mod 3");
+
+        var newResult = await Connection.ScanUpdate(UpdateFunc);
+
+        loadoutRO = loadoutRO.Rebase(newResult.Db);
+        
+        loadoutRO.Mods
+            .Where(m => m.Contains(Mod.Name))
+            .Select(m => m.Name).Order().Should()
+            .BeEquivalentTo("Test Mod 1", "UPDATED Test Mod 3 !!");
+
+        return;
+
+        ScanResultType UpdateFunc(ref KeyPrefix prefix, ReadOnlySpan<byte> input, in IBufferWriter<byte> output)
+        {
+            if (prefix.ValueTag != ValueTag.Utf8)
+                return ScanResultType.None;
+
+            var value = Utf8Serializer.Read(input);
+            switch (value)
+            {
+                case "Test Mod 1":
+                    return ScanResultType.None;
+                case "Test Mod 2":
+                    return ScanResultType.Delete;
+                case "Test Mod 3":
+                    Utf8Serializer.Write("UPDATED Test Mod 3 !!", output);
+                    return ScanResultType.Update;
+                default:
+                    return ScanResultType.None;
+            }
+        }
+
     }
 }

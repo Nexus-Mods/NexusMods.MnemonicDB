@@ -244,6 +244,15 @@ public class Connection : IConnection
         return await tx.Commit();
     }
 
+
+    /// <inheritdoc />
+    public async Task<ICommitResult> ScanUpdate(IConnection.ScanFunction function)
+    {
+        var tx = new Transaction(this);
+        tx.Set(new ScanMigration(function));
+        return await tx.Commit();
+    }
+
     /// <inheritdoc />
     public async Task<ICommitResult> FlushAndCompact()
     {
@@ -255,7 +264,7 @@ public class Connection : IConnection
     /// <inheritdoc />
     public Task UpdateSchema(params IAttribute[] attribute)
     {
-        return Transact(new SchemaMigration(attribute));
+        return Transact(new ScanUpdate(attribute));
     }
 
     public IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(SliceDescriptor descriptor)
@@ -284,7 +293,8 @@ public class Connection : IConnection
             return subject.StartWith(changes);
         }
     }
-    
+
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static DatomKey CreateKey(Datom datom, AttributeId attrId, bool isMany = false)
     {
@@ -317,7 +327,7 @@ public class Connection : IConnection
             AttributeCache.Reset(initialDb);
             
             var declaredAttributes = AttributeResolver.DefinedAttributes.OrderBy(a => a.Id.Id).ToArray();
-            _store.Transact(new SchemaMigration(declaredAttributes));
+            _store.Transact(new ScanUpdate(declaredAttributes));
             
             _dbStreamDisposable = ProcessUpdates(_store.TxLog)
                 .Subscribe();

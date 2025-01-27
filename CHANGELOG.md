@@ -1,5 +1,10 @@
 ## Changelog
 
+### 0.9.100 - 27/1/2025
+* Switch timestamps over to storing time as `DateTimeOffset.Ticks` so that we have the most accurate times possible
+* Provide a new `ScanUpdate` feature that can be used for data migration and conversions. Allows datoms to be deleted or 
+updated based on a simple function interface
+
 ### 0.9.99 - 21/1/2025
 * Provide a way to open a RocksDB backend in read-only mode
 * Default to zstd compression for RocksDB vs the previous snappy compression

@@ -96,6 +96,16 @@ public readonly struct Datom : IEquatable<Datom>, IComparable<Datom>
     /// </summary>
     public bool Valid => _prefix.IsValid;
 
+    /// <summary>
+    /// The minimum most possible datom
+    /// </summary>
+    public static Datom Min => new(KeyPrefix.Min, ReadOnlyMemory<byte>.Empty);
+    
+    /// <summary>
+    /// The maximum most possible datom
+    /// </summary>
+    public static Datom Max => new(KeyPrefix.Max, ReadOnlyMemory<byte>.Empty);
+
     /// <inheritdoc />
     public override string ToString()
     {
