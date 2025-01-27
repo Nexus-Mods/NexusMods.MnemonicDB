@@ -11,8 +11,8 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 public sealed class TimestampAttribute(string ns, string name) : ScalarAttribute<DateTimeOffset, long, Int64Serializer>(ns, name)
 {
     /// <inheritdoc />
-    protected override long ToLowLevel(DateTimeOffset value) => value.ToUnixTimeMilliseconds();
+    protected override long ToLowLevel(DateTimeOffset value) => value.UtcTicks;
 
     /// <inheritdoc />
-    protected override DateTimeOffset FromLowLevel(long value, AttributeResolver resolver) => DateTimeOffset.FromUnixTimeMilliseconds(value);
+    protected override DateTimeOffset FromLowLevel(long value, AttributeResolver resolver) => new(value, TimeSpan.Zero);
 }

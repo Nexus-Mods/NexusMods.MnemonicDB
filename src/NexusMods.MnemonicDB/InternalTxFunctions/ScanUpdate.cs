@@ -11,12 +11,12 @@ using NexusMods.MnemonicDB.Storage.Abstractions;
 
 namespace NexusMods.MnemonicDB.InternalTxFunctions;
 
-internal class SchemaMigration : AInternalFn
+internal class ScanUpdate : AInternalFn
 {
     private readonly IAttribute[] _declaredAttributes;
     private ulong _tempId = PartitionId.Temp.MakeEntityId(1).Value;
 
-    public SchemaMigration(IAttribute[] attributes)
+    public ScanUpdate(IAttribute[] attributes)
     {
         _declaredAttributes = attributes;
     }

@@ -264,7 +264,7 @@ public class Connection : IConnection
     /// <inheritdoc />
     public Task UpdateSchema(params IAttribute[] attribute)
     {
-        return Transact(new SchemaMigration(attribute));
+        return Transact(new ScanUpdate(attribute));
     }
 
     public IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(SliceDescriptor descriptor)
@@ -327,7 +327,7 @@ public class Connection : IConnection
             AttributeCache.Reset(initialDb);
             
             var declaredAttributes = AttributeResolver.DefinedAttributes.OrderBy(a => a.Id.Id).ToArray();
-            _store.Transact(new SchemaMigration(declaredAttributes));
+            _store.Transact(new ScanUpdate(declaredAttributes));
             
             _dbStreamDisposable = ProcessUpdates(_store.TxLog)
                 .Subscribe();
