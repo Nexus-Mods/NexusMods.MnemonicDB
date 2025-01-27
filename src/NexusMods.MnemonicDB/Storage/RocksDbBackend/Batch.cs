@@ -22,9 +22,8 @@ internal class Batch(RocksDb db) : IWriteBatch
     
     
     /// <inheritdoc />
-    public void Add(IndexType store, Datom datom)
+    public void Add(Datom datom)
     {
-        datom = datom with { Prefix = datom.Prefix with { Index = store } };
         if (datom.Prefix.ValueTag == ValueTag.HashedBlob)
         {
             var outOfBandData = datom.ValueSpan.SliceFast(Serializer.HashedBlobHeaderSize);
@@ -55,9 +54,8 @@ internal class Batch(RocksDb db) : IWriteBatch
     }
     
     /// <inheritdoc />
-    public void Delete(IndexType store, Datom datom)
+    public void Delete(Datom datom)
     {
-        datom = datom with { Prefix = datom.Prefix with { Index = store } };
         if (datom.Prefix.ValueTag == ValueTag.HashedBlob)
         {
            Span<byte> keySpan = stackalloc byte[Serializer.HashedBlobPrefixSize];

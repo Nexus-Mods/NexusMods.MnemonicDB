@@ -51,4 +51,9 @@ public class NullConnection : IConnection
     {
         throw new NotSupportedException();
     }
+
+    public Task<ICommitResult> ScanUpdate(IConnection.ScanFunction function)
+    {
+        throw new NotSupportedException();
+    }
 }

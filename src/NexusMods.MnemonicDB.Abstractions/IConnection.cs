@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DynamicData;
@@ -91,4 +92,19 @@ public interface IConnection
     /// with the changeset of datoms that have been added or removed.
     /// </summary>
     IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(SliceDescriptor descriptor);
+    
+    /// <summary>
+    /// This delegate is called for each datom in the scan, the result time defines what should be done with the datom
+    /// if None, no changes are made. If Update, the datom is updated via the value written to the valueOutput buffer.
+    /// if Delete, the datom is deleted.
+    /// </summary>
+    public delegate ScanResultType ScanFunction(ref KeyPrefix keyPrefix, ReadOnlySpan<byte> value,
+        in IBufferWriter<byte> valueOutput);
+
+    /// <summary>
+    /// Update the data with the given scan function. This function will be handed every datom in the database (in
+    /// an undefined order, and on an undefined number of threads). The function should return a ScanResultType that
+    /// defines what should be done with each datom.
+    /// </summary>
+    public Task<ICommitResult> ScanUpdate(ScanFunction function);
 }

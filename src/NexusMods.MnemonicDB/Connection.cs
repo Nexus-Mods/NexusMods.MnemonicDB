@@ -244,6 +244,15 @@ public class Connection : IConnection
         return await tx.Commit();
     }
 
+
+    /// <inheritdoc />
+    public async Task<ICommitResult> ScanUpdate(IConnection.ScanFunction function)
+    {
+        var tx = new Transaction(this);
+        tx.Set(new ScanMigration(function));
+        return await tx.Commit();
+    }
+
     /// <inheritdoc />
     public async Task<ICommitResult> FlushAndCompact()
     {
@@ -284,7 +293,8 @@ public class Connection : IConnection
             return subject.StartWith(changes);
         }
     }
-    
+
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static DatomKey CreateKey(Datom datom, AttributeId attrId, bool isMany = false)
     {

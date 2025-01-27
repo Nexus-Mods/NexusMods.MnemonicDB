@@ -42,7 +42,16 @@ public readonly struct SliceDescriptor
             return From.Prefix.Index;
         }
     }
-    
+
+    /// <summary>
+    /// A slice that includes all datoms in the database.
+    /// </summary>
+    public static readonly SliceDescriptor All = new()
+    {
+        From = DatomIterators.Datom.Min,
+        To = DatomIterators.Datom.Max
+    };
+
     /// <summary>
     /// Return a copy of this slice descriptor with the given index set on each datom.
     /// </summary>

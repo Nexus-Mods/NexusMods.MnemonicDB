@@ -157,12 +157,12 @@ public readonly record struct KeyPrefix
     /// <summary>
     /// The minimum key prefix possible
     /// </summary>
-    public static KeyPrefix Min => new(0, 0);
+    public static readonly KeyPrefix Min = new(0, 0) { Index = IndexType.TxLog };
 
     /// <summary>
     /// The maximum key prefix possible
     /// </summary>
-    public static KeyPrefix Max => new(0, 0);
+    public static readonly KeyPrefix Max = new(ulong.MaxValue, ulong.MaxValue) { Index = IndexType.AVETHistory };
 
     /// <summary>
     /// Returns true if this key is valid
