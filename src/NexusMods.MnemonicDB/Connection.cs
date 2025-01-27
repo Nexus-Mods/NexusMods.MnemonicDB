@@ -249,7 +249,7 @@ public class Connection : IConnection
     public async Task<ICommitResult> ScanUpdate(IConnection.ScanFunction function)
     {
         var tx = new Transaction(this);
-        tx.Set(new ScanMigration(function));
+        tx.Set(new ScanUpdate(function));
         return await tx.Commit();
     }
 
@@ -264,7 +264,7 @@ public class Connection : IConnection
     /// <inheritdoc />
     public Task UpdateSchema(params IAttribute[] attribute)
     {
-        return Transact(new ScanUpdate(attribute));
+        return Transact(new SimpleMigration(attribute));
     }
 
     public IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(SliceDescriptor descriptor)
@@ -327,7 +327,7 @@ public class Connection : IConnection
             AttributeCache.Reset(initialDb);
             
             var declaredAttributes = AttributeResolver.DefinedAttributes.OrderBy(a => a.Id.Id).ToArray();
-            _store.Transact(new ScanUpdate(declaredAttributes));
+            _store.Transact(new SimpleMigration(declaredAttributes));
             
             _dbStreamDisposable = ProcessUpdates(_store.TxLog)
                 .Subscribe();
