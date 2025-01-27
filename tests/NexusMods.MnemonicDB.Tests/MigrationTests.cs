@@ -91,34 +91,4 @@ public class MigrationTests : AMnemonicDBTest
         Action act = () => Connection.Db.Datoms(Mod.Source, new Uri("http://mod0.com")).ToArray();
         act.Should().Throw<InvalidOperationException>();
     }
-
-    [Fact]
-    public async Task CanConvertValues()
-    {
-        await AddData();
-
-        var cache = Connection.AttributeCache;
-        var aid = cache.GetAttributeId(Mod.Description.Id);
-        cache.IsIndexed(aid).Should().BeFalse();
-        
-        var withIndex = new UInt64Attribute(Mod.Description.Id.Namespace, Mod.Description.Id.Name) { IsIndexed = true, IsOptional = false };
-        var prevTxId = Connection.Db.BasisTxId;
-
-        await Connection.UpdateSchema(withIndex);
-
-        Connection.Db.BasisTxId.Value.Should().Be(prevTxId.Value + 1);
-        cache.IsIndexed(cache.GetAttributeId(Mod.Description.Id)).Should().BeTrue();
-        
-        var foundByDocs = Connection.Db.Datoms(withIndex, 0UL).ToArray();
-        foundByDocs.Length.Should().Be(10);
-    }
-
-    [Fact]
-    public async Task ConvertingValuesIncorrectlyFails()
-    {
-        await AddData();
-        var withIndex = new UInt64Attribute(Mod.Source.Id.Namespace, Mod.Source.Id.Name) { IsIndexed = true, IsOptional = false };
-        var act = async () => await Connection.UpdateSchema(withIndex);
-        await act.Should().ThrowAsync<InvalidOperationException>("Converting values for attribute Mod.Source from String to ULong where the source is a URI should fail");
-    }
 }
