@@ -48,7 +48,7 @@ public class Connection : IConnection
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers)
+    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers, bool readOnlyMode = false)
     {
         ServiceProvider = provider;
         AttributeCache = store.AttributeCache;
@@ -57,7 +57,7 @@ public class Connection : IConnection
         _store = (DatomStore)store;
         _dbStream = new DbStream();
         _analyzers = analyzers.ToArray();
-        Bootstrap();
+        Bootstrap(readOnlyMode);
     }
 
     /// <summary>
@@ -315,7 +315,7 @@ public class Connection : IConnection
         return result;
     }
 
-    private void Bootstrap()
+    private void Bootstrap(bool readOnlyMode)
     {
         try
         {
@@ -327,7 +327,9 @@ public class Connection : IConnection
             AttributeCache.Reset(initialDb);
             
             var declaredAttributes = AttributeResolver.DefinedAttributes.OrderBy(a => a.Id.Id).ToArray();
-            _store.Transact(new SimpleMigration(declaredAttributes));
+            
+            if (!readOnlyMode)
+                _store.Transact(new SimpleMigration(declaredAttributes));
             
             _dbStreamDisposable = ProcessUpdates(_store.TxLog)
                 .Subscribe();
