@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.101 - 28/1/2025
+* Add a option to Connection that allows the connection to be started in read-only mode (not running simple migrations)
+
 ### 0.9.100 - 27/1/2025
 * Switch timestamps over to storing time as `DateTimeOffset.Ticks` so that we have the most accurate times possible
 * Provide a new `ScanUpdate` feature that can be used for data migration and conversions. Allows datoms to be deleted or 
