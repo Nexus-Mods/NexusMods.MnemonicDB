@@ -676,6 +676,56 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     }
 
     [Fact]
+    public async Task CanNestObserveDatoms()
+    {
+        // To test nesting of observables, we're going to observe all loadouts, and then inside that observe all mods
+
+        List<EntityId> modIds = new();
+
+        using var disposable = Connection.ObserveDatoms(Loadout.Name)
+            .QueryWhenChanged(loadouts =>
+            {
+                foreach (var loadout in loadouts.Items)
+                {
+                    var mods = Connection.ObserveDatoms(Mod.Loadout, loadout.E)
+                        .QueryWhenChanged(mods =>
+                        {
+                            modIds.AddRange(mods.Items.Select(m => m.E));
+                            return 0;
+                        })
+                        .Subscribe();
+                }
+                return 42;
+            })
+            .Subscribe();
+        
+        using var tx = Connection.BeginTransaction();
+        var loadout = new Loadout.New(tx)
+        {
+            Name = "Test Loadout"
+        };
+        
+        for (var i = 0; i < 10; i++)
+        {
+            _ = new Mod.New(tx)
+            {
+                Name = $"Test Mod {i}",
+                Source = new Uri("http://test.com"),
+                LoadoutId = loadout
+            };
+        }
+        
+        await tx.Commit();
+        
+        // Delay because the chain of observables is async
+        await Task.Delay(1000);
+        
+        modIds.Count.Should().Be(10);
+
+
+    }
+
+    [Fact]
     public async Task CanQueryTwoAttributesAtOnce()
     {
         using var tx = Connection.BeginTransaction();
