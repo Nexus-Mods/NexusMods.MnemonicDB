@@ -16,9 +16,9 @@ public partial class ArchiveFile : IModelDefinition
     /// The path of the file in the archive
     /// </summary>
     public static readonly RelativePathAttribute Path = new(Namespace, nameof(Path)) { IsIndexed = true };
-    
+
     /// <summary>
     /// The hash of the file in the archive
     /// </summary>
-    public static readonly HashAttribute Hash = new(Namespace, nameof(Hash));
+    public static readonly HashAttribute Hash = new(Namespace, nameof(Hash)) { IsUnique = true };
 }
