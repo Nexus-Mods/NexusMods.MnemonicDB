@@ -18,6 +18,7 @@ public sealed class AttributeCache
     private BitArray _isCardinalityMany;
     private BitArray _isReference;
     private BitArray _isIndexed;
+    private BitArray _isUnique;
     private Symbol[] _symbols;
     private ValueTag[] _valueTags;
     private BitArray _isNoHistory;
@@ -31,6 +32,7 @@ public sealed class AttributeCache
         _isCardinalityMany = new BitArray(maxId);
         _isReference = new BitArray(maxId);
         _isIndexed = new BitArray(maxId);
+        _isUnique = new BitArray(maxId);
         _isNoHistory = new BitArray(maxId);
         _symbols = new Symbol[maxId];
         _valueTags = new ValueTag[maxId];
@@ -39,6 +41,7 @@ public sealed class AttributeCache
         {
             _attributeIdsBySymbol[kv.Key.Id] = AttributeId.From(kv.Value);
             _isIndexed[kv.Value] = kv.Key.IsIndexed;
+            _isUnique[kv.Value] = kv.Key.IsUnique;
             _symbols[kv.Value] = kv.Key.Id;
             _valueTags[kv.Value] = kv.Key.LowLevelType;
         }
@@ -88,6 +91,15 @@ public sealed class AttributeCache
             newIsIndexed[(int)id] = true;
         }
         _isIndexed = newIsIndexed;
+        
+        var isUnique = db.Datoms(AttributeDefinition.Unique);
+        var newIsUnique = new BitArray(maxIndex);
+        foreach (var datom in isUnique)
+        {
+            var id = datom.E.Value;
+            newIsUnique[(int)id] = true;
+        }
+        _isUnique = newIsUnique;
         
         var isNoHistory = db.Datoms(AttributeDefinition.NoHistory);
         var newIsNoHistory = new BitArray(maxIndex);
@@ -192,5 +204,13 @@ public sealed class AttributeCache
     public ValueTag GetValueTag(AttributeId aid)
     {
         return _valueTags[aid.Value];
+    }
+
+    /// <summary>
+    /// Returns true if the attribute is unique.
+    /// </summary>
+    public bool IsUnique(AttributeId attrId)
+    {
+        return _isUnique[attrId.Value];
     }
 }

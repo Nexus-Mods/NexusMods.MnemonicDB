@@ -3,6 +3,7 @@
 + | 0000000000000003 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Indexed          | 0100000000000001
 + | 0000000000000005 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/NoHistory        | 0100000000000001
 + | 0000000000000004 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Optional         | 0100000000000001
++ | 0000000000000009 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Unique           | 0100000000000001
 + | 0000000000000001 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/UniqueId         | 0100000000000001
 + | 0000000000000002 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/ValueType        | 0100000000000001
 + | 000000000000001E | (0001) UniqueId                 | NexusMods.MnemonicDB.S...stAttributes/InKeyBlob  | 0100000000000002

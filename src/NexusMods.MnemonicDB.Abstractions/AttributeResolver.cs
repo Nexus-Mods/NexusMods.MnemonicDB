@@ -14,7 +14,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 public sealed class AttributeResolver
 {
     private readonly FrozenDictionary<Symbol,IAttribute> _attrsById;
-    private AttributeCache _attributeCache;
+    private readonly AttributeCache _attributeCache;
 
     /// <summary>
     /// Occasionally we need to turn the raw datoms from the database into a IReadDatom, this class
@@ -25,6 +25,19 @@ public sealed class AttributeResolver
         ServiceProvider = provider;
         _attributeCache = cache;
         _attrsById = provider.GetServices<IAttribute>().ToDictionary(a => a.Id).ToFrozenDictionary();
+        
+        ValidateAttributes();
+    }
+
+    private void ValidateAttributes()
+    {
+        foreach (var attribute in _attrsById.Values)
+        {
+            if (attribute.IsUnique && !attribute.IsIndexed)
+            {
+                throw new InvalidOperationException($"Attribute {attribute.Id} is unique but not indexed, all unique attributes must also be indexed");
+            }
+        }
     }
 
 

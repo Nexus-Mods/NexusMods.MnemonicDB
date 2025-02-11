@@ -76,6 +76,31 @@ public sealed partial class DatomStore : IDatomStore
 
     private readonly TimeProvider _timeProvider;
 
+    private enum UniqueState : byte
+    {
+        // We've never seen this datom before
+        None = 0,
+        
+        // The unique datom has been asserted in the current transaction
+        Asserted = 1,
+        
+        // The unique datom has been retracted in the current transaction
+        Retracted = 2,
+        
+        // The unique datom has a violated constraint in the current transaction
+        Violation = 3
+    }
+    
+    /// <summary>
+    /// A cache of datoms on unique attributes being processed in the current transaction. These constraints require a bit
+    /// of working memory, because a single transaction could remove a datom from one entity and add it to another, and the
+    /// order of these datoms in the transaction is undefined. So we may get the retraction before the assertion, or vice versa.
+    /// So this dictionary contains storage for a simple state machine to check for unique constraints. Once a transaction is about
+    /// to be commited we look in this dictionary for any unique constraints that have been violated and throw errors. At the start
+    /// of every transaction, this dictionary is cleared.
+    /// </summary>
+    private SortedDictionary<Datom, UniqueState> _currentUniqueDatoms = new(UniqueAttributeEqualityComparer.Instance);
+
     /// <summary>
     /// DI constructor
     /// </summary>
@@ -315,6 +340,7 @@ public sealed partial class DatomStore : IDatomStore
     {
         var swPrepare = Stopwatch.StartNew();
         _remaps.Clear();
+        _currentUniqueDatoms.Clear();
         using var batch = Backend.CreateBatch();
 
         var datomCount = 0;
@@ -331,6 +357,8 @@ public sealed partial class DatomStore : IDatomStore
 
         if (advanceTx) 
             LogTx(batch);
+        
+        CheckForUniqueViolations();
         
         batch.Commit();
         var swWrite = Stopwatch.StartNew();
@@ -352,6 +380,18 @@ public sealed partial class DatomStore : IDatomStore
         
         // Update the snapshot
         CurrentSnapshot = Backend.GetSnapshot();
+    }
+
+    /// <summary>
+    /// Once we're all done processing a transaction, we need to check for any unique violations that may have occurred
+    /// </summary>
+    private void CheckForUniqueViolations()
+    {
+        foreach (var (datom, state) in _currentUniqueDatoms)
+        {
+            if (state == UniqueState.Violation)
+                throw new UniqueConstraintException(datom);
+        }
     }
 
     /// <summary>
@@ -419,6 +459,7 @@ public sealed partial class DatomStore : IDatomStore
 
         var newSpan = _writer.AsDatom();
 
+        ProcessMaybeUnique(attrId, newSpan);
         if (keyPrefix.IsRetract)
         {
             ProcessRetract(batch, attrId, newSpan, CurrentSnapshot!);
@@ -437,6 +478,71 @@ public sealed partial class DatomStore : IDatomStore
                 ProcessRetract(batch, attrId, _retractWriter.AsDatom(), CurrentSnapshot!);
                 ProcessAssert(batch, attrId, newSpan);
                 break;
+        }
+    }
+
+    private void ProcessMaybeUnique(AttributeId attrId, in Datom datom)
+    {
+        if (!_attributeCache.IsUnique(attrId))
+            return;
+
+        var cloned = datom.Clone();
+        var currentState = _currentUniqueDatoms.GetValueOrDefault(cloned, UniqueState.None);
+
+        switch (currentState, datom.Prefix.IsRetract)
+        {
+            // We've never seen this unique datom before
+            case (UniqueState.None, true) or (UniqueState.None, false):
+            {
+                // Let's see what the previous snapshot has
+                var datoms = CurrentSnapshot!.Datoms(SliceDescriptor.Create(datom.Prefix.A, datom.Prefix.ValueTag, datom.ValueMemory));
+                if (datoms.Any())
+                {
+                    // We're retracting a unique datom that already exists, another place will make sure we are retracting the 
+                    // correct EntityID
+                    if (datom.Prefix.IsRetract)
+                    {
+                        // This should really never happen
+                        if (datoms.First().E != datom.E)
+                            throw new InvalidOperationException("Retraction of unique datom with different entity id");
+                        // Mark this unique datom as retracted
+                        _currentUniqueDatoms.Add(cloned, UniqueState.Retracted);
+                    }
+                    else
+                    {
+                        // So far, it's a violation, unless we get a matching retraction
+                        _currentUniqueDatoms.Add(cloned, UniqueState.Violation);
+                    }
+                }
+                else
+                {
+                    _currentUniqueDatoms.Add(cloned, UniqueState.Asserted);
+                }
+                break;
+            }
+            // Asserted, then retracted. This is allowed. 
+            case (UniqueState.Asserted, true):
+                _currentUniqueDatoms.Remove(cloned);
+                break;
+            // Asserted, then reasserted. This is a violation
+            case (UniqueState.Asserted, false):
+                throw new UniqueConstraintException(datom);
+            // Double retracted, this should never happen
+            case (UniqueState.Retracted, true):
+                throw new InvalidOperationException("Double retraction of a unique datom");
+            // Retracted, then added. This is allowed
+            case (UniqueState.Retracted, false):
+                _currentUniqueDatoms[cloned] = UniqueState.Asserted;
+                break;
+            // A violation, then retracted. This is allowed.
+            case (UniqueState.Violation, true):
+                _currentUniqueDatoms.Remove(cloned);
+                break;
+            // A violation, then asserted. This is a violation
+            case (UniqueState.Violation, false):
+                throw new UniqueConstraintException(datom);
+            default:
+                throw new InvalidOperationException("Invalid unique state");
         }
     }
 

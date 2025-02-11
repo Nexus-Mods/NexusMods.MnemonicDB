@@ -1326,4 +1326,39 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         }
 
     }
+
+    [Fact]
+    public async Task UniqueAttributesThrowExceptions()
+    {
+        var tmpId1 = PartitionId.Temp.MakeEntityId(0x42);
+        var tmpId2 = PartitionId.Temp.MakeEntityId(0x43);
+        
+        // Two conflicting inserts
+        using var tx1 = Connection.BeginTransaction();
+        tx1.Add(tmpId1, ArchiveFile.Hash, Hash.From(0xDEADBEEF));
+        tx1.Add(tmpId2, ArchiveFile.Hash, Hash.From(0xDEADBEEF));
+        Func<Task> act = async () => await tx1.Commit();
+        await act.Should().ThrowAsync<UniqueConstraintException>();
+        
+        // Two conflicts from different transactions
+        using var tx2 = Connection.BeginTransaction();
+        tx2.Add(tmpId1, ArchiveFile.Hash, Hash.From(0xDEADBEEF));
+        var result = await tx2.Commit();
+        var insertedId = result[tmpId1]; 
+        
+        // This should throw because a previous transaction inserted the same value
+        using var tx3 = Connection.BeginTransaction();
+        tx3.Add(tmpId2, ArchiveFile.Hash, Hash.From(0xDEADBEEF));
+        Func<Task> act2 = async () => await tx3.Commit();
+        await act2.Should().ThrowAsync<UniqueConstraintException>();
+        
+        // Now let's retract the previous datom and set the datom again in the same transaction (out of order just to
+        // make sure we can process that). This should not throw, because the datom is retracted for the other unique
+        // constraint inside the same transaction that we are adding the new one.
+        using var tx4 = Connection.BeginTransaction();
+        tx4.Add(tmpId2, ArchiveFile.Hash, Hash.From(0xDEADBEEF));
+        tx4.Retract(insertedId, ArchiveFile.Hash, Hash.From(0xDEADBEEF));
+        await tx4.Commit();
+        
+    }
 }
