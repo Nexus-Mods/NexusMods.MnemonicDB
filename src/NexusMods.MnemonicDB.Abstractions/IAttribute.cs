@@ -39,6 +39,12 @@ public interface IAttribute
     ///    True if the attribute is indexed, false if it is not.
     /// </summary>
     bool IsIndexed { get; }
+    
+    /// <summary>
+    ///    True if the attribute is unique, false if it is not. Unique here is global for a specific attribute, this can
+    /// be thought of as making sure that .Datoms(Attribute, Value) for this attribute never returns more than one datom.
+    /// </summary>
+    bool IsUnique { get; }
 
     /// <summary>
     ///   True if the attribute has no history, false if it does.

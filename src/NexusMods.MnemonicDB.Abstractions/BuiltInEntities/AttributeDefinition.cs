@@ -19,37 +19,42 @@ public partial class AttributeDefinition : IModelDefinition
     /// <summary>
     /// The unique identifier of the entity, used to link attributes across application restarts and model changes.
     /// </summary>
-    public static readonly SymbolAttribute UniqueId = new(Namespace, "UniqueId") { IsIndexed = true };
+    public static readonly SymbolAttribute UniqueId = new(Namespace, nameof(UniqueId)) { IsIndexed = true, IsUnique = true };
 
     /// <summary>
     /// The type of the value.
     /// </summary>
-    public static readonly ValuesTagAttribute ValueType = new(Namespace, "ValueType");
+    public static readonly ValuesTagAttribute ValueType = new(Namespace, nameof(ValueType));
 
     /// <summary>
     /// True if the attribute is indexed.
     /// </summary>
-    public static readonly MarkerAttribute Indexed = new(Namespace, "Indexed");
+    public static readonly MarkerAttribute Indexed = new(Namespace, nameof(Indexed));
+    
+    /// <summary>
+    /// True if the attribute is unique, that this attr/value pair can only exist on one entity at a time
+    /// </summary>
+    public static readonly MarkerAttribute Unique = new(Namespace, nameof(Unique));
 
     /// <summary>
     /// This attribute is optional.
     /// </summary>
-    public static readonly MarkerAttribute Optional = new(Namespace, "Optional");
+    public static readonly MarkerAttribute Optional = new(Namespace, nameof(Optional));
 
     /// <summary>
     /// Do not store history for this attribute.
     /// </summary>
-    public static readonly MarkerAttribute NoHistory = new(Namespace, "NoHistory");
+    public static readonly MarkerAttribute NoHistory = new(Namespace, nameof(NoHistory));
 
     /// <summary>
     /// The cardinality of the attribute.
     /// </summary>
-    public static readonly CardinalityAttribute Cardinality = new(Namespace, "Cardinality");
+    public static readonly CardinalityAttribute Cardinality = new(Namespace, nameof(Cardinality));
 
     /// <summary>
     /// The doc string for the attribute
     /// </summary>
-    public static readonly StringAttribute Documentation = new(Namespace, "Documentation") { IsOptional = true };
+    public static readonly StringAttribute Documentation = new(Namespace, nameof(Documentation)) { IsOptional = true };
 
     /// <summary>
     /// Inserts an attribute into the transaction.
@@ -64,6 +69,8 @@ public partial class AttributeDefinition : IModelDefinition
         tx.Add(eid, Cardinality, attribute.Cardinalty);
         if (attribute.IsIndexed)
             tx.Add(eid, Indexed, Null.Instance);
+        if (attribute.IsUnique)
+            tx.Add(eid, Unique, Null.Instance);
         if (attribute.NoHistory)
             tx.Add(eid, NoHistory, Null.Instance);
         if (attribute.DeclaredOptional)
@@ -82,7 +89,8 @@ public partial class AttributeDefinition : IModelDefinition
         { NoHistory, 5 },
         { Cardinality, 6 },
         { Documentation, 7 },
-        { Transaction.Timestamp, 8}
+        { Transaction.Timestamp, 8},
+        { Unique, 9 }
     };
     
     /// <summary>
@@ -94,6 +102,7 @@ public partial class AttributeDefinition : IModelDefinition
         Insert(tx, ValueType);
         Insert(tx, Documentation);
         Insert(tx, Indexed);
+        Insert(tx, Unique);
         Insert(tx, Optional);
         Insert(tx, NoHistory);
         Insert(tx, Cardinality);

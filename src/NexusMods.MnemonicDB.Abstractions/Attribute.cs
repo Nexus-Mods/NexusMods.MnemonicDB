@@ -57,6 +57,9 @@ public abstract class Attribute<TValueType, TLowLevelType, TSerializer> :
 
     /// <inheritdoc />
     public bool IsIndexed { get; init; }
+    
+    /// <inheritdoc />
+    public bool IsUnique { get; init; }
 
     /// <inheritdoc />
     public bool NoHistory { get; init; }
