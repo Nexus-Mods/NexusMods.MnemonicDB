@@ -338,4 +338,19 @@ public readonly struct SliceDescriptor
             To = Datom(eid, AttributeId.Max, TxId.MaxValue, false, indexType)
         };
     }
+
+    /// <summary>
+    /// Creates a new slice descriptor for the given reference attribute and prefix value tag
+    /// </summary>
+    public static SliceDescriptor Create(AttributeId referenceAttribute, ValueTag prefixValueTag, ReadOnlyMemory<byte> datomValueSpan)
+    {
+        var fromPrefix = new KeyPrefix(EntityId.MinValueNoPartition, referenceAttribute, TxId.MinValue, false, prefixValueTag, IndexType.AVETCurrent);
+        var toPrefix = new KeyPrefix(EntityId.MaxValueNoPartition, referenceAttribute, TxId.MaxValue, false, prefixValueTag, IndexType.AVETCurrent);
+
+        return new SliceDescriptor
+        {
+            From = new Datom(fromPrefix, datomValueSpan),
+            To = new Datom(toPrefix, datomValueSpan)
+        };
+    }
 }

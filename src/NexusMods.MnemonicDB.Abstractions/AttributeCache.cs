@@ -205,4 +205,12 @@ public sealed class AttributeCache
     {
         return _valueTags[aid.Value];
     }
+
+    /// <summary>
+    /// Returns true if the attribute is unique.
+    /// </summary>
+    public bool IsUnique(AttributeId attrId)
+    {
+        return _isUnique[attrId.Value];
+    }
 }

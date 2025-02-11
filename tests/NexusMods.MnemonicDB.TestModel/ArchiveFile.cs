@@ -20,5 +20,5 @@ public partial class ArchiveFile : IModelDefinition
     /// <summary>
     /// The hash of the file in the archive
     /// </summary>
-    public static readonly HashAttribute Hash = new(Namespace, nameof(Hash)) { IsUnique = true };
+    public static readonly HashAttribute Hash = new(Namespace, nameof(Hash)) { IsUnique = true, IsIndexed = true };
 }
