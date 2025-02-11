@@ -294,9 +294,10 @@ public class Connection : IConnection
                 observer.OnNext(changes);
             
             
-            return Disposable.Create(() =>
+            return Disposable.Create((_observersPendingDisposal, observer), static state =>
             {
-                _observersPendingDisposal.Enqueue(observer);
+                var (observersPendingDisposal, observer) = state;
+                observersPendingDisposal.Enqueue(observer);
             });
         });
     }
