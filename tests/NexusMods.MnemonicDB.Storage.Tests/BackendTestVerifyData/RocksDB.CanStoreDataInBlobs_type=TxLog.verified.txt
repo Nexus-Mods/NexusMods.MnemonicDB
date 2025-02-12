@@ -2,7 +2,6 @@
 + | 0000000000000001 | (0002) ValueType                | Ascii                                            | 0100000000000001
 + | 0000000000000001 | (0003) Indexed                  |                                                  | 0100000000000001
 + | 0000000000000001 | (0006) Cardinality              | 1                                                | 0100000000000001
-+ | 0000000000000001 | (0009) Unique                   |                                                  | 0100000000000001
 + | 0000000000000002 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/ValueType        | 0100000000000001
 + | 0000000000000002 | (0002) ValueType                | UInt8                                            | 0100000000000001
 + | 0000000000000002 | (0006) Cardinality              | 1                                                | 0100000000000001
@@ -25,9 +24,6 @@
 + | 0000000000000008 | (0001) UniqueId                 | NexusMods.MnemonicDB.Transaction/Timestamp       | 0100000000000001
 + | 0000000000000008 | (0002) ValueType                | Int64                                            | 0100000000000001
 + | 0000000000000008 | (0006) Cardinality              | 1                                                | 0100000000000001
-+ | 0000000000000009 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Unique           | 0100000000000001
-+ | 0000000000000009 | (0002) ValueType                | Null                                             | 0100000000000001
-+ | 0000000000000009 | (0006) Cardinality              | 1                                                | 0100000000000001
 + | 0100000000000001 | (0008) Timestamp                | DateTime : 0                                     | 0100000000000001
 + | 0000000000000014 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Path         | 0100000000000002
 + | 0000000000000014 | (0002) ValueType                | Utf8Insensitive                                  | 0100000000000002

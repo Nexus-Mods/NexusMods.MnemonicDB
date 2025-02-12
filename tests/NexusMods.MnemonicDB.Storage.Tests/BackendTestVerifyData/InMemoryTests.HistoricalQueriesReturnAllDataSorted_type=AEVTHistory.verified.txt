@@ -6,7 +6,6 @@
 + | 0000000000000006 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Cardinality      | 0100000000000001
 + | 0000000000000007 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Documentation    | 0100000000000001
 + | 0000000000000008 | (0001) UniqueId                 | NexusMods.MnemonicDB.Transaction/Timestamp       | 0100000000000001
-+ | 0000000000000009 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Unique           | 0100000000000001
 + | 0000000000000014 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Path         | 0100000000000002
 + | 0000000000000015 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Hash         | 0100000000000002
 + | 0000000000000016 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Size         | 0100000000000002
@@ -27,7 +26,6 @@
 + | 0000000000000006 | (0002) ValueType                | UInt8                                            | 0100000000000001
 + | 0000000000000007 | (0002) ValueType                | Utf8                                             | 0100000000000001
 + | 0000000000000008 | (0002) ValueType                | Int64                                            | 0100000000000001
-+ | 0000000000000009 | (0002) ValueType                | Null                                             | 0100000000000001
 + | 0000000000000014 | (0002) ValueType                | Utf8Insensitive                                  | 0100000000000002
 + | 0000000000000015 | (0002) ValueType                | UInt64                                           | 0100000000000002
 + | 0000000000000016 | (0002) ValueType                | UInt64                                           | 0100000000000002
@@ -56,7 +54,6 @@
 + | 0000000000000006 | (0006) Cardinality              | 1                                                | 0100000000000001
 + | 0000000000000007 | (0006) Cardinality              | 1                                                | 0100000000000001
 + | 0000000000000008 | (0006) Cardinality              | 1                                                | 0100000000000001
-+ | 0000000000000009 | (0006) Cardinality              | 1                                                | 0100000000000001
 + | 0000000000000014 | (0006) Cardinality              | 1                                                | 0100000000000002
 + | 0000000000000015 | (0006) Cardinality              | 1                                                | 0100000000000002
 + | 0000000000000016 | (0006) Cardinality              | 1                                                | 0100000000000002
@@ -73,7 +70,6 @@
 + | 0100000000000002 | (0008) Timestamp                | DateTime : 1                                     | 0100000000000002
 + | 0100000000000003 | (0008) Timestamp                | DateTime : 2                                     | 0100000000000003
 + | 0100000000000004 | (0008) Timestamp                | DateTime : 3                                     | 0100000000000004
-+ | 0000000000000001 | (0009) Unique                   |                                                  | 0100000000000001
 + | 0200000000000001 | (0014) Path                     | /foo/bar                                         | 0100000000000003
 + | 0200000000000002 | (0014) Path                     | /foo/qux                                         | 0100000000000004
 + | 0200000000000002 | (0014) Path                     | /qix/bar                                         | 0100000000000003
