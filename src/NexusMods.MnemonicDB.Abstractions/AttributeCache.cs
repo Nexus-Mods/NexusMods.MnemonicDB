@@ -92,14 +92,18 @@ public sealed class AttributeCache
         }
         _isIndexed = newIsIndexed;
         
-        var isUnique = db.Datoms(AttributeDefinition.Unique);
+        
+        //var isUnique = db.Datoms(AttributeDefinition.Unique);
         var newIsUnique = new BitArray(maxIndex);
+        /*
         foreach (var datom in isUnique)
         {
             var id = datom.E.Value;
             newIsUnique[(int)id] = true;
         }
+        */
         _isUnique = newIsUnique;
+        
         
         var isNoHistory = db.Datoms(AttributeDefinition.NoHistory);
         var newIsNoHistory = new BitArray(maxIndex);

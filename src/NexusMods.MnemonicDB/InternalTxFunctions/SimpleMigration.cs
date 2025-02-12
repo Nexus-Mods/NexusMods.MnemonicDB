@@ -56,10 +56,12 @@ internal class SimpleMigration : AInternalFn
 
             if (cache.IsUnique(aid) != attribute.IsUnique)
             {
+                /*
                 if (attribute.IsUnique)
                     builder.Add(EntityId.From(aid.Value), AttributeDefinition.Unique, Null.Instance);
                 else
                     builder.Add(EntityId.From(aid.Value), AttributeDefinition.Unique, Null.Instance, true);
+                */
             }
             
             if (cache.GetValueTag(aid) != attribute.LowLevelType)
@@ -87,8 +89,8 @@ internal class SimpleMigration : AInternalFn
         if (definition.IsIndexed) 
             builder.Add(id, AttributeDefinition.Indexed, Null.Instance);
         
-        if (definition.IsUnique)
-            builder.Add(id, AttributeDefinition.Unique, Null.Instance);
+        //if (definition.IsUnique)
+        //    builder.Add(id, AttributeDefinition.Unique, Null.Instance);
         
         if (definition.DeclaredOptional)
             builder.Add(id, AttributeDefinition.Optional, Null.Instance);

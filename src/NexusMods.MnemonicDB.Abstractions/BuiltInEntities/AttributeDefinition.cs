@@ -31,10 +31,11 @@ public partial class AttributeDefinition : IModelDefinition
     /// </summary>
     public static readonly MarkerAttribute Indexed = new(Namespace, nameof(Indexed));
     
+    // Disabled until we figure out how to use TempIDs during attribute insertion
     /// <summary>
     /// True if the attribute is unique, that this attr/value pair can only exist on one entity at a time
     /// </summary>
-    public static readonly MarkerAttribute Unique = new(Namespace, nameof(Unique));
+    // public static readonly MarkerAttribute Unique = new(Namespace, nameof(Unique));
 
     /// <summary>
     /// This attribute is optional.
@@ -69,8 +70,8 @@ public partial class AttributeDefinition : IModelDefinition
         tx.Add(eid, Cardinality, attribute.Cardinalty);
         if (attribute.IsIndexed)
             tx.Add(eid, Indexed, Null.Instance);
-        if (attribute.IsUnique)
-            tx.Add(eid, Unique, Null.Instance);
+        //if (attribute.IsUnique)
+        //    tx.Add(eid, Unique, Null.Instance);
         if (attribute.NoHistory)
             tx.Add(eid, NoHistory, Null.Instance);
         if (attribute.DeclaredOptional)
@@ -90,7 +91,7 @@ public partial class AttributeDefinition : IModelDefinition
         { Cardinality, 6 },
         { Documentation, 7 },
         { Transaction.Timestamp, 8},
-        { Unique, 9 }
+        //{ Unique, 9 }
     };
     
     /// <summary>
@@ -102,7 +103,7 @@ public partial class AttributeDefinition : IModelDefinition
         Insert(tx, ValueType);
         Insert(tx, Documentation);
         Insert(tx, Indexed);
-        Insert(tx, Unique);
+        //Insert(tx, Unique);
         Insert(tx, Optional);
         Insert(tx, NoHistory);
         Insert(tx, Cardinality);
