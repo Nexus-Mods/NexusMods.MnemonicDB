@@ -26,21 +26,18 @@ public abstract class AStorageTest : IDisposable
     private ulong _tempId = 1;
     protected IDatomStore DatomStore;
 
-    protected AStorageTest(IServiceProvider provider, Func<IStoreBackend>? backendFn = null)
+    protected AStorageTest(IServiceProvider provider, bool inMemory)
     {
         _provider = provider;
-        
-        _path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("tests_datomstore" + Guid.NewGuid());
+
+        _path = inMemory ? default : FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("tests_datomstore" + Guid.NewGuid());
 
         DatomStoreSettings = new DatomStoreSettings
         {
             Path = _path
         };
-
-        backendFn ??= () => new Backend();
-
-
-        DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), DatomStoreSettings, backendFn());
+        
+        DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), DatomStoreSettings, new Backend());
         
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
         

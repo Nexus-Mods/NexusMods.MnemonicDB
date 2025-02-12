@@ -15,6 +15,7 @@ public class Backend : IStoreBackend
     internal RocksDb? Db = null!;
     private IntPtr _comparator;
     private readonly bool _isReadOnly;
+    private Env? _env = null!;
 
     /// <summary>
     /// Default constructor
@@ -41,7 +42,7 @@ public class Backend : IStoreBackend
     }
 
     /// <inheritdoc />
-    public void Init(AbsolutePath location)
+    public void Init(AbsolutePath location, bool inMemory = false)
     {
 
         _comparator = Native.Instance.rocksdb_comparator_create(IntPtr.Zero, 
@@ -49,18 +50,28 @@ public class Backend : IStoreBackend
             NativeComparators.GetNativeFnPtr(),
             NativeComparators.GetNamePtr());
 
+        if (inMemory)
+            _env = Env.CreateMemEnv();
+        else
+            _env = Env.CreateDefaultEnv();
+
         var options = new DbOptions()
             .SetCreateIfMissing()
             .SetCreateMissingColumnFamilies()
             .SetCompression(Compression.Zstd)
-            .SetComparator(_comparator);
+            .SetComparator(_comparator)
+            .SetEnv(_env.Handle);
         
         Native.Instance.rocksdb_options_set_bottommost_compression(options.Handle, (int)Compression.Zstd);
         
+        var locationString = location.ToString();
+        if (inMemory)
+            locationString = "/in-memory/" + Guid.NewGuid();
+        
         if (_isReadOnly)
-            Db = RocksDb.OpenReadOnly(options, location.ToString(), false);
+            Db = RocksDb.OpenReadOnly(options, locationString, false);
         else 
-            Db = RocksDb.Open(options, location.ToString());
+            Db = RocksDb.Open(options, locationString);
     }
 
     /// <summary>

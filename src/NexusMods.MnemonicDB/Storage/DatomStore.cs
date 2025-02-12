@@ -4,6 +4,7 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -126,8 +127,8 @@ public sealed partial class DatomStore : IDatomStore
 
         Logger = logger;
         _settings = settings;
-        
-        Backend.Init(settings.Path);
+
+        Backend.Init(settings.Path, settings.IsInMemory);
 
         if (bootstrap) 
             Bootstrap();

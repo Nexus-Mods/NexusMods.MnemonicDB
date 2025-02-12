@@ -27,7 +27,7 @@ public interface IStoreBackend : IDisposable
     /// <summary>
     /// Initialize the store backend with the given location
     /// </summary>
-    public void Init(AbsolutePath location);
+    public void Init(AbsolutePath location, bool inMemory = false);
 
     /// <summary>
     ///     Gets a snapshot of the current state of the store that will not change

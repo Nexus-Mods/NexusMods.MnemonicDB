@@ -4,7 +4,7 @@ using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage;
-using NexusMods.MnemonicDB.Storage.InMemoryBackend;
+using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 
@@ -23,7 +23,7 @@ public class ImportExportTests(IServiceProvider provider) : AMnemonicDBTest(prov
         Logger.LogInformation("Exported {0} bytes", ms.Length);
         
         var datomStore = new DatomStore(Provider.GetRequiredService<ILogger<DatomStore>>()!,
-            Config, new Backend(), bootstrap: false);
+           DatomStoreSettings.CreateInMemory(), new Backend(), bootstrap: false);
         
         ms.Position = 0;
         await datomStore.ImportAsync(ms);
