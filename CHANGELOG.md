@@ -1,5 +1,11 @@
 ## Changelog
 
+### 0.9.102 - 28/1/2025
+* Add support for Unqiue constraints on attributes. Setting `.Unique = true` on an attribute will cause the database to ensure
+that no two entities have the same value for that attribute. This is enforced at the database level and will cause a transaction
+to fail if the constraint is violated
+* Fix a deadlock issue when nested obervables are constructed inside the callback chain of a `Connection.ObserveDatoms` update
+
 ### 0.9.101 - 28/1/2025
 * Add a option to Connection that allows the connection to be started in read-only mode (not running simple migrations)
 
