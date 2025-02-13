@@ -17,8 +17,7 @@ public sealed class AttributeCache
     private Dictionary<Symbol, AttributeId> _attributeIdsBySymbol = new();
     private BitArray _isCardinalityMany;
     private BitArray _isReference;
-    private BitArray _isIndexed;
-    private BitArray _isUnique;
+    private IndexedFlags[] _indexedFlags;
     private Symbol[] _symbols;
     private ValueTag[] _valueTags;
     private BitArray _isNoHistory;
@@ -31,8 +30,7 @@ public sealed class AttributeCache
         var maxId = AttributeDefinition.HardcodedIds.Values.Max() + 1;
         _isCardinalityMany = new BitArray(maxId);
         _isReference = new BitArray(maxId);
-        _isIndexed = new BitArray(maxId);
-        _isUnique = new BitArray(maxId);
+        _indexedFlags = new IndexedFlags[maxId];
         _isNoHistory = new BitArray(maxId);
         _symbols = new Symbol[maxId];
         _valueTags = new ValueTag[maxId];
@@ -40,8 +38,7 @@ public sealed class AttributeCache
         foreach (var kv in AttributeDefinition.HardcodedIds)
         {
             _attributeIdsBySymbol[kv.Key.Id] = AttributeId.From(kv.Value);
-            _isIndexed[kv.Value] = kv.Key.IsIndexed;
-            _isUnique[kv.Value] = kv.Key.IsUnique;
+            _indexedFlags[kv.Value] = kv.Key.IndexedFlags;
             _symbols[kv.Value] = kv.Key.Id;
             _valueTags[kv.Value] = kv.Key.LowLevelType;
         }
@@ -84,25 +81,21 @@ public sealed class AttributeCache
         _isReference = newIsReference;
 
         var isIndexed = db.Datoms(AttributeDefinition.Indexed);
-        var newIsIndexed = new BitArray(maxIndex);
+        var newIsIndexed = new IndexedFlags[maxIndex];
         foreach (var datom in isIndexed)
         {
+            // Older DBs use a null to mark indexed attributes
+            var flags = datom.Prefix.ValueTag switch
+            {
+                ValueTag.Null => IndexedFlags.Indexed,
+                ValueTag.UInt8 => (IndexedFlags)datom.ValueSpan[0],
+                _ => IndexedFlags.None
+            };
+            
             var id = datom.E.Value;
-            newIsIndexed[(int)id] = true;
+            newIsIndexed[(int)id] = flags;
         }
-        _isIndexed = newIsIndexed;
-        
-        
-        //var isUnique = db.Datoms(AttributeDefinition.Unique);
-        var newIsUnique = new BitArray(maxIndex);
-        /*
-        foreach (var datom in isUnique)
-        {
-            var id = datom.E.Value;
-            newIsUnique[(int)id] = true;
-        }
-        */
-        _isUnique = newIsUnique;
+        _indexedFlags = newIsIndexed;
         
         
         var isNoHistory = db.Datoms(AttributeDefinition.NoHistory);
@@ -150,7 +143,7 @@ public sealed class AttributeCache
     /// </summary>
     public bool IsIndexed(AttributeId attrId)
     {
-        return _isIndexed[attrId.Value];
+        return _indexedFlags[attrId.Value].HasFlag(IndexedFlags.Indexed);
     }
 
     /// <summary>
@@ -215,6 +208,14 @@ public sealed class AttributeCache
     /// </summary>
     public bool IsUnique(AttributeId attrId)
     {
-        return _isUnique[attrId.Value];
+        return _indexedFlags[attrId.Value].HasFlag(IndexedFlags.Unique);
+    }
+
+    /// <summary>
+    /// Get the indexed flags for the given attribute id
+    /// </summary>
+    public IndexedFlags GetIndexedFlags(AttributeId aid)
+    {
+        return _indexedFlags[aid.Value];
     }
 }

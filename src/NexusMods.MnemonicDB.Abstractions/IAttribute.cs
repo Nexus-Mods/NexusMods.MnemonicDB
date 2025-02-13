@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
@@ -45,6 +46,11 @@ public interface IAttribute
     /// be thought of as making sure that .Datoms(Attribute, Value) for this attribute never returns more than one datom.
     /// </summary>
     bool IsUnique { get; }
+    
+    /// <summary>
+    /// The indexed flags for the attribute
+    /// </summary>
+    IndexedFlags IndexedFlags { get; }
 
     /// <summary>
     ///   True if the attribute has no history, false if it does.

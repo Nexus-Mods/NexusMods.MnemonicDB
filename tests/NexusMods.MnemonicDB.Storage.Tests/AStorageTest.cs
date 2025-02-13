@@ -66,8 +66,8 @@ public abstract class AStorageTest : IDisposable
         segmentBuilder.Add(EntityId.From(attributeId.Value), AttributeDefinition.UniqueId, attribute.Id);
         segmentBuilder.Add(EntityId.From(attributeId.Value), AttributeDefinition.ValueType, attribute.LowLevelType);
         segmentBuilder.Add(EntityId.From(attributeId.Value), AttributeDefinition.Cardinality, attribute.Cardinalty);
-        if (attribute.IsIndexed)
-            segmentBuilder.Add(EntityId.From(attributeId.Value), AttributeDefinition.Indexed, Null.Instance);
+        segmentBuilder.Add(EntityId.From(attributeId.Value), AttributeDefinition.Indexed, attribute.IndexedFlags);
+        
         if (attribute.NoHistory)
             segmentBuilder.Add(EntityId.From(attributeId.Value), AttributeDefinition.NoHistory, Null.Instance);
         if (attribute.DeclaredOptional)

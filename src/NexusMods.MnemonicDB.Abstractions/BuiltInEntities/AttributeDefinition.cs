@@ -29,14 +29,8 @@ public partial class AttributeDefinition : IModelDefinition
     /// <summary>
     /// True if the attribute is indexed.
     /// </summary>
-    public static readonly MarkerAttribute Indexed = new(Namespace, nameof(Indexed));
+    public static readonly EnumByteAttribute<IndexedFlags> Indexed = new(Namespace, nameof(Indexed)) { DefaultValue = IndexedFlags.None };
     
-    // Disabled until we figure out how to use TempIDs during attribute insertion
-    /// <summary>
-    /// True if the attribute is unique, that this attr/value pair can only exist on one entity at a time
-    /// </summary>
-    // public static readonly MarkerAttribute Unique = new(Namespace, nameof(Unique));
-
     /// <summary>
     /// This attribute is optional.
     /// </summary>
@@ -64,14 +58,12 @@ public partial class AttributeDefinition : IModelDefinition
     {
         if (id == 0)
             id = HardcodedIds[attribute];
-        var eid = EntityId.From(id);
+        var eid = EntityId.From((ushort)id);
         tx.Add(eid, UniqueId, attribute.Id);
         tx.Add(eid, ValueType, attribute.LowLevelType);
         tx.Add(eid, Cardinality, attribute.Cardinalty);
         if (attribute.IsIndexed)
-            tx.Add(eid, Indexed, Null.Instance);
-        //if (attribute.IsUnique)
-        //    tx.Add(eid, Unique, Null.Instance);
+            tx.Add(eid, Indexed, IndexedFlags.None);
         if (attribute.NoHistory)
             tx.Add(eid, NoHistory, Null.Instance);
         if (attribute.DeclaredOptional)
@@ -79,7 +71,9 @@ public partial class AttributeDefinition : IModelDefinition
     }
 
     /// <summary>
-    /// Hardcoded ids for the initial attributes
+    /// Hardcoded ids for the initial attributes. Negative numbers are assigned the next available id and may differ
+    /// from database to database. These IDs can't be hardcoded because they were added after some databases were created,
+    /// and so we can't be certain that we have a specific ID for them.
     /// </summary>
     public static readonly Dictionary<IAttribute, ushort> HardcodedIds = new()
     {
@@ -91,7 +85,6 @@ public partial class AttributeDefinition : IModelDefinition
         { Cardinality, 6 },
         { Documentation, 7 },
         { Transaction.Timestamp, 8},
-        //{ Unique, 9 }
     };
     
     /// <summary>
@@ -103,7 +96,6 @@ public partial class AttributeDefinition : IModelDefinition
         Insert(tx, ValueType);
         Insert(tx, Documentation);
         Insert(tx, Indexed);
-        //Insert(tx, Unique);
         Insert(tx, Optional);
         Insert(tx, NoHistory);
         Insert(tx, Cardinality);

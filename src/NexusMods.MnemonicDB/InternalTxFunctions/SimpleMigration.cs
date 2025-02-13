@@ -48,20 +48,10 @@ internal class SimpleMigration : AInternalFn
             if (cache.IsIndexed(aid) != attribute.IsIndexed)
             {
                 if (attribute.IsIndexed)
-                    AddIndex(store, aid, batch);
+                    AddIndex(store, aid, batch, attribute.IndexedFlags);
                 else
-                    RemoveIndex(store, aid, batch);
+                    RemoveIndex(store, aid, batch, attribute.IndexedFlags);
                 madeChanges = true;
-            }
-
-            if (cache.IsUnique(aid) != attribute.IsUnique)
-            {
-                /*
-                if (attribute.IsUnique)
-                    builder.Add(EntityId.From(aid.Value), AttributeDefinition.Unique, Null.Instance);
-                else
-                    builder.Add(EntityId.From(aid.Value), AttributeDefinition.Unique, Null.Instance, true);
-                */
             }
             
             if (cache.GetValueTag(aid) != attribute.LowLevelType)
@@ -85,12 +75,7 @@ internal class SimpleMigration : AInternalFn
         builder.Add(id, AttributeDefinition.UniqueId, definition.Id);
         builder.Add(id, AttributeDefinition.ValueType, definition.LowLevelType);
         builder.Add(id, AttributeDefinition.Cardinality, definition.Cardinalty);
-        
-        if (definition.IsIndexed) 
-            builder.Add(id, AttributeDefinition.Indexed, Null.Instance);
-        
-        //if (definition.IsUnique)
-        //    builder.Add(id, AttributeDefinition.Unique, Null.Instance);
+        builder.Add(id, AttributeDefinition.Indexed, definition.IndexedFlags);
         
         if (definition.DeclaredOptional)
             builder.Add(id, AttributeDefinition.Optional, Null.Instance);
@@ -102,7 +87,7 @@ internal class SimpleMigration : AInternalFn
     /// <summary>
     /// Remove add indexed datoms for a specific attribute
     /// </summary>
-    internal static void AddIndex(DatomStore store, AttributeId id, IWriteBatch batch)
+    internal static void AddIndex(DatomStore store, AttributeId id, IWriteBatch batch, IndexedFlags newFlags)
     {
         foreach (var datom in store.CurrentSnapshot.Datoms(SliceDescriptor.Create(id, IndexType.AEVTCurrent)))
         {
@@ -115,7 +100,7 @@ internal class SimpleMigration : AInternalFn
         }
         
         using var builder = new IndexSegmentBuilder(store.AttributeCache);
-        builder.Add(EntityId.From(id.Value), AttributeDefinition.Indexed, Null.Instance);
+        builder.Add(EntityId.From(id.Value), AttributeDefinition.Indexed, newFlags);
         var built = builder.Build();
         
         store.LogDatoms(batch, built);
@@ -124,7 +109,7 @@ internal class SimpleMigration : AInternalFn
     /// <summary>
     /// Remove the indexed datoms for a specific attribute
     /// </summary>
-    internal static void RemoveIndex(DatomStore store, AttributeId id, IWriteBatch batch)
+    internal static void RemoveIndex(DatomStore store, AttributeId id, IWriteBatch batch, IndexedFlags newFlags)
     {
         foreach (var datom in store.CurrentSnapshot.Datoms(SliceDescriptor.Create(id, IndexType.AEVTCurrent)))
         {
@@ -137,7 +122,7 @@ internal class SimpleMigration : AInternalFn
         }
         
         using var builder = new IndexSegmentBuilder(store.AttributeCache);
-        builder.Add(EntityId.From(id.Value), AttributeDefinition.Indexed, Null.Instance, true);
+        builder.Add(EntityId.From(id.Value), AttributeDefinition.Indexed, newFlags);
         var built = builder.Build();
         
         store.LogDatoms(batch, built);

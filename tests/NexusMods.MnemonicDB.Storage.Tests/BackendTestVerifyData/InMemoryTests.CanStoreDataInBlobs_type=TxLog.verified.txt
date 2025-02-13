@@ -1,12 +1,12 @@
 ﻿+ | 0000000000000001 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/UniqueId         | 0100000000000001
 + | 0000000000000001 | (0002) ValueType                | Ascii                                            | 0100000000000001
-+ | 0000000000000001 | (0003) Indexed                  |                                                  | 0100000000000001
++ | 0000000000000001 | (0003) Indexed                  | 0                                                | 0100000000000001
 + | 0000000000000001 | (0006) Cardinality              | 1                                                | 0100000000000001
 + | 0000000000000002 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/ValueType        | 0100000000000001
 + | 0000000000000002 | (0002) ValueType                | UInt8                                            | 0100000000000001
 + | 0000000000000002 | (0006) Cardinality              | 1                                                | 0100000000000001
 + | 0000000000000003 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Indexed          | 0100000000000001
-+ | 0000000000000003 | (0002) ValueType                | Null                                             | 0100000000000001
++ | 0000000000000003 | (0002) ValueType                | UInt8                                            | 0100000000000001
 + | 0000000000000003 | (0006) Cardinality              | 1                                                | 0100000000000001
 + | 0000000000000004 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Optional         | 0100000000000001
 + | 0000000000000004 | (0002) ValueType                | Null                                             | 0100000000000001
@@ -27,45 +27,51 @@
 + | 0100000000000001 | (0008) Timestamp                | DateTime : 0                                     | 0100000000000001
 + | 0000000000000014 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Path         | 0100000000000002
 + | 0000000000000014 | (0002) ValueType                | Utf8Insensitive                                  | 0100000000000002
-+ | 0000000000000014 | (0003) Indexed                  |                                                  | 0100000000000002
++ | 0000000000000014 | (0003) Indexed                  | 1                                                | 0100000000000002
 + | 0000000000000014 | (0006) Cardinality              | 1                                                | 0100000000000002
 + | 0000000000000015 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Hash         | 0100000000000002
 + | 0000000000000015 | (0002) ValueType                | UInt64                                           | 0100000000000002
-+ | 0000000000000015 | (0003) Indexed                  |                                                  | 0100000000000002
++ | 0000000000000015 | (0003) Indexed                  | 1                                                | 0100000000000002
 + | 0000000000000015 | (0006) Cardinality              | 1                                                | 0100000000000002
 + | 0000000000000016 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Size         | 0100000000000002
 + | 0000000000000016 | (0002) ValueType                | UInt64                                           | 0100000000000002
++ | 0000000000000016 | (0003) Indexed                  | 0                                                | 0100000000000002
 + | 0000000000000016 | (0006) Cardinality              | 1                                                | 0100000000000002
 + | 0000000000000017 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Mod          | 0100000000000002
 + | 0000000000000017 | (0002) ValueType                | Reference                                        | 0100000000000002
++ | 0000000000000017 | (0003) Indexed                  | 0                                                | 0100000000000002
 + | 0000000000000017 | (0006) Cardinality              | 1                                                | 0100000000000002
 + | 0000000000000018 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Mod/Name          | 0100000000000002
 + | 0000000000000018 | (0002) ValueType                | Utf8                                             | 0100000000000002
-+ | 0000000000000018 | (0003) Indexed                  |                                                  | 0100000000000002
++ | 0000000000000018 | (0003) Indexed                  | 1                                                | 0100000000000002
 + | 0000000000000018 | (0006) Cardinality              | 1                                                | 0100000000000002
 + | 0000000000000019 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Mod/Loadout       | 0100000000000002
 + | 0000000000000019 | (0002) ValueType                | Reference                                        | 0100000000000002
++ | 0000000000000019 | (0003) Indexed                  | 0                                                | 0100000000000002
 + | 0000000000000019 | (0006) Cardinality              | 1                                                | 0100000000000002
 + | 000000000000001A | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Loadout/Name      | 0100000000000002
 + | 000000000000001A | (0002) ValueType                | Utf8                                             | 0100000000000002
-+ | 000000000000001A | (0003) Indexed                  |                                                  | 0100000000000002
++ | 000000000000001A | (0003) Indexed                  | 1                                                | 0100000000000002
 + | 000000000000001A | (0006) Cardinality              | 1                                                | 0100000000000002
 + | 000000000000001B | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Collection/Name   | 0100000000000002
 + | 000000000000001B | (0002) ValueType                | Utf8                                             | 0100000000000002
++ | 000000000000001B | (0003) Indexed                  | 0                                                | 0100000000000002
 + | 000000000000001B | (0006) Cardinality              | 1                                                | 0100000000000002
 + | 000000000000001C | (0001) UniqueId                 | NexusMods.MnemonicDB.T...del.Collection/Loadout  | 0100000000000002
 + | 000000000000001C | (0002) ValueType                | Reference                                        | 0100000000000002
++ | 000000000000001C | (0003) Indexed                  | 0                                                | 0100000000000002
 + | 000000000000001C | (0006) Cardinality              | 1                                                | 0100000000000002
 + | 000000000000001D | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Collection/Mod    | 0100000000000002
 + | 000000000000001D | (0002) ValueType                | Reference                                        | 0100000000000002
++ | 000000000000001D | (0003) Indexed                  | 0                                                | 0100000000000002
 + | 000000000000001D | (0006) Cardinality              | 2                                                | 0100000000000002
 + | 000000000000001E | (0001) UniqueId                 | NexusMods.MnemonicDB.S...stAttributes/InKeyBlob  | 0100000000000002
 + | 000000000000001E | (0002) ValueType                | Blob                                             | 0100000000000002
-+ | 000000000000001E | (0003) Indexed                  |                                                  | 0100000000000002
++ | 000000000000001E | (0003) Indexed                  | 1                                                | 0100000000000002
 + | 000000000000001E | (0006) Cardinality              | 1                                                | 0100000000000002
 + | 000000000000001F | (0001) UniqueId                 | NexusMods.MnemonicDB.S...Attributes/InValueBlob  | 0100000000000002
 + | 000000000000001F | (0002) ValueType                | HashedBlob                                       | 0100000000000002
-+ | 000000000000001F | (0003) Indexed                  |                                                  | 0100000000000002
++ | 000000000000001F | (0003) Indexed                  | 1                                                | 0100000000000002
 + | 000000000000001F | (0006) Cardinality              | 1                                                | 0100000000000002
 + | 0100000000000002 | (0008) Timestamp                | DateTime : 1                                     | 0100000000000002
 + | 0100000000000003 | (0008) Timestamp                | DateTime : 2                                     | 0100000000000003

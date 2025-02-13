@@ -1377,7 +1377,6 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
     }
 
-    /* Disabled until we can figure out how to insert attributeId via tempIDs
     [Fact]
     public async Task UniqueAttributesThrowExceptions()
     {
@@ -1411,5 +1410,4 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx4.Retract(insertedId, ArchiveFile.Hash, Hash.From(0xDEADBEEF));
         await tx4.Commit();
     }
-    */
 }
