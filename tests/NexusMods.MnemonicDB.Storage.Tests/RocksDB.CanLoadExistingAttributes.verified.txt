@@ -6,7 +6,6 @@
 + | 0000000000000006 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Cardinality      | 0100000000000001
 + | 0000000000000007 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Documentation    | 0100000000000001
 + | 0000000000000008 | (0001) UniqueId                 | NexusMods.MnemonicDB.Transaction/Timestamp       | 0100000000000001
-+ | 0000000000000009 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Unique           | 0100000000000001
 + | 0000000000000014 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Path         | 0100000000000002
 + | 0000000000000015 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Hash         | 0100000000000002
 + | 0000000000000016 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Size         | 0100000000000002

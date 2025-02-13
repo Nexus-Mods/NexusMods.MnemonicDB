@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -60,6 +61,22 @@ public abstract class Attribute<TValueType, TLowLevelType, TSerializer> :
     
     /// <inheritdoc />
     public bool IsUnique { get; init; }
+    
+    /// <summary>
+    /// Returns the indexed flags for this attribute
+    /// </summary>
+    public IndexedFlags IndexedFlags
+    {
+        get
+        {
+            if (IsUnique)
+                return IndexedFlags.Unique;
+            if (IsIndexed)
+                return IndexedFlags.Indexed;
+            return IndexedFlags.None;
+        }
+        
+    }
 
     /// <inheritdoc />
     public bool NoHistory { get; init; }
@@ -106,7 +123,7 @@ public abstract class Attribute<TValueType, TLowLevelType, TSerializer> :
     /// <summary>
     /// Reads the high level value from the given span
     /// </summary>
-    public TValueType ReadValue(ReadOnlySpan<byte> span, ValueTag tag, AttributeResolver resolver)
+    public virtual TValueType ReadValue(ReadOnlySpan<byte> span, ValueTag tag, AttributeResolver resolver)
     {
         AssertTag(tag);
         return FromLowLevel(TSerializer.Read(span), resolver);

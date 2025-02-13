@@ -20,7 +20,7 @@ public interface ITransaction : IDisposable
     ///     Gets the temporary id for the transaction
     /// </summary>
     public TxId ThisTxId { get; }
-
+    
     /// <summary>
     ///     Gets a temporary id for a new entity in the given partition
     /// </summary>

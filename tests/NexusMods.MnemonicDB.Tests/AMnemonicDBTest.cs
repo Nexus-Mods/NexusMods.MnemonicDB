@@ -25,11 +25,14 @@ public class AMnemonicDBTest : IDisposable
     protected IConnection Connection;
     protected ILogger Logger;
     private readonly IAnalyzer[] _analyzers;
+    
+    protected TemporaryFileManager TemporaryFileManager;
 
 
     protected AMnemonicDBTest(IServiceProvider provider)
     {
         Provider = provider;
+        TemporaryFileManager = provider.GetRequiredService<TemporaryFileManager>();
         _attributes = provider.GetRequiredService<IEnumerable<IAttribute>>().ToArray();
 
         Config = new DatomStoreSettings
@@ -51,6 +54,7 @@ public class AMnemonicDBTest : IDisposable
 
         Logger = provider.GetRequiredService<ILogger<AMnemonicDBTest>>();
     }
+
 
     protected async Task LoadDatamodel(RelativePath name)
     {
