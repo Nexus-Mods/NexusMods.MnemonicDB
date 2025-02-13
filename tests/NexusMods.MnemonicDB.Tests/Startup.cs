@@ -12,6 +12,7 @@ public class Startup
     public void ConfigureServices(IServiceCollection services)
     {
         services.AddTestModel()
+            .AddSingleton<TemporaryFileManager>()
             .AddFileSystem()
             .AddLogging(builder => builder.AddXunitOutput().SetMinimumLevel(LogLevel.Debug))
             .AddMnemonicDBStorage();

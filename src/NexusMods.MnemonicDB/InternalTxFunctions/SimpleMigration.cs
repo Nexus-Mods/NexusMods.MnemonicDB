@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
@@ -15,6 +16,7 @@ internal class SimpleMigration : AInternalFn
     private readonly IAttribute[] _declaredAttributes;
     private ulong _tempId = PartitionId.Temp.MakeEntityId(1).Value;
 
+    private static string[] InternalNamespaces = ["NexusMods.MnemonicDB.DatomStore", "NexusMods.MnemonicDB.Transactions"]; 
     public SimpleMigration(IAttribute[] attributes)
     {
         _declaredAttributes = attributes;
@@ -38,6 +40,10 @@ internal class SimpleMigration : AInternalFn
         var madeChanges = false;
         foreach (var attribute in _declaredAttributes)
         {
+            // Internal transactions are migrated elsewhere
+            if (InternalNamespaces.Contains(attribute.Id.Namespace))
+                continue;
+            
             if (!cache.TryGetAttributeId(attribute.Id, out var aid))
             {
                 madeChanges = true;

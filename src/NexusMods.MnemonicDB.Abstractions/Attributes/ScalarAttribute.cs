@@ -66,7 +66,10 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     public TValue Get<T>(T entity, IndexSegment segment)
         where T : IHasEntityIdAndDb
     {
-        if (TryGetValue(entity, segment, out var value)) return value;
+        if (TryGetValue(entity, segment, out var value)) 
+            return value;
+        if (DefaultValue.HasValue) 
+            return DefaultValue.Value;
         return ThrowKeyNotfoundException(entity.Id);
     }
 

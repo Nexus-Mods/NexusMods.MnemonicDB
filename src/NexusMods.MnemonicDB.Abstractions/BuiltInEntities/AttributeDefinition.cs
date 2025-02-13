@@ -29,7 +29,7 @@ public partial class AttributeDefinition : IModelDefinition
     /// <summary>
     /// True if the attribute is indexed.
     /// </summary>
-    public static readonly EnumByteAttribute<IndexedFlags> Indexed = new(Namespace, nameof(Indexed)) { DefaultValue = IndexedFlags.None };
+    public static readonly IndexedFlagsAttribute Indexed = new(Namespace, nameof(Indexed));
     
     /// <summary>
     /// This attribute is optional.

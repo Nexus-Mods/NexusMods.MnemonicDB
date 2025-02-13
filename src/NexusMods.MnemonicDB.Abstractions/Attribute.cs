@@ -123,7 +123,7 @@ public abstract class Attribute<TValueType, TLowLevelType, TSerializer> :
     /// <summary>
     /// Reads the high level value from the given span
     /// </summary>
-    public TValueType ReadValue(ReadOnlySpan<byte> span, ValueTag tag, AttributeResolver resolver)
+    public virtual TValueType ReadValue(ReadOnlySpan<byte> span, ValueTag tag, AttributeResolver resolver)
     {
         AssertTag(tag);
         return FromLowLevel(TSerializer.Read(span), resolver);

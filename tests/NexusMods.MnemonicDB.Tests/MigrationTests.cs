@@ -1,5 +1,14 @@
+using System.IO.Compression;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using NexusMods.Hashing.xxHash3;
+using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
+using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.Query;
+using NexusMods.MnemonicDB.Storage;
+using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.MnemonicDB.TestModel.Attributes;
 using NexusMods.Paths;
@@ -90,5 +99,38 @@ public class MigrationTests : AMnemonicDBTest
         
         Action act = () => Connection.Db.Datoms(Mod.Source, new Uri("http://mod0.com")).ToArray();
         act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Theory]
+    [InlineData("SDV.2_5_2025.rocksdb.zip")]
+    public async Task CanOpenOlderDBs(string fileName)
+    {
+        var path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory) / "Resources/Databases" / fileName;
+
+        await using var extractedFolder = TemporaryFileManager.CreateFolder();
+
+        ZipFile.ExtractToDirectory(path.ToString(), extractedFolder.Path.ToString());
+
+        var settings = new DatomStoreSettings()
+        {
+            Path = extractedFolder.Path / "MnemonicDB.rocksdb",
+        };
+        using var backend = new Backend();
+        using var store = new DatomStore(Provider.GetRequiredService<ILogger<DatomStore>>(), settings, backend);
+        var connection = new Connection(Provider.GetRequiredService<ILogger<Connection>>(), store, Provider, [], false);
+
+        var db = connection.Db;
+        var attrs = db.Datoms(AttributeDefinition.UniqueId);
+        var datoms = new List<Datom>();
+        foreach (var attr in attrs)
+            datoms.AddRange(db.Datoms(attr.E));
+
+        var cache = connection.AttributeCache;
+        foreach (var attr in AttributeDefinition.All(db))
+        {
+            attr.Indexed.Should().Be(cache.GetIndexedFlags(cache.GetAttributeId(attr.UniqueId)), "The indexed flags are backwards compatible");
+        }
+        
+        return;
     }
 }
