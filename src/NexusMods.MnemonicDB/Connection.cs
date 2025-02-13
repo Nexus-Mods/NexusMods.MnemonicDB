@@ -25,7 +25,9 @@ namespace NexusMods.MnemonicDB;
 /// </summary>
 public class Connection : IConnection
 {
-    private readonly ScopedAsyncLock _observerLock = new();
+    private readonly Lock _dbLock = new();
+    private readonly Lock _observersLock = new();
+
     private readonly DatomStore _store;
     private readonly ILogger<Connection> _logger;
 
@@ -85,11 +87,14 @@ public class Connection : IConnection
                     _logger.LogError(ex, "Failed to analyze with {Analyzer}", analyzer.GetType().Name);
                 }
             }
-            
-            _dbStream.OnNext(db);
+
+            lock (_dbLock)
+            {
+                _dbStream.OnNext(db);
+            }
+
             ProcessObservers(db);
             prev = idb;
-            
 
             return idb;
         });
@@ -97,7 +102,6 @@ public class Connection : IConnection
 
     private void ProcessObservers(Db db)
     {
-        using var dLock = _observerLock.Lock();
         ProcessDisposedObservers();
         var recentlyAdded = db.RecentlyAdded;
         var cache = db.AttributeCache;
@@ -157,15 +161,19 @@ public class Connection : IConnection
             foreach (var index in IndexTypes)
             {
                 var reindex = datom.WithIndex(index);
-                foreach (var overlap in _datomObservers.Query(reindex))
+
+                lock (_observersLock)
                 {
-                    ref var changeSet = ref CollectionsMarshal.GetValueRefOrAddDefault(_changeSets, overlap, out _);
-                    changeSet ??= [];
-                    changeSet.AddRange(_localChanges);
+                    foreach (var overlap in _datomObservers.Query(reindex))
+                    {
+                        ref var changeSet = ref CollectionsMarshal.GetValueRefOrAddDefault(_changeSets, overlap, out _);
+                        changeSet ??= [];
+                        changeSet.AddRange(_localChanges);
+                    }
                 }
             }
         }
-            
+
         // Release all the sends
         foreach (var (subject, changeSet) in _changeSets)
         {
@@ -269,36 +277,42 @@ public class Connection : IConnection
 
     public IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(SliceDescriptor descriptor)
     {
-        return Observable.Create<IChangeSet<Datom, DatomKey>>(async (observer, token) =>
+        return Observable.Create<IChangeSet<Datom, DatomKey>>(observer =>
         {
-            using var _ = await _observerLock.LockAsync();
-            ProcessDisposedObservers();
-            var fromDatom = descriptor.From.WithIndex(descriptor.Index);
-            var toDatom = descriptor.To.WithIndex(descriptor.Index);
-            _datomObservers.Add(fromDatom, toDatom, observer);
+            lock (_dbLock)
+            {
+                var db = Db;
 
-            var db = Db;
-            var datoms = db.Datoms(descriptor);
-            var cache = db.AttributeCache;
-            var changes = new ChangeSet<Datom, DatomKey>();
-            
-            foreach (var datom in datoms)
-            {
-                var isMany = cache.IsCardinalityMany(datom.A);
-                changes.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, datom.A, isMany), datom));
+                ProcessDisposedObservers();
+                var fromDatom = descriptor.From.WithIndex(descriptor.Index);
+                var toDatom = descriptor.To.WithIndex(descriptor.Index);
+
+                var datoms = db.Datoms(descriptor);
+                var cache = db.AttributeCache;
+                var changes = new ChangeSet<Datom, DatomKey>();
+
+                foreach (var datom in datoms)
+                {
+                    var isMany = cache.IsCardinalityMany(datom.A);
+                    changes.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, datom.A, isMany), datom));
+                }
+
+                if (changes.Count == 0)
+                    observer.OnNext(ChangeSet<Datom, DatomKey>.Empty);
+                else
+                    observer.OnNext(changes);
+
+                lock (_observersLock)
+                {
+                    _datomObservers.Add(fromDatom, toDatom, observer);
+                }
+
+                return Disposable.Create((_observersPendingDisposal, observer), static state =>
+                {
+                    var (observersPendingDisposal, observer) = state;
+                    observersPendingDisposal.Enqueue(observer);
+                });
             }
-            
-            if (changes.Count == 0)
-                observer.OnNext(ChangeSet<Datom, DatomKey>.Empty);
-            else 
-                observer.OnNext(changes);
-            
-            
-            return Disposable.Create((_observersPendingDisposal, observer), static state =>
-            {
-                var (observersPendingDisposal, observer) = state;
-                observersPendingDisposal.Enqueue(observer);
-            });
         });
     }
 
@@ -307,9 +321,14 @@ public class Connection : IConnection
         // Quick exit so we don't allocate an enumerator
         if (_observersPendingDisposal.IsEmpty)
             return;
-        
-        foreach (var itm in _observersPendingDisposal)
-            _datomObservers.Remove(itm);
+
+        lock(_observersLock)
+        {
+            foreach (var itm in _observersPendingDisposal)
+            {
+                _datomObservers.Remove(itm);
+            }
+        }
     }
 
 
