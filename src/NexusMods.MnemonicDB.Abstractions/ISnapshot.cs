@@ -26,5 +26,4 @@ public interface ISnapshot
     /// Get the data specified by the given descriptor chunked into segments of datoms of the given size.
     /// </summary>
     IEnumerable<IndexSegment> DatomsChunked(SliceDescriptor descriptor, int chunkSize);
-
 }

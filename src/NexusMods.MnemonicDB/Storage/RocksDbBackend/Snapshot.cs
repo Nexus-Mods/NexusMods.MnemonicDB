@@ -2,16 +2,18 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Query;
+using NexusMods.MnemonicDB.Abstractions.UnsafeIterators;
 using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-internal class Snapshot : ISnapshot
+internal class Snapshot : ISnapshot, IUnsafeDatomIterable<Snapshot.UnsafeDatomIterator>
 {
     private readonly RocksDbSharp.Snapshot _snapshot;
     private readonly Backend _backend;
@@ -123,69 +125,48 @@ internal class Snapshot : ISnapshot
         if (builder.Count > 0) 
             yield return builder.Build();
     }
-
-
-    public RawDatomEnumerable ForwardDatoms(RawDatom from, RawDatom to)
+    
+    [MustDisposeResource]
+    public unsafe UnsafeDatomIterator IterateFrom<T>(T from) where T : IUnsafeDatom
     {
-        return new RawDatomEnumerable(from, to);
+        var iterator = _backend.Db!.NewIterator(null, _readOptions);
+        iterator.Seek(from.Key, (ulong)from.KeySize);
+        return new UnsafeDatomIterator(iterator);
     }
-
-    public ref struct RawDatomEnumerable(Snapshot snapshot, RawDatom from, RawDatom to)
+    
+    public ref struct UnsafeDatomIterator : IUnsafeIterator
     {
-        public RawDatomEnumerator GetEnumerator()
+        private readonly Iterator _iterator;
+        private bool _isValid;
+        private UnsafeDatom _current;
+
+        public UnsafeDatomIterator(RocksDbSharp.Iterator iterator)
         {
-            return new RawDatomEnumerator(snapshot._snapshot, from, to);
+            _iterator = iterator;
         }
-    }
-
-    public ref struct RawDatomEnumerator
-    {
-        private readonly RawDatom _from;
-        private readonly RawDatom _to;
-        private readonly Snapshot _snapshot;
-        private Iterator? _iterator;
-        
-        private RawDatom _current;
-
-        public RawDatomEnumerator(Snapshot snapshot, RawDatom from, RawDatom to)
+        public unsafe void Next()
         {
-            _snapshot = snapshot;
-            _from = from;
-            _to = to;
-        }
-        public bool MoveNext()
-        {
-            if (_iterator == null)
-                return SeekStart();
-
             _iterator.Next();
-            if (!_iterator.Valid())
-                return false;
+            _isValid = _iterator.Valid();
 
-            ReadPointers();
-            return Current.CompareTo(_to) <= 0;
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-        private unsafe void ReadPointers()
-        {
-            _current._key = (byte*)Native.Instance.rocksdb_iter_key(_iterator!.Handle, out var keyLength);
+            if (!_isValid) 
+                return;
+            
+            _current._key = (byte*)Native.Instance.rocksdb_iter_key(_iterator.Handle, out var keyLength);
             _current._keySize = (int)keyLength;
-            Debug.Assert(keyLength >= KeyPrefix.Size, "keyLength >= KeyPrefix.Size");
         }
+        
+        public bool IsValid => _isValid;
+        
+        public UnsafeDatom Current => _current;
+        
+        public ReadOnlySpan<byte> CurrentExtraValue => _iterator!.GetValueSpan();
 
-        private unsafe bool SeekStart()
+        public void Dispose()
         {
-            _iterator = _snapshot._backend.Db!.NewIterator(null, _snapshot._readOptions);
-            Native.Instance.rocksdb_iter_seek(_iterator.Handle, (IntPtr)_from._key, (UIntPtr)_from._keySize);
-            ReadPointers();
-            return Current.CompareTo(_to) >= 0;
+            _iterator.Dispose();
         }
-
-        public RawDatom Current => _current;
-        
-        public ReadOnlySpan<byte> CurrentValue => _iterator!.GetValueSpan();
-        
     }
+
 }
 

@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.UnsafeIterators;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
@@ -137,5 +139,25 @@ public readonly struct IndexSegmentBuilder : IDisposable
     public void Dispose()
     {
         _data.Dispose();
+    }
+
+    /// <summary>
+    /// Adds the current state of the iterator to the segment
+    /// </summary>
+    public void Add<TIterator>(TIterator iterator) where TIterator : IUnsafeIterator, allows ref struct
+    {
+        var offsetSize = iterator.Current._keySize;
+        var span = _data.GetSpan(offsetSize);
+        iterator.GetKeySpan().CopyTo(span);
+        _data.Advance(offsetSize);
+        if (iterator.ValueTag() == ValueTag.HashedBlob)
+        {
+            var extraSpan = iterator.CurrentExtraValue;
+            offsetSize += extraSpan.Length;
+            span = _data.GetSpan(extraSpan.Length);
+            extraSpan.CopyTo(span);
+            _data.Advance(extraSpan.Length);
+        }
+        _offsets.Add(offsetSize);
     }
 }

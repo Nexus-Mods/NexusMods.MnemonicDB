@@ -10,6 +10,7 @@
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"/>
         <PackageReference Include="NexusMods.Paths"/>
         <PackageReference Include="R3"/>
+        <PackageReference Include="RocksDB" />
         <PackageReference Include="System.IO.Hashing"/>
         <PackageReference Include="TransparentValueObjects"/>
         <PackageReference Update="JetBrains.Annotations"/>
