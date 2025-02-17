@@ -170,6 +170,18 @@ public readonly struct SliceDescriptor
     }
 
     /// <summary>
+    /// Creates a slice descriptor for the given datoms
+    /// </summary>
+    public static SliceDescriptor Create(Datom from, Datom to)
+    {
+        return new SliceDescriptor()
+        {
+            From = from,
+            To = to
+        };
+    }
+
+    /// <summary>
     /// Creates a slice descriptor for the given attribute from the current AEVT index
     /// reverse lookup.
     /// </summary>
