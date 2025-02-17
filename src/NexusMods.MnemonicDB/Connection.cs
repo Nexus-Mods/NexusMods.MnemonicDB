@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -13,9 +14,11 @@ using Jamarino.IntervalTree;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.InternalTxFunctions;
 using NexusMods.MnemonicDB.Storage;
+using Disposable = R3.Disposable;
 using Observable = System.Reactive.Linq.Observable;
 
 namespace NexusMods.MnemonicDB;
@@ -33,12 +36,13 @@ public class Connection : IConnection
     private IDisposable? _dbStreamDisposable;
     private readonly IAnalyzer[] _analyzers;
     
+    private List<Change<Datom, DatomKey>> _changes = new();
+    
     // Temporary storage for processing observers, we store these in the class so we don't have to 
     // allocate them on each update, and the code that uses these is always run on the same thread.
-    private readonly LightIntervalTree<Datom, IObserver<IChangeSet<Datom, DatomKey>>> _datomObservers = new();
-    private readonly Dictionary<IObserver<IChangeSet<Datom, DatomKey>>, ChangeSet<Datom, DatomKey>> _changeSets = new();
-    private readonly List<Change<Datom, DatomKey>> _localChanges = [];
-    private readonly ConcurrentQueue<IObserver<IChangeSet<Datom, DatomKey>>> _observersPendingDisposal = [];
+    private readonly LightIntervalTree<Datom, IObserver<(IChangeSet<Datom, DatomKey> Changes, IDb Db)>> _datomObservers = new();
+    private readonly Dictionary<IObserver<(IChangeSet<Datom, DatomKey> Changes, IDb Db)>, ChangeSet<Datom, DatomKey>> _changeSets = new();
+    private readonly ConcurrentQueue<IObserver<(IChangeSet<Datom, DatomKey> Changes, IDb Db)>> _observersPendingDisposal = [];
     
     private static readonly IndexType[] IndexTypes =
     [
@@ -102,13 +106,51 @@ public class Connection : IConnection
         var recentlyAdded = db.RecentlyAdded;
         var cache = db.AttributeCache;
         _changeSets.Clear();
+        _changes.Clear();
             
+        DatomsToChanges(recentlyAdded, cache, _changes);
+
+        // We now have collected all the changes, so we need to group them into changesets and send them to the listeners.
+        // We start by locking the observers, so we can safely process them. 
+        _changeSets.Clear();
+        lock (_datomObservers)
+        {
+            foreach (var change in _changes)
+            {
+                // It sucks that we have to do this for each index type, but we don't have a way to do a fuzzy match on the
+                // index part of the datom key, so we have to do it this way.
+                foreach (var index in IndexTypes)
+                {
+                    var reindex = change.Current.WithIndex(index);
+                    var matches = _datomObservers.Query(reindex);
+                    foreach (var overlap in matches)
+                    {
+                        ref var changeSet = ref CollectionsMarshal.GetValueRefOrAddDefault(_changeSets, overlap, out _);
+                        changeSet ??= [];
+                        changeSet.Add(change);
+                    }
+                }
+            }
+        }
+            
+        // Now that the changesets are built, we can send them to the observers. There is a race condition here, because
+        // between the time that we built the changesets and the time we send them, an observer could have been registered. 
+        // But we want to release sends outside the lock, so that any subscribers that try to connect inside a send don't
+        // deadlock.
+        foreach (var (subject, changeSet) in _changeSets)
+        {
+            subject.OnNext((changeSet, Db));
+        }
+    }
+
+    /// <summary>
+    /// Given an index segment of recently added datoms, we need to convert them into changes that observers may be interested in.
+    /// </summary>
+    private static void DatomsToChanges(IndexSegment recentlyAdded, AttributeCache cache, List<Change<Datom, DatomKey>> changes)
+    {
         // For each recently added datom, we need to find listeners to it
         for (var i = 0; i < recentlyAdded.Count; i++)
         {
-            // We're going to add changes to this list, and then send them all at the end
-            _localChanges.Clear();
-                
             var datom = recentlyAdded[i];
                 
             var isMany = cache.IsCardinalityMany(datom.A);
@@ -119,57 +161,34 @@ public class Connection : IConnection
                 // If the attribute is cardinality many, we can just remove the datom
                 if (isMany)
                 {
-                    _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, CreateKey(datom, attr, true), datom));
-                    goto PROCESS_CHANGES;
+                    changes.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, CreateKey(datom, attr, true), datom));
+                    continue;
                 }
                     
                 // If at the end of the segment
                 if (i + 1 >= recentlyAdded.Count)
                 {
-                    _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, CreateKey(datom, attr), datom));
-                    goto PROCESS_CHANGES;
+                    changes.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, CreateKey(datom, attr), datom));
+                    continue;
                 }
 
                 // If the next datom is not the same E or A, we can remove the datom
                 var nextDatom = recentlyAdded[i + 1];
                 if (nextDatom.E != datom.E || nextDatom.A != datom.A)
                 {
-                    _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, CreateKey(datom, attr), datom));
-                    goto PROCESS_CHANGES;
+                    changes.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, CreateKey(datom, attr), datom));
+                    continue;
                 }
 
                 // Otherwise we skip the add, and issue an update, and skip the add because we've already processed it
-                _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Update, CreateKey(datom, attr), nextDatom, datom));
+                changes.Add(new Change<Datom, DatomKey>(ChangeReason.Update, CreateKey(datom, attr), nextDatom, datom));
                 i++;
+                continue;
             }
             else
             {
-                _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, attr, isMany), datom));
+                changes.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, attr, isMany), datom));
             }
-
-            // Yes, I know this is a goto, but we need a way to run some code at the end of each loop after we early exit
-            // from the if-tree above.
-            PROCESS_CHANGES:
-                
-            // Now that we've found all the changes, we need to find all the observers that are interested in this datom
-                
-            // We could likely be cleaner about how we do this, but this will work for now
-            foreach (var index in IndexTypes)
-            {
-                var reindex = datom.WithIndex(index);
-                foreach (var overlap in _datomObservers.Query(reindex))
-                {
-                    ref var changeSet = ref CollectionsMarshal.GetValueRefOrAddDefault(_changeSets, overlap, out _);
-                    changeSet ??= [];
-                    changeSet.AddRange(_localChanges);
-                }
-            }
-        }
-            
-        // Release all the sends
-        foreach (var (subject, changeSet) in _changeSets)
-        {
-            subject.OnNext(changeSet);
         }
     }
 
@@ -269,37 +288,98 @@ public class Connection : IConnection
 
     public IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(SliceDescriptor descriptor)
     {
-        return Observable.Create<IChangeSet<Datom, DatomKey>>(async (observer, token) =>
+        return Observable.Create<IChangeSet<Datom, DatomKey>>(observer =>
         {
-            using var _ = await _observerLock.LockAsync();
-            ProcessDisposedObservers();
+            var lastDb = new Box<TxId>(TxId.MinValue);
+            var subject = new Subject<(IChangeSet<Datom, DatomKey> Changes, IDb Db)>();
             var fromDatom = descriptor.From.WithIndex(descriptor.Index);
             var toDatom = descriptor.To.WithIndex(descriptor.Index);
-            _datomObservers.Add(fromDatom, toDatom, observer);
-
-            var db = Db;
-            var datoms = db.Datoms(descriptor);
-            var cache = db.AttributeCache;
-            var changes = new ChangeSet<Datom, DatomKey>();
-            
-            foreach (var datom in datoms)
+            lock (_datomObservers)
             {
-                var isMany = cache.IsCardinalityMany(datom.A);
-                changes.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, datom.A, isMany), datom));
+                ProcessDisposedObservers();
+                _datomObservers.Add(fromDatom, toDatom, subject);
             }
-            
-            if (changes.Count == 0)
-                observer.OnNext(ChangeSet<Datom, DatomKey>.Empty);
-            else 
-                observer.OnNext(changes);
-            
-            
-            return Disposable.Create((_observersPendingDisposal, observer), static state =>
+
+            var disposable = subject.Subscribe(changeSet =>
             {
-                var (observersPendingDisposal, observer) = state;
-                observersPendingDisposal.Enqueue(observer);
+                lock (lastDb)
+                {
+                    IChangeSet<Datom, DatomKey> changes;
+                    
+                    // First time we've seen a change, so send all the datoms
+                    if (lastDb.Value == TxId.MinValue)
+                    {
+                        changes = InitializeFrom(changeSet.Db, fromDatom, toDatom);
+                    }
+                    // Normal case, where the changeset we're given is valid
+                    else if (changeSet.Db.BasisTxId.Value == lastDb.Value.Value + 1)
+                        changes = changeSet.Changes;
+                    // Somehow we got an older changeset, so we'll drop it
+                    else if (changeSet.Db.BasisTxId <= lastDb.Value)
+                        return;
+                    // We somehow fell behind by one or more timestamps, so re-diff all the ones we missed, then send the most recent
+                    // changeset
+                    else
+                    {
+                        for (var txId = lastDb.Value.Value + 1; txId < changeSet.Db.BasisTxId.Value - 1; txId++)
+                        {
+                            var db = AsOf(TxId.From(txId));
+                            observer.OnNext(ProcessDiff(db, fromDatom, toDatom));
+                        }
+                        changes = changeSet.Changes;
+                    }
+
+                    lastDb.Value = changeSet.Db.BasisTxId;
+                    
+                    if (changes.Count > 0)
+                    {
+                        observer.OnNext(changes);
+                    }
+                }
+            });
+
+            // Prime the subject, this could possibly race with the subscription, but that's fine because we have the 
+            // ability to remove duplicates, and 
+            subject.OnNext((ChangeSet<Datom, DatomKey>.Empty, Db));
+
+            return Disposable.Create((disposable, subject, this), static state =>
+            {
+                state.disposable.Dispose();
+                state.Item3._observersPendingDisposal.Enqueue(state.subject);
             });
         });
+        
+        
+        IChangeSet<Datom, DatomKey> ProcessDiff(IDb db, Datom fromDatom, Datom toDatom)
+        {
+            var descriptor = SliceDescriptor.Create(fromDatom, toDatom);
+            var changes = new List<Change<Datom, DatomKey>>();
+            DatomsToChanges(db.RecentlyAdded, db.AttributeCache, changes);
+            var changeSet = new ChangeSet<Datom, DatomKey>();
+            foreach (var change in changes)
+            {
+                if (descriptor.Includes(change.Current))
+                {
+                    changeSet.Add(change);
+                }
+            }
+            return changeSet;
+        }            
+        
+        // We need to send all datoms in the db that match the given range
+        static IChangeSet<Datom, DatomKey> InitializeFrom(IDb db, Datom fromDatom, Datom toDatom)
+        {
+            var changeSet = new ChangeSet<Datom, DatomKey>();
+            var cache = db.AttributeCache;
+            
+            foreach (var datom in db.Datoms(SliceDescriptor.Create(fromDatom, toDatom)))
+            {
+                var isCardinalityMany = cache.IsCardinalityMany(datom.A);
+                changeSet.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, datom.A, isCardinalityMany), datom));
+            }
+            return changeSet;
+        }
+        
     }
 
     private void ProcessDisposedObservers()
