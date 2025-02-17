@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.106 - 17/2/2025
+* Switch to a custom build of the interval tree that supports `O(n)` removals when bulk removing. Previous method was `O(m * n)`.
+
 ### 0.9.105 - 17/2/2025
 * Reworks the internals of datom observers so that they are mostly lock-free. This should result in a significant performance
 and yet still not deadlock on nested observables

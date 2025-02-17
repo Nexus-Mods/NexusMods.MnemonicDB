@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
@@ -28,7 +27,6 @@ namespace NexusMods.MnemonicDB;
 /// </summary>
 public class Connection : IConnection
 {
-    private readonly ScopedAsyncLock _observerLock = new();
     private readonly DatomStore _store;
     private readonly ILogger<Connection> _logger;
 
@@ -101,8 +99,6 @@ public class Connection : IConnection
 
     private void ProcessObservers(Db db)
     {
-        using var dLock = _observerLock.Lock();
-        ProcessDisposedObservers();
         var recentlyAdded = db.RecentlyAdded;
         var cache = db.AttributeCache;
         _changeSets.Clear();
@@ -115,6 +111,7 @@ public class Connection : IConnection
         _changeSets.Clear();
         lock (_datomObservers)
         {
+            ProcessDisposedObservers();
             foreach (var change in _changes)
             {
                 // It sucks that we have to do this for each index type, but we don't have a way to do a fuzzy match on the
@@ -388,8 +385,14 @@ public class Connection : IConnection
         if (_observersPendingDisposal.IsEmpty)
             return;
         
+        var toDispose = new HashSet<IObserver<(IChangeSet<Datom, DatomKey> Changes, IDb Db)>>();
+        
+        // Dequeue all the observers that need to be disposed
         foreach (var itm in _observersPendingDisposal)
-            _datomObservers.Remove(itm);
+            toDispose.Add(itm);
+        
+        // Dispose all the observers
+        _datomObservers.RemoveWhere(static (observer, set) => set.Contains(observer), toDispose);
     }
 
 
