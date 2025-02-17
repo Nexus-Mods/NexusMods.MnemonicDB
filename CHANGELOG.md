@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.9.104 - 17/2/2025
+* Fix a bug with the below-mentioned Unique attribute feature when used with an existing database. The new constraint is now
+backwards compatible.
+
 ### 0.9.103 - 12/2/2025
 * Placeholder release to fix issues in the build pipeline
 
