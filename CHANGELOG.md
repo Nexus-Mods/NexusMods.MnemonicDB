@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.9.105 - 17/2/2025
+* Reworks the internals of datom observers so that they are mostly lock-free. This should result in a significant performance
+and yet still not deadlock on nested observables
+
 ### 0.9.104 - 17/2/2025
 * Fix a bug with the below-mentioned Unique attribute feature when used with an existing database. The new constraint is now
 backwards compatible.
