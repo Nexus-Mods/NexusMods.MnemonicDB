@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -17,6 +16,8 @@ using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.InternalTxFunctions;
 using NexusMods.MnemonicDB.Storage;
+using R3;
+using Observable = System.Reactive.Linq.Observable;
 
 namespace NexusMods.MnemonicDB;
 
@@ -32,12 +33,10 @@ public class Connection : IConnection
     private IDisposable? _dbStreamDisposable;
     private readonly IAnalyzer[] _analyzers;
     
-    private List<Change<Datom, DatomKey>> _changes = new();
-    
     // Temporary storage for processing observers, we store these in the class so we don't have to 
     // allocate them on each update, and the code that uses these is always run on the same thread.
-    private readonly LightIntervalTree<Datom, Subject<IChangeSet<Datom, DatomKey>>> _datomObservers = new();
-    private readonly Dictionary<Subject<IChangeSet<Datom, DatomKey>>, ChangeSet<Datom, DatomKey>> _changeSets = new();
+    private readonly LightIntervalTree<Datom, IObserver<IChangeSet<Datom, DatomKey>>> _datomObservers = new();
+    private readonly Dictionary<IObserver<IChangeSet<Datom, DatomKey>>, ChangeSet<Datom, DatomKey>> _changeSets = new();
     private readonly List<Change<Datom, DatomKey>> _localChanges = [];
     private readonly ConcurrentQueue<IObserver<IChangeSet<Datom, DatomKey>>> _pendingDisposalObservables = new();
     
@@ -167,12 +166,12 @@ public class Connection : IConnection
                     }
                 }
             }
-            
-            // Release all the sends
-            foreach (var (subject, changeSet) in _changeSets)
-            {
-                subject.OnNext(changeSet);
-            }
+        }
+        
+        // Release all the sends
+        foreach (var (subject, changeSet) in _changeSets)
+        {
+            subject.OnNext(changeSet);
         }
     }
 
@@ -322,31 +321,39 @@ public class Connection : IConnection
 
     public IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(SliceDescriptor descriptor)
     {
-        var subject = new Subject<IChangeSet<Datom, DatomKey>>();
-
-        lock (_datomObservers)
+        return Observable.Create<IChangeSet<Datom, DatomKey>>(observer =>
         {
-            ProcessDisposedObservers();
-            var fromDatom = descriptor.From.WithIndex(descriptor.Index);
-            var toDatom = descriptor.To.WithIndex(descriptor.Index);
-            _datomObservers.Add(fromDatom, toDatom, subject);
-
-            var db = Db;
-            var datoms = db.Datoms(descriptor);
-            var cache = db.AttributeCache;
-            var changes = new ChangeSet<Datom, DatomKey>();
-            
-            foreach (var datom in datoms)
+            lock (_datomObservers)
             {
-                var isMany = cache.IsCardinalityMany(datom.A);
-                changes.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, datom.A, isMany), datom));
-            }
+                ProcessDisposedObservers();
+                var fromDatom = descriptor.From.WithIndex(descriptor.Index);
+                var toDatom = descriptor.To.WithIndex(descriptor.Index);
+                _datomObservers.Add(fromDatom, toDatom, observer);
 
-            if (changes.Count == 0)
-                return subject.StartWith(ChangeSet<Datom, DatomKey>.Empty);
-            return subject.StartWith(changes)
-                .Finally(() => _pendingDisposalObservables.Enqueue(subject));
-        }
+                var db = Db;
+                var datoms = db.Datoms(descriptor);
+                var cache = db.AttributeCache;
+                var changes = new ChangeSet<Datom, DatomKey>();
+
+                foreach (var datom in datoms)
+                {
+                    var isMany = cache.IsCardinalityMany(datom.A);
+                    changes.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, datom.A, isMany),
+                        datom));
+                }
+
+                if (changes.Count == 0)
+                    changes = ChangeSet<Datom, DatomKey>.Empty;
+
+                observer.OnNext(changes);
+
+                return Disposable.Create((observer, this), static state =>
+                {
+                    var (s, self) = state;
+                    self._pendingDisposalObservables.Enqueue(s);
+                });
+            }
+        });
     }
 
 
