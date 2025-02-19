@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.107 - 19/2/2025
+* Revert some of the `ObserveDatom` changes to respect the previous behavior, but keep other optimizations and proper disposal handling of observables
+
 ### 0.9.106 - 17/2/2025
 * Switch to a custom build of the interval tree that supports `O(n)` removals when bulk removing. Previous method was `O(m * n)`.
 
