@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.9.109 - 24/2/2025
+* Switch observers over to running purely on a thread responsible for handling events in the connection. This ensures that we never
+lose any data in observables, but data will arrive slightly after a subscription is created. Hopefully this works. 
+
 ### 0.9.108 - 24/2/2025
 * Completely switch over to lock free algorithms for `ObserveDatoms`. To implement this a new (internal) immutable interval tree was created
 and CAS operations are leveraged to maintain consistency. Should result in a performance improvement in some cases and a reduction in lock contention. 

@@ -565,6 +565,8 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             .Finally(() => loadoutNames.Add("DONE"))
             .Subscribe(l => loadoutNames.Add(l));
 
+        // Delay just a tad to make sure the initial subscription goes through
+        await Task.Delay(100);
 
         loadoutNames.Count.Should().Be(1, "Only the current revision should be loaded");
 
@@ -1410,4 +1412,77 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx4.Retract(insertedId, ArchiveFile.Hash, Hash.From(0xDEADBEEF));
         await tx4.Commit();
     }
+    
+    
+    [Fact]
+    public async Task ObserverFuzzingTests()
+    {
+        using var tx = Connection.BeginTransaction();
+        var file = new File.New(tx)
+        {
+            Path = "C:\\test.txt",
+            Hash = Hash.From(0xDEADBEEF),
+            Size = Size.From(0),
+            ModId = EntityId.From(1)
+        };
+        
+        var result = await tx.Commit();
+        var fileId = result[file.Id];
+        
+        
+        var txTask = Task.Run(async () =>
+        {
+            for (var i = 0; i < 10_000; i++)
+            {
+                using var tx2 = Connection.BeginTransaction();
+                tx2.Add(fileId, File.Size, Size.From((ulong)i));
+                await tx2.Commit();
+            }
+        });
+
+        List<Task<List<Size>>> tasks = new();
+        CancellationTokenSource cts = new();
+
+        for (int i = 0; i < 100; i++)
+        {
+            var obsTask = Task.Run(async () =>
+            {
+                List<Size> sizes = new();
+                await Task.Delay(Random.Shared.Next(10, 2000), cts.Token);
+                using var obs = File.Observe(Connection, fileId)
+                    .Subscribe(file => sizes.Add(file.Size));
+                try
+                {
+                    await Task.Delay(TimeSpan.FromMinutes(10), cts.Token);
+                }
+                catch (TaskCanceledException)
+                {
+                    // ignored
+                }
+                return sizes;
+            });
+            tasks.Add(obsTask);
+        }
+
+        await txTask;
+        await cts.CancelAsync();
+        await Task.WhenAll(tasks);
+
+        int taskId = 0;
+        foreach (var task in tasks)
+        {
+            var results = await task;
+            results.Count.Should().BeGreaterThan(0);
+            var prevResult = results.First();
+            var idx = 0;
+            foreach (var thisResult in results.Skip(1))
+            {
+                thisResult.Value.Should().Be(prevResult.Value + 1, $"no updates should be dropped at index {idx} of {taskId} previous result was {prevResult.Value}");;
+                prevResult = thisResult;
+                idx++;
+            }
+            taskId++;
+        }
+    }
+    
 }

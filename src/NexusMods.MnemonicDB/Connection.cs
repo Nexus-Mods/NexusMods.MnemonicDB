@@ -2,21 +2,18 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive;
-using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DynamicData;
+using Jamarino.IntervalTree;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
-using NexusMods.MnemonicDB.Helpers;
 using NexusMods.MnemonicDB.InternalTxFunctions;
-using NexusMods.MnemonicDB.IntervalTree;
 using NexusMods.MnemonicDB.Storage;
 using R3;
 using Observable = System.Reactive.Linq.Observable;
@@ -28,7 +25,7 @@ using DatomChangeSet = ChangeSet<Datom, DatomKey, IDb>;
 /// <summary>
 ///     Main connection class, co-ordinates writes and immutable reads
 /// </summary>
-public class Connection : IConnection
+public class Connection : IConnection, IDisposable
 {
     private readonly DatomStore _store;
     private readonly ILogger<Connection> _logger;
@@ -39,11 +36,15 @@ public class Connection : IConnection
     
     // Temporary storage for processing observers, we store these in the class so we don't have to 
     // allocate them on each update, and the code that uses these is always run on the same thread.
-    private readonly Atom<ImmutableIntervalTree<Datom, IObserver<DatomChangeSet>>> _datomObservers = new(ImmutableIntervalTree<Datom, IObserver<DatomChangeSet>>.Empty);
+    private readonly LightIntervalTree<Datom, IObserver<DatomChangeSet>> _datomObservers = new();
+    
     private readonly Dictionary<IObserver<DatomChangeSet>, DatomChangeSet> _changeSets = new();
     private readonly List<Change<Datom, DatomKey>> _localChanges = [];
     private readonly ConcurrentQueue<IObserver<DatomChangeSet>> _pendingDisposalObservables = new();
     
+    private readonly BlockingCollection<Action> _pendingEvents = new(new ConcurrentQueue<Action>());
+    private Thread _eventThread = default!;
+
     private static readonly IndexType[] IndexTypes =
     [
         IndexType.EAVTCurrent, IndexType.AEVTCurrent, IndexType.VAETCurrent, IndexType.AVETCurrent,
@@ -65,37 +66,55 @@ public class Connection : IConnection
         Bootstrap(readOnlyMode);
     }
 
+    private void ProcessEvents()
+    {
+        while (!_pendingEvents.IsCompleted && _pendingEvents.TryTake(out var action, -1))
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to process event");
+            }
+        }
+    }
+
     /// <summary>
     /// Scrubs the transaction stream so that we only ever move forward and never repeat transactions
     /// </summary>
-    private IObservable<IDb> ProcessUpdates(IObservable<IDb> dbStream)
+    private IDisposable ProcessUpdates(IObservable<IDb> dbStream)
     {
         IDb? prev = null;
-
-        return dbStream.Select(idb =>
+        
+        return dbStream
+            .Subscribe(idb =>
         {
             var db = (Db)idb;
             db.Connection = this;
-                
-            foreach (var analyzer in _analyzers)
+            var tcs = new TaskCompletionSource();
+            _pendingEvents.Add(() =>
             {
-                try
+                foreach (var analyzer in _analyzers)
                 {
-                    var result = analyzer.Analyze(prev, idb);
-                    db.AnalyzerData.Add(analyzer.GetType(), result);
+                    try
+                    {
+                        var result = analyzer.Analyze(prev, idb);
+                        db.AnalyzerData.Add(analyzer.GetType(), result);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to analyze with {Analyzer}", analyzer.GetType().Name);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to analyze with {Analyzer}", analyzer.GetType().Name);
-                }
-            }
-            
-            _dbStream.OnNext(db);
-            ProcessObservers(db);
-            prev = idb;
-            
 
-            return idb;
+                _dbStream.OnNext(db);
+                ProcessObservers(db);
+                prev = idb;
+                tcs.SetResult();
+            });
+            tcs.Task.Wait();
         });
     }
 
@@ -105,9 +124,7 @@ public class Connection : IConnection
         var recentlyAdded = db.RecentlyAdded;
         var cache = db.AttributeCache;
         _changeSets.Clear();
-        // Deref the observers so we can use them in the loop
-        var observers = _datomObservers.Value;
-            
+        
         // For each recently added datom, we need to find listeners to it
         for (var i = 0; i < recentlyAdded.Count; i++)
         {
@@ -162,7 +179,7 @@ public class Connection : IConnection
             foreach (var index in IndexTypes)
             {
                 var reindex = datom.WithIndex(index);
-                foreach (var overlap in observers.Query(reindex))
+                foreach (var overlap in _datomObservers.Query(reindex))
                 {
                     ref var changeSet = ref CollectionsMarshal.GetValueRefOrAddDefault(_changeSets, overlap, out _);
                     changeSet ??= new DatomChangeSet(db);
@@ -326,39 +343,37 @@ public class Connection : IConnection
     {
         return Observable.Create<DatomChangeSet>(observer =>
         {
-            var fromDatom = descriptor.From.WithIndex(descriptor.Index);
-            var toDatom = descriptor.To.WithIndex(descriptor.Index);
-
-
-            while (true)
-            {
-                var db = Db;
-                var datoms = db.Datoms(descriptor);
-                var cache = db.AttributeCache;
-                var changes = new DatomChangeSet(db);
-
-                foreach (var datom in datoms)
+            _pendingEvents.Add(() => {
+                var fromDatom = descriptor.From.WithIndex(descriptor.Index);
+                var toDatom = descriptor.To.WithIndex(descriptor.Index);
+                
+                while (true)
                 {
-                    var isMany = cache.IsCardinalityMany(datom.A);
-                    changes.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, datom.A, isMany),
-                        datom));
+                    var db = Db;
+                    var datoms = db.Datoms(descriptor);
+                    var cache = db.AttributeCache;
+                    var changes = new DatomChangeSet(db);
+
+                    foreach (var datom in datoms)
+                    {
+                        var isMany = cache.IsCardinalityMany(datom.A);
+                        changes.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, datom.A, isMany),
+                            datom));
+                    }
+
+                    // In the rare case where we weren't able to prime the first change set fast enough, we'll need to re-run
+                    // the changeset generation
+                    if (Db.BasisTxId != db.BasisTxId)
+                        continue;
+                    observer.OnNext(changes);
+                    break;
                 }
 
-                // In the rare case where we weren't able to prime the first change set fast enough, we'll need to re-run
-                // the changeset generation
-                if (Db.BasisTxId != db.BasisTxId)
-                    continue;
-                observer.OnNext(changes);
-                break;
-            }
-
-            // Add the observer, from here we could possibly start getting updates, we'll assume that between the above
-            // "onNext" and here, another transaction won't go through. 
-            _datomObservers.Swap(static (tree, toAdd) =>
-            {
-                var (from, to, observer) = toAdd;
-                return tree.Add(from, to, observer);
-            }, (fromDatom, toDatom, observer));
+                // Add the observer, from here we could possibly start getting updates, we'll assume that between the above
+                // "onNext" and here, another transaction won't go through. 
+                _datomObservers.Add(fromDatom, toDatom, observer);
+            
+            });
             
             return Disposable.Create((observer, this), static state =>
             {
@@ -386,8 +401,7 @@ public class Connection : IConnection
         foreach (var itm in _pendingDisposalObservables)
             toDispose.Add(itm);
 
-        _datomObservers.Swap(static (observers, toRemove) =>
-            observers.RemoveWhere(static (observer, set) => set.Contains(observer), toRemove), toDispose);
+        _datomObservers.RemoveWhere(static (observer, set) => set.Contains(observer), toDispose);
     }
 
 
@@ -424,11 +438,16 @@ public class Connection : IConnection
             
             var declaredAttributes = AttributeResolver.DefinedAttributes.OrderBy(a => a.Id.Id).ToArray();
             
+            _eventThread = new Thread(ProcessEvents)
+            {
+                Name = "MnemonicDB: Event Thread"
+            };
+            _eventThread.Start();
+            
             if (!readOnlyMode)
                 _store.Transact(new SimpleMigration(declaredAttributes));
             
-            _dbStreamDisposable = ProcessUpdates(_store.TxLog)
-                .Subscribe();
+            _dbStreamDisposable = ProcessUpdates(_store.TxLog);
         }
         catch (Exception ex)
         {
@@ -441,5 +460,11 @@ public class Connection : IConnection
     {
         _dbStreamDisposable?.Dispose();
         return Task.CompletedTask;
+    }
+
+    public void Dispose()
+    {
+        _pendingEvents.CompleteAdding();
+        _eventThread.Join();
     }
 }
