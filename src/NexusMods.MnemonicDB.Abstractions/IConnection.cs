@@ -10,6 +10,9 @@ using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
+
+using DatomChangeSet = ChangeSet<Datom, DatomKey, IDb>;
+
 /// <summary>
 ///     Represents a connection to a database.
 /// </summary>
@@ -91,7 +94,7 @@ public interface IConnection
     /// Observe a slice of the database, as datoms are added or removed from the database, the observer will be updated
     /// with the changeset of datoms that have been added or removed.
     /// </summary>
-    IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(SliceDescriptor descriptor);
+    IObservable<DatomChangeSet> ObserveDatoms(SliceDescriptor descriptor);
     
     /// <summary>
     /// This delegate is called for each datom in the scan, the result time defines what should be done with the datom

@@ -1,5 +1,11 @@
 ## Changelog
 
+### 0.9.108 - 24/2/2025
+* Completely switch over to lock free algorithms for `ObserveDatoms`. To implement this a new (internal) immutable interval tree was created
+and CAS operations are leveraged to maintain consistency. Should result in a performance improvement in some cases and a reduction in lock contention. 
+  * Datom observables check for DB updates before sending their initial changesets, but it is possible under heavy load to miss an update. It is yet
+to be seen if this will result in issues in practice. 
+
 ### 0.9.107 - 19/2/2025
 * Revert some of the `ObserveDatom` changes to respect the previous behavior, but keep other optimizations and proper disposal handling of observables
 
