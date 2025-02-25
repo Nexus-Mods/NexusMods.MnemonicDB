@@ -19,6 +19,8 @@ public abstract class AStorageTest : IDisposable
     private readonly AbsolutePath _path;
     private readonly IServiceProvider _provider;
     protected readonly DatomStoreSettings DatomStoreSettings;
+    public Backend Backend { get; }
+
     protected AttributeCache AttributeCache => DatomStore.AttributeCache;
 
     protected readonly ILogger Logger;
@@ -26,7 +28,7 @@ public abstract class AStorageTest : IDisposable
     private ulong _tempId = 1;
     protected IDatomStore DatomStore;
 
-    protected AStorageTest(IServiceProvider provider, Func<IStoreBackend>? backendFn = null)
+    protected AStorageTest(IServiceProvider provider, bool isInMemory)
     {
         _provider = provider;
         
@@ -34,13 +36,11 @@ public abstract class AStorageTest : IDisposable
 
         DatomStoreSettings = new DatomStoreSettings
         {
-            Path = _path
+            Path = isInMemory ? null : _path,
         };
 
-        backendFn ??= () => new Backend();
-
-
-        DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), DatomStoreSettings, backendFn());
+        Backend = new Backend();
+        DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), DatomStoreSettings, new Backend());
         
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
         
@@ -60,6 +60,7 @@ public abstract class AStorageTest : IDisposable
         var (_, db) = DatomStore.Transact(segmentBuilder.Build());
         AttributeCache.Reset(db);
     }
+
 
     private void AddAttr(IndexSegmentBuilder segmentBuilder, IAttribute attribute, AttributeId attributeId)
     { 

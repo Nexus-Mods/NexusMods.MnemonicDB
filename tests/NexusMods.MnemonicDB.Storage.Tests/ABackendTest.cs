@@ -1,5 +1,4 @@
 ﻿using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.TestModel.Helpers;
 using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
@@ -15,11 +14,10 @@ using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Storage.Tests;
 
-public abstract class ABackendTest<TStoreType>(
+public abstract class ABackendTest(
     IServiceProvider provider,
-    Func<IStoreBackend> backendFn)
-    : AStorageTest(provider, backendFn)
-    where TStoreType : IStoreBackend
+    bool isInMemory)
+    : AStorageTest(provider, isInMemory)
 {
     [Theory]
     [InlineData(IndexType.TxLog)]
