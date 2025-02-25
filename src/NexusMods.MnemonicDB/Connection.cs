@@ -393,7 +393,8 @@ public class Connection : IConnection
             
             _eventThread = new Thread(ProcessEvents)
             {
-                Name = "MnemonicDB: Event Thread"
+                Name = "MnemonicDB: Event Thread",
+                IsBackground = true
             };
             _eventThread.Start();
             

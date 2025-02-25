@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.111 - 24/2/2025
+* Set the connection event thread to "IsBackground" so that it doesn't prevent the application from shutting down
+
 ### 0.9.110 - 24/2/2025
 * Properly shut down the event queue in the connection when the connection is disposed.
 
