@@ -37,7 +37,9 @@ public class Backend : IStoreBackend
     /// <inheritdoc />
     public ISnapshot GetSnapshot()
     {
-        return new Snapshot(this, AttributeCache);
+        var snapShot = Db!.CreateSnapshot();
+        var readOptions = new ReadOptions().SetSnapshot(snapShot);
+        return new Snapshot(this, AttributeCache, readOptions, snapShot);
     }
 
     /// <inheritdoc />
