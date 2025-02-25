@@ -2,12 +2,10 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Query;
-using Reloaded.Memory.Extensions;
 using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
@@ -48,61 +46,18 @@ internal class Snapshot : ISnapshot
 
     public IEnumerable<IndexSegment> DatomsChunked(SliceDescriptor descriptor, int chunkSize)
     {
-        var reverse = descriptor.IsReverse;
-        var from = reverse ? descriptor.To : descriptor.From;
-        var to = reverse ? descriptor.From : descriptor.To;
-        
         using var builder = new IndexSegmentBuilder(_attributeCache);
-
-        using var iterator = _backend.Db!.NewIterator(null, _readOptions);
-        if (!reverse)
-            iterator.Seek(from.ToArray());
-        else
-            iterator.SeekForPrev(to.ToArray());
-
-        using var writer = new PooledMemoryBufferWriter(128);
-
-        while (iterator.Valid())
+        using var enumerable = RefDatoms(descriptor).GetEnumerator();
+        while (enumerable.MoveNext())
         {
-            writer.Reset();
-            writer.Write(iterator.GetKeySpan());
-
-            if (writer.Length >= KeyPrefix.Size)
-            {
-                var prefix = KeyPrefix.Read(writer.GetWrittenSpan());
-                if (prefix.ValueTag == ValueTag.HashedBlob)
-                {
-                    writer.Write(iterator.GetValueSpan());
-                }
-            }
-            
-            var curDatom = new Datom(writer.WrittenMemory);
-            
-            if (!reverse)
-            {
-                if (GlobalComparer.Compare(curDatom, to) > 0)
-                    break;
-            }
-            else
-            {
-                if (GlobalComparer.Compare(curDatom, from) < 0)
-                    break;
-            }
-            
-            builder.Add(writer.WrittenMemory.Span);
-
+            builder.AddCurrent(enumerable);
             if (builder.Count == chunkSize)
             {
                 yield return builder.Build();
                 builder.Reset();
             }
-
-            if (!reverse)
-                iterator.Next();
-            else
-                iterator.Prev();
         }
-        if (builder.Count > 0) 
+        if (builder.Count > 0)
             yield return builder.Build();
     }
     
@@ -120,14 +75,15 @@ internal class Snapshot : ISnapshot
         public RefDatomEnumerator GetEnumerator() => new(snapshot, sliceDescriptor);
     }
 
-    public ref struct RefDatomEnumerator : IRefDatomEnumerator
+    public unsafe struct RefDatomEnumerator : IRefDatomEnumerator
     {
         private readonly Snapshot _snapshot;
         private Iterator? _iterator;
         private readonly bool _reverse;
         private readonly byte[] _from;
         private readonly byte[] _to;
-        private ReadOnlySpan<byte> _currentSpan;
+        private IntPtr _currentKey;
+        private UIntPtr _currentKeyLength;
 
         public RefDatomEnumerator(Snapshot snapshot, SliceDescriptor sliceDescriptor)
         {
@@ -162,15 +118,16 @@ internal class Snapshot : ISnapshot
             
             if (_iterator.Valid())
             {
-                _currentSpan = _iterator.GetKeySpan();
+                _currentKey = Native.Instance.rocksdb_iter_key(_iterator.Handle, out _currentKeyLength);
+                var currentSpan = new ReadOnlySpan<byte>((void*)_currentKey, (int)_currentKeyLength);
                 if (!_reverse)
                 {
-                    if (GlobalComparer.Compare(_currentSpan, _to.AsSpan()) > 0)
+                    if (GlobalComparer.Compare(currentSpan, _to.AsSpan()) > 0)
                         return false;
                 }
                 else
                 {
-                    if (GlobalComparer.Compare(_currentSpan, _from.AsSpan()) < 0)
+                    if (GlobalComparer.Compare(currentSpan, _from.AsSpan()) < 0)
                         return false;
                 }
                 return true;
@@ -178,8 +135,8 @@ internal class Snapshot : ISnapshot
             return false;
         }
 
-        public KeyPrefix KeyPrefix => KeyPrefix.Read(_currentSpan);
-        public ReadOnlySpan<byte> ValueSpan => _currentSpan.SliceFast(KeyPrefix.Size);
+        public KeyPrefix KeyPrefix => *(KeyPrefix*)_currentKey;
+        public ReadOnlySpan<byte> ValueSpan => new((void*)(_currentKey + KeyPrefix.Size), (int)_currentKeyLength - KeyPrefix.Size);
 
         public ReadOnlySpan<byte> ExtraValueSpan 
         {
