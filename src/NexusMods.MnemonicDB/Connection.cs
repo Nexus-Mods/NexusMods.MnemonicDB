@@ -11,7 +11,6 @@ using Jamarino.IntervalTree;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.InternalTxFunctions;
 using NexusMods.MnemonicDB.Storage;
@@ -25,7 +24,7 @@ using DatomChangeSet = ChangeSet<Datom, DatomKey, IDb>;
 /// <summary>
 ///     Main connection class, co-ordinates writes and immutable reads
 /// </summary>
-public class Connection : IConnection, IDisposable
+public class Connection : IConnection
 {
     private readonly DatomStore _store;
     private readonly ILogger<Connection> _logger;
@@ -68,8 +67,11 @@ public class Connection : IConnection, IDisposable
 
     private void ProcessEvents()
     {
-        while (!_pendingEvents.IsCompleted && _pendingEvents.TryTake(out var action, -1))
+        while (!_pendingEvents.IsCompleted)
         {
+            if (!_pendingEvents.TryTake(out var action, 1000))
+                continue;
+            
             try
             {
                 action();
@@ -194,56 +196,7 @@ public class Connection : IConnection, IDisposable
             subject.OnNext(changeSet);
         }
     }
-
-    /// <summary>
-    /// Given an index segment of recently added datoms, we need to convert them into changes that observers may be interested in.
-    /// </summary>
-    private static void DatomsToChanges(IndexSegment recentlyAdded, AttributeCache cache, List<Change<Datom, DatomKey>> changes)
-    {
-        // For each recently added datom, we need to find listeners to it
-        for (var i = 0; i < recentlyAdded.Count; i++)
-        {
-            var datom = recentlyAdded[i];
-                
-            var isMany = cache.IsCardinalityMany(datom.A);
-            var attr = datom.A;
-            if (datom.IsRetract)
-            {
-                    
-                // If the attribute is cardinality many, we can just remove the datom
-                if (isMany)
-                {
-                    changes.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, CreateKey(datom, attr, true), datom));
-                    continue;
-                }
-                    
-                // If at the end of the segment
-                if (i + 1 >= recentlyAdded.Count)
-                {
-                    changes.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, CreateKey(datom, attr), datom));
-                    continue;
-                }
-
-                // If the next datom is not the same E or A, we can remove the datom
-                var nextDatom = recentlyAdded[i + 1];
-                if (nextDatom.E != datom.E || nextDatom.A != datom.A)
-                {
-                    changes.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, CreateKey(datom, attr), datom));
-                    continue;
-                }
-
-                // Otherwise we skip the add, and issue an update, and skip the add because we've already processed it
-                changes.Add(new Change<Datom, DatomKey>(ChangeReason.Update, CreateKey(datom, attr), nextDatom, datom));
-                i++;
-                continue;
-            }
-            else
-            {
-                changes.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, attr, isMany), datom));
-            }
-        }
-    }
-
+    
     /// <inheritdoc />
     public IServiceProvider ServiceProvider { get; set; }
 
@@ -462,6 +415,7 @@ public class Connection : IConnection, IDisposable
         return Task.CompletedTask;
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         _pendingEvents.CompleteAdding();

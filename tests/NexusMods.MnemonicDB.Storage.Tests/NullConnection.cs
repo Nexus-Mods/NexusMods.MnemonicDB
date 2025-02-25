@@ -56,4 +56,9 @@ public class NullConnection : IConnection
     {
         throw new NotSupportedException();
     }
+
+    public void Dispose()
+    {
+        // TODO release managed resources here
+    }
 }

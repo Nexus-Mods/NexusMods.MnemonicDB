@@ -16,7 +16,7 @@ using DatomChangeSet = ChangeSet<Datom, DatomKey, IDb>;
 /// <summary>
 ///     Represents a connection to a database.
 /// </summary>
-public interface IConnection
+public interface IConnection : IDisposable
 {
     /// <summary>
     ///     Gets the current database.

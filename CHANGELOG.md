@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.110 - 24/2/2025
+* Properly shut down the event queue in the connection when the connection is disposed.
+
 ### 0.9.109 - 24/2/2025
 * Switch observers over to running purely on a thread responsible for handling events in the connection. This ensures that we never
 lose any data in observables, but data will arrive slightly after a subscription is created. Hopefully this works. 

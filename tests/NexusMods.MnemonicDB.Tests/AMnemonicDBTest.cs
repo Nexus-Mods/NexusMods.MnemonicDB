@@ -194,6 +194,7 @@ public class AMnemonicDBTest : IDisposable
 
     public void Dispose()
     {
+        Connection.Dispose();
         _store.Dispose();
     }
 
@@ -206,6 +207,7 @@ public class AMnemonicDBTest : IDisposable
 
         GC.Collect();
 
+        Connection.Dispose();
         _backend = new Backend();
         _store = new DatomStore(Provider.GetRequiredService<ILogger<DatomStore>>(), Config, _backend);
 
