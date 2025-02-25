@@ -27,8 +27,9 @@ internal class Db : IDb
     public ISnapshot Snapshot { get; }
     public AttributeCache AttributeCache { get; }
 
-    public IndexSegment RecentlyAdded { get; }
-    
+    private readonly Lazy<IndexSegment> _recentlyAdded;
+    public IndexSegment RecentlyAdded => _recentlyAdded.Value;
+
     internal Dictionary<Type, object> AnalyzerData { get; } = new();
 
     public Db(ISnapshot snapshot, TxId txId, AttributeCache attributeCache)
@@ -38,7 +39,9 @@ internal class Db : IDb
         _cache = new IndexSegmentCache();
         Snapshot = snapshot;
         BasisTxId = txId;
-        RecentlyAdded = snapshot.Datoms(SliceDescriptor.Create(txId));
+        
+        // We may never need this data, so load it lazily
+        _recentlyAdded = new (() => snapshot.Datoms(SliceDescriptor.Create(txId)));
     }
 
     private Db(ISnapshot snapshot, TxId txId, AttributeCache attributeCache, IConnection connection, IndexSegmentCache newCache, IndexSegment recentlyAdded)
@@ -48,7 +51,7 @@ internal class Db : IDb
         _connection = connection;
         Snapshot = snapshot;
         BasisTxId = txId;
-        RecentlyAdded = recentlyAdded;
+        _recentlyAdded = new Lazy<IndexSegment>(recentlyAdded);
     }
 
     /// <summary>
