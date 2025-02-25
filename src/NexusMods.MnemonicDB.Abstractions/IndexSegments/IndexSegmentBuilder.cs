@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
@@ -123,6 +124,39 @@ public readonly struct IndexSegmentBuilder : IDisposable
         _offsets.Add(_data.Length);
         _data.Write(rawData);
     }
+
+    /// <summary>
+    /// Adds the current item pointed to by the enumerator
+    /// </summary>
+    public void AddCurrent<T>(in T enumerator) where T : IRefDatomEnumerator, allows ref struct
+    {
+        _offsets.Add(_data.Length);
+        var prefix = enumerator.KeyPrefix;
+        var prefixSpan = _data.GetSpan(KeyPrefix.Size);
+        MemoryMarshal.Write(prefixSpan, prefix);
+        _data.Advance(KeyPrefix.Size);
+        _data.Write(enumerator.ValueSpan);
+        
+        // Write the hashed blob if it exists
+        if (prefix.ValueTag == ValueTag.HashedBlob) 
+            _data.Write(enumerator.ExtraValueSpan);
+    }
+
+    /// <summary>
+    /// Adds all the items from the enumerator to the segment
+    /// </summary>
+    public void AddRange<TOuter, TInner>(in TOuter enumerator) 
+        where TOuter : IRefDatomEnumerable<TInner>, allows ref struct
+        where TInner : IRefDatomEnumerator, allows ref struct
+    {
+        using var inner = enumerator.GetEnumerator();
+        while (inner.MoveNext())
+        {
+            AddCurrent(in inner);
+        }
+    }
+    
+    
 
     /// <summary>
     /// Construct the index segment

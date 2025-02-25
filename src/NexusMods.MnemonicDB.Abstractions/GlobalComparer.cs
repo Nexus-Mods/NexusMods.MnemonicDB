@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -32,6 +33,21 @@ public sealed class GlobalComparer : IComparer<byte[]>
             IndexType.VAETCurrent or IndexType.VAETHistory => VAETComparator.Compare(aPtr, aLen, bPtr, bLen),
             _ => ThrowArgumentOutOfRangeException()
         };
+    }
+
+    /// <summary>
+    /// Compare two datoms represented as spans
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static unsafe int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        fixed (byte* aPtr = a)
+        {
+            fixed(byte* bPtr = b)
+            {
+                return Compare(aPtr, a.Length, bPtr, b.Length);
+            }
+        }
     }
 
     /// <summary>
