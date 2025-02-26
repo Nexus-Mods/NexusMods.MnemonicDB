@@ -1,5 +1,13 @@
 ## Changelog
 
+### 0.9.112 - 26/2/2025
+* Drastic improvements to the performance of the `Datoms` calls. Now these calls bottom out on raw RocksDB iterators and structs
+* Implements a `db.PrecacheAll()` method that will pre-cache all entities in the `Entity` partition. As well as any reverse indexes, useful for
+loading data in an app that will very quickly touch the entire active set of entities. This load operation is done in a single iteration, so the performance
+is at least one or two orders of magnitude faster than loading via lazy traversal.
+* Added new struct based versions of `SegmentDefinition`, that only contain the variable data about the segment being loaded. This results
+in less memory allocation and generally faster performance.
+
 ### 0.9.111 - 24/2/2025
 * Set the connection event thread to "IsBackground" so that it doesn't prevent the application from shutting down
 
