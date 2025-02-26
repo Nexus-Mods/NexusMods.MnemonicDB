@@ -7,6 +7,7 @@ loading data in an app that will very quickly touch the entire active set of ent
 is at least one or two orders of magnitude faster than loading via lazy traversal.
 * Added new struct based versions of `SegmentDefinition`, that only contain the variable data about the segment being loaded. This results
 in less memory allocation and generally faster performance.
+* The InMemory backend is now gone, all databases are based off of RocksDB, and in-memory databases are created by using RocksDB's in-memory environment.
 
 ### 0.9.111 - 24/2/2025
 * Set the connection event thread to "IsBackground" so that it doesn't prevent the application from shutting down
