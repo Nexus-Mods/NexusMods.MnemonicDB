@@ -12,7 +12,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Query;
 /// A slice descriptor for querying datoms, it doesn't contain any data, but can be combined
 /// with other objects like databases or indexes to query for datoms.
 /// </summary>
-public readonly struct SliceDescriptor
+public readonly struct SliceDescriptor : ISliceDescriptor
 {
     /// <summary>
     /// The lower bound of the slice, inclusive.
@@ -364,5 +364,29 @@ public readonly struct SliceDescriptor
             From = new Datom(fromPrefix, datomValueSpan),
             To = new Datom(toPrefix, datomValueSpan)
         };
+    }
+
+    public void Reset<T>(T iterator) where T : ILowLevelIterator, allows ref struct
+    {
+        if (!IsReverse)
+            iterator.SeekTo(From.ToArray());
+        else
+            iterator.SeekToPrev(From.ToArray());
+    }
+
+    public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct
+    {
+        if (IsReverse)
+            iterator.Prev();
+        else 
+            iterator.Next();
+    }
+
+    public bool ShouldContinue(ReadOnlySpan<byte> keySpan)
+    {
+        if (IsReverse)
+            return GlobalComparer.Compare(keySpan, To.ToArray()) >= 0;
+        else 
+            return GlobalComparer.Compare(keySpan, To.ToArray()) <= 0;
     }
 }

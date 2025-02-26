@@ -41,7 +41,7 @@ internal class Snapshot : ISnapshot
     public IndexSegment Datoms(SliceDescriptor descriptor)
     {
         using var builder = new IndexSegmentBuilder(_attributeCache);
-        builder.AddRange<RefDatomEnumerable, RefDatomEnumerator>(RefDatoms(descriptor));
+        builder.AddRange<RefDatomEnumerable<SliceDescriptor>, RefDatomEnumerator<SliceDescriptor>>(RefDatoms(descriptor));
         return builder.Build();
     }
 
@@ -65,33 +65,33 @@ internal class Snapshot : ISnapshot
     /// <summary>
     /// Get a high performance, ref-based enumerable of datoms
     /// </summary>
-    public RefDatomEnumerable RefDatoms(SliceDescriptor descriptor)
+    public RefDatomEnumerable<TDescriptor> RefDatoms<TDescriptor>(TDescriptor descriptor)
+    where TDescriptor : ISliceDescriptor
     {
         return new(this, descriptor);
     }
 
 
-    public readonly ref struct RefDatomEnumerable(Snapshot snapshot, SliceDescriptor sliceDescriptor) : IRefDatomEnumerable<RefDatomEnumerator>
+    public readonly ref struct RefDatomEnumerable<TDescriptor>(Snapshot snapshot, TDescriptor sliceDescriptor) 
+        : IRefDatomEnumerable<RefDatomEnumerator<TDescriptor>>
+    where TDescriptor : ISliceDescriptor
     {
-        public RefDatomEnumerator GetEnumerator() => new(snapshot, sliceDescriptor);
+        public RefDatomEnumerator<TDescriptor> GetEnumerator() => new(snapshot, sliceDescriptor);
     }
 
-    public unsafe struct RefDatomEnumerator : IRefDatomEnumerator
+    public unsafe struct RefDatomEnumerator<TDescriptor> : IRefDatomEnumerator
+    where TDescriptor : ISliceDescriptor
     {
         private readonly Snapshot _snapshot;
         private Iterator? _iterator;
-        private readonly bool _reverse;
-        private readonly byte[] _from;
-        private readonly byte[] _to;
+        private readonly TDescriptor _descriptor;
         private IntPtr _currentKey;
         private UIntPtr _currentKeyLength;
 
-        public RefDatomEnumerator(Snapshot snapshot, SliceDescriptor sliceDescriptor)
+        public RefDatomEnumerator(Snapshot snapshot, TDescriptor sliceDescriptor)
         {
+            _descriptor = sliceDescriptor;
             _snapshot = snapshot;
-            _reverse = sliceDescriptor.IsReverse;
-            _from = sliceDescriptor.From.ToArray();
-            _to = sliceDescriptor.To.ToArray();
         }
         
         public void Dispose()
@@ -104,34 +104,18 @@ internal class Snapshot : ISnapshot
             if (_iterator == null)
             {
                 _iterator = _snapshot._backend.Db!.NewIterator(null, _snapshot._readOptions);
-                if (!_reverse)
-                    _iterator.Seek(_from);
-                else
-                    _iterator.SeekForPrev(_from);
+                _descriptor.Reset(new IteratorWrapper(_iterator));
             }
             else
             {
-                if (!_reverse)
-                    _iterator.Next();
-                else
-                    _iterator.Prev();
+                _descriptor.MoveNext(new IteratorWrapper(_iterator));
             }
             
             if (_iterator.Valid())
             {
                 _currentKey = Native.Instance.rocksdb_iter_key(_iterator.Handle, out _currentKeyLength);
                 var currentSpan = new ReadOnlySpan<byte>((void*)_currentKey, (int)_currentKeyLength);
-                if (!_reverse)
-                {
-                    if (GlobalComparer.Compare(currentSpan, _to.AsSpan()) > 0)
-                        return false;
-                }
-                else
-                {
-                    if (GlobalComparer.Compare(currentSpan, _to.AsSpan()) < 0)
-                        return false;
-                }
-                return true;
+                return _descriptor.ShouldContinue(currentSpan);
             }
             return false;
         }
