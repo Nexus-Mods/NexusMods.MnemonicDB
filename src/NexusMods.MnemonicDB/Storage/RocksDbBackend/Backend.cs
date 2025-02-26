@@ -15,6 +15,7 @@ public class Backend : IStoreBackend
     internal RocksDb? Db = null!;
     private IntPtr _comparator;
     private readonly bool _isReadOnly;
+    private Env? _env;
 
     /// <summary>
     /// Default constructor
@@ -43,26 +44,33 @@ public class Backend : IStoreBackend
     }
 
     /// <inheritdoc />
-    public void Init(AbsolutePath location)
+    public void Init(DatomStoreSettings settings)
     {
-
         _comparator = Native.Instance.rocksdb_comparator_create(IntPtr.Zero, 
             NativeComparators.GetDestructorPtr(),
             NativeComparators.GetNativeFnPtr(),
             NativeComparators.GetNamePtr());
-
+        
+        if (settings.IsInMemory)
+            _env = Env.CreateMemEnv();
+        else
+            _env = Env.CreateDefaultEnv();
+        
         var options = new DbOptions()
             .SetCreateIfMissing()
             .SetCreateMissingColumnFamilies()
             .SetCompression(Compression.Zstd)
-            .SetComparator(_comparator);
+            .SetComparator(_comparator)
+            .SetEnv(_env.Handle);
         
         Native.Instance.rocksdb_options_set_bottommost_compression(options.Handle, (int)Compression.Zstd);
+
+        var nativePath = settings.Path?.ToString() ?? "/dev/in-memory";
         
         if (_isReadOnly)
-            Db = RocksDb.OpenReadOnly(options, location.ToString(), false);
+            Db = RocksDb.OpenReadOnly(options, nativePath, false);
         else 
-            Db = RocksDb.Open(options, location.ToString());
+            Db = RocksDb.Open(options, nativePath);
     }
 
     /// <summary>

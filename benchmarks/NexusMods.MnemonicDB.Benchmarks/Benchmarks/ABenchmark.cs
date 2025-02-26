@@ -43,9 +43,12 @@ public class ABenchmark : IAsyncLifetime
         await _host.StopAsync();
         _host.Dispose();
 
-        if (path.DirectoryExists())
-            path.DeleteDirectory();
-        if (path.FileExists)
-            path.Delete();
+        if (path is not null)
+        {
+            if (path.Value.DirectoryExists())
+                path.Value.DeleteDirectory();
+            if (path.Value.FileExists)
+                path.Value.Delete();
+        }
     }
 }

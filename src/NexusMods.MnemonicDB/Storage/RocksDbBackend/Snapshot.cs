@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Diagnostics;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -11,7 +10,7 @@ using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-internal class Snapshot : ISnapshot
+internal sealed class Snapshot : ISnapshot
 {
     /// <summary>
     /// The backend, needed to create iterators
@@ -28,6 +27,7 @@ internal class Snapshot : ISnapshot
     /// <summary>
     /// We keep this here, so that it's not finalized while we're using it
     /// </summary>
+    // ReSharper disable once NotAccessedField.Local
     private readonly RocksDbSharp.Snapshot _snapshot;
 
     public Snapshot(Backend backend, AttributeCache attributeCache, ReadOptions readOptions, RocksDbSharp.Snapshot snapshot)
@@ -38,117 +38,98 @@ internal class Snapshot : ISnapshot
         _snapshot = snapshot;
     }
 
-    public IndexSegment Datoms(SliceDescriptor descriptor)
+    public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
     {
-        var reverse = descriptor.IsReverse;
-        var from = reverse ? descriptor.To : descriptor.From;
-        var to = reverse ? descriptor.From : descriptor.To;
-        
         using var builder = new IndexSegmentBuilder(_attributeCache);
-
-        using var iterator = _backend.Db!.NewIterator(null, _readOptions);
-        if (!reverse)
-            iterator.Seek(from.ToArray());
-        else
-            iterator.SeekForPrev(to.ToArray());
-
-        using var writer = new PooledMemoryBufferWriter(128);
-
-        while (iterator.Valid())
-        {
-            writer.Reset();
-            
-            writer.Write(iterator.GetKeySpan());
-
-            if (writer.Length >= KeyPrefix.Size)
-            {
-                var prefix = KeyPrefix.Read(writer.GetWrittenSpan());
-                if (prefix.ValueTag == ValueTag.HashedBlob)
-                {
-                    writer.Write(iterator.GetValueSpan());
-                }
-            }
-
-            var curDatom = new Datom(writer.WrittenMemory);
-            
-            if (!reverse)
-            {
-                if (GlobalComparer.Compare(curDatom, to) > 0)
-                    break;
-            }
-            else
-            {
-                if (GlobalComparer.Compare(curDatom, from) < 0)
-                    break;
-            }
-
-            builder.Add(writer.WrittenMemory.Span);
-
-            if (!reverse)
-                iterator.Next();
-            else
-                iterator.Prev();
-        }
+        builder.AddRange<RefDatomEnumerable<TDescriptor>, RefDatomEnumerator<TDescriptor>>(RefDatoms(descriptor));
         return builder.Build();
     }
 
     public IEnumerable<IndexSegment> DatomsChunked(SliceDescriptor descriptor, int chunkSize)
     {
-        var reverse = descriptor.IsReverse;
-        var from = reverse ? descriptor.To : descriptor.From;
-        var to = reverse ? descriptor.From : descriptor.To;
-        
         using var builder = new IndexSegmentBuilder(_attributeCache);
-
-        using var iterator = _backend.Db!.NewIterator(null, _readOptions);
-        if (!reverse)
-            iterator.Seek(from.ToArray());
-        else
-            iterator.SeekForPrev(to.ToArray());
-
-        using var writer = new PooledMemoryBufferWriter(128);
-
-        while (iterator.Valid())
+        using var enumerable = RefDatoms(descriptor).GetEnumerator();
+        while (enumerable.MoveNext())
         {
-            writer.Reset();
-            writer.Write(iterator.GetKeySpan());
-
-            if (writer.Length >= KeyPrefix.Size)
-            {
-                var prefix = KeyPrefix.Read(writer.GetWrittenSpan());
-                if (prefix.ValueTag == ValueTag.HashedBlob)
-                {
-                    writer.Write(iterator.GetValueSpan());
-                }
-            }
-            
-            var curDatom = new Datom(writer.WrittenMemory);
-            
-            if (!reverse)
-            {
-                if (GlobalComparer.Compare(curDatom, to) > 0)
-                    break;
-            }
-            else
-            {
-                if (GlobalComparer.Compare(curDatom, from) < 0)
-                    break;
-            }
-            
-            builder.Add(writer.WrittenMemory.Span);
-
+            builder.AddCurrent(enumerable);
             if (builder.Count == chunkSize)
             {
                 yield return builder.Build();
                 builder.Reset();
             }
-
-            if (!reverse)
-                iterator.Next();
-            else
-                iterator.Prev();
         }
-        if (builder.Count > 0) 
+        if (builder.Count > 0)
             yield return builder.Build();
+    }
+    
+    /// <summary>
+    /// Get a high performance, ref-based enumerable of datoms
+    /// </summary>
+    public RefDatomEnumerable<TDescriptor> RefDatoms<TDescriptor>(TDescriptor descriptor)
+    where TDescriptor : ISliceDescriptor
+    {
+        return new(this, descriptor);
+    }
+
+
+    public readonly ref struct RefDatomEnumerable<TDescriptor>(Snapshot snapshot, TDescriptor sliceDescriptor) 
+        : IRefDatomEnumerable<RefDatomEnumerator<TDescriptor>>
+    where TDescriptor : ISliceDescriptor
+    {
+        public RefDatomEnumerator<TDescriptor> GetEnumerator() => new(snapshot, sliceDescriptor);
+    }
+
+    public unsafe struct RefDatomEnumerator<TDescriptor> : IRefDatomEnumerator
+    where TDescriptor : ISliceDescriptor
+    {
+        private readonly Snapshot _snapshot;
+        private Iterator? _iterator;
+        private readonly TDescriptor _descriptor;
+        private IntPtr _currentKey;
+        private UIntPtr _currentKeyLength;
+
+        public RefDatomEnumerator(Snapshot snapshot, TDescriptor sliceDescriptor)
+        {
+            _descriptor = sliceDescriptor;
+            _snapshot = snapshot;
+        }
+        
+        public void Dispose()
+        {
+            _iterator?.Dispose();
+        }
+
+        public bool MoveNext()
+        {
+            if (_iterator == null)
+            {
+                _iterator = _snapshot._backend.Db!.NewIterator(null, _snapshot._readOptions);
+                _descriptor.Reset(new IteratorWrapper(_iterator));
+            }
+            else
+            {
+                _descriptor.MoveNext(new IteratorWrapper(_iterator));
+            }
+            
+            if (_iterator.Valid())
+            {
+                _currentKey = Native.Instance.rocksdb_iter_key(_iterator.Handle, out _currentKeyLength);
+                var currentSpan = new ReadOnlySpan<byte>((void*)_currentKey, (int)_currentKeyLength);
+                return _descriptor.ShouldContinue(currentSpan);
+            }
+            return false;
+        }
+
+        public KeyPrefix KeyPrefix => *(KeyPrefix*)_currentKey;
+        public ReadOnlySpan<byte> ValueSpan => new((void*)(_currentKey + KeyPrefix.Size), (int)_currentKeyLength - KeyPrefix.Size);
+
+        public ReadOnlySpan<byte> ExtraValueSpan 
+        {
+            get
+            {
+                Debug.Assert(KeyPrefix.ValueTag == ValueTag.HashedBlob, "ExtraValueSpan is only valid for HashedBlob values");
+                return _iterator!.GetValueSpan();
+            }
+        }
     }
 }

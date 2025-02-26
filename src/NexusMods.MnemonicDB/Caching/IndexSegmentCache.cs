@@ -269,6 +269,27 @@ public class IndexSegmentCache
     }
 
     /// <summary>
+    /// Adds the given index segment to the cache, under the given entity id.
+    /// </summary>
+    public void Add(EntityId id, IndexSegment segment)
+    {
+        var key = CacheKey.Create(IndexType.EAVTCurrent, id);
+        if (_root.TryGetValue(key, out _))
+            return;
+        
+        UpdateEntry(key, segment);
+    }
+    
+    
+    public void AddReverse(EntityId eid, AttributeId aid, IndexSegment segment)
+    {
+        var key = CacheKey.Create(IndexType.VAETCurrent, aid, eid);
+        if (_root.TryGetValue(key, out _))
+            return;
+        UpdateEntry(key, segment);
+    }
+
+    /// <summary>
     /// Get a segment for all the datoms that point to the given entity id via their value for the given attribute.
     /// </summary>
     public IndexSegment GetReverse(AttributeId attributeId, EntityId entityId, IDb db)
@@ -326,4 +347,5 @@ public class IndexSegmentCache
     {
         _root = new CacheRoot(ImmutableDictionary<CacheKey, CacheValue>.Empty);
     }
+
 }

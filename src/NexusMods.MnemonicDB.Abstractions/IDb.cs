@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -49,6 +45,11 @@ public interface IDb : IEquatable<IDb>
     /// Get all the datoms for the given entity id.
     /// </summary>
     public IndexSegment Datoms(EntityId id);
+    
+    /// <summary>
+    /// Get all the datoms defined by the given slice descriptor.
+    /// </summary>
+    public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor;
 
     /// <summary>
     /// Get all the datoms for the given slice descriptor.
@@ -90,4 +91,9 @@ public interface IDb : IEquatable<IDb>
     /// Clears the internal cache of the database.
     /// </summary>
     void ClearIndexCache();
+
+    /// <summary>
+    /// Starts a thread that begins precaching all the entities and reverse references into this database instance.
+    /// </summary>
+    Task PrecacheAll();
 }

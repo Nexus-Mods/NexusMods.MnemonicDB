@@ -127,7 +127,7 @@ public sealed partial class DatomStore : IDatomStore
         Logger = logger;
         _settings = settings;
         
-        Backend.Init(settings.Path);
+        Backend.Init(settings);
 
         if (bootstrap) 
             Bootstrap();

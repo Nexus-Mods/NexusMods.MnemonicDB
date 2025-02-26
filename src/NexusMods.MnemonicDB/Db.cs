@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Caching;
-using NexusMods.MnemonicDB.Storage;
+using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
 namespace NexusMods.MnemonicDB;
 
@@ -27,8 +25,9 @@ internal class Db : IDb
     public ISnapshot Snapshot { get; }
     public AttributeCache AttributeCache { get; }
 
-    public IndexSegment RecentlyAdded { get; }
-    
+    private readonly Lazy<IndexSegment> _recentlyAdded;
+    public IndexSegment RecentlyAdded => _recentlyAdded.Value;
+
     internal Dictionary<Type, object> AnalyzerData { get; } = new();
 
     public Db(ISnapshot snapshot, TxId txId, AttributeCache attributeCache)
@@ -38,7 +37,9 @@ internal class Db : IDb
         _cache = new IndexSegmentCache();
         Snapshot = snapshot;
         BasisTxId = txId;
-        RecentlyAdded = snapshot.Datoms(SliceDescriptor.Create(txId));
+        
+        // We may never need this data, so load it lazily
+        _recentlyAdded = new (() => snapshot.Datoms(SliceDescriptor.Create(txId)));
     }
 
     private Db(ISnapshot snapshot, TxId txId, AttributeCache attributeCache, IConnection connection, IndexSegmentCache newCache, IndexSegment recentlyAdded)
@@ -48,7 +49,7 @@ internal class Db : IDb
         _connection = connection;
         Snapshot = snapshot;
         BasisTxId = txId;
-        RecentlyAdded = recentlyAdded;
+        _recentlyAdded = new Lazy<IndexSegment>(recentlyAdded);
     }
 
     /// <summary>
@@ -119,6 +120,74 @@ internal class Db : IDb
         _cache.Clear();
     }
 
+    public Task PrecacheAll()
+    {
+        var tcs = new TaskCompletionSource();
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var casted = (Snapshot)Snapshot;
+                using var builder = new IndexSegmentBuilder(AttributeCache);
+                using var enumerator =
+                    casted.RefDatoms(SliceDescriptor.AllEntities(PartitionId.Entity)).GetEnumerator();
+                EntityId currentEntity = default;
+                while (enumerator.MoveNext())
+                {
+                    if (enumerator.KeyPrefix.E != currentEntity && builder.Count > 0)
+                    {
+                        var built = builder.Build();
+                        builder.Reset();
+                        _cache.Add(currentEntity, built);
+                    }
+
+                    currentEntity = enumerator.KeyPrefix.E;
+                    builder.AddCurrent(enumerator);
+                }
+
+                if (builder.Count > 0)
+                {
+                    var built = builder.Build();
+                    builder.Reset();
+                    _cache.Add(currentEntity, built);
+                }
+
+
+                using var reverseIndexes = casted
+                    .RefDatoms(SliceDescriptor.AllReverseAttributesInPartition(PartitionId.Entity)).GetEnumerator();
+                var previousAid = default(AttributeId);
+                var previousEntity = default(EntityId);
+
+                while (reverseIndexes.MoveNext())
+                {
+                    if ((reverseIndexes.KeyPrefix.A != previousAid || reverseIndexes.KeyPrefix.E != previousEntity) &&
+                        builder.Count > 0)
+                    {
+                        var built = builder.Build();
+                        builder.Reset();
+                        _cache.AddReverse(previousEntity, previousAid, built);
+                    }
+
+                    previousAid = reverseIndexes.KeyPrefix.A;
+                    previousEntity = reverseIndexes.KeyPrefix.E;
+                    builder.AddCurrent(reverseIndexes);
+                }
+                tcs.SetResult();
+            }
+            catch (Exception e)
+            {
+                tcs.SetException(e);
+                return;
+            }
+        })
+        {
+            Name = "MnemonicDB Precache",
+            IsBackground = true
+        };
+        thread.Start();
+        return tcs.Task;
+    }
+
     public IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)
     {
         return Datoms(SliceDescriptor.Create(attribute, value, AttributeCache));
@@ -128,7 +197,12 @@ internal class Db : IDb
     {
         return _cache.Get(entityId, this);
     }
-    
+
+    public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
+    {
+        return Snapshot.Datoms(descriptor);
+    }
+
     public IndexSegment Datoms(IAttribute attribute)
     {
         return Snapshot.Datoms(SliceDescriptor.Create(attribute, AttributeCache));
