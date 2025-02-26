@@ -103,13 +103,9 @@ public readonly struct SliceDescriptor : ISliceDescriptor
     /// <summary>
     /// Creates a slice descriptor for the given transaction in the TxLog index
     /// </summary>
-    public static SliceDescriptor Create(TxId tx)
+    public static TxIdSlice Create(TxId tx)
     {
-        return new SliceDescriptor
-        {
-            From = Datom(EntityId.MinValueNoPartition, AttributeId.Min, tx, false, IndexType.TxLog),
-            To = Datom(EntityId.MaxValueNoPartition, AttributeId.Max, tx, false, IndexType.TxLog)
-        };
+        return new TxIdSlice(tx);
     }
 
     /// <summary>
@@ -157,13 +153,9 @@ public readonly struct SliceDescriptor : ISliceDescriptor
     /// Creates a slice descriptor for the given reference attribute and entity that is being pointed to, this is a
     /// reverse lookup.
     /// </summary>
-    public static SliceDescriptor Create(AttributeId referenceAttribute, EntityId pointingTo)
+    public static BackRefSlice Create(AttributeId referenceAttribute, EntityId pointingTo)
     {
-        return new SliceDescriptor
-        {
-            From = Datom(EntityId.MinValueNoPartition, referenceAttribute, pointingTo, TxId.MinValue, false, IndexType.VAETCurrent),
-            To = Datom(EntityId.MaxValueNoPartition, referenceAttribute, pointingTo, TxId.MaxValue, false, IndexType.VAETCurrent)
-        };
+        return new BackRefSlice(referenceAttribute, pointingTo);
     }
 
     /// <summary>
@@ -392,5 +384,15 @@ public readonly struct SliceDescriptor : ISliceDescriptor
         from = From;
         to = To;
         isReversed = IsReverse;
+    }
+
+    public static AllEntitiesInPartition AllEntities(PartitionId partition) 
+    {
+        return new AllEntitiesInPartition(partition);
+    }
+    
+    public static AllReverseAttributesInPartition AllReverseAttributesInPartition(PartitionId partition) 
+    {
+        return new AllReverseAttributesInPartition(partition);
     }
 }

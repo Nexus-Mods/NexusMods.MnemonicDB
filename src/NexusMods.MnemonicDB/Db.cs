@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Caching;
+using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
 namespace NexusMods.MnemonicDB;
 
@@ -115,6 +118,74 @@ internal class Db : IDb
     public void ClearIndexCache()
     {
         _cache.Clear();
+    }
+
+    public Task PrecacheAll()
+    {
+        var tcs = new TaskCompletionSource();
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var casted = (Snapshot)Snapshot;
+                using var builder = new IndexSegmentBuilder(AttributeCache);
+                using var enumerator =
+                    casted.RefDatoms(SliceDescriptor.AllEntities(PartitionId.Entity)).GetEnumerator();
+                EntityId currentEntity = default;
+                while (enumerator.MoveNext())
+                {
+                    if (enumerator.KeyPrefix.E != currentEntity && builder.Count > 0)
+                    {
+                        var built = builder.Build();
+                        builder.Reset();
+                        _cache.Add(currentEntity, built);
+                    }
+
+                    currentEntity = enumerator.KeyPrefix.E;
+                    builder.AddCurrent(enumerator);
+                }
+
+                if (builder.Count > 0)
+                {
+                    var built = builder.Build();
+                    builder.Reset();
+                    _cache.Add(currentEntity, built);
+                }
+
+
+                using var reverseIndexes = casted
+                    .RefDatoms(SliceDescriptor.AllReverseAttributesInPartition(PartitionId.Entity)).GetEnumerator();
+                var previousAid = default(AttributeId);
+                var previousEntity = default(EntityId);
+
+                while (reverseIndexes.MoveNext())
+                {
+                    if ((reverseIndexes.KeyPrefix.A != previousAid || reverseIndexes.KeyPrefix.E != previousEntity) &&
+                        builder.Count > 0)
+                    {
+                        var built = builder.Build();
+                        builder.Reset();
+                        _cache.AddReverse(previousEntity, previousAid, built);
+                    }
+
+                    previousAid = reverseIndexes.KeyPrefix.A;
+                    previousEntity = reverseIndexes.KeyPrefix.E;
+                    builder.AddCurrent(reverseIndexes);
+                }
+                tcs.SetResult();
+            }
+            catch (Exception e)
+            {
+                tcs.SetException(e);
+                return;
+            }
+        })
+        {
+            Name = "MnemonicDB Precache",
+            IsBackground = true
+        };
+        thread.Start();
+        return tcs.Task;
     }
 
     public IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)
