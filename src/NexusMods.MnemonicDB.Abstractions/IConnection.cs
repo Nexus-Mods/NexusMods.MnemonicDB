@@ -94,7 +94,7 @@ public interface IConnection : IDisposable
     /// Observe a slice of the database, as datoms are added or removed from the database, the observer will be updated
     /// with the changeset of datoms that have been added or removed.
     /// </summary>
-    IObservable<DatomChangeSet> ObserveDatoms(SliceDescriptor descriptor);
+    IObservable<DatomChangeSet> ObserveDatoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor;
     
     /// <summary>
     /// This delegate is called for each datom in the scan, the result time defines what should be done with the datom

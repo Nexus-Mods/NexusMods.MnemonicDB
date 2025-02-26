@@ -20,7 +20,7 @@ public interface ISnapshot
     /// <summary>
     /// Get the data specified by the given descriptor as a single segment.
     /// </summary>
-    IndexSegment Datoms(SliceDescriptor descriptor);
+    IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor;
 
     /// <summary>
     /// Get the data specified by the given descriptor chunked into segments of datoms of the given size.

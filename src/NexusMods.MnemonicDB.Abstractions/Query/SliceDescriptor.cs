@@ -4,6 +4,7 @@ using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Query.SliceDescriptors;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.Query;
@@ -94,13 +95,9 @@ public readonly struct SliceDescriptor : ISliceDescriptor
     /// <summary>
     /// Creates a slice descriptor for the given entity in the current EAVT index
     /// </summary>
-    public static SliceDescriptor Create(EntityId e)
+    public static EntityIdSlice Create(EntityId e)
     {
-        return new SliceDescriptor
-        {
-            From = Datom(e, AttributeId.Min, TxId.MinValue, false, IndexType.EAVTCurrent),
-            To = Datom(e, AttributeId.Max, TxId.MaxValue, false, IndexType.EAVTCurrent)
-        };
+        return new EntityIdSlice(e);
     }
 
     /// <summary>
