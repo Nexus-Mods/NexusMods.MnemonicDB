@@ -292,13 +292,13 @@ public class Connection : IConnection
     }
 
 
-    public IObservable<DatomChangeSet> ObserveDatoms(SliceDescriptor descriptor)
+    public IObservable<DatomChangeSet> ObserveDatoms<TDescriptor>(TDescriptor descriptor) 
+        where TDescriptor : ISliceDescriptor
     {
         return Observable.Create<DatomChangeSet>(observer =>
         {
             _pendingEvents.Add(() => {
-                var fromDatom = descriptor.From.WithIndex(descriptor.Index);
-                var toDatom = descriptor.To.WithIndex(descriptor.Index);
+                var (fromDatom, toDatom, isReversed) = descriptor;
                 
                 while (true)
                 {

@@ -49,6 +49,11 @@ public interface IDb : IEquatable<IDb>
     /// Get all the datoms for the given entity id.
     /// </summary>
     public IndexSegment Datoms(EntityId id);
+    
+    /// <summary>
+    /// Get all the datoms defined by the given slice descriptor.
+    /// </summary>
+    public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor;
 
     /// <summary>
     /// Get all the datoms for the given slice descriptor.

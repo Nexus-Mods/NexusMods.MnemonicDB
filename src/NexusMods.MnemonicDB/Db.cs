@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Diagnostics;
-using System.Linq;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Caching;
-using NexusMods.MnemonicDB.Storage;
 
 namespace NexusMods.MnemonicDB;
 
@@ -131,7 +126,12 @@ internal class Db : IDb
     {
         return _cache.Get(entityId, this);
     }
-    
+
+    public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
+    {
+        return Snapshot.Datoms(descriptor);
+    }
+
     public IndexSegment Datoms(IAttribute attribute)
     {
         return Snapshot.Datoms(SliceDescriptor.Create(attribute, AttributeCache));

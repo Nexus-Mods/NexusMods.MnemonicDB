@@ -386,4 +386,11 @@ public readonly struct SliceDescriptor : ISliceDescriptor
         else 
             return GlobalComparer.Compare(keySpan, To.ToArray()) <= 0;
     }
+
+    public void Deconstruct(out Datom from, out Datom to, out bool isReversed)
+    {
+        from = From;
+        to = To;
+        isReversed = IsReverse;
+    }
 }

@@ -1,4 +1,5 @@
 using System;
+using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -18,4 +19,9 @@ public interface ISliceDescriptor
     /// Given the current iterator position, and this key, should we continue iterating (is the given span inside the bounds of the iterator)?
     /// </summary>
     public bool ShouldContinue(ReadOnlySpan<byte> keySpan);
+    
+    /// <summary>
+    /// Deconstruct the slice descriptor into its constituent parts.
+    /// </summary>
+    public void Deconstruct(out Datom from, out Datom to, out bool isReversed);
 }

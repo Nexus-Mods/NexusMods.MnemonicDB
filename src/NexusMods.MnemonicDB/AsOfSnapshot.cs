@@ -19,12 +19,19 @@ namespace NexusMods.MnemonicDB;
 /// </summary>
 internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeCache attributeCache) : ISnapshot
 {
-    public IndexSegment Datoms(SliceDescriptor descriptor)
+    public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) 
+        where TDescriptor : ISliceDescriptor
     {
-        // TODO: stop using IEnumerable and use IndexSegment directly
-        var current = inner.Datoms(descriptor.WithIndex(descriptor.Index.CurrentVariant()));
-        var history = inner.Datoms(descriptor.WithIndex(descriptor.Index.HistoryVariant()));
-        var comparatorFn = descriptor.Index.GetComparator();
+        var (fromDatom, toDatom, isReversed) = descriptor;
+        var fromIndex = fromDatom.Prefix.Index;
+        var toIndex = toDatom.Prefix.Index;
+        
+        var currentDescriptor = SliceDescriptor.Create(fromDatom.WithIndex(fromIndex.CurrentVariant()), toDatom.WithIndex(toIndex.CurrentVariant()));
+        var historyDescriptor = SliceDescriptor.Create(fromDatom.WithIndex(fromIndex.HistoryVariant()), toDatom.WithIndex(toIndex.HistoryVariant()));
+
+        var current = inner.Datoms(currentDescriptor);
+        var history = inner.Datoms(historyDescriptor);
+        var comparatorFn = fromIndex.GetComparator();
 
         using var builder = new IndexSegmentBuilder(attributeCache);
 

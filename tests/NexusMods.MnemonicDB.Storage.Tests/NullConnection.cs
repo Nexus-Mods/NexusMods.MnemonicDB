@@ -47,6 +47,11 @@ public class NullConnection : IConnection
         throw new NotSupportedException();
     }
 
+    public IObservable<ChangeSet<Datom, DatomKey, IDb>> ObserveDatoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
+    {
+        throw new NotSupportedException();
+    }
+
     public IObservable<ChangeSet<Datom, DatomKey, IDb>> ObserveDatoms(SliceDescriptor descriptor)
     {
         throw new NotSupportedException();

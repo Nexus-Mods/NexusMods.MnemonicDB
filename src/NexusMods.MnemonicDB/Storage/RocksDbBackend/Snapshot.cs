@@ -10,7 +10,7 @@ using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-internal class Snapshot : ISnapshot
+internal sealed class Snapshot : ISnapshot
 {
     /// <summary>
     /// The backend, needed to create iterators
@@ -38,10 +38,10 @@ internal class Snapshot : ISnapshot
         _snapshot = snapshot;
     }
 
-    public IndexSegment Datoms(SliceDescriptor descriptor)
+    public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
     {
         using var builder = new IndexSegmentBuilder(_attributeCache);
-        builder.AddRange<RefDatomEnumerable<SliceDescriptor>, RefDatomEnumerator<SliceDescriptor>>(RefDatoms(descriptor));
+        builder.AddRange<RefDatomEnumerable<TDescriptor>, RefDatomEnumerator<TDescriptor>>(RefDatoms(descriptor));
         return builder.Build();
     }
 
