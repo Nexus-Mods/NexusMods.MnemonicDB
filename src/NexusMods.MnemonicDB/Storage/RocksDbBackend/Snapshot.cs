@@ -27,6 +27,7 @@ internal class Snapshot : ISnapshot
     /// <summary>
     /// We keep this here, so that it's not finalized while we're using it
     /// </summary>
+    // ReSharper disable once NotAccessedField.Local
     private readonly RocksDbSharp.Snapshot _snapshot;
 
     public Snapshot(Backend backend, AttributeCache attributeCache, ReadOptions readOptions, RocksDbSharp.Snapshot snapshot)
@@ -89,8 +90,8 @@ internal class Snapshot : ISnapshot
         {
             _snapshot = snapshot;
             _reverse = sliceDescriptor.IsReverse;
-            _from = (_reverse ? sliceDescriptor.To : sliceDescriptor.From).ToArray();
-            _to = (_reverse ? sliceDescriptor.From : sliceDescriptor.To).ToArray();
+            _from = sliceDescriptor.From.ToArray();
+            _to = sliceDescriptor.To.ToArray();
         }
         
         public void Dispose()
@@ -106,7 +107,7 @@ internal class Snapshot : ISnapshot
                 if (!_reverse)
                     _iterator.Seek(_from);
                 else
-                    _iterator.SeekForPrev(_to);
+                    _iterator.SeekForPrev(_from);
             }
             else
             {
@@ -127,7 +128,7 @@ internal class Snapshot : ISnapshot
                 }
                 else
                 {
-                    if (GlobalComparer.Compare(currentSpan, _from.AsSpan()) < 0)
+                    if (GlobalComparer.Compare(currentSpan, _to.AsSpan()) < 0)
                         return false;
                 }
                 return true;
