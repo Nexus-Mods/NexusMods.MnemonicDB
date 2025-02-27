@@ -9,7 +9,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Query.SliceDescriptors;
 /// <summary>
 /// Forward slice for a transaction id
 /// </summary>
-public struct TxIdSlice(TxId txId) : ISliceDescriptor
+public readonly struct TxIdSlice(TxId txId) : ISliceDescriptor
 {
     /// <inheritdoc />
     public void Reset<T>(T iterator) where T : ILowLevelIterator, allows ref struct
