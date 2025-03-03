@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.113 - 3/3/2025
+* Removed "DelayUntilFirstValue". It's no longer needed and was causing a deadlock in some cases
+
 ### 0.9.112 - 26/2/2025
 * Drastic improvements to the performance of the `Datoms` calls. Now these calls bottom out on raw RocksDB iterators and structs
 * Implements a `db.PrecacheAll()` method that will pre-cache all entities in the `Entity` partition. As well as any reverse indexes, useful for
