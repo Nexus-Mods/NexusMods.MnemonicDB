@@ -9,7 +9,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Query.SliceDescriptors;
 /// <summary>
 /// A slice descriptor for all the entities in a partition via the EAVT Index.
 /// </summary>
-public struct AllEntitiesInPartition(PartitionId partitionId) : ISliceDescriptor
+public readonly struct AllEntitiesInPartition(PartitionId partitionId) : ISliceDescriptor
 {
     /// <inheritdoc />
     public void Reset<T>(T iterator) where T : ILowLevelIterator, allows ref struct

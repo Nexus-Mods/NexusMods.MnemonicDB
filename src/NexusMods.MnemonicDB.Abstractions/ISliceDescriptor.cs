@@ -3,6 +3,9 @@ using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
+/// <summary>
+/// Represents a slice descriptor.
+/// </summary>
 public interface ISliceDescriptor
 {
     /// <summary>
