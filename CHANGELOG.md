@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.114 - 3/3/2025
+* Fixed a compile error in the build pipeline
+
 ### 0.9.113 - 3/3/2025
 * Removed "DelayUntilFirstValue". It's no longer needed and was causing a deadlock in some cases
 
