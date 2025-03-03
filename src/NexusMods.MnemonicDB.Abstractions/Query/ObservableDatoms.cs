@@ -18,49 +18,6 @@ namespace NexusMods.MnemonicDB.Abstractions.Query;
 /// </summary>
 public static class ObservableDatoms
 {
-
-    /// <summary>
-    /// Delays the creation of the IObservable until after the first value from the src is received. Once the first
-    /// value arrives the ctor function will be called to create the observable. This is useful for situations where
-    /// the creation of an observable is not valid until some startup operations have been performed that will eventually
-    /// publish a value to an observable.
-    /// </summary>
-    public static IObservable<TResult> DelayUntilFirstValue<TSrc, TResult>(this IObservable<TSrc> src,
-        Func<IObservable<TResult>> constructorFn)
-    {
-        ArgumentNullException.ThrowIfNull(src);
-        ArgumentNullException.ThrowIfNull(constructorFn);
-
-        return src
-            .Take(1)
-            .Select(_ => constructorFn())
-            .Switch();
-    }
-
-    /// <summary>
-    /// Observe a slice of the database, as datoms are added or removed from the database, the observer will be updated
-    /// with the changeset of datoms that have been added or removed.
-    /// </summary>
-    /*
-    public static IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(this IConnection conn, SliceDescriptor descriptor)
-    {
-        var lastTxId = TxId.From(0);
-
-        return conn.Revisions
-            .Where(rev => rev.RecentlyAdded.Count > 0)
-            .Select<IDb, IChangeSet<Datom, DatomKey>>((rev, idx) =>
-        {
-            if (rev.BasisTxId <= lastTxId && idx != 0)
-                return ChangeSet<Datom, DatomKey>.Empty;
-
-            lastTxId = rev.BasisTxId;
-
-            if (idx == 0)
-                return Setup(rev, descriptor);
-            return Diff(conn.AttributeCache, rev.RecentlyAdded, descriptor);
-        });
-    }*/
-
     /// <summary>
     /// Observe all datoms for a given entity id
     /// </summary>
@@ -75,7 +32,7 @@ public static class ObservableDatoms
     public static IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(this IConnection conn, EntityId id, IAttribute attribute)
     {
         var aid = conn.AttributeCache.GetAttributeId(attribute.Id);
-        return conn.Revisions.DelayUntilFirstValue(() => conn.ObserveDatoms(SliceDescriptor.Create(id, aid)));
+        return conn.ObserveDatoms(SliceDescriptor.Create(id, aid));
     }
 
     /// <summary>
@@ -83,7 +40,7 @@ public static class ObservableDatoms
     /// </summary>
     public static IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(this IConnection conn, ReferenceAttribute attribute, EntityId id)
     {
-        return conn.Revisions.DelayUntilFirstValue(() => conn.ObserveDatoms(SliceDescriptor.Create(attribute, id, conn.AttributeCache)));
+        return conn.ObserveDatoms(SliceDescriptor.Create(attribute, id, conn.AttributeCache));
     }
 
     /// <summary>
@@ -91,9 +48,9 @@ public static class ObservableDatoms
     /// </summary>
     public static IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(this IConnection conn, IAttribute attribute)
     {
-        return conn.Revisions.DelayUntilFirstValue(() => conn.ObserveDatoms(SliceDescriptor.Create(attribute, conn.AttributeCache)));
+        return conn.ObserveDatoms(SliceDescriptor.Create(attribute, conn.AttributeCache));
     }
-    
+
     /// <summary>
     /// Converts a set of observed datoms to a set of observed entity ids, assumes that there will be no datoms with
     /// duplicate entity ids.
