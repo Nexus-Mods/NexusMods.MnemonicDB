@@ -142,6 +142,8 @@ public sealed partial class DatomStore : IDatomStore
     /// <inheritdoc />
     public async Task<(StoreResult, IDb)> TransactAsync(IInternalTxFunction fn)
     {
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+
         var casted = (IInternalTxFunctionImpl)fn;
         _pendingTransactions.Add(casted);
 
@@ -158,6 +160,8 @@ public sealed partial class DatomStore : IDatomStore
     /// <inheritdoc />
     public (StoreResult, IDb) Transact(IInternalTxFunction fn)
     {
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
+
         var casted = (IInternalTxFunctionImpl)fn;
         _pendingTransactions.Add(casted);
 
@@ -166,9 +170,9 @@ public sealed partial class DatomStore : IDatomStore
         {
             return task.Result;
         }
+
         Logger.LogError("Transaction didn't complete after {Timeout}", TransactionTimeout);
         throw new TimeoutException($"Transaction didn't complete after {TransactionTimeout}");
-
     }
     
     /// <inheritdoc />
@@ -191,16 +195,22 @@ public sealed partial class DatomStore : IDatomStore
     {
         return CurrentSnapshot!;
     }
-    
+
+    private bool _isDisposed;
+
     /// <inheritdoc />
     public void Dispose()
     {
+        if (_isDisposed) return;
+
         _pendingTransactions.CompleteAdding();
         _shutdownToken.Cancel();
         _loggerThread?.Join();
         _dbStream.Dispose();
         _writer.Dispose();
         _retractWriter.Dispose();
+
+        _isDisposed = true;
     }
 
     private void ConsumeTransactions()
