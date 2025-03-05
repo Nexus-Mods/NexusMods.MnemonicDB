@@ -3,7 +3,7 @@ using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
-public interface IRefDatomEnumerator : IDisposable
+public interface IRefDatomEnumerator
 {
     /// <summary>
     /// Returns true if the enumerator was able to move to the next element

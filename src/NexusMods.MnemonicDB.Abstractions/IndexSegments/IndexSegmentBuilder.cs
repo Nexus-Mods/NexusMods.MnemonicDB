@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Query;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
@@ -146,15 +147,11 @@ public readonly struct IndexSegmentBuilder : IDisposable
     /// <summary>
     /// Adds all the items from the enumerator to the segment
     /// </summary>
-    public void AddRange<TOuter, TInner>(in TOuter enumerator) 
-        where TOuter : IRefDatomEnumerable<TInner>, allows ref struct
-        where TInner : IRefDatomEnumerator, allows ref struct
+    public void AddRange<TEnumerator>(TEnumerator enumerator) 
+        where TEnumerator : IRefDatomEnumerator
     {
-        using var inner = enumerator.GetEnumerator();
-        while (inner.MoveNext())
-        {
-            AddCurrent(in inner);
-        }
+        while (enumerator.MoveNext()) 
+            AddCurrent(enumerator);
     }
     
     /// <summary>

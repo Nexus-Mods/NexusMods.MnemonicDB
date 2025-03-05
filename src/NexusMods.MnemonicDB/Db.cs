@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
@@ -12,8 +13,9 @@ using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
 namespace NexusMods.MnemonicDB;
 
-internal class Db<TSnapshot> : IDb 
-    where TSnapshot : ISnapshot
+internal class Db<TSnapshot, TLowLevelIterator> : ADatomsIndex<TLowLevelIterator>, IDb 
+    where TSnapshot : ISnapshot<TLowLevelIterator>
+    where TLowLevelIterator : ILowLevelIterator
 {
     private readonly IndexSegmentCache _cache;
     
@@ -23,27 +25,16 @@ internal class Db<TSnapshot> : IDb
     /// and is set by the Connection class after the Datom Store has pushed the Db object to it.
     /// </summary>
     private IConnection? _connection;
-    public ISnapshot Snapshot { get; }
+    public ISnapshot Snapshot => _snapshot;
     public AttributeCache AttributeCache { get; }
 
     private readonly Lazy<IndexSegment> _recentlyAdded;
+    private readonly TSnapshot _snapshot;
     public IndexSegment RecentlyAdded => _recentlyAdded.Value;
 
     internal Dictionary<Type, object> AnalyzerData { get; } = new();
 
-    public Db(TSnapshot snapshot, TxId txId, AttributeCache attributeCache)
-    {
-        Debug.Assert(snapshot != null, $"{nameof(snapshot)} cannot be null");
-        AttributeCache = attributeCache;
-        _cache = new IndexSegmentCache();
-        Snapshot = snapshot;
-        BasisTxId = txId;
-        
-        // We may never need this data, so load it lazily
-        _recentlyAdded = new (() => snapshot.Datoms(SliceDescriptor.Create(txId)));
-    }
-
-    internal Db(TSnapshot snapshot, TxId txId, AttributeCache attributeCache, IConnection? connection = null, object? newCache = null, IndexSegment? recentlyAdded = null)
+    internal Db(TSnapshot snapshot, TxId txId, AttributeCache attributeCache, IConnection? connection = null, object? newCache = null, IndexSegment? recentlyAdded = null) : base(attributeCache)
     {
         AttributeCache = attributeCache;
         
@@ -52,7 +43,7 @@ internal class Db<TSnapshot> : IDb
         else
             _cache = (IndexSegmentCache)newCache;
         _connection = connection;
-        Snapshot = snapshot;
+        _snapshot = snapshot;
         BasisTxId = txId;
         
         if (recentlyAdded is null)
@@ -201,21 +192,14 @@ internal class Db<TSnapshot> : IDb
     {
         return _cache.Get(entityId, this);
     }
-
-    public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
-    {
-        return Snapshot.Datoms(descriptor);
-    }
-
+    
     public IndexSegment Datoms(IAttribute attribute)
     {
-        return Snapshot.Datoms(SliceDescriptor.Create(attribute, AttributeCache));
+        return Datoms(SliceDescriptor.Create(attribute, AttributeCache));
     }
 
-    public IndexSegment Datoms(SliceDescriptor sliceDescriptor)
-    {
-        return Snapshot.Datoms(sliceDescriptor);
-    }
+    [MustDisposeResource]
+    protected override TLowLevelIterator GetLowLevelIterator() => _snapshot.GetLowLevelIterator();
 
     public IndexSegment Datoms(TxId txId)
     {

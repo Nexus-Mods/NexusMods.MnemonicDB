@@ -1,5 +1,6 @@
 using System;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using Reloaded.Memory.Pointers;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 

@@ -2,14 +2,13 @@
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
 /// <summary>
 ///     Represents an immutable database fixed to a specific TxId.
 /// </summary>
-public interface IDb : IEquatable<IDb>
+public interface IDb : IDatomsIndex, IEquatable<IDb>
 {
     /// <summary>
     ///     Gets the basis TxId of the database.
@@ -46,16 +45,6 @@ public interface IDb : IEquatable<IDb>
     /// </summary>
     public EntitySegment Datoms(EntityId id);
     
-    /// <summary>
-    /// Get all the datoms defined by the given slice descriptor.
-    /// </summary>
-    public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor;
-
-    /// <summary>
-    /// Get all the datoms for the given slice descriptor.
-    /// </summary>
-    public IndexSegment Datoms(SliceDescriptor sliceDescriptor);
-
     /// <summary>
     ///     Gets the datoms for the given transaction id.
     /// </summary>
