@@ -61,17 +61,7 @@ internal class Db : IDb
         var newCache = _cache.ForkAndEvict(storeResult, AttributeCache, out var newDatoms);
         return new Db(storeResult.Snapshot, txId, AttributeCache, _connection!, newCache, newDatoms);
     }
-
-    private IndexSegment EntityDatoms(IDb db, EntityId id)
-    {
-        return _cache.Get(id, db);
-    }
-
-    private static IndexSegment ReverseDatoms(IDb db, (EntityId, AttributeId) key)
-    {
-        return db.Snapshot.Datoms(SliceDescriptor.Create(key.Item2, key.Item1));
-    }
-
+    
     public TxId BasisTxId { get; }
 
     public IConnection Connection

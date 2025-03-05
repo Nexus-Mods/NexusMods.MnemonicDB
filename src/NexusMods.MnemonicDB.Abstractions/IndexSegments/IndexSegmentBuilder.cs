@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
@@ -165,6 +166,23 @@ public readonly struct IndexSegmentBuilder : IDisposable
     {
         _offsets.Add(_data.Length);
         return new IndexSegment(_data.GetWrittenSpan(), _offsets.ToArray(), _attributeCache);
+    }
+
+    /// <summary>
+    /// Returns just the entity ids from the segment
+    /// </summary>
+    public Memory<EntityId> BuildEntityIds()
+    {
+        var memory = GC.AllocateUninitializedArray<EntityId>(_offsets.Count);
+        var writtenSpan = _data.GetWrittenSpan();
+        var offsetsSpan = CollectionsMarshal.AsSpan(_offsets);
+        for (var idx = 0; idx < _offsets.Count; idx++)
+        {
+            var offset = offsetsSpan[idx];
+            var span = KeyPrefix.Read(writtenSpan.SliceFast(offset));
+            memory[idx] = span.E;
+        }
+        return memory;
     }
 
     /// <inheritdoc />
