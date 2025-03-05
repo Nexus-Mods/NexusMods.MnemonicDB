@@ -39,12 +39,12 @@ public interface IDb : IEquatable<IDb>
     /// <summary>
     /// Gets the index segment for the given entity id.
     /// </summary>
-    public IndexSegment Get(EntityId entityId);
+    public EntitySegment Get(EntityId entityId);
 
     /// <summary>
     /// Get all the datoms for the given entity id.
     /// </summary>
-    public IndexSegment Datoms(EntityId id);
+    public EntitySegment Datoms(EntityId id);
     
     /// <summary>
     /// Get all the datoms defined by the given slice descriptor.

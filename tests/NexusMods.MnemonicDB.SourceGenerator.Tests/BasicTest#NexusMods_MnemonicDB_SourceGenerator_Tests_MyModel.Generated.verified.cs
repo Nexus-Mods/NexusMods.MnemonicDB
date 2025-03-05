@@ -194,17 +194,17 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
            /// <summary>
            /// The database segment containing the datoms for this entity in EAVT order.
            /// </summary>
-           public readonly __SEGMENTS__.IndexSegment IndexSegment;
+           public readonly __SEGMENTS__.EntitySegment EntitySegment;
            
-           __SEGMENTS__.IndexSegment __MODELS__.IHasIdAndIndexSegment.IndexSegment => this.IndexSegment; 
+           __SEGMENTS__.EntitySegment __MODELS__.IHasIdAndEntitySegment.EntitySegment => this.EntitySegment; 
 
            /// <summary>
            /// Constructs a new ReadOnly model of the entity from the given segment and id.
            /// </summary>
-           public ReadOnly(__ABSTRACTIONS__.IDb db, __SEGMENTS__.IndexSegment segment, __ABSTRACTIONS__.EntityId id) {
+           public ReadOnly(__ABSTRACTIONS__.IDb db, __SEGMENTS__.EntitySegment segment, __ABSTRACTIONS__.EntityId id) {
                Db = db;
                Id = id;
-               IndexSegment = segment;
+               EntitySegment = segment;
            }
 
            /// <summary>
@@ -241,16 +241,16 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
            }
 
            /// <inheritdoc />
-           public int Count => IndexSegment.Count;
+           public int Count => EntitySegment.Count;
 
 
            /// <inheritdoc />
            public IEnumerator<IReadDatom> GetEnumerator()
            {
                var resolver = Db.Connection.AttributeResolver;
-               for (var i = 0; i < IndexSegment.Count; i++)
+               foreach (var datom in EntitySegment)
                {
-                   yield return resolver.Resolve(IndexSegment[i]);
+                   yield return resolver.Resolve(datom);
                }
            }
 

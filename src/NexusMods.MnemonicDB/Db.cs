@@ -81,7 +81,7 @@ internal class Db : IDb
     /// <summary>
     /// Gets the IndexSegment for the given entity id.
     /// </summary>
-    public IndexSegment Get(EntityId entityId)
+    public EntitySegment Get(EntityId entityId)
     {
         return Datoms(entityId);
     }
@@ -90,7 +90,7 @@ internal class Db : IDb
     {
         var aid = _connection!.AttributeCache.GetAttributeId(attribute.Id);
         var segment = _cache.GetReverse(aid, id, this);
-        return segment.EntityIds();
+        return segment;
     }
     
     public IndexSegment ReferencesTo(EntityId id)
@@ -183,7 +183,7 @@ internal class Db : IDb
         return Datoms(SliceDescriptor.Create(attribute, value, AttributeCache));
     }
     
-    public IndexSegment Datoms(EntityId entityId)
+    public EntitySegment Datoms(EntityId entityId)
     {
         return _cache.Get(entityId, this);
     }

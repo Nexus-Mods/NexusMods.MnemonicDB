@@ -16,23 +16,12 @@ public abstract class CollectionAttribute<TValue, TLowLevel, TSerializer>(string
     /// <summary>
     /// Gets all values for this attribute on the given entity
     /// </summary>
-    public Values<TValue> Get(IHasIdAndIndexSegment ent)
+    public Values<TValue> Get(IHasIdAndEntitySegment ent)
     {
-        var segment = ent.IndexSegment;
+        var segment = ent.EntitySegment;
         var dbId = ent.Db.AttributeCache.GetAttributeId(Id);
-        for (var i = 0; i < segment.Count; i++)
-        {
-            var datom = segment[i];
-            if (datom.A != dbId) continue;
-
-            var start = i;
-            while (i < segment.Count && segment[i].A == dbId)
-            {
-                i++;
-            }
-            return new Values<TValue>(segment, start, i, this, ent.Db.Connection.AttributeResolver);
-        }
-        return new Values<TValue>(segment, 0, 0, this, ent.Db.Connection.AttributeResolver);
+        var range = segment.GetRange(dbId);
+        return new Values<TValue>(segment, range, this);
     }
     
     /// <summary>
@@ -43,19 +32,8 @@ public abstract class CollectionAttribute<TValue, TLowLevel, TSerializer>(string
     {
         var segment = ent.Db.Get(ent.Id);
         var dbId = ent.Db.AttributeCache.GetAttributeId(Id);
-        for (var i = 0; i < segment.Count; i++)
-        {
-            var datom = segment[i];
-            if (datom.A != dbId) continue;
-
-            var start = i;
-            while (i < segment.Count && segment[i].A == dbId)
-            {
-                i++;
-            }
-            return new Values<TValue>(segment, start, i, this, ent.Db.Connection.AttributeResolver);
-        }
-        return new Values<TValue>(segment, 0, 0, this, ent.Db.Connection.AttributeResolver);
+        var range = segment.GetRange(dbId);
+        return new Values<TValue>(segment, range, this);
     }
 
     /// <summary>

@@ -93,13 +93,13 @@ public struct CacheValue : IEquatable<CacheValue>
     /// <summary>
     /// The cached index segment.
     /// </summary>
-    public readonly IndexSegment Segment;
+    public readonly object Segment;
     
     /// <summary>
     /// Create a new cache value.
     /// </summary>
     /// <param name="segment"></param>
-    public CacheValue(IndexSegment segment)
+    public CacheValue(object segment)
     {
         LastAccessed = CreateLastAccessed();
         Segment = segment;
@@ -159,7 +159,7 @@ public class CacheRoot
     /// <summary>
     /// Get the index segment for the given key, if it exists.
     /// </summary>
-    public bool TryGetValue(CacheKey key, out IndexSegment segment)
+    public bool TryGetValue(CacheKey key, out object segment)
     {
         if (_entries.TryGetValue(key, out var value))
         {
@@ -167,14 +167,14 @@ public class CacheRoot
             segment = value.Segment;
             return true;
         }
-        segment = default;
+        segment = null!;
         return false;
     }
 
     /// <summary>
     /// Create a new cache root with the given segment added.
     /// </summary>
-    public CacheRoot With(CacheKey key, IndexSegment segment, IndexSegmentCache cache)
+    public CacheRoot With(CacheKey key, object segment, IndexSegmentCache cache)
     {
         var newEntries = _entries.SetItem(key, new CacheValue(segment));
         if (newEntries.Count > cache.EntryCapacity)
@@ -193,11 +193,9 @@ public class CacheRoot
         var toDrop = newEntries.OrderBy(kv => kv.Value.LastAccessed).Take(toPurge);
         
         var builder = newEntries.ToBuilder();
-        var droppedSize = Size.Zero;
         foreach (var kv in toDrop)
         {
             builder.Remove(kv.Key);
-            droppedSize += kv.Value.Segment.DataSize;
         }
         
         return builder.ToImmutable();
@@ -257,15 +255,15 @@ public class IndexSegmentCache
     /// Get the index segment for the given entity id, if it is not in the cache, cache it, then update the cache at the
     /// given location so that it contains the new segment.
     /// </summary>
-    public IndexSegment Get(EntityId entityId, IDb db)
+    public EntitySegment Get(EntityId entityId, IDb db)
     {
         var key = CacheKey.Create(IndexType.EAVTCurrent, entityId);
         if (_root.TryGetValue(key, out var segment))
-            return segment;
+            return (EntitySegment)segment;
 
         segment = db.Snapshot.Datoms(SliceDescriptor.Create(entityId));
         UpdateEntry(key, segment);
-        return segment;
+        return (EntitySegment)segment;
     }
 
     /// <summary>
@@ -292,15 +290,15 @@ public class IndexSegmentCache
     /// <summary>
     /// Get a segment for all the datoms that point to the given entity id via their value for the given attribute.
     /// </summary>
-    public IndexSegment GetReverse(AttributeId attributeId, EntityId entityId, IDb db)
+    public EntityIds GetReverse(AttributeId attributeId, EntityId entityId, IDb db)
     {
         var key = CacheKey.Create(IndexType.VAETCurrent, attributeId, entityId);
         if (_root.TryGetValue(key, out var segment))
-            return segment;
+            return (EntityIds)segment;
         
         segment = db.Snapshot.Datoms(SliceDescriptor.Create(attributeId, entityId));
         UpdateEntry(key, segment);
-        return segment;
+        return (EntityIds)segment;
     }
     
     /// <summary>
@@ -310,11 +308,11 @@ public class IndexSegmentCache
     {
         var key = CacheKey.Create(IndexType.VAETCurrent, entityId);
         if (_root.TryGetValue(key, out var segment))
-            return segment;
+            return (IndexSegment)segment;
         
         segment = db.Snapshot.Datoms(SliceDescriptor.CreateReferenceTo(entityId));
         UpdateEntry(key, segment);
-        return segment;
+        return (IndexSegment)segment;
     }
     
     /// <summary>
@@ -327,7 +325,7 @@ public class IndexSegmentCache
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void UpdateEntry(CacheKey key, IndexSegment segment)
+    private void UpdateEntry(CacheKey key, object segment)
     {
         while (true)
         {

@@ -157,8 +157,6 @@ public readonly struct IndexSegmentBuilder : IDisposable
         }
     }
     
-    
-
     /// <summary>
     /// Construct the index segment
     /// </summary>
@@ -189,5 +187,14 @@ public readonly struct IndexSegmentBuilder : IDisposable
     public void Dispose()
     {
         _data.Dispose();
+    }
+
+    /// <summary>
+    /// Build an entity segment from the current data
+    /// </summary>
+    public EntitySegment BuildEntitySegment(IDb db, EntityId id)
+    {
+        _offsets.Add(_data.Length);
+        return EntitySegment.Create(db, id, _offsets, _data.GetWrittenSpan());
     }
 }
