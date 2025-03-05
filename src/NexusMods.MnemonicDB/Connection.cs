@@ -11,7 +11,6 @@ using Jamarino.IntervalTree;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.InternalTxFunctions;
 using NexusMods.MnemonicDB.Storage;
 using R3;
@@ -24,7 +23,7 @@ using DatomChangeSet = ChangeSet<Datom, DatomKey, IDb>;
 /// <summary>
 ///     Main connection class, co-ordinates writes and immutable reads
 /// </summary>
-public class Connection : IConnection
+public sealed class Connection : IConnection
 {
     private readonly DatomStore _store;
     private readonly ILogger<Connection> _logger;
@@ -90,9 +89,10 @@ public class Connection : IConnection
     {
         IDb? prev = null;
         
-        return dbStream
-            .Subscribe(idb =>
+        return dbStream.Subscribe(idb =>
         {
+            if (_isDisposed) return;
+
             var db = (Db)idb;
             db.Connection = this;
             var tcs = new TaskCompletionSource();
@@ -291,12 +291,13 @@ public class Connection : IConnection
         return Transact(new SimpleMigration(attribute));
     }
 
-
     public IObservable<DatomChangeSet> ObserveDatoms<TDescriptor>(TDescriptor descriptor) 
         where TDescriptor : ISliceDescriptor
     {
         return Observable.Create<DatomChangeSet>(observer =>
         {
+            if (_isDisposed) return Disposable.Empty;
+
             _pendingEvents.Add(() => {
                 var (fromDatom, toDatom, isReversed) = descriptor;
                 
@@ -416,10 +417,16 @@ public class Connection : IConnection
         return Task.CompletedTask;
     }
 
+    private bool _isDisposed;
+
     /// <inheritdoc />
     public void Dispose()
     {
+        if (_isDisposed) return;
+
         _pendingEvents.CompleteAdding();
         _eventThread.Join();
+
+        _isDisposed = true;
     }
 }
