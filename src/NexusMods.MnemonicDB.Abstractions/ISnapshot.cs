@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+﻿using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Query;
-using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -17,6 +12,11 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// </summary>
 public interface ISnapshot
 {
+    /// <summary>
+    /// Construct a new DB with this snapshot and the given paramters.
+    /// </summary>
+    public IDb MakeDb(TxId txId, AttributeCache attributeCache, IConnection? connection = null, object? newCache = null, IndexSegment? recentlyAdded = null);
+    
     /// <summary>
     /// Get the data specified by the given descriptor as a single segment.
     /// </summary>

@@ -137,7 +137,7 @@ public class Connection : IConnection
             try
             {
                 var result = analyzer.Analyze(newEvent.Prev, newEvent.Db);
-                newEvent.Db.AnalyzerData.Add(analyzer.GetType(), result);
+                newEvent.Db.AddAnalyzerData(analyzer.GetType(), result);
             }
             catch (Exception ex)
             {
@@ -208,12 +208,12 @@ public class Connection : IConnection
     /// </summary>
     private IDisposable ProcessUpdates(IObservable<IDb> dbStream)
     {
-        Db? prev = null;
+        IDb? prev = null;
         
         return dbStream
             .Subscribe(idb =>
         {
-            var db = (Db)idb;
+            var db = idb;
             db.Connection = this;
             var tcs = new TaskCompletionSource();
             _pendingEvents.Writer.TryWrite(new NewRevisionEvent(prev, db, tcs));
@@ -222,7 +222,7 @@ public class Connection : IConnection
         });
     }
 
-    private void ProcessObservers(Db db)
+    private void ProcessObservers(IDb db)
     {
         var recentlyAdded = db.RecentlyAdded;
         var cache = db.AttributeCache;
@@ -336,19 +336,13 @@ public class Connection : IConnection
     public IDb AsOf(TxId txId)
     {
         var snapshot = new AsOfSnapshot(_store.GetSnapshot(), txId, AttributeCache);
-        return new Db(snapshot, txId, AttributeCache)
-        {
-            Connection = this
-        };
+        return snapshot.MakeDb(txId, AttributeCache, this);
     }
 
     /// <inheritdoc />
     public IDb History()
     {
-        return new Db(new HistorySnapshot(_store.GetSnapshot(), AttributeCache), TxId, AttributeCache)
-        {
-            Connection = this
-        };
+        return new HistorySnapshot(_store.GetSnapshot(), AttributeCache).MakeDb(TxId, AttributeCache, this);
     }
 
     /// <inheritdoc />
@@ -425,7 +419,7 @@ public class Connection : IConnection
         IDb newDb;
 
         (newTx, newDb) = await _store.TransactAsync(fn);
-        ((Db)newDb).Connection = this;
+        newDb.Connection = this;
         var result = new CommitResult(newDb, newTx.Remaps);
         return result;
     }
@@ -435,10 +429,7 @@ public class Connection : IConnection
         try
         {
             var initialSnapshot = _store.GetSnapshot();
-            var initialDb = new Db(initialSnapshot, TxId, AttributeCache)
-            {
-                Connection = this
-            };
+            var initialDb = initialSnapshot.MakeDb(TxId, AttributeCache, this);
             AttributeCache.Reset(initialDb);
             
             var declaredAttributes = AttributeResolver.DefinedAttributes.OrderBy(a => a.Id.Id).ToArray();

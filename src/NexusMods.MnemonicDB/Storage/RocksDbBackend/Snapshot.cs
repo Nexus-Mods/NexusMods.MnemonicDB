@@ -38,6 +38,11 @@ internal sealed class Snapshot : ISnapshot
         _snapshot = snapshot;
     }
 
+    public IDb MakeDb(TxId txId, AttributeCache attributeCache, IConnection? connection, object? newCache, IndexSegment? recentlyAdded)
+    {
+        return new Db<Snapshot>(this, txId, attributeCache, connection, newCache, recentlyAdded);
+    }
+
     public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
     {
         using var builder = new IndexSegmentBuilder(_attributeCache);

@@ -71,7 +71,7 @@ internal class SimpleMigration : AInternalFn
         
         var built = builder.Build();
         store.LogDatoms(batch, built, advanceTx: true);
-        store.AttributeCache.Reset(new Db(store.CurrentSnapshot, store.AsOfTxId, store.AttributeCache));
+        store.AttributeCache.Reset(store.CurrentSnapshot.MakeDb(store.AsOfTxId, store.AttributeCache));
     }
 
 

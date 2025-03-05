@@ -14,6 +14,11 @@ namespace NexusMods.MnemonicDB;
 /// </summary>
 internal class HistorySnapshot(ISnapshot inner, AttributeCache attributeCache) : ISnapshot
 {
+    public IDb MakeDb(TxId txId, AttributeCache cache, IConnection? connection = null, object? newCache = null, IndexSegment? recentlyAdded = null)
+    {
+        return new Db<HistorySnapshot>(this, txId, cache, connection, newCache, recentlyAdded);
+    }
+
     public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
     {
         var (fromDatom, toDatom, isReversed) = descriptor;

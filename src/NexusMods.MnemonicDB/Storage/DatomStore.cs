@@ -240,7 +240,7 @@ public sealed partial class DatomStore : IDatomStore
     /// </summary>
     private void FinishTransaction(StoreResult result, IInternalTxFunctionImpl pendingTransaction)
     {
-        _currentDb = ((Db)_currentDb!).WithNext(result, result.AssignedTxId);
+        _currentDb = _currentDb!.WithNext(result, result.AssignedTxId);
         _dbStream.OnNext(_currentDb);
         Task.Run(() => pendingTransaction.Complete(result, _currentDb));
     }
@@ -279,7 +279,7 @@ public sealed partial class DatomStore : IDatomStore
             throw;
         }
         
-        _currentDb = new Db(CurrentSnapshot, _asOfTx, _attributeCache);
+        _currentDb = CurrentSnapshot.MakeDb(_asOfTx, _attributeCache);
         _dbStream.OnNext(_currentDb);
         _loggerThread = new Thread(ConsumeTransactions)
         {

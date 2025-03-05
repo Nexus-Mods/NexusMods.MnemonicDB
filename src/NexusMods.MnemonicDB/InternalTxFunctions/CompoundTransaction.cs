@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
+using NexusMods.MnemonicDB.Caching;
 using NexusMods.MnemonicDB.Storage;
 
 namespace NexusMods.MnemonicDB.InternalTxFunctions;
@@ -37,8 +38,7 @@ internal sealed class CompoundTransaction : AInternalFn
         var secondaryBuilder = new IndexSegmentBuilder(store.AttributeCache);
         try
         {
-            var db = new Db(store.CurrentSnapshot, store.AsOfTxId, store.AttributeCache);
-            db.Connection = Connection;
+            var db = store.CurrentSnapshot.MakeDb(store.AsOfTxId, store.AttributeCache, Connection);
             var tx = new InternalTransaction(db, secondaryBuilder);
             
             foreach (var fn in _userFunctions)

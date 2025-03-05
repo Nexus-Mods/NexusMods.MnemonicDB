@@ -12,7 +12,8 @@ using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
 namespace NexusMods.MnemonicDB;
 
-internal class Db : IDb
+internal class Db<TSnapshot> : IDb 
+    where TSnapshot : ISnapshot
 {
     private readonly IndexSegmentCache _cache;
     
@@ -30,7 +31,7 @@ internal class Db : IDb
 
     internal Dictionary<Type, object> AnalyzerData { get; } = new();
 
-    public Db(ISnapshot snapshot, TxId txId, AttributeCache attributeCache)
+    public Db(TSnapshot snapshot, TxId txId, AttributeCache attributeCache)
     {
         Debug.Assert(snapshot != null, $"{nameof(snapshot)} cannot be null");
         AttributeCache = attributeCache;
@@ -42,26 +43,39 @@ internal class Db : IDb
         _recentlyAdded = new (() => snapshot.Datoms(SliceDescriptor.Create(txId)));
     }
 
-    private Db(ISnapshot snapshot, TxId txId, AttributeCache attributeCache, IConnection connection, IndexSegmentCache newCache, IndexSegment recentlyAdded)
+    internal Db(TSnapshot snapshot, TxId txId, AttributeCache attributeCache, IConnection? connection = null, object? newCache = null, IndexSegment? recentlyAdded = null)
     {
         AttributeCache = attributeCache;
-        _cache = newCache;
+        
+        if (newCache is null)
+            _cache = new IndexSegmentCache();
+        else
+            _cache = (IndexSegmentCache)newCache;
         _connection = connection;
         Snapshot = snapshot;
         BasisTxId = txId;
-        _recentlyAdded = new Lazy<IndexSegment>(recentlyAdded);
+        
+        if (recentlyAdded is null)
+            _recentlyAdded = new (() => snapshot.Datoms(SliceDescriptor.Create(txId)));
+        else
+            _recentlyAdded = new (() => recentlyAdded.Value);
     }
 
     /// <summary>
     /// Create a new Db instance with the given store result and transaction id integrated, will evict old items
     /// from the cache, and update the cache with the new datoms.
     /// </summary>
-    internal Db WithNext(StoreResult storeResult, TxId txId)
+    public IDb WithNext(StoreResult storeResult, TxId txId)
     {
         var newCache = _cache.ForkAndEvict(storeResult, AttributeCache, out var newDatoms);
-        return new Db(storeResult.Snapshot, txId, AttributeCache, _connection!, newCache, newDatoms);
+        return storeResult.Snapshot.MakeDb(txId, AttributeCache, _connection!, newCache, newDatoms);
     }
-    
+
+    public void AddAnalyzerData(Type getType, object result)
+    {
+        AnalyzerData.Add(getType, result);
+    }
+
     public TxId BasisTxId { get; }
 
     public IConnection Connection
@@ -213,7 +227,8 @@ internal class Db : IDb
         if (other is null)
             return false;
         return ReferenceEquals(_connection, other.Connection)
-               && BasisTxId.Equals(other.BasisTxId);
+               && BasisTxId.Equals(other.BasisTxId)
+               && Snapshot.GetType() == other.Snapshot.GetType();
     }
 
     public override bool Equals(object? obj)
@@ -221,7 +236,7 @@ internal class Db : IDb
         if (ReferenceEquals(null, obj)) return false;
         if (ReferenceEquals(this, obj)) return true;
         if (obj.GetType() != GetType()) return false;
-        return Equals((Db)obj);
+        return Equals((IDb)obj);
     }
 
     public override int GetHashCode()

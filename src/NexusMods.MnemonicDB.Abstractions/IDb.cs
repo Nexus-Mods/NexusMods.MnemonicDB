@@ -19,8 +19,8 @@ public interface IDb : IEquatable<IDb>
     /// <summary>
     ///     The connection that this database is using for its state.
     /// </summary>
-    IConnection Connection { get; }
-    
+    IConnection Connection { get; set; }
+
     /// <summary>
     ///     The datoms that were added in the most recent transaction (indicated by the basis TxId).
     /// </summary>
@@ -96,4 +96,14 @@ public interface IDb : IEquatable<IDb>
     /// Starts a thread that begins precaching all the entities and reverse references into this database instance.
     /// </summary>
     Task PrecacheAll();
+
+    /// <summary>
+    /// Create the next version of the database with the given result and the transaction id that the result was assigned.
+    /// </summary>
+    IDb WithNext(StoreResult result, TxId resultAssignedTxId);
+
+    /// <summary>
+    /// Add the given analyzer data to the analyzer cache.
+    /// </summary>
+    void AddAnalyzerData(Type getType, object result);
 }
