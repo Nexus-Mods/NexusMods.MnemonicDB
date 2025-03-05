@@ -4,7 +4,7 @@ using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-public readonly struct IteratorWrapper(Iterator iterator) : ILowLevelIterator
+internal readonly struct IteratorWrapper(Iterator iterator) : ILowLevelIterator
 {
     public void SeekTo(ReadOnlySpan<byte> span)
     {

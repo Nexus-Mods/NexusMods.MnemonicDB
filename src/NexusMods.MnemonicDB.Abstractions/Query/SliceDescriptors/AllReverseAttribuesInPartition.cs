@@ -10,8 +10,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Query.SliceDescriptors;
 /// <summary>
 /// A slice for all reverse attributes in a given partition
 /// </summary>
-/// <param name="partitionId"></param>
-public class AllReverseAttributesInPartition(PartitionId partitionId) : ISliceDescriptor
+public readonly struct AllReverseAttributesInPartition(PartitionId partitionId) : ISliceDescriptor
 {
     /// <inheritdoc />
     public void Reset<T>(T iterator) where T : ILowLevelIterator, allows ref struct
@@ -45,8 +44,9 @@ public class AllReverseAttributesInPartition(PartitionId partitionId) : ISliceDe
     /// <inheritdoc />
     public void Deconstruct(out Datom from, out Datom to, out bool isReversed)
     {
-        var fromValue = new byte[8];
-        var toValue = new byte[8];
+        var fromValue = GC.AllocateUninitializedArray<byte>(sizeof(ulong));
+        var toValue = GC.AllocateUninitializedArray<byte>(sizeof(ulong));
+
         MemoryMarshal.Write(fromValue, partitionId.MinValue);
         MemoryMarshal.Write(toValue, partitionId.MaxValue);
         
