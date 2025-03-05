@@ -90,7 +90,7 @@ internal class Db : IDb
     {
         var aid = _connection!.AttributeCache.GetAttributeId(attribute.Id);
         var segment = _cache.GetReverse(aid, id, this);
-        return new EntityIds(segment, 0, segment.Count);
+        return segment.EntityIds();
     }
     
     public IndexSegment ReferencesTo(EntityId id)

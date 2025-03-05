@@ -10,18 +10,18 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 /// A subview of an IndexSegment that returns the entity ids of the segment
 /// </summary>
 [PublicAPI]
-public readonly struct EntityIds(IndexSegment segment, int start, int end) :
+public readonly struct EntityIds(Memory<EntityId> segment) :
     IReadOnlyCollection<EntityId>, IIndexSegment<EntityId>
 {
     /// <summary>
     /// Gets the value at the given location
     /// </summary>
-    public EntityId this[int idx] => segment[idx + start].E;
+    public EntityId this[int idx] => segment.Span[idx];
 
     /// <summary>
     /// Returns the number of items in the collection
     /// </summary>
-    public int Count => end - start;
+    public int Count => segment.Length;
 
     /// <summary>
     /// Converts the view to an array
@@ -39,7 +39,7 @@ public readonly struct EntityIds(IndexSegment segment, int start, int end) :
     /// <summary>
     /// Returns an enumerator.
     /// </summary>
-    public Enumerator GetEnumerator() => new(segment, start, end);
+    public Enumerator GetEnumerator() => new(segment);
     IEnumerator<EntityId> IEnumerable<EntityId>.GetEnumerator() => GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -57,18 +57,15 @@ public readonly struct EntityIds(IndexSegment segment, int start, int end) :
     /// </summary>
     public struct Enumerator : IEnumerator<EntityId>
     {
-        private readonly IndexSegment _segment;
-        private readonly int _start;
-        private readonly int _end;
+        private readonly Memory<EntityId> _segment;
         private int _index;
+        private readonly int _max;
 
-        internal Enumerator(IndexSegment segment, int start, int end)
+        internal Enumerator(Memory<EntityId> segment)
         {
+            _max = segment.Length;
             _segment = segment;
-            _start = start;
-            _end = end;
-
-            _index = start;
+            _index = 0;
         }
 
         /// <inheritdoc/>
@@ -78,8 +75,8 @@ public readonly struct EntityIds(IndexSegment segment, int start, int end) :
         /// <inheritdoc/>
         public bool MoveNext()
         {
-            if (_index >= _end) return false;
-            Current = _segment[_index + _start].E;
+            if (_index >= _max) return false;
+            Current = _segment.Span[_index];
             _index += 1;
             return true;
         }

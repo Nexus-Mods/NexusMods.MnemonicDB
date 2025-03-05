@@ -190,7 +190,21 @@ public readonly struct IndexSegment : IReadOnlyList<Datom>
     public Entities<TModel> AsModels<TModel>(IDb fromDb) 
         where TModel : IReadOnlyModel<TModel>
     {
-        return new Entities<TModel>(new EntityIds(this, 0, Count), fromDb);
+        return new Entities<TModel>(EntityIds(), fromDb);
+    }
+
+    /// <summary>
+    /// Gets all the entity ids in this segment
+    /// </summary>
+    public EntityIds EntityIds()
+    {
+        var ids = GC.AllocateUninitializedArray<EntityId>(_rowCount);
+        for (var i = 0; i < _rowCount; i++)
+        {
+            var prefix = new KeyPrefix(Uppers[i], Lowers[i]);
+            ids[i] = prefix.E;
+        }
+        return new EntityIds(ids);
     }
 
     /// <summary>
