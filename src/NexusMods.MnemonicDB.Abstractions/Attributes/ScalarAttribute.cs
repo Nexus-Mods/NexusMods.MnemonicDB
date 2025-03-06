@@ -40,12 +40,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
         where T : IHasEntityIdAndDb
     {
         var attributeId = entity.Db.AttributeCache.GetAttributeId(Id);
-        if (segment.TryGetValue(this, attributeId, out value)) 
-        {
-            return false;
-        }
-        value = default!;
-        return true;
+        return segment.TryGetValue(this, attributeId, out value);
     }
 
     /// <summary>

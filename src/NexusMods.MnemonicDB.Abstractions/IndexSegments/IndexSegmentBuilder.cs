@@ -5,7 +5,6 @@ using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Abstractions.Query;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;

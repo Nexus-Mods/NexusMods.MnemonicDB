@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -72,7 +73,7 @@ public readonly struct EntitySegment : IEnumerable<Datom>
     /// <summary>
     /// Get the value for the first occurrence of the given attribute id in the segment
     /// </summary>
-    public bool TryGetValue<TAttribute, TValueType>(TAttribute attr, AttributeId id, out TValueType value) 
+    public bool TryGetValue<TAttribute, TValueType>(TAttribute attr, AttributeId id, [NotNullWhen(true)] out TValueType value) 
         where TAttribute : IReadableAttribute<TValueType>
     {
         var i = FirstOffsetOf(id);
@@ -150,7 +151,7 @@ public readonly struct EntitySegment : IEnumerable<Datom>
         if (start == -1)
             return new Range(0, 0);
         var end = LastOffsetOf(start, id);
-        return new Range(start, end - start);
+        return new Range(start, end);
     }
     
     /// <summary>

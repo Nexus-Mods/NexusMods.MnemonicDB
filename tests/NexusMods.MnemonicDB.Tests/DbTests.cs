@@ -1122,7 +1122,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         var modRO = result.Remap(mod);
         
-        modRO.Tags.Should().BeEquivalentTo(["A", "B", "C"]);
+        modRO.Tags.Should().BeEquivalentTo("A", "B", "C");
     }
 
     /// <summary>
