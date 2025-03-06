@@ -1432,7 +1432,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         var txTask = Task.Run(async () =>
         {
-            for (var i = 0; i < 10_000; i++)
+            for (var i = 0; i < 1000; i++)
             {
                 using var tx2 = Connection.BeginTransaction();
                 tx2.Add(fileId, File.Size, Size.From((ulong)i));

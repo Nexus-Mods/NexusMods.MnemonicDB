@@ -14,19 +14,14 @@ public readonly struct TxIdSlice(TxId txId) : ISliceDescriptor
     /// <inheritdoc />
     public void Reset<T>(T iterator, bool useHistory) where T : ILowLevelIterator, allows ref struct
     {
+        // There is no history for a TxLog, so we do nothing.
         if (useHistory)
-            throw new InvalidOperationException("Cannot query history with a TxIdSlice");
+            return;
         var prefix = new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, txId, false, ValueTag.Null, IndexType.TxLog);
         var spanTo = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in prefix, 1));
         iterator.SeekTo(spanTo);
     }
-
-    /// <inheritdoc />
-    public void ResetHistory<T>(T iterator) where T : ILowLevelIterator, allows ref struct
-    {
-        throw new NotSupportedException("TxIdSlice does not support history");
-    }
-
+    
     /// <inheritdoc />
     public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct
     {
@@ -37,7 +32,7 @@ public readonly struct TxIdSlice(TxId txId) : ISliceDescriptor
     public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool useHistory)
     {
         if (useHistory)
-            throw new InvalidOperationException("Cannot query history with a TxIdSlice");
+            return false;
         var prefix = KeyPrefix.Read(keySpan);
         return prefix.T == txId && prefix.Index == IndexType.TxLog;
     }
