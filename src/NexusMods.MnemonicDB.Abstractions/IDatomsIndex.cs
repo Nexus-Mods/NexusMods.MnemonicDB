@@ -5,6 +5,8 @@ namespace NexusMods.MnemonicDB.Abstractions;
 
 public interface IDatomsIndex
 {
+    public AttributeCache AttributeCache { get; }
+    
     /// <summary>
     /// Get the datoms for a specific descriptor
     /// </summary>
@@ -16,4 +18,23 @@ public interface IDatomsIndex
     /// </summary>
     public IEnumerable<IndexSegment> DatomsChunked<TSliceDescriptor>(TSliceDescriptor descriptor, int chunkSize)
         where TSliceDescriptor : ISliceDescriptor;
+    
+    /// <summary>
+    /// Get the entity segment for a specific entity id
+    /// </summary>
+    public EntitySegment GetEntitySegment(IDb db, EntityId entityId);
+    
+    /// <summary>
+    /// Gets all the entity ids pointing to the given entity id via the given attribute.
+    /// </summary>
+    public EntityIds GetEntityIdsPointingTo(AttributeId attribute, EntityId entityId);
+
+    /// <summary>
+    /// Gets all the entity ids pointing to the given entity id via the given attribute.
+    /// </summary>
+    public EntityIds GetEntityIdsPointingTo(IAttribute attribute, EntityId entityId)
+    {
+        var attrId = AttributeCache.GetAttributeId(attribute.Id);
+        return GetEntityIdsPointingTo(attrId, entityId);
+    }
 }

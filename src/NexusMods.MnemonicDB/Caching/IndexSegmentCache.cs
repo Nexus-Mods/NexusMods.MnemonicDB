@@ -261,7 +261,7 @@ public class IndexSegmentCache
         if (_root.TryGetValue(key, out var segment))
             return (EntitySegment)segment;
 
-        segment = db.Snapshot.Datoms(SliceDescriptor.Create(entityId));
+        segment = db.Snapshot.GetEntitySegment(db, entityId);
         UpdateEntry(key, segment);
         return (EntitySegment)segment;
     }
@@ -296,7 +296,7 @@ public class IndexSegmentCache
         if (_root.TryGetValue(key, out var segment))
             return (EntityIds)segment;
         
-        segment = db.Snapshot.Datoms(SliceDescriptor.Create(attributeId, entityId));
+        segment = db.Snapshot.GetEntityIdsPointingTo(attributeId, entityId);
         UpdateEntry(key, segment);
         return (EntityIds)segment;
     }

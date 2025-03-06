@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB;
 
@@ -42,6 +43,23 @@ public abstract class ADatomsIndex<TLowLevelIterator> : IDatomsIndex, ILowLevelI
         }
         if (builder.Count > 0)
             yield return builder.Build();
+    }
+
+    public EntitySegment GetEntitySegment(IDb db, EntityId entityId)
+    {
+        using var builder = new IndexSegmentBuilder(AttributeCache);
+        using var iterator = GetLowLevelIterator();
+        builder.AddRange(iterator.Slice(SliceDescriptor.Create(entityId)));
+        return builder.BuildEntitySegment(db, entityId);
+    }
+
+    public EntityIds GetEntityIdsPointingTo(AttributeId attrId, EntityId entityId)
+    {
+        var slice = SliceDescriptor.Create(attrId, entityId);
+        using var builder = new IndexSegmentBuilder(AttributeCache);
+        using var iterator = GetLowLevelIterator();
+        builder.AddRange(iterator.Slice(slice));
+        return new EntityIds(builder.BuildEntityIds());
     }
 
     /// <inheritdoc />

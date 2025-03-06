@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Query;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
@@ -42,12 +43,13 @@ public readonly struct EntitySegment : IEnumerable<Datom>
         var compressedSize = ((rowCount * sizeof(ushort)) + rowCount + (sizeof(uint) * rowCount)) + dataSize;
         
         var compressed = GC.AllocateUninitializedArray<byte>(compressedSize);
+        var compressedSpan = compressed.AsSpan();
         
-        var aSpan = compressed.AsSpan().SliceFast(0, rowCount * sizeof(ushort)).CastFast<byte, AttributeId>();
-        var vSpan = compressed.AsSpan().SliceFast(rowCount * sizeof(ushort), rowCount).CastFast<byte, ValueTag>();
-        var offsetSpan = compressed.AsSpan().SliceFast(rowCount * sizeof(ushort) + rowCount, rowCount * sizeof(uint)).CastFast<byte, int>();
+        var aSpan = compressedSpan.SliceFast(0, rowCount * sizeof(ushort)).CastFast<byte, AttributeId>();
+        var vSpan = compressedSpan.SliceFast(rowCount * sizeof(ushort), rowCount).CastFast<byte, ValueTag>();
+        var offsetSpan = compressedSpan.SliceFast(rowCount * sizeof(ushort) + rowCount, rowCount * sizeof(uint)).CastFast<byte, int>();
         var dataStart = rowCount * sizeof(ushort) + rowCount + (rowCount * sizeof(uint));
-        var dataSpan = compressed.AsSpan().SliceFast(dataStart, dataSize);
+        var dataSpan = compressedSpan.SliceFast(dataStart, dataSize);
 
         var dataOffset = dataStart;
         for (var idx = 0; idx < rowCount; idx++)
@@ -61,7 +63,7 @@ public readonly struct EntitySegment : IEnumerable<Datom>
             aSpan[idx] = prefix.A;
             vSpan[idx] = prefix.ValueTag;
             offsetSpan[idx] = dataOffset;
-            valueSpan.CopyTo(dataSpan.SliceFast(dataOffset));
+            valueSpan.CopyTo(compressedSpan.SliceFast(dataOffset));
             dataOffset += valueSpan.Length;
         }
         return new EntitySegment(id, compressed, rowCount, context);
@@ -163,7 +165,7 @@ public readonly struct EntitySegment : IEnumerable<Datom>
     
     public IEnumerator<Datom> GetEnumerator()
     {
-        return _db.Datoms(_id).GetEnumerator();
+        return _db.Datoms(SliceDescriptor.Create(_id)).GetEnumerator();
     }
 
     /// <summary>
