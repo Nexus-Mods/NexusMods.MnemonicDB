@@ -336,7 +336,7 @@ public class Connection : IConnection
     /// <inheritdoc />
     public IDb AsOf(TxId txId)
     {
-        var snapshot = new AsOfSnapshot(_store.GetSnapshot(), txId, AttributeCache);
+        var snapshot = new AsOfSnapshot((Snapshot)_store.GetSnapshot(), txId, AttributeCache);
         return snapshot.MakeDb(txId, AttributeCache, this);
     }
 

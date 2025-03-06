@@ -38,3 +38,13 @@ public interface IRefDatomEnumerator : IDisposable
     /// </summary>
     public Ptr ExtraValueSpan { get; }
 }
+
+
+public interface IRefDatomPeekingEnumerator : IRefDatomEnumerator
+{
+    /// <summary>
+    /// If the next datom is a retraction, this will return the txId of the retraction. Only valid for history indexes
+    /// and forward iteration.
+    /// </summary>
+    public bool TryGetRetractionId(out TxId id);
+}

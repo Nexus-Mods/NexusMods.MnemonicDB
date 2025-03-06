@@ -1,12 +1,11 @@
 using System;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Internals;
-using Reloaded.Memory.Extensions;
 using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-internal struct RocksDbIteratorWrapper : IRefDatomEnumerator, ILowLevelIterator
+internal struct RocksDbIteratorWrapper : IRefDatomPeekingEnumerator, ILowLevelIterator
 {
     private Ptr _key;
     private bool _started;
@@ -41,7 +40,30 @@ internal struct RocksDbIteratorWrapper : IRefDatomEnumerator, ILowLevelIterator
             return descriptor.ShouldContinue(_key.Span, useHistory);
         }
         return false;
+    }
 
+    public unsafe bool TryGetRetractionId(out TxId id)
+    {
+        _iterator.Next();
+        if (!_iterator.Valid())
+        {
+            _iterator.Prev();
+            id = default;
+            return false;
+        }
+        var keyPtr = Native.Instance.rocksdb_iter_key(_iterator.Handle, out var keyLen);
+        var prefix = KeyPrefix.Read(new ReadOnlySpan<byte>((byte*)keyPtr, (int)keyLen));
+        _iterator.Prev();
+        
+        if (!prefix.IsRetract)
+        {
+            id = default;
+            return false;
+        }
+        
+        // The way indexes are sorted, there's never a case where a retraction comes after an assert that it is not retraction for
+        id = prefix.T;
+        return true;
     }
 
     public KeyPrefix KeyPrefix => _key.Read<KeyPrefix>(0);

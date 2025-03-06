@@ -14,8 +14,8 @@ public struct HistoryRefDatomEnumerator<THistory, TCurrent> : IRefDatomEnumerato
         Current = 2
     }
     
-    private readonly THistory _history;
-    private readonly TCurrent _current;
+    private THistory _history;
+    private TCurrent _current;
 
     // These fields track whether each enumerator currently has a valid element.
     private bool _historyHasCurrent;
@@ -28,7 +28,7 @@ public struct HistoryRefDatomEnumerator<THistory, TCurrent> : IRefDatomEnumerato
     private UseSide _useSide = UseSide.History;
 
     public HistoryRefDatomEnumerator(THistory history,
-                                    TCurrent current)
+                                     TCurrent current)
     {
         _history = history ?? throw new ArgumentNullException(nameof(history));
         _current = current ?? throw new ArgumentNullException(nameof(current));
@@ -36,7 +36,6 @@ public struct HistoryRefDatomEnumerator<THistory, TCurrent> : IRefDatomEnumerato
         _historyHasCurrent = false;
         _currentHasCurrent = false;
     }
-
 
     /// <inheritdoc />
     public KeyPrefix KeyPrefix => _useSide == UseSide.History ? _history.KeyPrefix : _current.KeyPrefix;
@@ -69,44 +68,59 @@ public struct HistoryRefDatomEnumerator<THistory, TCurrent> : IRefDatomEnumerato
             _historyHasCurrent = _history.MoveNext(descriptor, true);
             _currentHasCurrent = _current.MoveNext(descriptor, false);
             _initialized = true;
+
+            if (!_historyHasCurrent && !_currentHasCurrent)
+                return false;
+
+            // Determine which enumerator to use without advancing it again.
+            if (!_historyHasCurrent)
+            {
+                _useSide = UseSide.Current;
+            }
+            else if (!_currentHasCurrent)
+            {
+                _useSide = UseSide.History;
+            }
+            else
+            {
+                var cmp = GlobalComparer.CompareIgnoreHistoryIndex(_history.Current, _current.Current);
+                _useSide = cmp < 0 ? UseSide.History : UseSide.Current;
+            }
+            return true;
+        }
+
+        // Advance only the enumerator that yielded the current element.
+        if (_useSide == UseSide.History)
+        {
+            _historyHasCurrent = _history.MoveNext(descriptor, true);
+        }
+        else
+        {
+            _currentHasCurrent = _current.MoveNext(descriptor, false);
         }
 
         // If both enumerators are exhausted, we're done.
         if (!_historyHasCurrent && !_currentHasCurrent)
             return false;
 
-        // If one enumerator is exhausted, return the element from the other.
+        // If one enumerator is exhausted, choose the other.
         if (!_historyHasCurrent)
         {
             _useSide = UseSide.Current;
-            _currentHasCurrent = _current.MoveNext(descriptor, false);
-            return true;
         }
-
-        if (!_currentHasCurrent)
+        else if (!_currentHasCurrent)
         {
             _useSide = UseSide.History;
-            _historyHasCurrent = _history.MoveNext(descriptor, true);
-            return true;
         }
-
-        // Both enumerators have a current element.
-        // Compare them using the provided comparison function.
-        var cmp = GlobalComparer.Compare(_history.Current, _current.Current);
-        if (cmp < 0)
+        else
         {
-            _useSide = UseSide.History;
-            _historyHasCurrent = _history.MoveNext(descriptor, true);
-        }
-        else // cmp > 0 since 0 is never returned
-        {
-            _useSide = UseSide.Current;
-            _currentHasCurrent = _current.MoveNext(descriptor, false);
+            // Both enumerators have a current element; compare them.
+            var cmp = GlobalComparer.CompareIgnoreHistoryIndex(_history.Current, _current.Current);
+            _useSide = cmp < 0 ? UseSide.History : UseSide.Current;
         }
         return true;
     }
     
-
     /// <inheritdoc />
     public void Dispose()
     {
