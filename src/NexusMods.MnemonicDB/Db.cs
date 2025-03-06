@@ -14,7 +14,7 @@ using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 namespace NexusMods.MnemonicDB;
 
 internal class Db<TSnapshot, TLowLevelIterator> : ADatomsIndex<TLowLevelIterator>, IDb 
-    where TSnapshot : ISnapshot<TLowLevelIterator>
+    where TSnapshot : ILowLevelIteratorFactory<TLowLevelIterator>, IDatomsIndex, ISnapshot
     where TLowLevelIterator : ILowLevelIterator
 {
     private readonly IndexSegmentCache _cache;
@@ -114,75 +114,7 @@ internal class Db<TSnapshot, TLowLevelIterator> : ADatomsIndex<TLowLevelIterator
     {
         _cache.Clear();
     }
-
-    public Task PrecacheAll()
-    {
-        var tcs = new TaskCompletionSource();
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                var casted = (Snapshot)Snapshot;
-                using var builder = new IndexSegmentBuilder(AttributeCache);
-                using var enumerator =
-                    casted.RefDatoms(SliceDescriptor.AllEntities(PartitionId.Entity)).GetEnumerator();
-                EntityId currentEntity = default;
-                while (enumerator.MoveNext())
-                {
-                    if (enumerator.KeyPrefix.E != currentEntity && builder.Count > 0)
-                    {
-                        var built = builder.Build();
-                        builder.Reset();
-                        _cache.Add(currentEntity, built);
-                    }
-
-                    currentEntity = enumerator.KeyPrefix.E;
-                    builder.AddCurrent(enumerator);
-                }
-
-                if (builder.Count > 0)
-                {
-                    var built = builder.Build();
-                    builder.Reset();
-                    _cache.Add(currentEntity, built);
-                }
-
-
-                using var reverseIndexes = casted
-                    .RefDatoms(SliceDescriptor.AllReverseAttributesInPartition(PartitionId.Entity)).GetEnumerator();
-                var previousAid = default(AttributeId);
-                var previousEntity = default(EntityId);
-
-                while (reverseIndexes.MoveNext())
-                {
-                    if ((reverseIndexes.KeyPrefix.A != previousAid || reverseIndexes.KeyPrefix.E != previousEntity) &&
-                        builder.Count > 0)
-                    {
-                        var built = builder.Build();
-                        builder.Reset();
-                        _cache.AddReverse(previousEntity, previousAid, built);
-                    }
-
-                    previousAid = reverseIndexes.KeyPrefix.A;
-                    previousEntity = reverseIndexes.KeyPrefix.E;
-                    builder.AddCurrent(reverseIndexes);
-                }
-                tcs.SetResult();
-            }
-            catch (Exception e)
-            {
-                tcs.SetException(e);
-                return;
-            }
-        })
-        {
-            Name = "MnemonicDB Precache",
-            IsBackground = true
-        };
-        thread.Start();
-        return tcs.Task;
-    }
-
+    
     public IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)
     {
         return Datoms(SliceDescriptor.Create(attribute, value, AttributeCache));
@@ -199,7 +131,7 @@ internal class Db<TSnapshot, TLowLevelIterator> : ADatomsIndex<TLowLevelIterator
     }
 
     [MustDisposeResource]
-    protected override TLowLevelIterator GetLowLevelIterator() => _snapshot.GetLowLevelIterator();
+    public override TLowLevelIterator GetLowLevelIterator() => _snapshot.GetLowLevelIterator();
 
     public IndexSegment Datoms(TxId txId)
     {

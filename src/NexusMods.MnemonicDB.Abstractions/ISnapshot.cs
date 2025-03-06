@@ -18,16 +18,4 @@ public interface ISnapshot : IDatomsIndex
     public IDb MakeDb(TxId txId, AttributeCache attributeCache, IConnection? connection = null, object? newCache = null, IndexSegment? recentlyAdded = null);
 }
 
-/// <summary>
-/// A snapshot that returns a specific type of low-level iterator.
-/// </summary>
-public interface ISnapshot<out TLowLevelIterator> : ISnapshot
-    where TLowLevelIterator : ILowLevelIterator
-{
-    /// <summary>
-    /// Get a low-level iterator for this snapshot, this can be combined with slice descriptors to get high performance
-    /// access to a portion of the index
-    /// </summary>
-    [MustDisposeResource]
-    public TLowLevelIterator GetLowLevelIterator();
-}
+

@@ -16,6 +16,7 @@ using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.EventTypes;
 using NexusMods.MnemonicDB.InternalTxFunctions;
 using NexusMods.MnemonicDB.Storage;
+using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using R3;
 using Observable = System.Reactive.Linq.Observable;
 
@@ -342,7 +343,7 @@ public class Connection : IConnection
     /// <inheritdoc />
     public IDb History()
     {
-        return new HistorySnapshot(_store.GetSnapshot(), AttributeCache).MakeDb(TxId, AttributeCache, this);
+        return new HistorySnapshot((Snapshot)_store.GetSnapshot(), AttributeCache).MakeDb(TxId, AttributeCache, this);
     }
 
     /// <inheritdoc />

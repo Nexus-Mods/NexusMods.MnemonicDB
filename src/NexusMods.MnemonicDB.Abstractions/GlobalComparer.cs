@@ -84,4 +84,12 @@ public sealed class GlobalComparer : IComparer<byte[]>
             return Compare(xPtr, x!.Length, yPtr, y!.Length);
         }
     }
+
+    /// <summary>
+    /// Compare two pointers
+    /// </summary>
+    public static unsafe int Compare(Ptr leftKey, Ptr rightKey)
+    {
+        return Compare(leftKey.Base, leftKey.Length, rightKey.Base, rightKey.Length);
+    }
 }

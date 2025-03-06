@@ -1484,27 +1484,5 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             taskId++;
         }
     }
-
-    [Fact]
-    public async Task CanPrecacheEntities()
-    {
-        using var tx = Connection.BeginTransaction();
-        for (var i = 0 ; i < 1000; i++)
-        {
-            _ = new Mod.New(tx)
-            {
-                Name = "Test Mod " + i,
-                Source = new Uri("http://test.com"),
-                LoadoutId = EntityId.From(0)
-            };
-        }
-        var result = await tx.Commit();
-        
-        result.Db.ClearIndexCache();
-        await result.Db.PrecacheAll();
-
-        var mods = Mod.All(result.Db).ToArray();
-        mods.Length.Should().Be(1000);
-    }
     
 }

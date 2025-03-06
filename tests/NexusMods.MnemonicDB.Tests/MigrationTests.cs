@@ -120,7 +120,6 @@ public class MigrationTests : AMnemonicDBTest
         using var connection = new Connection(Provider.GetRequiredService<ILogger<Connection>>(), store, Provider, [], false);
 
         var db = connection.Db;
-        await db.PrecacheAll();
         var attrs = db.Datoms(AttributeDefinition.UniqueId);
         var datoms = new List<Datom>();
         foreach (var attr in attrs)

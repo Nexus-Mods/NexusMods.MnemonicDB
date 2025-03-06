@@ -80,12 +80,7 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// Clears the internal cache of the database.
     /// </summary>
     void ClearIndexCache();
-
-    /// <summary>
-    /// Starts a thread that begins precaching all the entities and reverse references into this database instance.
-    /// </summary>
-    Task PrecacheAll();
-
+    
     /// <summary>
     /// Create the next version of the database with the given result and the transaction id that the result was assigned.
     /// </summary>

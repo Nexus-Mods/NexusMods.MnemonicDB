@@ -5,7 +5,7 @@ using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
 namespace NexusMods.MnemonicDB;
 
-public abstract class ADatomsIndex<TLowLevelIterator> : IDatomsIndex
+public abstract class ADatomsIndex<TLowLevelIterator> : IDatomsIndex, ILowLevelIteratorFactory<TLowLevelIterator>
     where TLowLevelIterator : ILowLevelIterator
 {
     protected ADatomsIndex(AttributeCache cache)
@@ -13,10 +13,6 @@ public abstract class ADatomsIndex<TLowLevelIterator> : IDatomsIndex
         AttributeCache = cache;
     }
     public AttributeCache AttributeCache { get; }
-    /// <summary>
-    /// Get a low-level iterator for the backing store
-    /// </summary>
-    protected abstract TLowLevelIterator GetLowLevelIterator();
 
     /// <summary>
     /// Get datoms for a specific descriptor
@@ -47,4 +43,7 @@ public abstract class ADatomsIndex<TLowLevelIterator> : IDatomsIndex
         if (builder.Count > 0)
             yield return builder.Build();
     }
+
+    /// <inheritdoc />
+    public abstract TLowLevelIterator GetLowLevelIterator();
 }

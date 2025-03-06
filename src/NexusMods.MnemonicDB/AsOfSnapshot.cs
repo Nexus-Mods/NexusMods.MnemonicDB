@@ -8,20 +8,24 @@ using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage;
+using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB;
+
+using ResultIterator = HistoryMergeIterator<RocksDbIteratorWrapper, RocksDbIteratorWrapper>;
 
 /// <summary>
 /// This is a wrapper around snapshots that allows you to query the snapshot as of a specific transaction
 /// id, this requires merging two indexes together, and then the deduplication of the merged index (retractions
 /// removing assertions).
 /// </summary>
-internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeCache attributeCache) : ISnapshot
+internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeCache attributeCache) : ADatomsIndex<ResultIterator>(attributeCache)
 {
     public IDb MakeDb(TxId txId, AttributeCache cache, IConnection? connection = null, object? newCache = null, IndexSegment? recentlyAdded = null)
     {
-        return new Db<AsOfSnapshot>(this, txId, cache, connection, newCache, recentlyAdded);
+        throw new NotImplementedException();
+        //return new Db<AsOfSnapshot, ResultIterator>(this, txId, cache, connection, newCache, recentlyAdded);
     }
 
     public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) 
@@ -52,6 +56,11 @@ internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeCache attri
         }
 
         return builder.Build();
+    }
+
+    public override ResultIterator GetLowLevelIterator()
+    {
+        throw new NotImplementedException();
     }
 
     public IEnumerable<IndexSegment> DatomsChunked(SliceDescriptor descriptor, int chunkSize)
