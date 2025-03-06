@@ -136,20 +136,21 @@ public readonly struct IndexSegmentBuilder : IDisposable
         var prefixSpan = _data.GetSpan(KeyPrefix.Size);
         MemoryMarshal.Write(prefixSpan, prefix);
         _data.Advance(KeyPrefix.Size);
-        _data.Write(enumerator.ValueSpan);
+        _data.Write(enumerator.ValueSpan.Span);
         
         // Write the hashed blob if it exists
         if (prefix.ValueTag == ValueTag.HashedBlob) 
-            _data.Write(enumerator.ExtraValueSpan);
+            _data.Write(enumerator.ExtraValueSpan.Span);
     }
 
     /// <summary>
     /// Adds all the items from the enumerator to the segment
     /// </summary>
-    public void AddRange<TEnumerator>(TEnumerator enumerator) 
+    public void AddRange<TEnumerator, TDescriptor>(TEnumerator enumerator, TDescriptor descriptor) 
         where TEnumerator : IRefDatomEnumerator
+        where TDescriptor : ISliceDescriptor, allows ref struct
     {
-        while (enumerator.MoveNext()) 
+        while (enumerator.MoveNext(descriptor)) 
             AddCurrent(enumerator);
     }
     

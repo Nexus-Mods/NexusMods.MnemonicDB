@@ -13,25 +13,16 @@ namespace NexusMods.MnemonicDB.Abstractions.Query.SliceDescriptors;
 public readonly struct AllReverseAttributesInPartition(PartitionId partitionId) : ISliceDescriptor
 {
     /// <inheritdoc />
-    public void Reset<T>(T iterator) where T : ILowLevelIterator, allows ref struct
+    public void Reset<T>(T iterator, bool useHistory = false) where T : ILowLevelIterator, allows ref struct
     {
+        var index = useHistory ? IndexType.VAETHistory : IndexType.VAETCurrent;
         Span<byte> fullSpan = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
-        var prefix = new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false, ValueTag.Reference, IndexType.VAETCurrent);
+        var prefix = new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false, ValueTag.Reference, index);
         MemoryMarshal.Write(fullSpan, prefix);
         MemoryMarshal.Write(fullSpan.SliceFast(KeyPrefix.Size), partitionId.MinValue);
         iterator.SeekTo(fullSpan);
     }
-
-    /// <inheritdoc />
-    public void ResetHistory<T>(T iterator) where T : ILowLevelIterator, allows ref struct
-    {
-        Span<byte> fullSpan = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
-        var prefix = new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false, ValueTag.Reference, IndexType.VAETHistory);
-        MemoryMarshal.Write(fullSpan, prefix);
-        MemoryMarshal.Write(fullSpan.SliceFast(KeyPrefix.Size), partitionId.MinValue);
-        iterator.SeekTo(fullSpan);
-    }
-
+    
     /// <inheritdoc />
     public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct
     {
@@ -39,23 +30,11 @@ public readonly struct AllReverseAttributesInPartition(PartitionId partitionId) 
     }
 
     /// <inheritdoc />
-    public bool ShouldContinue(ReadOnlySpan<byte> keySpan)
+    public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool useHistory)
     {
+        var index = useHistory ? IndexType.VAETHistory : IndexType.VAETCurrent;
         var prefix = KeyPrefix.Read(keySpan);
-        if (prefix.Index != IndexType.VAETCurrent)
-            return false;
-        if (prefix.ValueTag != ValueTag.Reference)
-            return false;
-        
-        var entityId = MemoryMarshal.Read<EntityId>(keySpan.SliceFast(KeyPrefix.Size));
-        return entityId.Partition == partitionId;
-    }
-
-    /// <inheritdoc />
-    public bool ShouldContinueHistory(ReadOnlySpan<byte> keySpan)
-    {
-        var prefix = KeyPrefix.Read(keySpan);
-        if (prefix.Index != IndexType.VAETHistory)
+        if (prefix.Index != index)
             return false;
         if (prefix.ValueTag != ValueTag.Reference)
             return false;

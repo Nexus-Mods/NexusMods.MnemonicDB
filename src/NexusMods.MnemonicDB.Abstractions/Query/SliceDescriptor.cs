@@ -355,18 +355,16 @@ public readonly struct SliceDescriptor : ISliceDescriptor
         };
     }
 
-    public void Reset<T>(T iterator) where T : ILowLevelIterator, allows ref struct
+    public void Reset<T>(T iterator, bool useHistory) where T : ILowLevelIterator, allows ref struct
     {
+        if (useHistory)
+            throw new NotImplementedException();
         if (!IsReverse)
             iterator.SeekTo(From.ToArray());
         else
             iterator.SeekToPrev(From.ToArray());
     }
 
-    public void ResetHistory<T>(T iterator) where T : ILowLevelIterator, allows ref struct
-    {
-        throw new NotImplementedException();
-    }
 
     public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct
     {
@@ -376,17 +374,14 @@ public readonly struct SliceDescriptor : ISliceDescriptor
             iterator.Next();
     }
 
-    public bool ShouldContinue(ReadOnlySpan<byte> keySpan)
+    public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool isHistory)
     {
+        if (isHistory)
+            throw new NotImplementedException();
         if (IsReverse)
             return GlobalComparer.Compare(keySpan, To.ToArray()) >= 0;
         else 
             return GlobalComparer.Compare(keySpan, To.ToArray()) <= 0;
-    }
-
-    public bool ShouldContinueHistory(ReadOnlySpan<byte> keySpan)
-    {
-        throw new NotImplementedException();
     }
 
     public void Deconstruct(out Datom from, out Datom to, out bool isReversed)

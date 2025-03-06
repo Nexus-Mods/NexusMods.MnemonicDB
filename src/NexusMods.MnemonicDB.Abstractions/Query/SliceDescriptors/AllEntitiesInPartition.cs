@@ -12,41 +12,26 @@ namespace NexusMods.MnemonicDB.Abstractions.Query.SliceDescriptors;
 public readonly struct AllEntitiesInPartition(PartitionId partitionId) : ISliceDescriptor
 {
     /// <inheritdoc />
-    public void Reset<T>(T iterator) where T : ILowLevelIterator, allows ref struct
+    public void Reset<T>(T iterator, bool history = false) where T : ILowLevelIterator, allows ref struct
     {
-        var prefix = new KeyPrefix(partitionId.MinValue, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTCurrent);
+        var index = history ? IndexType.EAVTHistory : IndexType.EAVTCurrent;
+        var prefix = new KeyPrefix(partitionId.MinValue, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, index);
         var spanTo = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in prefix, 1));
         iterator.SeekTo(spanTo);
     }
 
     /// <inheritdoc />
-    public void ResetHistory<T>(T iterator) where T : ILowLevelIterator, allows ref struct
-    {
-        var prefix = new KeyPrefix(partitionId.MinValue, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTHistory);
-        var spanTo = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in prefix, 1));
-        iterator.SeekTo(spanTo);
-    }
+    public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct 
+        => iterator.Next();
 
     /// <inheritdoc />
-    public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct
+    public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool history = false)
     {
-        iterator.Next();
-    }
-
-    /// <inheritdoc />
-    public bool ShouldContinue(ReadOnlySpan<byte> keySpan)
-    {
+        var index = history ? IndexType.EAVTHistory : IndexType.EAVTCurrent;
         var prefix = KeyPrefix.Read(keySpan);
-        return prefix.Index == IndexType.EAVTCurrent && prefix.E.Partition == partitionId;
+        return prefix.Index == index && prefix.E.Partition == partitionId;
     }
-
-    /// <inheritdoc />
-    public bool ShouldContinueHistory(ReadOnlySpan<byte> keySpan)
-    {
-        var prefix = KeyPrefix.Read(keySpan);
-        return prefix.Index == IndexType.EAVTHistory && prefix.E.Partition == partitionId;
-    }
-
+    
     /// <inheritdoc />
     public void Deconstruct(out Datom from, out Datom to, out bool isReversed)
     {

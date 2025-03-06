@@ -4,7 +4,7 @@ using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-internal sealed class Snapshot : ADatomsIndex<RocksDbIteratorWrapper>, ILowLevelIteratorFactory<RocksDbIteratorWrapper>, ISnapshot
+internal sealed class Snapshot : ADatomsIndex<RocksDbIteratorWrapper>, IRefDatomEnumeratorFactory<RocksDbIteratorWrapper>, ISnapshot
 {
     /// <summary>
     /// The backend, needed to create iterators
@@ -34,5 +34,5 @@ internal sealed class Snapshot : ADatomsIndex<RocksDbIteratorWrapper>, ILowLevel
         return new Db<Snapshot, RocksDbIteratorWrapper>(this, txId, attributeCache, connection, newCache, recentlyAdded);
     }
     
-    public override RocksDbIteratorWrapper GetLowLevelIterator() => new(_backend.Db!.NewIterator(null, _readOptions));
+    public override RocksDbIteratorWrapper GetRefDatomEnumerator() => new(_backend.Db!.NewIterator(null, _readOptions));
 }

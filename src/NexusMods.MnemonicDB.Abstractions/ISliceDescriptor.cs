@@ -12,12 +12,7 @@ public interface ISliceDescriptor
     /// <summary>
     /// Reset the iterator to either the first or last element, depending on the direction of the iterator.
     /// </summary>
-    public void Reset<T>(T iterator) where T : ILowLevelIterator, allows ref struct;
-    
-    /// <summary>
-    /// Reset the iterator to the first element in the history index
-    /// </summary>
-    public void ResetHistory<T>(T iterator) where T : ILowLevelIterator, allows ref struct;
+    public void Reset<T>(T iterator, bool history = false) where T : ILowLevelIterator, allows ref struct;
     
     /// <summary>
     /// Move the iterator to the next element, which should either call `Next` or `Prev` on the iterator.
@@ -27,12 +22,7 @@ public interface ISliceDescriptor
     /// <summary>
     /// Given the current iterator position, and this key, should we continue iterating (is the given span inside the bounds of the iterator)?
     /// </summary>
-    public bool ShouldContinue(ReadOnlySpan<byte> keySpan);
-    
-    /// <summary>
-    /// Returns true if the iterator should continue iterating over the history index.
-    /// </summary>
-    public bool ShouldContinueHistory(ReadOnlySpan<byte> keySpan);
+    public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool history = false);
     
     /// <summary>
     /// Deconstruct the slice descriptor into its constituent parts.

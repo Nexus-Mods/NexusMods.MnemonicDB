@@ -12,8 +12,10 @@ namespace NexusMods.MnemonicDB.Abstractions.Query.SliceDescriptors;
 public readonly struct TxIdSlice(TxId txId) : ISliceDescriptor
 {
     /// <inheritdoc />
-    public void Reset<T>(T iterator) where T : ILowLevelIterator, allows ref struct
+    public void Reset<T>(T iterator, bool useHistory) where T : ILowLevelIterator, allows ref struct
     {
+        if (useHistory)
+            throw new InvalidOperationException("Cannot query history with a TxIdSlice");
         var prefix = new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, txId, false, ValueTag.Null, IndexType.TxLog);
         var spanTo = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in prefix, 1));
         iterator.SeekTo(spanTo);
@@ -32,16 +34,12 @@ public readonly struct TxIdSlice(TxId txId) : ISliceDescriptor
     }
 
     /// <inheritdoc />
-    public bool ShouldContinue(ReadOnlySpan<byte> keySpan)
+    public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool useHistory)
     {
+        if (useHistory)
+            throw new InvalidOperationException("Cannot query history with a TxIdSlice");
         var prefix = KeyPrefix.Read(keySpan);
         return prefix.T == txId && prefix.Index == IndexType.TxLog;
-    }
-
-    /// <inheritdoc />
-    public bool ShouldContinueHistory(ReadOnlySpan<byte> keySpan)
-    {
-        throw new NotSupportedException("TxIdSlice does not support history");
     }
 
     /// <inheritdoc />

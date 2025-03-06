@@ -19,6 +19,14 @@ public readonly unsafe struct Ptr
     public ReadOnlySpan<byte> Span => new(Base, Length);
 
     /// <summary>
+    /// Slice the pointer from the given start index, without checking bounds.
+    /// </summary>
+    public Ptr SliceFast(int fromStart)
+    {
+        return new(Base + fromStart, Length - fromStart);
+    }
+
+    /// <summary>
     /// Read a value from the pointer at the given byte offset.
     /// </summary>
     /// <returns></returns>

@@ -13,16 +13,10 @@ namespace NexusMods.MnemonicDB.Abstractions.Query.SliceDescriptors;
 public readonly struct EntityIdSlice(EntityId entityId) : ISliceDescriptor
 {
     /// <inheritdoc />
-    public void Reset<T>(T iterator) where T : ILowLevelIterator, allows ref struct 
-        => ResetCore(iterator, IndexType.EAVTCurrent);
-
-    /// <inheritdoc />
-    public void ResetHistory<T>(T iterator) where T : ILowLevelIterator, allows ref struct 
-        => ResetCore(iterator, IndexType.EAVTHistory);
-
-    private void ResetCore<T>(T iterator, IndexType indexType) where T : ILowLevelIterator, allows ref struct
+    public void Reset<T>(T iterator, bool useHistory) where T : ILowLevelIterator, allows ref struct
     {
-        var prefix = new KeyPrefix(entityId, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, indexType);
+        var index = useHistory ? IndexType.EAVTHistory : IndexType.EAVTCurrent;
+        var prefix = new KeyPrefix(entityId, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, index);
         var spanTo = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in prefix, 1));
         iterator.SeekTo(spanTo);
     }
@@ -34,17 +28,11 @@ public readonly struct EntityIdSlice(EntityId entityId) : ISliceDescriptor
     }
 
     /// <inheritdoc />
-    public bool ShouldContinue(ReadOnlySpan<byte> keySpan) 
-        => ShouldContinueCore(keySpan, IndexType.EAVTCurrent);
-
-    /// <inheritdoc />
-    public bool ShouldContinueHistory(ReadOnlySpan<byte> keySpan) 
-        => ShouldContinueCore(keySpan, IndexType.EAVTHistory);
-    
-    private bool ShouldContinueCore(ReadOnlySpan<byte> keySpan, IndexType indexType)
+    public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool useHistory)
     {
+        var index = useHistory ? IndexType.EAVTHistory : IndexType.EAVTCurrent;
         var prefix = KeyPrefix.Read(keySpan);
-        return prefix.E == entityId && prefix.Index == indexType;
+        return prefix.E == entityId && prefix.Index == index;
     }
 
 

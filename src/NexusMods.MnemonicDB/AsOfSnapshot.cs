@@ -7,13 +7,12 @@ using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Query;
-using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB;
 
-using ResultIterator = HistoryMergeIterator<RocksDbIteratorWrapper, RocksDbIteratorWrapper>;
+using ResultIterator = HistoryRefDatomEnumerator<RocksDbIteratorWrapper, RocksDbIteratorWrapper>;
 
 /// <summary>
 /// This is a wrapper around snapshots that allows you to query the snapshot as of a specific transaction
@@ -58,7 +57,7 @@ internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeCache attri
         return builder.Build();
     }
 
-    public override ResultIterator GetLowLevelIterator()
+    public override ResultIterator GetRefDatomEnumerator()
     {
         throw new NotImplementedException();
     }

@@ -14,8 +14,8 @@ using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 namespace NexusMods.MnemonicDB;
 
 internal class Db<TSnapshot, TLowLevelIterator> : ADatomsIndex<TLowLevelIterator>, IDb 
-    where TSnapshot : ILowLevelIteratorFactory<TLowLevelIterator>, IDatomsIndex, ISnapshot
-    where TLowLevelIterator : ILowLevelIterator
+    where TSnapshot : IRefDatomEnumeratorFactory<TLowLevelIterator>, IDatomsIndex, ISnapshot
+    where TLowLevelIterator : IRefDatomEnumerator
 {
     private readonly IndexSegmentCache _cache;
     
@@ -131,7 +131,7 @@ internal class Db<TSnapshot, TLowLevelIterator> : ADatomsIndex<TLowLevelIterator
     }
 
     [MustDisposeResource]
-    public override TLowLevelIterator GetLowLevelIterator() => _snapshot.GetLowLevelIterator();
+    public override TLowLevelIterator GetRefDatomEnumerator() => _snapshot.GetRefDatomEnumerator();
 
     public IndexSegment Datoms(TxId txId)
     {

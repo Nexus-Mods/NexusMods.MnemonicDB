@@ -13,23 +13,16 @@ namespace NexusMods.MnemonicDB.Abstractions.Query.SliceDescriptors;
 public readonly struct BackRefSlice(AttributeId aid, EntityId eid) : ISliceDescriptor
 {
     /// <inheritdoc />
-    public void Reset<T>(T iterator) where T : ILowLevelIterator, allows ref struct 
-        => ResetCore(iterator, IndexType.VAETCurrent);
-
-    /// <inheritdoc />
-    public void ResetHistory<T>(T iterator) where T : ILowLevelIterator, allows ref struct 
-        => ResetCore(iterator, IndexType.VAETHistory);
-
-    private void ResetCore<T>(T iterator, IndexType indexType) where T : ILowLevelIterator, allows ref struct
+    public void Reset<T>(T iterator, bool useHistory) where T : ILowLevelIterator, allows ref struct
     {
+        var index = useHistory ? IndexType.VAETHistory : IndexType.VAETCurrent;
         Span<byte> fullSpan = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
-        var prefix = new KeyPrefix(EntityId.MinValueNoPartition, aid, TxId.MinValue, false, ValueTag.Reference, indexType);
+        var prefix = new KeyPrefix(EntityId.MinValueNoPartition, aid, TxId.MinValue, false, ValueTag.Reference, index);
         MemoryMarshal.Write(fullSpan, prefix);
         MemoryMarshal.Write(fullSpan.SliceFast(KeyPrefix.Size), eid);
         iterator.SeekTo(fullSpan);
     }
-
-
+    
     /// <inheritdoc />
     public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct
     {
@@ -37,18 +30,11 @@ public readonly struct BackRefSlice(AttributeId aid, EntityId eid) : ISliceDescr
     }
 
     /// <inheritdoc />
-    public bool ShouldContinue(ReadOnlySpan<byte> keySpan) 
-        => ShouldContinueCore(keySpan, IndexType.VAETCurrent);
-
-    /// <inheritdoc />
-    public bool ShouldContinueHistory(ReadOnlySpan<byte> keySpan) 
-        => ShouldContinueCore(keySpan, IndexType.VAETHistory);
-
-    
-    private bool ShouldContinueCore(ReadOnlySpan<byte> keySpan, IndexType indexType)
+    public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool useHistory)
     {
+        var index = useHistory ? IndexType.VAETHistory : IndexType.VAETCurrent;
         var prefix = KeyPrefix.Read(keySpan);
-        if (prefix.A != aid || prefix.Index != indexType) 
+        if (prefix.A != aid || prefix.Index != index) 
             return false;
         
         var eidValue = MemoryMarshal.Read<EntityId>(keySpan.SliceFast(KeyPrefix.Size));

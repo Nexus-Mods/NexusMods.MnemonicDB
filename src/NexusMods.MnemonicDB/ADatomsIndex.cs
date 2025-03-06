@@ -6,8 +6,8 @@ using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB;
 
-public abstract class ADatomsIndex<TLowLevelIterator> : IDatomsIndex, ILowLevelIteratorFactory<TLowLevelIterator>
-    where TLowLevelIterator : ILowLevelIterator
+public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnumeratorFactory<TRefEnumerator>
+    where TRefEnumerator : IRefDatomEnumerator
 {
     protected ADatomsIndex(AttributeCache cache)
     {
@@ -21,8 +21,8 @@ public abstract class ADatomsIndex<TLowLevelIterator> : IDatomsIndex, ILowLevelI
     public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
     {
         using var builder = new IndexSegmentBuilder(AttributeCache);
-        using var iterator = GetLowLevelIterator();
-        builder.AddRange(iterator.Slice(descriptor));
+        using var iterator = GetRefDatomEnumerator();
+        builder.AddRange(iterator, descriptor);
         return builder.Build();
     }
     
@@ -30,11 +30,10 @@ public abstract class ADatomsIndex<TLowLevelIterator> : IDatomsIndex, ILowLevelI
         where TSliceDescriptor : ISliceDescriptor
     {
         using var builder = new IndexSegmentBuilder(AttributeCache);
-        using var iterator = GetLowLevelIterator();
-        var slice = iterator.Slice(descriptor);
-        while (slice.MoveNext())
+        using var iterator = GetRefDatomEnumerator();
+        while (iterator.MoveNext(descriptor))
         {
-            builder.AddCurrent(slice);
+            builder.AddCurrent(iterator);
             if (builder.Count == chunkSize)
             {
                 yield return builder.Build();
@@ -48,8 +47,8 @@ public abstract class ADatomsIndex<TLowLevelIterator> : IDatomsIndex, ILowLevelI
     public EntitySegment GetEntitySegment(IDb db, EntityId entityId)
     {
         using var builder = new IndexSegmentBuilder(AttributeCache);
-        using var iterator = GetLowLevelIterator();
-        builder.AddRange(iterator.Slice(SliceDescriptor.Create(entityId)));
+        using var iterator = GetRefDatomEnumerator();
+        builder.AddRange(iterator, SliceDescriptor.Create(entityId));
         return builder.BuildEntitySegment(db, entityId);
     }
 
@@ -57,11 +56,11 @@ public abstract class ADatomsIndex<TLowLevelIterator> : IDatomsIndex, ILowLevelI
     {
         var slice = SliceDescriptor.Create(attrId, entityId);
         using var builder = new IndexSegmentBuilder(AttributeCache);
-        using var iterator = GetLowLevelIterator();
-        builder.AddRange(iterator.Slice(slice));
+        using var iterator = GetRefDatomEnumerator();
+        builder.AddRange(iterator, slice);
         return new EntityIds(builder.BuildEntityIds());
     }
 
     /// <inheritdoc />
-    public abstract TLowLevelIterator GetLowLevelIterator();
+    public abstract TRefEnumerator GetRefDatomEnumerator();
 }
