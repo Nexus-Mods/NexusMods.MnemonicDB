@@ -25,9 +25,4 @@ internal class HistorySnapshot(Snapshot inner, AttributeCache attributeCache) : 
     {
         return new ResultIterator(inner.GetLowLevelIterator(), inner.GetLowLevelIterator());
     }
-
-    ResultIterator ILowLevelIteratorFactory<ResultIterator>.GetLowLevelIterator()
-    {
-        return GetLowLevelIterator();
-    }
 }

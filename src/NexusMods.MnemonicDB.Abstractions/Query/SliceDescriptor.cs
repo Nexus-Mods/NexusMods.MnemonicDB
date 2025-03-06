@@ -363,6 +363,11 @@ public readonly struct SliceDescriptor : ISliceDescriptor
             iterator.SeekToPrev(From.ToArray());
     }
 
+    public void ResetHistory<T>(T iterator) where T : ILowLevelIterator, allows ref struct
+    {
+        throw new NotImplementedException();
+    }
+
     public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct
     {
         if (IsReverse)
@@ -377,6 +382,11 @@ public readonly struct SliceDescriptor : ISliceDescriptor
             return GlobalComparer.Compare(keySpan, To.ToArray()) >= 0;
         else 
             return GlobalComparer.Compare(keySpan, To.ToArray()) <= 0;
+    }
+
+    public bool ShouldContinueHistory(ReadOnlySpan<byte> keySpan)
+    {
+        throw new NotImplementedException();
     }
 
     public void Deconstruct(out Datom from, out Datom to, out bool isReversed)

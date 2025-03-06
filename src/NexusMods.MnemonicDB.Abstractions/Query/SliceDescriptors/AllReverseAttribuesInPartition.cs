@@ -23,6 +23,16 @@ public readonly struct AllReverseAttributesInPartition(PartitionId partitionId) 
     }
 
     /// <inheritdoc />
+    public void ResetHistory<T>(T iterator) where T : ILowLevelIterator, allows ref struct
+    {
+        Span<byte> fullSpan = stackalloc byte[KeyPrefix.Size + sizeof(ulong)];
+        var prefix = new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false, ValueTag.Reference, IndexType.VAETHistory);
+        MemoryMarshal.Write(fullSpan, prefix);
+        MemoryMarshal.Write(fullSpan.SliceFast(KeyPrefix.Size), partitionId.MinValue);
+        iterator.SeekTo(fullSpan);
+    }
+
+    /// <inheritdoc />
     public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct
     {
         iterator.Next();
@@ -33,6 +43,19 @@ public readonly struct AllReverseAttributesInPartition(PartitionId partitionId) 
     {
         var prefix = KeyPrefix.Read(keySpan);
         if (prefix.Index != IndexType.VAETCurrent)
+            return false;
+        if (prefix.ValueTag != ValueTag.Reference)
+            return false;
+        
+        var entityId = MemoryMarshal.Read<EntityId>(keySpan.SliceFast(KeyPrefix.Size));
+        return entityId.Partition == partitionId;
+    }
+
+    /// <inheritdoc />
+    public bool ShouldContinueHistory(ReadOnlySpan<byte> keySpan)
+    {
+        var prefix = KeyPrefix.Read(keySpan);
+        if (prefix.Index != IndexType.VAETHistory)
             return false;
         if (prefix.ValueTag != ValueTag.Reference)
             return false;

@@ -20,6 +20,14 @@ public readonly struct AllEntitiesInPartition(PartitionId partitionId) : ISliceD
     }
 
     /// <inheritdoc />
+    public void ResetHistory<T>(T iterator) where T : ILowLevelIterator, allows ref struct
+    {
+        var prefix = new KeyPrefix(partitionId.MinValue, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTHistory);
+        var spanTo = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in prefix, 1));
+        iterator.SeekTo(spanTo);
+    }
+
+    /// <inheritdoc />
     public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct
     {
         iterator.Next();
@@ -30,6 +38,13 @@ public readonly struct AllEntitiesInPartition(PartitionId partitionId) : ISliceD
     {
         var prefix = KeyPrefix.Read(keySpan);
         return prefix.Index == IndexType.EAVTCurrent && prefix.E.Partition == partitionId;
+    }
+
+    /// <inheritdoc />
+    public bool ShouldContinueHistory(ReadOnlySpan<byte> keySpan)
+    {
+        var prefix = KeyPrefix.Read(keySpan);
+        return prefix.Index == IndexType.EAVTHistory && prefix.E.Partition == partitionId;
     }
 
     /// <inheritdoc />

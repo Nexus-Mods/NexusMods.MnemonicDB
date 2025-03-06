@@ -20,6 +20,12 @@ public readonly struct TxIdSlice(TxId txId) : ISliceDescriptor
     }
 
     /// <inheritdoc />
+    public void ResetHistory<T>(T iterator) where T : ILowLevelIterator, allows ref struct
+    {
+        throw new NotSupportedException("TxIdSlice does not support history");
+    }
+
+    /// <inheritdoc />
     public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct
     {
         iterator.Next();
@@ -30,6 +36,12 @@ public readonly struct TxIdSlice(TxId txId) : ISliceDescriptor
     {
         var prefix = KeyPrefix.Read(keySpan);
         return prefix.T == txId && prefix.Index == IndexType.TxLog;
+    }
+
+    /// <inheritdoc />
+    public bool ShouldContinueHistory(ReadOnlySpan<byte> keySpan)
+    {
+        throw new NotSupportedException("TxIdSlice does not support history");
     }
 
     /// <inheritdoc />
