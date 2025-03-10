@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments.Columns;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using Reloaded.Memory.Extensions;
 
@@ -179,19 +182,77 @@ public readonly struct IndexSegmentBuilder : IDisposable
         }
         return memory;
     }
+    
+    /// <summary>
+    /// Build a segment with the given columns
+    /// </summary>
+    public Memory<byte> Build<TValue1>() 
+    {
+        return Build(ColumnDefinitions.ColumnFor<TValue1>());
+    }
+    
+    /// <summary>
+    /// Build a segment with the given columns
+    /// </summary>
+    public Memory<byte> Build<TValue1, TValue2>() 
+    {
+        return Build(ColumnDefinitions.ColumnFor<TValue1>(), ColumnDefinitions.ColumnFor<TValue2>());
+    }
 
+    /// <summary>
+    /// Build a segment with the given columns
+    /// </summary>
+    public Memory<byte> Build<TValue1, TValue2, TValue3>() 
+    {
+        return Build(ColumnDefinitions.ColumnFor<TValue1>(), ColumnDefinitions.ColumnFor<TValue2>(), ColumnDefinitions.ColumnFor<TValue3>());
+    }
+
+    /// <summary>
+    /// Build the index segment with the given columns
+    /// </summary>
+    /// <param name="columns"></param>
+    /// <returns></returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public Memory<byte> Build(params ReadOnlySpan<IColumn> columns)
+    {
+        Span<int> columnOffsets = stackalloc int[columns.Length];
+        Span<int> columnFixedSizes = stackalloc int[columns.Length];
+        
+        using var writer = new PooledMemoryBufferWriter();
+        
+        // Number of rows
+        writer.Write(_offsets.Count);
+        
+        for (var i = 0 ; i < columns.Length; i++)
+        {
+            // Column offsets are next
+            columnOffsets[i] = writer.Length;
+            // Columns for each part
+            var fixedSize = columns[i].FixedSize;
+            columnFixedSizes[i] = fixedSize;
+            var partSpan = writer.GetSpan(fixedSize * _offsets.Count);
+            writer.Advance(partSpan.Length);
+        }
+        
+        var offsetSpan = CollectionsMarshal.AsSpan(_offsets);
+        var srcWrittenSpan = _data.GetWrittenSpan();
+        var destWrittenSpan = writer.GetWrittenSpanWritable();
+        for (var columnIdx = 0; columnIdx < columns.Length; columnIdx++)
+        {
+            for (var idx = 0; idx < columns.Length; idx++)
+            {
+                var fromSpan = srcWrittenSpan.SliceFast(offsetSpan[idx], offsetSpan[idx + 1]);
+                var fixedSize = columnFixedSizes[columnIdx];
+                var destSpan = destWrittenSpan.SliceFast(columnOffsets[columnIdx] + (fixedSize * idx), fixedSize);
+                columns[columnIdx].Extract(fromSpan, destSpan, writer);
+            }
+        }
+        return writer.WrittenMemory.ToArray();
+    }
+    
     /// <inheritdoc />
     public void Dispose()
     {
         _data.Dispose();
-    }
-
-    /// <summary>
-    /// Build an entity segment from the current data
-    /// </summary>
-    public EntitySegment BuildEntitySegment(IDb db, EntityId id)
-    {
-        _offsets.Add(_data.Length);
-        return EntitySegment.Create(db, id, _offsets, _data.GetWrittenSpan());
     }
 }

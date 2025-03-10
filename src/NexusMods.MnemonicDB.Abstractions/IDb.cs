@@ -36,14 +36,12 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     AttributeCache AttributeCache { get; }
     
     /// <summary>
-    /// Gets the index segment for the given entity id.
-    /// </summary>
-    public EntitySegment Get(EntityId entityId);
-
-    /// <summary>
     /// Get all the datoms for the given entity id.
     /// </summary>
-    public EntitySegment Datoms(EntityId id);
+    public EntitySegment Datoms(EntityId id)
+    {
+        return GetEntitySegment(this, id);
+    }
     
     /// <summary>
     ///     Gets the datoms for the given transaction id.
@@ -59,16 +57,6 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// Finds all the datoms that have the given attribute with the given value.
     /// </summary>
     IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value);
-    
-    /// <summary>
-    /// Gets all the back references for this entity that are through the given attribute.
-    /// </summary>
-    EntityIds GetBackRefs(ReferenceAttribute attribute, EntityId id);
-
-    /// <summary>
-    /// Returns an index segment of all the datoms that are a reference pointing to the given entity id.
-    /// </summary>
-    IndexSegment ReferencesTo(EntityId eid);
     
     /// <summary>
     /// Get the cached data for the given analyzer.
@@ -90,4 +78,13 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// Add the given analyzer data to the analyzer cache.
     /// </summary>
     void AddAnalyzerData(Type getType, object result);
+    
+    /// <summary>
+    /// Gets the index segment for the given entity id.
+    /// </summary>
+    public EntitySegment Get(EntityId entityId)
+    {
+        return GetEntitySegment(this, entityId);
+    }
+    
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
 
@@ -49,7 +50,8 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         using var builder = new IndexSegmentBuilder(AttributeCache);
         using var iterator = GetRefDatomEnumerator();
         builder.AddRange(iterator, SliceDescriptor.Create(entityId));
-        return builder.BuildEntitySegment(db, entityId);
+        var avSegment = AVSegment.Build(builder);
+        return new EntitySegment(entityId, new AVSegment() { Data = avSegment }, db);
     }
 
     public EntityIds GetEntityIdsPointingTo(AttributeId attrId, EntityId entityId)
@@ -59,6 +61,20 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         using var iterator = GetRefDatomEnumerator();
         builder.AddRange(iterator, slice);
         return new EntityIds(builder.BuildEntityIds());
+    }
+    
+    public EntityIds GetBackRefs(ReferenceAttribute attribute, EntityId id)
+    {
+        var attrId = AttributeCache.GetAttributeId(attribute.Id);
+        return GetEntityIdsPointingTo(attrId, id);
+    }
+
+    public IndexSegment ReferencesTo(EntityId eid)
+    {
+        using var builder = new IndexSegmentBuilder(AttributeCache);
+        using var iterator = GetRefDatomEnumerator();
+        builder.AddRange(iterator, SliceDescriptor.CreateReferenceTo(eid));
+        return builder.Build();
     }
 
     /// <inheritdoc />

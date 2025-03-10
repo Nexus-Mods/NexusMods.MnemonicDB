@@ -17,7 +17,7 @@ internal class Db<TSnapshot, TLowLevelIterator> : ADatomsIndex<TLowLevelIterator
     where TSnapshot : IRefDatomEnumeratorFactory<TLowLevelIterator>, IDatomsIndex, ISnapshot
     where TLowLevelIterator : IRefDatomEnumerator
 {
-    private readonly IndexSegmentCache _cache;
+    //private readonly IndexSegmentCache _cache;
     
     /// <summary>
     /// The connection is used by several methods to navigate the graph of objects of Db, Connection, Datom Store, and
@@ -26,7 +26,6 @@ internal class Db<TSnapshot, TLowLevelIterator> : ADatomsIndex<TLowLevelIterator
     /// </summary>
     private IConnection? _connection;
     public ISnapshot Snapshot => _snapshot;
-    public AttributeCache AttributeCache { get; }
 
     private readonly Lazy<IndexSegment> _recentlyAdded;
     private readonly TSnapshot _snapshot;
@@ -36,12 +35,12 @@ internal class Db<TSnapshot, TLowLevelIterator> : ADatomsIndex<TLowLevelIterator
 
     internal Db(TSnapshot snapshot, TxId txId, AttributeCache attributeCache, IConnection? connection = null, object? newCache = null, IndexSegment? recentlyAdded = null) : base(attributeCache)
     {
-        AttributeCache = attributeCache;
-        
+        /*
         if (newCache is null)
             _cache = new IndexSegmentCache();
         else
             _cache = (IndexSegmentCache)newCache;
+            */
         _connection = connection;
         _snapshot = snapshot;
         BasisTxId = txId;
@@ -58,8 +57,8 @@ internal class Db<TSnapshot, TLowLevelIterator> : ADatomsIndex<TLowLevelIterator
     /// </summary>
     public IDb WithNext(StoreResult storeResult, TxId txId)
     {
-        var newCache = _cache.ForkAndEvict(storeResult, AttributeCache, out var newDatoms);
-        return storeResult.Snapshot.MakeDb(txId, AttributeCache, _connection!, newCache, newDatoms);
+        //var newCache = _cache.ForkAndEvict(storeResult, AttributeCache, out var newDatoms);
+        return storeResult.Snapshot.MakeDb(txId, AttributeCache, _connection!, null, null);
     }
 
     public void AddAnalyzerData(Type getType, object result)
@@ -82,27 +81,7 @@ internal class Db<TSnapshot, TLowLevelIterator> : ADatomsIndex<TLowLevelIterator
             _connection = value;
         }
     }
-
-    /// <summary>
-    /// Gets the IndexSegment for the given entity id.
-    /// </summary>
-    public EntitySegment Get(EntityId entityId)
-    {
-        return Datoms(entityId);
-    }
-
-    public EntityIds GetBackRefs(ReferenceAttribute attribute, EntityId id)
-    {
-        var aid = _connection!.AttributeCache.GetAttributeId(attribute.Id);
-        var segment = _cache.GetReverse(aid, id, this);
-        return segment;
-    }
     
-    public IndexSegment ReferencesTo(EntityId id)
-    {
-        return _cache.GetReferences(id, this);
-    }
-
     TReturn IDb.AnalyzerData<TAnalyzer, TReturn>()
     {
         if (AnalyzerData.TryGetValue(typeof(TAnalyzer), out var value))
@@ -112,17 +91,12 @@ internal class Db<TSnapshot, TLowLevelIterator> : ADatomsIndex<TLowLevelIterator
 
     public void ClearIndexCache()
     {
-        _cache.Clear();
+        //_cache.Clear();
     }
     
     public IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)
     {
         return Datoms(SliceDescriptor.Create(attribute, value, AttributeCache));
-    }
-    
-    public EntitySegment Datoms(EntityId entityId)
-    {
-        return _cache.Get(entityId, this);
     }
     
     public IndexSegment Datoms(IAttribute attribute)
