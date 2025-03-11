@@ -6,6 +6,9 @@ using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.Caching;
 
+/// <summary>
+/// A cache strategy for a cache of index segments, defines the max size of the cache and how to get the bytes for a key.
+/// </summary>
 public abstract class CacheStrategy<TKey, TValue>
 {
     /// <summary>
@@ -29,7 +32,7 @@ public abstract class CacheStrategy<TKey, TValue>
     public abstract Memory<byte> GetBytes(TKey key);
     
     /// <summary>
-    /// Construct a value from the given bytes, key, and db.
+    /// Construct a value from the given bytes, key, and db. Useful for wrapping the bytes into a segment
     /// </summary>
     public abstract TValue GetValue(TKey key, IDb db, Memory<byte> bytes);
     

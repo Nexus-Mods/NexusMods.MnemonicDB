@@ -6,6 +6,10 @@ using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.Caching;
 
+/// <summary>
+/// A root node for a cache, containing the size of the cache and the cache itself. Immutable as this data gets shared
+/// between multiple iterations of a database.
+/// </summary>
 public record CacheRoot<TKey>(Size Size, ImmutableDictionary<TKey, CacheValue> Cache)
     where TKey : notnull
 {
@@ -18,6 +22,9 @@ public record CacheRoot<TKey>(Size Size, ImmutableDictionary<TKey, CacheValue> C
         return new CacheRoot<TKey>(Size.Zero, ImmutableDictionary<TKey, CacheValue>.Empty);
     }
 
+    /// <summary>
+    /// Create a new instance of the cache root with the given key and data added to the cache.
+    /// </summary>
     public CacheRoot<TKey> With(TKey key, Memory<byte> data)
     {
         return new CacheRoot<TKey>(Size + Size.FromLong(data.Length), Cache.SetItem(key, new CacheValue(data)));

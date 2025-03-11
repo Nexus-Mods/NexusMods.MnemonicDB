@@ -89,7 +89,8 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
 
     public void ClearIndexCache()
     {
-        //_cache.Clear();
+        EntityCache.Clear();
+        BackReferenceCache.Clear();
     }
     
     public IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)

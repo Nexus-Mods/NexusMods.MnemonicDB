@@ -3,6 +3,11 @@ using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
+/// <summary>
+/// An enumerator that filters out all datoms that are newer than the given transaction id, and processes transactions
+/// so that the database is "rewound" to the state it was at the given transaction id.
+/// </summary>
+/// <typeparam name="TInner"></typeparam>
 public struct TimeFilteredRetractionEnumerator<TInner> : IRefDatomEnumerator 
     where TInner : IRefDatomPeekingEnumerator
 {

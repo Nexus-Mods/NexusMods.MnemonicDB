@@ -1,4 +1,3 @@
-using System;
 using System.Threading;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;

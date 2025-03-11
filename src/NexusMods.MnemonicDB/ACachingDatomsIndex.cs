@@ -83,9 +83,9 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
         }
     }
 
-    private IndexSegmentCache<EntityId, EntitySegment> EntityCache { get; }
+    public IndexSegmentCache<EntityId, EntitySegment> EntityCache { get; }
 
-    private IndexSegmentCache<(AttributeId A, EntityId E), EntityIds> BackReferenceCache { get; }
+    public IndexSegmentCache<(AttributeId A, EntityId E), EntityIds> BackReferenceCache { get; }
 
     /// <inheritdoc />
     public override EntitySegment GetEntitySegment(IDb db, EntityId entityId)
