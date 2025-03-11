@@ -6,7 +6,7 @@ using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments.Columns;
 
-public class OffsetColumn : IColumn<Offset>
+public class OffsetColumn : IColumn
 {
     public static readonly OffsetColumn Instance = new();
     

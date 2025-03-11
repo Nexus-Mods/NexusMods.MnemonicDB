@@ -4,7 +4,7 @@ using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments.Columns;
 
-public abstract class ASimpleColumn<T> : IColumn<T>
+public abstract class ASimpleColumn<T> : IColumn
     where T : unmanaged
 {
     public abstract T GetValue(in KeyPrefix prefix);

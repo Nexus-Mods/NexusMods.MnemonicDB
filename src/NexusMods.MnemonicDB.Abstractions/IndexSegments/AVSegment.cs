@@ -12,10 +12,19 @@ public readonly struct AVSegment : ISegment<AttributeId, ValueTag, Offset>
         Data = data;
     }
     
+    /// <summary>
+    /// Gets the attribute IDs column
+    /// </summary>
     public ReadOnlySpan<AttributeId> GetAttributeIds() => this.GetValues1<AVSegment, AttributeId>();
     
+    /// <summary>
+    /// Gets the value types column
+    /// </summary>
     public ReadOnlySpan<ValueTag> GetValueTypes() => this.GetValues2<AVSegment, AttributeId, ValueTag>();
     
+    /// <summary>
+    /// Gets the offsets column
+    /// </summary>
     public ReadOnlySpan<Offset> GetOffsets() => this.GetValues3<AVSegment, AttributeId, ValueTag, Offset>();
     
     /// <summary>

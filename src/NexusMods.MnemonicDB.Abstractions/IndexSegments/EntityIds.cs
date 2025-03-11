@@ -10,36 +10,39 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 /// A subview of an IndexSegment that returns the entity ids of the segment
 /// </summary>
 [PublicAPI]
-public readonly struct EntityIds(Memory<EntityId> segment) :
-    IReadOnlyCollection<EntityId>, IIndexSegment<EntityId>
+public readonly struct EntityIds : ISegment<EntityId>, IReadOnlyCollection<EntityId>
 {
     /// <summary>
     /// Gets the value at the given location
     /// </summary>
-    public EntityId this[int idx] => segment.Span[idx];
+    public EntityId this[int idx] => this.GetValues1<EntityIds, EntityId>()[idx];
+
+    /// <inheritdoc />
+    public required ReadOnlyMemory<byte> Data { get; init; }
+    
+    /// <summary>
+    /// Builds the segment of this type from the given builder
+    /// </summary>
+    public static Memory<byte> Build(in IndexSegmentBuilder builder)
+    {
+        return builder.Build<EntityId>();
+    }
 
     /// <summary>
     /// Returns the number of items in the collection
     /// </summary>
-    public int Count => segment.Length;
+    public int Count => this.GetCount();
 
     /// <summary>
     /// Converts the view to an array
     /// </summary>
-    public EntityId[] ToArray()
-    {
-        var arr = GC.AllocateUninitializedArray<EntityId>(Count);
-        for (var i = 0; i < Count; i++)
-        {
-            arr[i] = this[i];
-        }
-        return arr;
-    }
+    public EntityId[] ToArray() => 
+        this.GetValues1<EntityIds, EntityId>().ToArray();
 
     /// <summary>
     /// Returns an enumerator.
     /// </summary>
-    public Enumerator GetEnumerator() => new(segment);
+    public Enumerator GetEnumerator() => new(this);
     IEnumerator<EntityId> IEnumerable<EntityId>.GetEnumerator() => GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -57,13 +60,11 @@ public readonly struct EntityIds(Memory<EntityId> segment) :
     /// </summary>
     public struct Enumerator : IEnumerator<EntityId>
     {
-        private readonly Memory<EntityId> _segment;
+        private readonly EntityIds _segment;
         private int _index;
-        private readonly int _max;
 
-        internal Enumerator(Memory<EntityId> segment)
+        internal Enumerator(EntityIds segment)
         {
-            _max = segment.Length;
             _segment = segment;
             _index = 0;
         }
@@ -75,8 +76,9 @@ public readonly struct EntityIds(Memory<EntityId> segment) :
         /// <inheritdoc/>
         public bool MoveNext()
         {
-            if (_index >= _max) return false;
-            Current = _segment.Span[_index];
+            var span = _segment.GetValues1<EntityIds, EntityId>();
+            if (_index >= span.Length) return false;
+            Current = _segment[_index];
             _index += 1;
             return true;
         }

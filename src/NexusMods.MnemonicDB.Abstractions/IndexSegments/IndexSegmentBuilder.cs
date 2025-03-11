@@ -168,23 +168,6 @@ public readonly struct IndexSegmentBuilder : IDisposable
     }
 
     /// <summary>
-    /// Returns just the entity ids from the segment
-    /// </summary>
-    public Memory<EntityId> BuildEntityIds()
-    {
-        var memory = GC.AllocateUninitializedArray<EntityId>(_offsets.Count);
-        var writtenSpan = _data.GetWrittenSpan();
-        var offsetsSpan = CollectionsMarshal.AsSpan(_offsets);
-        for (var idx = 0; idx < _offsets.Count; idx++)
-        {
-            var offset = offsetsSpan[idx];
-            var span = KeyPrefix.Read(writtenSpan.SliceFast(offset));
-            memory[idx] = span.E;
-        }
-        return memory;
-    }
-    
-    /// <summary>
     /// Build a segment with the given columns
     /// </summary>
     public Memory<byte> Build<TValue1>() 

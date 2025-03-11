@@ -60,7 +60,8 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         using var builder = new IndexSegmentBuilder(AttributeCache);
         using var iterator = GetRefDatomEnumerator();
         builder.AddRange(iterator, slice);
-        return new EntityIds(builder.BuildEntityIds());
+        var ids = EntityIds.Build(builder);
+        return new EntityIds { Data = ids };
     }
     
     public EntityIds GetBackRefs(ReferenceAttribute attribute, EntityId id)

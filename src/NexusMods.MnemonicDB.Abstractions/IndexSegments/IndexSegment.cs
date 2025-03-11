@@ -196,50 +196,21 @@ public readonly struct IndexSegment : IReadOnlyList<Datom>
     /// <summary>
     /// Gets all the entity ids in this segment
     /// </summary>
-    public EntityIds EntityIds()
+    public unsafe EntityIds EntityIds()
     {
-        var ids = GC.AllocateUninitializedArray<EntityId>(_rowCount);
+        var ids = GC.AllocateUninitializedArray<byte>(_rowCount * sizeof(EntityId) + sizeof(uint));
+        {
+            var span = ids.AsSpan();
+            MemoryMarshal.Write(span, (uint)Count);
+        }
         for (var i = 0; i < _rowCount; i++)
         {
             var prefix = new KeyPrefix(Uppers[i], Lowers[i]);
-            ids[i] = prefix.E;
+            var span = ids.AsSpan(i * sizeof(EntityId) + sizeof(uint));
+            MemoryMarshal.Write(span, prefix.E);
         }
-        return new EntityIds(ids);
-    }
 
-    /// <summary>
-    /// Finds the first index of the given entity id
-    /// </summary>
-    /// <returns></returns>
-    public int FindFirst(EntityId find)
-    {
-        var left = 0;
-        var right = _rowCount - 1;
-        var result = -1;
-        while (left <= right)
-        {
-            var mid = left + (right - left) / 2;
-
-
-            var lower = Lowers[mid];
-            var e = EntityId.From((lower & 0xFF00000000000000) | ((lower >> 8) & 0x0000FFFFFFFFFFFF));
-
-            var comparison = e.CompareTo(find);
-            if (comparison == 0)
-            {
-                result = mid; // Don't return, but continue searching to the left
-                right = mid - 1;
-            }
-            else if (comparison < 0)
-            {
-                left = mid + 1;
-            }
-            else
-            {
-                right = mid - 1;
-            }
-        }
-        return result; // Return the first occurrence found, or -1 if not found
+        return new EntityIds { Data = ids };
     }
     
     /// <summary>

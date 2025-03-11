@@ -26,6 +26,7 @@ public static class HaveColumnExtensions
         where TValue1 : unmanaged => 
         MemoryMarshal.Cast<byte, TValue1>(segment.Data.Span.SliceFast(sizeof(int), segment.Count * sizeof(TValue1)));
     
+    
     /// <summary>
     /// Get the values of the second column
     /// </summary>

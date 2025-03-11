@@ -22,7 +22,7 @@ public static class SegmentExtensions
     public static int GetCount(this ISegment segment) => MemoryMarshal.Read<int>(segment.Data.Span);
 }
 
-public interface ISegment<TValue1> : ISegment 
+public interface ISegment<TValue1> : IHaveColumn<TValue1>
     where TValue1 : unmanaged
 {
     /// <summary>

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Query;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
@@ -64,12 +65,7 @@ public readonly struct EntitySegment : IEnumerable<Datom>
     public int FirstOffsetOf(AttributeId id)
     {
         var attrIds = AttributeIds;
-        for (var i = 0; i < attrIds.Length; i++)
-        {
-            if (attrIds[i] == id)
-                return i;
-        }
-        return -1;
+        return attrIds.IndexOf(id);
     }
 
     /// <summary>
@@ -77,14 +73,8 @@ public readonly struct EntitySegment : IEnumerable<Datom>
     /// </summary>
     public int LastOffsetOf(int start, AttributeId id)
     {
-        var attrIds = AttributeIds;
-        var i = start;
-        for (; i < attrIds.Length; i++)
-        {
-            if (attrIds[i] != id)
-                return i;
-        }
-        return i;
+        var found = AttributeIds.SliceFast(start).LastIndexOf(id);
+        return found == -1 ? start : start + found + 1;
     }
     
     /// <summary>
