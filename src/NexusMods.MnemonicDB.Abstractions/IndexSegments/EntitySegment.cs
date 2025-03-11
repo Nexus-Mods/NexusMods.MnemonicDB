@@ -27,6 +27,11 @@ public readonly struct EntitySegment : IEnumerable<Datom>
         _db = db;
     }
     
+    /// <summary>
+    /// The Db associated with this segment
+    /// </summary>
+    public IDb Db => _db;
+    
 
     /// <summary>
     /// Get the value for the first occurrence of the given attribute id in the segment

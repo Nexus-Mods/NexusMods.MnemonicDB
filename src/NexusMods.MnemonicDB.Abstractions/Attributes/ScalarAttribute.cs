@@ -36,10 +36,9 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     /// <summary>
     ///  Tries to get the value of the attribute from the entity.
     /// </summary>
-    public bool TryGetValue<T>(T entity, EntitySegment segment, [NotNullWhen(true)] out TValue? value)
-        where T : IHasEntityIdAndDb
+    public bool TryGetValue(EntitySegment segment, [NotNullWhen(true)] out TValue? value)
     {
-        var attributeId = entity.Db.AttributeCache.GetAttributeId(Id);
+        var attributeId = segment.Db.AttributeCache.GetAttributeId(Id);
         return segment.TryGetValue(this, attributeId, out value);
     }
 
@@ -49,7 +48,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     public bool TryGetValue<T>(T entity, [NotNullWhen(true)] out TValue? value)
         where T : IHasIdAndEntitySegment
     {
-        return TryGetValue(entity, segment: entity.EntitySegment, out value);
+        return TryGetValue(segment: entity.EntitySegment, out value);
     }
 
     /// <summary>
@@ -58,7 +57,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     public TValue Get<T>(T entity, EntitySegment segment)
         where T : IHasEntityIdAndDb
     {
-        if (TryGetValue(entity, segment, out var value)) 
+        if (TryGetValue(segment, out var value)) 
             return value;
         if (DefaultValue.HasValue) 
             return DefaultValue.Value;

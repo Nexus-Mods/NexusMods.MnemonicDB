@@ -544,13 +544,13 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var remapped = result.Remap(modWithDescription);
         remapped.Contains(Mod.Description).Should().BeTrue();
-        Mod.Description.TryGetValue(remapped, remapped.EntitySegment, out var foundDesc).Should().BeTrue();
+        Mod.Description.TryGetValue(remapped.EntitySegment, out var foundDesc).Should().BeTrue();
         foundDesc.Should().Be("Test Description");
         remapped.Description.Value.Should().Be("Test Description");
 
         var remapped2 = result.Remap(modWithoutDiscription);
         remapped2.Contains(Mod.Description).Should().BeFalse();
-        Mod.Description.TryGetValue(remapped2, remapped2.EntitySegment, out var foundDesc2).Should().BeFalse();
+        Mod.Description.TryGetValue(remapped2.EntitySegment, out var foundDesc2).Should().BeFalse();
     }
 
     [Fact]
@@ -1483,6 +1483,22 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             }
             taskId++;
         }
+    }
+
+    [Fact]
+    public async Task EntitiesCanStoreLongStrings()
+    {
+        using var tx = Connection.BeginTransaction();
+        var loadout = new Loadout.New(tx)
+        {
+            Name = new string('A', 10000)
+        };
+        
+        var result = await tx.Commit();
+        
+        var loadoutRO = result.Remap(loadout);
+        
+        loadoutRO.Name.Should().Be(new string('A', 10000));
     }
     
 }

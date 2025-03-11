@@ -26,7 +26,7 @@ public readonly partial struct Offset
         {
             var span = segment.Data.Span;
             var actualSize = MemoryMarshal.Read<int>(span.SliceFast(offset));
-            return segment.Data.Span.SliceFast(offset + sizeof(int), actualSize);
+            return span.SliceFast(offset + sizeof(int), actualSize);
         }
         else
         {

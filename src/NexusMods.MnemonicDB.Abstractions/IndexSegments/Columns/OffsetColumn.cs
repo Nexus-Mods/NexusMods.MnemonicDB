@@ -34,7 +34,7 @@ public class OffsetColumn : IColumn
             var finalSize = ((uint)offset << 8) | MaxInlineSize;
             MemoryMarshal.Write(dst, finalSize);
             var outSpan = writer.GetSpan(valueSize + sizeof(uint));
-            MemoryMarshal.Write(outSpan, offset);
+            MemoryMarshal.Write(outSpan, valueSize);
             src.SliceFast(KeyPrefix.Size).CopyTo(outSpan.SliceFast(sizeof(uint)));
             writer.Advance(valueSize + sizeof(uint));
         }
