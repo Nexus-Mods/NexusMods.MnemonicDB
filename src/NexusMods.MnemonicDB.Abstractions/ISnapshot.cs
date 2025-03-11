@@ -15,7 +15,7 @@ public interface ISnapshot : IDatomsIndex
     /// Construct a new DB with this snapshot and the given parameters, may feel backwards to create DBs this way, but it's so that
     /// the low level iterator types can be injected into the DBs.
     /// </summary>
-    public IDb MakeDb(TxId txId, AttributeCache attributeCache, IConnection? connection = null, object? newCache = null, IndexSegment? recentlyAdded = null);
+    public IDb MakeDb(TxId txId, AttributeCache attributeCache, IConnection? connection = null);
 }
 
 

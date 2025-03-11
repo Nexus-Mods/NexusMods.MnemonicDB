@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
@@ -45,7 +44,7 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
             yield return builder.Build();
     }
 
-    public EntitySegment GetEntitySegment(IDb db, EntityId entityId)
+    public virtual EntitySegment GetEntitySegment(IDb db, EntityId entityId)
     {
         using var builder = new IndexSegmentBuilder(AttributeCache);
         using var iterator = GetRefDatomEnumerator();
@@ -54,14 +53,13 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         return new EntitySegment(entityId, new AVSegment(avSegment), db);
     }
 
-    public EntityIds GetEntityIdsPointingTo(AttributeId attrId, EntityId entityId)
+    public virtual EntityIds GetEntityIdsPointingTo(AttributeId attrId, EntityId entityId)
     {
         var slice = SliceDescriptor.Create(attrId, entityId);
         using var builder = new IndexSegmentBuilder(AttributeCache);
         using var iterator = GetRefDatomEnumerator();
         builder.AddRange(iterator, slice);
-        var ids = EntityIds.Build(builder);
-        return new EntityIds { Data = ids };
+        return new EntityIds { Data = EntityIds.Build(builder) };
     }
     
     public EntityIds GetBackRefs(ReferenceAttribute attribute, EntityId id)
@@ -75,6 +73,14 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         using var builder = new IndexSegmentBuilder(AttributeCache);
         using var iterator = GetRefDatomEnumerator();
         builder.AddRange(iterator, SliceDescriptor.CreateReferenceTo(eid));
+        return builder.Build();
+    }
+
+    public IndexSegment Datoms(TxId txId)
+    {
+        using var builder = new IndexSegmentBuilder(AttributeCache);
+        using var iterator = GetRefDatomEnumerator();
+        builder.AddRange(iterator, SliceDescriptor.Create(txId));
         return builder.Build();
     }
 

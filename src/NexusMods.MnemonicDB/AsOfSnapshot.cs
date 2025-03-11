@@ -13,9 +13,9 @@ using ResultIterator = HistoryRefDatomEnumerator<TimeFilteredRetractionEnumerato
 /// </summary>
 internal class AsOfSnapshot(Snapshot inner, TxId asOfTxId, AttributeCache attributeCache) : ADatomsIndex<ResultIterator>(attributeCache), ISnapshot
 {
-    public IDb MakeDb(TxId txId, AttributeCache cache, IConnection? connection = null, object? newCache = null, IndexSegment? recentlyAdded = null)
+    public IDb MakeDb(TxId txId, AttributeCache cache, IConnection? connection = null)
     {
-        return new Db<AsOfSnapshot, ResultIterator>(this, txId, cache, connection, newCache, recentlyAdded);
+        return new Db<AsOfSnapshot, ResultIterator>(this, txId, cache, connection);
     }
     
     public override ResultIterator GetRefDatomEnumerator()

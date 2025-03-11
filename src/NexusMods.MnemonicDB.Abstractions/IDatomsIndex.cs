@@ -48,5 +48,10 @@ public interface IDatomsIndex
     /// Returns an index segment of all the datoms that are a reference pointing to the given entity id.
     /// </summary>
     IndexSegment ReferencesTo(EntityId eid);
+    
+    /// <summary>
+    /// Get the datoms for a specific transaction id
+    /// </summary>
+    IndexSegment Datoms(TxId txId);
 
 }

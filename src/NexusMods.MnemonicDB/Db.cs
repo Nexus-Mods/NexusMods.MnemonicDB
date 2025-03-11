@@ -13,7 +13,7 @@ using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
 namespace NexusMods.MnemonicDB;
 
-internal class Db<TSnapshot, TLowLevelIterator> : ADatomsIndex<TLowLevelIterator>, IDb 
+internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelIterator>, IDb 
     where TSnapshot : IRefDatomEnumeratorFactory<TLowLevelIterator>, IDatomsIndex, ISnapshot
     where TLowLevelIterator : IRefDatomEnumerator
 {
@@ -33,22 +33,20 @@ internal class Db<TSnapshot, TLowLevelIterator> : ADatomsIndex<TLowLevelIterator
 
     internal Dictionary<Type, object> AnalyzerData { get; } = new();
 
-    internal Db(TSnapshot snapshot, TxId txId, AttributeCache attributeCache, IConnection? connection = null, object? newCache = null, IndexSegment? recentlyAdded = null) : base(attributeCache)
+    internal Db(TSnapshot snapshot, TxId txId, AttributeCache attributeCache, IConnection? connection = null) : base(attributeCache)
     {
-        /*
-        if (newCache is null)
-            _cache = new IndexSegmentCache();
-        else
-            _cache = (IndexSegmentCache)newCache;
-            */
         _connection = connection;
         _snapshot = snapshot;
         BasisTxId = txId;
-        
-        if (recentlyAdded is null)
-            _recentlyAdded = new (() => snapshot.Datoms(SliceDescriptor.Create(txId)));
-        else
-            _recentlyAdded = new (() => recentlyAdded.Value);
+        _recentlyAdded = new (() => snapshot.Datoms(SliceDescriptor.Create(txId)));
+    }
+
+    internal Db(TSnapshot newSnapshot, TxId newTxId, IndexSegment addedDatoms, Db<TSnapshot, TLowLevelIterator> src) : base(src, addedDatoms) 
+    {
+        _connection = src._connection;
+        _snapshot = newSnapshot;
+        BasisTxId = newTxId;
+        _recentlyAdded = new Lazy<IndexSegment>(() => addedDatoms);
     }
 
     /// <summary>
@@ -57,8 +55,8 @@ internal class Db<TSnapshot, TLowLevelIterator> : ADatomsIndex<TLowLevelIterator
     /// </summary>
     public IDb WithNext(StoreResult storeResult, TxId txId)
     {
-        //var newCache = _cache.ForkAndEvict(storeResult, AttributeCache, out var newDatoms);
-        return storeResult.Snapshot.MakeDb(txId, AttributeCache, _connection!, null, null);
+        var newDatoms = storeResult.Snapshot.Datoms(txId);
+        return new Db<TSnapshot, TLowLevelIterator>((TSnapshot)storeResult.Snapshot, txId, newDatoms, this);
     }
 
     public void AddAnalyzerData(Type getType, object result)

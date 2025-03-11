@@ -12,7 +12,6 @@ namespace NexusMods.MnemonicDB.Caching;
 /// </summary>
 public class IndexSegmentCache<TKey, TValue>
     where TKey : notnull
-    where TValue : IEquatable<TValue>
 {
     private CacheRoot<TKey> _root;
     private readonly CacheStrategy<TKey,TValue> _strategy;
@@ -36,10 +35,10 @@ public class IndexSegmentCache<TKey, TValue>
     /// <summary>
     /// Forks the cache and evicts entries based on the given store result's recently added datoms.
     /// </summary>
-    public IndexSegmentCache<TKey, TValue> Fork(IndexSegment segment)
+    public IndexSegmentCache<TKey, TValue> Fork(IndexSegment segment, CacheStrategy<TKey,TValue> newStrategy)
     {
         var newRoot = _root.Evict(_strategy.GetKeysFromRecentlyAdded(segment));
-        return new IndexSegmentCache<TKey, TValue>(_strategy, newRoot);
+        return new IndexSegmentCache<TKey, TValue>(newStrategy, newRoot);
     }
 
     /// <summary>
@@ -74,7 +73,7 @@ public class IndexSegmentCache<TKey, TValue>
     /// <inheritdoc />
     public override string ToString()
     {
-        return $"{typeof(TValue).Name} Cache with {_root.Cache.Count} ({_root.Size} entries";
+        return $"{typeof(TValue).Name} Cache with {_root.Cache.Count} ({_root.Size}) entries";
     }
 
     /// <summary>

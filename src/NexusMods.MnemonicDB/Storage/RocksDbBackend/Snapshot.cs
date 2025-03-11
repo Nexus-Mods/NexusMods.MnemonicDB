@@ -29,9 +29,9 @@ internal sealed class Snapshot : ADatomsIndex<RocksDbIteratorWrapper>, IRefDatom
         _snapshot = snapshot;
     }
 
-    public IDb MakeDb(TxId txId, AttributeCache attributeCache, IConnection? connection, object? newCache, IndexSegment? recentlyAdded)
+    public IDb MakeDb(TxId txId, AttributeCache attributeCache, IConnection? connection)
     {
-        return new Db<Snapshot, RocksDbIteratorWrapper>(this, txId, attributeCache, connection, newCache, recentlyAdded);
+        return new Db<Snapshot, RocksDbIteratorWrapper>(this, txId, attributeCache, connection);
     }
     
     public override RocksDbIteratorWrapper GetRefDatomEnumerator() => new(_backend.Db!.NewIterator(null, _readOptions));

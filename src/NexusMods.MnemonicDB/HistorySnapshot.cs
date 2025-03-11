@@ -14,9 +14,9 @@ using ResultIterator = HistoryRefDatomEnumerator<RocksDbIteratorWrapper, RocksDb
 /// </summary>
 internal class HistorySnapshot(Snapshot inner, AttributeCache attributeCache) : ADatomsIndex<ResultIterator>(attributeCache), IRefDatomEnumeratorFactory<ResultIterator>, ISnapshot
 {
-    public IDb MakeDb(TxId txId, AttributeCache cache, IConnection? connection = null, object? newCache = null, IndexSegment? recentlyAdded = null)
+    public IDb MakeDb(TxId txId, AttributeCache cache, IConnection? connection = null)
     {
-        return new Db<HistorySnapshot, ResultIterator>(this, txId, cache, connection, newCache, recentlyAdded);
+        return new Db<HistorySnapshot, ResultIterator>(this, txId, cache, connection);
     }
 
     public override ResultIterator GetRefDatomEnumerator()

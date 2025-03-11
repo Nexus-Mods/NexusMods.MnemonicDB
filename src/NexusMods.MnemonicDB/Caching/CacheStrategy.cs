@@ -11,17 +11,17 @@ public abstract class CacheStrategy<TKey, TValue>
     /// <summary>
     /// The maximum number of entries in the cache.
     /// </summary>
-    public int MaxEntries { get; set; }
-    
+    public int MaxEntries { get; set; } = 100_000;
+
     /// <summary>
     /// The maximum number of bytes in the cache.
     /// </summary>
-    public Size MaxBytes { get; set; }
-    
+    public Size MaxBytes { get; set; } = Size.MB * 100;
+
     /// <summary>
     /// When the caches are full we evict entries until we have this percentage of free space.
     /// </summary>
-    public double EvictPercentage { get; set; }
+    public double EvictPercentage { get; set; } = 0.25;
     
     /// <summary>
     /// On a cache miss, this method will be called to get the actual bytes for the index segment

@@ -22,6 +22,13 @@ public readonly struct IndexSegmentBuilder : IDisposable
     private readonly PooledMemoryBufferWriter _data;
     private readonly AttributeCache _attributeCache;
 
+    private static readonly Memory<byte> Empty;
+    
+    static IndexSegmentBuilder()
+    {
+        Empty = new byte[sizeof(ulong)];
+    }
+
     /// <summary>
     /// Not supported, use the other constructor
     /// </summary>
@@ -199,6 +206,9 @@ public readonly struct IndexSegmentBuilder : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public Memory<byte> Build(params ReadOnlySpan<IColumn> columns)
     {
+        if (Count == 0)
+            return Empty;
+        
         _offsets.Add(_data.Length);
         var rowCount = _offsets.Count - 1;
         
