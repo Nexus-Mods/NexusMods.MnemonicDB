@@ -27,7 +27,7 @@ public abstract class ACachingDatomsIndex<TRefEnumerator>(AttributeCache attribu
 
         public override AVSegment GetValue(EntityId key, IDb db, Memory<byte> bytes)
         {
-            return new AVSegment { Data = bytes };
+            return new AVSegment(bytes);
         }
 
         public override IEnumerable<EntityId> GetKeysFromRecentlyAdded(IndexSegment segment)

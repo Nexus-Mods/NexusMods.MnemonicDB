@@ -51,7 +51,7 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         using var iterator = GetRefDatomEnumerator();
         builder.AddRange(iterator, SliceDescriptor.Create(entityId));
         var avSegment = AVSegment.Build(builder);
-        return new EntitySegment(entityId, new AVSegment() { Data = avSegment }, db);
+        return new EntitySegment(entityId, new AVSegment(avSegment), db);
     }
 
     public EntityIds GetEntityIdsPointingTo(AttributeId attrId, EntityId entityId)

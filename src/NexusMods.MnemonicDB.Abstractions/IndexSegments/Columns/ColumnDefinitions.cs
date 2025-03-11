@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments.Columns;
 
@@ -17,6 +18,8 @@ public static class ColumnDefinitions
             return AttributeIdColumn.Instance;
         else if (typeof(T) == typeof(Offset))
             return OffsetColumn.Instance;
+        else if (typeof(T) == typeof(ValueTag))
+            return ValueTypeColumn.Instance;
         else
             throw new NotSupportedException($"Type {typeof(T)} is not supported.");
     }

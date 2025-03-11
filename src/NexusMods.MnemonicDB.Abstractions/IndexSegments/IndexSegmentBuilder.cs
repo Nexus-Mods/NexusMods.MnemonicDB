@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using DynamicData;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments.Columns;
@@ -215,34 +216,40 @@ public readonly struct IndexSegmentBuilder : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public Memory<byte> Build(params ReadOnlySpan<IColumn> columns)
     {
+        _offsets.Add(_data.Length);
+        var rowCount = _offsets.Count - 1;
+        
         Span<int> columnOffsets = stackalloc int[columns.Length];
         Span<int> columnFixedSizes = stackalloc int[columns.Length];
         
         using var writer = new PooledMemoryBufferWriter();
         
         // Number of rows
-        writer.Write(_offsets.Count);
+        writer.Write(rowCount);
         
+        // Column offsets are next
         for (var i = 0 ; i < columns.Length; i++)
         {
-            // Column offsets are next
             columnOffsets[i] = writer.Length;
             // Columns for each part
             var fixedSize = columns[i].FixedSize;
             columnFixedSizes[i] = fixedSize;
-            var partSpan = writer.GetSpan(fixedSize * _offsets.Count);
+            var partSpan = writer.GetSpan(fixedSize * rowCount);
             writer.Advance(partSpan.Length);
         }
         
         var offsetSpan = CollectionsMarshal.AsSpan(_offsets);
         var srcWrittenSpan = _data.GetWrittenSpan();
-        var destWrittenSpan = writer.GetWrittenSpanWritable();
         for (var columnIdx = 0; columnIdx < columns.Length; columnIdx++)
         {
-            for (var idx = 0; idx < columns.Length; idx++)
+            for (var idx = 0; idx < rowCount; idx++)
             {
-                var fromSpan = srcWrittenSpan.SliceFast(offsetSpan[idx], offsetSpan[idx + 1]);
+                var thisOffset = offsetSpan[idx];
+                var fromSpan = srcWrittenSpan.SliceFast(thisOffset, offsetSpan[idx + 1] - thisOffset);
                 var fixedSize = columnFixedSizes[columnIdx];
+                // We have to re-get the span because the writer may have been advanced causing the writer to have to 
+                // expand its buffer
+                var destWrittenSpan = writer.GetWrittenSpanWritable();
                 var destSpan = destWrittenSpan.SliceFast(columnOffsets[columnIdx] + (fixedSize * idx), fixedSize);
                 columns[columnIdx].Extract(fromSpan, destSpan, writer);
             }

@@ -3,15 +3,20 @@ using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
-public struct AVSegment : ISegment<AttributeId, ValueTag, Offset>
+public readonly struct AVSegment : ISegment<AttributeId, ValueTag, Offset>
 {
-    public ReadOnlyMemory<byte> Data { get; init; }
+    public ReadOnlyMemory<byte> Data { get; }
+
+    public AVSegment(ReadOnlyMemory<byte> data)
+    {
+        Data = data;
+    }
     
-    public readonly ReadOnlySpan<AttributeId> GetAttributeIds() => this.GetValues1<AVSegment, AttributeId>();
+    public ReadOnlySpan<AttributeId> GetAttributeIds() => this.GetValues1<AVSegment, AttributeId>();
     
-    public readonly ReadOnlySpan<ValueTag> GetValueTypes() => this.GetValues2<AVSegment, AttributeId, ValueTag>();
+    public ReadOnlySpan<ValueTag> GetValueTypes() => this.GetValues2<AVSegment, AttributeId, ValueTag>();
     
-    public readonly ReadOnlySpan<Offset> GetOffsets() => this.GetValues3<AVSegment, AttributeId, ValueTag, Offset>();
+    public ReadOnlySpan<Offset> GetOffsets() => this.GetValues3<AVSegment, AttributeId, ValueTag, Offset>();
     
     /// <summary>
     /// Builds the segment of this type from the given builder

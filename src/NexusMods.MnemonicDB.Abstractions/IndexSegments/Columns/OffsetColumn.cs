@@ -12,7 +12,6 @@ public class OffsetColumn : IColumn<Offset>
     
     public const uint MaxSegmentOffset = 1 << 24;
     public const uint MaxInlineSize = 0xFF;
-    public const uint OversizeMask = 0xFF000000;
     
     public unsafe int FixedSize => sizeof(Offset);
     public Type ValueType => typeof(Offset);
@@ -24,7 +23,7 @@ public class OffsetColumn : IColumn<Offset>
         
         if (valueSize < MaxInlineSize)
         {
-            var finalSize = (offset << 8) | valueSize;
+            var finalSize = ((uint)offset << 8) | (uint)valueSize;
             MemoryMarshal.Write(dst, finalSize);
             var outSpan = writer.GetSpan(valueSize);
             src.SliceFast(KeyPrefix.Size).CopyTo(outSpan);
@@ -32,12 +31,12 @@ public class OffsetColumn : IColumn<Offset>
         }
         else
         {
-            var finalSize = (offset << 8) | MaxInlineSize;
+            var finalSize = ((uint)offset << 8) | MaxInlineSize;
             MemoryMarshal.Write(dst, finalSize);
-            var outSpan = writer.GetSpan(valueSize + sizeof(int));
+            var outSpan = writer.GetSpan(valueSize + sizeof(uint));
             MemoryMarshal.Write(outSpan, offset);
-            src.SliceFast(KeyPrefix.Size).CopyTo(outSpan.SliceFast(sizeof(int)));
-            writer.Advance(valueSize + sizeof(int));
+            src.SliceFast(KeyPrefix.Size).CopyTo(outSpan.SliceFast(sizeof(uint)));
+            writer.Advance(valueSize + sizeof(uint));
         }
     }
 }
