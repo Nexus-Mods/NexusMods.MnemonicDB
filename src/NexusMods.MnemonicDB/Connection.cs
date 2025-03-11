@@ -84,7 +84,7 @@ public sealed class Connection : IConnection
                 action = task.IsCompleted ? task.Result : task.AsTask().Result;
                 events.Clear();
                 events.Add(action);
-                
+
                 // We do some event compression here. We try to get as many events of the same type as possible, then
                 // process them all at once. For subscriptions this means we can prime them in parallel, and for unsubscribes
                 // we can remove them all at once, reducing overhead of some of the more expensive memoized data structures.
@@ -109,16 +109,22 @@ public sealed class Connection : IConnection
                             {
                                 ProcessNewRevision(newEvent);
                             }
+
                             break;
                         }
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to process {Count} events of type {Event}", events.Count, action.GetType().Name);
+                    _logger.LogError(ex, "Failed to process {Count} events of type {Event}", events.Count,
+                        action.GetType().Name);
                 }
-                
+
             }
+        }
+        catch (ChannelClosedException)
+        {
+            // We're done
         }
         catch (AggregateException ex)
         {
