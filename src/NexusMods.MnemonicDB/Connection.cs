@@ -440,6 +440,7 @@ public sealed class Connection : IConnection
             initialDb.Analyze(null, _analyzers);
             
             var declaredAttributes = AttributeResolver.DefinedAttributes.OrderBy(a => a.Id.Id).ToArray();
+            _dbStream.OnNext(initialDb);
             
             _eventThread = new Thread(ProcessEvents)
             {
