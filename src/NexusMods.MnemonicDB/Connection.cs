@@ -435,6 +435,7 @@ public sealed class Connection : IConnection
         {
             var initialSnapshot = _store.GetSnapshot();
             var initialDb = initialSnapshot.MakeDb(TxId, AttributeCache, this);
+            initialDb.Connection = this;
             AttributeCache.Reset(initialDb);
             initialDb.Analyze(null, _analyzers);
             
