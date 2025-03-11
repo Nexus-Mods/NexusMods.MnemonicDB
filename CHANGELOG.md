@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.115 - 3/11/2025
+* Many internal optimizations, should not affect the public API
+
 ### 0.9.114 - 3/3/2025
 * Fixed a compile error in the build pipeline
 
