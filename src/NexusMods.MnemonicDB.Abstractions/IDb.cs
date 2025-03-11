@@ -73,11 +73,6 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// Create the next version of the database with the given result and the transaction id that the result was assigned.
     /// </summary>
     IDb WithNext(StoreResult result, TxId resultAssignedTxId);
-
-    /// <summary>
-    /// Add the given analyzer data to the analyzer cache.
-    /// </summary>
-    void AddAnalyzerData(Type getType, object result);
     
     /// <summary>
     /// Gets the index segment for the given entity id.
@@ -86,5 +81,9 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     {
         return GetEntitySegment(this, entityId);
     }
-    
+
+    /// <summary>
+    /// Process and store the data from the given analyzers.
+    /// </summary>
+    void Analyze(IDb? prev, IAnalyzer[] analyzers);
 }

@@ -58,10 +58,14 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         var newDatoms = storeResult.Snapshot.Datoms(txId);
         return new Db<TSnapshot, TLowLevelIterator>((TSnapshot)storeResult.Snapshot, txId, newDatoms, this);
     }
-
-    public void AddAnalyzerData(Type getType, object result)
+    
+    public void Analyze(IDb? prev, IAnalyzer[] analyzers)
     {
-        AnalyzerData.Add(getType, result);
+        foreach (var analyzer in analyzers)
+        {
+            var result = analyzer.Analyze(prev, this);
+            AnalyzerData[analyzer.GetType()] = result;
+        }
     }
 
     public TxId BasisTxId { get; }

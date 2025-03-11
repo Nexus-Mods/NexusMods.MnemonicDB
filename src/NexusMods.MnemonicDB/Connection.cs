@@ -139,19 +139,15 @@ public sealed class Connection : IConnection
 
     private void ProcessNewRevision(NewRevisionEvent newEvent)
     {
-        foreach (var analyzer in _analyzers)
+        try
         {
-            try
-            {
-                var result = analyzer.Analyze(newEvent.Prev, newEvent.Db);
-                newEvent.Db.AddAnalyzerData(analyzer.GetType(), result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to analyze with {Analyzer}", analyzer.GetType().Name);
-            }
+            newEvent.Db.Analyze(newEvent.Prev, _analyzers);
         }
-
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to analyze db");
+        }
+        
         _dbStream.OnNext(newEvent.Db);
         ProcessObservers(newEvent.Db);
         newEvent.OnFinished.SetResult();
@@ -440,6 +436,7 @@ public sealed class Connection : IConnection
             var initialSnapshot = _store.GetSnapshot();
             var initialDb = initialSnapshot.MakeDb(TxId, AttributeCache, this);
             AttributeCache.Reset(initialDb);
+            initialDb.Analyze(null, _analyzers);
             
             var declaredAttributes = AttributeResolver.DefinedAttributes.OrderBy(a => a.Id.Id).ToArray();
             

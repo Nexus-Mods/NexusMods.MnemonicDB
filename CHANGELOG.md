@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.116 - 3/11/2025
+* Fix a bug with Analyzers not being run the first time an existing database is opened
+
 ### 0.9.115 - 3/11/2025
 * Many internal optimizations, should not affect the public API
 
