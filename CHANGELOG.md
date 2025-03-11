@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.9.119 - 3/11/2025
+* Fix a bug with AVSegments and long values
+* Remove an unused parameter from the `IAttribute.TryGetValue` method
+
 ### 0.9.117 - 3/11/2025
 * Fix a bug only found in NMA that errored because the initial Db didn't have its connection set
 
