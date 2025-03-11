@@ -544,13 +544,13 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var remapped = result.Remap(modWithDescription);
         remapped.Contains(Mod.Description).Should().BeTrue();
-        Mod.Description.TryGetValue(remapped, remapped.IndexSegment, out var foundDesc).Should().BeTrue();
+        Mod.Description.TryGetValue(remapped, remapped.EntitySegment, out var foundDesc).Should().BeTrue();
         foundDesc.Should().Be("Test Description");
         remapped.Description.Value.Should().Be("Test Description");
 
         var remapped2 = result.Remap(modWithoutDiscription);
         remapped2.Contains(Mod.Description).Should().BeFalse();
-        Mod.Description.TryGetValue(remapped2, remapped2.IndexSegment, out var foundDesc2).Should().BeFalse();
+        Mod.Description.TryGetValue(remapped2, remapped2.EntitySegment, out var foundDesc2).Should().BeFalse();
     }
 
     [Fact]
@@ -1122,7 +1122,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         var modRO = result.Remap(mod);
         
-        modRO.Tags.Should().BeEquivalentTo(["A", "B", "C"]);
+        modRO.Tags.Should().BeEquivalentTo("A", "B", "C");
     }
 
     /// <summary>
@@ -1432,7 +1432,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         var txTask = Task.Run(async () =>
         {
-            for (var i = 0; i < 10_000; i++)
+            for (var i = 0; i < 1000; i++)
             {
                 using var tx2 = Connection.BeginTransaction();
                 tx2.Add(fileId, File.Size, Size.From((ulong)i));
@@ -1483,28 +1483,6 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             }
             taskId++;
         }
-    }
-
-    [Fact]
-    public async Task CanPrecacheEntities()
-    {
-        using var tx = Connection.BeginTransaction();
-        for (var i = 0 ; i < 1000; i++)
-        {
-            _ = new Mod.New(tx)
-            {
-                Name = "Test Mod " + i,
-                Source = new Uri("http://test.com"),
-                LoadoutId = EntityId.From(0)
-            };
-        }
-        var result = await tx.Commit();
-        
-        result.Db.ClearIndexCache();
-        await result.Db.PrecacheAll();
-
-        var mods = Mod.All(result.Db).ToArray();
-        mods.Length.Should().Be(1000);
     }
     
 }

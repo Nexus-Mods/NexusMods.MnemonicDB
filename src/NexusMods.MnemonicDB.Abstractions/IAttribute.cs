@@ -80,7 +80,7 @@ public interface IAttribute
     /// <summary>
     ///     Returns true if the attribute is in the given entity
     /// </summary>
-    bool IsIn<T>(T entity) where T : IHasIdAndIndexSegment;
+    bool IsIn<T>(T entity) where T : IHasIdAndEntitySegment;
 }
 
 /// <summary>

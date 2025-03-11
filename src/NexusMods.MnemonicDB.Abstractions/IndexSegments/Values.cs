@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using NexusMods.Paths.Utilities;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
 /// <summary>
 /// A subview of an IndexSegment that returns a specific value type
 /// </summary>
-public readonly struct Values<TValueType>(IndexSegment segment, int start, int end, IReadableAttribute<TValueType> attribute, AttributeResolver resolver) :
+public readonly struct Values<TValueType>(EntitySegment segment, Range range, IReadableAttribute<TValueType> attribute) :
     IEnumerable<TValueType>, IIndexSegment<TValueType> 
 {
     /// <summary>
@@ -17,15 +18,23 @@ public readonly struct Values<TValueType>(IndexSegment segment, int start, int e
     {
         get
         {
-            var datom = segment[idx + start];
-            return attribute.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver);
+            if (idx < 0 || idx >= Count)
+            {
+                throw new IndexOutOfRangeException();
+            }
+            
+            if (!segment.TryGetValue<IReadableAttribute<TValueType>, TValueType>(attribute, range.Start.Value + idx, out var value))
+            {
+                throw new IndexOutOfRangeException();
+            }
+            return value;
         }
     }
 
     /// <summary>
     /// Returns the number of items in the collection
     /// </summary>
-    public int Count => end - start;
+    public int Count => range.End.Value - range.Start.Value;
 
     /// <summary>
     /// Converts the view to an array

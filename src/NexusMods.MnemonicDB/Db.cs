@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
@@ -12,9 +13,11 @@ using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
 namespace NexusMods.MnemonicDB;
 
-internal class Db : IDb
+internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelIterator>, IDb 
+    where TSnapshot : IRefDatomEnumeratorFactory<TLowLevelIterator>, IDatomsIndex, ISnapshot
+    where TLowLevelIterator : IRefDatomEnumerator
 {
-    private readonly IndexSegmentCache _cache;
+    //private readonly IndexSegmentCache _cache;
     
     /// <summary>
     /// The connection is used by several methods to navigate the graph of objects of Db, Connection, Datom Store, and
@@ -22,54 +25,43 @@ internal class Db : IDb
     /// and is set by the Connection class after the Datom Store has pushed the Db object to it.
     /// </summary>
     private IConnection? _connection;
-    public ISnapshot Snapshot { get; }
-    public AttributeCache AttributeCache { get; }
+    public ISnapshot Snapshot => _snapshot;
 
     private readonly Lazy<IndexSegment> _recentlyAdded;
+    private readonly TSnapshot _snapshot;
     public IndexSegment RecentlyAdded => _recentlyAdded.Value;
 
     internal Dictionary<Type, object> AnalyzerData { get; } = new();
 
-    public Db(ISnapshot snapshot, TxId txId, AttributeCache attributeCache)
+    internal Db(TSnapshot snapshot, TxId txId, AttributeCache attributeCache, IConnection? connection = null) : base(attributeCache)
     {
-        Debug.Assert(snapshot != null, $"{nameof(snapshot)} cannot be null");
-        AttributeCache = attributeCache;
-        _cache = new IndexSegmentCache();
-        Snapshot = snapshot;
+        _connection = connection;
+        _snapshot = snapshot;
         BasisTxId = txId;
-        
-        // We may never need this data, so load it lazily
         _recentlyAdded = new (() => snapshot.Datoms(SliceDescriptor.Create(txId)));
     }
 
-    private Db(ISnapshot snapshot, TxId txId, AttributeCache attributeCache, IConnection connection, IndexSegmentCache newCache, IndexSegment recentlyAdded)
+    internal Db(TSnapshot newSnapshot, TxId newTxId, IndexSegment addedDatoms, Db<TSnapshot, TLowLevelIterator> src) : base(src, addedDatoms) 
     {
-        AttributeCache = attributeCache;
-        _cache = newCache;
-        _connection = connection;
-        Snapshot = snapshot;
-        BasisTxId = txId;
-        _recentlyAdded = new Lazy<IndexSegment>(recentlyAdded);
+        _connection = src._connection;
+        _snapshot = newSnapshot;
+        BasisTxId = newTxId;
+        _recentlyAdded = new Lazy<IndexSegment>(() => addedDatoms);
     }
 
     /// <summary>
     /// Create a new Db instance with the given store result and transaction id integrated, will evict old items
     /// from the cache, and update the cache with the new datoms.
     /// </summary>
-    internal Db WithNext(StoreResult storeResult, TxId txId)
+    public IDb WithNext(StoreResult storeResult, TxId txId)
     {
-        var newCache = _cache.ForkAndEvict(storeResult, AttributeCache, out var newDatoms);
-        return new Db(storeResult.Snapshot, txId, AttributeCache, _connection!, newCache, newDatoms);
+        var newDatoms = storeResult.Snapshot.Datoms(txId);
+        return new Db<TSnapshot, TLowLevelIterator>((TSnapshot)storeResult.Snapshot, txId, newDatoms, this);
     }
 
-    private IndexSegment EntityDatoms(IDb db, EntityId id)
+    public void AddAnalyzerData(Type getType, object result)
     {
-        return _cache.Get(id, db);
-    }
-
-    private static IndexSegment ReverseDatoms(IDb db, (EntityId, AttributeId) key)
-    {
-        return db.Snapshot.Datoms(SliceDescriptor.Create(key.Item2, key.Item1));
+        AnalyzerData.Add(getType, result);
     }
 
     public TxId BasisTxId { get; }
@@ -87,27 +79,7 @@ internal class Db : IDb
             _connection = value;
         }
     }
-
-    /// <summary>
-    /// Gets the IndexSegment for the given entity id.
-    /// </summary>
-    public IndexSegment Get(EntityId entityId)
-    {
-        return Datoms(entityId);
-    }
-
-    public EntityIds GetBackRefs(ReferenceAttribute attribute, EntityId id)
-    {
-        var aid = _connection!.AttributeCache.GetAttributeId(attribute.Id);
-        var segment = _cache.GetReverse(aid, id, this);
-        return new EntityIds(segment, 0, segment.Count);
-    }
     
-    public IndexSegment ReferencesTo(EntityId id)
-    {
-        return _cache.GetReferences(id, this);
-    }
-
     TReturn IDb.AnalyzerData<TAnalyzer, TReturn>()
     {
         if (AnalyzerData.TryGetValue(typeof(TAnalyzer), out var value))
@@ -117,101 +89,22 @@ internal class Db : IDb
 
     public void ClearIndexCache()
     {
-        _cache.Clear();
+        EntityCache.Clear();
+        BackReferenceCache.Clear();
     }
-
-    public Task PrecacheAll()
-    {
-        var tcs = new TaskCompletionSource();
-        var thread = new Thread(() =>
-        {
-            try
-            {
-                var casted = (Snapshot)Snapshot;
-                using var builder = new IndexSegmentBuilder(AttributeCache);
-                using var enumerator =
-                    casted.RefDatoms(SliceDescriptor.AllEntities(PartitionId.Entity)).GetEnumerator();
-                EntityId currentEntity = default;
-                while (enumerator.MoveNext())
-                {
-                    if (enumerator.KeyPrefix.E != currentEntity && builder.Count > 0)
-                    {
-                        var built = builder.Build();
-                        builder.Reset();
-                        _cache.Add(currentEntity, built);
-                    }
-
-                    currentEntity = enumerator.KeyPrefix.E;
-                    builder.AddCurrent(enumerator);
-                }
-
-                if (builder.Count > 0)
-                {
-                    var built = builder.Build();
-                    builder.Reset();
-                    _cache.Add(currentEntity, built);
-                }
-
-
-                using var reverseIndexes = casted
-                    .RefDatoms(SliceDescriptor.AllReverseAttributesInPartition(PartitionId.Entity)).GetEnumerator();
-                var previousAid = default(AttributeId);
-                var previousEntity = default(EntityId);
-
-                while (reverseIndexes.MoveNext())
-                {
-                    if ((reverseIndexes.KeyPrefix.A != previousAid || reverseIndexes.KeyPrefix.E != previousEntity) &&
-                        builder.Count > 0)
-                    {
-                        var built = builder.Build();
-                        builder.Reset();
-                        _cache.AddReverse(previousEntity, previousAid, built);
-                    }
-
-                    previousAid = reverseIndexes.KeyPrefix.A;
-                    previousEntity = reverseIndexes.KeyPrefix.E;
-                    builder.AddCurrent(reverseIndexes);
-                }
-                tcs.SetResult();
-            }
-            catch (Exception e)
-            {
-                tcs.SetException(e);
-                return;
-            }
-        })
-        {
-            Name = "MnemonicDB Precache",
-            IsBackground = true
-        };
-        thread.Start();
-        return tcs.Task;
-    }
-
+    
     public IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)
     {
         return Datoms(SliceDescriptor.Create(attribute, value, AttributeCache));
     }
     
-    public IndexSegment Datoms(EntityId entityId)
-    {
-        return _cache.Get(entityId, this);
-    }
-
-    public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
-    {
-        return Snapshot.Datoms(descriptor);
-    }
-
     public IndexSegment Datoms(IAttribute attribute)
     {
-        return Snapshot.Datoms(SliceDescriptor.Create(attribute, AttributeCache));
+        return Datoms(SliceDescriptor.Create(attribute, AttributeCache));
     }
 
-    public IndexSegment Datoms(SliceDescriptor sliceDescriptor)
-    {
-        return Snapshot.Datoms(sliceDescriptor);
-    }
+    [MustDisposeResource]
+    public override TLowLevelIterator GetRefDatomEnumerator() => _snapshot.GetRefDatomEnumerator();
 
     public IndexSegment Datoms(TxId txId)
     {
@@ -223,7 +116,8 @@ internal class Db : IDb
         if (other is null)
             return false;
         return ReferenceEquals(_connection, other.Connection)
-               && BasisTxId.Equals(other.BasisTxId);
+               && BasisTxId.Equals(other.BasisTxId)
+               && Snapshot.GetType() == other.Snapshot.GetType();
     }
 
     public override bool Equals(object? obj)
@@ -231,7 +125,7 @@ internal class Db : IDb
         if (ReferenceEquals(null, obj)) return false;
         if (ReferenceEquals(this, obj)) return true;
         if (obj.GetType() != GetType()) return false;
-        return Equals((Db)obj);
+        return Equals((IDb)obj);
     }
 
     public override int GetHashCode()

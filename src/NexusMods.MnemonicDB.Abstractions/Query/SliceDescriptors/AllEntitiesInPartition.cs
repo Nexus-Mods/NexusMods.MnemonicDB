@@ -12,26 +12,26 @@ namespace NexusMods.MnemonicDB.Abstractions.Query.SliceDescriptors;
 public readonly struct AllEntitiesInPartition(PartitionId partitionId) : ISliceDescriptor
 {
     /// <inheritdoc />
-    public void Reset<T>(T iterator) where T : ILowLevelIterator, allows ref struct
+    public void Reset<T>(T iterator, bool history = false) where T : ILowLevelIterator, allows ref struct
     {
-        var prefix = new KeyPrefix(partitionId.MinValue, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTCurrent);
+        var index = history ? IndexType.EAVTHistory : IndexType.EAVTCurrent;
+        var prefix = new KeyPrefix(partitionId.MinValue, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, index);
         var spanTo = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in prefix, 1));
         iterator.SeekTo(spanTo);
     }
 
     /// <inheritdoc />
-    public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct
-    {
-        iterator.Next();
-    }
+    public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct 
+        => iterator.Next();
 
     /// <inheritdoc />
-    public bool ShouldContinue(ReadOnlySpan<byte> keySpan)
+    public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool history = false)
     {
+        var index = history ? IndexType.EAVTHistory : IndexType.EAVTCurrent;
         var prefix = KeyPrefix.Read(keySpan);
-        return prefix.Index == IndexType.EAVTCurrent && prefix.E.Partition == partitionId;
+        return prefix.Index == index && prefix.E.Partition == partitionId;
     }
-
+    
     /// <inheritdoc />
     public void Deconstruct(out Datom from, out Datom to, out bool isReversed)
     {

@@ -30,6 +30,51 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
         _size = initialCapacity;
     }
 
+    /// <summary>
+    /// Write the unmanaged structure to the buffer.
+    /// </summary>
+    public void Write<T>(in T structure) where T : unmanaged
+    {
+        var structureSpan = MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in structure), 1);
+        var byteSpan = MemoryMarshal.Cast<T, byte>(structureSpan);
+        var outSpan = GetSpan(byteSpan.Length);
+        byteSpan.CopyTo(outSpan);
+        Advance(byteSpan.Length);
+    }
+
+    /// <summary>
+    /// Creates a marker for this location in memory, allowing the structure to be written later via the returned
+    /// marker.
+    /// </summary>
+    public void Mark<T>() where T : unmanaged
+    {
+        var d = default(T);
+        var structureSpan = MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in d), 1);
+        var byteSpan = MemoryMarshal.Cast<T, byte>(structureSpan);
+        var outSpan = GetSpan(byteSpan.Length);
+        byteSpan.CopyTo(outSpan);
+        Advance(byteSpan.Length);
+    }
+
+    /// <summary>
+    /// A marker for a location in memory, allowing the structure to be written later.
+    /// </summary>
+    /// <param name="writer"></param>
+    /// <param name="offset"></param>
+    /// <typeparam name="T"></typeparam>
+    public struct Marker<T>(PooledMemoryBufferWriter writer, int offset) where T : unmanaged
+    {
+        /// <summary>
+        /// Write the structure to the buffer at the marker location.
+        /// </summary>
+        public void Set(T structure)
+        {
+            var structureSpan = MemoryMarshal.CreateSpan(ref Unsafe.AsRef(in structure), 1);
+            var byteSpan = MemoryMarshal.Cast<T, byte>(structureSpan);
+            byteSpan.CopyTo(writer.WrittenSpanWritable.SliceFast(offset, byteSpan.Length));
+        }
+    }
+
 
     /// <summary>
     /// Gets the written memory of this writer.

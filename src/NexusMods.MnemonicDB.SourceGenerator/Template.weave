@@ -302,17 +302,17 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            /// <summary>
            /// The database segment containing the datoms for this entity in EAVT order.
            /// </summary>
-           public readonly __SEGMENTS__.IndexSegment IndexSegment;
+           public readonly __SEGMENTS__.EntitySegment EntitySegment;
            
-           __SEGMENTS__.IndexSegment __MODELS__.IHasIdAndIndexSegment.IndexSegment => this.IndexSegment; 
+           __SEGMENTS__.EntitySegment __MODELS__.IHasIdAndEntitySegment.EntitySegment => this.EntitySegment; 
 
            /// <summary>
            /// Constructs a new ReadOnly model of the entity from the given segment and id.
            /// </summary>
-           public ReadOnly(__ABSTRACTIONS__.IDb db, __SEGMENTS__.IndexSegment segment, __ABSTRACTIONS__.EntityId id) {
+           public ReadOnly(__ABSTRACTIONS__.IDb db, __SEGMENTS__.EntitySegment segment, __ABSTRACTIONS__.EntityId id) {
                Db = db;
                Id = id;
-               IndexSegment = segment;
+               EntitySegment = segment;
            }
 
            /// <summary>
@@ -349,16 +349,16 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            }
 
            /// <inheritdoc />
-           public int Count => IndexSegment.Count;
+           public int Count => EntitySegment.Count;
 
 
            /// <inheritdoc />
            public IEnumerator<IReadDatom> GetEnumerator()
            {
                var resolver = Db.Connection.AttributeResolver;
-               for (var i = 0; i < IndexSegment.Count; i++)
+               foreach (var datom in EntitySegment)
                {
-                   yield return resolver.Resolve(IndexSegment[i]);
+                   yield return resolver.Resolve(datom);
                }
            }
 
@@ -583,7 +583,7 @@ public static class {{= model.Name}}Extensions {
     /// Tries to get the entity as a {{= model.Name}} entity, if the entity is not a {{= model.Name}} entity, it returns false.
     /// </summary>
     public static bool TryGetAs{{= model.Name}}(this {{= include.ToDisplayString()}}.ReadOnly model, [NotNullWhen(true)] out {{= model.Name}}.ReadOnly result) {
-        var casted = new {{= model.Name}}.ReadOnly(model.Db, model.IndexSegment, model.Id);
+        var casted = new {{= model.Name}}.ReadOnly(model.Db, model.EntitySegment, model.Id);
         if (casted.IsValid()) {
             result = casted;
             return true;

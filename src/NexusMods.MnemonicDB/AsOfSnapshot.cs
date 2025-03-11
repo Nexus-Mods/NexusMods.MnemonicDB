@@ -1,24 +1,34 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+﻿using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Abstractions.Query;
-using NexusMods.MnemonicDB.Storage;
-using Reloaded.Memory.Extensions;
+using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
 namespace NexusMods.MnemonicDB;
+
+using ResultIterator = HistoryRefDatomEnumerator<TimeFilteredRetractionEnumerator<RocksDbIteratorWrapper>, TimeFilteredEnumerator<RocksDbIteratorWrapper>>;
 
 /// <summary>
 /// This is a wrapper around snapshots that allows you to query the snapshot as of a specific transaction
 /// id, this requires merging two indexes together, and then the deduplication of the merged index (retractions
 /// removing assertions).
 /// </summary>
-internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeCache attributeCache) : ISnapshot
+internal class AsOfSnapshot(Snapshot inner, TxId asOfTxId, AttributeCache attributeCache) : ADatomsIndex<ResultIterator>(attributeCache), ISnapshot
 {
+    public IDb MakeDb(TxId txId, AttributeCache cache, IConnection? connection = null)
+    {
+        return new Db<AsOfSnapshot, ResultIterator>(this, txId, cache, connection);
+    }
+    
+    public override ResultIterator GetRefDatomEnumerator()
+    {
+        // I don't want to hear it, this looks like absolute garbage, but it's fast, and C# needs better generic support
+        // and/or macros
+        return new ResultIterator(
+            new TimeFilteredRetractionEnumerator<RocksDbIteratorWrapper>(inner.GetRefDatomEnumerator(), asOfTxId),
+            new TimeFilteredEnumerator<RocksDbIteratorWrapper>(inner.GetRefDatomEnumerator(), asOfTxId));
+
+    }
+
+    /*
     public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) 
         where TDescriptor : ISliceDescriptor
     {
@@ -48,6 +58,7 @@ internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeCache attri
 
         return builder.Build();
     }
+
 
     public IEnumerable<IndexSegment> DatomsChunked(SliceDescriptor descriptor, int chunkSize)
     {
@@ -157,4 +168,5 @@ internal class AsOfSnapshot(ISnapshot inner, TxId asOfTxId, AttributeCache attri
         return aSpan.SliceFast(KeyPrefix.Size).SequenceEqual(bDatom.ValueSpan);
 
     }
+    */
 }

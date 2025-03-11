@@ -1,10 +1,15 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using DynamicData;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.IndexSegments.Columns;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
@@ -16,6 +21,13 @@ public readonly struct IndexSegmentBuilder : IDisposable
     private readonly List<int> _offsets;
     private readonly PooledMemoryBufferWriter _data;
     private readonly AttributeCache _attributeCache;
+
+    private static readonly Memory<byte> Empty;
+    
+    static IndexSegmentBuilder()
+    {
+        Empty = new byte[sizeof(ulong)];
+    }
 
     /// <summary>
     /// Not supported, use the other constructor
@@ -135,29 +147,24 @@ public readonly struct IndexSegmentBuilder : IDisposable
         var prefixSpan = _data.GetSpan(KeyPrefix.Size);
         MemoryMarshal.Write(prefixSpan, prefix);
         _data.Advance(KeyPrefix.Size);
-        _data.Write(enumerator.ValueSpan);
+        _data.Write(enumerator.ValueSpan.Span);
         
         // Write the hashed blob if it exists
         if (prefix.ValueTag == ValueTag.HashedBlob) 
-            _data.Write(enumerator.ExtraValueSpan);
+            _data.Write(enumerator.ExtraValueSpan.Span);
     }
 
     /// <summary>
     /// Adds all the items from the enumerator to the segment
     /// </summary>
-    public void AddRange<TOuter, TInner>(in TOuter enumerator) 
-        where TOuter : IRefDatomEnumerable<TInner>, allows ref struct
-        where TInner : IRefDatomEnumerator, allows ref struct
+    public void AddRange<TEnumerator, TDescriptor>(TEnumerator enumerator, TDescriptor descriptor) 
+        where TEnumerator : IRefDatomEnumerator
+        where TDescriptor : ISliceDescriptor, allows ref struct
     {
-        using var inner = enumerator.GetEnumerator();
-        while (inner.MoveNext())
-        {
-            AddCurrent(in inner);
-        }
+        while (enumerator.MoveNext(descriptor)) 
+            AddCurrent(enumerator);
     }
     
-    
-
     /// <summary>
     /// Construct the index segment
     /// </summary>
@@ -167,6 +174,82 @@ public readonly struct IndexSegmentBuilder : IDisposable
         return new IndexSegment(_data.GetWrittenSpan(), _offsets.ToArray(), _attributeCache);
     }
 
+    /// <summary>
+    /// Build a segment with the given columns
+    /// </summary>
+    public Memory<byte> Build<TValue1>() 
+    {
+        return Build(ColumnDefinitions.ColumnFor<TValue1>());
+    }
+    
+    /// <summary>
+    /// Build a segment with the given columns
+    /// </summary>
+    public Memory<byte> Build<TValue1, TValue2>() 
+    {
+        return Build(ColumnDefinitions.ColumnFor<TValue1>(), ColumnDefinitions.ColumnFor<TValue2>());
+    }
+
+    /// <summary>
+    /// Build a segment with the given columns
+    /// </summary>
+    public Memory<byte> Build<TValue1, TValue2, TValue3>() 
+    {
+        return Build(ColumnDefinitions.ColumnFor<TValue1>(), ColumnDefinitions.ColumnFor<TValue2>(), ColumnDefinitions.ColumnFor<TValue3>());
+    }
+
+    /// <summary>
+    /// Build the index segment with the given columns
+    /// </summary>
+    /// <param name="columns"></param>
+    /// <returns></returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public Memory<byte> Build(params ReadOnlySpan<IColumn> columns)
+    {
+        if (Count == 0)
+            return Empty;
+        
+        _offsets.Add(_data.Length);
+        var rowCount = _offsets.Count - 1;
+        
+        Span<int> columnOffsets = stackalloc int[columns.Length];
+        Span<int> columnFixedSizes = stackalloc int[columns.Length];
+        
+        using var writer = new PooledMemoryBufferWriter();
+        
+        // Number of rows
+        writer.Write(rowCount);
+        
+        // Column offsets are next
+        for (var i = 0 ; i < columns.Length; i++)
+        {
+            columnOffsets[i] = writer.Length;
+            // Columns for each part
+            var fixedSize = columns[i].FixedSize;
+            columnFixedSizes[i] = fixedSize;
+            var partSpan = writer.GetSpan(fixedSize * rowCount);
+            writer.Advance(partSpan.Length);
+        }
+        
+        var offsetSpan = CollectionsMarshal.AsSpan(_offsets);
+        var srcWrittenSpan = _data.GetWrittenSpan();
+        for (var columnIdx = 0; columnIdx < columns.Length; columnIdx++)
+        {
+            for (var idx = 0; idx < rowCount; idx++)
+            {
+                var thisOffset = offsetSpan[idx];
+                var fromSpan = srcWrittenSpan.SliceFast(thisOffset, offsetSpan[idx + 1] - thisOffset);
+                var fixedSize = columnFixedSizes[columnIdx];
+                // We have to re-get the span because the writer may have been advanced causing the writer to have to 
+                // expand its buffer
+                var destWrittenSpan = writer.GetWrittenSpanWritable();
+                var destSpan = destWrittenSpan.SliceFast(columnOffsets[columnIdx] + (fixedSize * idx), fixedSize);
+                columns[columnIdx].Extract(fromSpan, destSpan, writer);
+            }
+        }
+        return writer.WrittenMemory.ToArray();
+    }
+    
     /// <inheritdoc />
     public void Dispose()
     {

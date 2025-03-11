@@ -190,42 +190,27 @@ public readonly struct IndexSegment : IReadOnlyList<Datom>
     public Entities<TModel> AsModels<TModel>(IDb fromDb) 
         where TModel : IReadOnlyModel<TModel>
     {
-        return new Entities<TModel>(new EntityIds(this, 0, Count), fromDb);
+        return new Entities<TModel>(EntityIds(), fromDb);
     }
 
     /// <summary>
-    /// Finds the first index of the given entity id
+    /// Gets all the entity ids in this segment
     /// </summary>
-    /// <returns></returns>
-    public int FindFirst(EntityId find)
+    public unsafe EntityIds EntityIds()
     {
-        var left = 0;
-        var right = _rowCount - 1;
-        var result = -1;
-        while (left <= right)
+        var ids = GC.AllocateUninitializedArray<byte>(_rowCount * sizeof(EntityId) + sizeof(uint));
         {
-            var mid = left + (right - left) / 2;
-
-
-            var lower = Lowers[mid];
-            var e = EntityId.From((lower & 0xFF00000000000000) | ((lower >> 8) & 0x0000FFFFFFFFFFFF));
-
-            var comparison = e.CompareTo(find);
-            if (comparison == 0)
-            {
-                result = mid; // Don't return, but continue searching to the left
-                right = mid - 1;
-            }
-            else if (comparison < 0)
-            {
-                left = mid + 1;
-            }
-            else
-            {
-                right = mid - 1;
-            }
+            var span = ids.AsSpan();
+            MemoryMarshal.Write(span, (uint)Count);
         }
-        return result; // Return the first occurrence found, or -1 if not found
+        for (var i = 0; i < _rowCount; i++)
+        {
+            var prefix = new KeyPrefix(Uppers[i], Lowers[i]);
+            var span = ids.AsSpan(i * sizeof(EntityId) + sizeof(uint));
+            MemoryMarshal.Write(span, prefix.E);
+        }
+
+        return new EntityIds { Data = ids };
     }
     
     /// <summary>

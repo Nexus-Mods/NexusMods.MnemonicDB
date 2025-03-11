@@ -154,10 +154,10 @@ public abstract class Attribute<TValueType, TLowLevelType, TSerializer> :
     /// <summary>
     /// Returns true if the attribute is present on the entity
     /// </summary>
-    public bool IsIn<T>(T entity)
-    where T : IHasIdAndIndexSegment
+    public bool IsIn<T>(T entity) 
+        where T : IHasIdAndEntitySegment
     {
-        return entity.IndexSegment.Contains(this);
+        return entity.EntitySegment.Contains(this);
     }
     
     /// <summary>

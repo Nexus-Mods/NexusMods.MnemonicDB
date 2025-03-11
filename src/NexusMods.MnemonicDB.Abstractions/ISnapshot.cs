@@ -1,11 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+﻿using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Abstractions.Query;
-using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -15,16 +9,13 @@ namespace NexusMods.MnemonicDB.Abstractions;
 ///     Using snapshots to query the database is the most efficient way, and is leveraged by the IDb interface,
 ///     to provide a read-only view of the database.
 /// </summary>
-public interface ISnapshot
+public interface ISnapshot : IDatomsIndex
 {
     /// <summary>
-    /// Get the data specified by the given descriptor as a single segment.
+    /// Construct a new DB with this snapshot and the given parameters, may feel backwards to create DBs this way, but it's so that
+    /// the low level iterator types can be injected into the DBs.
     /// </summary>
-    IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor;
-
-    /// <summary>
-    /// Get the data specified by the given descriptor chunked into segments of datoms of the given size.
-    /// </summary>
-    IEnumerable<IndexSegment> DatomsChunked(SliceDescriptor descriptor, int chunkSize);
-
+    public IDb MakeDb(TxId txId, AttributeCache attributeCache, IConnection? connection = null);
 }
+
+

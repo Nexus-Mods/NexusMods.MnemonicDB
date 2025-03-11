@@ -13,10 +13,10 @@ namespace NexusMods.MnemonicDB.Abstractions.Query.SliceDescriptors;
 public readonly struct EntityIdSlice(EntityId entityId) : ISliceDescriptor
 {
     /// <inheritdoc />
-    public void Reset<T>(T iterator) where T : ILowLevelIterator, allows ref struct
+    public void Reset<T>(T iterator, bool useHistory) where T : ILowLevelIterator, allows ref struct
     {
-        var prefix = new KeyPrefix(entityId, AttributeId.Min, TxId.MinValue, false, ValueTag.Null,
-            IndexType.EAVTCurrent);
+        var index = useHistory ? IndexType.EAVTHistory : IndexType.EAVTCurrent;
+        var prefix = new KeyPrefix(entityId, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, index);
         var spanTo = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in prefix, 1));
         iterator.SeekTo(spanTo);
     }
@@ -28,11 +28,13 @@ public readonly struct EntityIdSlice(EntityId entityId) : ISliceDescriptor
     }
 
     /// <inheritdoc />
-    public bool ShouldContinue(ReadOnlySpan<byte> keySpan)
+    public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool useHistory)
     {
+        var index = useHistory ? IndexType.EAVTHistory : IndexType.EAVTCurrent;
         var prefix = KeyPrefix.Read(keySpan);
-        return prefix.E == entityId && prefix.Index == IndexType.EAVTCurrent;
+        return prefix.E == entityId && prefix.Index == index;
     }
+
 
     /// <inheritdoc />
     public void Deconstruct(out Datom from, out Datom to, out bool isReversed)
