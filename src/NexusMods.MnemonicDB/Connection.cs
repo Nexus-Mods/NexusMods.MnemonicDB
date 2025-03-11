@@ -27,7 +27,7 @@ using DatomChangeSet = ChangeSet<Datom, DatomKey, IDb>;
 /// <summary>
 ///     Main connection class, co-ordinates writes and immutable reads
 /// </summary>
-public class Connection : IConnection
+public sealed class Connection : IConnection
 {
     private readonly DatomStore _store;
     private readonly ILogger<Connection> _logger;
@@ -211,9 +211,10 @@ public class Connection : IConnection
     {
         IDb? prev = null;
         
-        return dbStream
-            .Subscribe(idb =>
+        return dbStream.Subscribe(idb =>
         {
+            if (_isDisposed) return;
+
             var db = idb;
             db.Connection = this;
             var tcs = new TaskCompletionSource();
@@ -387,12 +388,13 @@ public class Connection : IConnection
         return Transact(new SimpleMigration(attribute));
     }
 
-
     public IObservable<DatomChangeSet> ObserveDatoms<TDescriptor>(TDescriptor descriptor) 
         where TDescriptor : ISliceDescriptor
     {
         return Observable.Create<DatomChangeSet>(observer =>
         {
+            if (_isDisposed) return Disposable.Empty;
+
             _pendingEvents.Writer.TryWrite(new ObserveDatomsEvent<TDescriptor>(descriptor, observer));
             
             return Disposable.Create((observer, this), static state =>
@@ -460,10 +462,16 @@ public class Connection : IConnection
         return Task.CompletedTask;
     }
 
+    private bool _isDisposed;
+
     /// <inheritdoc />
     public void Dispose()
     {
+        if (_isDisposed) return;
+
         _pendingEvents.Writer.TryComplete();
         _eventThread.Join();
+
+        _isDisposed = true;
     }
 }
