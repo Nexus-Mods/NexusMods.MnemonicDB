@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -6,9 +7,14 @@ namespace NexusMods.MnemonicDB.Abstractions;
 ///     A string that is interned behind a class so we can do reference equality
 ///     instead of value equality
 /// </summary>
-public class Symbol
+public class Symbol : IEquatable<Symbol>
 {
     private static readonly ConcurrentDictionary<(string Namespace, string Name), Symbol> InternedSymbols = new();
+    
+    /// <summary>
+    /// Cached hashcode for faster equality comparisons
+    /// </summary>
+    private readonly int _hashCode;
 
     /// <summary>
     ///     The constructor, which is private to ensure that all symbols are interned
@@ -17,6 +23,7 @@ public class Symbol
     private Symbol((string Namespace, string Name) nsAndName)
     {
         Id = $"{nsAndName.Namespace}/{nsAndName.Name}";
+        _hashCode = Id.GetHashCode();
         Name = nsAndName.Name;
         Namespace = nsAndName.Namespace;
     }
@@ -91,20 +98,18 @@ public class Symbol
     }
 
     /// <inheritdoc />
-    public override string ToString()
-    {
-        return Id;
-    }
+    public override string ToString() 
+        => Id;
 
     /// <inheritdoc />
-    public override bool Equals(object? obj)
-    {
-        return ReferenceEquals(this, obj);
-    }
+    public override bool Equals(object? obj) 
+        => ReferenceEquals(this, obj);
 
     /// <inheritdoc />
-    public override int GetHashCode()
-    {
-        return Id.GetHashCode();
-    }
+    public override int GetHashCode() 
+        => _hashCode;
+
+    /// <inheritdoc />
+    public bool Equals(Symbol? other) 
+        => ReferenceEquals(this, other);
 }

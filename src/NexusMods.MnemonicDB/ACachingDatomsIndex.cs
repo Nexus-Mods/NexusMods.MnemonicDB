@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
@@ -74,7 +75,10 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
             foreach (var datom in segment)
             {
                 if (datom.Prefix.ValueTag == ValueTag.Reference)
-                    yield return (datom.A, datom.E);
+                {
+                    var eVal = MemoryMarshal.Read<EntityId>(datom.ValueSpan);
+                    yield return (datom.A, eVal);
+                }
             }
         }
     }
@@ -87,7 +91,9 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
     public override EntitySegment GetEntitySegment(IDb db, EntityId entityId)
         => EntityCache.GetValue(entityId, db);
 
+    
     /// <inheritdoc />
     public override EntityIds GetEntityIdsPointingTo(AttributeId attrId, EntityId entityId) 
         => BackReferenceCache.GetValue((attrId, entityId), null!);
+        
 }
