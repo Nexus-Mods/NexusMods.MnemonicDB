@@ -32,7 +32,7 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
 
     private class EntityCacheStrategy(ACachingDatomsIndex<TRefEnumerator> parent) : CacheStrategy<EntityId, EntitySegment>
     {
-        public override Memory<byte> GetBytes(EntityId key, IDb db)
+        public override Memory<byte> GetBytes(EntityId key)
         {
             var builder = new IndexSegmentBuilder(parent.AttributeCache);
             using var iterator = parent.GetRefDatomEnumerator();
@@ -56,7 +56,7 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
     
     private class BackReferenceCacheStrategy(ACachingDatomsIndex<TRefEnumerator> parent) : CacheStrategy<(AttributeId A, EntityId E), EntityIds>
     {
-        public override Memory<byte> GetBytes((AttributeId A, EntityId E) key, IDb db)
+        public override Memory<byte> GetBytes((AttributeId A, EntityId E) key)
         {
             var builder = new IndexSegmentBuilder(parent.AttributeCache);
             using var iterator = parent.GetRefDatomEnumerator();
@@ -79,14 +79,15 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
         }
     }
 
-    public IndexSegmentCache<EntityId, EntitySegment> EntityCache { get; }
-    
-    public IndexSegmentCache<(AttributeId A, EntityId E), EntityIds> BackReferenceCache { get; }
+    private IndexSegmentCache<EntityId, EntitySegment> EntityCache { get; }
+
+    private IndexSegmentCache<(AttributeId A, EntityId E), EntityIds> BackReferenceCache { get; }
 
     /// <inheritdoc />
     public override EntitySegment GetEntitySegment(IDb db, EntityId entityId)
         => EntityCache.GetValue(entityId, db);
 
+    /// <inheritdoc />
     public override EntityIds GetEntityIdsPointingTo(AttributeId attrId, EntityId entityId) 
         => BackReferenceCache.GetValue((attrId, entityId), null!);
 }

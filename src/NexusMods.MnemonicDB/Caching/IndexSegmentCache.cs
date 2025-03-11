@@ -52,7 +52,7 @@ public class IndexSegmentCache<TKey, TValue>
             return _strategy.GetValue(key, context, value.Segment);
         }
 
-        var valueBytes = _strategy.GetBytes(key, context);
+        var valueBytes = _strategy.GetBytes(key);
         
         while (true)
         {

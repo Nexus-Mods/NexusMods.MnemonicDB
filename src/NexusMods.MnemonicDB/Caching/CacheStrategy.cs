@@ -26,7 +26,7 @@ public abstract class CacheStrategy<TKey, TValue>
     /// <summary>
     /// On a cache miss, this method will be called to get the actual bytes for the index segment
     /// </summary>
-    public abstract Memory<byte> GetBytes(TKey key, IDb db);
+    public abstract Memory<byte> GetBytes(TKey key);
     
     /// <summary>
     /// Construct a value from the given bytes, key, and db.
