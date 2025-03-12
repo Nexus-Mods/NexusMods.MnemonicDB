@@ -129,11 +129,15 @@ public struct SliceDescriptor : ISliceDescriptor
     /// <summary>
     /// Creates a slice descriptor for the given attribute in the current AVET index
     /// </summary>
-    public static SliceDescriptor Create<THighLevel>(IWritableAttribute<THighLevel> attr, THighLevel value, AttributeCache attributeCache)
+    public static ISliceDescriptor Create<THighLevel>(IWritableAttribute<THighLevel> attr, THighLevel value, AttributeCache attributeCache)
     {
         var id = attributeCache.GetAttributeId(attr.Id);
-        if (attributeCache.GetValueTag(id) != ValueTag.Reference && !attributeCache.IsIndexed(id))
+        var tag = attributeCache.GetValueTag(id);
+        if (tag != ValueTag.Reference && !attributeCache.IsIndexed(id))
             throw new InvalidOperationException($"Attribute {attr.Id} must be indexed or a reference");
+
+        if (tag == ValueTag.Reference)
+            return new BackRefSlice(id, (EntityId)(object)value!);
         
         var index = attr.IsReference ? IndexType.VAETCurrent : IndexType.AVETCurrent;
         return new SliceDescriptor
@@ -375,27 +379,20 @@ public struct SliceDescriptor : ISliceDescriptor
 
     public void Reset<T>(T iterator, bool useHistory) where T : ILowLevelIterator, allows ref struct
     {
+        Datom datomToUse;
         if (useHistory)
         {
             CreateHistoryVariants();
-            if (!IsReverse)
-            {
-                iterator.SeekTo(_fromHistory!.Value.ToArray());
-            }
-            else
-            {
-                iterator.SeekToPrev(_toHistory!.Value.ToArray());
-            }
+            datomToUse = _fromHistory!.Value;
         }
         else
-        {
-            iterator.SeekTo(From.ToArray());
-            
-        }
+            datomToUse = From;
+        
+        iterator.SeekTo(datomToUse.ToArray());
         if (!IsReverse)
-            iterator.SeekTo(From.ToArray());
+            iterator.SeekTo(datomToUse.ToArray());
         else
-            iterator.SeekToPrev(From.ToArray());
+            iterator.SeekToPrev(datomToUse.ToArray());
     }
 
 
@@ -409,18 +406,17 @@ public struct SliceDescriptor : ISliceDescriptor
 
     public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool isHistory)
     {
+        var datomToUse = From;
         if (isHistory)
         {
             CreateHistoryVariants();
-            if (IsReverse)
-                return GlobalComparer.Compare(keySpan, _toHistory!.Value.ToArray()) >= 0;
-            else 
-                return GlobalComparer.Compare(keySpan, _fromHistory!.Value.ToArray()) <= 0;
+            datomToUse = _toHistory!.Value;
         }
+        
         if (IsReverse)
-            return GlobalComparer.Compare(keySpan, To.ToArray()) >= 0;
+            return GlobalComparer.Compare(keySpan, datomToUse.ToArray()) >= 0;
         else 
-            return GlobalComparer.Compare(keySpan, To.ToArray()) <= 0;
+            return GlobalComparer.Compare(keySpan, datomToUse.ToArray()) <= 0;
     }
 
     public void Deconstruct(out Datom from, out Datom to, out bool isReversed)
