@@ -13,7 +13,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Query;
 /// A slice descriptor for querying datoms, it doesn't contain any data, but can be combined
 /// with other objects like databases or indexes to query for datoms.
 /// </summary>
-public readonly struct SliceDescriptor : ISliceDescriptor
+public struct SliceDescriptor : ISliceDescriptor
 {
     /// <summary>
     /// The lower bound of the slice, inclusive.
@@ -26,10 +26,28 @@ public readonly struct SliceDescriptor : ISliceDescriptor
     public required Datom To { get; init; }
 
     /// <summary>
+    /// Lazily created history variants of the `from` datom 
+    /// </summary>
+    private Datom? _fromHistory;
+    
+    /// <summary>
+    /// Lazily created history variants of the `to` datom
+    /// </summary>
+    private Datom? _toHistory;
+
+    /// <summary>
     /// True if the slice is in reverse order, false otherwise. Reverse order means that a DB query
     /// with this slice will sort the results in descending order.
     /// </summary>
     public bool IsReverse => From.Compare(To) > 0;
+
+    private void CreateHistoryVariants()
+    {
+        if (_fromHistory is null)
+            _fromHistory = From.WithIndex(From.Prefix.Index.HistoryVariant());
+        if (_toHistory is null)
+            _toHistory = To.WithIndex(To.Prefix.Index.HistoryVariant());
+    }
 
     /// <summary>
     /// Sets the index of both datoms in the slice
@@ -358,7 +376,22 @@ public readonly struct SliceDescriptor : ISliceDescriptor
     public void Reset<T>(T iterator, bool useHistory) where T : ILowLevelIterator, allows ref struct
     {
         if (useHistory)
-            throw new NotImplementedException();
+        {
+            CreateHistoryVariants();
+            if (!IsReverse)
+            {
+                iterator.SeekTo(_fromHistory!.Value.ToArray());
+            }
+            else
+            {
+                iterator.SeekToPrev(_toHistory!.Value.ToArray());
+            }
+        }
+        else
+        {
+            iterator.SeekTo(From.ToArray());
+            
+        }
         if (!IsReverse)
             iterator.SeekTo(From.ToArray());
         else
@@ -377,7 +410,13 @@ public readonly struct SliceDescriptor : ISliceDescriptor
     public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool isHistory)
     {
         if (isHistory)
-            throw new NotImplementedException();
+        {
+            CreateHistoryVariants();
+            if (IsReverse)
+                return GlobalComparer.Compare(keySpan, _toHistory!.Value.ToArray()) >= 0;
+            else 
+                return GlobalComparer.Compare(keySpan, _fromHistory!.Value.ToArray()) <= 0;
+        }
         if (IsReverse)
             return GlobalComparer.Compare(keySpan, To.ToArray()) >= 0;
         else 

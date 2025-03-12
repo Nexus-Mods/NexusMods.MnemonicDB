@@ -87,11 +87,28 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             txEs.Add(result.NewTx);
         }
 
+        var idx = 0;
         foreach (var txId in txEs)
         {
             var db = Connection.AsOf(txId);
             var resolved = db.Datoms(modId).Resolved(Connection);
             await VerifyTable(resolved).UseTextForParameters("mod data_" + txId.Value);
+
+            // Make sure we can still look up mods by indexed attributes
+            if (idx > 0)
+            {
+                Mod.FindByName(db, $"Test Mod {idx + 1}").Select(v => v.ModId)
+                    .Should()
+                    .Contain(modId);
+            }
+            else
+            {
+                Mod.FindByName(db, $"Test Mod").Select(v => v.ModId)
+                    .Should()
+                    .Contain(modId);
+            }
+
+            idx += 1;
         }
     }
 
