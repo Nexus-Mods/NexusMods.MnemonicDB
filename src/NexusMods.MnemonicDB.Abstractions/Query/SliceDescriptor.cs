@@ -43,10 +43,8 @@ public struct SliceDescriptor : ISliceDescriptor
 
     private void CreateHistoryVariants()
     {
-        if (_fromHistory is null)
-            _fromHistory = From.WithIndex(From.Prefix.Index.HistoryVariant());
-        if (_toHistory is null)
-            _toHistory = To.WithIndex(To.Prefix.Index.HistoryVariant());
+        _fromHistory ??= From.WithIndex(From.Prefix.Index.HistoryVariant());
+        _toHistory ??= To.WithIndex(To.Prefix.Index.HistoryVariant());
     }
 
     /// <summary>
@@ -379,16 +377,13 @@ public struct SliceDescriptor : ISliceDescriptor
 
     public void Reset<T>(T iterator, bool useHistory) where T : ILowLevelIterator, allows ref struct
     {
-        Datom datomToUse;
+        var datomToUse = From;
         if (useHistory)
         {
             CreateHistoryVariants();
             datomToUse = _fromHistory!.Value;
         }
-        else
-            datomToUse = From;
         
-        iterator.SeekTo(datomToUse.ToArray());
         if (!IsReverse)
             iterator.SeekTo(datomToUse.ToArray());
         else
@@ -406,7 +401,7 @@ public struct SliceDescriptor : ISliceDescriptor
 
     public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool isHistory)
     {
-        var datomToUse = From;
+        var datomToUse = To;
         if (isHistory)
         {
             CreateHistoryVariants();

@@ -97,7 +97,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             // Make sure we can still look up mods by indexed attributes
             if (idx > 0)
             {
-                Mod.FindByName(db, $"Test Mod {idx + 1}").Select(v => v.ModId)
+                Mod.FindByName(db, $"Test Mod {idx - 1}").Select(v => v.ModId)
                     .Should()
                     .Contain(modId);
             }
