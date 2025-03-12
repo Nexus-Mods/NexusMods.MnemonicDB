@@ -25,16 +25,7 @@ public static class ObservableDatoms
     {
         return conn.ObserveDatoms(SliceDescriptor.Create(id));
     }
-
-    /// <summary>
-    /// Observe changes for a given attribute on a given entity id
-    /// </summary>
-    public static IObservable<IChangeSet<Datom, DatomKey>> ObserveDatoms(this IConnection conn, EntityId id, IAttribute attribute)
-    {
-        var aid = conn.AttributeCache.GetAttributeId(attribute.Id);
-        return conn.ObserveDatoms(SliceDescriptor.Create(id, aid));
-    }
-
+    
     /// <summary>
     /// Observe changes for datoms that point to the given entity id via the given attribute
     /// </summary>

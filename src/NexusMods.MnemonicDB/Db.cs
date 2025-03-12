@@ -7,6 +7,7 @@ using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Caching;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
@@ -84,6 +85,9 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         }
     }
     
+    public Entities<TModel> GetBackrefModels<TModel>(AttributeId aid, EntityId id) where TModel : IReadOnlyModel<TModel> 
+        => GetBackrefModels<TModel>(this, aid, id);
+
     TReturn IDb.AnalyzerData<TAnalyzer, TReturn>()
     {
         if (AnalyzerData.TryGetValue(typeof(TAnalyzer), out var value))

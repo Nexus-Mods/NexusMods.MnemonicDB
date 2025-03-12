@@ -585,6 +585,7 @@ public sealed partial class DatomStore : IDatomStore
         {
             From = low.WithIndex(EAVTCurrent),
             To = high.WithIndex(EAVTCurrent),
+            IsReverse = false
         };
 
         var prevDatom = iterator.Datoms(sliceDescriptor)

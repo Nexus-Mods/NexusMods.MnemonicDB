@@ -53,7 +53,11 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     /// Finds all {{= model.Name}} entities with the given value for the {{= attr.Name}} attribute.
     /// </summary>
     public static __SEGMENTS__.Entities<{{= model.Name}}.ReadOnly> FindBy{{= attr.Name}}(__ABSTRACTIONS__.IDb db, {{= attr.HighLevelType.ToDisplayString()}} value) {
+    {{if attr.IsReference}}
+        return db.GetBackrefModels<{{= model.Name}}.ReadOnly>({{= attr.FieldName}}, value);    
+    {{else}}
         return db.Datoms({{= attr.FieldName}}, value).AsModels<{{= model.Name}}.ReadOnly>(db);
+    {{/if}}    
     }
     {{/if}}
     {{/each}}
@@ -432,7 +436,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 
            {{each backref in model.BackReferences}}
 
-           public __SEGMENTS__.Entities<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly> {{= backref.Name}} => Db.GetBackRefs({{= backref.OtherAttribute.ToDisplayString()}}, this.Id).AsModels<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly>(Db);
+           public __SEGMENTS__.Entities<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly> {{= backref.Name}} => Db.GetBackrefModels<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly>({{= backref.OtherAttribute.ToDisplayString()}}, this.Id);
            {{/each}}
 
            /// <summary>
