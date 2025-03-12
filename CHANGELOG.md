@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.9.120 - 3/12/2025
+* Fix a bug in the generic slice descriptor that didn't allow for it to query historical indexes
+
 ### 0.9.119 - 3/11/2025
 * Fix a bug with AVSegments and long values
 * Remove an unused parameter from the `IAttribute.TryGetValue` method
