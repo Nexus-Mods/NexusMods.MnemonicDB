@@ -99,9 +99,11 @@ foreach ($Project in $Projects) {
     try {
         Write-Host "Extracting package contents..." -ForegroundColor Cyan
         
+        Rename-Item -Path $NupkgFile.FullName -NewName "$($NupkgFile.FullName).zip" -Force
+        
         # Ensure both pwsh and legacy PowerShell work for extract
         if ($PSVersionTable.PSVersion.Major -ge 5) {
-            Expand-Archive -Path $NupkgFile.FullName -DestinationPath $VersionPath -Force
+            Expand-Archive -Path "$($NupkgFile.FullName).zip" -DestinationPath $VersionPath -Force
         } else {
             Add-Type -AssemblyName System.IO.Compression.FileSystem
             [System.IO.Compression.ZipFile]::ExtractToDirectory($NupkgFile.FullName, $VersionPath, $true)

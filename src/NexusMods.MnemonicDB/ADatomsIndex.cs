@@ -62,10 +62,9 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         return new EntityIds { Data = EntityIds.Build(builder) };
     }
     
-    public EntityIds GetBackRefs(ReferenceAttribute attribute, EntityId id)
+    public virtual EntityIds GetBackRefs(AttributeId attribute, EntityId id)
     {
-        var attrId = AttributeCache.GetAttributeId(attribute.Id);
-        return GetEntityIdsPointingTo(attrId, id);
+        return GetEntityIdsPointingTo(attribute, id);
     }
 
     public IndexSegment ReferencesTo(EntityId eid)

@@ -97,7 +97,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             // Make sure we can still look up mods by indexed attributes
             if (idx > 0)
             {
-                Mod.FindByName(db, $"Test Mod {idx + 1}").Select(v => v.ModId)
+                Mod.FindByName(db, $"Test Mod {idx - 1}").Select(v => v.ModId)
                     .Should()
                     .Contain(modId);
             }
@@ -1449,7 +1449,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         var txTask = Task.Run(async () =>
         {
-            for (var i = 0; i < 1000; i++)
+            for (var i = 0; i < 10_000; i++)
             {
                 using var tx2 = Connection.BeginTransaction();
                 tx2.Add(fileId, File.Size, Size.From((ulong)i));

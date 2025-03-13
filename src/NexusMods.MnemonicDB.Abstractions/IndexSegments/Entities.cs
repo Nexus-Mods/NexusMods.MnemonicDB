@@ -88,6 +88,11 @@ where TModel : IReadOnlyModel<TModel>
 
     /// <inheritdoc />
     public int Count => _ids.Count;
+    
+    /// <summary>
+    /// Get the entity ids in this collection
+    /// </summary>
+    public EntityIds EntityIds => _ids;
 
     /// <summary>
     /// Returns an enumerator.

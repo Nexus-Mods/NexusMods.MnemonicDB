@@ -264,15 +264,8 @@ public partial class MyModelArrayTest : __MODELS__.IModelFactory<MyModelArrayTes
            /// Looks for the given attribute in the entity
            /// </summary>
            public bool Contains(IAttribute attribute)
-           {
-               foreach (var datom in this)
-               {
-                   if (datom.A == attribute)
-                       return true;
-               }
-
-               return false;
-           }
+              => EntitySegment.Contains(attribute);
+        
 
            /// <inheritdoc />
            public override string ToString()

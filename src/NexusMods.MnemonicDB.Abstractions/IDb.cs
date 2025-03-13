@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Models;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -57,6 +58,32 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// Finds all the datoms that have the given attribute with the given value.
     /// </summary>
     IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value);
+
+    /// <summary>
+    /// Gets and caches all the models that point to the given entity via the given attribute.
+    /// </summary>
+    public Entities<TModel> GetBackrefModels<TModel>(AttributeId attribute, EntityId id)
+        where TModel : IReadOnlyModel<TModel>;
+
+    /// <summary>
+    /// Gets and caches all the models that point to the given entity via the given attribute.
+    /// </summary>
+    public Entities<TModel> GetBackrefModels<TModel>(ReferencesAttribute attribute, EntityId id)
+        where TModel : IReadOnlyModel<TModel>
+    {
+        var aid = AttributeCache.GetAttributeId(attribute.Id);
+        return GetBackrefModels<TModel>(aid, id);
+    }
+    
+    /// <summary>
+    /// Gets and caches all the models that point to the given entity via the given attribute.
+    /// </summary>
+    public Entities<TModel> GetBackrefModels<TModel>(ReferenceAttribute attribute, EntityId id)
+        where TModel : IReadOnlyModel<TModel>
+    {
+        var aid = AttributeCache.GetAttributeId(attribute.Id);
+        return GetBackrefModels<TModel>(aid, id);
+    }
     
     /// <summary>
     /// Get the cached data for the given analyzer.
@@ -86,4 +113,10 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// Process and store the data from the given analyzers.
     /// </summary>
     void Analyze(IDb? prev, IAnalyzer[] analyzers);
+
+    /// <summary>
+    /// Caches all the entities in the provided entity id segment. This load operation is done in bulk so it's often
+    /// faster to run this method before accessing the provided models randomly.
+    /// </summary>
+    void BulkCache(EntityIds ids);
 }
