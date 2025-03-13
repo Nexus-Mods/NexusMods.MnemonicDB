@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.9.121 - 3/13/2025
+* Optimize many of the `.Datoms` calls
+* Performance improvements of Backref lookups and indexes
+
 ### 0.9.120 - 3/12/2025
 * Fix a bug in the generic slice descriptor that didn't allow for it to query historical indexes
 
