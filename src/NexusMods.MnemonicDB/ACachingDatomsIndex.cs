@@ -1,9 +1,9 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
@@ -102,34 +102,34 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
     /// <inheritdoc />
     public EntityIds GetBackRefs(AttributeId attrId, EntityId entityId, out bool cacheHit) 
         => BackReferenceCache.GetValue((attrId, entityId), null!, out cacheHit);
-    
-    /// <summary>
-    /// Bulk-loads and caches all the datoms attached to the given entity id via the given attribute. The provided
-    /// attachedDb is used as the context db for the entities
-    /// </summary>
-    public Entities<TModel> GetBackrefModels<TModel>(IDb attachedDb, AttributeId aid, EntityId id)
-        where TModel : IReadOnlyModel<TModel>
+
+    public void BulkCache(EntityIds ids)
     {
-        // Get the ids we need to load, these will be sorted by EntityId
-        var ids = GetBackRefs(aid, id, out var cacheHit);
-        
-        // If we have a cache hit, no reason to bulk load the other entities
-        if (true || cacheHit || ids.Count == 0)
-            return new Entities<TModel>(ids, attachedDb);
-        
-        
-        var idMin = ids[0];
-        var idMax = ids[^1];
-        var wasteRatio = (ulong)ids.Count / (idMax.Value - idMin.Value + 1);
-        
-        Console.WriteLine("{0}tx Bulk loading backrefs {1} for {2} from {3} to {4} with a waste ratio of {5} span of {6} for {7} entities", attachedDb.BasisTxId, typeof(TModel), id, idMin, idMax, wasteRatio, (idMax.Value - idMin.Value + 1), ids.Count);
+        var numThreads = Environment.ProcessorCount;
+        var chunkSize = ids.Count / numThreads;
 
-        // If the ids are to spread out, we're not going to bulk load them 
-        if (ids.Count > 100 && wasteRatio > 4)
+        if (ids.Count == 0)
+            return;
+        
+        if (ids.Count < 1024)
         {
-            return new Entities<TModel>(ids, attachedDb);
+            BulkCache(ids.Span);
+            return;
         }
+        
+        var partioner = Partitioner.Create(0, ids.Count, chunkSize);
 
+        Parallel.ForEach(partioner, range =>
+        {
+            BulkCache(ids.Span.Slice(range.Item1, range.Item2 - range.Item1));
+        });
+
+    }
+    public void BulkCache(ReadOnlySpan<EntityId> ids)
+    {
+        if (ids.Length == 0)
+            return;
+        
         // Now we are going to bulk load and cache the entities. We make an assumption here that a
         // seek in RocksDB is going to be way slower than a single iteration over a large number of 
         // mostly useless datoms. So we walk the entity ids in hand with the EAVT index and do a sorted
@@ -161,7 +161,7 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
                     eidIndex++;
 
                     // If we're out of range for the ids, we have all we need
-                    if (eidIndex >= ids.Count)
+                    if (eidIndex >= ids.Length)
                         break;
 
                     currentId = ids[eidIndex];
@@ -181,8 +181,17 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
         {
             EntityCache.AddValue(readingE, AVSegment.Build(builder));
         }
-        
-        // From now on, getting a model in this set should be a cache hit
+    }
+    
+    /// <summary>
+    /// Converts the ids into a list of models. In the future this method may be expanded to auto-cache
+    /// entities based on some heuristic, but for now it just loads the ids.
+    /// </summary>
+    public Entities<TModel> GetBackrefModels<TModel>(IDb attachedDb, AttributeId aid, EntityId id)
+        where TModel : IReadOnlyModel<TModel>
+    {
+        // Get the ids we need to load, these will be sorted by EntityId
+        var ids = GetBackRefs(aid, id, out var cacheHit);
         return new Entities<TModel>(ids, attachedDb);
     }
 }

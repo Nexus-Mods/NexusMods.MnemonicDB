@@ -88,6 +88,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
             .Count().Should().Be(loadoutRO.Mods.Count(), "all mods should be in a collection");
 
         sw.Restart();
+        
         foreach (var mod in loadoutRO.Mods)
             //totalSize += mod.Files.Sum(f => f.Size);
             mod.Files.Count().Should().Be(filesPerMod, "every mod should have the same amount of files");

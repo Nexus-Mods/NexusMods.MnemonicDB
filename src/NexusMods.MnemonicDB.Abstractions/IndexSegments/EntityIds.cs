@@ -16,6 +16,11 @@ public readonly struct EntityIds : ISegment<EntityId>, IReadOnlyCollection<Entit
     /// Gets the value at the given location
     /// </summary>
     public EntityId this[int idx] => this.GetValues1<EntityIds, EntityId>()[idx];
+    
+    /// <summary>
+    /// A span of all the values in the segment
+    /// </summary>
+    public ReadOnlySpan<EntityId> Span => this.GetValues1<EntityIds, EntityId>();
 
     /// <inheritdoc />
     public required ReadOnlyMemory<byte> Data { get; init; }

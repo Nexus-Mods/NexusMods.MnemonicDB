@@ -113,4 +113,10 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// Process and store the data from the given analyzers.
     /// </summary>
     void Analyze(IDb? prev, IAnalyzer[] analyzers);
+
+    /// <summary>
+    /// Caches all the entities in the provided entity id segment. This load operation is done in bulk so it's often
+    /// faster to run this method before accessing the provided models randomly.
+    /// </summary>
+    void BulkCache(EntityIds ids);
 }

@@ -14,12 +14,12 @@ public abstract class CacheStrategy<TKey, TValue>
     /// <summary>
     /// The maximum number of entries in the cache.
     /// </summary>
-    public int MaxEntries { get; set; } = 100_000;
+    public int MaxEntries { get; set; } = 500_000;
 
     /// <summary>
     /// The maximum number of bytes in the cache.
     /// </summary>
-    public Size MaxBytes { get; set; } = Size.MB * 100;
+    public Size MaxBytes { get; set; } = Size.MB * 128;
 
     /// <summary>
     /// When the caches are full we evict entries until we have this percentage of free space.
