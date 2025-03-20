@@ -13,7 +13,7 @@
     <PackageVersion Include="JetBrains.Profiler.Api" Version="1.4.8" />
     <PackageVersion Include="Argon" Version="0.24.2" />
     <PackageVersion Include="FluentAssertions.OneOf" Version="0.0.5" />
-    <PackageVersion Include="NexusMods.Paths" Version="0.15.0" />
+    <PackageVersion Include="NexusMods.Paths" Version="0.17.0" />
     <PackageVersion Include="R3" Version="1.2.9" />
     <PackageVersion Include="System.IO.Hashing" Version="9.0.0" />
     <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="all" />
