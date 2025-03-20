@@ -15,7 +15,7 @@ public sealed class ReferenceLocationPath(string ns, string name) : ScalarAttrib
     protected override (EntityId, LocationId, RelativePath) FromLowLevel((EntityId, ushort, string) value, AttributeResolver resolver)
     {
         // NOTE(erri120): Stored data should be sanitized already.
-        Debug.Assert(PathHelpers.IsSanitized(value.Item3, OSInformation.Shared, isRelative: true));
+        Debug.Assert(PathHelpers.IsSanitized(value.Item3, OSInformation.Shared, isRelative: true), $"Path {value.Item3} is not sanitized!");
         var path = RelativePath.CreateUnsafe(value.Item3);
         return (value.Item1, LocationId.From(value.Item2), path);
     }

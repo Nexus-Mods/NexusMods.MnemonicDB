@@ -20,7 +20,7 @@ public sealed class RelativePathAttribute(string ns, string name) : ScalarAttrib
     protected override RelativePath FromLowLevel(string value, AttributeResolver resolver)
     {
         // NOTE(erri120): Stored data should be sanitized already.
-        Debug.Assert(PathHelpers.IsSanitized(value, OSInformation.Shared, isRelative: true));
+        Debug.Assert(PathHelpers.IsSanitized(value, OSInformation.Shared, isRelative: true), $"Path {value} is not sanitized!");
         return RelativePath.CreateUnsafe(value);
     }
 }
