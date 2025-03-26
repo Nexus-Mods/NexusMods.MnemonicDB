@@ -1102,7 +1102,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     {
         var fileSystem = Provider.GetRequiredService<IFileSystem>();
         
-        var path = fileSystem.GetKnownPath(KnownPath.EntryDirectory).Combine("/foo/bar/qux.txt");
+        var path = fileSystem.GetKnownPath(KnownPath.EntryDirectory).Combine("foo/bar/qux.txt");
         
         using var tx = Connection.BeginTransaction();
         
