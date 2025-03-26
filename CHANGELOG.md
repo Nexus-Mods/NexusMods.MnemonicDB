@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.9.122 - 2025-03-26
+
+* Upgrade `NexusMods.Paths` to 0.18.0
+
 ### 0.9.121 - 3/13/2025
 * Optimize many of the `.Datoms` calls
 * Performance improvements of Backref lookups and indexes
