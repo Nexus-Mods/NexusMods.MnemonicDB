@@ -1,5 +1,9 @@
 ## Changelog
 
+### next
+
+* Improve performance when iterating over datoms in `EntitySegment`
+
 ### 0.9.122 - 2025-03-26
 
 * Upgrade `NexusMods.Paths` to 0.18.0
