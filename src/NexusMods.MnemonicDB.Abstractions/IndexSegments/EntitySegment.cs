@@ -104,10 +104,6 @@ public readonly struct EntitySegment : IEnumerable<Datom>
     /// </summary>
     public int Count => _data.GetCount();
     
-    public IEnumerator<Datom> GetEnumerator()
-    {
-        return _db.Datoms(SliceDescriptor.Create(_id)).GetEnumerator();
-    }
 
     /// <summary>
     /// Returns true if the segment contains the given attribute
@@ -118,10 +114,16 @@ public readonly struct EntitySegment : IEnumerable<Datom>
         return FirstOffsetOf(aid) != -1;
     }
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
+    /// <summary>
+    /// Returns the enumerator.
+    /// </summary>
+    public IndexSegment.Enumerator GetEnumerator() => _db.Datoms(SliceDescriptor.Create(_id)).GetEnumerator();
+
+    /// <inheritdoc />
+    IEnumerator<Datom> IEnumerable<Datom>.GetEnumerator() => GetEnumerator();
+
+    /// <inheritdoc />
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     public IEnumerable<IReadDatom> Resolved(IConnection connection)
     {
