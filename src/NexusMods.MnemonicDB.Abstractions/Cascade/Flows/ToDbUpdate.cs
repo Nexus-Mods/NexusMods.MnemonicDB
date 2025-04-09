@@ -14,20 +14,29 @@ public sealed class ToDbUpdate(IFlow<IDb> upstream) : IFlow<DbUpdate>
     public ISource<DbUpdate> ConstructIn(ITopology topology)
     {
         var source = topology.Intern(upstream);
-        var impl = new ToDbUpdateImpl();
+        var impl = new ToDbUpdateImpl(source);
         source.Connect(impl);
         return impl;
     }
 
     public IDiffFlow<EVRow<TValue>> ForAttribute<TValue>(IReadableAttribute<TValue> attribute)
     {
-        throw new NotImplementedException();
+        return new DbUpdateSubFlow<TValue>(attribute, this);
     }
 
     internal class ToDbUpdateImpl : ISource<DbUpdate>, ISink<IDb>
     {
-        private Ref<DbUpdate> _state = new(new DbUpdate(null!, null!, UpdateType.None));
+        private Ref<DbUpdate> _state;
         private TxDictionary<IAttribute, ISink<DbUpdate>> _sinks = new();
+
+        public ToDbUpdateImpl(ISource<IDb> upstream)
+        {
+            var current  = upstream.Current;
+            if (current == null)
+                throw new InvalidOperationException("The current context is null.");
+
+            _state = new Ref<DbUpdate>(new DbUpdate(null!, current, UpdateType.Init));
+        }
 
         public IDisposable Connect(ISink<DbUpdate> sink)
         {
@@ -76,13 +85,13 @@ public sealed class ToDbUpdate(IFlow<IDb> upstream) : IFlow<DbUpdate>
                 sink.OnCompleted();
         }
 
-        public ISource<EVRow<TValue>> Connect<TValue>(IReadableAttribute<TValue> attribute, DbUpdateSubFlow<TValue>.DbUpdateSubFlowSource subFlow)
+        public IDiffSource<EVRow<TValue>> Connect<TValue>(IReadableAttribute<TValue> attribute, DbUpdateSubFlow<TValue>.DbUpdateSubFlowSource subFlow)
         {
             if (_sinks.TryGetValue(attribute, out var sink))
-                return (ISource<EVRow<TValue>>)sink;
+                return (IDiffSource<EVRow<TValue>>)sink;
             
-            _sinks[attribute] = (ISink<DbUpdate>)subFlow;
-            return (ISource<EVRow<TValue>>)subFlow;
+            _sinks[attribute] = subFlow;
+            return subFlow;
         }
     }
 }

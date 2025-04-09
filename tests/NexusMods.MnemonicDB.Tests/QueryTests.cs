@@ -1,3 +1,5 @@
+using DynamicData;
+using NexusMods.Cascade;
 using NexusMods.Cascade.Abstractions;
 using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions;
@@ -9,22 +11,37 @@ namespace NexusMods.MnemonicDB.Tests;
 
 public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 {
-    /*
+    [Fact]
+    public async Task CanGetDatoms()
+    {
+        await InsertExampleData();
+        var db = Connection.Db;
+
+        var flow = from p in File.Path
+            select p;
+
+        var results = db.Topology.Outlet(flow);
+        
+        Assert.NotEmpty(results.Values);
+    }
+    
     [Fact]
     public async Task CanFilterAndSelectDatoms()
     {
         await InsertExampleData();
         var db = Connection.Db;
         
-        IQuery<(EntityId Id, RelativePath Path, Hash Hash)> query = 
-            Query.Where(File.Path, "File1")
-                .Select(File.Path, File.Hash);
+        var flow = from p in File.Path == "File1"
+            where p.Value == "File1"
+            join p2 in File.Hash on p.Id equals p2.Id
+            select (p.Id, p.Value, p2.Value);
+
+        var results = db.Topology.Outlet(flow);
         
-        var results = db.Flow.Query(query); 
-        
-        Assert.NotEmpty(results);
+        Assert.NotEmpty(results.Values);
     }
-    
+
+    /*
     [Fact]
     public async Task CanRunActiveQueries()
     {

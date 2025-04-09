@@ -1,18 +1,22 @@
-using System;
 using NexusMods.Cascade.Abstractions;
 using NexusMods.Cascade.Abstractions.Diffs;
 using NexusMods.Cascade.Implementation;
 
 namespace NexusMods.MnemonicDB.Abstractions.Cascade.Flows;
 
-internal class DbUpdateSubFlow<TValue>(IReadableAttribute<TValue> attribute, ToDbUpdate parent) : IFlow<EVRow<TValue>>
+internal class DbUpdateSubFlow<TValue>(IReadableAttribute<TValue> attribute, ToDbUpdate parent) : IDiffFlow<EVRow<TValue>>
 {
-    public ISource<EVRow<TValue>> ConstructIn(ITopology topology)
+    public ISource<DiffSet<EVRow<TValue>>> ConstructIn(ITopology topology)
     {
         var parentSource = (ToDbUpdate.ToDbUpdateImpl)topology.Intern(parent);
         var subFlow = new DbUpdateSubFlowSource(attribute, parentSource);
-        var actualSource = parentSource.Connect(attribute, subFlow);
+        var actualSource = (IDiffSource<EVRow<TValue>>)parentSource.Connect(attribute, subFlow);
         return actualSource;
+    }
+
+    public override string ToString()
+    {
+        return $"DatomsFlow({attribute.Id.Name})";
     }
 
 
@@ -98,6 +102,11 @@ internal class DbUpdateSubFlow<TValue>(IReadableAttribute<TValue> attribute, ToD
         public void OnCompleted()
         {
             CompleteSinks();
+        }
+
+        public override string ToString()
+        {
+            return $"DatomsSource({attribute.Id.Name})";
         }
     }
 }
