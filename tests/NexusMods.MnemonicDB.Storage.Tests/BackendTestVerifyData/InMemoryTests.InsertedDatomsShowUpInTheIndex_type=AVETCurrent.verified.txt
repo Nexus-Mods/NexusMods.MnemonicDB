@@ -18,8 +18,8 @@
 + | 0000000000000019 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Mod/Loadout       | 0100000000000002
 + | 0000000000000018 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Mod/Name          | 0100000000000002
 + | 0000000000000008 | (0001) UniqueId                 | NexusMods.MnemonicDB.Transaction/Timestamp       | 0100000000000001
-+ | 0200000000000001 | (0014) Path                     | /foo/bar                                         | 0100000000000003
-+ | 0200000000000002 | (0014) Path                     | /foo/qux                                         | 0100000000000004
++ | 0200000000000001 | (0014) Path                     | foo/bar                                          | 0100000000000003
++ | 0200000000000002 | (0014) Path                     | foo/qux                                          | 0100000000000004
 + | 0200000000000002 | (0015) Hash                     | 0x00000000DEADBEAF                               | 0100000000000003
 + | 0200000000000001 | (0015) Hash                     | 0x00000000DEADBEEF                               | 0100000000000003
 + | 0200000000000003 | (0018) Name                     | Test Mod 1                                       | 0100000000000003

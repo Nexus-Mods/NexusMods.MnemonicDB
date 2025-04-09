@@ -39,7 +39,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         {
             var file = new File.New(tx)
             {
-                Path = $"C:\\test_{idx}.txt",
+                Path = $"test_{idx}.txt",
                 Hash = Hash.From(idx + 0xDEADBEEF),
                 Size = Size.From(idx),
                 ModId = EntityId.From(1)
@@ -123,7 +123,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var file = new File.New(tx)
         {
-            Path = "C:\\test.txt",
+            Path = "test.txt",
             Hash = Hash.From(1 + 0xDEADBEEF),
             Size = Size.From(1),
             ModId = EntityId.From(1)
@@ -144,7 +144,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         for (var i = 0; i < times; i++)
         {
             var newTx = Connection.BeginTransaction();
-            newTx.Add(realId, File.Path, $"C:\\test_{i}.txt_mutate");
+            newTx.Add(realId, File.Path, $"test_{i}.txt_mutate");
 
             await newTx.Commit();
 
@@ -173,12 +173,12 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         {
             File = new File.New(tx, id)
             {
-                Path = "C:\\test.txt",
+                Path = "test.txt",
                 Hash = Hash.From(1 + 0xDEADBEEF),
                 Size = Size.From(1),
                 ModId = EntityId.From(1)
             },
-            Path = "C:\\test.zip",
+            Path = "test.zip",
             Hash = Hash.From(0xFEEDBEEF)
         };
 
@@ -224,7 +224,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var tx = Connection.BeginTransaction();
         var file = new File.New(tx)
         {
-            Path = "C:\\test.txt",
+            Path = "test.txt",
             Hash = Hash.From(0xDEADBEEF),
             Size = Size.From(1),
             ModId = EntityId.From(1)
@@ -356,7 +356,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         using var tx = Connection.BeginTransaction();
         var file1 = new File.New(tx)
         {
-            Path = "C:\\test1.txt",
+            Path = "test1.txt",
             Hash = Hash.From(0xDEADBEEF),
             Size = Size.From(1),
             ModId = EntityId.From(1)
@@ -364,7 +364,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var file2 = new File.New(tx, tx.TempId(PartitionId.From(10)))
         {
-            Path = "C:\\test2.txt",
+            Path = "test2.txt",
             Hash = Hash.From(0xDEADBEEF),
             Size = Size.From(1),
             ModId = EntityId.From(1)
@@ -372,7 +372,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var file3 = new File.New(tx, tx.TempId(PartitionId.From(200)))
         {
-            Path = "C:\\test3.txt",
+            Path = "test3.txt",
             Hash = Hash.From(0xDEADBEEF),
             Size = Size.From(1),
             ModId = EntityId.From(1)
@@ -1015,7 +1015,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         var fileA = new File.New(tx)
         {
-            Path = "C:\\test.txt",
+            Path = "test.txt",
             Hash = Hash.From(0xDEADBEEF),
             Size = Size.From(1),
             ModId = mod.Id,
@@ -1024,7 +1024,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         var fileB = new File.New(tx)
         {
-            Path = "C:\\test2.txt",
+            Path = "test2.txt",
             Hash = Hash.From(0xDEADBEEF),
             Size = Size.From(1),
             ModId = mod.Id,
@@ -1033,7 +1033,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         var fileC = new File.New(tx)
         {
-            Path = "C:\\test3.txt",
+            Path = "test3.txt",
             Hash = Hash.From(0xDEADBEEF),
             Size = Size.From(1),
             ModId = mod.Id,
@@ -1102,7 +1102,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     {
         var fileSystem = Provider.GetRequiredService<IFileSystem>();
         
-        var path = fileSystem.GetKnownPath(KnownPath.EntryDirectory).Combine("/foo/bar/qux.txt");
+        var path = fileSystem.GetKnownPath(KnownPath.EntryDirectory).Combine("foo/bar/qux.txt");
         
         using var tx = Connection.BeginTransaction();
         
@@ -1437,7 +1437,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         using var tx = Connection.BeginTransaction();
         var file = new File.New(tx)
         {
-            Path = "C:\\test.txt",
+            Path = "test.txt",
             Hash = Hash.From(0xDEADBEEF),
             Size = Size.From(0),
             ModId = EntityId.From(1)

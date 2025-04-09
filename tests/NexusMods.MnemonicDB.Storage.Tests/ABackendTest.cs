@@ -137,9 +137,9 @@ public abstract class ABackendTest(
         var id1 = NextTempId();
         var id2 = NextTempId();
         var id3 = NextTempId();
-        segment.Add(id1, File.Path, "/foo/bar");
-        segment.Add(id2, File.Path, "/foo/bar");
-        segment.Add(id3, File.Path, "/foo/bar");
+        segment.Add(id1, File.Path, "foo/bar");
+        segment.Add(id2, File.Path, "foo/bar");
+        segment.Add(id3, File.Path, "foo/bar");
         
         var (tx, _) = await DatomStore.TransactAsync(segment.Build());
     }
@@ -167,10 +167,10 @@ public abstract class ABackendTest(
 
             using var segment = new IndexSegmentBuilder(AttributeCache);
 
-            segment.Add(id1, File.Path, "/foo/bar");
+            segment.Add(id1, File.Path, "foo/bar");
             segment.Add(id1, File.Hash, Hash.From(0xDEADBEEF));
             segment.Add(id1, File.Size, Size.From(42));
-            segment.Add(id2, File.Path, "/qix/bar");
+            segment.Add(id2, File.Path, "qix/bar");
             segment.Add(id2, File.Hash, Hash.From(0xDEADBEAF));
             segment.Add(id2, File.Size, Size.From(77));
             segment.Add(id1, File.ModId, modId1);
@@ -197,7 +197,7 @@ public abstract class ABackendTest(
 
         {
             using var segment = new IndexSegmentBuilder(AttributeCache);
-            segment.Add(id2, File.Path, "/foo/qux");
+            segment.Add(id2, File.Path, "foo/qux");
             segment.Add(id1, File.ModId, modId2);
             segment.Add(collectionId, Collection.ModIds, modId2, true);
             (tx, _) = await DatomStore.TransactAsync(segment.Build());
@@ -225,7 +225,7 @@ public abstract class ABackendTest(
         {
             using var segment = new IndexSegmentBuilder(AttributeCache);
 
-            segment.Add(id, File.Path, "/foo/bar");
+            segment.Add(id, File.Path, "foo/bar");
             segment.Add(id, File.Hash, Hash.From(0xDEADBEEF));
             segment.Add(id, File.Size, Size.From(42));
             segment.Add(id, File.ModId, modId);
@@ -239,7 +239,7 @@ public abstract class ABackendTest(
         {
             using var segment = new IndexSegmentBuilder(AttributeCache);
 
-            segment.Add(id, File.Path, "/foo/bar", true);
+            segment.Add(id, File.Path, "foo/bar", true);
             segment.Add(id, File.Hash, Hash.From(0xDEADBEEF), true);
             segment.Add(id, File.Size, Size.From(42), true);
             segment.Add(id, File.ModId, modId, true);

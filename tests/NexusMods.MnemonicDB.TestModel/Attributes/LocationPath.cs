@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 using NexusMods.Paths;
+using NexusMods.Paths.Utilities;
 
 namespace NexusMods.MnemonicDB.TestModel.Attributes;
 
@@ -10,6 +12,11 @@ public sealed class LocationPath(string ns, string name) : ScalarAttribute<(Loca
     protected override (ushort, string) ToLowLevel((LocationId, RelativePath) value) 
         => (value.Item1.Value, value.Item2.Path);
 
-    protected override (LocationId, RelativePath) FromLowLevel((ushort, string) value, AttributeResolver resolver) 
-        => (LocationId.From(value.Item1), new(value.Item2));
+    protected override (LocationId, RelativePath) FromLowLevel((ushort, string) value, AttributeResolver resolver)
+    {
+        // NOTE(erri120): Stored data should be sanitized already.
+        Debug.Assert(PathHelpers.IsSanitized(value.Item2), $"Path {value.Item2} is not sanitized!");
+        var path = RelativePath.CreateUnsafe(value.Item2);
+        return (LocationId.From(value.Item1), path);
+    }
 }
