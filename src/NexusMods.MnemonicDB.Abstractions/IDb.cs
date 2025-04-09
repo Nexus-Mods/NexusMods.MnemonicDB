@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using NexusMods.Cascade;
+using NexusMods.Cascade.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
@@ -15,7 +16,7 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// <summary>
     /// Gets the dedicated flow for this database.
     /// </summary>
-    Flow Flow { get; }
+    ITopology Topology { get; }
     
     /// <summary>
     ///     Gets the basis TxId of the database.

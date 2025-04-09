@@ -1,5 +1,6 @@
 using DynamicData;
 using NexusMods.Cascade;
+using NexusMods.Cascade.Abstractions;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -9,7 +10,7 @@ namespace NexusMods.MnemonicDB.Storage.Tests;
 
 public class NullConnection : IConnection
 {
-    public Flow Flow => throw new NotSupportedException();
+    public ITopology Topology => throw new NotSupportedException();
     public IDb Db => throw new NotSupportedException();
     public AttributeResolver AttributeResolver => throw new NotSupportedException();
     public AttributeCache AttributeCache => throw new NotSupportedException();

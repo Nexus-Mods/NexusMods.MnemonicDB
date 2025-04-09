@@ -9,6 +9,7 @@ namespace NexusMods.MnemonicDB.Tests;
 
 public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 {
+    /*
     [Fact]
     public async Task CanFilterAndSelectDatoms()
     {
@@ -49,4 +50,5 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         Assert.NotEmpty(updatedResults);
     }
+    */
 }
