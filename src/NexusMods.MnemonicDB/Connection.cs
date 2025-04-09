@@ -11,6 +11,7 @@ using DynamicData;
 using Jamarino.IntervalTree;
 using Microsoft.Extensions.Logging;
 using NexusMods.Cascade;
+using NexusMods.Cascade.Abstractions;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Cascade;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
@@ -64,7 +65,9 @@ public sealed class Connection : IConnection
     /// </summary>
     public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers, bool readOnlyMode = false)
     {
-        Flow = new Flow();
+        Topology = ITopology.Create();
+        _dbInlet = Topology.Intern(Query.Db);
+        
         ServiceProvider = provider;
         AttributeCache = store.AttributeCache;
         AttributeResolver = new AttributeResolver(provider, AttributeCache);
@@ -225,18 +228,7 @@ public sealed class Connection : IConnection
             var tcs = new TaskCompletionSource();
             _pendingEvents.Writer.TryWrite(new NewRevisionEvent(prev, db, tcs));
             tcs.Task.Wait();
-            Flow.Update(static (ops, input) =>
-            {
-                var (newDb, prevDb) = input;
-                if (prevDb is not null)
-                {
-                    ops.AddData(Query.Db, -1, prevDb);
-                }
-                
-                ops.AddData(Query.Db, 1, newDb);
-
-            }, (db, prev));
-            prev = db;
+            _dbInlet.Value = db;
         });
     }
 
@@ -324,7 +316,7 @@ public sealed class Connection : IConnection
 
 
     /// <inheritdoc />
-    public Flow Flow { get; }
+    public ITopology Topology { get; }
 
     /// <inheritdoc />
     public IDb Db
@@ -486,6 +478,7 @@ public sealed class Connection : IConnection
     }
 
     private bool _isDisposed;
+    private readonly IInlet<IDb> _dbInlet;
 
     /// <inheritdoc />
     public void Dispose()

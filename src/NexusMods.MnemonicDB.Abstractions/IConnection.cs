@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using DynamicData;
 using NexusMods.Cascade;
+using NexusMods.Cascade.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -22,7 +23,7 @@ public interface IConnection : IDisposable
     /// <summary>
     /// The dedicated flow for this connection
     /// </summary>
-    public Flow Flow { get; }
+    public ITopology Topology { get; }
     
     /// <summary>
     ///     Gets the current database.

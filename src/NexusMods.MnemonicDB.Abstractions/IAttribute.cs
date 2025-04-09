@@ -106,3 +106,12 @@ public interface IReadableAttribute<out T> : IAttribute
     /// </summary>
     public T ReadValue(ReadOnlySpan<byte> span, ValueTag tag, AttributeResolver resolver);
 }
+
+
+/// <summary>
+/// Combiner interface for both readable and writable attributes
+/// </summary>
+public interface IAttribute<T> : IReadableAttribute<T>, IWritableAttribute<T>
+{
+    
+}

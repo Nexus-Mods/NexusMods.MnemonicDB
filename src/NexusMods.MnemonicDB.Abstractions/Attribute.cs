@@ -13,10 +13,8 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// <summary>
 ///     Interface for a specific attribute
 /// </summary>
-public abstract class Attribute<TValueType, TLowLevelType, TSerializer> : 
-      IWritableAttribute<TValueType>,
-      IReadableAttribute<TValueType>
-      where TSerializer : IValueSerializer<TLowLevelType>
+public abstract class Attribute<TValueType, TLowLevelType, TSerializer> : IAttribute<TValueType> 
+    where TSerializer : IValueSerializer<TLowLevelType>
 {
     
     /// <summary>
