@@ -42,7 +42,7 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
         datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
     }
 
-    public void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false) where TSerializer : IValueSerializer<TLowLevel>
+    public void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false) where TSerializer : IValueSerializer<TLowLevel> where TVal : notnull
     {
         datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
     }

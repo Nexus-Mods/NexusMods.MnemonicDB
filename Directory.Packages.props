@@ -5,7 +5,7 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.ObjectPool" Version="10.0.0-preview.2.25164.1" />
-    <PackageVersion Include="NexusMods.Cascade" Version="0.4.0" />
+    <PackageVersion Include="NexusMods.Cascade" Version="9999.0.0-localbuild" />
     <PackageVersion Include="Reloaded.Memory" Version="9.4.2" />
     <PackageVersion Include="RocksDB" Version="9.4.0.50294" />
     <PackageVersion Include="System.Reactive" Version="6.0.1" />

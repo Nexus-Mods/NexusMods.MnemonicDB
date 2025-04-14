@@ -10,7 +10,8 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 [PublicAPI]
 public abstract class CollectionAttribute<TValue, TLowLevel, TSerializer>(string ns, string name)
     : Attribute<TValue, TLowLevel, TSerializer>(ns, name, cardinality: Cardinality.Many) 
-    where TSerializer : IValueSerializer<TLowLevel>
+    where TSerializer : IValueSerializer<TLowLevel> 
+    where TValue : notnull
 {
 
     /// <summary>

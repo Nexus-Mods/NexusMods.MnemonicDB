@@ -43,7 +43,7 @@ public interface ITransaction : IDisposable
     ///    Adds a new datom to the transaction
     /// </summary>
     void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false)
-        where TSerializer : IValueSerializer<TLowLevel>;
+        where TSerializer : IValueSerializer<TLowLevel> where TVal : notnull;
     
     /// <summary>
     ///     Adds datoms for adding the given ids to the transaction under the given attribute

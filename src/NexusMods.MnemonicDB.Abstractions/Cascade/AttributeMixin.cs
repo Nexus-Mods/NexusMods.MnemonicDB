@@ -2,7 +2,6 @@
 
 using System;
 using NexusMods.Cascade.Abstractions;
-using NexusMods.Cascade.Abstractions.Diffs;
 using NexusMods.MnemonicDB.Abstractions.Cascade;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -10,14 +9,10 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// <summary>
 ///     Interface for a specific attribute
 /// </summary>
-public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> : IDiffFlow<EVRow<TValueType>> 
+public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> : IDiffFlow<TValueType> 
+    where TValueType : notnull
+    where TSerializer : IValueSerializer<TLowLevelType>
 {
-    public ISource<DiffSet<EVRow<TValueType>>> ConstructIn(ITopology topology)
-    {
-        var flow = NexusMods.MnemonicDB.Abstractions.Cascade.Query.Updates.ForAttribute(this);
-        return topology.Intern(flow);
-    }
-
     public static int operator ==(Attribute<TValueType, TLowLevelType, TSerializer> a, TValueType value)
     {
         throw new NotImplementedException();
@@ -26,5 +21,10 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
     public static int operator !=(Attribute<TValueType, TLowLevelType, TSerializer> a, TValueType value)
     {
         throw new NotImplementedException();
+    }
+
+    public FlowDescription AsFlow()
+    {
+        return this.QueryAll().AsFlow();
     }
 }

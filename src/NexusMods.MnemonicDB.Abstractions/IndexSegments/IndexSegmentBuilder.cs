@@ -111,7 +111,7 @@ public readonly struct IndexSegmentBuilder : IDisposable
     /// </summary>
     public void Add<TValue, TLowLevel, TSerializer>(EntityId entityId,
         Attribute<TValue, TLowLevel, TSerializer> attribute, TValue value, bool isRetract = false)
-        where TSerializer : IValueSerializer<TLowLevel>
+        where TSerializer : IValueSerializer<TLowLevel> where TValue : notnull
     {
         _offsets.Add(_data.Length);
         attribute.Write(entityId, _attributeCache, value, TxId.Tmp, isRetract, _data);

@@ -478,7 +478,7 @@ public sealed class Connection : IConnection
     }
 
     private bool _isDisposed;
-    private readonly IInlet<IDb> _dbInlet;
+    private readonly Inlet<IDb> _dbInlet;
 
     /// <inheritdoc />
     public void Dispose()

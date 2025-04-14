@@ -17,12 +17,12 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await InsertExampleData();
         var db = Connection.Db;
 
-        var flow = from p in File.Path
+        var flow = from p in File.Path.QueryAll()
             select p;
 
         var results = db.Topology.Outlet(flow);
         
-        Assert.NotEmpty(results.Values);
+        Assert.NotEmpty(results);
     }
     
     [Fact]
@@ -31,14 +31,14 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await InsertExampleData();
         var db = Connection.Db;
         
-        var flow = from p in File.Path 
+        var flow = from p in File.Path
             where p.Value == "File1"
             join p2 in File.Hash on p.Id equals p2.Id
             select (p.Id, p.Value, p2.Value);
 
         var results = db.Topology.Outlet(flow);
         
-        Assert.NotEmpty(results.Values);
+        Assert.NotEmpty(results);
     }
 
     /*
