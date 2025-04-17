@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using NexusMods.Cascade;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
@@ -34,6 +35,12 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
         Cardinalty = cardinality;
         IsIndexed = isIndexed;
         NoHistory = noHistory;
+        StepFn = AttributeStepFn;
+        Upstream = [Cascade.Query.Db];
+        DebugInfo = new DebugInfo
+        {
+            Name = "Attr: " + Id,
+        };
     }
 
     /// <summary>

@@ -43,9 +43,9 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         _snapshot = snapshot;
         BasisTxId = txId;
         _recentlyAdded = new (() => snapshot.Datoms(SliceDescriptor.Create(txId)));
-        Topology = ITopology.Create();
+        Topology = new Topology();
         var dbInlet = Topology.Intern(Query.Db);
-        dbInlet.Value = this;
+        dbInlet.Values = [this];
     }
 
     internal Db(TSnapshot newSnapshot, TxId newTxId, IndexSegment addedDatoms, Db<TSnapshot, TLowLevelIterator> src) : base(src, addedDatoms) 
@@ -54,9 +54,9 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         _snapshot = newSnapshot;
         BasisTxId = newTxId;
         _recentlyAdded = new Lazy<IndexSegment>(() => addedDatoms);
-        Topology = ITopology.Create();
+        Topology = new Topology();
         var dbInlet = Topology.Intern(Query.Db);
-        dbInlet.Value = this;
+        dbInlet.Values = [this];
     }
 
     /// <summary>
@@ -78,7 +78,7 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         }
     }
 
-    public ITopology Topology { get; }
+    public Topology Topology { get; }
     public TxId BasisTxId { get; }
 
     public IConnection Connection

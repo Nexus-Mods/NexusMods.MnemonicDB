@@ -23,4 +23,4 @@ public enum UpdateType
     RemoveAndAdd
 }
 
-public readonly record struct DbUpdate(IDb Prev, IDb Next, UpdateType UpdateType);
+public readonly record struct DbUpdate(IDb? Prev, IDb? Next, UpdateType UpdateType);

@@ -16,7 +16,7 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// <summary>
     /// Gets the dedicated flow for this database.
     /// </summary>
-    ITopology Topology { get; }
+    Topology Topology { get; }
     
     /// <summary>
     ///     Gets the basis TxId of the database.

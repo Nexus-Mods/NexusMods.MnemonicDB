@@ -23,7 +23,7 @@ public interface IConnection : IDisposable
     /// <summary>
     /// The dedicated flow for this connection
     /// </summary>
-    public ITopology Topology { get; }
+    public Topology Topology { get; }
     
     /// <summary>
     ///     Gets the current database.

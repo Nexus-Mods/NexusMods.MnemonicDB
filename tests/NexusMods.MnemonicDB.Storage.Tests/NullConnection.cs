@@ -10,7 +10,7 @@ namespace NexusMods.MnemonicDB.Storage.Tests;
 
 public class NullConnection : IConnection
 {
-    public ITopology Topology => throw new NotSupportedException();
+    public Topology Topology => throw new NotSupportedException();
     public IDb Db => throw new NotSupportedException();
     public AttributeResolver AttributeResolver => throw new NotSupportedException();
     public AttributeCache AttributeCache => throw new NotSupportedException();

@@ -65,7 +65,7 @@ public sealed class Connection : IConnection
     /// </summary>
     public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers, bool readOnlyMode = false)
     {
-        Topology = ITopology.Create();
+        Topology = new Topology();
         _dbInlet = Topology.Intern(Query.Db);
         
         ServiceProvider = provider;
@@ -228,7 +228,7 @@ public sealed class Connection : IConnection
             var tcs = new TaskCompletionSource();
             _pendingEvents.Writer.TryWrite(new NewRevisionEvent(prev, db, tcs));
             tcs.Task.Wait();
-            _dbInlet.Value = db;
+            _dbInlet.Values = [db];
         });
     }
 
@@ -316,7 +316,7 @@ public sealed class Connection : IConnection
 
 
     /// <inheritdoc />
-    public ITopology Topology { get; }
+    public Topology Topology { get; }
 
     /// <inheritdoc />
     public IDb Db
@@ -478,7 +478,7 @@ public sealed class Connection : IConnection
     }
 
     private bool _isDisposed;
-    private readonly Inlet<IDb> _dbInlet;
+    private readonly InletNode<IDb> _dbInlet;
 
     /// <inheritdoc />
     public void Dispose()

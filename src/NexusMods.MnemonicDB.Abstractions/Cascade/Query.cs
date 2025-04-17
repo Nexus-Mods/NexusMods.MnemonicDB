@@ -1,39 +1,49 @@
+using System;
+using System.Linq;
 using NexusMods.Cascade;
 using NexusMods.Cascade.Abstractions;
+using NexusMods.Cascade.Collections;
 using NexusMods.MnemonicDB.Abstractions.Cascade.Flows;
 
 namespace NexusMods.MnemonicDB.Abstractions.Cascade;
 
 public static class Query
 {
-    public static readonly InletDefinition<IDb> Db = new();
-    
-    public static readonly Flow<DbUpdate> Updates = Db.ToDbUpdate();
-    
-    /// <summary>
-    ///  Returns a flow for a tuple where the first item is the EntityId and the other items are values pulled from the
-    /// given attributes
-    /// </summary>
-    public static IDiffFlow<(EntityId Id, T1, T2)> Pull<T1, T2>(IReadableAttribute<T1> attr1,
-        IReadableAttribute<T2> attr2)
-    {
-        return from d1 in attr1.QueryAll()
-            join d2 in attr2.QueryAll() on d1.Id equals d2.Id
-            select (d1.Id, d1.Value, d2.Value);
-    }
+    public static readonly Inlet<IDb> Db = new();
 
-    /// <summary>
-    ///  Returns a flow for a tuple where the first item is the EntityId and the other items are values pulled from the
-    /// given attributes
-    /// </summary>
-    public static IDiffFlow<(EntityId Id, T1, T2, T3)> Pull<T1, T2, T3>(IReadableAttribute<T1> attr1,
-        IReadableAttribute<T2> attr2,
-        IReadableAttribute<T3> attr3)
+    internal static DbUpdate ToDbUpdate(DiffSet<IDb> diffSet)
     {
-        return from d1 in attr1.QueryAll()
-            join d2 in attr2.QueryAll() on d1.Id equals d2.Id
-            join d3 in attr3.QueryAll() on d1.Id equals d3.Id
-            select (d1.Id, d1.Value, d2.Value, d3.Value);
+        if (diffSet.Count == 1)
+        {
+            var (db, delta) = diffSet.First();
+            if (delta < 1)
+            {
+                return new DbUpdate(db, null, UpdateType.RemoveAndAdd);
+            }
+            else
+            {
+                return new DbUpdate(null, db, UpdateType.Init);
+            }
+        }
+        else if (diffSet.Count == 2)
+        {
+            var (db1, delta1) = diffSet.First();
+            var (db2, delta2) = diffSet.Last();
+
+            // Swap the ordering so it's old -> new
+            if (delta2 < delta1)
+            {
+                (db1, delta1) = (db2, delta2);
+            }
+
+            if (db1.BasisTxId.Value + 1 == db2.BasisTxId.Value)
+                return new DbUpdate(db1, db2, UpdateType.NextTx);
+            else
+                return new DbUpdate(db1, db2, UpdateType.RemoveAndAdd);
+        }
+        else
+        {
+            throw new InvalidOperationException("Invalid number of databases in diff set");
+        }
     }
-    
 }

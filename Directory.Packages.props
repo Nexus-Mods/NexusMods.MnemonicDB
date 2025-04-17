@@ -27,7 +27,7 @@
     <PackageVersion Include="Verify" Version="28.2.1" />
     <PackageVersion Include="Verify.SourceGenerators" Version="2.5.0" />
     <PackageVersion Include="Verify.Xunit" Version="28.2.1" />
-    <PackageVersion Include="FluentAssertions" Version="6.12.2" />
+    <PackageVersion Include="FluentAssertions" Version="7.2.0" />
     <PackageVersion Include="FluentAssertions.Analyzers" Version="0.34.1" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false">
       <IncludeAssets>runtime; build; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
