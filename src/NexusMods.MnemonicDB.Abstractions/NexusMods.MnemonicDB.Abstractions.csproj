@@ -9,6 +9,7 @@
         <PackageReference Include="JetBrains.Annotations" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"/>
         <PackageReference Include="NexusMods.Cascade" />
+        <PackageReference Include="NexusMods.Cascade.SourceGenerator" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
         <PackageReference Include="NexusMods.Paths"/>
         <PackageReference Include="R3"/>
         <PackageReference Include="System.IO.Hashing"/>

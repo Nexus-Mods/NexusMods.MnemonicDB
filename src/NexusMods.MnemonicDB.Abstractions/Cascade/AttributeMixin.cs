@@ -18,20 +18,12 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
     where TValueType : notnull
     where TSerializer : IValueSerializer<TLowLevelType>
 {
-    
-    public static int operator ==(Attribute<TValueType, TLowLevelType, TSerializer> a, TValueType value)
-    {
-        throw new NotImplementedException();
-    }
+    public Flow<(EntityId Id, TValueType Value, EntityId TxId)> AttributeWithTxIdFlow { get; }
 
-    public static int operator !=(Attribute<TValueType, TLowLevelType, TSerializer> a, TValueType value)
+    private void AttributeStepFn(IToDiffSpan<IDb> input, DiffList<KeyedValue<EntityId, TValueType>> output)
     {
-        throw new NotImplementedException();
-    }
-
-    private void AttributeStepFn(DiffSet<IDb> input, DiffSet<KeyedValue<EntityId, TValueType>> output)
-    {
-        var update = Cascade.Query.ToDbUpdate(input);
+        var span = input.ToDiffSpan();
+        var update = Cascade.Query.ToDbUpdate(span);
 
         if (update.UpdateType == UpdateType.None)
             return;
@@ -41,7 +33,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
             var datoms = update.Next!.Datoms(this);
             var resolver = update.Next.Connection.AttributeResolver;
             foreach (var datom in datoms)
-                output.Update((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver)), 1);
+                output.Add((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver)), 1);
         }
         else if (update.UpdateType == UpdateType.NextTx)
         {
@@ -52,7 +44,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
                 if (datom.A != attrId)
                     continue;
 
-                output.Update((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver)), 1);
+                output.Add((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver)), 1);
             }
         }
         else
@@ -61,11 +53,52 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
 
             var oldDatoms = update.Prev!.Datoms(this);
             foreach (var datom in oldDatoms)
-                output.Update((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver)), -1);
+                output.Add((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver)), -1);
 
             var newDatoms = update.Prev.Datoms(this);
             foreach (var datom in newDatoms)
-                output.Update((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver)), 1);
+                output.Add((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver)), 1);
+        }
+    }
+
+    private void AttributeWithTxIdStepFn(IToDiffSpan<IDb> input, DiffList<(EntityId Id, TValueType Value, EntityId TxId)> output)
+    {
+        var span = input.ToDiffSpan();
+        var update = Cascade.Query.ToDbUpdate(span);
+
+        if (update.UpdateType == UpdateType.None)
+            return;
+
+        else if (update.UpdateType == UpdateType.Init)
+        {
+            var datoms = update.Next!.Datoms(this);
+            var resolver = update.Next.Connection.AttributeResolver;
+            foreach (var datom in datoms)
+                output.Add((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver), EntityId.From(datom.T.Value)), 1);
+        }
+        else if (update.UpdateType == UpdateType.NextTx)
+        {
+            var resolver = update.Next!.Connection.AttributeResolver;
+            var attrId = update.Next.AttributeCache.GetAttributeId(Id);
+            foreach (var datom in update.Next.RecentlyAdded)
+            {
+                if (datom.A != attrId)
+                    continue;
+
+                output.Add((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver), EntityId.From(datom.T.Value)), 1);
+            }
+        }
+        else
+        {
+            var resolver = update.Next!.Connection.AttributeResolver;
+
+            var oldDatoms = update.Prev!.Datoms(this);
+            foreach (var datom in oldDatoms)
+                output.Add((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver), EntityId.From(datom.T.Value)), -1);
+
+            var newDatoms = update.Prev.Datoms(this);
+            foreach (var datom in newDatoms)
+                output.Add((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver), EntityId.From(datom.T.Value)), 1);
         }
     }
     

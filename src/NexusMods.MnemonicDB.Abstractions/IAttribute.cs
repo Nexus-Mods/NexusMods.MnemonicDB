@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using NexusMods.Cascade;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -114,4 +115,9 @@ public interface IReadableAttribute<out T> : IAttribute
 public interface IAttribute<T> : IReadableAttribute<T>, IWritableAttribute<T>
 {
     
+}
+
+public interface IAttributeFlow<T>
+{
+    public Flow<(EntityId Id, T Value, EntityId TxId)> AttributeWithTxIdFlow { get; }
 }

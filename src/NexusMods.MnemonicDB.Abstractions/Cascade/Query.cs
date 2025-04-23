@@ -3,6 +3,7 @@ using System.Linq;
 using NexusMods.Cascade;
 using NexusMods.Cascade.Abstractions;
 using NexusMods.Cascade.Collections;
+using NexusMods.Cascade.Structures;
 using NexusMods.MnemonicDB.Abstractions.Cascade.Flows;
 
 namespace NexusMods.MnemonicDB.Abstractions.Cascade;
@@ -11,11 +12,11 @@ public static class Query
 {
     public static readonly Inlet<IDb> Db = new();
 
-    internal static DbUpdate ToDbUpdate(DiffSet<IDb> diffSet)
+    internal static DbUpdate ToDbUpdate(ReadOnlySpan<Diff<IDb>> diffSet)
     {
-        if (diffSet.Count == 1)
+        if (diffSet.Length == 1)
         {
-            var (db, delta) = diffSet.First();
+            var (db, delta) = diffSet[0];
             if (delta < 1)
             {
                 return new DbUpdate(db, null, UpdateType.RemoveAndAdd);
@@ -25,10 +26,10 @@ public static class Query
                 return new DbUpdate(null, db, UpdateType.Init);
             }
         }
-        else if (diffSet.Count == 2)
+        else if (diffSet.Length == 2)
         {
-            var (db1, delta1) = diffSet.First();
-            var (db2, delta2) = diffSet.Last();
+            var (db1, delta1) = diffSet[0];
+            var (db2, delta2) = diffSet[1];
 
             // Swap the ordering so it's old -> new
             if (delta2 < delta1)
