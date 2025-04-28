@@ -15,7 +15,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// <summary>
 ///     Interface for a specific attribute
 /// </summary>
-public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> : IAttribute<TValueType>
+public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> : IAttribute<TValueType>, IAttributeFlow<TValueType>
     where TValueType : notnull
     where TSerializer : IValueSerializer<TLowLevelType>
 {
