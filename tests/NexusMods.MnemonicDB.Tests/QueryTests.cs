@@ -1,6 +1,7 @@
 using DynamicData;
 using NexusMods.Cascade;
 using NexusMods.Cascade.Abstractions;
+using NexusMods.Cascade.Patterns;
 using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Cascade;
@@ -21,8 +22,8 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             select p;
 
         var results = db.Topology.Outlet(flow);
-        
-        Assert.NotEmpty(results.Values);
+
+        results.Should().NotBeEmpty();
     }
     
     [Fact]
@@ -39,34 +40,47 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var results = db.Topology.Outlet(flow);
         
-        Assert.NotEmpty(results.Values);
+        results.Should().NotBeEmpty();
     }
 
-    /*
+    
     [Fact]
     public async Task CanRunActiveQueries()
     {
         await InsertExampleData();
         
-        IQuery<(EntityId Id, RelativePath Path, Hash Hash)> query = 
-            Query.Where(File.Path, "File1")
-                .Select(File.Path, File.Hash);
         
-        var results = Connection.Flow.Query(query);
-        //var activeQuery = Connection.Flow.Update(ops => ops.ObserveAllResults(query));
+        var query = 
+            Pattern.Create()
+                .Db(out var e, File.Path, out var path)
+                .Db(e, File.Hash, out var hash)
+                .Return(path, hash, path.Count());
         
-        Assert.NotEmpty(results);
+        
+        var results = Connection.Topology.Outlet(query);
+        
+        results.Should().NotBeEmpty();
+
+        // Three mods with overlapping filenames, so we expect 3 results for each
+        results.Should().BeEquivalentTo(new (RelativePath, Hash, int)[] {
+            ("File1", Hash.FromLong(0xDEADBEEF), 3),
+            ("File2", Hash.FromLong(0xDEADBEF0), 3),
+            ("File3", Hash.FromLong(0xDEADBEF1), 3),
+        });
 
         using var tx = Connection.BeginTransaction();
-        foreach (var (id, path, hash) in results)
-        {
-            tx.Add(id, File.Hash, Hash.From(hash.Value + 42));
-        }
+        var ent = File.FindByPath(Connection.Db, "File1").First();
+        tx.Add(ent.Id, File.Hash, Hash.FromLong(0x42));
         await tx.Commit();
         
-        var updatedResults = Connection.Flow.Query(query);
-        
-        Assert.NotEmpty(updatedResults);
+        // we swapped one file over to a different hash, so we should see 4 results now with 2 count for one
+        // and 1 for the other
+        results.Should().BeEquivalentTo(new (RelativePath, Hash, int)[] {
+            ("File1", Hash.FromLong(0x42), 1),
+            ("File2", Hash.FromLong(0xDEADBEF0), 3),
+            ("File3", Hash.FromLong(0xDEADBEF1), 3),
+            ("File1", Hash.FromLong(0xDEADBEEF), 2),
+        });
+
     }
-    */
 }

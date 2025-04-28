@@ -44,7 +44,8 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
                 if (datom.A != attrId)
                     continue;
 
-                output.Add((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver)), 1);
+                var delta = datom.IsRetract ? -1 : 1;
+                output.Add((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver)), delta);
             }
         }
         else
@@ -85,7 +86,8 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
                 if (datom.A != attrId)
                     continue;
 
-                output.Add((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver), EntityId.From(datom.T.Value)), 1);
+                var delta = datom.IsRetract ? -1 : 1;
+                output.Add((datom.E, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver), EntityId.From(datom.T.Value)), delta);
             }
         }
         else
