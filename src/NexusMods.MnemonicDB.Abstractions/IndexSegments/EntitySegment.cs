@@ -61,6 +61,29 @@ public readonly struct EntitySegment : IEnumerable<Datom>
         return true;
     }
 
+    /// <summary>
+    /// Returns true if the value/attribute and entity represented by the datom is in this segment
+    /// </summary>
+    public bool Contains(Datom datom)
+    {
+        if (datom.E != _id)
+            return false;
+        var index = FirstOffsetOf(datom.A);
+        if (index == -1)
+            return false;
+        
+        for (var i = index; i < _data.GetCount(); i++)
+        {
+            if (datom.A != _data.GetAttributeIds()[i])
+                return false;
+            var valueSpan = _data.GetOffsets()[i].GetSpan(_data);
+            if (valueSpan.SequenceEqual(datom.ValueSpan))
+                return true;
+        }
+
+        return false;
+    }
+
 
     /// <summary>
     /// Returns the first occurrence of the given attribute id in the segment, or -1 if not found

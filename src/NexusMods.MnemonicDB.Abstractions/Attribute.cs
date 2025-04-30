@@ -53,6 +53,18 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
             Upstream = [Cascade.Query.Db],
             StepFn = AttributeWithTxIdStepFn,
         };
+        
+        AttributeHistoryFlow = new UnaryFlow<IDb,(EntityId Id, TValueType Value, EntityId TxId)>
+        {
+            DebugInfo = new()
+            {
+                Name = "MnemonicDB Attribute History",
+                Expression = Id!.ToString()
+            },
+            Upstream = [Cascade.Query.Db],
+            StepFn = AttributeHistoryStepFn,
+        };
+        
     }
 
     /// <summary>

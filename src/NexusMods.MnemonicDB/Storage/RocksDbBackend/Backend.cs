@@ -39,7 +39,9 @@ public class Backend : IStoreBackend
     public ISnapshot GetSnapshot()
     {
         var snapShot = Db!.CreateSnapshot();
-        var readOptions = new ReadOptions().SetSnapshot(snapShot);
+        var readOptions = new ReadOptions()
+            .SetSnapshot(snapShot)
+            .SetPinData(true);
         return new Snapshot(this, AttributeCache, readOptions, snapShot);
     }
 

@@ -24,9 +24,24 @@ public sealed class ValueComparer : IElementComparer
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
     {
-        var prefixA = (KeyPrefix*)aPtr;
-        var prefixB = (KeyPrefix*)bPtr;
-        return Compare(prefixA, aPtr + KeyPrefix.Size, aLen - KeyPrefix.Size, prefixB, bPtr + KeyPrefix.Size, bLen - KeyPrefix.Size);
+        var typeA = (*(KeyPrefix*)aPtr).ValueTag;
+        var typeB = (*(KeyPrefix*)bPtr).ValueTag;
+        
+        var typeAByte = (byte)typeA;
+        var typeBByte = (byte)typeB;
+        
+        if (typeAByte != typeBByte)
+            return typeAByte.CompareTo(typeBByte);
+        
+        // Fastpath for VAET indexes
+        if (typeA == ValueTag.Reference)
+        {
+            var aId = *(ulong*)(aPtr + KeyPrefix.Size);
+            var bId = *(ulong*)(bPtr + KeyPrefix.Size);
+            return aId.CompareTo(bId);
+        }
+
+        return Serializer.Compare(typeA, aPtr + KeyPrefix.Size, aLen - KeyPrefix.Size, typeB, bPtr + KeyPrefix.Size, bLen - KeyPrefix.Size);
     }
 
     /// <inheritdoc />

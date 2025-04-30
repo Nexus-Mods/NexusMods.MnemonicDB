@@ -60,14 +60,32 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var results = Connection.Topology.Outlet(query);
         
         results.Should().NotBeEmpty();
+        
+        // Query how many hashes are modified in each transaction
+        var historyQuery =
+            Pattern.Create()
+                .DbHistory(e, File.Hash, hash, out var txId)
+                // Strip the partition from the txId, just to make it easier to read
+                .Project(txId, t => t.ValuePortion, out var txNoPartition)
+                .Return(txNoPartition, e.Count());
+        
+        var historyResults = Connection.Topology.Outlet(historyQuery);
 
+        // Validate the results
+        
         // Three mods with overlapping filenames, so we expect 3 results for each
         results.Should().BeEquivalentTo(new (RelativePath, Hash, int)[] {
             ("File1", Hash.FromLong(0xDEADBEEF), 3),
             ("File2", Hash.FromLong(0xDEADBEF0), 3),
             ("File3", Hash.FromLong(0xDEADBEF1), 3),
         });
+        
+        historyResults.Should().BeEquivalentTo(new (ulong, int)[] {
+            // 9 hashes in the first transaction
+            (3, 9),
+        });
 
+        // Update one hash to check that the queries update correctly
         using var tx = Connection.BeginTransaction();
         var ent = File.FindByPath(Connection.Db, "File1").First();
         tx.Add(ent.Id, File.Hash, Hash.FromLong(0x42));
@@ -80,6 +98,16 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             ("File2", Hash.FromLong(0xDEADBEF0), 3),
             ("File3", Hash.FromLong(0xDEADBEF1), 3),
             ("File1", Hash.FromLong(0xDEADBEEF), 2),
+        });
+
+
+        
+        historyResults.Should().NotBeEmpty();
+        historyResults.Should().BeEquivalentTo(new (ulong, int)[] {
+            // 9 hashes in the first transaction
+            (3, 9),
+            // 1 hash in the second transaction
+            (5, 1)
         });
 
     }
