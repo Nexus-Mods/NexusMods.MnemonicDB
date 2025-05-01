@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.Internals;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
@@ -17,9 +19,14 @@ public readonly struct PinnedIndexSegmentBuilder : IIndexSegmentBuilder
     /// <summary>
     /// Adds the current item pointed to by the enumerator
     /// </summary>
-    public void AddCurrent<T>(in T enumerator) where T : IRefDatomEnumerator, allows ref struct
+    public unsafe void AddCurrent<T>(in T enumerator) where T : IRefDatomEnumerator, allows ref struct
     {
-        _pointers.Add((enumerator.Current, enumerator.ExtraValueSpan));
+        var current = enumerator.Current;
+        var type = ((KeyPrefix*)current.Base)->ValueTag;
+        if (type == ValueTag.HashedBlob) 
+            _pointers.Add((enumerator.Current, enumerator.ExtraValueSpan));
+        else
+            _pointers.Add((enumerator.Current, default));
     }
 
     /// <summary>
@@ -42,7 +49,7 @@ public readonly struct PinnedIndexSegmentBuilder : IIndexSegmentBuilder
     public Memory<byte> Build(params ReadOnlySpan<IColumn> columns)
     {
         if (_pointers.Count == 0)
-            return Memory<byte>.Empty;
+            return IndexSegmentBuilder.Empty;
 
         var rowCount = _pointers.Count;
         

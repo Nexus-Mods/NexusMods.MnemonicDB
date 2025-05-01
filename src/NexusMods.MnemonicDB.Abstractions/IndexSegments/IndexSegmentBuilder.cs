@@ -22,7 +22,7 @@ public readonly struct IndexSegmentBuilder : IIndexSegmentBuilder, IDisposable
     private readonly PooledMemoryBufferWriter _data;
     private readonly AttributeCache _attributeCache;
 
-    private static readonly Memory<byte> Empty;
+    internal static readonly Memory<byte> Empty;
     
     static IndexSegmentBuilder()
     {
