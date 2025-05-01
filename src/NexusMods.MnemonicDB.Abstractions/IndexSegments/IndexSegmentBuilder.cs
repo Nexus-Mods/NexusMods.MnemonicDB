@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using DynamicData;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments.Columns;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using Reloaded.Memory.Extensions;
 
@@ -89,8 +86,8 @@ public readonly struct IndexSegmentBuilder : IIndexSegmentBuilder, IDisposable
     /// <summary>
     /// Add a datom to the segment
     /// </summary>
-    public void Add<TValue, TAttribute>(EntityId entityId, TAttribute attribute, TValue value, TxId txId, bool isRetract)
-    where TAttribute : IWritableAttribute<TValue>
+    public void Add<TValue, TAttribute>(EntityId entityId, TAttribute attribute, TValue value, TxId txId, bool isRetract) 
+        where TAttribute : IWritableAttribute<TValue>
     {
         _offsets.Add(_data.Length);
         attribute.Write(entityId, _attributeCache, value, txId, isRetract, _data);
@@ -232,7 +229,7 @@ public readonly struct IndexSegmentBuilder : IIndexSegmentBuilder, IDisposable
                 // expand its buffer
                 var destWrittenSpan = writer.GetWrittenSpanWritable();
                 var destSpan = destWrittenSpan.SliceFast(columnOffsets[columnIdx] + (fixedSize * idx), fixedSize);
-                columns[columnIdx].Extract(fromSpan, ReadOnlySpan<byte>.Empty, destSpan, writer);
+                columns[columnIdx].Extract(fromSpan, destSpan, writer);
             }
         }
         return writer.WrittenMemory.ToArray();

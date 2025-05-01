@@ -38,7 +38,7 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
     {
         public override Memory<byte> GetBytes(EntityId key)
         {
-            var builder = new PinnedIndexSegmentBuilder();
+            var builder = new IndexSegmentBuilder(parent.AttributeCache);
             using var iterator = parent.GetRefDatomEnumerator();
             builder.AddRange(iterator, SliceDescriptor.Create(key));
             return AVSegment.Build(builder);

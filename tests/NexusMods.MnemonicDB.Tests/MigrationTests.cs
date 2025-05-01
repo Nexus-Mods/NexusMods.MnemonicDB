@@ -128,7 +128,9 @@ public class MigrationTests : AMnemonicDBTest
         var cache = connection.AttributeCache;
         foreach (var attr in AttributeDefinition.All(db))
         {
-            attr.Indexed.Should().Be(cache.GetIndexedFlags(cache.GetAttributeId(attr.UniqueId)), "The indexed flags are backwards compatible");
+            var expected = cache.GetAttributeId(attr.UniqueId);
+            
+            attr.Indexed.Should().Be(cache.GetIndexedFlags(expected), "The indexed flags are backwards compatible");
         }
         
         return;

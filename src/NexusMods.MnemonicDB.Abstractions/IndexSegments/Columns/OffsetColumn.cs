@@ -15,12 +15,9 @@ public class OffsetColumn : IColumn
     
     public unsafe int FixedSize => sizeof(Offset);
     public Type ValueType => typeof(Offset);
-    public void Extract(ReadOnlySpan<byte> src, ReadOnlySpan<byte> valueSpan, Span<byte> dst,
+    public void Extract(ReadOnlySpan<byte> src, Span<byte> dst,
         PooledMemoryBufferWriter writer)
     {
-        if (valueSpan.Length > 0)
-            throw new NotImplementedException();
-        
         var valueSize = src.Length - KeyPrefix.Size;
         var offset = writer.Length;
         Debug.Assert(offset < MaxSegmentOffset);
