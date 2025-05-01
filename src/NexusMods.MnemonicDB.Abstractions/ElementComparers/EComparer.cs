@@ -17,7 +17,7 @@ public sealed class EComparer : IElementComparer
         return aPrefix->E.CompareTo(bPrefix->E);
     }
     
-    private const ulong EMask = 0xFF00FFFFFFFFFFFFUL;
+    private const ulong EMask = 0xFFFFFFFFFFFFFF00UL;
 
     /// <inheritdoc />
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

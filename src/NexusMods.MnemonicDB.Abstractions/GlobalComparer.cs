@@ -30,11 +30,11 @@ public sealed class GlobalComparer : IComparer<byte[]>
 
         return (IndexType)(aIndex >> 40)  switch
         {
-            IndexType.TxLog => TxLogComparator.Compare(aPtr, aLen, bPtr, bLen),
             IndexType.EAVTCurrent or IndexType.EAVTHistory => EAVTComparator.Compare(aPtr, aLen, bPtr, bLen),
             IndexType.AEVTCurrent or IndexType.AEVTHistory => AEVTComparator.Compare(aPtr, aLen, bPtr, bLen),
             IndexType.AVETCurrent or IndexType.AVETHistory => AVETComparator.Compare(aPtr, aLen, bPtr, bLen),
             IndexType.VAETCurrent or IndexType.VAETHistory => VAETComparator.Compare(aPtr, aLen, bPtr, bLen),
+            IndexType.TxLog => TxLogComparator.Compare(aPtr, aLen, bPtr, bLen),
             _ => -1,
         };
     }

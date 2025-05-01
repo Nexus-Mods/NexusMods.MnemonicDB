@@ -16,7 +16,7 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 /// <summary>
 /// A builder for constructing an index segment
 /// </summary>
-public readonly struct IndexSegmentBuilder : IDisposable
+public readonly struct IndexSegmentBuilder : IIndexSegmentBuilder, IDisposable
 {
     private readonly List<int> _offsets;
     private readonly PooledMemoryBufferWriter _data;
@@ -187,30 +187,6 @@ public readonly struct IndexSegmentBuilder : IDisposable
     }
 
     /// <summary>
-    /// Build a segment with the given columns
-    /// </summary>
-    public Memory<byte> Build<TValue1>() 
-    {
-        return Build(ColumnDefinitions.ColumnFor<TValue1>());
-    }
-    
-    /// <summary>
-    /// Build a segment with the given columns
-    /// </summary>
-    public Memory<byte> Build<TValue1, TValue2>() 
-    {
-        return Build(ColumnDefinitions.ColumnFor<TValue1>(), ColumnDefinitions.ColumnFor<TValue2>());
-    }
-
-    /// <summary>
-    /// Build a segment with the given columns
-    /// </summary>
-    public Memory<byte> Build<TValue1, TValue2, TValue3>() 
-    {
-        return Build(ColumnDefinitions.ColumnFor<TValue1>(), ColumnDefinitions.ColumnFor<TValue2>(), ColumnDefinitions.ColumnFor<TValue3>());
-    }
-
-    /// <summary>
     /// Build the index segment with the given columns
     /// </summary>
     /// <param name="columns"></param>
@@ -256,7 +232,7 @@ public readonly struct IndexSegmentBuilder : IDisposable
                 // expand its buffer
                 var destWrittenSpan = writer.GetWrittenSpanWritable();
                 var destSpan = destWrittenSpan.SliceFast(columnOffsets[columnIdx] + (fixedSize * idx), fixedSize);
-                columns[columnIdx].Extract(fromSpan, destSpan, writer);
+                columns[columnIdx].Extract(fromSpan, ReadOnlySpan<byte>.Empty, destSpan, writer);
             }
         }
         return writer.WrittenMemory.ToArray();
