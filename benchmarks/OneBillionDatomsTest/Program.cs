@@ -55,7 +55,7 @@ for (ulong i = 0; i < batches; i++)
         fileNumber += 1;
         var _ = new File.New(tx)
         {
-            Path = $"c:\\test_{i}_{j}.txt",
+            Path = $"foo/test_{i}_{j}.txt",
             Hash = Hash.From(fileNumber % 0xFFFF),
             Size = Size.From(fileNumber),
             ModId = EntityId.From(1)

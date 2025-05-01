@@ -32,7 +32,27 @@ public readonly partial struct Offset
         {
             return segment.Data.Span.SliceFast(offset, (int)size);
         }
-        
+    }
+    
+    /// <summary>
+    /// Get the span of the value data in the segment
+    /// </summary>
+    public ReadOnlyMemory<byte> GetMemory<TSegment>(in TSegment segment)
+        where TSegment : ISegment
+    {
+        var size = Value & 0xFF;
+        var offset = (int)(Value >> 8);
+
+        if (size == 0xFF)
+        {
+            var memory = segment.Data;
+            var actualSize = MemoryMarshal.Read<int>(memory.Span.SliceFast(offset));
+            return memory.Slice(offset + sizeof(int), actualSize);
+        }
+        else
+        {
+            return segment.Data.Slice(offset, (int)size);
+        }
     }
 
 }

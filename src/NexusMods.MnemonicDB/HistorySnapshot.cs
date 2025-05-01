@@ -1,3 +1,4 @@
+using System;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
@@ -19,8 +20,13 @@ internal class HistorySnapshot(Snapshot inner, AttributeCache attributeCache) : 
         return new Db<HistorySnapshot, ResultIterator>(this, txId, cache, connection);
     }
 
-    public override ResultIterator GetRefDatomEnumerator()
+    public bool TryGetMaxIdInPartition(PartitionId partitionId, out EntityId id)
     {
-        return new ResultIterator(inner.GetRefDatomEnumerator(), inner.GetRefDatomEnumerator());
+        throw new NotSupportedException();
+    }
+
+    public override ResultIterator GetRefDatomEnumerator(bool totalOrder = false)
+    {
+        return new ResultIterator(inner.GetRefDatomEnumerator(totalOrder), inner.GetRefDatomEnumerator(totalOrder));
     }
 }

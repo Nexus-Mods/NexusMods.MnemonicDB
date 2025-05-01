@@ -16,6 +16,7 @@ public class Backend : IStoreBackend
     private IntPtr _comparator;
     private readonly bool _isReadOnly;
     private Env? _env;
+    private IntPtr _sliceTransform;
 
     /// <summary>
     /// Default constructor
@@ -40,6 +41,7 @@ public class Backend : IStoreBackend
     {
         var snapShot = Db!.CreateSnapshot();
         var readOptions = new ReadOptions()
+            .SetTotalOrderSeek(false)
             .SetSnapshot(snapShot)
             .SetPinData(true);
         return new Snapshot(this, AttributeCache, readOptions, snapShot);
@@ -52,6 +54,8 @@ public class Backend : IStoreBackend
             NativeComparators.GetDestructorPtr(),
             NativeComparators.GetNativeFnPtr(),
             NativeComparators.GetNamePtr());
+
+        _sliceTransform = NativePrefixExtractor.MakeSliceTransform();
         
         if (settings.IsInMemory)
             _env = Env.CreateMemEnv();
@@ -63,7 +67,13 @@ public class Backend : IStoreBackend
             .SetCreateMissingColumnFamilies()
             .SetCompression(Compression.Zstd)
             .SetComparator(_comparator)
+            .SetPrefixExtractor(_sliceTransform)
             .SetEnv(_env.Handle);
+
+        var tableOptions = new BlockBasedTableOptions()
+            .SetFilterPolicy(BloomFilterPolicy.Create(10, false));
+
+        options.SetBlockBasedTableFactory(tableOptions);
         
         Native.Instance.rocksdb_options_set_bottommost_compression(options.Handle, (int)Compression.Zstd);
 

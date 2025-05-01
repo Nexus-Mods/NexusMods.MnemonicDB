@@ -30,18 +30,11 @@ public sealed class ValueComparer : IElementComparer
         var typeAByte = (byte)typeA;
         var typeBByte = (byte)typeB;
         
-        if (typeAByte != typeBByte)
-            return typeAByte.CompareTo(typeBByte);
+        var cmp = typeAByte.CompareTo(typeBByte);
+        if (cmp != 0)
+            return cmp;
         
-        // Fastpath for VAET indexes
-        if (typeA == ValueTag.Reference)
-        {
-            var aId = *(ulong*)(aPtr + KeyPrefix.Size);
-            var bId = *(ulong*)(bPtr + KeyPrefix.Size);
-            return aId.CompareTo(bId);
-        }
-
-        return Serializer.Compare(typeA, aPtr + KeyPrefix.Size, aLen - KeyPrefix.Size, typeB, bPtr + KeyPrefix.Size, bLen - KeyPrefix.Size);
+        return typeA.Compare(aPtr + KeyPrefix.Size, aLen - KeyPrefix.Size, bPtr + KeyPrefix.Size, bLen - KeyPrefix.Size);
     }
 
     /// <inheritdoc />

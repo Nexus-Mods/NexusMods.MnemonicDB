@@ -121,10 +121,22 @@ public readonly struct IndexSegmentBuilder : IDisposable
     /// Adds a datom to the segment for the tmp transaction, with the given assert flag
     /// </summary>
     public void Add<TValue, TAttribute>(EntityId entityId, TAttribute attribute, TValue value, bool isRetract)
-    where TAttribute : IWritableAttribute<TValue>
+        where TAttribute : IWritableAttribute<TValue>
     {
         _offsets.Add(_data.Length);
         attribute.Write(entityId, _attributeCache, value, TxId.Tmp, isRetract, _data);
+    }
+    
+    
+    /// <summary>
+    /// Adds a datom to the segment for the tmp transaction, with the given assert flag
+    /// </summary>
+    public void Add(EntityId e, AttributeId a, ValueTag valueTag, ReadOnlySpan<byte> value, bool isRetract)
+    {
+        _offsets.Add(_data.Length);
+        var prefix = new KeyPrefix(e, a, TxId.Tmp, isRetract, valueTag);
+        _data.Write(prefix);
+        _data.Write(value);
     }
 
     /// <summary>

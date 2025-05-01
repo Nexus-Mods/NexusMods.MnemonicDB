@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
@@ -74,6 +75,17 @@ internal class Transaction(Connection connection) : ITransaction
             {
                 _datoms.Add(entityId, attribute, id, ThisTxId, isRetract: false);
             }
+        }
+    }
+
+    public void Add(EntityId e, AttributeId a, ValueTag valueTag, ReadOnlySpan<byte> valueSpan, bool isRetract = false)
+    {
+        lock (_lock)
+        {
+            if (_committed)
+                throw new InvalidOperationException("Transaction has already been committed");
+
+            _datoms.Add(e, a, valueTag, valueSpan, isRetract);
         }
     }
 
