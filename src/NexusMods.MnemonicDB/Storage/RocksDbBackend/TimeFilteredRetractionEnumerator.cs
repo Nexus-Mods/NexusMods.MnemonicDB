@@ -14,12 +14,10 @@ namespace NexusMods.MnemonicDB.Storage.RocksDbBackend
         private TInner _inner;
         private readonly TxId _txId;
         private Ptr _key;
-        private Ptr _value;
         private Ptr _extraValue;
         
         // Cached next values
         private Ptr _nextKey;
-        private Ptr _nextValue;
         private Ptr _nextExtraValue;
         private bool _isNextSet;
         private bool _atEnd;
@@ -31,10 +29,8 @@ namespace NexusMods.MnemonicDB.Storage.RocksDbBackend
             _isNextSet = false;
             _atEnd = false;
             _key = default;
-            _value = default;
             _extraValue = default;
             _nextKey = default;
-            _nextValue = default;
             _nextExtraValue = default;
         }
         
@@ -50,7 +46,6 @@ namespace NexusMods.MnemonicDB.Storage.RocksDbBackend
                 if (_isNextSet)
                 {
                     _key = _nextKey;
-                    _value = _nextValue;
                     _extraValue = _nextExtraValue;
                     _isNextSet = false;
                 }
@@ -69,7 +64,6 @@ namespace NexusMods.MnemonicDB.Storage.RocksDbBackend
                     
                     // Cache the current value from the inner enumerator
                     _key = _inner.Current;
-                    _value = _inner.ValueSpan;
                     _extraValue = _inner.ExtraValueSpan;
                 }
 
@@ -78,7 +72,6 @@ namespace NexusMods.MnemonicDB.Storage.RocksDbBackend
                 if (!_atEnd)
                 {
                     _nextKey = _inner.Current;
-                    _nextValue = _inner.ValueSpan;
                     _nextExtraValue = _inner.ExtraValueSpan;
                     _isNextSet = true;
                 }
@@ -110,7 +103,7 @@ namespace NexusMods.MnemonicDB.Storage.RocksDbBackend
 
         public KeyPrefix KeyPrefix => _key.Read<KeyPrefix>(0);
         public Ptr Current => _key;
-        public Ptr ValueSpan => _value;
+        public Ptr ValueSpan => _key.SliceFast(KeyPrefix.Size);
         public Ptr ExtraValueSpan => _extraValue;
     }
 }
