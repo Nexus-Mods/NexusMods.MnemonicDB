@@ -32,8 +32,26 @@ public unsafe struct PtrCache : IDisposable
             _rawData = (byte*)Marshal.AllocHGlobal(ptr.Length);
             _fullSize = ptr.Length;
         }
-        ptr.Span.CopyTo(new Span<byte>(_rawData, _usedSize));
         _usedSize = ptr.Length;
+        ptr.Span.CopyTo(new Span<byte>(_rawData, _usedSize));
+    }
+
+    /// <summary>
+    /// Swap the contents of this cache with another cache
+    /// </summary>
+    public void Swap(PtrCache other)
+    {
+        var tmpData = _rawData;
+        var tmpFullSize = _fullSize;
+        var tmpUsedSize = _usedSize;
+        
+        _rawData = other._rawData;
+        _fullSize = other._fullSize;
+        _usedSize = other._usedSize;
+        
+        other._rawData = tmpData;
+        other._fullSize = tmpFullSize;
+        other._usedSize = tmpUsedSize;
     }
 
     /// <inheritdoc />
