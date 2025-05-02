@@ -13,9 +13,11 @@ namespace NexusMods.MnemonicDB.Abstractions;
 public sealed class GlobalComparer : IComparer<byte[]>
 {
     private const ulong IndexMask = 0xFFUL << 40;
+    
     /// <summary>
     /// Compare two byte arrays that are prefixed by the index type
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
     {
         var prefixA = (KeyPrefix*)aPtr;

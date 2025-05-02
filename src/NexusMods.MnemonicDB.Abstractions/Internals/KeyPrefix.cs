@@ -26,26 +26,17 @@ public readonly record struct KeyPrefix
     /// </summary>
     public const int Size = 16;
 
-    [FieldOffset(0)] private readonly ulong _upper;
-    [FieldOffset(8)] private readonly ulong _lower;
-
-    /// <summary>
-    /// The upper 8 bytes of the key
-    /// </summary>
-    public ulong Upper => _upper;
-
-    /// <summary>
-    /// The lower 8 bytes of the key
-    /// </summary>
-    public ulong Lower => _lower;
-
+    [FieldOffset(0)] public readonly ulong Upper;
+    [FieldOffset(8)] public readonly ulong Lower;
+    
+    
     /// <summary>
     ///    Sets the key prefix to the given values
     /// </summary>
     public KeyPrefix(ulong upper, ulong lower)
     {
-        _upper = upper;
-        _lower = lower;
+        Upper = upper;
+        Lower = lower;
     }
 
     /// <summary>
@@ -62,8 +53,8 @@ public readonly record struct KeyPrefix
     /// </summary>
     public KeyPrefix(EntityId id, AttributeId attributeId, TxId txId, bool isRetract, ValueTag tags, IndexType index = IndexType.None)
     {
-        _upper = ((ulong)attributeId << 48) | ((ulong)txId & 0x000000FFFFFFFFFF) | ((ulong)index << 40);
-        _lower = ((ulong)id & 0xFF00000000000000) | (((ulong)id & 0x0000FFFFFFFFFFFF) << 8) | (isRetract ? 1UL : 0UL) | ((ulong)tags << 1);
+        Upper = ((ulong)attributeId << 48) | ((ulong)txId & 0x000000FFFFFFFFFF) | ((ulong)index << 40);
+        Lower = ((ulong)id & 0xFF00000000000000) | (((ulong)id & 0x0000FFFFFFFFFFFF) << 8) | (isRetract ? 1UL : 0UL) | ((ulong)tags << 1);
     }
 
     /// <summary>
@@ -73,8 +64,8 @@ public readonly record struct KeyPrefix
     /// </summary>
     public IndexType Index
     {
-        get => (IndexType)((_upper >> 40) & 0xFF);
-        init => _upper = (_upper & 0xFFFF00FFFFFFFFFF) | ((ulong)value << 40);
+        get => (IndexType)((Upper >> 40) & 0xFF);
+        init => Upper = (Upper & 0xFFFF00FFFFFFFFFF) | ((ulong)value << 40);
     }
     
 
@@ -85,10 +76,10 @@ public readonly record struct KeyPrefix
     {
         get
         {
-            var val = _lower & 0xFF00000000000000 | ((_lower >> 8) & 0x0000FFFFFFFFFFFF);
+            var val = Lower & 0xFF00000000000000 | ((Lower >> 8) & 0x0000FFFFFFFFFFFF);
             return Unsafe.As<ulong, EntityId>(ref val);
         }
-        init => _lower = (_lower & 0xFF) | ((ulong)value & 0xFF00000000000000) | (((ulong)value & 0x0000FFFFFFFFFFFF) << 8);
+        init => Lower = (Lower & 0xFF) | ((ulong)value & 0xFF00000000000000) | (((ulong)value & 0x0000FFFFFFFFFFFF) << 8);
     }
     
     /// <summary>
@@ -96,8 +87,8 @@ public readonly record struct KeyPrefix
     /// </summary>
     public bool IsRetract
     {
-        get => (_lower & 1) == 1;
-        init => _lower = value ? _lower | 1UL : _lower & ~1UL;
+        get => (Lower & 1) == 1;
+        init => Lower = value ? Lower | 1UL : Lower & ~1UL;
     }
 
     /// <summary>
@@ -105,8 +96,8 @@ public readonly record struct KeyPrefix
     /// </summary>
     public ValueTag ValueTag
     {
-        get => (ValueTag)((_lower >> 1) & 0x7F);
-        init => _lower = (_lower & 0xFFFFFFFFFFFFFF01) | ((ulong)value << 1);
+        get => (ValueTag)((Lower >> 1) & 0x7F);
+        init => Lower = (Lower & 0xFFFFFFFFFFFFFF01) | ((ulong)value << 1);
     }
 
     /// <summary>
@@ -116,10 +107,10 @@ public readonly record struct KeyPrefix
     {
         get
         {
-            var val = (ushort)(_upper >> 48);
+            var val = (ushort)(Upper >> 48);
             return Unsafe.As<ushort, AttributeId>(ref val);
         }
-        init => _upper = (_upper & 0x0000FFFFFFFFFFFF) | ((ulong)value << 48);
+        init => Upper = (Upper & 0x0000FFFFFFFFFFFF) | ((ulong)value << 48);
     }
 
     /// <summary>
@@ -130,10 +121,10 @@ public readonly record struct KeyPrefix
     {
         get
         {
-            var id = PartitionId.Transactions.MakeEntityId(_upper & 0x000000FFFFFFFFFF).Value;
+            var id = PartitionId.Transactions.MakeEntityId(Upper & 0x000000FFFFFFFFFF).Value;
             return Unsafe.As<ulong, TxId>(ref id);
         }
-        init => _upper = (_upper & 0xFFFFFF0000000000) | ((ulong)value & 0x000000FFFFFFFFFF);
+        init => Upper = (Upper & 0xFFFFFF0000000000) | ((ulong)value & 0x000000FFFFFFFFFF);
     }
 
     /// <inheritdoc />
@@ -167,7 +158,7 @@ public readonly record struct KeyPrefix
     /// <summary>
     /// Returns true if this key is valid
     /// </summary>
-    public bool IsValid => _upper != 0;
+    public bool IsValid => Upper != 0;
 
     #endregion
 }
