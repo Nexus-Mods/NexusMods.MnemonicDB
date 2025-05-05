@@ -31,12 +31,16 @@ internal class ModelAnalyzer
     public string Name { get; set; } = "";
     public INamespaceSymbol Namespace { get; set; } = null!;
 
+    public INamedTypeSymbol ClassSymbol => _classSymbol;
+
     internal List<AnalyzedAttribute> Attributes { get; } = new();
     
     internal List<AnalyzedBackReferenceAttribute> BackReferences { get; } = new();
 
     public List<INamedTypeSymbol> Includes { get; set; } = new();
     public string Comments { get; set; } = "";
+
+    public List<AnalyzedAttribute> IncludedAttributes { get; } = [];
 
     #endregion
 
@@ -93,9 +97,18 @@ internal class ModelAnalyzer
         {
             foreach (var attribute in attributeList.Attributes)
             {
-                var attributeSymbol = ModelExtensions.GetSymbolInfo(_compilation.GetSemanticModel(attribute.SyntaxTree), attribute).Symbol as IMethodSymbol;
+                var semanticModel = _compilation.GetSemanticModel(attribute.SyntaxTree);
+                var symbolInfo = ModelExtensions.GetSymbolInfo(semanticModel, attribute);
 
-                if (attributeSymbol != null && SymbolEqualityComparer.Default.Equals(attributeSymbol.ContainingType.OriginalDefinition, _includesTypeSymbol))
+                // NOTE(erri120): Symbol can be rejected with the reason NotAnAttributeType in valid builds but can occur
+                // due to ordering. In either case, it's fine if we use the first rejected symbol.
+                var attributeSymbol = symbolInfo.Symbol as IMethodSymbol;
+                if (attributeSymbol is null && symbolInfo is { CandidateReason: CandidateReason.NotAnAttributeType, CandidateSymbols.Length: 1 })
+                {
+                    attributeSymbol = symbolInfo.CandidateSymbols[0] as IMethodSymbol;
+                }
+
+                if (attributeSymbol is not null && SymbolEqualityComparer.Default.Equals(attributeSymbol.ContainingType.OriginalDefinition, _includesTypeSymbol))
                 {
                     var typeArgumentSyntax = ((GenericNameSyntax)attribute.Name).TypeArgumentList.Arguments[0];
                     var typeSymbol = ModelExtensions.GetTypeInfo(_compilation.GetSemanticModel(typeArgumentSyntax.SyntaxTree), typeArgumentSyntax).Type;
@@ -146,6 +159,8 @@ internal class ModelAnalyzer
                     Markers = markers,
                     Comments = comments
                 };
+
+                analyzedAttribute.Cref = $"{Name}.{analyzedAttribute.ContextualName}";
 
                 if (SymbolEqualityComparer.Default.Equals(fieldSymbol.Type.OriginalDefinition, _referenceAttributeTypeSymbol))
                 {
