@@ -28,7 +28,7 @@ public readonly struct EntityIds : ISegment<EntityId>, IReadOnlyCollection<Entit
     /// <summary>
     /// Builds the segment of this type from the given builder
     /// </summary>
-    public static Memory<byte> Build(in IndexSegmentBuilder builder)
+    public static Memory<byte> Build<T>(in T builder) where T : IIndexSegmentBuilder, allows ref struct
     {
         return builder.Build<EntityId>();
     }

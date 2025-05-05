@@ -15,7 +15,8 @@ public class OffsetColumn : IColumn
     
     public unsafe int FixedSize => sizeof(Offset);
     public Type ValueType => typeof(Offset);
-    public void Extract(ReadOnlySpan<byte> src, Span<byte> dst, PooledMemoryBufferWriter writer)
+    public void Extract(ReadOnlySpan<byte> src, Span<byte> dst,
+        PooledMemoryBufferWriter writer)
     {
         var valueSize = src.Length - KeyPrefix.Size;
         var offset = writer.Length;

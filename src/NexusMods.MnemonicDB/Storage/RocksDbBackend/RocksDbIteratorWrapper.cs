@@ -5,7 +5,7 @@ using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-internal struct RocksDbIteratorWrapper : IRefDatomPeekingEnumerator, ILowLevelIterator
+internal struct RocksDbIteratorWrapper : ILowLevelIterator, IRefDatomPeekingEnumerator
 {
     private Ptr _key;
     private bool _started;
@@ -42,29 +42,6 @@ internal struct RocksDbIteratorWrapper : IRefDatomPeekingEnumerator, ILowLevelIt
         return false;
     }
 
-    public unsafe bool TryGetRetractionId(out TxId id)
-    {
-        _iterator.Next();
-        if (!_iterator.Valid())
-        {
-            _iterator.Prev();
-            id = default;
-            return false;
-        }
-        var keyPtr = Native.Instance.rocksdb_iter_key(_iterator.Handle, out var keyLen);
-        var prefix = KeyPrefix.Read(new ReadOnlySpan<byte>((byte*)keyPtr, (int)keyLen));
-        _iterator.Prev();
-        
-        if (!prefix.IsRetract)
-        {
-            id = default;
-            return false;
-        }
-        
-        // The way indexes are sorted, there's never a case where a retraction comes after an assert that it is not retraction for
-        id = prefix.T;
-        return true;
-    }
 
     public KeyPrefix KeyPrefix => _key.Read<KeyPrefix>(0);
     public Ptr Current => _key;
@@ -78,13 +55,24 @@ internal struct RocksDbIteratorWrapper : IRefDatomPeekingEnumerator, ILowLevelIt
             return new Ptr((byte*)vPtr, (int)vLen);
         }
     }
-    
-    
+
+    public bool TryGetRetractionId(out TxId id)
+    {
+        throw new NotImplementedException();
+    }
+
+
     public void SeekTo(ReadOnlySpan<byte> span) => 
         _iterator.Seek(span);
 
-    public void SeekToPrev(ReadOnlySpan<byte> span) => 
-        _iterator.SeekForPrev(span);
+    public void SeekToPrev(ReadOnlySpan<byte> span)
+    {
+        _iterator.Seek(span);
+        if (!_iterator.Valid())
+            _iterator.SeekToLast();
+        else
+            _iterator.Prev();
+    }
 
     public void Next() => 
         _iterator.Next();

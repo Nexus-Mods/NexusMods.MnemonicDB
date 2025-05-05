@@ -28,7 +28,7 @@ public interface ISegment<TValue1> : IHaveColumn<TValue1>
     /// <summary>
     /// Builds the segment of this type from the given builder
     /// </summary>
-    public static Memory<byte> Build(in IndexSegmentBuilder builder)
+    public static Memory<byte> Build<T>(in T builder) where T : IIndexSegmentBuilder
     {
         return builder.Build<TValue1>();
     }

@@ -12,7 +12,8 @@ public abstract class ASimpleColumn<T> : IColumn
     public unsafe int FixedSize => sizeof(T);
     public Type ValueType => typeof(T);
 
-    public void Extract(ReadOnlySpan<byte> src, Span<byte> dst, PooledMemoryBufferWriter writer)
+    public void Extract(ReadOnlySpan<byte> src, Span<byte> dst,
+        PooledMemoryBufferWriter writer)
     {
         var prefix = KeyPrefix.Read(src);
         var value = GetValue(prefix);

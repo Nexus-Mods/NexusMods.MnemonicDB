@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using DynamicData;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments.Columns;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using Reloaded.Memory.Extensions;
 
@@ -16,13 +13,13 @@ namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 /// <summary>
 /// A builder for constructing an index segment
 /// </summary>
-public readonly struct IndexSegmentBuilder : IDisposable
+public readonly struct IndexSegmentBuilder : IIndexSegmentBuilder, IDisposable
 {
     private readonly List<int> _offsets;
     private readonly PooledMemoryBufferWriter _data;
     private readonly AttributeCache _attributeCache;
 
-    private static readonly Memory<byte> Empty;
+    internal static readonly Memory<byte> Empty;
     
     static IndexSegmentBuilder()
     {
@@ -89,8 +86,8 @@ public readonly struct IndexSegmentBuilder : IDisposable
     /// <summary>
     /// Add a datom to the segment
     /// </summary>
-    public void Add<TValue, TAttribute>(EntityId entityId, TAttribute attribute, TValue value, TxId txId, bool isRetract)
-    where TAttribute : IWritableAttribute<TValue>
+    public void Add<TValue, TAttribute>(EntityId entityId, TAttribute attribute, TValue value, TxId txId, bool isRetract) 
+        where TAttribute : IWritableAttribute<TValue>
     {
         _offsets.Add(_data.Length);
         attribute.Write(entityId, _attributeCache, value, txId, isRetract, _data);
@@ -111,7 +108,7 @@ public readonly struct IndexSegmentBuilder : IDisposable
     /// </summary>
     public void Add<TValue, TLowLevel, TSerializer>(EntityId entityId,
         Attribute<TValue, TLowLevel, TSerializer> attribute, TValue value, bool isRetract = false)
-        where TSerializer : IValueSerializer<TLowLevel>
+        where TSerializer : IValueSerializer<TLowLevel> where TValue : notnull
     {
         _offsets.Add(_data.Length);
         attribute.Write(entityId, _attributeCache, value, TxId.Tmp, isRetract, _data);
@@ -121,10 +118,22 @@ public readonly struct IndexSegmentBuilder : IDisposable
     /// Adds a datom to the segment for the tmp transaction, with the given assert flag
     /// </summary>
     public void Add<TValue, TAttribute>(EntityId entityId, TAttribute attribute, TValue value, bool isRetract)
-    where TAttribute : IWritableAttribute<TValue>
+        where TAttribute : IWritableAttribute<TValue>
     {
         _offsets.Add(_data.Length);
         attribute.Write(entityId, _attributeCache, value, TxId.Tmp, isRetract, _data);
+    }
+    
+    
+    /// <summary>
+    /// Adds a datom to the segment for the tmp transaction, with the given assert flag
+    /// </summary>
+    public void Add(EntityId e, AttributeId a, ValueTag valueTag, ReadOnlySpan<byte> value, bool isRetract)
+    {
+        _offsets.Add(_data.Length);
+        var prefix = new KeyPrefix(e, a, TxId.Tmp, isRetract, valueTag);
+        _data.Write(prefix);
+        _data.Write(value);
     }
 
     /// <summary>
@@ -172,30 +181,6 @@ public readonly struct IndexSegmentBuilder : IDisposable
     {
         _offsets.Add(_data.Length);
         return new IndexSegment(_data.GetWrittenSpan(), _offsets.ToArray(), _attributeCache);
-    }
-
-    /// <summary>
-    /// Build a segment with the given columns
-    /// </summary>
-    public Memory<byte> Build<TValue1>() 
-    {
-        return Build(ColumnDefinitions.ColumnFor<TValue1>());
-    }
-    
-    /// <summary>
-    /// Build a segment with the given columns
-    /// </summary>
-    public Memory<byte> Build<TValue1, TValue2>() 
-    {
-        return Build(ColumnDefinitions.ColumnFor<TValue1>(), ColumnDefinitions.ColumnFor<TValue2>());
-    }
-
-    /// <summary>
-    /// Build a segment with the given columns
-    /// </summary>
-    public Memory<byte> Build<TValue1, TValue2, TValue3>() 
-    {
-        return Build(ColumnDefinitions.ColumnFor<TValue1>(), ColumnDefinitions.ColumnFor<TValue2>(), ColumnDefinitions.ColumnFor<TValue3>());
     }
 
     /// <summary>

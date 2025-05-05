@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
@@ -42,7 +43,7 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
         datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
     }
 
-    public void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false) where TSerializer : IValueSerializer<TLowLevel>
+    public void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false) where TSerializer : IValueSerializer<TLowLevel> where TVal : notnull
     {
         datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
     }
@@ -50,6 +51,11 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
     public void Add(EntityId entityId, ReferencesAttribute attribute, IEnumerable<EntityId> ids)
     {
         throw new NotSupportedException();
+    }
+
+    public void Add(EntityId e, AttributeId a, ValueTag valueTag, ReadOnlySpan<byte> valueSpan, bool isRetract = false)
+    {
+        datoms.Add(e, a, valueTag, valueSpan, isRetract);
     }
 
     /// <inheritdoc />

@@ -2,6 +2,8 @@
 using System.Buffers;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using NexusMods.Cascade;
+using NexusMods.Cascade.Flows;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
@@ -13,10 +15,9 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// <summary>
 ///     Interface for a specific attribute
 /// </summary>
-public abstract class Attribute<TValueType, TLowLevelType, TSerializer> : 
-      IWritableAttribute<TValueType>,
-      IReadableAttribute<TValueType>
-      where TSerializer : IValueSerializer<TLowLevelType>
+public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> : IAttribute<TValueType>, IAttributeFlow<TValueType>
+    where TValueType : notnull
+    where TSerializer : IValueSerializer<TLowLevelType>
 {
     
     /// <summary>
@@ -35,6 +36,35 @@ public abstract class Attribute<TValueType, TLowLevelType, TSerializer> :
         Cardinalty = cardinality;
         IsIndexed = isIndexed;
         NoHistory = noHistory;
+        StepFn = AttributeStepFn;
+        Upstream = [Cascade.Query.Db];
+        DebugInfo = new DebugInfo
+        {
+            Name = "MnemonicDB Attr",
+            Expression = Id.ToString()
+        };
+        AttributeWithTxIdFlow = new UnaryFlow<IDb,(EntityId Id, TValueType Value, EntityId TxId)>
+        {
+            DebugInfo = new()
+            {
+                Name = "MnemonicDB AttrWithTx",
+                Expression = Id!.ToString()
+            },
+            Upstream = [Cascade.Query.Db],
+            StepFn = AttributeWithTxIdStepFn,
+        };
+        
+        AttributeHistoryFlow = new UnaryFlow<IDb,(EntityId Id, TValueType Value, EntityId TxId)>
+        {
+            DebugInfo = new()
+            {
+                Name = "MnemonicDB Attribute History",
+                Expression = Id!.ToString()
+            },
+            Upstream = [Cascade.Query.Db],
+            StepFn = AttributeHistoryStepFn,
+        };
+        
     }
 
     /// <summary>

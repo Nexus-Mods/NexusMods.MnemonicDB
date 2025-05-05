@@ -15,5 +15,5 @@ public interface IColumn
     /// <summary>
     /// Extract the segment part from the source datom segment and write it to the destination buffer.
     /// </summary>
-    public void Extract(ReadOnlySpan<byte> src, Span<byte> dst, PooledMemoryBufferWriter writer);
+    public void Extract(ReadOnlySpan<byte> keySpan, Span<byte> dst, PooledMemoryBufferWriter writer);
 }

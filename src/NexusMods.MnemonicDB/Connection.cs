@@ -10,7 +10,10 @@ using System.Threading.Tasks;
 using DynamicData;
 using Jamarino.IntervalTree;
 using Microsoft.Extensions.Logging;
+using NexusMods.Cascade;
+using NexusMods.Cascade.Abstractions;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Cascade;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.EventTypes;
@@ -62,6 +65,9 @@ public sealed class Connection : IConnection
     /// </summary>
     public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers, bool readOnlyMode = false)
     {
+        Topology = new Topology();
+        _dbInlet = Topology.Intern(Query.Db);
+        
         ServiceProvider = provider;
         AttributeCache = store.AttributeCache;
         AttributeResolver = new AttributeResolver(provider, AttributeCache);
@@ -221,8 +227,8 @@ public sealed class Connection : IConnection
             db.Connection = this;
             var tcs = new TaskCompletionSource();
             _pendingEvents.Writer.TryWrite(new NewRevisionEvent(prev, db, tcs));
-            prev = db;
             tcs.Task.Wait();
+            _dbInlet.Values = [db];
         });
     }
 
@@ -307,6 +313,10 @@ public sealed class Connection : IConnection
 
     /// <inheritdoc />
     public IDatomStore DatomStore => _store;
+
+
+    /// <inheritdoc />
+    public Topology Topology { get; }
 
     /// <inheritdoc />
     public IDb Db
@@ -468,6 +478,7 @@ public sealed class Connection : IConnection
     }
 
     private bool _isDisposed;
+    private readonly InletNode<IDb> _dbInlet;
 
     /// <inheritdoc />
     public void Dispose()

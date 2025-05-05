@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -15,11 +16,16 @@ public sealed class EComparer : IElementComparer
     {
         return aPrefix->E.CompareTo(bPrefix->E);
     }
+    
+    private const ulong EMask = 0xFFFFFFFFFFFFFF00UL;
 
     /// <inheritdoc />
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
     {
-        return ((KeyPrefix*)aPtr)->E.CompareTo(((KeyPrefix*)bPtr)->E);
+        var aVal = ((KeyPrefix*)aPtr)->Lower & EMask;
+        var bVal = ((KeyPrefix*)bPtr)->Lower & EMask;
+        return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
     }
 
     /// <inheritdoc />

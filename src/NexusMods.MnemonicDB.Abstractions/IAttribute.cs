@@ -2,6 +2,8 @@
 using System.Buffers;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using NexusMods.Cascade;
+using NexusMods.Cascade.Structures;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -105,4 +107,36 @@ public interface IReadableAttribute<out T> : IAttribute
     /// Reads the high level value from the given span
     /// </summary>
     public T ReadValue(ReadOnlySpan<byte> span, ValueTag tag, AttributeResolver resolver);
+}
+
+
+/// <summary>
+/// Combiner interface for both readable and writable attributes
+/// </summary>
+public interface IAttribute<T> : IReadableAttribute<T>, IWritableAttribute<T>
+{
+    
+}
+
+public interface IAttributeFlow<T> where T : notnull
+{
+    /// <summary>
+    /// A flow that emits the current value of the attribute for every entity along with the transaction id of the
+    /// matching datom. 
+    /// </summary>
+    public Flow<(EntityId Id, T Value, EntityId TxId)> AttributeWithTxIdFlow { get; }
+    
+    /// <summary>
+    /// A flow that emits all revisions of the attribute for every entity
+    /// </summary>
+    public Flow<(EntityId Id, T Value, EntityId TxId)> AttributeHistoryFlow { get; }
+
+    /// <summary>
+    /// Like AttributeHistoryFlow, but also includes another attribute from the same entity and the same TxId. This is
+    /// required in some cases to avoid using `.AsOf` inside a flow.
+    /// </summary>
+    public Flow<(EntityId Id, T Value, EntityId TxId, TOther Other)> AttributeHistoryFlowWithOther<TOther>(
+        IReadableAttribute<TOther> other);
+    
+    public Flow<KeyedValue<EntityId, T>> FlowFor(Flow<IDb> dbFlow);
 }

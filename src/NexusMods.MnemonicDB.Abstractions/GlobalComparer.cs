@@ -12,26 +12,32 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// </summary>
 public sealed class GlobalComparer : IComparer<byte[]>
 {
+    private const ulong IndexMask = 0xFFUL << 40;
+    
     /// <summary>
     /// Compare two byte arrays that are prefixed by the index type
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen)
     {
         var prefixA = (KeyPrefix*)aPtr;
         var prefixB = (KeyPrefix*)bPtr;
         
-        var cmp = ((byte)prefixA->Index).CompareTo((byte)prefixB->Index);
+        var aIndex = prefixA->Upper & IndexMask;
+        var bIndex = prefixB->Upper & IndexMask;
+        
+        var cmp = aIndex.CompareTo(bIndex);
         if (cmp != 0)
             return cmp;
 
-        return prefixA->Index switch
+        return (IndexType)(aIndex >> 40)  switch
         {
-            IndexType.TxLog => TxLogComparator.Compare(aPtr, aLen, bPtr, bLen),
             IndexType.EAVTCurrent or IndexType.EAVTHistory => EAVTComparator.Compare(aPtr, aLen, bPtr, bLen),
             IndexType.AEVTCurrent or IndexType.AEVTHistory => AEVTComparator.Compare(aPtr, aLen, bPtr, bLen),
             IndexType.AVETCurrent or IndexType.AVETHistory => AVETComparator.Compare(aPtr, aLen, bPtr, bLen),
             IndexType.VAETCurrent or IndexType.VAETHistory => VAETComparator.Compare(aPtr, aLen, bPtr, bLen),
-            _ => ThrowArgumentOutOfRangeException()
+            IndexType.TxLog => TxLogComparator.Compare(aPtr, aLen, bPtr, bLen),
+            _ => -1,
         };
     }
 

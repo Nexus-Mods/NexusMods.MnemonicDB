@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
@@ -43,12 +44,17 @@ public interface ITransaction : IDisposable
     ///    Adds a new datom to the transaction
     /// </summary>
     void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false)
-        where TSerializer : IValueSerializer<TLowLevel>;
+        where TSerializer : IValueSerializer<TLowLevel> where TVal : notnull;
     
     /// <summary>
     ///     Adds datoms for adding the given ids to the transaction under the given attribute
     /// </summary>
     void Add(EntityId entityId, ReferencesAttribute attribute, IEnumerable<EntityId> ids);
+    
+    /// <summary>
+    /// Adds a new datom using spans for the 
+    /// </summary>
+    void Add(EntityId e, AttributeId a, ValueTag valueTag, ReadOnlySpan<byte> valueSpan, bool isRetract = false);
 
     /// <summary>
     /// Adds a transactor function to the transaction

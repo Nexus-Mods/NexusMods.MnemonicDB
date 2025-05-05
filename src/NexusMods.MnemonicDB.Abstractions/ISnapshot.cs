@@ -16,6 +16,11 @@ public interface ISnapshot : IDatomsIndex
     /// the low level iterator types can be injected into the DBs.
     /// </summary>
     public IDb MakeDb(TxId txId, AttributeCache attributeCache, IConnection? connection = null);
+
+    /// <summary>
+    /// Get the max id currently used in the given partition, returns false if not found
+    /// </summary>
+    public bool TryGetMaxIdInPartition(PartitionId partitionId, out EntityId id);
 }
 
 

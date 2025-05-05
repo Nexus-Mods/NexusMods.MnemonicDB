@@ -21,7 +21,7 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
     public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
     {
         using var builder = new IndexSegmentBuilder(AttributeCache);
-        using var iterator = GetRefDatomEnumerator();
+        using var iterator = GetRefDatomEnumerator(descriptor is SliceDescriptor);
         builder.AddRange(iterator, descriptor);
         return builder.Build();
     }
@@ -84,5 +84,5 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
     }
 
     /// <inheritdoc />
-    public abstract TRefEnumerator GetRefDatomEnumerator();
+    public abstract TRefEnumerator GetRefDatomEnumerator(bool totalOrder = false);
 }

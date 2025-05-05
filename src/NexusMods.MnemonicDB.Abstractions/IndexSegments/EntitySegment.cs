@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using Reloaded.Memory.Extensions;
 
@@ -59,6 +60,39 @@ public readonly struct EntitySegment : IEnumerable<Datom>
         var valueTag = _data.GetValueTypes()[i];
         value = attr.ReadValue(dataSpan, valueTag, _db.Connection.AttributeResolver);
         return true;
+    }
+
+    /// <summary>
+    /// Returns true if the value/attribute and entity represented by the datom is in this segment
+    /// </summary>
+    public unsafe bool Contains(in AVData avData)
+    {
+        var index = FirstOffsetOf(avData.A);
+        if (index == -1)
+            return false;
+
+        fixed (byte* aPtr = avData.Value.Span)
+        {
+            for (var i = index; i < _data.GetCount(); i++)
+            {
+                if (avData.A != _data.GetAttributeIds()[i])
+                    return false;
+                
+                var otherType = _data.GetValueTypes()[i];
+                if (avData.ValueType != otherType)
+                    return false;
+                
+                var valueSpan = _data.GetOffsets()[i].GetSpan(_data);
+                fixed (byte* bPtr = valueSpan)
+                {
+                    var cmp = avData.ValueType.Compare(aPtr, avData.Value.Span.Length, bPtr, valueSpan.Length);
+                    if (cmp == 0)
+                        return true;
+                }
+            }
+        }
+
+        return false;
     }
 
 
@@ -133,4 +167,55 @@ public readonly struct EntitySegment : IEnumerable<Datom>
             yield return resolver.Resolve(datom);
         }
     }
+    
+    /// <summary>
+    /// Returns a very light weight enumerable for the AV data in this segment. Unlike the normal enumerator,
+    /// this doesn't return the datom nor re-query the database for the datom, but instead returns the attribute id,
+    /// value type and the value span.
+    /// </summary>
+    public AVEnumerable GetAVEnumerable() => new(this);
+
+    public struct AVEnumerable(EntitySegment segment)
+    {
+        public AVEnumerator GetEnumerator() => new(segment);
+    }
+
+    public ref struct AVEnumerator
+    {
+        private int _idx;
+        private readonly EntitySegment _segment;
+        private AVData _current;
+
+        public AVEnumerator(EntitySegment segment)
+        {
+            _idx = -1;
+            _segment = segment;
+        }
+
+        public bool MoveNext()
+        {
+            if (_idx + 1 >= _segment.Count)
+                return false;
+            _idx++;
+            _current = new AVData(_segment._data.GetAttributeIds()[_idx], _segment._data.GetValueTypes()[_idx], _segment._data.GetOffsets()[_idx].GetMemory(_segment._data));
+            return true;
+        }
+
+        public AVData Current => _current;
+    }
+
+    public readonly struct AVData
+    {
+        public AVData(AttributeId a, ValueTag valueType, ReadOnlyMemory<byte> valueSpan)
+        {
+            A = a;
+            ValueType = valueType;
+            Value = valueSpan;
+        }
+        
+        public readonly AttributeId A;
+        public readonly ValueTag ValueType;
+        public readonly ReadOnlyMemory<byte> Value;
+    }
 }
+

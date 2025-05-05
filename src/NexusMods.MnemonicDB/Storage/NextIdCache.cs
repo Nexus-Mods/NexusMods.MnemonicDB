@@ -57,24 +57,14 @@ public struct NextIdCache
             return partitionId.MakeEntityId(this[partition]);
         }
 
-        var descriptor = SliceDescriptor.Create(partitionId.MakeEntityId(0), 
-            partitionId.MakeEntityId(ulong.MaxValue))
-            .Reversed();
-
-        var lastEnt = snapshot.DatomsChunked(descriptor, 1)
-            .SelectMany(c => c)
-            .Select(d => d.E)
-            .FirstOrDefault(partitionId.MakeEntityId(0));
-
-        if (lastEnt.Partition != partitionId)
+        if (snapshot.TryGetMaxIdInPartition(partitionId, out var id))
         {
-            return partitionId.MakeEntityId(0);
+            this[partition] = id.Value;
+            return id;
         }
-        else
-        {
-            // Implicitly cache the last entity id
-            this[partition] = lastEnt.Value;
-            return lastEnt;
-        }
+        
+        // If we don't have a max id, we need to use the min id
+        this[partition] = 0;
+        return partitionId.MinValue;
     }
 }

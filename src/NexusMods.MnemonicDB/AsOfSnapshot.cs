@@ -1,4 +1,5 @@
-﻿using NexusMods.MnemonicDB.Abstractions;
+﻿using System;
+using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
@@ -17,14 +18,19 @@ internal class AsOfSnapshot(Snapshot inner, TxId asOfTxId, AttributeCache attrib
     {
         return new Db<AsOfSnapshot, ResultIterator>(this, txId, cache, connection);
     }
-    
-    public override ResultIterator GetRefDatomEnumerator()
+
+    public bool TryGetMaxIdInPartition(PartitionId partitionId, out EntityId id)
+    {
+        throw new NotSupportedException();
+    }
+
+    public override ResultIterator GetRefDatomEnumerator(bool totalOrder = false)
     {
         // I don't want to hear it, this looks like absolute garbage, but it's fast, and C# needs better generic support
         // and/or macros
         return new ResultIterator(
-            new TimeFilteredRetractionEnumerator<RocksDbIteratorWrapper>(inner.GetRefDatomEnumerator(), asOfTxId),
-            new TimeFilteredEnumerator<RocksDbIteratorWrapper>(inner.GetRefDatomEnumerator(), asOfTxId));
+            new TimeFilteredRetractionEnumerator<RocksDbIteratorWrapper>(inner.GetRefDatomEnumerator(totalOrder), asOfTxId),
+            new TimeFilteredEnumerator<RocksDbIteratorWrapper>(inner.GetRefDatomEnumerator(totalOrder), asOfTxId));
 
     }
 
