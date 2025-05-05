@@ -21,7 +21,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var flow = from p in File.Path
             select p;
 
-        var results = db.Topology.Outlet(flow);
+        using var results = await db.Topology.QueryAsync(flow);
 
         results.Should().NotBeEmpty();
     }
@@ -38,7 +38,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 .LeftInnerJoin(File.Hash)
                 .Select(r => (r.Key, r.Value.Item1, r.Value.Item2));
 
-        var results = db.Topology.Outlet(flow);
+        using var results = await db.Topology.QueryAsync(flow);
         
         results.Should().NotBeEmpty();
     }
@@ -57,7 +57,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 .Return(path, hash, path.Count());
         
         
-        var results = Connection.Topology.Outlet(query);
+        using var results = await Connection.Topology.QueryAsync(query);
         
         results.Should().NotBeEmpty();
         
@@ -69,7 +69,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 .Project(txId, t => t.ValuePortion, out var txNoPartition)
                 .Return(txNoPartition, e.Count());
         
-        var historyResults = Connection.Topology.Outlet(historyQuery);
+        using var historyResults = await Connection.Topology.QueryAsync(historyQuery);
 
         // Validate the results
         
