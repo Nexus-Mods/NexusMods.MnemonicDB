@@ -1,8 +1,14 @@
 ## Changelog
 
-### next
+### 0.9.123 - 2025-05-05
 
 * Improve performance when iterating over datoms in `EntitySegment`
+* Massively improved the initial seek performance of the RocksDB code. The backend now leverages bloom filters (on new blocks)
+to reduce the number of datom comparisons by a factor of 10-1000x
+* Massively improved iteration and lookup performance of the query routines
+* Optimized the most heavily used paths of the `GlobalCompare` code resulting in a 2x speedup on compare bound operations
+* Added Cascade query support
+* Backwards compatible with existing uses of the database
 
 ### 0.9.122 - 2025-03-26
 
