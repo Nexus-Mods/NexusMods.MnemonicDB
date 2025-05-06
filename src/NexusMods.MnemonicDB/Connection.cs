@@ -81,8 +81,7 @@ public sealed class Connection : IConnection
     private void ProcessEvents()
     {
         List<IEvent> events = new();
-        try
-        {
+        try {
             while (true)
             {
                 IEvent action;
@@ -387,10 +386,10 @@ public sealed class Connection : IConnection
     }
 
     /// <inheritdoc />
-    public async Task<ICommitResult> FlushAndCompact()
+    public async Task<ICommitResult> FlushAndCompact(bool verify = false)
     {
         var tx = new Transaction(this);
-        tx.Set(new FlushAndCompact());
+        tx.Set(new FlushAndCompact(verify));
         return await tx.Commit();
     }
 

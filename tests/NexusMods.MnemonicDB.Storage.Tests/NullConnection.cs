@@ -40,7 +40,8 @@ public class NullConnection : IConnection
         throw new NotSupportedException();
     }
 
-    public Task<ICommitResult> FlushAndCompact()
+
+    public Task<ICommitResult> FlushAndCompact(bool verify)
     {
         throw new NotSupportedException();
     }

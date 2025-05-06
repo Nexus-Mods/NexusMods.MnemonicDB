@@ -162,7 +162,7 @@ public readonly struct IndexSegmentBuilder : IIndexSegmentBuilder, IDisposable
         if (prefix.ValueTag == ValueTag.HashedBlob) 
             _data.Write(enumerator.ExtraValueSpan.Span);
     }
-
+    
     /// <summary>
     /// Adds all the items from the enumerator to the segment
     /// </summary>

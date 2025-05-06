@@ -39,5 +39,5 @@ public interface IStoreBackend : IDisposable
     /// Flushes all the logs to disk, and performs a compaction, recommended if you want to archive the database
     /// and move it somewhere else.
     /// </summary>
-    public void FlushAndCompact();
+    public void FlushAndCompact(bool verify);
 }

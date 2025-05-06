@@ -29,8 +29,8 @@ public static unsafe class Utf8Comparer
                 }
 
                 // case-insensitive ASCII compare
-                byte aUp = (byte)(a & 0xDF);
-                byte bUp = (byte)(b & 0xDF);
+                byte aUp = FoldAsciiToLower(a);
+                byte bUp = FoldAsciiToLower(b);
                 if (aUp != bUp)
                     return aUp < bUp ? -1 : 1;
 
@@ -52,8 +52,8 @@ public static unsafe class Utf8Comparer
 
             if (cpA < 128 && cpB < 128)
             {
-                byte ua = (byte)(cpA & 0xDF);
-                byte ub = (byte)(cpB & 0xDF);
+                byte ua = FoldAsciiToLower((byte)cpA);
+                byte ub = FoldAsciiToLower((byte)cpB);
                 if (ua != ub)
                     return ua < ub ? -1 : 1;
             }
@@ -69,6 +69,19 @@ public static unsafe class Utf8Comparer
         if (indexA < lenA) return 1;
         if (indexB < lenB) return -1;
         return 0;
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static byte FoldAsciiToLower(byte b)
+    {
+        // compute a mask = 0x20 if b ∈ ['A'..'Z'], else 0
+        //   x = (b - 'A') | ('Z' - b)
+        //   if b<'A' or b>'Z' then either term is negative → high bit set → x>>31 == -1 → ~(-1)==0
+        //   if 'A'<=b<='Z' then both terms>=0 → x>>31 == 0 → ~(0)==-1 → &0x20 == 0x20
+        int bb = b;
+        int x  = (bb - 'A') | ('Z' - bb);
+        int m  = ~(x >> 31) & 0x20;
+        return (byte)(bb + m);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
