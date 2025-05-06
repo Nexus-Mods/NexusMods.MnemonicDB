@@ -9,6 +9,8 @@ public static class Query
 {
     public static readonly Inlet<IDb> Db = new();
 
+    public static readonly Flow<(EntityId E, EntityId Tx)> LatestTxForEntity = new LatestTxForEntity(Db);
+
     internal static DbUpdate ToDbUpdate(ReadOnlySpan<Diff<IDb>> diffSet)
     {
         switch (diffSet.Length)

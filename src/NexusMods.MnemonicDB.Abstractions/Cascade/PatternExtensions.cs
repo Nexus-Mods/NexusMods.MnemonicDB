@@ -57,5 +57,14 @@ public static partial class PatternExtensions
     {
         return pattern.Match(attribute.AttributeHistoryFlowWithOther(other), entity, value, txId, otherValue);
     }
+
+    /// <summary>
+    /// A pattern that gets the latest TxId for the given entity, if the entity is updated, the pattern will be re-evaluated
+    /// </summary>
+    [GenerateLVarOverrides]
+    public static Pattern DbLatestTx(this Pattern pattern, LVar<EntityId> entity, LVar<EntityId> txId)
+    {
+        return pattern.Match(Query.LatestTxForEntity, entity, txId);
+    }
     
 }

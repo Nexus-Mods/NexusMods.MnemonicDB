@@ -22,6 +22,12 @@ public interface IDatomsIndex
         where TSliceDescriptor : ISliceDescriptor;
     
     /// <summary>
+    /// A lightweight datom segment doesn't load the entire set into memory.
+    /// </summary>
+    public ILightweightDatomSegment LightweightDatoms<TDescriptor>(TDescriptor descriptor, bool totalOrdered = true)
+        where TDescriptor : ISliceDescriptor;
+    
+    /// <summary>
     /// Get the entity segment for a specific entity id
     /// </summary>
     public EntitySegment GetEntitySegment(IDb db, EntityId entityId);

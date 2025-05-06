@@ -16,4 +16,5 @@ public interface IRefDatomEnumeratorFactory<out TRefEnumerator>
     /// </summary>
     [MustDisposeResource]
     public TRefEnumerator GetRefDatomEnumerator(bool totalOrdered);
+    
 }
