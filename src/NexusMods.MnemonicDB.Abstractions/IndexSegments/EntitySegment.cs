@@ -217,5 +217,12 @@ public readonly struct EntitySegment : IEnumerable<Datom>
         public readonly ValueTag ValueType;
         public readonly ReadOnlyMemory<byte> Value;
     }
+
+    public ReadOnlySpan<byte> GetValueSpan(int index, out ValueTag valueType)
+    {
+        var offset = _data.GetOffsets()[index];
+        valueType = _data.GetValueTypes()[index];
+        return offset.GetMemory(_data).Span;
+    }
 }
 

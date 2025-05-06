@@ -5,6 +5,7 @@ using NexusMods.Cascade.Patterns;
 using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Cascade;
+using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.File;
 
@@ -108,6 +109,38 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             (3, 9),
             // 1 hash in the second transaction
             (5, 1)
+        });
+
+    }
+
+    [Fact]
+    public async Task CanGetLatestTxForEntity()
+    {
+        await InsertExampleData();
+
+        var query = Pattern.Create()
+            .Db(out var e, File.ModId, out var mod)
+            .Db(mod, Mod.Loadout, out var loadout)
+            .DbLatestTx(e, out var txId)
+            .Return(loadout, txId.Max());
+
+        using var queryResults = await Connection.Topology.QueryAsync(query);
+        
+        var oldData = queryResults.ToList();
+        
+        // Update one hash to check that the queries update correctly
+        using var tx = Connection.BeginTransaction();
+        var ent = File.FindByPath(Connection.Db, "File1").First();
+        tx.Add(ent.Id, File.Hash, Hash.FromLong(0x42));
+        await tx.Commit();
+        
+        var newData = queryResults.ToList();
+
+        var diagram = Connection.Topology.Diagram();
+        await Verify(new
+        {
+            OldData = oldData.Select(row => row.ToString()).ToArray(),
+            NewData = newData.Select(row => row.ToString()).ToArray(),
         });
 
     }

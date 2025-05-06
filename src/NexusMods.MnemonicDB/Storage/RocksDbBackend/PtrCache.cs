@@ -18,6 +18,11 @@ public unsafe struct PtrCache : IDisposable
     /// Get the Ptr for this cache
     /// </summary>
     public Ptr Ptr => new(_rawData, _usedSize);
+    
+    /// <summary>
+    /// True if the cache is empty
+    /// </summary>
+    public bool IsNull => _rawData == null;
 
     /// <summary>
     /// Cop

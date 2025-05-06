@@ -90,7 +90,7 @@ public interface IConnection : IDisposable
     /// <summary>
     /// Flushes the in-memory transaction log to the database, and compacts the database to remove any unused space.
     /// </summary>
-    public Task<ICommitResult> FlushAndCompact();
+    public Task<ICommitResult> FlushAndCompact(bool verify = false);
 
     /// <summary>
     /// Update the database's schema with the given attributes.

@@ -65,7 +65,7 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// Finds all the datoms that have the given attribute with the given value.
     /// </summary>
     IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value);
-
+    
     /// <summary>
     /// Gets and caches all the models that point to the given entity via the given attribute.
     /// </summary>
@@ -126,4 +126,5 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// faster to run this method before accessing the provided models randomly.
     /// </summary>
     void BulkCache(EntityIds ids);
+    
 }

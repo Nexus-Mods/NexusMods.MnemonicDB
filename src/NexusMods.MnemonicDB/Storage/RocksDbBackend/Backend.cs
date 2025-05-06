@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Text;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.Paths;
 using RocksDbSharp;
@@ -71,7 +73,7 @@ public class Backend : IStoreBackend
             .SetEnv(_env.Handle);
 
         var tableOptions = new BlockBasedTableOptions()
-            .SetFilterPolicy(BloomFilterPolicy.Create(10, false));
+            .SetFilterPolicy(BloomFilterPolicy.Create(10,true));
 
         options.SetBlockBasedTableFactory(tableOptions);
         
@@ -89,10 +91,44 @@ public class Backend : IStoreBackend
     /// Flushes all the logs to disk, and performs a compaction, recommended if you want to archive the database
     /// and move it somewhere else.
     /// </summary>
-    public void FlushAndCompact()
+    public void FlushAndCompact(bool verify)
     {
+        if (verify)
+            VerifyOrdering();
         Db?.Flush(new FlushOptions().SetWaitForFlush(true));
-        Db?.CompactRange([0x00], [0xFF]);
+        Native.Instance.rocksdb_compact_range(Db!.Handle, IntPtr.Zero, 0, IntPtr.Zero, 0);
+        Db?.Flush(new FlushOptions().SetWaitForFlush(true));
+    }
+
+    private unsafe void VerifyOrdering()
+    {
+        using var iterator = Db!.NewIterator();
+        iterator.SeekToFirst();
+
+        var prevPtrCache = new PtrCache();
+        while (iterator.Valid())
+        {
+            var ptr = Native.Instance.rocksdb_iter_key(iterator.Handle, out var len);
+            var thisPtr = new Ptr((byte*)ptr,(int)len);
+            if (!prevPtrCache.IsNull)
+            {
+                var cmp= GlobalComparer.Compare(thisPtr.Base, thisPtr.Length, prevPtrCache.Ptr.Base, prevPtrCache.Ptr.Length);
+                if (cmp <= 0)
+                {
+                    var prevPrefix = prevPtrCache.Ptr.Read<KeyPrefix>(0);
+                    var thisPrefix = thisPtr.Read<KeyPrefix>(0);
+
+                    var sb = new StringBuilder();
+                    sb.Append($"Validation failed, ordering is not correct - result: {cmp}");
+                    sb.AppendLine($"    this: {thisPrefix} - index: {thisPrefix.Index} - type: {thisPrefix.ValueTag} - length: {thisPtr.Length}");
+                    sb.AppendLine($"    prev: {prevPrefix} - index: {prevPrefix.Index} - type: {prevPrefix.ValueTag} - length: {prevPtrCache.Ptr.Length}");
+                    
+                    throw new Exception(sb.ToString());
+                }
+            }
+            prevPtrCache.CopyFrom(thisPtr);
+            iterator.Next();
+        }
     }
 
     /// <inheritdoc />

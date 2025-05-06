@@ -1,6 +1,6 @@
 using System.Collections.Generic;
+using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
 
@@ -44,6 +44,20 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
             yield return builder.Build();
     }
 
+    /// <summary>
+    /// A lightweight datom segment doesn't load the entire set into memory.
+    /// </summary>
+    [MustDisposeResource]
+    public ILightweightDatomSegment LightweightDatoms<TDescriptor>(TDescriptor descriptor, bool totalOrdered = false)
+        where TDescriptor : ISliceDescriptor
+    {
+        var enumerator = GetRefDatomEnumerator(totalOrdered);
+        return new LightweightDatomSegment<TRefEnumerator, TDescriptor>(enumerator, descriptor);
+    }
+    
+    
+    
+    
     public virtual EntitySegment GetEntitySegment(IDb db, EntityId entityId)
     {
         using var builder = new IndexSegmentBuilder(AttributeCache);

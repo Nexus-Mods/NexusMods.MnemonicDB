@@ -45,6 +45,8 @@ public sealed partial class DatomStore : IDatomStore
     private IDb? _currentDb;
 
     private static readonly TimeSpan TransactionTimeout = TimeSpan.FromMinutes(120);
+    
+    private Dictionary<EntityId, IndexSegment> _avCache = new();
 
     /// <summary>
     /// Cached function to remap temporary entity ids to real entity ids
@@ -264,10 +266,11 @@ public sealed partial class DatomStore : IDatomStore
         {
             CurrentSnapshot = Backend.GetSnapshot();
             var lastTx = TxId.From(_nextIdCache.LastEntityInPartition(CurrentSnapshot, PartitionId.Transactions).Value);
-
+            
             if (lastTx.Value == TxId.MinValue)
             {
                 Logger.LogInformation("Bootstrapping the datom store no existing state found");
+                _currentDb = CurrentSnapshot.MakeDb(TxId.MinValue, _attributeCache);
                 using var builder = new IndexSegmentBuilder(_attributeCache);
                 var internalTx = new InternalTransaction(null!, builder);
                 AttributeDefinition.AddInitial(internalTx);
@@ -275,6 +278,7 @@ public sealed partial class DatomStore : IDatomStore
                 // Call directly into `Log` as the transaction channel is not yet set up
                 Log(new IndexSegmentTransaction(builder.Build()));
                 CurrentSnapshot = Backend.GetSnapshot();
+                _currentDb = CurrentSnapshot.MakeDb(_asOfTx, _attributeCache);
             }
             else
             {
@@ -388,6 +392,7 @@ public sealed partial class DatomStore : IDatomStore
         if (advanceTx)
             _asOfTx = _thisTx;
         
+        _avCache.Clear();
         // Update the snapshot
         CurrentSnapshot = Backend.GetSnapshot();
     }
@@ -673,58 +678,70 @@ public sealed partial class DatomStore : IDatomStore
         Duplicate
     }
 
-    private unsafe PrevState GetPreviousState(bool isRemapped, AttributeId attrId, ISnapshot snapshot, Datom span)
+    private unsafe PrevState GetPreviousState(bool isRemapped, AttributeId attrId, ISnapshot snapshot, Datom toFind)
     {
         if (isRemapped) return PrevState.NotExists;
 
-        var keyPrefix = span.Prefix;
+        var keyPrefix = toFind.Prefix;
+
+        if (!_avCache.TryGetValue(toFind.E, out var cached))
+        {
+            cached = _currentDb!.Datoms(SliceDescriptor.Create(keyPrefix.E));
+            _avCache.Add(toFind.E, cached);
+        }
 
         if (_attributeCache.IsCardinalityMany(attrId))
         {
-            var sliceDescriptor = SliceDescriptor.Exact(EAVTCurrent, span);
-            var found = snapshot.Datoms(sliceDescriptor)
-                .FirstOrDefault();
-            if (!found.Valid) return PrevState.NotExists;
-            if (found.E != keyPrefix.E || found.A != keyPrefix.A)
+            var indexOf = FirstIndexOf(cached, attrId);
+            if (indexOf < 0) 
                 return PrevState.NotExists;
 
-            var aSpan = found.ValueSpan;
-            fixed (byte* a = aSpan)
-            fixed (byte* b = span.ValueSpan)
+            for (var i = indexOf; i < cached.Count; i++)
             {
-                var cmp = Serializer.Compare(found.Prefix.ValueTag, a, aSpan.Length, keyPrefix.ValueTag, b, span.ValueSpan.Length);
-                return cmp == 0 ? PrevState.Duplicate : PrevState.NotExists;
+                var aPrefix = cached[i].Prefix;
+                var aSpan = cached[i].ValueSpan;
+
+                fixed (byte* a = aSpan)
+                fixed (byte* b = toFind.ValueSpan)
+                {
+                    var cmp = Serializer.Compare(aPrefix.ValueTag, a, aSpan.Length, keyPrefix.ValueTag, b, toFind.ValueSpan.Length);
+                    if (cmp == 0) return PrevState.Duplicate;
+                }
             }
+            return PrevState.NotExists;
         }
         else
         {
-
-            var descriptor = SliceDescriptor.Create(keyPrefix.E, keyPrefix.A);
-
-            var datom = snapshot.Datoms(descriptor)
-                .FirstOrDefault();
-            if (!datom.Valid) return PrevState.NotExists;
-
-            var currKey = datom.Prefix;
-            if (currKey.E != keyPrefix.E || currKey.A != keyPrefix.A)
+            var indexOf = FirstIndexOf(cached, attrId);
+            if (indexOf < 0)
                 return PrevState.NotExists;
-
-            var aSpan = datom.ValueSpan;
-            var bSpan = span.ValueSpan;
-            var bPrefix = span.Prefix;
+            
+            var aPrefix = cached[indexOf].Prefix;
+            var aSpan = cached[indexOf].ValueSpan;
+            
+            var bPrefix = toFind.Prefix;
+            var bSpan = toFind.ValueSpan;
             fixed (byte* a = aSpan)
             fixed (byte* b = bSpan)
             {
-                var cmp = Serializer.Compare(datom.Prefix.ValueTag, a, aSpan.Length, bPrefix.ValueTag, b, bSpan.Length);
+                var cmp = Serializer.Compare(aPrefix.ValueTag, a, aSpan.Length, bPrefix.ValueTag, b, bSpan.Length);
                 if (cmp == 0) return PrevState.Duplicate;
             }
 
             _retractWriter.Reset();
-            _retractWriter.Write(datom);
+            _retractWriter.Write(cached[indexOf]);
 
             return PrevState.Exists;
         }
 
+    }
+
+    private static int FirstIndexOf(IndexSegment segment, AttributeId atttrId)
+    {
+        for (var i = 0; i < segment.Count; i++)
+            if (segment[i].A == atttrId)
+                return i;
+        return -1;
     }
 
 
