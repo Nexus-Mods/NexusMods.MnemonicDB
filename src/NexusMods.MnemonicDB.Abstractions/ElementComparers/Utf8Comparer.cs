@@ -6,77 +6,29 @@ using System.Runtime.Intrinsics.X86;
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
-internal static unsafe class Utf8Comparer
+public static unsafe class Utf8Comparer
 {
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static int Utf8CaseInsensitiveCompare(byte* ptrA, int lenA, byte* ptrB, int lenB)
     {
         int i = 0;
         int minLength = Math.Min(lenA, lenB);
-        
-        if (Avx2.IsSupported)
-        {
-            Vector256<byte> caseMask = Vector256.Create((byte)0xDF);
-            var asciiThreshold = Vector256.Create((sbyte)0x7F);
 
-            while (i + 32 <= minLength)
-            {
-                var va = Avx.LoadVector256(ptrA + i);
-                var vb = Avx.LoadVector256(ptrB + i);
-
-                var combined = Avx2.Or(va, vb);
-                var isNonAscii = Avx2.CompareGreaterThan(combined.AsSByte(), asciiThreshold);
-                if (Avx2.MoveMask(isNonAscii.AsByte()) != 0)
-                    break;
-
-                var aMasked = Avx2.And(va, caseMask);
-                var bMasked = Avx2.And(vb, caseMask);
-
-                var cmp = Avx2.CompareEqual(aMasked, bMasked);
-                if (Avx2.MoveMask(cmp) != -1)
-                    break;
-
-                i += 32;
-            }
-        }
-        else if (Sse2.IsSupported)
-        {
-            Vector128<byte> caseMask = Vector128.Create((byte)0xDF);
-            var asciiThreshold = Vector128.Create((sbyte)0x7F);
-
-            while (i + 16 <= minLength)
-            {
-                var va = Sse2.LoadVector128(ptrA + i);
-                var vb = Sse2.LoadVector128(ptrB + i);
-
-                var combined = Sse2.Or(va, vb);
-                var isNonAscii = Sse2.CompareGreaterThan(combined.AsSByte(), asciiThreshold);
-                if (Sse2.MoveMask(isNonAscii.AsByte()) != 0)
-                    break;
-
-                var aMasked = Sse2.And(va, caseMask);
-                var bMasked = Sse2.And(vb, caseMask);
-
-                var cmp = Sse2.CompareEqual(aMasked, bMasked);
-                if (Sse2.MoveMask(cmp) != 0xFFFF)
-                    break;
-
-                i += 16;
-            }
-        }
-
-        // Byte-by-byte loop
-        while (i < lenA && i < lenB)
+        // byte-by-byte fast path: only skip pure ASCII
+        while (i < minLength)
         {
             byte a = ptrA[i], b = ptrB[i];
-            if (a == b)
-            {
-                i++;
-                continue;
-            }
 
-            if (a < 128 && b < 128)
+            // both ASCII?
+            if (a < 0x80 && b < 0x80)
             {
+                if (a == b)
+                {
+                    i++;
+                    continue;
+                }
+
+                // case-insensitive ASCII compare
                 byte aUp = (byte)(a & 0xDF);
                 byte bUp = (byte)(b & 0xDF);
                 if (aUp != bUp)
@@ -86,30 +38,31 @@ internal static unsafe class Utf8Comparer
                 continue;
             }
 
-            // Non-ASCII fallback
+            // as soon as we hit ANY non-ASCII, stop here and
+            // let the full code-point decoder handle it
             break;
         }
 
+        // fallback: decode full code points from i onward
         int indexA = i, indexB = i;
         while (indexA < lenA && indexB < lenB)
         {
-            var codePointA = DecodeUtf8CodePoint(ptrA, lenA, ref indexA);
-            var codePointB = DecodeUtf8CodePoint(ptrB, lenB, ref indexB);
+            uint cpA = DecodeUtf8CodePoint(ptrA, lenA, ref indexA);
+            uint cpB = DecodeUtf8CodePoint(ptrB, lenB, ref indexB);
 
-            if (codePointA < 128 && codePointB < 128)
+            if (cpA < 128 && cpB < 128)
             {
-                byte upperA = (byte)(codePointA & 0xDF);
-                byte upperB = (byte)(codePointB & 0xDF);
-                if (upperA != upperB)
-                    return upperA < upperB ? -1 : 1;
+                byte ua = (byte)(cpA & 0xDF);
+                byte ub = (byte)(cpB & 0xDF);
+                if (ua != ub)
+                    return ua < ub ? -1 : 1;
             }
             else
             {
-                var normA = Rune.ToUpperInvariant(new Rune(codePointA));
-                var normB = Rune.ToUpperInvariant(new Rune(codePointB));
-                int cmp = normA.Value.CompareTo(normB.Value);
-                if (cmp != 0)
-                    return cmp;
+                var rA = Rune.ToUpperInvariant(new Rune(cpA));
+                var rB = Rune.ToUpperInvariant(new Rune(cpB));
+                int c = rA.Value.CompareTo(rB.Value);
+                if (c != 0) return c;
             }
         }
 
