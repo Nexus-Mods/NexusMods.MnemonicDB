@@ -46,7 +46,7 @@ public static class NativePrefixExtractor
             case IndexType.VAETHistory:
                 // In this case, we need to get the reference id which is stored in the value
                 var eid = *((ulong*)(key + KeyPrefix.Size));
-                // Now we need to pack it, by removing the left-but-one byte from the ulong
+                // Now we need to pack it by removing the left-but-one byte from the ulong
                 var packed = ((eid & 0xFF00000000000000) >> 8) | (eid & 0x0000FFFFFFFFFFFF);
                 outVal |= packed;
                 break;
