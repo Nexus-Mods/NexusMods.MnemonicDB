@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.12.0 - 2025-05-08
+* Upgrade to the latest version of Cascade and allow for any version higher than the current
+
 ### 0.9.123 - 2025-05-05
 
 * Improve performance when iterating over datoms in `EntitySegment`
