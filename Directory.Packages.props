@@ -1,6 +1,6 @@
 <Project>
   <ItemGroup>
-    <PackageVersion Include="DynamicData" Version="9.0.4" />
+    <PackageVersion Include="DynamicData" Version="9.2.2" />
     <PackageVersion Include="Halgari.Jamarino.IntervalTree" Version="1.0.0-alpha" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
