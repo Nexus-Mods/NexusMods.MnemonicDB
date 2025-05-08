@@ -37,7 +37,7 @@ public class LatestTxForEntity : Flow<(EntityId Entity, EntityId Tx)>
                     return;
                 case UpdateType.Init:
                 {
-                    using var datoms = update.Next!.LightweightDatoms(SliceDescriptor.Create(IndexType.EAVTCurrent));
+                    using var datoms = update.Next!.LightweightDatoms(SliceDescriptor.Create(IndexType.EAVTCurrent), true);
                     var currentEId = EntityId.From(0);
                     // We have to assign it to something, and intially it will be 0
                     ref var currentSlot = ref currentEId;

@@ -5,8 +5,8 @@
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
     <PackageVersion Include="Microsoft.Extensions.ObjectPool" Version="9.0.3" />
-    <PackageVersion Include="NexusMods.Cascade" Version="0.7.0" />
-    <PackageVersion Include="NexusMods.Cascade.SourceGenerator" Version="0.7.0" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <PackageVersion Include="NexusMods.Cascade" Version="0.10.0" />
+    <PackageVersion Include="NexusMods.Cascade.SourceGenerator" Version="0.10.0" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <PackageVersion Include="Reloaded.Memory" Version="9.4.2" />
     <PackageVersion Include="RocksDB" Version="9.10.0.55496" />
     <PackageVersion Include="System.Reactive" Version="6.0.1" />
