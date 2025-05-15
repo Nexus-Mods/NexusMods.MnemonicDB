@@ -11,11 +11,9 @@ using DynamicData;
 using Jamarino.IntervalTree;
 using Microsoft.Extensions.Logging;
 using NexusMods.Cascade;
-using NexusMods.Cascade.Abstractions;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Cascade;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.EventTypes;
 using NexusMods.MnemonicDB.InternalTxFunctions;
 using NexusMods.MnemonicDB.Storage;
@@ -50,9 +48,9 @@ public sealed class Connection : IConnection
     
     // Pending events that need to be processed
     private readonly Channel<IEvent> _pendingEvents = Channel.CreateUnbounded<IEvent>();
-    
-    //private readonly BlockingCollection<IEvent> _pendingEvents = new(new ConcurrentQueue<IEvent>());
     private Thread _eventThread = null!;
+
+    private readonly CancellationTokenSource _cancellationTokenSource = new();
 
     private static readonly IndexType[] IndexTypes =
     [
@@ -80,24 +78,24 @@ public sealed class Connection : IConnection
 
     private void ProcessEvents()
     {
-        List<IEvent> events = new();
-        try {
-            while (true)
+        List<IEvent> events = [];
+        try
+        {
+            while (!_cancellationTokenSource.IsCancellationRequested)
             {
-                IEvent action;
-                var task = _pendingEvents.Reader.ReadAsync();
-                action = task.IsCompleted ? task.Result : task.AsTask().Result;
+                var task = _pendingEvents.Reader.ReadAsync(cancellationToken: _cancellationTokenSource.Token).AsTask();
+                var pendingEvent = task.IsCompleted ? task.Result : task.GetAwaiter().GetResult();
                 events.Clear();
-                events.Add(action);
+                events.Add(pendingEvent);
 
                 // We do some event compression here. We try to get as many events of the same type as possible, then
                 // process them all at once. For subscriptions this means we can prime them in parallel, and for unsubscribes
                 // we can remove them all at once, reducing overhead of some of the more expensive memoized data structures.
-                AddWhileOfSameType(events, _pendingEvents, action.GetType());
+                AddWhileOfSameType(events, _pendingEvents, pendingEvent.GetType());
 
                 try
                 {
-                    switch (action)
+                    switch (pendingEvent)
                     {
                         // Observers are done and want to be removed
                         case UnSubscribeEvent:
@@ -122,14 +120,18 @@ public sealed class Connection : IConnection
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Failed to process {Count} events of type {Event}", events.Count,
-                        action.GetType().Name);
+                        pendingEvent.GetType().Name);
                 }
 
             }
         }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
         catch (ChannelClosedException)
         {
-            // We're done
+            return;
         }
         catch (AggregateException ex)
         {
@@ -469,13 +471,6 @@ public sealed class Connection : IConnection
         }
     }
 
-    /// <inheritdoc />
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        _dbStreamDisposable?.Dispose();
-        return Task.CompletedTask;
-    }
-
     private bool _isDisposed;
     private readonly InletNode<IDb> _dbInlet;
 
@@ -484,9 +479,12 @@ public sealed class Connection : IConnection
     {
         if (_isDisposed) return;
 
+        _cancellationTokenSource.Cancel();
         _pendingEvents.Writer.TryComplete();
         _eventThread.Join();
 
+        _dbStreamDisposable?.Dispose();
+        
         _isDisposed = true;
     }
 }
