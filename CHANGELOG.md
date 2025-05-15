@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.13.0 - 2025-05-15
+* Tweak how Connection and DatomStore are shutdown to avoid deadlocks
+
 ### 0.12.0 - 2025-05-08
 * Upgrade to the latest version of Cascade and allow for any version higher than the current
 
