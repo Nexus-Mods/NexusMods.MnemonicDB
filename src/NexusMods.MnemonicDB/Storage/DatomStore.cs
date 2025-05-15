@@ -207,7 +207,6 @@ public sealed partial class DatomStore : IDatomStore
 
         _pendingTransactions.CompleteAdding();
         _shutdownToken.Cancel();
-        _loggerThread?.Join();
         _dbStream.Dispose();
         _writer.Dispose();
         _retractWriter.Dispose();

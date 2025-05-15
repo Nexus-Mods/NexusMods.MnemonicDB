@@ -84,9 +84,11 @@ public sealed class Connection : IConnection
         try {
             while (true)
             {
-                IEvent action;
-                var task = _pendingEvents.Reader.ReadAsync();
-                action = task.IsCompleted ? task.Result : task.AsTask().Result;
+                if (!_pendingEvents.Reader.WaitToReadAsync().AsTask().GetAwaiter().GetResult())
+                    break;
+                
+                if (!_pendingEvents.Reader.TryRead(out var action))
+                    break;
                 events.Clear();
                 events.Add(action);
 
@@ -468,14 +470,7 @@ public sealed class Connection : IConnection
             _logger.LogError(ex, "Failed to add missing attributes");
         }
     }
-
-    /// <inheritdoc />
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        _dbStreamDisposable?.Dispose();
-        return Task.CompletedTask;
-    }
-
+    
     private bool _isDisposed;
     private readonly InletNode<IDb> _dbInlet;
 
@@ -484,8 +479,8 @@ public sealed class Connection : IConnection
     {
         if (_isDisposed) return;
 
+        _dbStreamDisposable?.Dispose();
         _pendingEvents.Writer.TryComplete();
-        _eventThread.Join();
 
         _isDisposed = true;
     }
