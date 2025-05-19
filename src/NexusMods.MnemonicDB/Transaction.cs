@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
@@ -15,19 +15,19 @@ using NexusMods.MnemonicDB.InternalTxFunctions;
 
 namespace NexusMods.MnemonicDB;
 
-/// <inheritdoc />
-internal class Transaction : ISubTransaction
+internal sealed class Transaction : IMainTransaction, ISubTransaction 
 {
+    private readonly Transaction? _parentTransaction;
+
     private readonly Connection _connection;
     private readonly IndexSegmentBuilder _datoms;
     private readonly Lock _lock = new();
-
-    private readonly Transaction? _parentTransaction;
 
     private HashSet<ITxFunction>? _txFunctions;
     private List<ITemporaryEntity>? _tempEntities;
     private IInternalTxFunction? _internalTxFunction;
 
+    private bool _disposed;
     private bool _committed;
     private ulong _tempId = PartitionId.Temp.MakeEntityId(1).Value;
 
@@ -65,7 +65,7 @@ internal class Transaction : ISubTransaction
     {
         lock (_lock)
         {
-            ThrowIfCommitted();
+            CheckAccess();
             _datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
         }
     }
@@ -74,7 +74,7 @@ internal class Transaction : ISubTransaction
     {
         lock (_lock)
         {
-            ThrowIfCommitted();
+            CheckAccess();
             _datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
         }
     }
@@ -83,7 +83,7 @@ internal class Transaction : ISubTransaction
     {
         lock (_lock)
         {
-            ThrowIfCommitted();
+            CheckAccess();
             foreach (var id in ids)
             {
                 _datoms.Add(entityId, attribute, id, ThisTxId, isRetract: false);
@@ -95,7 +95,7 @@ internal class Transaction : ISubTransaction
     {
         lock (_lock)
         {
-            ThrowIfCommitted();
+            CheckAccess();
             _datoms.Add(e, a, valueTag, valueSpan, isRetract);
         }
     }
@@ -105,7 +105,7 @@ internal class Transaction : ISubTransaction
     {
         lock (_lock)
         {
-            ThrowIfCommitted();
+            CheckAccess();
             _datoms.Add(datom);
         }
     }
@@ -114,7 +114,7 @@ internal class Transaction : ISubTransaction
     {
         lock (_lock)
         {
-            ThrowIfCommitted();
+            CheckAccess();
 
             _txFunctions ??= [];
             _txFunctions?.Add(fn);
@@ -133,7 +133,7 @@ internal class Transaction : ISubTransaction
     {
         lock (_lock)
         {
-            ThrowIfCommitted();
+            CheckAccess();
             _tempEntities ??= [];
             _tempEntities.Add(entity);
         }
@@ -162,55 +162,9 @@ internal class Transaction : ISubTransaction
         return false;
     }
 
-    public async Task<ICommitResult> Commit()
+    public void CommitToParent()
     {
-        if (_parentTransaction is not null) throw new NotSupportedException("Sub-transactions can't be committed");
-
-        IndexSegment built;
-        lock (_lock)
-        {
-            if (_tempEntities is not null)
-            {
-                foreach (var entity in _tempEntities)
-                {
-                    entity.AddTo(this);
-                }
-            }
-
-            _committed = true;
-
-            // Build the datoms block here, so that future calls to add won't modify this while we're building
-            built = _datoms.Build();
-        }
-        
-        if (_internalTxFunction is not null)
-            return await _connection.Transact(_internalTxFunction);
-
-        if (_txFunctions is not null) 
-            return await _connection.Transact(new CompoundTransaction(built, _txFunctions) { Connection = _connection });
-        
-        return await _connection.Transact(new IndexSegmentTransaction(built));
-    }
-
-    [MustDisposeResource] public ISubTransaction CreateSubTransaction()
-    {
-        return new Transaction(_connection, parentTransaction: this);
-    }
-
-    public void Reset()
-    {
-        _datoms.Reset();
-
-        _tempEntities?.Clear();
-        _tempEntities = null;
-
-        _txFunctions?.Clear();
-        _txFunctions = null;
-    }
-
-    private void UpdateParent()
-    {
-        if (_parentTransaction is null) return;
+        Debug.Assert(_parentTransaction is not null);
 
         var indexSegment = _datoms.Build();
         foreach (var datom in indexSegment)
@@ -241,14 +195,63 @@ internal class Transaction : ISubTransaction
         }
     }
 
-    public void Dispose()
+    public async Task<ICommitResult> Commit()
     {
-        UpdateParent();
-        _datoms.Dispose();
+        Debug.Assert(_parentTransaction is null);
+
+        IndexSegment built;
+        lock (_lock)
+        {
+            if (_tempEntities is not null)
+            {
+                foreach (var entity in _tempEntities)
+                {
+                    entity.AddTo(this);
+                }
+            }
+
+            _committed = true;
+
+            // Build the datoms block here, so that future calls to add won't modify this while we're building
+            built = _datoms.Build();
+        }
+        
+        if (_internalTxFunction is not null)
+            return await _connection.Transact(_internalTxFunction);
+
+        if (_txFunctions is not null) 
+            return await _connection.Transact(new CompoundTransaction(built, _txFunctions) { Connection = _connection });
+        
+        return await _connection.Transact(new IndexSegmentTransaction(built));
     }
 
-    private void ThrowIfCommitted()
+    public ISubTransaction CreateSubTransaction()
     {
+        return new Transaction(_connection, parentTransaction: this);
+    }
+
+    public void Reset()
+    {
+        _datoms.Reset();
+
+        _tempEntities?.Clear();
+        _tempEntities = null;
+
+        _txFunctions?.Clear();
+        _txFunctions = null;
+    }
+
+    public void Dispose()
+    {
+        if (_disposed) return;
+
+        _disposed = true;
+        Reset();
+    }
+
+    private void CheckAccess()
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
         if (_committed) throw new InvalidOperationException("Transaction has already been committed!");
     }
 }

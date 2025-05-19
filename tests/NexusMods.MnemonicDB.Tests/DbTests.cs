@@ -1519,26 +1519,30 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     }
 
     [Fact]
-    public async Task Test_SubTransactions()
+    public async Task Test_NestedTransactions()
     {
         using var tx = Connection.BeginTransaction();
 
         EntityId loadout1Id;
+        EntityId loadout2Id;
         using (var subTx1 = tx.CreateSubTransaction())
         {
             loadout1Id = new Loadout.New(subTx1)
             {
                 Name = "Foo"
             };
-        }
 
-        EntityId loadout2Id;
-        using (var subTx2 = tx.CreateSubTransaction())
-        {
-            loadout2Id = new Loadout.New(subTx2)
+            using (var subTx2 = subTx1.CreateSubTransaction())
             {
-                Name = "Bar"
-            };
+                loadout2Id = new Loadout.New(subTx2)
+                {
+                    Name = "Bar"
+                };
+
+                subTx2.CommitToParent();
+            }
+
+            subTx1.CommitToParent();
         }
 
         var result = await tx.Commit();

@@ -90,12 +90,7 @@ public interface ITransaction : IDisposable
     /// <summary>
     /// Creates a sub-transaction.
     /// </summary>
-    [MustDisposeResource] ISubTransaction CreateSubTransaction();
-
-    /// <summary>
-    ///     Commits the transaction
-    /// </summary>
-    Task<ICommitResult> Commit();
+    ISubTransaction CreateSubTransaction();
 
     /// <summary>
     /// Resets the transaction.
@@ -104,7 +99,25 @@ public interface ITransaction : IDisposable
 }
 
 /// <summary>
+/// Represents a transaction that can be committed to the DB.
+/// </summary>
+[PublicAPI]
+public interface IMainTransaction : ITransaction
+{
+    /// <summary>
+    /// Commits the transaction
+    /// </summary>
+    Task<ICommitResult> Commit();
+}
+
+/// <summary>
 /// A sub-transaction.
 /// </summary>
 [PublicAPI]
-public interface ISubTransaction : ITransaction;
+public interface ISubTransaction : ITransaction
+{
+    /// <summary>
+    /// Commits the data to the parent transaction.
+    /// </summary>
+    void CommitToParent();
+}

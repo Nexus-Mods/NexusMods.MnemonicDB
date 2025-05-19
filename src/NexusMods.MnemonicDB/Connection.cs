@@ -361,9 +361,9 @@ public sealed class Connection : IConnection
     }
 
     /// <inheritdoc />
-    public ITransaction BeginTransaction()
+    public IMainTransaction BeginTransaction()
     {
-        return new Transaction(this);
+        return new Transaction(connection: this);
     }
 
     /// <inheritdoc />
