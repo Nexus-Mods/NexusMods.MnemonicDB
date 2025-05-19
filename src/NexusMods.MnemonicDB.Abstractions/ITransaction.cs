@@ -88,7 +88,23 @@ public interface ITransaction : IDisposable
         where TEntity : class, ITemporaryEntity;
 
     /// <summary>
+    /// Creates a sub-transaction.
+    /// </summary>
+    [MustDisposeResource] ISubTransaction CreateSubTransaction();
+
+    /// <summary>
     ///     Commits the transaction
     /// </summary>
     Task<ICommitResult> Commit();
+
+    /// <summary>
+    /// Resets the transaction.
+    /// </summary>
+    void Reset();
 }
+
+/// <summary>
+/// A sub-transaction.
+/// </summary>
+[PublicAPI]
+public interface ISubTransaction : ITransaction;

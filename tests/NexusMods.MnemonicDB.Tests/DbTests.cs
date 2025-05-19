@@ -1517,5 +1517,38 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         loadoutRO.Name.Should().Be(new string('A', 10000));
     }
-    
+
+    [Fact]
+    public async Task Test_SubTransactions()
+    {
+        using var tx = Connection.BeginTransaction();
+
+        EntityId loadout1Id;
+        using (var subTx1 = tx.CreateSubTransaction())
+        {
+            loadout1Id = new Loadout.New(subTx1)
+            {
+                Name = "Foo"
+            };
+        }
+
+        EntityId loadout2Id;
+        using (var subTx2 = tx.CreateSubTransaction())
+        {
+            loadout2Id = new Loadout.New(subTx2)
+            {
+                Name = "Bar"
+            };
+        }
+
+        var result = await tx.Commit();
+
+        var loadout1 = Loadout.Load(result.Db, result[loadout1Id]);
+        loadout1.IsValid().Should().BeTrue();
+        loadout1.Name.Should().Be("Foo");
+
+        var loadout2 = Loadout.Load(result.Db, result[loadout2Id]);
+        loadout2.IsValid().Should().BeTrue();
+        loadout2.Name.Should().Be("Bar");
+    }
 }

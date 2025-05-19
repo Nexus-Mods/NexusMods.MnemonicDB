@@ -93,7 +93,19 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
     }
 
     /// <inheritdoc />
+    public ISubTransaction CreateSubTransaction()
+    {
+        throw new NotSupportedException();
+    }
+
+    /// <inheritdoc />
     public Task<ICommitResult> Commit()
+    {
+        throw new NotSupportedException();
+    }
+
+    /// <inheritdoc />
+    public void Reset()
     {
         throw new NotSupportedException();
     }
@@ -116,6 +128,4 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
     public void Dispose()
     {
     }
-
-
 }
