@@ -11,6 +11,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".solutionItems", ".solution
 		Directory.Build.targets = Directory.Build.targets
 		NuGet.Build.props = NuGet.Build.props
 		icon.png = icon.png
+		Directory.Packages.props = Directory.Packages.props
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{0377EBE6-F147-4233-86AD-32C821B9567E}"

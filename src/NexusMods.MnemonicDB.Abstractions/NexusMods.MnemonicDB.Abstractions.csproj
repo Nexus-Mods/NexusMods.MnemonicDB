@@ -13,7 +13,8 @@
         <PackageReference Include="NexusMods.Paths"/>
         <PackageReference Include="R3"/>
         <PackageReference Include="System.IO.Hashing"/>
-        <PackageReference Include="TransparentValueObjects"/>
+        <PackageReference Include="TransparentValueObjects" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+        <PackageReference Include="TransparentValueObjects.Abstractions" />
         <PackageReference Update="JetBrains.Annotations"/>
         <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.SourceGenerator\NexusMods.MnemonicDB.SourceGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
