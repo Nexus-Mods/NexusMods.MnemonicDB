@@ -29,7 +29,7 @@ public class NullConnection : IConnection
         throw new NotSupportedException();
     }
 
-    public ITransaction BeginTransaction()
+    public IMainTransaction BeginTransaction()
     {
         throw new NotSupportedException();
     }
