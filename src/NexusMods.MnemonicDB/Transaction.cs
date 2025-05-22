@@ -164,6 +164,7 @@ internal sealed class Transaction : IMainTransaction, ISubTransaction
 
     public void CommitToParent()
     {
+        CheckAccess();
         Debug.Assert(_parentTransaction is not null);
 
         var indexSegment = _datoms.Build();
@@ -178,9 +179,6 @@ internal sealed class Transaction : IMainTransaction, ISubTransaction
             {
                 _parentTransaction.Attach(tmpEntity);
             }
-
-            _tempEntities.Clear();
-            _tempEntities = null;
         }
 
         if (_txFunctions is not null)
@@ -189,14 +187,14 @@ internal sealed class Transaction : IMainTransaction, ISubTransaction
             {
                 _parentTransaction.Add(txFunction);
             }
-
-            _txFunctions.Clear();
-            _txFunctions = null;
         }
+
+        _committed = true;
     }
 
     public async Task<ICommitResult> Commit()
     {
+        CheckAccess();
         Debug.Assert(_parentTransaction is null);
 
         IndexSegment built;
