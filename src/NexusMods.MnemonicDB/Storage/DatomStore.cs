@@ -205,8 +205,8 @@ public sealed partial class DatomStore : IDatomStore
     {
         if (_isDisposed) return;
 
-        _pendingTransactions.CompleteAdding();
         _shutdownToken.Cancel();
+        _pendingTransactions.CompleteAdding();
         _dbStream.Dispose();
         _writer.Dispose();
         _retractWriter.Dispose();
@@ -220,7 +220,7 @@ public sealed partial class DatomStore : IDatomStore
         {
             while (!_pendingTransactions.IsCompleted && !_shutdownToken.Token.IsCancellationRequested)
             {
-                if (!_pendingTransactions.TryTake(out var txFn, -1))
+                if (!_pendingTransactions.TryTake(out var txFn, millisecondsTimeout: -1, cancellationToken: _shutdownToken.Token))
                     continue;
                 try
                 {
@@ -239,6 +239,10 @@ public sealed partial class DatomStore : IDatomStore
                     txFn.SetException(ex);
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // ignored
         }
         catch (Exception ex)
         {
