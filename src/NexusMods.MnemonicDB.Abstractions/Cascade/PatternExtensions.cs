@@ -29,6 +29,13 @@ public static partial class PatternExtensions
     }
     
     [GenerateLVarOverrides]
+    public static Pattern DbOrDefault<TValue>(this Pattern pattern, LVar<EntityId> entity, IAttributeFlow<TValue> attribute, LVar<TValue> value) 
+        where TValue : notnull
+    {
+        return pattern.MatchDefault(attribute.FlowFor(Query.Db), entity, value);
+    }
+    
+    [GenerateLVarOverrides]
     public static Pattern DbOrDefault<TValue>(this Pattern pattern, Flow<IDb> dbFlow, LVar<EntityId> entity, IAttributeFlow<TValue> attribute, LVar<TValue> value) 
         where TValue : notnull
     {

@@ -1,5 +1,10 @@
 ## Changelog
 
+### 0.14.0 - 2025-05-28
+* Transactions can now be nested
+* Support for nullable `Null` values, something that was needed for the `Cascade` query system
+* Add overload for `DbOrDefault` that uses the default db
+
 ### 0.13.0 - 2025-05-15
 * Tweak how Connection and DatomStore are shutdown to avoid deadlocks
 
