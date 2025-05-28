@@ -74,8 +74,8 @@ public interface IConnection : IDisposable
     ///     Starts a new transaction.
     /// </summary>
     /// <returns></returns>
-    public ITransaction BeginTransaction();
-    
+    public IMainTransaction BeginTransaction();
+
     /// <summary>
     /// The analyzers that are available for this connection
     /// </summary>
