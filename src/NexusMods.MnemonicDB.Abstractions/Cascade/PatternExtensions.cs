@@ -29,17 +29,17 @@ public static partial class PatternExtensions
     }
     
     [GenerateLVarOverrides]
-    public static Pattern DbOrDefault<TValue>(this Pattern pattern, LVar<EntityId> entity, IAttributeFlow<TValue> attribute, LVar<TValue> value) 
+    public static Pattern DbOrDefault<TValue>(this Pattern pattern, LVar<EntityId> entity, IAttributeFlow<TValue> attribute, LVar<TValue> value, TValue? defaultValue = default)
         where TValue : notnull
     {
-        return pattern.MatchDefault(attribute.FlowFor(Query.Db), entity, value);
+        return pattern.MatchDefault(attribute.FlowFor(Query.Db), entity, value, EntityId.MinValueNoPartition, defaultValue);
     }
     
     [GenerateLVarOverrides]
-    public static Pattern DbOrDefault<TValue>(this Pattern pattern, Flow<IDb> dbFlow, LVar<EntityId> entity, IAttributeFlow<TValue> attribute, LVar<TValue> value) 
+    public static Pattern DbOrDefault<TValue>(this Pattern pattern, Flow<IDb> dbFlow, LVar<EntityId> entity, IAttributeFlow<TValue> attribute, LVar<TValue> value, TValue? defaultValue = default)
         where TValue : notnull
     {
-        return pattern.MatchDefault(attribute.FlowFor(dbFlow), entity, value);
+        return pattern.MatchDefault(attribute.FlowFor(dbFlow), entity, value, EntityId.MinValueNoPartition, defaultValue);
     }
 
     /// <summary>
