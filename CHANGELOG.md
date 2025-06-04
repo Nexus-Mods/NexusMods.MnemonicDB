@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.15.0 - 2025-06-04
+* Add user defined defaults for `MatchDefault`
+* Rework the `LatestTxForEntity` node to properly handle deleted entities
+
 ### 0.14.0 - 2025-05-28
 * Transactions can now be nested
 * Support for nullable `Null` values, something that was needed for the `Cascade` query system
