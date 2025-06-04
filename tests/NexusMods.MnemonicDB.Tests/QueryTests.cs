@@ -5,6 +5,7 @@ using NexusMods.Cascade.Patterns;
 using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Cascade;
+using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.File;
@@ -141,6 +142,44 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         {
             OldData = oldData.Select(row => row.ToString()).ToArray(),
             NewData = newData.Select(row => row.ToString()).ToArray(),
+        });
+
+    }
+    
+    [Fact]
+    public async Task CanGetLatestTxForEntityOnDeletedEntities()
+    {
+        await InsertExampleData();
+
+        var query = Pattern.Create()
+            .Db(out var e, File.ModId, out var mod)
+            .Db(mod, Mod.Loadout, out var loadout)
+            .DbLatestTx(e, out var txId)
+            .Return(loadout, txId.Max(), e.Count());
+        
+        using var queryResults = await Connection.Topology.QueryAsync(query);
+        
+        var oldData = queryResults.ToList();
+        
+        // Delete only one datom to check that we get an update even for retracted datoms, as long as the entity is still present
+        using var tx = Connection.BeginTransaction();
+        var ent = File.FindByPath(Connection.Db, "File1").First();
+        tx.Retract(ent.Id, File.Path, (RelativePath)"File1");
+        await tx.Commit();
+        
+        var withoutName = queryResults.ToList();
+        
+        using var tx2 = Connection.BeginTransaction();
+        tx2.Delete(ent.Id, recursive: false);
+        await tx2.Commit();
+        
+        var deletedEntity = queryResults.ToList();
+
+        await Verify(new
+        {
+            Entry1 = oldData.Select(row => row.ToString()).ToArray(),
+            Entry2 = withoutName.Select(row => row.ToString()).ToArray(),
+            Entry3 = deletedEntity.Select(row => row.ToString()).ToArray(),
         });
 
     }
