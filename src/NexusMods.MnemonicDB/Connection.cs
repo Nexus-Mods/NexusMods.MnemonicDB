@@ -1,21 +1,19 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
-using System.Threading.Channels;
 using System.Threading.Tasks;
 using DynamicData;
 using Jamarino.IntervalTree;
 using Microsoft.Extensions.Logging;
 using NexusMods.Cascade;
-using NexusMods.Cascade.Abstractions;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Cascade;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.EventTypes;
 using NexusMods.MnemonicDB.InternalTxFunctions;
 using NexusMods.MnemonicDB.Storage;
@@ -47,11 +45,11 @@ public sealed class Connection : IConnection
     // Temporary storage for observers that are being processed
     private readonly Dictionary<IObserver<DatomChangeSet>, DatomChangeSet> _changeSets = new();
     private readonly List<Change<Datom, DatomKey>> _localChanges = [];
-    
-    // Pending events that need to be processed
-    private readonly Channel<IEvent> _pendingEvents = Channel.CreateUnbounded<IEvent>();
-    
-    //private readonly BlockingCollection<IEvent> _pendingEvents = new(new ConcurrentQueue<IEvent>());
+
+    private readonly CancellationTokenSource _cts = new();
+    private readonly BlockingCollection<IEvent> _pendingEvents = new(new ConcurrentQueue<IEvent>());
+    private readonly ConcurrentBag<(Datom, Datom, IObserver<DatomChangeSet>)> _pendingObservers = [];
+
     private Thread _eventThread = null!;
 
     private static readonly IndexType[] IndexTypes =
@@ -80,137 +78,172 @@ public sealed class Connection : IConnection
 
     private void ProcessEvents()
     {
-        List<IEvent> events = new();
-        try {
-            while (true)
+        List<IEvent> events = [];
+        IEvent? startEvent = null;
+        var startIndex = -1;
+        var endIndex = -1;
+
+        while (!_cts.IsCancellationRequested && !_pendingEvents.IsAddingCompleted)
+        {
+            events.Clear();
+
+            try
             {
-                if (!_pendingEvents.Reader.WaitToReadAsync().AsTask().GetAwaiter().GetResult())
-                    break;
-                
-                if (!_pendingEvents.Reader.TryRead(out var action))
-                    break;
-                events.Clear();
-                events.Add(action);
+                var pendingEvent = _pendingEvents.Take(cancellationToken: _cts.Token);
+                events.Add(pendingEvent);
+            }
+            catch (Exception e) when (e is OperationCanceledException or InvalidOperationException)
+            {
+                break;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Exception trying to take an new event");
+                break;
+            }
 
-                // We do some event compression here. We try to get as many events of the same type as possible, then
-                // process them all at once. For subscriptions this means we can prime them in parallel, and for unsubscribes
-                // we can remove them all at once, reducing overhead of some of the more expensive memoized data structures.
-                AddWhileOfSameType(events, _pendingEvents, action.GetType());
+            // NOTE(erri120): taking as many items as possible without blocking for batching
+            while (_pendingEvents.TryTake(out var nextEvent))
+            {
+                events.Add(nextEvent);
+            }
 
-                try
+            Debug.Assert(events.Count > 0);
+
+            for (var i = 0; i < events.Count; i++)
+            {
+                var current = events[i];
+
+                if (startEvent is not null)
                 {
-                    switch (action)
+                    if (startEvent.GetType() == current.GetType())
                     {
-                        // Observers are done and want to be removed
-                        case UnSubscribeEvent:
-                            UnsubscribeAll(events);
-                            break;
-                        // Observers that want to be added
-                        case IObserveDatomsEvent:
-                            ObserveAll(events);
-                            break;
-                        // A new DB revision
-                        case NewRevisionEvent:
-                        {
-                            foreach (var newEvent in events.Cast<NewRevisionEvent>())
-                            {
-                                ProcessNewRevision(newEvent);
-                            }
-
-                            break;
-                        }
+                        endIndex = i;
+                        continue;
                     }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Failed to process {Count} events of type {Event}", events.Count,
-                        action.GetType().Name);
+
+                    ProcessEventsImpl();
+                    startEvent = null;
                 }
 
+                if (startEvent is not null) continue;
+                startEvent = current;
+                startIndex = i;
+                endIndex = i;
             }
+
+            ProcessEventsImpl();
         }
-        catch (ChannelClosedException)
+
+        return;
+        void ProcessEventsImpl()
         {
-            // We're done
-        }
-        catch (AggregateException ex)
-        {
-            if (ex.InnerExceptions[0] is not ChannelClosedException)
+            Debug.Assert(startEvent is not null);
+            Debug.Assert(startIndex != -1);
+            Debug.Assert(endIndex != -1);
+            var range = new Range(start: startIndex, end: endIndex + 1);
+            Debug.Assert(range.GetOffsetAndLength(events.Count).Length > 0);
+   
+            try
             {
-                _logger.LogError(ex, "Failed to process events");
+                switch (startEvent)
+                {
+                    case IObserveDatomsEvent:
+                        ObserveAll(events, range);
+                        break;
+                    case UnSubscribeEvent:
+                        UnsubscribeAll(events, range);
+                        break;
+                    case NewRevisionEvent:
+                        ProcessNewRevisions(events, range);
+                        break;
+                    default:
+                        throw new Exception($"Unknown event type: {startEvent.GetType()}");
+                }
             }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Exception processing {Count} events", endIndex - startIndex + 1);
+            }
+
+            startEvent = null;
+            startIndex = -1;
+            endIndex = -1;
         }
     }
 
-    private ConcurrentBag<(Datom, Datom, IObserver<DatomChangeSet>)> _pendingObservers = [];
-
-    private void ProcessNewRevision(NewRevisionEvent newEvent)
+    private void ProcessNewRevisions(List<IEvent> events, Range range)
     {
-        try
+        for (var i = range.Start.Value; i < range.End.Value; i++)
         {
-            newEvent.Db.Analyze(newEvent.Prev, _analyzers);
+            var newRevisionEvent = events[i] as NewRevisionEvent;
+            Debug.Assert(newRevisionEvent is not null);
+
+            try
+            {
+                newRevisionEvent.Db.Analyze(newRevisionEvent.Prev, _analyzers);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to analyze db");
+            }
+
+            _dbStream.OnNext(newRevisionEvent.Db);
+            ProcessObservers(newRevisionEvent.Db);
+            newRevisionEvent.OnFinished.Release(releaseCount: 1);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to analyze db");
-        }
-        
-        _dbStream.OnNext(newEvent.Db);
-        ProcessObservers(newEvent.Db);
-        newEvent.OnFinished.SetResult();
     }
-    private void ObserveAll(List<IEvent> events)
+
+    private void ObserveAll(List<IEvent> events, Range range)
     {
         const int maxObserversBeforeParallel = 32;
-        if (events.Count <= maxObserversBeforeParallel)
+        if (range.GetOffsetAndLength(events.Count).Length <= maxObserversBeforeParallel)
         {
-            foreach (var action in events.Cast<IObserveDatomsEvent>())
+            for (var i = range.Start.Value; i < range.End.Value; i++)
             {
-                var (from, to, observer) = action.Prime(Db);
+                var observeDatomsEvent = events[i] as IObserveDatomsEvent;
+                Debug.Assert(observeDatomsEvent is not null);
+
+                var (from, to, observer) = observeDatomsEvent.Prime(Db);
                 _datomObservers.Add(from, to, observer);
             }
         }
         else
         {
             _pendingObservers.Clear();
-            Parallel.ForEach(events.Cast<IObserveDatomsEvent>(), action =>
+
+            Parallel.For(fromInclusive: range.Start.Value, toExclusive: range.End.Value, i =>
             {
-                var (from, to, observer) = action.Prime(Db);
+                var observeDatomsEvent = events[i] as IObserveDatomsEvent;
+                Debug.Assert(observeDatomsEvent is not null);
+
+                var (from, to, observer) = observeDatomsEvent.Prime(Db);
                 _pendingObservers.Add((from, to, observer));
             });
+
             foreach (var (from, to, observer) in _pendingObservers)
             {
                 _datomObservers.Add(from, to, observer);
             }
+
             _pendingObservers.Clear();
         }
-        
     }
 
-    private void UnsubscribeAll(List<IEvent> action)
+    private void UnsubscribeAll(List<IEvent> events, Range range)
     {
-        var observers = action.Cast<UnSubscribeEvent>().Select(s => s.Observer).ToHashSet();
-        _datomObservers.RemoveWhere(static (observer, set) => set.Contains(observer), observers);
-    }
-
-    /// <summary>
-    /// Gets all the items possible from the blocking collection that are of the same type as the first item, and puts
-    /// them into the list.
-    /// </summary>
-    private void AddWhileOfSameType(List<IEvent> events, Channel<IEvent> pendingEvents, Type getType)
-    {
-        while (true)
+        _datomObservers.RemoveWhere(static (observer, state) =>
         {
-            if (!pendingEvents.Reader.TryPeek(out var action))
-                return;
-            if (action.GetType() != getType)
+            for (var i = state.range.Start.Value; i < state.range.End.Value; i++)
             {
-                return;
+                var unSubscribeEvent = state.events[i] as UnSubscribeEvent;
+                Debug.Assert(unSubscribeEvent is not null);
+
+                if (ReferenceEquals(unSubscribeEvent.Observer, observer)) return true;
             }
-            pendingEvents.Reader.TryRead(out action);
-            events.Add(action!);
-        }
-        
+
+            return false;
+        }, (events, range));
     }
 
     /// <summary>
@@ -219,16 +252,44 @@ public sealed class Connection : IConnection
     private IDisposable ProcessUpdates(IObservable<IDb> dbStream)
     {
         IDb? prev = null;
-        
+
         return dbStream.Subscribe(idb =>
         {
             if (_isDisposed) return;
 
             var db = idb;
             db.Connection = this;
-            var tcs = new TaskCompletionSource();
-            _pendingEvents.Writer.TryWrite(new NewRevisionEvent(prev, db, tcs));
-            tcs.Task.Wait();
+
+            using var semaphoreSlim = new SemaphoreSlim(initialCount: 0, maxCount: 1);
+
+            try
+            {
+                _pendingEvents.Add(new NewRevisionEvent(prev, db, semaphoreSlim), _cts.Token);
+            }
+            catch (Exception e) when (e is OperationCanceledException or InvalidOperationException)
+            {
+                return;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Exception adding event to queue");
+                return;
+            }
+
+            try
+            {
+                semaphoreSlim.Wait(cancellationToken: _cts.Token);
+            }
+            catch (Exception e) when (e is OperationCanceledException or ObjectDisposedException)
+            {
+                return;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Exception waiting on semaphore");
+                return;
+            }
+
             _dbInlet.Values = [db];
         });
     }
@@ -408,18 +469,41 @@ public sealed class Connection : IConnection
         {
             if (_isDisposed) return Disposable.Empty;
 
-            _pendingEvents.Writer.TryWrite(new ObserveDatomsEvent<TDescriptor>(descriptor, observer));
-            
+            try
+            {
+                _pendingEvents.Add(new ObserveDatomsEvent<TDescriptor>(descriptor, observer), _cts.Token);
+            }
+            catch (Exception e) when (e is OperationCanceledException or InvalidOperationException)
+            {
+                return Disposable.Empty;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Exception adding event to queue");
+                return Disposable.Empty;
+            }
+
             return Disposable.Create((observer, this), static state =>
             {
                 var (sObserver, self) = state;
-                // Enqueue the dispose operation, we don't remove the item here, because removing a lot of items one by one
-                // from the tree is expensive, so we batch them up and remove them all at once.
-                self._pendingEvents.Writer.TryWrite(new UnSubscribeEvent(sObserver));
+                
+                try
+                {
+                    self._pendingEvents.Add(new UnSubscribeEvent(sObserver), self._cts.Token);
+                }
+                catch (Exception e) when (e is OperationCanceledException or InvalidOperationException)
+                {
+                    return;
+                }
+                catch (Exception e)
+                {
+                    self._logger.LogError(e, "Exception adding event to queue");
+                    return;
+                }
             });
         });
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static DatomKey CreateKey(Datom datom, AttributeId attrId, bool isMany = false)
     {
@@ -479,8 +563,11 @@ public sealed class Connection : IConnection
     {
         if (_isDisposed) return;
 
+        _cts.Cancel();
+
         _dbStreamDisposable?.Dispose();
-        _pendingEvents.Writer.TryComplete();
+        _pendingEvents.CompleteAdding();
+        _pendingEvents.Dispose();
 
         _isDisposed = true;
     }
