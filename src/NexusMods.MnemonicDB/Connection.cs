@@ -183,11 +183,11 @@ public sealed class Connection : IConnection
             var db = idb;
             db.Connection = this;
 
-            var tcs = new TaskCompletionSource();
-            
+            using var semaphoreSlim = new SemaphoreSlim(initialCount: 0, maxCount: 1);
+
             try
             {
-                _pendingEvents.Add(new NewRevisionEvent(prev, db, tcs), _cts.Token);
+                _pendingEvents.Add(new NewRevisionEvent(prev, db, semaphoreSlim), _cts.Token);
             }
             catch (Exception e) when (e is OperationCanceledException or InvalidOperationException)
             {
@@ -199,7 +199,20 @@ public sealed class Connection : IConnection
                 return;
             }
 
-            tcs.Task.Wait();
+            try
+            {
+                semaphoreSlim.Wait(cancellationToken: _cts.Token);
+            }
+            catch (Exception e) when (e is OperationCanceledException or ObjectDisposedException)
+            {
+                return;
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Exception waiting on semaphore");
+                return;
+            }
+
             _dbInlet.Values = [db];
         });
     }
