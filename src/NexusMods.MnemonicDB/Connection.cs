@@ -106,8 +106,8 @@ public sealed class Connection : IConnection
 
             try
             {
-                UnsubscribeAll(events.OfType<UnSubscribeEvent>());
                 ObserveAll(events.OfType<IObserveDatomsEvent>().ToArray());
+                UnsubscribeAll(events.OfType<UnSubscribeEvent>());
                 ProcessNewRevisions(events.OfType<NewRevisionEvent>());
             }
             catch (Exception e)
