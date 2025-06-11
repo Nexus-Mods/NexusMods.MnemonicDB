@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -78,6 +79,9 @@ public sealed class Connection : IConnection
     private void ProcessEvents()
     {
         List<IEvent> events = [];
+        IEvent? startEvent = null;
+        var startIndex = -1;
+        var endIndex = -1;
 
         while (!_cts.IsCancellationRequested && !_pendingEvents.IsAddingCompleted)
         {
@@ -104,23 +108,77 @@ public sealed class Connection : IConnection
                 events.Add(nextEvent);
             }
 
+            Debug.Assert(events.Count > 0);
+
+            for (var i = 0; i < events.Count; i++)
+            {
+                var current = events[i];
+
+                if (startEvent is not null)
+                {
+                    if (startEvent.GetType() == current.GetType())
+                    {
+                        endIndex = i;
+                        continue;
+                    }
+
+                    ProcessEventsImpl();
+                    startEvent = null;
+                }
+
+                if (startEvent is not null) continue;
+                startEvent = current;
+                startIndex = i;
+                endIndex = i;
+            }
+
+            ProcessEventsImpl();
+        }
+
+        return;
+        void ProcessEventsImpl()
+        {
+            Debug.Assert(startEvent is not null);
+            Debug.Assert(startIndex != -1);
+            Debug.Assert(endIndex != -1);
+            var range = new Range(start: startIndex, end: endIndex + 1);
+            Debug.Assert(range.GetOffsetAndLength(events.Count).Length > 0);
+   
             try
             {
-                ObserveAll(events.OfType<IObserveDatomsEvent>().ToArray());
-                UnsubscribeAll(events.OfType<UnSubscribeEvent>());
-                ProcessNewRevisions(events.OfType<NewRevisionEvent>());
+                switch (startEvent)
+                {
+                    case IObserveDatomsEvent:
+                        ObserveAll(events, range);
+                        break;
+                    case UnSubscribeEvent:
+                        UnsubscribeAll(events, range);
+                        break;
+                    case NewRevisionEvent:
+                        ProcessNewRevisions(events, range);
+                        break;
+                    default:
+                        throw new Exception($"Unknown event type: {startEvent.GetType()}");
+                }
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Exception processing {Count} events", events.Count);
+                _logger.LogError(e, "Exception processing {Count} events", endIndex - startIndex + 1);
             }
+
+            startEvent = null;
+            startIndex = -1;
+            endIndex = -1;
         }
     }
 
-    private void ProcessNewRevisions(IEnumerable<NewRevisionEvent> events)
+    private void ProcessNewRevisions(List<IEvent> events, Range range)
     {
-        foreach (var newRevisionEvent in events)
+        for (var i = range.Start.Value; i < range.End.Value; i++)
         {
+            var newRevisionEvent = events[i] as NewRevisionEvent;
+            Debug.Assert(newRevisionEvent is not null);
+
             try
             {
                 newRevisionEvent.Db.Analyze(newRevisionEvent.Prev, _analyzers);
@@ -136,13 +194,16 @@ public sealed class Connection : IConnection
         }
     }
 
-    private void ObserveAll(IObserveDatomsEvent[] events)
+    private void ObserveAll(List<IEvent> events, Range range)
     {
         const int maxObserversBeforeParallel = 32;
-        if (events.Length <= maxObserversBeforeParallel)
+        if (range.GetOffsetAndLength(events.Count).Length <= maxObserversBeforeParallel)
         {
-            foreach (var observeDatomsEvent in events)
+            for (var i = range.Start.Value; i < range.End.Value; i++)
             {
+                var observeDatomsEvent = events[i] as IObserveDatomsEvent;
+                Debug.Assert(observeDatomsEvent is not null);
+
                 var (from, to, observer) = observeDatomsEvent.Prime(Db);
                 _datomObservers.Add(from, to, observer);
             }
@@ -150,23 +211,39 @@ public sealed class Connection : IConnection
         else
         {
             _pendingObservers.Clear();
-            Parallel.ForEach(events, action =>
+
+            Parallel.For(fromInclusive: range.Start.Value, toExclusive: range.End.Value, i =>
             {
-                var (from, to, observer) = action.Prime(Db);
+                var observeDatomsEvent = events[i] as IObserveDatomsEvent;
+                Debug.Assert(observeDatomsEvent is not null);
+
+                var (from, to, observer) = observeDatomsEvent.Prime(Db);
                 _pendingObservers.Add((from, to, observer));
             });
+
             foreach (var (from, to, observer) in _pendingObservers)
             {
                 _datomObservers.Add(from, to, observer);
             }
+
             _pendingObservers.Clear();
         }
     }
 
-    private void UnsubscribeAll(IEnumerable<UnSubscribeEvent> events)
+    private void UnsubscribeAll(List<IEvent> events, Range range)
     {
-        var observers = events.Select(static e => e.Observer).ToHashSet();
-        _datomObservers.RemoveWhere(static (observer, set) => set.Contains(observer), observers);
+        _datomObservers.RemoveWhere(static (observer, state) =>
+        {
+            for (var i = state.range.Start.Value; i < state.range.End.Value; i++)
+            {
+                var unSubscribeEvent = state.events[i] as UnSubscribeEvent;
+                Debug.Assert(unSubscribeEvent is not null);
+
+                if (ReferenceEquals(unSubscribeEvent.Observer, observer)) return true;
+            }
+
+            return false;
+        }, (events, range));
     }
 
     /// <summary>
