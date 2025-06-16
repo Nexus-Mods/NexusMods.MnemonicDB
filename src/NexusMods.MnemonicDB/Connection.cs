@@ -98,16 +98,25 @@ public sealed class Connection : IConnection
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Exception trying to take an new event");
+                _logger.LogError(e, "Exception trying to take a new event");
                 break;
             }
 
             // NOTE(erri120): taking as many items as possible without blocking for batching
-            while (_pendingEvents.TryTake(out var nextEvent))
+            while (!_cts.IsCancellationRequested && !_pendingEvents.IsAddingCompleted)
             {
-                events.Add(nextEvent);
+                try
+                {
+                    if (_pendingEvents.TryTake(out var nextEvent)) events.Add(nextEvent);
+                    else break;
+                }
+                catch (Exception)
+                {
+                    break;
+                }
             }
 
+            if (_cts.IsCancellationRequested || _pendingEvents.IsAddingCompleted) return;
             Debug.Assert(events.Count > 0);
 
             for (var i = 0; i < events.Count; i++)
