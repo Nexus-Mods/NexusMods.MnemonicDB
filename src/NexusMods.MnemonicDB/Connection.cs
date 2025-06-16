@@ -98,16 +98,25 @@ public sealed class Connection : IConnection
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "Exception trying to take an new event");
+                _logger.LogError(e, "Exception trying to take a new event");
                 break;
             }
 
             // NOTE(erri120): taking as many items as possible without blocking for batching
-            while (_pendingEvents.TryTake(out var nextEvent))
+            while (!_cts.IsCancellationRequested && !_pendingEvents.IsAddingCompleted)
             {
-                events.Add(nextEvent);
+                try
+                {
+                    if (_pendingEvents.TryTake(out var nextEvent)) events.Add(nextEvent);
+                    else break;
+                }
+                catch (Exception)
+                {
+                    break;
+                }
             }
 
+            if (_cts.IsCancellationRequested || _pendingEvents.IsAddingCompleted) return;
             Debug.Assert(events.Count > 0);
 
             for (var i = 0; i < events.Count; i++)
@@ -190,7 +199,7 @@ public sealed class Connection : IConnection
 
             _dbStream.OnNext(newRevisionEvent.Db);
             ProcessObservers(newRevisionEvent.Db);
-            newRevisionEvent.OnFinished.Release(releaseCount: 1);
+            newRevisionEvent.OnFinished.Set();
         }
     }
 
@@ -260,11 +269,11 @@ public sealed class Connection : IConnection
             var db = idb;
             db.Connection = this;
 
-            using var semaphoreSlim = new SemaphoreSlim(initialCount: 0, maxCount: 1);
+            using var manualResetEventSlim = new ManualResetEventSlim();
 
             try
             {
-                _pendingEvents.Add(new NewRevisionEvent(prev, db, semaphoreSlim), _cts.Token);
+                _pendingEvents.Add(new NewRevisionEvent(prev, db, manualResetEventSlim), _cts.Token);
             }
             catch (Exception e) when (e is OperationCanceledException or InvalidOperationException)
             {
@@ -278,9 +287,9 @@ public sealed class Connection : IConnection
 
             try
             {
-                semaphoreSlim.Wait(cancellationToken: _cts.Token);
+                manualResetEventSlim.Wait(cancellationToken: _cts.Token);
             }
-            catch (Exception e) when (e is OperationCanceledException or ObjectDisposedException)
+            catch (Exception e) when (e is OperationCanceledException or InvalidOperationException)
             {
                 return;
             }
