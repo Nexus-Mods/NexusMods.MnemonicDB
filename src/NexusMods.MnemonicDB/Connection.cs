@@ -199,7 +199,7 @@ public sealed class Connection : IConnection
 
             _dbStream.OnNext(newRevisionEvent.Db);
             ProcessObservers(newRevisionEvent.Db);
-            newRevisionEvent.OnFinished.Release(releaseCount: 1);
+            newRevisionEvent.OnFinished.Set();
         }
     }
 
@@ -269,11 +269,11 @@ public sealed class Connection : IConnection
             var db = idb;
             db.Connection = this;
 
-            using var semaphoreSlim = new SemaphoreSlim(initialCount: 0, maxCount: 1);
+            using var manualResetEventSlim = new ManualResetEventSlim();
 
             try
             {
-                _pendingEvents.Add(new NewRevisionEvent(prev, db, semaphoreSlim), _cts.Token);
+                _pendingEvents.Add(new NewRevisionEvent(prev, db, manualResetEventSlim), _cts.Token);
             }
             catch (Exception e) when (e is OperationCanceledException or InvalidOperationException)
             {
@@ -287,9 +287,9 @@ public sealed class Connection : IConnection
 
             try
             {
-                semaphoreSlim.Wait(cancellationToken: _cts.Token);
+                manualResetEventSlim.Wait(cancellationToken: _cts.Token);
             }
-            catch (Exception e) when (e is OperationCanceledException or ObjectDisposedException)
+            catch (Exception e) when (e is OperationCanceledException or InvalidOperationException)
             {
                 return;
             }
