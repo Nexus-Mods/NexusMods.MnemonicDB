@@ -401,8 +401,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            public {{= include.ToDisplayString()}}.ReadOnly As{{= include.Name}}() => new {{= include.ToDisplayString()}}.ReadOnly(Db, Id);
            {{/each}}
 
-           {{each attr in model.Attributes}}
-           /// <inheritdoc cref="{{= model.Name}}.{{= attr.ContextualName}}" />
+           {{each attr in model.IncludedAttributes}}
+           /// <inheritdoc cref="{{= attr.Cref}}" />
            {{if attr.IsCollection && attr.IsReference && !attr.IsMarker}}
            public __SEGMENTS__.Values<__ABSTRACTIONS__.EntityId> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
            public __SEGMENTS__.ValueEntities<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => __SEGMENTS__.ValuesExtensions.AsModels<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly>({{= attr.FieldName}}.Get(this), Db);
