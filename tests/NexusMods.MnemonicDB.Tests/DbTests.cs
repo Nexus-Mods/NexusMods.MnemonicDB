@@ -1555,4 +1555,5 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         loadout2.IsValid().Should().BeTrue();
         loadout2.Name.Should().Be("Bar");
     }
+    
 }

@@ -61,6 +61,16 @@ public readonly struct Null : IComparable<Null>, IEquatable<Null>, IComparable
         return _dummy == other._dummy;
     }
     
+    public static bool operator ==(Null left, Null right)
+    {
+        return left.Equals(right);
+    }
+    
+    public static bool operator !=(Null left, Null right)
+    {
+        return !left.Equals(right);
+    }
+    
     /// <inheritdoc />
     public override bool Equals(object? obj)
     {

@@ -1,6 +1,8 @@
 using NexusMods.Cascade;
 using NexusMods.Cascade.Patterns;
 using NexusMods.Cascade.Structures;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
 namespace NexusMods.MnemonicDB.Abstractions.Cascade;
 
@@ -26,6 +28,26 @@ public static partial class PatternExtensions
         where TValue : notnull
     {
         return pattern.Match(attribute.AttributeWithTxIdFlow, entity, value, txId);
+    }
+
+    /// <summary>
+    /// Filters entities by those that have the given attribute
+    /// </summary>
+    public static Pattern HasAttribute<TValue>(this Pattern pattern, LVar<EntityId> entity, IAttributeFlow<TValue> attribute) where TValue : notnull
+    {
+        return pattern
+            .MatchDefault(attribute.FlowFor(Query.Db)!, entity, out var value, default, default!)
+            .IsNotDefault(value);
+    }
+    
+    /// <summary>
+    /// Filters entities by those that do not have the given attribute
+    /// </summary>
+    public static Pattern MissingAttribute<TValue>(this Pattern pattern, LVar<EntityId> entity, IAttributeFlow<TValue> attribute) where TValue : notnull
+    {
+        return pattern
+            .MatchDefault(attribute.FlowFor(Query.Db)!, entity, out var value, default, default!)
+            .IsDefault(value);
     }
     
     [GenerateLVarOverrides]

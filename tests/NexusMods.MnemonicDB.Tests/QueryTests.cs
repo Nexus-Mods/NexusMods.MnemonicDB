@@ -5,6 +5,7 @@ using NexusMods.Cascade.Patterns;
 using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Cascade;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
@@ -182,5 +183,59 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             Entry3 = deletedEntity.Select(row => row.ToString()).ToArray(),
         });
 
+    }
+
+    [Fact]
+    public async Task TestMissingAndHaveQueries()
+    {
+        await InsertExampleData();
+
+        var mods = Pattern.Create()
+            .Db(out var e, File.ModId, out var mod)
+            .Return(e, mod);
+        
+        var results = await Connection.Topology.QueryAsync(mods);
+
+        var testMod = results.First().Item2;
+        
+        using var tx = Connection.BeginTransaction();
+        tx.Add(testMod, Mod.Marked, Null.Instance);
+        await tx.Commit();
+        
+        var markedMods = Pattern.Create()
+            .Db(mod, Mod.Name, out var name)
+            .HasAttribute(mod, Mod.Marked)
+            .Return(mod, name);
+        
+        using var markedResults = await Connection.Topology.QueryAsync(markedMods);
+        markedResults.Count.Should().Be(1);
+        
+        var unmarkedMods = Pattern.Create()
+            .Db(mod, Mod.Name, out var name2)
+            .MissingAttribute(mod, Mod.Marked)
+            .Return(mod, name2);
+        
+        using var unmarkedResults = await Connection.Topology.QueryAsync(unmarkedMods);
+        unmarkedResults.Count.Should().Be(2);
+        
+        using var tx2 = Connection.BeginTransaction();
+        tx2.Add(testMod, Mod.Description, "Test Mod Description");
+        await tx2.Commit();
+        
+        var modsWithDescription = Pattern.Create()
+            .Db(mod, Mod.Name, name)
+            .HasAttribute(mod, Mod.Description)
+            .Return(mod, name);
+        
+        using var descriptionResults = await Connection.Topology.QueryAsync(modsWithDescription);
+        descriptionResults.Count.Should().Be(1);
+        
+        var modsWithoutDescription = Pattern.Create()
+            .Db(mod, Mod.Name, name)
+            .MissingAttribute(mod, Mod.Description)
+            .Return(mod, name);
+        
+        using var noDescriptionResults = await Connection.Topology.QueryAsync(modsWithoutDescription);
+        noDescriptionResults.Count.Should().Be(2);
     }
 }

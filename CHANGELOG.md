@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.18.0 - 2025-06-24
+* Add `HasAttribute` and `MissingAttribute` operators for matching entities based on the presence or absence of attributes
+
 ### 0.15.0 - 2025-06-04
 * Add user defined defaults for `MatchDefault`
 * Rework the `LatestTxForEntity` node to properly handle deleted entities
