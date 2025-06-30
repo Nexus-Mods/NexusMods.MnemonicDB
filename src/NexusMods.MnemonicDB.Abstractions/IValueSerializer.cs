@@ -45,6 +45,6 @@ public interface IValueSerializer<T> : IValueSerializer
     /// <summary>
     /// Remap any references in the given span using the given remap function
     /// </summary>
-    public static abstract void  Remap(Span<byte> span, Func<EntityId, EntityId> remapFn);
+    public static abstract void Remap(Span<byte> span, Func<EntityId, EntityId> remapFn);
 }
 

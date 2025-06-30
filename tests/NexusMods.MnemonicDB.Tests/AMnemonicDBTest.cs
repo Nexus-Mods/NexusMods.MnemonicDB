@@ -7,6 +7,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.Hashing.xxHash3;
+using NexusMods.MnemonicDB.QueryV2;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.MnemonicDB.TestModel.Analyzers;
 using NexusMods.Paths;
@@ -53,7 +54,11 @@ public class AMnemonicDBTest : IDisposable
         Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, provider, _analyzers);
 
         Logger = provider.GetRequiredService<ILogger<AMnemonicDBTest>>();
+        
+        Query = provider.GetRequiredService<QueryEngine>();
     }
+
+    public QueryEngine Query { get; set; }
 
 
     protected async Task LoadDatamodel(RelativePath name)

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using NexusMods.MnemonicDB.QueryV2;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
@@ -13,6 +14,7 @@ public class Startup
     {
         services.AddTestModel()
             .AddSingleton<TemporaryFileManager>()
+            .AddSingleton<QueryEngine>()
             .AddFileSystem()
             .AddLogging(builder => builder.AddXunitOutput().SetMinimumLevel(LogLevel.Debug))
             .AddMnemonicDBStorage();

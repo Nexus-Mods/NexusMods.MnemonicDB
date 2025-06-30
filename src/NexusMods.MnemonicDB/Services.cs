@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
+using NexusMods.MnemonicDB.QueryV2;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
@@ -19,6 +20,7 @@ public static class Services
     {
         services.AddSingleton<IConnection, Connection>();
         services.AddMnemonicDBStorage();
+        services.AddSingleton<QueryEngine>();
 
         return services;
     }

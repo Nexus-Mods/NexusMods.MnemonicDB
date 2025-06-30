@@ -58,6 +58,34 @@ public static class Serializer
             _ => throw new ArgumentOutOfRangeException(nameof(tag), tag, "Unknown tag")
         };
     }
+    
+    /// <summary>
+    /// Gets the low-level C# type that corresponds to the given tag.
+    /// </summary>
+    public static Type LowLevelType(this ValueTag tag)
+    {
+        return tag switch
+        {
+            ValueTag.Null => typeof(Null),
+            ValueTag.UInt8 => typeof(byte),
+            ValueTag.UInt16 => typeof(ushort),
+            ValueTag.UInt32 => typeof(uint),
+            ValueTag.UInt64 => typeof(ulong),
+            ValueTag.UInt128 => typeof(UInt128),
+            ValueTag.Int16 => typeof(short),
+            ValueTag.Int32 => typeof(int),
+            ValueTag.Int64 => typeof(long),
+            ValueTag.Int128 => typeof(Int128),
+            ValueTag.Float32 => typeof(float),
+            ValueTag.Float64 => typeof(double),
+            ValueTag.Ascii or ValueTag.Utf8 or ValueTag.Utf8Insensitive => typeof(string),
+            ValueTag.Blob or ValueTag.HashedBlob => typeof(Memory<byte>),
+            ValueTag.Reference => typeof(EntityId),
+            ValueTag.Tuple3_Ref_UShort_Utf8I => typeof(Tuple3_Ref_UShort_Utf8I),
+            ValueTag.Tuple2_UShort_Utf8I => typeof(Tuple2_UShort_Utf8I),
+            _ => throw new ArgumentOutOfRangeException(nameof(tag), tag, "Unknown tag")
+        };
+    }
     #endregion
 
     #region Write
@@ -197,6 +225,7 @@ public static class Serializer
             _ => throw new ArgumentOutOfRangeException(nameof(tag), tag, "Unknown tag")
         };
     }
+    
     #endregion
     
     #region Remap
