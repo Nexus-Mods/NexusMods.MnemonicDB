@@ -1,4 +1,5 @@
 using NexusMods.Hashing.xxHash3;
+using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.QueryV2;
 using R3;
 
@@ -44,15 +45,13 @@ public class LowLevelQueryEngineTests(IServiceProvider provider) : AMnemonicDBTe
         result.ToList().Should().BeEquivalentTo([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
     }
     
-    
-
     class RangeTableFunction : TableFunction
     {
-        public RangeTableFunction(string name) : base(name, [], [typeof(int)])
+        public RangeTableFunction(string name) : base(name, [])
         {
         }
 
-        protected override void Write(DuckDBChunkWriter writer, object? state)
+        protected override void Write(DuckDBChunkWriter writer, object? state, object? initData)
         {
             if (state is not FnState fnState)
                 throw new InvalidOperationException("Invalid state for RangeTableFunction.");
@@ -85,5 +84,21 @@ public class LowLevelQueryEngineTests(IServiceProvider provider) : AMnemonicDBTe
             info.AddColumn<int>("value");
             info.SetBindData(new FnState{ Current = 0 });
         }
+    }
+
+    [Fact]
+    public async Task CanQueryModsByTable()
+    {
+        await InsertExampleData();
+        
+        using var result = Query.Query<(EntityId, string)>("SELECT Id, Name FROM mdb_Mod()");
+        
+        result.ToList().Should().BeEquivalentTo(
+            [
+                (PartitionId.Entity.MakeEntityId(2), "Mod1 - Updated"),
+                (PartitionId.Entity.MakeEntityId(6), "Mod2 - Updated"),
+                (PartitionId.Entity.MakeEntityId(0xA), "Mod3 - Updated"),
+            ]);
+        
     }
 }

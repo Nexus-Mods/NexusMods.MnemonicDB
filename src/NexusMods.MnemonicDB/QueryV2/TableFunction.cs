@@ -8,13 +8,11 @@ namespace NexusMods.MnemonicDB.QueryV2;
 public abstract class TableFunction
 {
     public Type[] ArgumentTypes { get; }
-    public Type[] ReturnTypes { get; }
     public string Name { get; }
 
-    public TableFunction(string name, Type[] argumentTypes, Type[] returnTypes)
+    public TableFunction(string name, Type[] argumentTypes)
     {
         ArgumentTypes = argumentTypes;
-        ReturnTypes = returnTypes;
         Name = name;
     }
 
@@ -28,7 +26,7 @@ public abstract class TableFunction
         }
 
         NativeMethods.TableFunction.DuckDBTableFunctionSetBind(fn, &BindNative);
-        NativeMethods.TableFunction.DuckDBTableFunctionSetInit(fn, &Init);
+        NativeMethods.TableFunction.DuckDBTableFunctionSetInit(fn, &InitNative);
         NativeMethods.TableFunction.DuckDBTableFunctionSetFunction(fn, &TableFunctionScan);
         NativeMethods.TableFunction.DuckDBTableFunctionSetExtraInfo(fn, GCHandle.ToIntPtr(GCHandle.Alloc(this)), &DestroyBindData);
         HighPerfBindings.DuckDBTableFunctionSupportsProjectionPushdown(fn, true);
@@ -45,9 +43,16 @@ public abstract class TableFunction
 
     }
 
-    protected abstract void Write(DuckDBChunkWriter writer, object? state);
+    protected abstract void Write(DuckDBChunkWriter writer, object? bindData, object? initData);
 
     protected abstract void Bind(ref BindInfoWriter arguments);
+    
+    protected virtual object? Init(int[] columnMappings)
+    {
+        // Default implementation does nothing.
+        // Override this method if you need to perform initialization logic.
+        return null;
+    }
 
     internal class BindInfoContainer
     {
@@ -59,6 +64,12 @@ public abstract class TableFunction
             ColumnCount = columnCount;
             _userData = userData;
         }
+    }
+
+    internal class InitInfoContainer
+    {
+        public required int[] ColumnMappings { get; init; }
+        public object? UserData { get; init; }
     }
     
     public unsafe ref struct BindInfoWriter
@@ -107,13 +118,20 @@ public abstract class TableFunction
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
-    public static unsafe void Init(IntPtr info)
+    public static unsafe void InitNative(IntPtr info)
     {
         var bindInfoHandle = GCHandle.FromIntPtr(HighPerfBindings.DuckDBInitGetBindInfo(info));
         if (bindInfoHandle.Target is not BindInfoContainer bindInfo)
         {
             throw new InvalidOperationException("User defined table function init failed. Bind info is null");
         }
+
+        var extraInfoHandle = GCHandle.FromIntPtr(HighPerfBindings.DuckDBInitGetExtraInfo(info));
+        if (extraInfoHandle.Target is not TableFunction tableFunction)
+        {
+            throw new InvalidOperationException("User defined table function init failed. Extra info is null");
+        }
+        
         var columnCount = HighPerfBindings.DuckDBInitGetColumnCount(info);
         
         var mappings = new int[bindInfo.ColumnCount];
@@ -124,8 +142,15 @@ public abstract class TableFunction
             mappings[internalIndex] = queryIndex;
         }
 
-        var extraInfoHandle = GCHandle.Alloc(mappings, GCHandleType.Normal);
-        HighPerfBindings.DuckDBInitSetInitData(info, GCHandle.ToIntPtr(extraInfoHandle), &DestroyBindData);
+        var userData = tableFunction.Init(mappings);
+
+        var container = new InitInfoContainer
+        {
+            ColumnMappings = mappings,
+            UserData = userData,
+        };
+        var initInfoHandle = GCHandle.Alloc(container, GCHandleType.Normal);
+        HighPerfBindings.DuckDBInitSetInitData(info, GCHandle.ToIntPtr(initInfoHandle), &DestroyBindData);
     }
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -188,13 +213,13 @@ public abstract class TableFunction
             }
 
             var initData = GCHandle.FromIntPtr(HighPerfBindings.DuckDBFunctionGetInitData(info));
-            if (initData.Target is not int[] mappings)
+            if (initData.Target is not InitInfoContainer initInfo)
             {
                 throw new InvalidOperationException("User defined table function scan failed. Init data is null");
             }
             
-            var writer = new DuckDBChunkWriter(new DuckDBDataChunk(chunk), mappings);
-            tableFunction.Write(writer, bindData._userData);
+            var writer = new DuckDBChunkWriter(new DuckDBDataChunk(chunk), initInfo.ColumnMappings);
+            tableFunction.Write(writer, bindData._userData, initInfo.UserData);
             
         }
         catch (Exception ex)

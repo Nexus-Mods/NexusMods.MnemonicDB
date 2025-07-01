@@ -1,6 +1,9 @@
 using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using DuckDB.NET.Native;
 using JetBrains.Annotations;
+using NexusMods.MnemonicDB.Abstractions;
 
 namespace NexusMods.MnemonicDB.QueryV2;
 
@@ -11,7 +14,9 @@ public class QueryEngine : IDisposable
     
     private const string ConnectionString = ":memrory:";
     
-    public QueryEngine()
+    private IConnection? _defaultConnection;
+    
+    public QueryEngine(IEnumerable<ModelTableDefinition> modelTables)
     {
         if (NativeMethods.Startup.DuckDBOpen(":memory:", out _duckDb) == DuckDBState.Error)
         {
@@ -22,6 +27,21 @@ public class QueryEngine : IDisposable
         {
             throw new InvalidOperationException("Failed to connect to DuckDB.");
         }
+
+        foreach (var function in modelTables)
+        {
+            new ModelTableFunction(function, this).Register(_dbConnection);
+        }
+    }
+
+    public void Add(IConnection connection)
+    {
+        _defaultConnection = connection;
+    }
+
+    public IConnection DefaultConnection()
+    {
+        return _defaultConnection!;
     }
     
     [MustDisposeResource]
@@ -29,7 +49,8 @@ public class QueryEngine : IDisposable
     {
         if (NativeMethods.Query.DuckDBQuery(_dbConnection, sql, out var res) == DuckDBState.Error)
         {
-            throw new InvalidOperationException("Failed to execute query: " + sql);
+            var errorString = Marshal.PtrToStringUTF8(NativeMethods.Query.DuckDBResultError(ref res));
+            throw new InvalidOperationException("Failed to execute query: " + errorString);
         }
 
         return res.ToQueryResult<TRow>();

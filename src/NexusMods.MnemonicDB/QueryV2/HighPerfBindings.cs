@@ -35,6 +35,9 @@ public static class HighPerfBindings
     [DllImport(DuckDbLibrary, CallingConvention = CallingConvention.Cdecl, EntryPoint = "duckdb_init_get_bind_data")]
     public static extern unsafe IntPtr DuckDBInitGetBindInfo(IntPtr initInfo);
     
+    [DllImport(DuckDbLibrary, CallingConvention = CallingConvention.Cdecl, EntryPoint = "duckdb_init_get_extra_info")]
+    public static extern unsafe IntPtr DuckDBInitGetExtraInfo(IntPtr initInfo);
+    
     [DllImport(DuckDbLibrary, CallingConvention = CallingConvention.Cdecl, EntryPoint = "duckdb_init_set_init_data")]
     public static extern unsafe void DuckDBInitSetInitData(IntPtr initInfo, IntPtr initData, delegate* unmanaged[Cdecl]<IntPtr, void> destroy);
     
