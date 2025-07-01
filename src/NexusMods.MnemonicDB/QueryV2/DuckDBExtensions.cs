@@ -45,6 +45,23 @@ public static class DuckDBExtensions
     {
         if (DuckDBTypeMap.TryGetValue(type, out var duckDbType))
         {
+            if (type == typeof(ValueTuple<ulong, ushort, string>))
+            {
+                using var type1 = typeof(ulong).ToLogicalType();
+                using var type2 = typeof(ushort).ToLogicalType();
+                using var type3 = typeof(string).ToLogicalType();
+                return HighPerfBindings.DuckDBCreateStructType(
+                    [type1, type2, type3],
+                    ["Item1", "Item2", "Item3"], 3);
+            }
+            if (type == typeof(ValueTuple<ushort, string>))
+            {
+                using var type1 = typeof(ushort).ToLogicalType();
+                using var type2 = typeof(string).ToLogicalType();
+                return HighPerfBindings.DuckDBCreateStructType(
+                    [type1, type2],
+                    ["Item1", "Item2"], 2);
+            }
             return HighPerfBindings.DuckDBCreateLogicalType(duckDbType);
         }
         else

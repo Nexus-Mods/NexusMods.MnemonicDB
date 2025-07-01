@@ -1,7 +1,8 @@
 using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.QueryV2;
-using R3;
+using NexusMods.MnemonicDB.TestModel.Attributes;
+using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
 
@@ -100,5 +101,29 @@ public class LowLevelQueryEngineTests(IServiceProvider provider) : AMnemonicDBTe
                 (PartitionId.Entity.MakeEntityId(0xA), "Mod3 - Updated"),
             ]);
         
+    }
+    
+    [Fact]
+    public async Task CanUseTuple3Attributes()
+    {
+        using var tx = Connection.BeginTransaction();
+        
+        foreach (var a in new[]{1, 2, 3})
+        foreach (var b in new[]{1, 2, 3})
+        foreach (var c in new[]{1, 2, 3})
+        {
+            var tmpId = tx.TempId();
+            tx.Add(tmpId, File.TupleTest, (tmpId, LocationId.Game, c.ToString()));
+        }
+
+        var results = await tx.Commit();
+
+        using var query = Query.Query<(EntityId EId, (EntityId Parent, LocationId Location, string Path) Tuple)>(
+            "SELECT Id, TupleTest FROM mdb_File()");
+
+        var resolved = query.ToList();
+            
+        resolved.Select(v => v.Tuple.Parent)
+            .Should().AllSatisfy(id => id.Partition.Should().NotBe(PartitionId.Temp));
     }
 }

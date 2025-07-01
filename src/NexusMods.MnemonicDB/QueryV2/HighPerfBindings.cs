@@ -43,4 +43,15 @@ public static class HighPerfBindings
     
     [DllImport(DuckDbLibrary, CallingConvention = CallingConvention.Cdecl, EntryPoint = "duckdb_function_get_init_data")]
     public static extern IntPtr DuckDBFunctionGetInitData(IntPtr info);
+    
+    
+    [DllImport(DuckDbLibrary, CallingConvention = CallingConvention.Cdecl, EntryPoint = "duckdb_create_struct_type")]
+    public static extern DuckDBLogicalType DuckDBCreateStructType(DuckDBLogicalType[] types, string[] names, int memberCount);
+    
+    [DllImport(DuckDbLibrary, CallingConvention = CallingConvention.Cdecl, EntryPoint = "duckdb_column_logical_type")]
+    public static extern DuckDBLogicalType DuckDbColumnLogicalType([In, Out] ref DuckDBResult result, long col);
+    
+    [DllImport(DuckDbLibrary, CallingConvention = CallingConvention.Cdecl, EntryPoint = "duckdb_get_type_id")]
+    public static extern DuckDBType DuckDBGetTypeId(DuckDBLogicalType type);
+
 }
