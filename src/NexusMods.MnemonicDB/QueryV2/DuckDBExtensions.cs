@@ -15,6 +15,7 @@ public static class DuckDBExtensions
             DuckDBType.Invalid => throw new ArgumentException("Invalid DuckDB type"),
             DuckDBType.UnsignedBigInt => typeof(ulong),
             DuckDBType.Integer => typeof(int),
+            DuckDBType.Varchar => typeof(string),
             _ => throw new NotSupportedException($"DuckDB type {type} is not supported")
         };
     }

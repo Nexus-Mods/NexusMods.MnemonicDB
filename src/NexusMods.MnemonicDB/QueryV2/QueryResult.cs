@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
@@ -77,7 +78,18 @@ public static class QueryResultExtensions
         }
         else
         {
-            throw new NotImplementedException();
+            var tupleType = typeof(TRow).GetGenericTypeDefinition();
+            var outputElements = typeof(TRow).GetGenericArguments();
+
+            var param = Expression.Parameter(tupleType.MakeGenericType(columnTypes.ToArray().Select(t => t.ToClrType()).ToArray()), "input");
+            var decompose = new List<Expression>();
+            for (var i = 0; i < columnTypes.Length; i++)
+            {
+                decompose.Add(Expression.Convert(Expression.PropertyOrField(param, "Item" + (i + 1)), outputElements[i]));
+            }
+
+            var ctorExpr = Expression.New(typeof(TRow).GetConstructor(outputElements)!, decompose);
+            converterFn = Expression.Lambda(ctorExpr, param).Compile();
         }
         return (IQueryResult<TRow>)Activator.CreateInstance(ctor, result, converterFn)!;
     }
@@ -131,6 +143,17 @@ public static class QueryResultExtensions
             1 => typeof(DataChunk<,>),
             2 => typeof(DataChunk<,,,>),
             _ => throw new NotImplementedException($"No override for {arity}")
+        };
+    }
+
+    private static Type TupleTypeForArity(int arity)
+    {
+        return arity switch
+        {
+            2 => typeof(ValueTuple<,>),
+            3 => typeof(ValueTuple<,,>),
+            4 => typeof(ValueTuple<,,,>),
+            _ => throw new NotSupportedException()
         };
     }
 

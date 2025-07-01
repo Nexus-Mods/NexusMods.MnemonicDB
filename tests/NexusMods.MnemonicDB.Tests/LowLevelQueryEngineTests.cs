@@ -40,9 +40,11 @@ public class LowLevelQueryEngineTests(IServiceProvider provider) : AMnemonicDBTe
     {
         Query.Register(new RangeTableFunction("range10"));
         
-        using var result = Query.Query<int>("SELECT value2 FROM range10()");
+        using var result = Query.Query<int>("SELECT value FROM range10()");
         result.ToList().Should().BeEquivalentTo([0, 1, 2, 3, 4, 5, 6, 7, 8, 9]);
     }
+    
+    
 
     class RangeTableFunction : TableFunction
     {
@@ -81,7 +83,6 @@ public class LowLevelQueryEngineTests(IServiceProvider provider) : AMnemonicDBTe
         protected override void Bind(ref BindInfoWriter info)
         {
             info.AddColumn<int>("value");
-            info.AddColumn<int>("value2");
             info.SetBindData(new FnState{ Current = 0 });
         }
     }
