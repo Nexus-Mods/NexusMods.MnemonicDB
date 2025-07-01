@@ -3,10 +3,10 @@ using DuckDB.NET.Native;
 namespace NexusMods.MnemonicDB.QueryV2;
 
 public struct DataChunk<TVector1, T1> : IDataChunk<T1, DataChunk<TVector1, T1>>
-    where TVector1 : IHighLevelVector<T1, TVector1>
+    where TVector1 : IVector<T1, TVector1>
 {
     private readonly ulong _rowCount;
-    private readonly IHighLevelVector<T1, TVector1> _column0Vector;
+    private readonly IVector<T1, TVector1> _column0Vector;
 
     public DataChunk(DuckDBDataChunk chunk)
     {
@@ -39,19 +39,19 @@ public struct DataChunk<TVector1, T1> : IDataChunk<T1, DataChunk<TVector1, T1>>
             value = default!;
             return false;
         }
-        value = _column0Vector[offset];
+        value = _column0Vector.GetLowLevel(offset);
         return true;
     }
 
 }
 
 public struct DataChunk<TVector1, TVector2, T1, T2> : IDataChunk<(T1, T2), DataChunk<TVector1, TVector2, T1, T2>>
-    where TVector1 : IHighLevelVector<T1, TVector1>
-    where TVector2 : IHighLevelVector<T2, TVector2>
+    where TVector1 : IVector<T1, TVector1>
+    where TVector2 : IVector<T2, TVector2>
 {
     private readonly ulong _rowCount;
-    private readonly IHighLevelVector<T1, TVector1> _column0Vector;
-    private readonly IHighLevelVector<T2, TVector2> _column1Vector;
+    private readonly IVector<T1, TVector1> _column0Vector;
+    private readonly IVector<T2, TVector2> _column1Vector;
 
     public DataChunk(DuckDBDataChunk chunk)
     {
@@ -86,7 +86,8 @@ public struct DataChunk<TVector1, TVector2, T1, T2> : IDataChunk<(T1, T2), DataC
             row = default;
             return false;
         }
-        row = (_column0Vector[offset], _column1Vector[offset]);
+
+        row = (_column0Vector.GetLowLevel(offset), _column1Vector.GetLowLevel(offset));
         return true;
     }
 }

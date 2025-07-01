@@ -23,7 +23,7 @@ public class QueryEngine : IDisposable
             throw new InvalidOperationException("Failed to connect to DuckDB.");
         }
     }
-
+    
     [MustDisposeResource]
     public IQueryResult<TRow> Query<TRow>(string sql)
     {
@@ -39,5 +39,10 @@ public class QueryEngine : IDisposable
     {
         _dbConnection.Dispose();
         _duckDb.Dispose();
+    }
+
+    public void Register(TableFunction tableFunction)
+    {
+        tableFunction.Register(_dbConnection);
     }
 }

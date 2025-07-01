@@ -17,7 +17,8 @@ public interface IVector
 /// <summary>
 /// A vector of a specific low-level type and serializer for that type.
 /// </summary>
-public interface ILowLevelVector<out TLowLevel> : IVector
+public interface IVector<out TLowLevel, TThis> : IVector
+    where TThis : IVector<TLowLevel, TThis>
 {
     /// <summary>
     /// Get the low-level value at the given index.
@@ -25,17 +26,6 @@ public interface ILowLevelVector<out TLowLevel> : IVector
     /// <param name="index"></param>
     /// <returns></returns>
     public TLowLevel GetLowLevel(int index);
-}
-
-
-/// <summary>
-/// An interface specifically for high-level vectors, which only exposes the high-level type.
-/// </summary>
-public interface IHighLevelVector<out THighLevel, TThis> : IVector 
-    where TThis : IHighLevelVector<THighLevel, TThis>
-{
-    public THighLevel this[int index] { get; }
-    
     
     public void Reset(DuckDBDataChunk chunk, int column);
 

@@ -1,29 +1,30 @@
 using System;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using DuckDB.NET.Native;
-using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
 namespace NexusMods.MnemonicDB.QueryV2;
 
-public class QueryResult<TRow, TChunk> : IQueryResult<TRow>
-    where TChunk : IDataChunk<TRow, TChunk>
+public class QueryResult<TRow, TLowLevelRow, TChunk> : IQueryResult<TRow>
+    where TChunk : IDataChunk<TLowLevelRow, TChunk>
 {
     private TChunk? _result;
     private DuckDBResult _dbResult;
-    private bool isStarted = false;
     private int _chunkOffset = 0;
-    private bool _isStarted;
+    private bool _isStarted = false;
+    private readonly Func<TLowLevelRow, TRow> _converter;
 
-    public QueryResult(DuckDBResult result)
+    public QueryResult(DuckDBResult result, Func<TLowLevelRow, TRow> converter)
     {
+        _converter = converter;
         _dbResult = result;
     }
     
     public bool MoveNext(out TRow result)
     {
-        if (!isStarted)
+        if (!_isStarted)
         {
             if (!TChunk.TryCreate(ref _dbResult, out _result))
             {
@@ -34,8 +35,13 @@ public class QueryResult<TRow, TChunk> : IQueryResult<TRow>
             _isStarted = true;
         }
 
-        if (_result!.TryGetRow(_chunkOffset, out result))
+        if (_result!.TryGetRow(_chunkOffset, out var lowLevelRow))
+        {
+            result = _converter(lowLevelRow);
+            _chunkOffset += 1;
             return true;
+        }
+           
 
         result = default!;
         return false;
@@ -54,18 +60,29 @@ public static class QueryResultExtensions
     {
         var columns = NativeMethods.Query.DuckDBColumnCount(ref result);
         
-        Span<ValueTag> columnTypes = stackalloc ValueTag[(int)columns];
+        Span<DuckDBType> columnTypes = stackalloc DuckDBType[(int)columns];
 
         for (int i = 0; i < columnTypes.Length; i++)
         {
-            columnTypes[i] = GetValueTag(NativeMethods.Query.DuckDBColumnType(ref result, i));
+            columnTypes[i] = NativeMethods.Query.DuckDBColumnType(ref result, i);
         }
         
         var ctor = MakeQueryResultCtor(typeof(TRow), columnTypes);
-        return (IQueryResult<TRow>)Activator.CreateInstance(ctor, result)!;
+        object converterFn = null!;
+        if (columnTypes.Length == 1)
+        {
+            var param = Expression.Parameter(columnTypes[0].ToClrType(), "input");
+            var convert = Expression.Convert(param, typeof(TRow));
+            converterFn = Expression.Lambda(convert, param).Compile();
+        }
+        else
+        {
+            throw new NotImplementedException();
+        }
+        return (IQueryResult<TRow>)Activator.CreateInstance(ctor, result, converterFn)!;
     }
 
-    private static Type MakeQueryResultCtor(Type rowType, Span<ValueTag> columnTypes)
+    private static Type MakeQueryResultCtor(Type rowType, ReadOnlySpan<DuckDBType> columnTypes)
     {
         if (rowType.IsAssignableTo(typeof(ITuple)) && columnTypes.Length != 1)
             return MakeQueryResultCtorForTuple(rowType, columnTypes);
@@ -73,18 +90,24 @@ public static class QueryResultExtensions
         var vectorType = MakeVectorType(rowType, columnTypes[0]);
         var chunkType = MakeChunkType([vectorType]);
         
-        var queryResultType = typeof(QueryResult<,>).MakeGenericType(rowType, chunkType);
+        var queryResultType = typeof(QueryResult<,,>).MakeGenericType(rowType, columnTypes[0].ToClrType(), chunkType);
         return queryResultType;
     }
 
-    private static Type MakeQueryResultCtorForTuple(Type resultType, Span<ValueTag> columnTypes)
+    private static Type MakeQueryResultCtorForTuple(Type resultType, ReadOnlySpan<DuckDBType> columnTypes)
     {
         var elementTypes = resultType.GetGenericArguments();
+
+        var internalTypes = new Type[columnTypes.Length];
+        for (var i = 0; i < columnTypes.Length; i++)
+            internalTypes[i] = columnTypes[i].ToClrType();
+
+        var internalResultType = resultType.GetGenericTypeDefinition().MakeGenericType(internalTypes);
         
         var vectorTypes = elementTypes.Zip(columnTypes.ToArray(), MakeVectorType).ToArray();
         var chunkType = MakeChunkType(vectorTypes);
         
-        var queryResultType = typeof(QueryResult<,>).MakeGenericType(resultType, chunkType);
+        var queryResultType = typeof(QueryResult<,,>).MakeGenericType(resultType, internalResultType, chunkType);
         return queryResultType;
     }
 
@@ -113,14 +136,10 @@ public static class QueryResultExtensions
 
 
 
-    private static (Type VectorType, Type LowLevelType) MakeVectorType(Type type, ValueTag columnType)
+    private static (Type VectorType, Type LowLevelType) MakeVectorType(Type highLevelType, DuckDBType columnType)
     {
-        var lowLevelType = columnType.LowLevelType();
-
-        if (lowLevelType.IsAssignableTo(type))
-            return (typeof(Vector<,>).MakeGenericType(type, type), lowLevelType);
-
-        throw new NotImplementedException();
+        var lowLevelType = columnType.ToClrType();
+        return (typeof(Vector<>).MakeGenericType(lowLevelType), lowLevelType);
     }
 
     private static ValueTag GetValueTag(DuckDBType duckDbColumnType)
@@ -128,6 +147,7 @@ public static class QueryResultExtensions
         return duckDbColumnType switch
         {
             DuckDBType.Integer => ValueTag.Int32,
+            DuckDBType.UnsignedBigInt => ValueTag.UInt64,
             DuckDBType.Varchar => ValueTag.Utf8,
             _ => throw new ArgumentOutOfRangeException(nameof(duckDbColumnType), duckDbColumnType, null)
         };
