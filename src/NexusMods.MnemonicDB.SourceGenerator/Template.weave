@@ -572,6 +572,7 @@ public static class {{= model.Name}}Extensions {
         {{each attr in model.Attributes}}
         services.AddSingleton<__ABSTRACTIONS__.IAttribute>(_ => {{= attr.FieldName}});
         {{/each}}
+        services.AddSingleton<IQueryFunction>(new ModelTableFunction("mdb_{{= model.Name}}", {{= model.Name}}.PrimaryAttribute, {{= model.Name}}.AllAttributes));
         return services;
     }
 

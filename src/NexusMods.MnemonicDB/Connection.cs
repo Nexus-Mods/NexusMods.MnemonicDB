@@ -73,6 +73,9 @@ public sealed class Connection : IConnection
         _store = (DatomStore)store;
         _dbStream = new DbStream();
         _analyzers = analyzers.ToArray();
+        var engine = provider.GetService(typeof(IQueryEngine)) as QueryEngine;
+        if (engine is not null)
+            engine.AddConnection(this);
         Bootstrap(readOnlyMode);
     }
 

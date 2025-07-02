@@ -1,4 +1,7 @@
 ﻿// ReSharper disable InconsistentNaming
+
+using System;
+
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
 /// <summary>
@@ -93,4 +96,32 @@ public enum ValueTag : byte
     /// A tuple of two values: an unsigned 16-bit integer and a UTF-8 (case insensitive) string
     /// </summary>
     Tuple2_UShort_Utf8I = 65,
+}
+
+public static class ValueTagExtensions
+{
+    public static Type ToClrType(this ValueTag tag) => tag switch
+    {
+        ValueTag.Null => typeof(bool),
+        ValueTag.UInt8 => typeof(byte),
+        ValueTag.UInt16 => typeof(ushort),
+        ValueTag.UInt32 => typeof(uint),
+        ValueTag.UInt64 => typeof(ulong),
+        ValueTag.UInt128 => typeof(ulong),
+        ValueTag.Int16 => typeof(short),
+        ValueTag.Int32 => typeof(int),
+        ValueTag.Int64 => typeof(long),
+        ValueTag.Int128 => typeof(long),
+        ValueTag.Float32 => typeof(float),
+        ValueTag.Float64 => typeof(double),
+        ValueTag.Ascii => typeof(string),
+        ValueTag.Utf8 => typeof(string),
+        ValueTag.Utf8Insensitive => typeof(string),
+        ValueTag.Blob => typeof(byte[]),
+        ValueTag.HashedBlob => typeof(byte[]),
+        ValueTag.Reference => typeof(ulong),
+        ValueTag.Tuple3_Ref_UShort_Utf8I => typeof(Tuple<EntityId, ushort, string>),
+        ValueTag.Tuple2_UShort_Utf8I => typeof(Tuple<ushort, string>),
+        _ => throw new ArgumentOutOfRangeException(nameof(tag), tag, null)
+    };
 }

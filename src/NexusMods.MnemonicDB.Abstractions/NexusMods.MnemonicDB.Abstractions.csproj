@@ -5,6 +5,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="DuckDB.NET.Data.Full" />
         <PackageReference Include="DynamicData"/>
         <PackageReference Include="JetBrains.Annotations" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"/>

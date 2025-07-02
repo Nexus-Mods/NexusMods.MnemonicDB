@@ -51,9 +51,13 @@ public class AMnemonicDBTest : IDisposable
         ];
         
         Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, provider, _analyzers);
+        Query = provider.GetRequiredService<IQueryEngine>();
 
+        
         Logger = provider.GetRequiredService<ILogger<AMnemonicDBTest>>();
     }
+
+    public IQueryEngine Query { get; set; }
 
 
     protected async Task LoadDatamodel(RelativePath name)

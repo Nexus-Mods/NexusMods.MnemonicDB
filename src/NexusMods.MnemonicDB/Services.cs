@@ -19,6 +19,7 @@ public static class Services
     {
         services.AddSingleton<IConnection, Connection>();
         services.AddMnemonicDBStorage();
+        services.AddSingleton<IQueryEngine, QueryEngine>();
 
         return services;
     }
