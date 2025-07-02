@@ -71,9 +71,53 @@ public class ModelTableFunction : IQueryFunction
                 case ValueTag.Null:
                     writers[i].WriteValue(true, row);
                     break;
-
+                case ValueTag.UInt8:
+                    writers[i].WriteValue(UInt8Serializer.Read(span), row);
+                    break;
+                case ValueTag.UInt16:
+                    writers[i].WriteValue(UInt16Serializer.Read(span), row);
+                    break;
+                case ValueTag.UInt32:
+                    writers[i].WriteValue(UInt32Serializer.Read(span), row);
+                    break;
+                case ValueTag.UInt64:
+                    writers[i].WriteValue(UInt64Serializer.Read(span), row);
+                    break;
+                case ValueTag.UInt128:
+                    writers[i].WriteValue(UInt128Serializer.Read(span), row);
+                    break;
+                case ValueTag.Int16:
+                    writers[i].WriteValue(Int16Serializer.Read(span), row);
+                    break;
+                case ValueTag.Int32:
+                    writers[i].WriteValue(Int32Serializer.Read(span), row);
+                    break;
+                case ValueTag.Int64:
+                    writers[i].WriteValue(Int64Serializer.Read(span), row);
+                    break;
+                case ValueTag.Int128:
+                    writers[i].WriteValue(Int128Serializer.Read(span), row);
+                    break;
+                case ValueTag.Float32:
+                    writers[i].WriteValue(Float32Serializer.Read(span), row);
+                    break;
+                case ValueTag.Float64:
+                    writers[i].WriteValue(Float64Serializer.Read(span), row);
+                    break;
+                case ValueTag.Ascii:
+                    writers[i].WriteValue(AsciiSerializer.Read(span), row);
+                    break;
                 case ValueTag.Utf8:
                     writers[i].WriteValue(Utf8Serializer.Read(span), row);
+                    break;
+                case ValueTag.Utf8Insensitive:
+                    writers[i].WriteValue(Utf8InsensitiveSerializer.Read(span), row);
+                    break;
+                case ValueTag.Blob:
+                    writers[i].WriteValue(BlobSerializer.Read(span), row);
+                    break;
+                case ValueTag.HashedBlob:
+                    writers[i].WriteValue(HashedBlobSerializer.Read(span), row);
                     break;
                 case ValueTag.Reference:
                     writers[i].WriteValue(UInt64Serializer.Read(span), row);
