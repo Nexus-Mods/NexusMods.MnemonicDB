@@ -53,5 +53,10 @@ public static class HighPerfBindings
     
     [DllImport(DuckDbLibrary, CallingConvention = CallingConvention.Cdecl, EntryPoint = "duckdb_get_type_id")]
     public static extern DuckDBType DuckDBGetTypeId(DuckDBLogicalType type);
+    
+        
+    [DllImport(DuckDbLibrary, CallingConvention = CallingConvention.Cdecl, EntryPoint = "duckdb_struct_type_child_count")]
+    public static extern int DuckDBStructTypeChildCount(DuckDBLogicalType type);
+
 
 }

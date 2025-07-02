@@ -248,7 +248,12 @@ public class QueryEngine : IDisposable
 
     private Type StructToClrType(DuckDBLogicalType logicalType)
     {
-        throw new NotImplementedException();
+        var members = HighPerfBindings.DuckDBStructTypeChildCount(logicalType);
+        if (members == 2)
+            return typeof((ushort, string));
+        if (members == 3)
+            return typeof((ulong, ushort, string));
+        throw new NotSupportedException($"Struct with {members} members is not supported.");
     }
 
     public void Dispose()

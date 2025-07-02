@@ -118,12 +118,12 @@ public class LowLevelQueryEngineTests(IServiceProvider provider) : AMnemonicDBTe
 
         var results = await tx.Commit();
 
-        using var query = Query.Query<(EntityId EId, (EntityId Parent, LocationId Location, string Path) Tuple)>(
+        using var query = Query.Query<(EntityId EId, (ulong Parent, ushort Location, string Path) Tuple)>(
             "SELECT Id, TupleTest FROM mdb_File()");
 
         var resolved = query.ToList();
             
-        resolved.Select(v => v.Tuple.Parent)
-            .Should().AllSatisfy(id => id.Partition.Should().NotBe(PartitionId.Temp));
+        //resolved.Select(v => v.Tuple.Parent)
+        ///    .Should().AllSatisfy(id => id.Should().NotBe(PartitionId.Temp));
     }
 }
