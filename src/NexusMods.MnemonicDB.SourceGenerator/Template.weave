@@ -83,10 +83,21 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     /// A list of all attributes of the model.
     /// </summary>
     public static __ABSTRACTIONS__.IAttribute[] AllAttributes => new __ABSTRACTIONS__.IAttribute[] {
-        {{each attr in model.Attributes}}
-        {{= attr.FieldName}},
+                                                                         {{each attr in model.Attributes}}
+                                                                         {{= attr.FieldName}},
+                                                                         {{/each}}
+                                                                     };
+    
+    /// <summary>
+    /// A list of all attributes of the model.
+    /// </summary>
+    public static __ABSTRACTIONS__.IAttribute[] AllAttributesWithIncludes => AllAttributes
+        {{each include in model.Includes}}
+        .Concat({{= include}}.AllAttributesWithIncludes)
         {{/each}}
-    };
+        .ToArray();
+
+    
 
     /// <summary>
     /// Returns all {{= model.Name}} entities in the database.
@@ -572,7 +583,7 @@ public static class {{= model.Name}}Extensions {
         {{each attr in model.Attributes}}
         services.AddSingleton<__ABSTRACTIONS__.IAttribute>(_ => {{= attr.FieldName}});
         {{/each}}
-        services.AddSingleton<IQueryFunction>(new ModelTableFunction("mdb_{{= model.Name}}", {{= model.Name}}.PrimaryAttribute, {{= model.Name}}.AllAttributes));
+        services.AddSingleton<IQueryFunction>(new ModelTableFunction("mdb_{{= model.Name}}", {{= model.Name}}.PrimaryAttribute, {{= model.Name}}.AllAttributesWithIncludes));
         return services;
     }
 

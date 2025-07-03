@@ -1,6 +1,7 @@
 ﻿// ReSharper disable InconsistentNaming
 
 using System;
+using System.IO;
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
@@ -117,11 +118,11 @@ public static class ValueTagExtensions
         ValueTag.Ascii => typeof(string),
         ValueTag.Utf8 => typeof(string),
         ValueTag.Utf8Insensitive => typeof(string),
-        ValueTag.Blob => typeof(byte[]),
-        ValueTag.HashedBlob => typeof(byte[]),
+        ValueTag.Blob => typeof(Stream),
+        ValueTag.HashedBlob => typeof(Stream),
         ValueTag.Reference => typeof(ulong),
-        ValueTag.Tuple3_Ref_UShort_Utf8I => typeof(Tuple<EntityId, ushort, string>),
-        ValueTag.Tuple2_UShort_Utf8I => typeof(Tuple<ushort, string>),
+        ValueTag.Tuple3_Ref_UShort_Utf8I => typeof(string),
+        ValueTag.Tuple2_UShort_Utf8I => typeof(string),
         _ => throw new ArgumentOutOfRangeException(nameof(tag), tag, null)
     };
 }

@@ -1,7 +1,9 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using DuckDB.NET.Data;
 using DuckDB.NET.Data.DataChunk.Writer;
 using DuckDB.NET.Native;
@@ -114,13 +116,21 @@ public class ModelTableFunction : IQueryFunction
                     writers[i].WriteValue(Utf8InsensitiveSerializer.Read(span), row);
                     break;
                 case ValueTag.Blob:
-                    writers[i].WriteValue(BlobSerializer.Read(span), row);
+                    writers[i].WriteValue(Encoding.ASCII.GetString(span), row);
                     break;
                 case ValueTag.HashedBlob:
-                    writers[i].WriteValue(HashedBlobSerializer.Read(span), row);
+                    writers[i].WriteValue(Encoding.ASCII.GetString(span), row);
                     break;
                 case ValueTag.Reference:
                     writers[i].WriteValue(UInt64Serializer.Read(span), row);
+                    break;
+                case ValueTag.Tuple2_UShort_Utf8I:
+                    var tpl = Tuple2_UShort_Utf8I_Serializer.Read(span);
+                    writers[i].WriteValue(tpl.Item2, row);
+                    break;
+                case ValueTag.Tuple3_Ref_UShort_Utf8I:
+                    var tp3 = Tuple3_Ref_UShort_Utf8I_Serializer.Read(span);
+                    writers[i].WriteValue(tp3.Item3, row);
                     break;
                 default:
                     throw new NotImplementedException($"No writer for {valueType}");

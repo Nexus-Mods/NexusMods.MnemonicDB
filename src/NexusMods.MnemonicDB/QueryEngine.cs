@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Dapper;
 using DuckDB.NET.Data;
@@ -8,7 +9,7 @@ namespace NexusMods.MnemonicDB;
 public class QueryEngine : IQueryEngine
 {
     private readonly DuckDBConnection _duckDb;
-    private IConnection? _connection;
+    private ConcurrentDictionary<string, IConnection> _connections = new();
 
     public DuckDBConnection DuckDb => _duckDb;
     
@@ -17,6 +18,8 @@ public class QueryEngine : IQueryEngine
         _duckDb = new DuckDBConnection();
         _duckDb.ConnectionString = "Data Source=:memory:";
         _duckDb.Open();
+        
+        _duckDb.Execute("INSTALL ui; LOAD ui; CALL start_ui();");
         
         foreach (var function in functions)
             function.Register(_duckDb, this);
@@ -32,9 +35,9 @@ public class QueryEngine : IQueryEngine
         return _duckDb.Query<T>(select);
     }
 
-    public void AddConnection(IConnection c)
+    public void AddConnection(IConnection c, string name)
     {
-        _connection = c;
+        _connections[name] = c;
     }
     
     public void Dispose()
@@ -44,6 +47,6 @@ public class QueryEngine : IQueryEngine
 
     public IConnection DefaultConnection()
     {
-        return _connection!;
+        return _connections["default"];
     }
 }

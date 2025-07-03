@@ -61,7 +61,7 @@ public sealed class Connection : IConnection
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers, bool readOnlyMode = false)
+    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers, bool readOnlyMode = false, string name = "default")
     {
         Topology = new Topology();
         _dbInlet = Topology.Intern(Query.Db);
@@ -75,7 +75,7 @@ public sealed class Connection : IConnection
         _analyzers = analyzers.ToArray();
         var engine = provider.GetService(typeof(IQueryEngine)) as QueryEngine;
         if (engine is not null)
-            engine.AddConnection(this);
+            engine.AddConnection(this, name);
         Bootstrap(readOnlyMode);
     }
 
