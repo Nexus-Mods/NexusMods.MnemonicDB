@@ -2,9 +2,10 @@
   <ItemGroup>
     <PackageVersion Include="DynamicData" Version="9.3.2" />
     <PackageVersion Include="Halgari.Jamarino.IntervalTree" Version="1.0.0-alpha" />
-    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.ObjectPool" Version="9.0.3" />
+    <PackageVersion Include="HyperDuck" Version="0.1.0" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.7" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.7" />
+    <PackageVersion Include="Microsoft.Extensions.ObjectPool" Version="9.0.7" />
     <PackageVersion Include="NexusMods.Cascade" Version="0.16.0" />
     <PackageVersion Include="NexusMods.Cascade.SourceGenerator" Version="0.16.0" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     <PackageVersion Include="Reloaded.Memory" Version="9.4.2" />
