@@ -454,8 +454,8 @@ public abstract unsafe partial class ATableFunction
             for (var i = 0UL; i < columns; i++)
             {
                 var mapping = Native.duckdb_init_get_column_index(initInfo, i);
-                initData.EngineToFn[mapping] = (byte)i;
-                initData.FnToEngine[i] = (sbyte)mapping;
+                initData.EngineToFn[i] = (byte)mapping;
+                initData.FnToEngine[mapping] = (sbyte)i;
             }
             
             var userData = fn.Init(initData);

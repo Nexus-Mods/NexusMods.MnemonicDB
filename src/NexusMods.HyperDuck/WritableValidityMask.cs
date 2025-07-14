@@ -15,6 +15,11 @@ public unsafe struct WritableValidityMask
         _mask = mask;
         _rowCount = rowCount;
     }
+    
+    /// <summary>
+    /// Returns false if the internal pointers are null
+    /// </summary>
+    public bool IsValid => _mask != null;
 
     public bool this[ulong index]
     {
@@ -39,5 +44,14 @@ public unsafe struct WritableValidityMask
                 _mask[ulongIndex] &= ~(1UL << (int)bitIndex);
             }
         }
+    }
+
+    /// <summary>
+    /// Sets all the rows in the mask to valid
+    /// </summary>
+    public void SetAllValid()
+    {
+        var span = new Span<ulong>(_mask, (int)(_rowCount / 64) + 1);
+        span.Fill(ulong.MaxValue);
     }
 }

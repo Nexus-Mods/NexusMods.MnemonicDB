@@ -21,7 +21,7 @@ public static class Helpers
             DuckDbType.Varchar => typeof(StringElement),
             DuckDbType.List => typeof(ListEntry),
             DuckDbType.Enum => type.EnumScalarType,
-            _ => throw new NotImplementedException($"Row scalar mapping for {type} not implemented.")
+            _ => throw new NotImplementedException($"Row scalar mapping for {type.TypeId} not implemented.")
         };
     }
 }

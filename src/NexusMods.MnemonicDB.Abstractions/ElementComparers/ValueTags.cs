@@ -2,6 +2,7 @@
 
 using System;
 using NexusMods.HyperDuck;
+// ReSharper disable NotDisposedResource
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
@@ -101,7 +102,7 @@ public enum ValueTag : byte
 
 public static class ValueTagsExtensions
 {
-    private static LogicalType[] _duckDbTypes;
+    private static readonly LogicalType[] _duckDbTypes;
 
     static ValueTagsExtensions()
     {
@@ -121,6 +122,11 @@ public static class ValueTagsExtensions
         _duckDbTypes[(int)ValueTag.Utf8Insensitive] = LogicalType.From<string>();
         _duckDbTypes[(int)ValueTag.Blob] = LogicalType.From<byte[]>();
         _duckDbTypes[(int)ValueTag.HashedBlob] = LogicalType.From<byte[]>();
+        _duckDbTypes[(int)ValueTag.Reference] = LogicalType.From<ulong>();
+        _duckDbTypes[(int)ValueTag.Tuple3_Ref_UShort_Utf8I] = LogicalType.CreateStruct(["Item1", "Item2", "Item3"],
+            [LogicalType.From<ulong>(), LogicalType.From<ushort>(), LogicalType.From<string>()]);
+        _duckDbTypes[(int)ValueTag.Tuple2_UShort_Utf8I] = LogicalType.CreateStruct(["Item1", "Item2"], 
+            [LogicalType.From<ushort>(), LogicalType.From<string>()]);
     }
 
     public static LogicalType DuckDbType(this ValueTag tag)

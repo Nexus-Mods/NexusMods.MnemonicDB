@@ -68,22 +68,139 @@ public class ModelTableFunction : ATableFunction
     {
         switch (tag)
         {
+            case ValueTag.UInt8:
+                WriteUnmanagedColumn<byte>(ids, vector, datoms);
+                break;
+            case ValueTag.UInt16:
+                WriteUnmanagedColumn<ushort>(ids, vector, datoms);
+                break;
+            case ValueTag.UInt32:
+                WriteUnmanagedColumn<uint>(ids, vector, datoms);
+                break;
+            case ValueTag.UInt64:
+                WriteUnmanagedColumn<ulong>(ids, vector, datoms);
+                break;
+            case ValueTag.UInt128:
+                WriteUnmanagedColumn<UInt128>(ids, vector, datoms);
+                break;
+            case ValueTag.Int16:
+                WriteUnmanagedColumn<short>(ids, vector, datoms);
+                break;
+            case ValueTag.Int32:
+                WriteUnmanagedColumn<int>(ids, vector, datoms);
+                break;
+            case ValueTag.Int64:
+                WriteUnmanagedColumn<long>(ids, vector, datoms);
+                break;
+            case ValueTag.Int128:
+                WriteUnmanagedColumn<Int128>(ids, vector, datoms);
+                break;
+            case ValueTag.Float32:
+                WriteUnmanagedColumn<float>(ids, vector, datoms);
+                break;
+            case ValueTag.Float64:
+                WriteUnmanagedColumn<double>(ids, vector, datoms);
+                break;
+            case ValueTag.Ascii:
+                WriteVarCharColumn(ids, vector, datoms);
+                break;
+            case ValueTag.Utf8Insensitive:
+                WriteVarCharColumn(ids, vector, datoms);
+                break;
             case ValueTag.Utf8:
                 WriteVarCharColumn(ids, vector, datoms);
+                break;
+            case ValueTag.Reference:
+                WriteUnmanagedColumn<ulong>(ids, vector, datoms);
+                break;
+            case ValueTag.Tuple2_UShort_Utf8I:
+                WriteTuple2Column(ids, vector, datoms);
+                break;
+            case ValueTag.Tuple3_Ref_UShort_Utf8I:
+                WriteTuple3Column(ids, vector, datoms);
                 break;
             default:
                 throw new NotImplementedException("Not implemented for " + tag);
         }
     }
 
+    private void WriteTuple3Column(ReadOnlySpan<EntityId> ids, WritableVector vector, ILightweightDatomSegment datoms)
+    {
+        var validityMask = vector.GetValidityMask();
+        var refVector = vector.GetStructChild(0).GetData<ulong>();
+        var shortVector = vector.GetStructChild(1).GetData<ushort>();
+        var stringVector = vector.GetStructChild(2);
+        for (var rowIdx = 0; rowIdx < ids.Length; rowIdx++)
+        {
+            var rowId = ids[rowIdx];
+            if (datoms.FastForwardTo(rowId))
+            {
+                refVector[rowIdx] = datoms.ValueSpan.CastFast<byte, ulong>()[0];
+                shortVector[rowIdx] = datoms.ValueSpan.SliceFast(sizeof(ulong)).CastFast<byte, ushort>()[0];
+                stringVector.WriteUtf8((ulong)rowIdx, datoms.ValueSpan.SliceFast(sizeof(ulong) + sizeof(ushort)));
+                validityMask[(ulong)rowIdx] = true;
+            }
+            else
+            {
+                validityMask[(ulong)rowIdx] = false;
+            }
+        }
+    }
+
+    private void WriteTuple2Column(ReadOnlySpan<EntityId> ids, WritableVector vector, ILightweightDatomSegment datoms)
+    {
+        var validityMask = vector.GetValidityMask();
+        var shortVector = vector.GetStructChild(0).GetData<ushort>();
+        var stringVector = vector.GetStructChild(1);
+        for (var rowIdx = 0; rowIdx < ids.Length; rowIdx++)
+        {
+            var rowId = ids[rowIdx];
+            if (datoms.FastForwardTo(rowId))
+            {
+                shortVector[rowIdx] = datoms.ValueSpan.CastFast<byte, ushort>()[0];
+                stringVector.WriteUtf8((ulong)rowIdx, datoms.ValueSpan.SliceFast(sizeof(ushort)));
+                validityMask[(ulong)rowIdx] = true;
+            }
+            else
+            {
+                validityMask[(ulong)rowIdx] = false;
+            }
+        }
+    }
+
+    private void WriteUnmanagedColumn<T>(ReadOnlySpan<EntityId> ids, WritableVector vector, ILightweightDatomSegment datoms) 
+        where T : unmanaged
+    {
+        var dataSpan = vector.GetData().CastFast<byte, T>();
+        for (var rowIdx = 0; rowIdx < ids.Length; rowIdx++)
+        {
+            var rowId = ids[rowIdx];
+            if (datoms.FastForwardTo(rowId))
+            {
+                dataSpan[rowIdx] = datoms.ValueSpan.CastFast<byte, T>()[0];
+            }
+        }
+    }
+
     private void WriteVarCharColumn(ReadOnlySpan<EntityId> ids, WritableVector vector, ILightweightDatomSegment datoms)
     {
+        WritableValidityMask mask = default;
         for (var rowIdx = 0; rowIdx < ids.Length; rowIdx++)
         {
             var rowId = ids[rowIdx];
             if (datoms.FastForwardTo(rowId))
             {
                 vector.WriteUtf8((ulong)rowIdx, datoms.ValueSpan);
+            }
+            else
+            {
+                if (!mask.IsValid)
+                {
+                    mask = vector.GetValidityMask();
+                    mask.SetAllValid();
+                }
+
+                mask[(ulong)rowIdx] = false;
             }
         }
     }
