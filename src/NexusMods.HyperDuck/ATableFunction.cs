@@ -260,12 +260,39 @@ public abstract unsafe partial class ATableFunction
         }
         
         public WritableChunk Chunk => new(_chunk);
+        public int EmitSize => InternalConsts.DefaultVectorSize;
 
         public T GetBindInfo<T>()
         {
             if (_bindData.UserBindData is not T bindInfo)
                 throw new InvalidOperationException("Cannot cast user bind data");
             return bindInfo;
+        }
+
+        /// <summary>
+        /// Sets the emitted number of rows. Must be set at least once by every call to Execute
+        /// </summary>
+        public void SetEmittedRowCount(int count)
+        {
+            var chunk = Chunk;
+            chunk.Size = (ulong)count;
+        }
+
+        public T GetInitInfo<T>()
+        {
+            if (_initData.UserData is not T initInfo)
+                throw new InvalidOperationException("Cannot cast user init data");
+            return initInfo;
+        }
+
+        public int EngineToFn(int column)
+        {
+            return _initData.EngineToFn[column];
+        }
+
+        public int FnToEngine(int column)
+        {
+            return _initData.FnToEngine[column];
         }
 
         /// <summary>
@@ -381,7 +408,7 @@ public abstract unsafe partial class ATableFunction
         handle.Free();
     }
 
-    internal class InitData
+    public class InitData
     {
         /// <summary>
         /// A mapping of the Engine's requested Column to the Fn's column
@@ -393,6 +420,11 @@ public abstract unsafe partial class ATableFunction
         /// requested.
         /// </summary>
         public sbyte[] FnToEngine = [];
+
+        /// <summary>
+        /// User defined init data
+        /// </summary>
+        public object? UserData;
     }
     
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -401,8 +433,12 @@ public abstract unsafe partial class ATableFunction
         try
         {
             var columns = Native.duckdb_init_get_column_count(initInfo);
-            var handle = GCHandle.FromIntPtr((IntPtr)Native.duckdb_init_get_bind_data(initInfo));
             
+            var fnHandle = GCHandle.FromIntPtr((IntPtr)Native.duckdb_init_get_extra_info(initInfo));
+            if (fnHandle.Target is not ATableFunction fn)
+                throw new InvalidOperationException("Invalid function pointer");
+            
+            var handle = GCHandle.FromIntPtr((IntPtr)Native.duckdb_init_get_bind_data(initInfo));
             if (handle.Target is not BindData bindData)
                 throw new InvalidOperationException("Invalid bind data pointer");
 
@@ -422,12 +458,20 @@ public abstract unsafe partial class ATableFunction
                 initData.FnToEngine[i] = (sbyte)mapping;
             }
             
+            var userData = fn.Init(initData);
+            initData.UserData = userData;
+            
             Native.duckdb_init_set_init_data(initInfo, (void*)GCHandle.ToIntPtr(GCHandle.Alloc(initData)), &DeleteHandleFn);
         }
         catch (Exception ex)
         {
             Native.duckdb_init_set_error(initInfo, ex.Message);
         }
+    }
+
+    protected virtual object? Init(InitData initData)
+    {
+        return null;
     }
     
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]

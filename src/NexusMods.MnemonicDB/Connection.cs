@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DynamicData;
 using Jamarino.IntervalTree;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.Cascade;
 using NexusMods.MnemonicDB.Abstractions;
@@ -82,6 +83,11 @@ public sealed class Connection : IConnection
     private void RegisterWithEngine(IQueryEngine queryEngine)
     {
         queryEngine.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes));
+
+        foreach (var model in ServiceProvider.GetServices<ModelDefinition>())
+        {
+            queryEngine.Register(new ModelTableFunction(this, model));
+        }
     }
 
     private void ProcessEvents()

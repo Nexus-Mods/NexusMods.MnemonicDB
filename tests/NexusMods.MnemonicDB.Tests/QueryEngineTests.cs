@@ -35,4 +35,13 @@ public class QueryEngineTests : AMnemonicDBTest
 
         data.Count.Should().Be(3);
     }
+
+    [Fact]
+    public async Task CanSelectFromModels()
+    {
+        await InsertExampleData();
+        var data = QueryEngine.Query<List<(EntityId, string)>>("SELECT Id, Name FROM mdb_Mod()"); 
+
+        data.Count.Should().Be(3);
+    }
 }
