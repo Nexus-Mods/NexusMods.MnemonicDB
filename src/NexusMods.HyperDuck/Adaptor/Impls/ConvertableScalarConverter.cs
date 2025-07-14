@@ -7,7 +7,9 @@ public class ConvertableScalarConverter<T>(DuckDbType typeId): IConverter
 {
     public int? CanConvert(BuilderContext ctx)
     {
-        return ctx.Mode == BuilderContext.ContextMode.Value && ctx.Types[0].TypeId == typeId  ? 0 : null;
+        return ctx.Mode == BuilderContext.ContextMode.Value 
+               && ctx.Types[0].TypeId == typeId
+            && ctx.ClrType == typeof(T) ? 0 : null;
     }
 
     public List<Expression> ConvertExpr(BuilderContext context)

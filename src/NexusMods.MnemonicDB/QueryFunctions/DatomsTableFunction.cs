@@ -16,6 +16,7 @@ public class DatomsTableFunction : ATableFunction
     private readonly LogicalType _valueType;
     private readonly IConnection _conn;
     private readonly string _prefix;
+    private readonly ushort[] _attrIdToEnum;
 
     private enum UnionOrdering : byte
     {
@@ -31,6 +32,14 @@ public class DatomsTableFunction : ATableFunction
         _conn = conn;
         _engine = null;
         _attrs = attrs.OrderBy(attr => attr.Id.Id).ToArray();
+        var cache = conn.AttributeCache;
+        _attrIdToEnum = new ushort[cache.MaxAttrId + 1];
+        for (int i = 0; i < attrs.Count(); i++)
+        {
+            var attr = _attrs[i];
+            _attrIdToEnum[cache.GetAttributeId(attr.Id).Value] = (ushort)i;
+        }
+
         _logicalType = LogicalType.CreateEnum(_attrs.Select(s => 
             $"{s.Id.Namespace.Split(".").Last()}/{s.Id.Name}").ToArray());
 
@@ -97,7 +106,7 @@ public class DatomsTableFunction : ATableFunction
         while (iterator.MoveNext())
         {
             eVec[row] = iterator.KeyPrefix.E.Value;
-            aVec[row] = (byte)iterator.KeyPrefix.A.Value;
+            aVec[row] = (byte)_attrIdToEnum[iterator.KeyPrefix.A.Value];
             tVec[row] = iterator.KeyPrefix.T.Value;
 
             strValidity[(ulong)row] = false;
