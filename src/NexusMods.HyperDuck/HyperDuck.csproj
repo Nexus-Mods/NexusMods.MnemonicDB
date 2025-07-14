@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <LangVersion>latest</LangVersion>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <Title>An extremely fast DuckDB interface for C#</Title>
+        <PackageProjectUrl>https://github.com/halgari/HyperDuck</PackageProjectUrl>
+        <PackageLicenseUrl>https://github.com/halgari/HyperDuck/blob/master/LICENSE</PackageLicenseUrl>
+        <PackageTags>duckdb, interop, csharp</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="JetBrains.Annotations" Version="2024.3.0" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.6" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeIdentifier)' == 'win-x64'">
+        <ProjectReference Include="..\HyperDuck.Native.Windows.x64\HyperDuck.Native.Windows.x64.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeIdentifier)' == 'linux-x64'">
+        <ProjectReference Include="..\HyperDuck.Native.Linux.x64\HyperDuck.Native.Linux.x64.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeIdentifier)' == 'osx-x64'">
+        <ProjectReference Include="..\HyperDuck.Native.OSX.arm64\HyperDuck.Native.OSX.arm64.csproj" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeIdentifier)' == ''">  <!-- empty RID = AnyCPU -->
+        <ProjectReference Include="..\HyperDuck.Native.OSX.arm64\HyperDuck.Native.OSX.arm64.csproj" />
+        <ProjectReference Include="..\HyperDuck.Native.Linux.x64\HyperDuck.Native.Linux.x64.csproj" />
+        <ProjectReference Include="..\HyperDuck.Native.Windows.x64\HyperDuck.Native.Windows.x64.csproj" />
+    </ItemGroup>
+    
+</Project>
