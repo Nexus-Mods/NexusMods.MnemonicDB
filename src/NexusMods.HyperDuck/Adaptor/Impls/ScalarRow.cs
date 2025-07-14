@@ -17,7 +17,7 @@ public class ScalarRow : IConverter
 
     public List<Expression> ConvertExpr(BuilderContext ctx)
     {
-        var clrType = Helpers.ScalarMapping(ctx.Types[0].TypeId);
+        var clrType = Helpers.ScalarMapping(ctx.Types[0]);
         if (clrType != ctx.ClrType)
             throw new NotImplementedException();
         

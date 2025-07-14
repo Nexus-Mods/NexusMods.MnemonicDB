@@ -25,7 +25,7 @@ public class TupleRowConverter : IConverter
         for (var i = 0; i < ctx.Types.Length; i++)
         {
             var clrResultType = genericTypes[i];
-            var nativeType = Helpers.ScalarMapping(ctx.Types[i].TypeId);
+            var nativeType = Helpers.ScalarMapping(ctx.Types[i]);
             var vector = Expression.Variable(typeof(ReadOnlyVector), $"columnVector{i}");
             var vectorData = Expression.Variable(typeof(ReadOnlySpan<>).MakeGenericType(nativeType), $"columnVectorData{i}");
             var val = Expression.Variable(nativeType, $"columnValue{i}");

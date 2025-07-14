@@ -16,6 +16,7 @@ using NexusMods.MnemonicDB.Abstractions.Cascade;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.EventTypes;
 using NexusMods.MnemonicDB.InternalTxFunctions;
+using NexusMods.MnemonicDB.QueryFunctions;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using R3;
@@ -74,6 +75,13 @@ public sealed class Connection : IConnection
         _dbStream = new DbStream();
         _analyzers = analyzers.ToArray();
         Bootstrap(readOnlyMode);
+        if (ServiceProvider.GetService(typeof(IQueryEngine)) is IQueryEngine queryEngine)
+            RegisterWithEngine(queryEngine);
+    }
+
+    private void RegisterWithEngine(IQueryEngine queryEngine)
+    {
+        queryEngine.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes));
     }
 
     private void ProcessEvents()

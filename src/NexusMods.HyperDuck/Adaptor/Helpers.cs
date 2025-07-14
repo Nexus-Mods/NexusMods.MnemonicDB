@@ -11,14 +11,16 @@ public static class Helpers
         return span[(int)index];
     }
     
-    public static Type ScalarMapping(DuckDbType type)
+    public static Type ScalarMapping(LogicalType type)
     {
-        return type switch
+        return type.TypeId switch
         {
             DuckDbType.Integer => typeof(int),
             DuckDbType.BigInt => typeof(long),
+            DuckDbType.UBigInt => typeof(ulong),
             DuckDbType.Varchar => typeof(StringElement),
             DuckDbType.List => typeof(ListEntry),
+            DuckDbType.Enum => type.EnumScalarType,
             _ => throw new NotImplementedException($"Row scalar mapping for {type} not implemented.")
         };
     }

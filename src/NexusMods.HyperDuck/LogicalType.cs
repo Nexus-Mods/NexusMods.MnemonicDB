@@ -66,6 +66,15 @@ public unsafe partial struct LogicalType : IDisposable
         _ => throw new NotImplementedException("SizeInVector not implemented for type: " + TypeId)
     };
 
+    public Type EnumScalarType => Native.duckdb_enum_internal_type(_ptr) switch
+    {
+        DuckDbType.UTinyInt => typeof(byte),
+        DuckDbType.USmallInt => typeof(ushort),
+        DuckDbType.UInteger => typeof(uint),
+        DuckDbType.UBigInt => typeof(ulong),
+        _ => throw new NotImplementedException("EnumScalarType not implemented for enum type.")
+    };
+
     [MustDisposeResource]
     public static LogicalType CreateListOf(LogicalType childType)
     {

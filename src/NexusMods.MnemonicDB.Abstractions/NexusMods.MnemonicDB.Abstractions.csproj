@@ -17,6 +17,7 @@
         <PackageReference Include="TransparentValueObjects.Abstractions" />
         <PackageReference Update="JetBrains.Annotations"/>
         <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.SourceGenerator\NexusMods.MnemonicDB.SourceGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+        <ProjectReference Include="..\NexusMods.HyperDuck\NexusMods.HyperDuck.csproj" />
     </ItemGroup>
 
     <ItemGroup>

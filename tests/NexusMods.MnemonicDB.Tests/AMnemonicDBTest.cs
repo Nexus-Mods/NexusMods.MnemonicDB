@@ -27,6 +27,9 @@ public class AMnemonicDBTest : IDisposable
     private readonly IAnalyzer[] _analyzers;
     
     protected TemporaryFileManager TemporaryFileManager;
+    
+    public IQueryEngine QueryEngine { get; set; }
+
 
 
     protected AMnemonicDBTest(IServiceProvider provider)
@@ -53,7 +56,10 @@ public class AMnemonicDBTest : IDisposable
         Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, provider, _analyzers);
 
         Logger = provider.GetRequiredService<ILogger<AMnemonicDBTest>>();
+        
+        QueryEngine = provider.GetRequiredService<IQueryEngine>();
     }
+
 
 
     protected async Task LoadDatamodel(RelativePath name)

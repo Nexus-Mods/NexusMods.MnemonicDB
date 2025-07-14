@@ -1,4 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using NexusMods.HyperDuck;
+using NexusMods.HyperDuck.Adaptor;
+using NexusMods.HyperDuck.Adaptor.Impls;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Storage;
@@ -31,7 +34,11 @@ public static class Services
         services.AddAttributeDefinitionModel()
                 .AddTransactionModel()
                 .AddSingleton<IDatomStore, DatomStore>()
-                .AddSingleton<DatomStore>(s => (DatomStore)s.GetRequiredService<IDatomStore>());
+                .AddSingleton<DatomStore>(s => (DatomStore)s.GetRequiredService<IDatomStore>())
+                .AddSingleton<IQueryEngine, QueryEngine>()
+                .AddAdapters()
+                .AddSingleton<IConverter, ConvertableScalarConverter<EntityId>>(s => new ConvertableScalarConverter<EntityId>(DuckDbType.UBigInt))
+                .AddSingleton<IConverter, ConvertableScalarConverter<TxId>>(s => new ConvertableScalarConverter<TxId>(DuckDbType.UBigInt));
         return services;
     }
     

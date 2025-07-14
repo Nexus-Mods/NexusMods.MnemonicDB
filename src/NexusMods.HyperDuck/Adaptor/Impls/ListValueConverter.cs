@@ -18,7 +18,7 @@ public class ListValueConverter : IConverter
     public List<Expression> ConvertExpr(BuilderContext ctx)
     {
         using var childType = ctx.Types[0].ListChildType();
-        var nativeType = Helpers.ScalarMapping(childType.TypeId);
+        var nativeType = Helpers.ScalarMapping(childType);
         var clrInnerType = ctx.ClrType.GetGenericArguments()[0];
         
         // If the types match perfectly, we can just initialize a List from a span 
