@@ -27,10 +27,17 @@
         </None>
     </ItemGroup>
     <ItemGroup>
-      <Content Include="HyperDuck.csproj" />
-    </ItemGroup>
-    <ItemGroup>
       <PackageReference Include="JetBrains.Annotations" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     </ItemGroup>
+
+
+    <PropertyGroup>
+        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(DefineConstants);IS_WINDOWS</DefineConstants>
+        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(DefineConstants);IS_LINUX</DefineConstants>
+        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(DefineConstants);IS_MACOS</DefineConstants>
+    </PropertyGroup>
+    
+    <!-- Non-NuGet Only -->
+    <Import Project="build\NexusMods.HyperDuck.targets" />
 </Project>
