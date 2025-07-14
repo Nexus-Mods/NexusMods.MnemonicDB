@@ -34,7 +34,7 @@ public unsafe partial struct LogicalType : IDisposable
         if (typeof(T) == typeof(ulong)) return Create(DuckDbType.UBigInt);
         if (typeof(T) == typeof(string)) return Create(DuckDbType.Varchar);
         if (typeof(T) == typeof(ReadOnlySpan<char>)) return Create(DuckDbType.Varchar);
-        if (typeof(T) == typeof(ReadOnlySpan<byte>)) return Create(DuckDbType.Blob);
+        if (typeof(T) == typeof(ReadOnlySpan<byte>) || typeof(T) == typeof(byte[])) return Create(DuckDbType.Blob);
         if (typeof(T) == typeof(float)) return Create(DuckDbType.Float);
         if (typeof(T) == typeof(double)) return Create(DuckDbType.Double);
         throw new NotImplementedException();

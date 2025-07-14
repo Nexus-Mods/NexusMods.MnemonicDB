@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NexusMods.Cascade;
@@ -33,6 +34,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
     {
         
         Id = Symbol.Intern(ns, name);
+        ShortName = $"{ns.Split(".").Last()}/{name}";
         Cardinalty = cardinality;
         IsIndexed = isIndexed;
         NoHistory = noHistory;
@@ -66,6 +68,8 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
         };
         
     }
+
+    public string ShortName { get; }
 
     /// <summary>
     /// Converts a high-level value to a low-level value

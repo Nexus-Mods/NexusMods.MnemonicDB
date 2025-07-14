@@ -70,6 +70,11 @@ public interface IAttribute
     Cardinality Cardinalty { get; }
 
     /// <summary>
+    /// The shorthand version of the id which is the last segment of the namespace and the name, e.g. `Mod/Name`
+    /// </summary>
+    string ShortName { get; }
+
+    /// <summary>
     ///     Converts the given values into a typed datom
     /// </summary>
     IReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, AttributeResolver resolver);

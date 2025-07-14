@@ -112,7 +112,9 @@ public unsafe partial struct Value : IDisposable
 
     public double GetDouble() => Native.duckdb_get_double(_ptr);
 
-    public bool IsNull => Native.duckdb_is_null_value(_ptr) != 0;
+    public string GetVarChar() => Marshal.PtrToStringUTF8((nint)Native.duckdb_get_varchar(_ptr))!;
+
+    public bool IsNull => _ptr == null || Native.duckdb_is_null_value(_ptr) != 0;
 
     [MustUseReturnValue]
     public LogicalType GetValueType() => new(Native.duckdb_get_value_type(_ptr));
@@ -248,6 +250,10 @@ public unsafe partial struct Value : IDisposable
         
         [LibraryImport(InternalConsts.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial void* duckdb_get_varchar(void* value);
+        
+        [LibraryImport(InternalConsts.LibraryName)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void* duckdb_get_value_type(void* value);
         
         [LibraryImport(InternalConsts.LibraryName)]
@@ -267,5 +273,4 @@ public unsafe partial struct Value : IDisposable
         Native.duckdb_destroy_value(ref _ptr);
         _ptr = null;
     }
-
 }

@@ -16,10 +16,17 @@ public unsafe ref partial struct WritableVector
         _ptr = ptr;
         _rowCount = rowCount;
     }
+    
+    /// <summary>
+    /// Returns true if this vector is valid (has a non-null ptr)
+    /// </summary>
+    public bool IsValid => _ptr != null;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public Span<byte> GetData()
     {
+        if (_ptr == null)
+            return Span<byte>.Empty;
         if (!_data.IsEmpty) 
             return _data;
         
@@ -35,8 +42,8 @@ public unsafe ref partial struct WritableVector
     public Span<T> GetData<T>() 
         where T : unmanaged
     {
-        ArgumentNullException.ThrowIfNull(_ptr);
-        
+        if (_ptr == null)
+            return Span<T>.Empty;
         var data = GetData();
         return MemoryMarshal.Cast<byte, T>(data);
     }

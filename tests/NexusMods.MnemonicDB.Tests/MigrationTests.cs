@@ -117,7 +117,7 @@ public class MigrationTests : AMnemonicDBTest
         };
         using var backend = new Backend();
         using var store = new DatomStore(Provider.GetRequiredService<ILogger<DatomStore>>(), settings, backend);
-        using var connection = new Connection(Provider.GetRequiredService<ILogger<Connection>>(), store, Provider, [], false);
+        using var connection = new Connection(Provider.GetRequiredService<ILogger<Connection>>(), store, Provider, [], null, false);
 
         var db = connection.Db;
         var attrs = db.Datoms(AttributeDefinition.UniqueId);
