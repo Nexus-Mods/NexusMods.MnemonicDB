@@ -72,52 +72,52 @@ public abstract unsafe partial class ATableFunction
     internal static partial class Native
     {
         #region Creation
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void* duckdb_create_table_function();
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_destroy_table_function(ref void* ptr);
         
-        [LibraryImport(InternalConsts.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_table_function_set_name(void* ptr, string name);
   
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial State duckdb_register_table_function(void* conn, void* fn);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_table_function_set_function(void* ptr, delegate* unmanaged[Cdecl]<void*, void*, void> fnPtr);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_table_function_set_extra_info(void* ptr, void* extraInfo, delegate* unmanaged[Cdecl]<void*, void> deleteFn);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_table_function_set_bind(void* ptr, delegate* unmanaged[Cdecl]<void*, void> bindFn);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_table_function_set_init(void* ptr, delegate* unmanaged[Cdecl]<void*, void> initFn);
 
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_table_function_set_local_init(void* ptr, delegate* unmanaged[Cdecl]<void*, void> localInitFn);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_table_function_supports_projection_pushdown(void* ptr, byte supportsProjectionPushdown);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_table_function_add_parameter(void* ptr, void* logicalType);
         
-        [LibraryImport(InternalConsts.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_table_function_add_named_parameter(void* ptr, string name, void* logicalType);
         #endregion
@@ -125,35 +125,35 @@ public abstract unsafe partial class ATableFunction
 
         #region Bind
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void* duckdb_bind_get_extra_info(void* bindInfo);
         
-        [LibraryImport(InternalConsts.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_bind_set_error(void* bindInfo, string error);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_bind_set_bind_data(void* bindInfo, void* data, delegate* unmanaged[Cdecl]<void*, void> deleteFn);
         
-        [LibraryImport(InternalConsts.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void  duckdb_bind_add_result_column(void* bindInfo, string name, void* logicalType); 
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_bind_set_cardinality(void* bindInfo, ulong cardinality, byte isExact);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial ulong duckdb_bind_get_parameter_count(void* bindInfo);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void* duckdb_bind_get_parameter(void* bindInfo, ulong index);
         
-        [LibraryImport(InternalConsts.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void* duckdb_bind_get_named_parameter(void* bindInfo, string name);
         
@@ -162,31 +162,31 @@ public abstract unsafe partial class ATableFunction
 
         #region Init
 
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void* duckdb_init_get_extra_info(void* initInfo);
 
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void* duckdb_init_get_bind_data(void* initInfo);
 
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_init_set_init_data(void* initInfo, void* initData, delegate* unmanaged[Cdecl]<void*, void> destroy);
 
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial ulong duckdb_init_get_column_count(void* initInfo);
 
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial ulong duckdb_init_get_column_index(void* initInfo, ulong columnIndex);
 
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_init_set_max_threads(void* initInfo, nuint maxThreads);
 
-        [LibraryImport(InternalConsts.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_init_set_error(void* initInfo, string error);
 
@@ -198,19 +198,19 @@ public abstract unsafe partial class ATableFunction
         
         #region Function Scan
         // Function
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void* duckdb_function_get_extra_info(void* functionInfo);
 
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void* duckdb_function_get_bind_data(void* functionInfo);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void* duckdb_function_get_init_data(void* functionInfo);
 
-        [LibraryImport(InternalConsts.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial void duckdb_function_set_error(void* functionInfo, string error);
         #endregion
@@ -260,7 +260,7 @@ public abstract unsafe partial class ATableFunction
         }
         
         public WritableChunk Chunk => new(_chunk);
-        public int EmitSize => InternalConsts.DefaultVectorSize;
+        public int EmitSize => (int)GlobalConstants.DefaultVectorSize;
 
         public T GetBindInfo<T>()
         {

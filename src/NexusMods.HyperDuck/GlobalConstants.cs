@@ -1,8 +1,9 @@
 ﻿using System;
+using System.Security.AccessControl;
 
 namespace NexusMods.HyperDuck;
 
-internal static class InternalConsts
+public static class GlobalConstants
 {
 
     #if IS_WINDOWS
@@ -14,8 +15,8 @@ internal static class InternalConsts
     #else
     public const string LibraryName = "NO_KNOWN_DLL_MAPPING FOR THIS OS";
     #endif
-    
-    
-    public const int DefaultVectorSize = 1024 * 2;
-    
+
+
+    public static ulong DefaultVectorSize { get; } = ReadOnlyVector.Native.duckdb_vector_size();
+
 }

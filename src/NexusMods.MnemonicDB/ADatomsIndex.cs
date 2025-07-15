@@ -1,3 +1,5 @@
+using System;
+using System.Buffers;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions;
@@ -54,8 +56,30 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         var enumerator = GetRefDatomEnumerator(totalOrdered);
         return new LightweightDatomSegment<TRefEnumerator, TDescriptor>(enumerator, descriptor);
     }
-    
-    
+
+    public int IdsForPrimaryAttribute(AttributeId attributeId, int chunkSize, out List<EntityId[]> chunks)
+    {
+        List<EntityId[]> result = [];
+        using var iterator = GetRefDatomEnumerator();
+        var slice = SliceDescriptor.Create(attributeId);
+        var chunk = ArrayPool<EntityId>.Shared.Rent(chunkSize);
+        result.Add(chunk);
+        int chunkOffset = 0;
+        while (iterator.MoveNext(slice))
+        {
+            chunk[chunkOffset] = iterator.KeyPrefix.E;
+            chunkOffset++;
+            if (chunkOffset >= chunk.Length)
+            {
+                chunk = ArrayPool<EntityId>.Shared.Rent(chunkSize);
+                chunkOffset = 0;
+                result.Add(chunk);
+            }
+        }
+
+        chunks = result;
+        return (result.Count - 1) * chunkSize + chunkOffset;
+    }
     
     
     public virtual EntitySegment GetEntitySegment(IDb db, EntityId entityId)

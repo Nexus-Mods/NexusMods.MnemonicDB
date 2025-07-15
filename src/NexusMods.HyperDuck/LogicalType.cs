@@ -44,6 +44,7 @@ public unsafe partial struct LogicalType : IDisposable
     
     public int SizeInVector => TypeId switch
     {
+        DuckDbType.Boolean => 1,
         DuckDbType.TinyInt => 1,
         DuckDbType.SmallInt => 2,
         DuckDbType.Integer => 4,
@@ -151,39 +152,39 @@ public unsafe partial struct LogicalType : IDisposable
 
     private static partial class Native
     {
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void duckdb_destroy_logical_type(ref void* logical);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial DuckDbType duckdb_get_type_id(void* logical);
 
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void* duckdb_list_type_child_type(void* logical);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void* duckdb_create_logical_type(DuckDbType typeId);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void* duckdb_create_list_type(void* childType);
 
-        [LibraryImport(InternalConsts.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void* duckdb_create_enum_type(string[] values, ulong count);
         
-        [LibraryImport(InternalConsts.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void* duckdb_create_struct_type(void* types, string[] values, ulong count);
         
-        [LibraryImport(InternalConsts.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void* duckdb_create_union_type(void* types, void* values, ulong count);
 
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial DuckDbType duckdb_enum_internal_type(void* type);
     }

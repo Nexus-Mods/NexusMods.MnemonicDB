@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
@@ -12,12 +14,19 @@ public class ModelTableFunction : ATableFunction
     private readonly ModelDefinition _definition;
     private readonly IConnection _conn;
     private readonly string _prefix;
+    
+    /// <summary>
+    /// Each time this function runs to completion we store the number of rows we emitted, and feed that data to
+    /// duckdb on the next evocation of the function. 
+    /// </summary>
+    private int _cardinality;
 
     public ModelTableFunction(IConnection conn, ModelDefinition definition, string prefix = "mdb")
     {
         _prefix = prefix;
         _conn = conn;
         _definition = definition;
+        _cardinality = -1;
     }
     
     protected override void Setup(RegistrationInfo info)
@@ -44,6 +53,11 @@ public class ModelTableFunction : ATableFunction
             idVec[rowsEmitted] = primaryIterator.KeyPrefix.E.Value;
             rowsEmitted++;
         }
+        iterators.TotalRowsEmitted += rowsEmitted;
+
+        // We reached the end of the primary iterator, so we can store the cardinality
+        if (rowsEmitted < idVec.Length) 
+            _cardinality = iterators.TotalRowsEmitted;
         
         // Slice the idVec so we can constrain the joining columns
         var ids = idVec.SliceFast(0, rowsEmitted).CastFast<ulong, EntityId>();
@@ -57,7 +71,7 @@ public class ModelTableFunction : ATableFunction
             // No reason to copy the ids if they're already emitted
             if (fnIdx == 0)
                 continue;
-            
+
             var valueVector = chunk[(ulong)columnIdx];
             var attr = _definition.AllAttributes[fnIdx - 1];
             WriteColumn(attr.LowLevelType, ids, valueVector, iterator);
@@ -68,6 +82,9 @@ public class ModelTableFunction : ATableFunction
     {
         switch (tag)
         {
+            case ValueTag.Null:
+                WriteNullColumn(ids, vector, datoms);
+                break;
             case ValueTag.UInt8:
                 WriteUnmanagedColumn<byte>(ids, vector, datoms);
                 break;
@@ -121,6 +138,23 @@ public class ModelTableFunction : ATableFunction
                 break;
             default:
                 throw new NotImplementedException("Not implemented for " + tag);
+        }
+    }
+
+    private void WriteNullColumn(ReadOnlySpan<EntityId> ids, WritableVector vector, ILightweightDatomSegment datoms)
+    {
+        var dataSpan = vector.GetData<byte>();
+        for (var rowIdx = 0; rowIdx < ids.Length; rowIdx++)
+        {
+            var rowId = ids[rowIdx];
+            if (datoms.FastForwardTo(rowId))
+            {
+                dataSpan[rowIdx] = 1;
+            }
+            else
+            {
+                dataSpan[rowIdx] = 0;
+            }
         }
     }
 
@@ -209,6 +243,7 @@ public class ModelTableFunction : ATableFunction
     {
         public required ILightweightDatomSegment PrimaryIterator;
         public required ILightweightDatomSegment[] InnerIterators;
+        public int TotalRowsEmitted = 0;
     }
 
     protected override object? Init(InitData initData)
@@ -237,6 +272,11 @@ public class ModelTableFunction : ATableFunction
         };
     }
 
+    private class BindData
+    {
+        public IDb Db;
+        public List<EntityId[]> Ids;
+    }
     protected override void Bind(BindInfo info)
     {
         info.AddColumn<ulong>("Id");
@@ -244,5 +284,11 @@ public class ModelTableFunction : ATableFunction
         {
             info.AddColumn(attr.Id.Name, attr.LowLevelType.DuckDbType());
         }
+        
+        var ids = 
+        
+        // If we have a memoized cardinality value, hand that off to DuckDB
+        if (_cardinality != -1) 
+            info.SetCardinality((ulong)_cardinality, false);
     }
 }

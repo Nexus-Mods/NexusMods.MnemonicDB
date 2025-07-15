@@ -59,19 +59,19 @@ public unsafe partial struct ReadOnlyChunk : IDisposable
 
     internal static partial class Native
     {
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial ulong duckdb_data_chunk_get_size(void* chunk);
 
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial ulong duckdb_data_chunk_get_column_count(ReadOnlyChunk chunk);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void duckdb_destroy_data_chunk(ref ReadOnlyChunk ptr);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void* duckdb_data_chunk_get_vector(void* chunk, ulong index);
     }

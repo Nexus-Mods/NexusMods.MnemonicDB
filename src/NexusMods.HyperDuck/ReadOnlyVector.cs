@@ -105,33 +105,37 @@ public unsafe partial struct ReadOnlyVector
     public static partial class Native
     {
 
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void* duckdb_vector_get_data(void* vector);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial LogicalType duckdb_vector_get_column_type(void* vector);
 
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial ulong* duckdb_vector_get_validity(void* vector);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void duckdb_vector_ensure_validity_writable(void* vector);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void* duckdb_list_vector_get_child(void* vector);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial ulong duckdb_list_vector_get_size(void* vector);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void* duckdb_struct_vector_get_child(void* vector, ulong idx);
+
+        [LibraryImport(GlobalConstants.LibraryName)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial ulong duckdb_vector_size();
     }
 
 }

@@ -89,31 +89,31 @@ public unsafe partial struct Result : IDisposable
 
     private static partial class Native
     {
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void duckdb_destroy_result(ref Result result);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial ulong duckdb_column_count(ref Result result);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial ulong duckdb_row_count(ref Result result);
         
-        [LibraryImport(InternalConsts.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial char* duckdb_column_name(ref Result result, ulong column_index);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial DuckDbType duckdb_column_type(ref Result result, ulong column_index);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void* duckdb_column_logical_type(ref Result result, ulong column_index);
         
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         internal static partial ReadOnlyChunk duckdb_fetch_chunk(Result result);
     }

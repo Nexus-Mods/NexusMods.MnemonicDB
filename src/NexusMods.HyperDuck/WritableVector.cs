@@ -79,7 +79,7 @@ public unsafe ref partial struct WritableVector
 
     internal static partial class Native
     {
-        [LibraryImport(InternalConsts.LibraryName)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void duckdb_vector_assign_string_element_len(void* vector, ulong offset, void* str, ulong length);
     }

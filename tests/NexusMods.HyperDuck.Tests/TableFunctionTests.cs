@@ -64,7 +64,7 @@ public class Squares : ATableFunction
         var vecB = chunk[1].GetData<int>();
 
         var row = 0;
-        for (var i = bindInfo.Start; i < bindInfo.End && row < 2048; i += bindInfo.Stride)
+        for (var i = bindInfo.Start; i < bindInfo.End && row < functionInfo.EmitSize ; i += bindInfo.Stride)
         {
             vecA[row] = i;
             vecB[row] = i * i;
