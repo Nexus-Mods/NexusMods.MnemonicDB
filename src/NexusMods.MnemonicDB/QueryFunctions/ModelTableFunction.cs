@@ -1,5 +1,7 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
@@ -37,45 +39,38 @@ public class ModelTableFunction : ATableFunction
 
     protected override void Execute(FunctionInfo functionInfo)
     {
-        var iterators = functionInfo.GetInitInfo<Iterators>();
-        var chunk = functionInfo.Chunk;
-        
-        var idVec = functionInfo.GetWritableVector(0).GetData<ulong>();
-        var actualIdSpan = idVec;
-        if (idVec.IsEmpty)
-            idVec = new Span<ulong>(new ulong[functionInfo.EmitSize]);
-
-        var rowsEmitted = 0;
-
-        var primaryIterator = iterators.PrimaryIterator;
-        while (primaryIterator.MoveNext() && rowsEmitted < idVec.Length)
+        var initData = functionInfo.GetInitInfo<Iterators>();
+        var bindData = functionInfo.GetBindInfo<BindData>();
+        var outChunk = functionInfo.Chunk;
+        if (!bindData.NextChunk(initData, out var idsChunk, out var emitSize))
         {
-            idVec[rowsEmitted] = primaryIterator.KeyPrefix.E.Value;
-            rowsEmitted++;
+            outChunk.Size = 0;
+            return;
         }
-        iterators.TotalRowsEmitted += rowsEmitted;
 
-        // We reached the end of the primary iterator, so we can store the cardinality
-        if (rowsEmitted < idVec.Length) 
-            _cardinality = iterators.TotalRowsEmitted;
+        outChunk.Size = (ulong)emitSize;
+        var idVec = idsChunk.AsSpan().SliceFast(0, emitSize);
         
-        // Slice the idVec so we can constrain the joining columns
-        var ids = idVec.SliceFast(0, rowsEmitted).CastFast<ulong, EntityId>();
-        functionInfo.SetEmittedRowCount(rowsEmitted);
-
+        var engineToFn = functionInfo.EngineToFn;
         // Now write the other columns
-        for (var columnIdx = 0; columnIdx < iterators.InnerIterators.Length; columnIdx++)
+        for (var columnIdx = 0; columnIdx < engineToFn.Length; columnIdx++)
         {
-            var iterator = iterators.InnerIterators[columnIdx];
-            var fnIdx = functionInfo.EngineToFn(columnIdx);
-            // No reason to copy the ids if they're already emitted
-            if (fnIdx == 0)
+            var mapping = engineToFn[columnIdx];
+            // Id Column, no reason to iterate, copy over the ids
+            if (mapping == 0)
+            {
+                var data = outChunk[0].GetData<EntityId>();
+                idVec.CopyTo(data);
                 continue;
-
-            var valueVector = chunk[(ulong)columnIdx];
-            var attr = _definition.AllAttributes[fnIdx - 1];
-            WriteColumn(attr.LowLevelType, ids, valueVector, iterator);
+            }
+            
+            var attr = _definition.AllAttributes[mapping - 1];
+            var attrId = bindData.Db.AttributeCache.GetAttributeId(attr.Id);
+            var iterator = bindData.Db.LightweightDatoms(SliceDescriptor.AttributesStartingAt(attrId, idVec[0]));
+            var valueVector = outChunk[(ulong)columnIdx];
+            WriteColumn(attr.LowLevelType, idVec, valueVector, iterator);
         }
+        ArrayPool<EntityId>.Shared.Return(idsChunk);
     }
 
     private void WriteColumn(ValueTag tag, ReadOnlySpan<EntityId> ids, WritableVector vector, ILightweightDatomSegment datoms)
@@ -241,41 +236,40 @@ public class ModelTableFunction : ATableFunction
 
     private class Iterators
     {
-        public required ILightweightDatomSegment PrimaryIterator;
-        public required ILightweightDatomSegment[] InnerIterators;
-        public int TotalRowsEmitted = 0;
+        public int NextId = 0;
     }
 
-    protected override object? Init(InitData initData)
+    protected override object? Init(InitInfo initInfo, InitData initData)
     {
-        var attrCache = _conn.AttributeCache;
-        var db = _conn.Db;
-        var iterators = new ILightweightDatomSegment[initData.EngineToFn.Length];
-        var primaryIterator = db.LightweightDatoms(SliceDescriptor.Create(_definition.PrimaryAttribute, attrCache));
-        for (var i = 0; i < initData.EngineToFn.Length; i++)
-        {
-            var innerIdx = initData.EngineToFn[i];
-            if (innerIdx == 0)
-            {
-                iterators[i] = db.LightweightDatoms(SliceDescriptor.Create(_definition.PrimaryAttribute, attrCache));
-            }
-            else
-            {
-                var innerAttr = _definition.AllAttributes[innerIdx - 1];
-                iterators[i] = db.LightweightDatoms(SliceDescriptor.Create(innerAttr, attrCache));
-            }
-        }
         return new Iterators
         {
-            PrimaryIterator = primaryIterator,
-            InnerIterators = iterators,
+            NextId = 0,
         };
     }
 
     private class BindData
     {
-        public IDb Db;
-        public List<EntityId[]> Ids;
+        public required IDb Db;
+        public required List<EntityId[]> Ids;
+        public required int RowCount;
+        public required int ChunkSize;
+
+        public bool NextChunk(Iterators initData, out EntityId[] ids, out int emitSize)
+        {
+            var thisId = Interlocked.Increment(ref initData.NextId) - 1;
+            if (thisId >= Ids.Count)
+            {
+                ids = [];
+                emitSize = 0;
+                return false;
+            }
+            ids = Ids[thisId];
+            if (thisId == Ids.Count - 1)
+                emitSize = RowCount - (Ids.Count - 1) * ChunkSize;
+            else 
+                emitSize = ids.Length;
+            return true;
+        }
     }
     protected override void Bind(BindInfo info)
     {
@@ -284,11 +278,21 @@ public class ModelTableFunction : ATableFunction
         {
             info.AddColumn(attr.Id.Name, attr.LowLevelType.DuckDbType());
         }
+
+        var db = _conn.Db;
+        var attrId = db.AttributeCache.GetAttributeId(_definition.PrimaryAttribute.Id);
         
-        var ids = 
+        // Load all the Ids here so we can load the rows in parallel.
+        var totalRows = db.IdsForPrimaryAttribute(attrId, (int)GlobalConstants.DefaultVectorSize, out var chunks);
+        info.SetCardinality((ulong)totalRows, true);
         
-        // If we have a memoized cardinality value, hand that off to DuckDB
-        if (_cardinality != -1) 
-            info.SetCardinality((ulong)_cardinality, false);
+        var bindData = new BindData
+        {
+            Db = db,
+            Ids = chunks,
+            RowCount = totalRows,
+            ChunkSize = (int)GlobalConstants.DefaultVectorSize,
+        };
+        info.SetBindInfo(bindData);
     }
 }

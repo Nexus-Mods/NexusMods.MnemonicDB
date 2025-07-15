@@ -56,4 +56,9 @@ public interface IDatomsIndex
     /// </summary>
     IndexSegment Datoms(TxId txId);
 
+    /// <summary>
+    /// Loads sorted chunks of ids (of the given size) for the given attribute.  
+    /// </summary>
+    public int IdsForPrimaryAttribute(AttributeId attributeId, int chunkSize, out List<EntityId[]> chunks);
+
 }

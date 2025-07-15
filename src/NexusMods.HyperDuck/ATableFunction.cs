@@ -184,7 +184,7 @@ public abstract unsafe partial class ATableFunction
 
         [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        internal static partial void duckdb_init_set_max_threads(void* initInfo, nuint maxThreads);
+        internal static partial void duckdb_init_set_max_threads(void* initInfo, ulong maxThreads);
 
         [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
@@ -285,16 +285,9 @@ public abstract unsafe partial class ATableFunction
             return initInfo;
         }
 
-        public int EngineToFn(int column)
-        {
-            return _initData.EngineToFn[column];
-        }
-
-        public int FnToEngine(int column)
-        {
-            return _initData.FnToEngine[column];
-        }
-
+        public byte[] EngineToFn => _initData.EngineToFn;
+        public sbyte[] FnToEngine => _initData.FnToEngine;
+        
         /// <summary>
         /// Returns if the given column should be emitted, will be false if the engine has not requested
         /// this column's data
@@ -426,6 +419,32 @@ public abstract unsafe partial class ATableFunction
         /// </summary>
         public object? UserData;
     }
+
+    protected ref struct InitInfo
+    {
+        private void* _ptr;
+
+        public InitInfo(void* ptr)
+        {
+            _ptr = ptr;
+        }
+        
+        /// <summary>
+        /// Sets the maximum number of threads DuckDB can use to call this function
+        /// </summary>
+        public void SetMaxThreads(int max)
+        {
+            Native.duckdb_init_set_max_threads(_ptr, (ulong)max);
+        }
+
+        public T GetBindData<T>()
+        {
+            var handle = GCHandle.FromIntPtr((IntPtr)Native.duckdb_init_get_bind_data(_ptr));
+            if (handle.Target is not BindData bindData)
+                throw new InvalidOperationException("Invalid bind data pointer");
+            return bindData.UserBindData is T bindInfo ? bindInfo : throw new InvalidOperationException("Cannot cast user bind data");
+        }
+    }
     
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     public static void InitFn(void* initInfo)
@@ -458,7 +477,7 @@ public abstract unsafe partial class ATableFunction
                 initData.FnToEngine[mapping] = (sbyte)i;
             }
             
-            var userData = fn.Init(initData);
+            var userData = fn.Init(new InitInfo(initInfo), initData);
             initData.UserData = userData;
             
             Native.duckdb_init_set_init_data(initInfo, (void*)GCHandle.ToIntPtr(GCHandle.Alloc(initData)), &DeleteHandleFn);
@@ -469,7 +488,7 @@ public abstract unsafe partial class ATableFunction
         }
     }
 
-    protected virtual object? Init(InitData initData)
+    protected virtual object? Init(InitInfo initInfo, InitData initData)
     {
         return null;
     }
