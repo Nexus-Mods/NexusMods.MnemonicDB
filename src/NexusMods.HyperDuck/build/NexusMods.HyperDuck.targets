@@ -24,16 +24,19 @@
     <ItemGroup Condition="'$(_UseSystemExtractor)' == '' Or '$(_UseSystemExtractor)' == 'false'">
         <!-- Copy all if platform not specified -->
         <None Condition="'$(PlatformTarget)' == 'AnyCPU' Or '$(PlatformTarget)' == ''" Include="$(MSBuildThisFileDirectory)../runtimes/**" Exclude="$(MSBuildThisFileDirectory)*.targets">
-            <Link>runtimes\%(RecursiveDir)\%(Filename)%(Extension)</Link>
+            <Link>runtimes\$(_NativeRuntime)\$([System.String]::Copy('%(RecursiveDir)').Substring($([MSBuild]::Add($(_NativeRuntime.Length), 1))))%(Filename)%(Extension)</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Visible>False</Visible>
+
+
         </None>
 
         <!-- Otherwise unpack for specific platform -->
         <None Condition="'$(_NativeRuntime)' != '' And '$(PlatformTarget)' != 'AnyCPU' And '$(PlatformTarget)' != ''" Include="$(MSBuildThisFileDirectory)../runtimes/$(_NativeRuntime)/**" Exclude="$(MSBuildThisFileDirectory)*.targets">
-            <Link>runtimes\$(_NativeRuntime)\native\%(Filename)%(Extension)</Link>
+            <Link>runtimes\$(_NativeRuntime)\$([System.String]::Copy('%(RecursiveDir)').Substring($([MSBuild]::Add($(_NativeRuntime.Length), 1))))%(Filename)%(Extension)</Link>
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
             <Visible>False</Visible>
+
         </None>
     </ItemGroup>
 </Project>

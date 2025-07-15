@@ -110,7 +110,7 @@ public abstract unsafe partial class AScalarFunction
         }
         catch (Exception e)
         {
-            Native.duckdb_scalar_function_set_error(fn, e.Message);
+            Native.duckdb_scalar_function_set_error(fn, e.ToString());
         }
     }
     

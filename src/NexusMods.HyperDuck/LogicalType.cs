@@ -28,10 +28,12 @@ public unsafe partial struct LogicalType : IDisposable
         if (typeof(T) == typeof(short)) return Create(DuckDbType.SmallInt);
         if (typeof(T) == typeof(int)) return Create(DuckDbType.Integer);
         if (typeof(T) == typeof(long)) return Create(DuckDbType.BigInt);
+        if (typeof(T) == typeof(Int128)) return Create(DuckDbType.Hugeint);
         if (typeof(T) == typeof(sbyte)) return Create(DuckDbType.UTinyInt);
         if (typeof(T) == typeof(ushort)) return Create(DuckDbType.USmallInt);
         if (typeof(T) == typeof(uint)) return Create(DuckDbType.UInteger);
         if (typeof(T) == typeof(ulong)) return Create(DuckDbType.UBigInt);
+        if (typeof(T) == typeof(UInt128)) return Create(DuckDbType.Uhugeint);;
         if (typeof(T) == typeof(string)) return Create(DuckDbType.Varchar);
         if (typeof(T) == typeof(ReadOnlySpan<char>)) return Create(DuckDbType.Varchar);
         if (typeof(T) == typeof(ReadOnlySpan<byte>) || typeof(T) == typeof(byte[])) return Create(DuckDbType.Blob);
@@ -46,10 +48,12 @@ public unsafe partial struct LogicalType : IDisposable
         DuckDbType.SmallInt => 2,
         DuckDbType.Integer => 4,
         DuckDbType.BigInt => 8,
+        DuckDbType.Hugeint => 16,
         DuckDbType.UTinyInt => 1,
         DuckDbType.USmallInt => 2,
         DuckDbType.UInteger => 4,
         DuckDbType.UBigInt => 8,
+        DuckDbType.Uhugeint => 16,
         DuckDbType.Float => 4,
         DuckDbType.Double => 8,
         DuckDbType.Varchar => StringElement.ElementSize, // This is only the size of the StringElement (duckdb_string_t), not the actual string data.

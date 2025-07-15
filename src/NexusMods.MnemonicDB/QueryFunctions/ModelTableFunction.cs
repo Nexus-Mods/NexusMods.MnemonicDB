@@ -39,7 +39,7 @@ public class ModelTableFunction : ATableFunction
         var rowsEmitted = 0;
 
         var primaryIterator = iterators.PrimaryIterator;
-        while (primaryIterator.MoveNext())
+        while (primaryIterator.MoveNext() && rowsEmitted < idVec.Length)
         {
             idVec[rowsEmitted] = primaryIterator.KeyPrefix.E.Value;
             rowsEmitted++;
@@ -171,7 +171,7 @@ public class ModelTableFunction : ATableFunction
     private void WriteUnmanagedColumn<T>(ReadOnlySpan<EntityId> ids, WritableVector vector, ILightweightDatomSegment datoms) 
         where T : unmanaged
     {
-        var dataSpan = vector.GetData().CastFast<byte, T>();
+        var dataSpan = vector.GetData<T>();
         for (var rowIdx = 0; rowIdx < ids.Length; rowIdx++)
         {
             var rowId = ids[rowIdx];

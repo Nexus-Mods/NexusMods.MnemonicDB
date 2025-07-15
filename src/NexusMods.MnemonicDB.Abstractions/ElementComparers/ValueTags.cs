@@ -112,9 +112,11 @@ public static class ValueTagsExtensions
         _duckDbTypes[(int)ValueTag.UInt16] = LogicalType.From<ushort>();
         _duckDbTypes[(int)ValueTag.UInt32] = LogicalType.From<uint>();
         _duckDbTypes[(int)ValueTag.UInt64] = LogicalType.From<ulong>();
+        _duckDbTypes[(int)ValueTag.UInt128] = LogicalType.From<UInt128>();
         _duckDbTypes[(int)ValueTag.Int16] = LogicalType.From<short>();
         _duckDbTypes[(int)ValueTag.Int32] = LogicalType.From<int>();
         _duckDbTypes[(int)ValueTag.Int64] = LogicalType.From<long>();
+        _duckDbTypes[(int)ValueTag.Int128] = LogicalType.From<Int128>();
         _duckDbTypes[(int)ValueTag.Float32] = LogicalType.From<float>();
         _duckDbTypes[(int)ValueTag.Float64] = LogicalType.From<double>();
         _duckDbTypes[(int)ValueTag.Ascii] = LogicalType.From<string>();

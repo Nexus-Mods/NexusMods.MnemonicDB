@@ -330,7 +330,7 @@ public abstract unsafe partial class ATableFunction
         }
         catch (Exception e)
         {
-            Native.duckdb_bind_set_error(bindInfo, e.Message);
+            Native.duckdb_bind_set_error(bindInfo, e.ToString());
         }
     }
 
@@ -465,7 +465,7 @@ public abstract unsafe partial class ATableFunction
         }
         catch (Exception ex)
         {
-            Native.duckdb_init_set_error(initInfo, ex.Message);
+            Native.duckdb_init_set_error(initInfo, ex.ToString());
         }
     }
 
