@@ -2,6 +2,6 @@ namespace NexusMods.MnemonicDB.SourceGenerator.Tests;
 
 public class ArrayTest
 {
-    [Fact]
+    [Test]
     public async Task TestModel() => await Helper.TestGenerator();
 }

@@ -15,12 +15,12 @@
 
     <ItemGroup>
       <PackageReference Include="TUnit" />
+      <PackageReference Include="TUnit.Assertions" />
+      <PackageReference Include="Verify.TUnit" />
       <PackageReference Update="JetBrains.Annotations" />
       <PackageReference Update="NexusMods.Hashing.xxHash64" />
       <PackageReference Update="coverlet.collector"/>
       <PackageReference Update="GitHubActionsTestLogger"/>
-      <PackageReference Include="TUnit.Assertions" />
-      <PackageReference Include="Verify.TUnit" />
     </ItemGroup>
 
 </Project>
