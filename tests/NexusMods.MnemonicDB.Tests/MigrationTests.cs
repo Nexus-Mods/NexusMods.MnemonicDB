@@ -6,12 +6,11 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.MnemonicDB.TestModel;
-using NexusMods.MnemonicDB.TestModel.Attributes;
 using NexusMods.Paths;
+using TUnit.Assertions.AssertConditions.Throws;
 using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
@@ -67,18 +66,18 @@ public class MigrationTests : AMnemonicDBTest
 
         var cache = Connection.AttributeCache;
         var aid = cache.GetAttributeId(Mod.Description.Id);
-        cache.IsIndexed(aid).Should().BeFalse();
+        await Assert.That(cache.IsIndexed(aid)).IsFalse();
         
         var withIndex = new StringAttribute(Mod.Description.Id.Namespace, Mod.Description.Id.Name) { IsIndexed = true, IsOptional = true };
         var prevTxId = Connection.Db.BasisTxId;
 
         await Connection.UpdateSchema(withIndex);
 
-        Connection.Db.BasisTxId.Value.Should().Be(prevTxId.Value + 1);
-        cache.IsIndexed(cache.GetAttributeId(Mod.Description.Id)).Should().BeTrue();
+        await Assert.That(Connection.Db.BasisTxId.Value).IsEqualTo(prevTxId.Value + 1);
+        await Assert.That(cache.IsIndexed(cache.GetAttributeId(Mod.Description.Id))).IsTrue();
         
         var foundByDocs = Connection.Db.Datoms(Mod.Description, "0").ToArray();
-        foundByDocs.Length.Should().Be(10);
+        await Assert.That(foundByDocs.Length).IsEqualTo(10);
     }
 
     [Test]
@@ -88,18 +87,17 @@ public class MigrationTests : AMnemonicDBTest
 
         var cache = Connection.AttributeCache;
         var aid = cache.GetAttributeId(Mod.Source.Id);
-        cache.IsIndexed(aid).Should().BeTrue();
+        await Assert.That(cache.IsIndexed(aid)).IsTrue();
         
         var withIndex = new UriAttribute(Mod.Source.Id.Namespace, Mod.Source.Id.Name) { IsIndexed = false };
         var prevTxId = Connection.Db.BasisTxId;
 
         await Connection.UpdateSchema(withIndex);
 
-        Connection.Db.BasisTxId.Value.Should().Be(prevTxId.Value + 1);
-        cache.IsIndexed(cache.GetAttributeId(Mod.Source.Id)).Should().BeFalse();
+        await Assert.That(Connection.Db.BasisTxId.Value).IsEqualTo(prevTxId.Value + 1);
+        await Assert.That(cache.IsIndexed(cache.GetAttributeId(Mod.Source.Id))).IsFalse();
         
-        Action act = () => Connection.Db.Datoms(Mod.Source, new Uri("http://mod0.com")).ToArray();
-        act.Should().Throw<InvalidOperationException>();
+        await Assert.That(() => Connection.Db.Datoms(Mod.Source, new Uri("http://mod0.com")).ToArray()).Throws<InvalidOperationException>();
     }
 
     [Test]
@@ -131,7 +129,7 @@ public class MigrationTests : AMnemonicDBTest
         {
             var expected = cache.GetAttributeId(attr.UniqueId);
             
-            attr.Indexed.Should().Be(cache.GetIndexedFlags(expected), "The indexed flags are backwards compatible");
+            await Assert.That(attr.Indexed).IsEqualTo(cache.GetIndexedFlags(expected));
         }
         
         return;
