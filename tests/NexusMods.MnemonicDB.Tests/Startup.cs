@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using NexusMods.HyperDuck;
+using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 
@@ -9,10 +11,13 @@ public static class Startup
 {
     public static IServiceCollection ConfigureServices(this IServiceCollection services)
     {
-        return services.AddTestModel()
+        return services
+            .AddAttributeDefinitionModel()
+            .AddAdapters()
+            .AddTransactionModel()
+            .AddTestModel()
             .AddSingleton<TemporaryFileManager>()
             .AddFileSystem()
-            .AddLogging(builder => builder.AddConsole())
-            .AddMnemonicDBStorage();
+            .AddLogging(builder => builder.AddConsole());
     }
 }

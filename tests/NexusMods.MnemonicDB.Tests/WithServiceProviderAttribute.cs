@@ -6,10 +6,17 @@ public class WithServiceProviderAttribute : DependencyInjectionDataSourceAttribu
 {
     public override IHost CreateScope(DataGeneratorMetadata dataGeneratorMetadata)
     {
-        var host = Host.CreateDefaultBuilder()
-            .ConfigureServices(s => s.ConfigureServices())
-            .Build();
-        return host;
+        try
+        {
+            var host = Host.CreateDefaultBuilder()
+                .ConfigureServices(s => s.ConfigureServices())
+                .Build();
+            return host;
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
     }
 
     public override object? Create(IHost scope, Type type)

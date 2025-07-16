@@ -32,11 +32,11 @@ public static class Services
     public static IServiceCollection AddMnemonicDBStorage(this IServiceCollection services)
     {
         services.AddAttributeDefinitionModel()
-                .AddTransactionModel()
-                .AddSingleton<IDatomStore, DatomStore>()
+            .AddAdapters()
+            .AddTransactionModel()
+            .AddSingleton<IDatomStore, DatomStore>()
                 .AddSingleton<DatomStore>(s => (DatomStore)s.GetRequiredService<IDatomStore>())
                 .AddSingleton<IQueryEngine, QueryEngine>()
-                .AddAdapters()
                 .AddSingleton<IConverter, ConvertableScalarConverter<EntityId>>(s => new ConvertableScalarConverter<EntityId>(DuckDbType.UBigInt))
                 .AddSingleton<IConverter, ConvertableScalarConverter<TxId>>(s => new ConvertableScalarConverter<TxId>(DuckDbType.UBigInt));
         return services;
