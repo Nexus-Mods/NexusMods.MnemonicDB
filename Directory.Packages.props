@@ -34,7 +34,6 @@
     <PackageVersion Include="System.CodeDom" Version="9.0.0" />
     <PackageVersion Include="Verify" Version="30.5.0-beta.1" />
     <PackageVersion Include="Verify.SourceGenerators" Version="2.5.0" />
-    <PackageVersion Include="Verify.Xunit" Version="28.2.1" />
     <PackageVersion Include="NexusMods.Hashing.xxHash3" Version="3.0.4" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageVersion Include="coverlet.collector" Version="6.0.2" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false">

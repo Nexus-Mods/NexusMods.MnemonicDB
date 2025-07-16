@@ -3,14 +3,12 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
-using Xunit;
 
 namespace NexusMods.MnemonicDB.Benchmarks.Benchmarks;
 
-public class ABenchmark : IAsyncLifetime
+public class ABenchmark
 {
     private IHost _host = null!;
     protected IConnection Connection = null!;

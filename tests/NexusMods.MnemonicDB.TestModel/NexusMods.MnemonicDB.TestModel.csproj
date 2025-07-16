@@ -22,15 +22,6 @@
       <PackageReference Include="Microsoft.Extensions.Logging.Console" />
       <PackageReference Include="NexusMods.Hashing.xxHash3"/>
         <PackageReference Include="TransparentValueObjects" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
-        <PackageReference Remove="xunit" />
-        <PackageReference Remove="Xunit.DependencyInjection" />
-        <PackageReference Remove="Xunit.DependencyInjection.Logging" />
-        <PackageReference Remove="xunit.runner.visualstudio" />
-        <PackageReference Remove="Xunit.SkippableFact" />
-        <PackageReference Remove="Xunit.DependencyInjection.SkippableFact" />
-        <PackageReference Remove="FluentAssertions" />
-        <PackageReference Remove="FluentAssertions.OneOf" />
-        <PackageReference Remove="FluentAssertions.Analyzers" />
     </ItemGroup>
 
 </Project>

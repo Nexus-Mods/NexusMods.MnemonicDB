@@ -36,15 +36,6 @@
       <PackageReference Include="Microsoft.Extensions.Logging.Console" />
       <PackageReference Include="TUnit.Assertions" />
       <PackageReference Include="Verify.TUnit" />
-      <PackageReference Remove="xunit" />
-      <PackageReference Remove="Xunit.DependencyInjection" />
-      <PackageReference Remove="Xunit.DependencyInjection.Logging" />
-      <PackageReference Remove="xunit.runner.visualstudio" />
-      <PackageReference Remove="Xunit.SkippableFact" />
-      <PackageReference Remove="Xunit.DependencyInjection.SkippableFact" />
-      <PackageReference Remove="FluentAssertions" />
-      <PackageReference Remove="FluentAssertions.OneOf" />
-      <PackageReference Remove="FluentAssertions.Analyzers" />
     </ItemGroup>
 
     <ItemGroup>

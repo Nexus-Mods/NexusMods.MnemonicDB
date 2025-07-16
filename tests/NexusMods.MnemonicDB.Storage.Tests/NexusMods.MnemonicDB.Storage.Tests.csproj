@@ -25,15 +25,6 @@
       <PackageReference Update="NexusMods.Hashing.xxHash64" />
       <PackageReference Update="coverlet.collector"/>
       <PackageReference Update="GitHubActionsTestLogger"/>
-      <PackageReference Remove="xunit" />
-      <PackageReference Remove="Xunit.DependencyInjection" />
-      <PackageReference Remove="Xunit.DependencyInjection.Logging" />
-      <PackageReference Remove="xunit.runner.visualstudio" />
-      <PackageReference Remove="Xunit.SkippableFact" />
-      <PackageReference Remove="Xunit.DependencyInjection.SkippableFact" />
-      <PackageReference Remove="FluentAssertions" />
-      <PackageReference Remove="FluentAssertions.OneOf" />
-      <PackageReference Remove="FluentAssertions.Analyzers" />
     </ItemGroup>
 
 </Project>

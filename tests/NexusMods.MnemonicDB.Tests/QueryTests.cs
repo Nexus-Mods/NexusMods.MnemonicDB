@@ -79,16 +79,16 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         // Validate the results
         
         // Three mods with overlapping filenames, so we expect 3 results for each
-        await Assert.That(results).IsEquatableOrEqualTo(new (RelativePath, Hash, int)[] {
+        await Assert.That(results.ToArray()).IsEquatableOrEqualTo([
             ("File1", Hash.FromLong(0xDEADBEEF), 3),
             ("File2", Hash.FromLong(0xDEADBEF0), 3),
-            ("File3", Hash.FromLong(0xDEADBEF1), 3),
-        });
+            ("File3", Hash.FromLong(0xDEADBEF1), 3)
+        ]);
         
-        await Assert.That(historyResults).IsEquatableOrEqualTo(new (ulong, int)[] {
+        await Assert.That(historyResults.ToArray()).IsEquatableOrEqualTo([
             // 9 hashes in the first transaction
-            (3, 9),
-        });
+            (3, 9)
+        ]);
 
         // Update one hash to check that the queries update correctly
         using var tx = Connection.BeginTransaction();
@@ -98,22 +98,22 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         // we swapped one file over to a different hash, so we should see 4 results now with 2 count for one
         // and 1 for the other
-        await Assert.That(results).IsEquatableOrEqualTo(new (RelativePath, Hash, int)[] {
+        await Assert.That(results.ToArray()).IsEquatableOrEqualTo([
             ("File1", Hash.FromLong(0x42), 1),
             ("File2", Hash.FromLong(0xDEADBEF0), 3),
             ("File3", Hash.FromLong(0xDEADBEF1), 3),
-            ("File1", Hash.FromLong(0xDEADBEEF), 2),
-        });
+            ("File1", Hash.FromLong(0xDEADBEEF), 2)
+        ]);
 
 
         
         await Assert.That(historyResults).IsNotEmpty();
-        await Assert.That(historyResults).IsEquatableOrEqualTo(new (ulong, int)[] {
+        await Assert.That(historyResults.ToArray()).IsEquatableOrEqualTo([
             // 9 hashes in the first transaction
             (3, 9),
             // 1 hash in the second transaction
             (5, 1)
-        });
+        ]);
 
     }
 
