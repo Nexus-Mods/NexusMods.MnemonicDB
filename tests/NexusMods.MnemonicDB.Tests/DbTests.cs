@@ -21,13 +21,12 @@ using NexusMods.MnemonicDB.TestModel.Analyzers;
 using NexusMods.MnemonicDB.TestModel.Attributes;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.File;
-
-
 namespace NexusMods.MnemonicDB.Tests;
 
+[WithServiceProvider]
 public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 {
-    [Fact]
+    [Test]
     public async Task ReadDatomsForEntity()
     {
         const int totalCount = 10;
@@ -58,7 +57,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await VerifyModel(resolved);
     }
 
-    [Fact]
+    [Test]
     public async Task ReadDatomsOverTime()
     {
         var times = 3;
@@ -113,7 +112,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     }
 
 
-    [Fact]
+    [Test]
     public async Task DbIsImmutable()
     {
         const int times = 3;
@@ -163,7 +162,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     }
 
 
-    [Fact]
+    [Test]
     public async Task ReadModelsCanHaveExtraAttributes()
     {
         // Insert some data
@@ -215,7 +214,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         castedDown.Should().BeEquivalentTo(archiveReadModel, "casted down model should be the same as the original model");
     }
 
-    [Fact]
+    [Test]
     public async Task CanGetCommitUpdates()
     {
         List<IReadDatom[]> updates = new();
@@ -257,7 +256,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         }
     }
 
-    [Fact]
+    [Test]
     public async Task TimestampsArentBorked()
     {
         using var tx = Connection.BeginTransaction();
@@ -278,7 +277,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             .And.BeBefore(DateTimeOffset.UtcNow.AddSeconds(100));
     }
 
-    [Fact]
+    [Test]
     public async Task CanGetChildEntities()
     {
         var tx = Connection.BeginTransaction();
@@ -320,7 +319,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     }
 
 
-    [Fact]
+    [Test]
     public async Task CanFindEntitiesByAttribute()
     {
         await InsertExampleData();
@@ -334,7 +333,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Verify(ids);
     }
 
-    [Fact]
+    [Test]
     public async Task CanGetDatomsFromEntity()
     {
         var loadout = await InsertExampleData();
@@ -349,7 +348,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await VerifyTable(mod);
     }
 
-    [Fact]
+    [Test]
     public async Task CanPutEntitiesInDifferentPartitions()
     {
 
@@ -394,7 +393,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await VerifyTable(allDatoms);
     }
 
-    [Fact]
+    [Test]
     public async Task CanLoadEntitiesWithoutSubclass()
     {
         var loadout = await InsertExampleData();
@@ -406,7 +405,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     }
     
 
-    [Fact]
+    [Test]
     public async Task CanExecuteTxFunctions()
     {
         EntityId id;
@@ -453,7 +452,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         }
     }
 
-    [Fact]
+    [Test]
     public async Task NonRecursiveDeleteDeletesOnlyOneEntity()
     {
         var loadout = await InsertExampleData();
@@ -485,7 +484,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         }
     }
 
-    [Fact]
+    [Test]
     public async Task RecursiveDeleteDeletesModsAsWellButNotCollections()
     {
         var loadout = await InsertExampleData();
@@ -531,7 +530,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         }
     }
 
-    [Fact]
+    [Test]
     public async Task CanReadAndWriteOptionalAttributes()
     {
         var loadout = await InsertExampleData();
@@ -570,7 +569,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         Mod.Description.TryGetValue(remapped2.EntitySegment, out var foundDesc2).Should().BeFalse();
     }
 
-    [Fact]
+    [Test]
     public async Task CanGetModelRevisions()
     {
         var loadout = await InsertExampleData();
@@ -605,7 +604,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
     }
 
-    [Fact]
+    [Test]
     public async Task CanFindByReference()
     {
         var loadout = await InsertExampleData();
@@ -617,7 +616,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         }
     }
 
-    [Fact]
+    [Test]
     public async Task CanObserveIndexChanges()
     {
         var loadout = await InsertExampleData();
@@ -657,7 +656,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Verify(changes);
     }
 
-    [Fact]
+    [Test]
     public async Task ObserveLargeDatomChanges()
     {
         var list = Connection.ObserveDatoms(Loadout.Name)
@@ -694,7 +693,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         allLoadouts.Should().Be(10000);
     }
 
-    [Fact]
+    [Test]
     public async Task CanNestObserveDatoms()
     {
         // To test nesting of observables, we're going to observe all loadouts, and then inside that observe all mods
@@ -744,7 +743,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
     }
 
-    [Fact]
+    [Test]
     public async Task CanQueryTwoAttributesAtOnce()
     {
         using var tx = Connection.BeginTransaction();
@@ -783,7 +782,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         found.Should().BeEquivalentTo(matchingSet);
     }
     
-    [Fact]
+    [Test]
     public async Task CanQueryThreeAttributesAtOnce()
     {
         using var tx = Connection.BeginTransaction();
@@ -826,7 +825,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         found.Should().BeEquivalentTo(matchingSet);
     }
     
-    [Fact]
+    [Test]
     public async Task CanQueryFourAttributesAtOnce()
     {
         using var tx = Connection.BeginTransaction();
@@ -870,7 +869,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         found.Should().BeEquivalentTo(matchingSet);
     }
 
-    [Fact]
+    [Test]
     public async Task CanGetInitialDbStateFromObservable()
     {
         var attrs = await Connection.ObserveDatoms(AttributeDefinition.UniqueId).FirstAsync();
@@ -886,7 +885,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     /// Test for a flickering bug in UI users, where datoms that are changed result in a `add` and a `remove` operation
     /// causing the UI to flicker, instead we want to issue changes on a ScalarAttribute as a replace operation.
     /// </summary>
-    [Fact]
+    [Test]
     public async Task CanObserveIndexChangesWithoutFlickering()
     {
         
@@ -930,7 +929,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
     }
 
-    [Fact]
+    [Test]
     public async Task MultipleIncludesDontSplitEntities()
     {
         using var tx = Connection.BeginTransaction();
@@ -961,7 +960,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await VerifyTable(result.Db.Datoms(result.NewTx).Resolved(Connection));
     }
     
-    [Fact]
+    [Test]
     public async Task MultipleIncludesCanBeConstructedSeparately()
     {
         using var tx = Connection.BeginTransaction();
@@ -996,7 +995,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     }
 
 
-    [Fact]
+    [Test]
     public async Task CanWriteTupleAttributes()
     {
         using var tx = Connection.BeginTransaction();
@@ -1046,7 +1045,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await VerifyTable(avet.Resolved(Connection));
     }
     
-    [Fact]
+    [Test]
     public async Task CanUseTuple3Attributes()
     {
         using var tx = Connection.BeginTransaction();
@@ -1069,7 +1068,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await VerifyTable(resolved);
     }
 
-    [Fact]
+    [Test]
     public async Task CanGetAnalyzerData()
     {
         using var tx = Connection.BeginTransaction();
@@ -1097,7 +1096,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         attrs.Should().NotBeEmpty();
     }
 
-    [Fact]
+    [Test]
     public async Task CanGetAttributesThatRequireDI()
     {
         var fileSystem = Provider.GetRequiredService<IFileSystem>();
@@ -1117,7 +1116,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         loadout.GamePath.Value.Should().Be(path);
     }
 
-    [Fact]
+    [Test]
     public async Task CollectionAttributesAreSupportedOnModels()
     {
         using var tx = Connection.BeginTransaction();
@@ -1147,7 +1146,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     /// is disposed, and then another subscriber attaches, an exception would be thrown. This test ensures that
     /// this behavior works correctly.
     /// </summary>
-    [Fact]
+    [Test]
     public async Task RefCountWorksWithObservables()
     {
         var tx = Connection.BeginTransaction();
@@ -1189,7 +1188,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Verify(mods.Select(m => m.Name).Distinct());
     }
     
-    [Fact]
+    [Test]
     public async Task CanExciseEntities()
     {
         using var tx = Connection.BeginTransaction();
@@ -1245,7 +1244,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             .NotBeEmpty();
     }
 
-    [Fact]
+    [Test]
     public async Task CanHandleLargeNumbersOfSubscribers()
     {
         List<EntityId> mods = new();
@@ -1306,7 +1305,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         }
     }
 
-    [Fact]
+    [Test]
     public async Task CanFlushAndCompactTheDB()
     {
         var tx = Connection.BeginTransaction();
@@ -1325,7 +1324,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Connection.FlushAndCompact();
     }
 
-    [Fact]
+    [Test]
     public async Task CanPerformDatomScanUpdate()
     {
         var tx = Connection.BeginTransaction();
@@ -1396,7 +1395,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
     }
 
-    [Fact]
+    [Test]
     public async Task UniqueAttributesThrowExceptions()
     {
         var tmpId1 = PartitionId.Temp.MakeEntityId(0x42);
@@ -1431,7 +1430,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     }
     
     
-    [Fact]
+    [Test]
     public async Task ObserverFuzzingTests()
     {
         using var tx = Connection.BeginTransaction();
@@ -1502,7 +1501,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         }
     }
 
-    [Fact]
+    [Test]
     public async Task EntitiesCanStoreLongStrings()
     {
         using var tx = Connection.BeginTransaction();
@@ -1518,7 +1517,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         loadoutRO.Name.Should().Be(new string('A', 10000));
     }
 
-    [Fact]
+    [Test]
     public async Task Test_NestedTransactions()
     {
         using var tx = Connection.BeginTransaction();

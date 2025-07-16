@@ -16,6 +16,7 @@ using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
 
+[WithServiceProvider]
 public class MigrationTests : AMnemonicDBTest
 {
     public MigrationTests(IServiceProvider provider) : base(provider)
@@ -59,7 +60,7 @@ public class MigrationTests : AMnemonicDBTest
         await tx.Commit();
     }
 
-    [Fact]
+    [Test]
     public async Task CanAddIndex()
     {
         await AddData();
@@ -80,7 +81,7 @@ public class MigrationTests : AMnemonicDBTest
         foundByDocs.Length.Should().Be(10);
     }
 
-    [Fact]
+    [Test]
     public async Task CanRemoveIndex()
     {
         await AddData();
@@ -101,8 +102,8 @@ public class MigrationTests : AMnemonicDBTest
         act.Should().Throw<InvalidOperationException>();
     }
 
-    [Theory]
-    [InlineData("SDV.2_5_2025.rocksdb.zip")]
+    [Test]
+    [Arguments("SDV.2_5_2025.rocksdb.zip")]
     public async Task CanOpenOlderDBs(string fileName)
     {
         var path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory) / "Resources/Databases" / fileName;

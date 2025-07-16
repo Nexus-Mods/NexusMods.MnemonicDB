@@ -7,13 +7,14 @@ using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
 
+[WithServiceProvider]
 public class QueryEngineTests : AMnemonicDBTest
 {
     public QueryEngineTests(IServiceProvider provider) : base(provider)
     {
     }
 
-    [Fact]
+    [Test]
     public async Task CanGetDatomsViaDatomsFunction()
     {
         await InsertExampleData();
@@ -22,7 +23,7 @@ public class QueryEngineTests : AMnemonicDBTest
         await VerifyTable(data);
     }
 
-    [Fact]
+    [Test]
     public async Task CanGetDatomsForSpecificAttribute()
     {
         await InsertExampleData();
@@ -32,7 +33,7 @@ public class QueryEngineTests : AMnemonicDBTest
         await VerifyTable(data);
     }
 
-    [Fact]
+    [Test]
     public async Task CanPushdownProjection()
     {
         await InsertExampleData();
@@ -41,7 +42,7 @@ public class QueryEngineTests : AMnemonicDBTest
         data.Count.Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public async Task CanSelectFromModels()
     {
         await InsertExampleData();
@@ -50,7 +51,7 @@ public class QueryEngineTests : AMnemonicDBTest
         data.Count.Should().Be(3);
     }
 
-    [Fact]
+    [Test]
     public async Task CanSelectTuples()
     {
         using var tx = Connection.BeginTransaction();
@@ -101,7 +102,7 @@ public class QueryEngineTests : AMnemonicDBTest
         results.Count.Should().Be(3);
     }
     
-    [Fact]
+    [Test]
     public async Task CanSelectFromModelsWithJoin()
     {
         await InsertExampleData();

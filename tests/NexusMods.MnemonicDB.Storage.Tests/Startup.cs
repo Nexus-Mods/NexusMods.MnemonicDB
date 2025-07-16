@@ -5,7 +5,6 @@ using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.MnemonicDB.Storage.Tests.TestAttributes;
 using NexusMods.MnemonicDB.TestModel;
-using Xunit.DependencyInjection.Logging;
 
 namespace NexusMods.MnemonicDB.Storage.Tests;
 

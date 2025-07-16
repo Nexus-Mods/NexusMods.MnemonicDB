@@ -1,12 +1,10 @@
 ﻿using System.IO.Hashing;
 using System.Runtime.InteropServices;
 using System.Text;
-using Microsoft.Extensions.Primitives;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.TestModel.Helpers;
 

@@ -14,9 +14,10 @@ using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
 
+[WithServiceProvider]
 public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 {
-    [Fact]
+    [Test]
     public async Task CanGetDatoms()
     {
         await InsertExampleData();
@@ -30,7 +31,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         results.Should().NotBeEmpty();
     }
     
-    [Fact]
+    [Test]
     public async Task CanFilterAndSelectDatoms()
     {
         await InsertExampleData();
@@ -48,7 +49,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     }
 
     
-    [Fact]
+    [Test]
     public async Task CanRunActiveQueries()
     {
         await InsertExampleData();
@@ -116,7 +117,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
     }
 
-    [Fact]
+    [Test]
     public async Task CanGetLatestTxForEntity()
     {
         await InsertExampleData();
@@ -148,7 +149,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
     }
     
-    [Fact]
+    [Test]
     public async Task CanGetLatestTxForEntityOnDeletedEntities()
     {
         await InsertExampleData();
@@ -186,7 +187,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
     }
 
-    [Fact]
+    [Test]
     public async Task TestMissingAndHaveQueries()
     {
         await InsertExampleData();

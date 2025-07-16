@@ -10,9 +10,10 @@ using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.Tests;
 
+[WithServiceProvider]
 public class ImportExportTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 {
-    [Fact]
+    [Test]
     public async Task CanExportAndImportData()
     {
         await InsertData();
@@ -39,10 +40,10 @@ public class ImportExportTests(IServiceProvider provider) : AMnemonicDBTest(prov
 
             var setDiff = setB.Except(setA).ToArray();
             
-            setB.Count.Should().Be(setA.Count);
+            await Assert.That(setB.Count).IsEqualTo(setA.Count);
             foreach (var (a, b) in setA.Zip(setB))
             {
-                a.Should().BeEquivalentTo(b);
+                await Assert.That(a).IsEqualTo(b);
             }
         }
 
