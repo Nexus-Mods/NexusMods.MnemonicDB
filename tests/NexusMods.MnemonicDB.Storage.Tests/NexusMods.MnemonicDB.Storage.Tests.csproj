@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
     <PropertyGroup>
-        <!-- https://github.com/pengweiqhca/Xunit.DependencyInjection#how-to-disable-xunitdependencyinjection -->
-        <EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>true</EnableXunitDependencyInjectionDefaultTestFrameworkAttribute>
-        <RootNamespace>NexusMods.MnemonicDB.Storage.Tests</RootNamespace>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
     
@@ -12,26 +12,15 @@
         <ProjectReference Include="..\NexusMods.MnemonicDB.TestModel\NexusMods.MnemonicDB.TestModel.csproj"/>
     </ItemGroup>
 
-    <ItemGroup>
-      <None Remove="InMemoryTests.CanStoreDataInBlobs.verified.txt" />
-    </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Update="Verify" />
+      <PackageReference Include="TUnit" />
       <PackageReference Update="JetBrains.Annotations" />
-      <PackageReference Update="FluentAssertions" />
-      <PackageReference Update="FluentAssertions.Analyzers"/>
-      <PackageReference Update="xunit" />
-      <PackageReference Update="xunit.runner.visualstudio"/>
-      <PackageReference Update="Xunit.SkippableFact"/>
-      <PackageReference Update="Xunit.DependencyInjection"/>
-      <PackageReference Update="Xunit.DependencyInjection.Logging"/>
-      <PackageReference Update="Xunit.DependencyInjection.SkippableFact"/>
       <PackageReference Update="NexusMods.Hashing.xxHash64" />
-      <PackageReference Update="Verify.Xunit"/>
-      <PackageReference Update="Microsoft.NET.Test.Sdk"/>
       <PackageReference Update="coverlet.collector"/>
       <PackageReference Update="GitHubActionsTestLogger"/>
+      <PackageReference Include="TUnit.Assertions" />
+      <PackageReference Include="Verify.TUnit" />
     </ItemGroup>
 
 </Project>

@@ -21,7 +21,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{6ED01F9D
 		tests\Directory.Build.props = tests\Directory.Build.props
 		tests\Directory.Build.targets = tests\Directory.Build.targets
 		tests\SharedAssemblyAttributes.cs = tests\SharedAssemblyAttributes.cs
-		tests\SharedUsings.cs = tests\SharedUsings.cs
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.MnemonicDB", "src\NexusMods.MnemonicDB\NexusMods.MnemonicDB.csproj", "{A92DED3D-BC67-4E04-9A06-9A1B302B3070}"

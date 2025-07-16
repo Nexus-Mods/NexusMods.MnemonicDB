@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using FluentAssertions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using NexusMods.MnemonicDB.Abstractions.Models;

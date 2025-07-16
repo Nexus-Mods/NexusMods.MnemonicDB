@@ -9,10 +9,9 @@ using Xunit.DependencyInjection.Logging;
 
 namespace NexusMods.MnemonicDB.Storage.Tests;
 
-public class Startup
+public static class Startup
 {
-    public void ConfigureServices(IServiceCollection services)
-    {
+    public static IServiceCollection ConfigureServices(this IServiceCollection services) =>
         services
             .AddAttributeCollection(typeof(AttributeDefinition))
             .AddAttributeCollection(typeof(Transaction))
@@ -20,7 +19,6 @@ public class Startup
             .AddSingleton<IAttribute>(Blobs.InKeyBlob)
             .AddSingleton<IAttribute>(Blobs.InValueBlob)
             .AddSingleton<Backend>()
-            .AddLogging(builder => builder.AddXunitOutput().SetMinimumLevel(LogLevel.Debug));
-    }
+            .AddLogging(builder => builder.AddConsole());
 }
 

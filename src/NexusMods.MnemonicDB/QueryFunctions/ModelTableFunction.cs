@@ -35,6 +35,7 @@ public class ModelTableFunction : ATableFunction
     {
         info.SetName($"{_prefix}_{_definition.Name}");
         info.SupportsPredicatePushdown();
+        info.AddNamedParameter<ulong>("AsOf");
     }
 
     protected override void Execute(FunctionInfo functionInfo)
@@ -59,7 +60,7 @@ public class ModelTableFunction : ATableFunction
             // Id Column, no reason to iterate, copy over the ids
             if (mapping == 0)
             {
-                var data = outChunk[0].GetData<EntityId>();
+                var data = outChunk[(ulong)columnIdx].GetData<EntityId>();
                 idVec.CopyTo(data);
                 continue;
             }
@@ -241,6 +242,8 @@ public class ModelTableFunction : ATableFunction
 
     protected override object? Init(InitInfo initInfo, InitData initData)
     {
+        var bindData = initInfo.GetBindData<BindData>();
+        initInfo.SetMaxThreads(bindData.Ids.Count);
         return new Iterators
         {
             NextId = 0,
@@ -279,7 +282,11 @@ public class ModelTableFunction : ATableFunction
             info.AddColumn(attr.Id.Name, attr.LowLevelType.DuckDbType());
         }
 
-        var db = _conn.Db;
+        using var asOf = info.GetParameter("AsOf");
+        IDb db = _conn.Db;
+        if (!asOf.IsNull)
+            db = db.Connection.AsOf(TxId.From(asOf.GetUInt64()));
+            
         var attrId = db.AttributeCache.GetAttributeId(_definition.PrimaryAttribute.Id);
         
         // Load all the Ids here so we can load the rows in parallel.

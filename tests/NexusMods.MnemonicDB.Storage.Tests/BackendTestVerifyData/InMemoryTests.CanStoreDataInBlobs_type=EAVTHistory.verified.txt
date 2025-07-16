@@ -1,8 +1,0 @@
-﻿+ | 0200000000000001 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000003
-- | 0200000000000001 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000007
-+ | 0200000000000001 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | 0100000000000003
-- | 0200000000000001 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | 0100000000000007
-+ | 0200000000000002 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000004
-- | 0200000000000002 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000008
-+ | 0200000000000002 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | 0100000000000004
-- | 0200000000000002 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | 0100000000000008

@@ -1,6 +1,0 @@
-﻿+ | 0000000000000001 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/UniqueId         | 0100000000000001
-+ | 0000000000000001 | (0002) ValueType                | Ascii                                            | 0100000000000001
-+ | 0000000000000002 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/ValueType        | 0100000000000001
-+ | 0000000000000002 | (0002) ValueType                | UInt8                                            | 0100000000000001
-+ | 0200000000000001 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000002
-+ | 0200000000000001 | (001F) InValueBlob              | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000002

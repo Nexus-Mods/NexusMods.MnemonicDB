@@ -39,6 +39,8 @@
       <PackageReference Update="Microsoft.NET.Test.Sdk"/>
       <PackageReference Update="coverlet.collector"/>
       <PackageReference Update="GitHubActionsTestLogger"/>
+      <PackageReference Include="Verify" />
+      <PackageReference Include="Verify.TUnit" />
     </ItemGroup>
 
     <ItemGroup>
