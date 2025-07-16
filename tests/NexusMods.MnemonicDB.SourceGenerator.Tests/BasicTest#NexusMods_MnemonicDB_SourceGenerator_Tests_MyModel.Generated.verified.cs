@@ -58,6 +58,10 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
     public static __ABSTRACTIONS__.IAttribute[] AllAttributes => new __ABSTRACTIONS__.IAttribute[] {
         NexusMods.MnemonicDB.SourceGenerator.Tests.MyModel.Name,
     };
+    
+    public static __ABSTRACTIONS__.IAttribute[] AllAttributesWithIncludes => 
+        AllAttributes
+       .ToArray();
 
     /// <summary>
     /// Returns all MyModel entities in the database.
@@ -428,6 +432,7 @@ public static class MyModelExtensions {
     /// </summary>
     public static __DI__.IServiceCollection AddMyModelModel(this __DI__.IServiceCollection services) {
         services.AddSingleton<__ABSTRACTIONS__.IAttribute>(_ => NexusMods.MnemonicDB.SourceGenerator.Tests.MyModel.Name);
+        services.AddSingleton(_ => new ModelDefinition("MyModel", MyModel.PrimaryAttribute, MyModel.AllAttributesWithIncludes));
         return services;
     }
 

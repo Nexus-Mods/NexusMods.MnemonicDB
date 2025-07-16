@@ -58,6 +58,10 @@ public partial class MyModelArrayTest : __MODELS__.IModelFactory<MyModelArrayTes
     public static __ABSTRACTIONS__.IAttribute[] AllAttributes => new __ABSTRACTIONS__.IAttribute[] {
         NexusMods.MnemonicDB.SourceGenerator.Tests.MyModelArrayTest.MyAttribute,
     };
+    
+    public static __ABSTRACTIONS__.IAttribute[] AllAttributesWithIncludes => 
+        AllAttributes
+       .ToArray();
 
     /// <summary>
     /// Returns all MyModelArrayTest entities in the database.
@@ -428,6 +432,7 @@ public static class MyModelArrayTestExtensions {
     /// </summary>
     public static __DI__.IServiceCollection AddMyModelArrayTestModel(this __DI__.IServiceCollection services) {
         services.AddSingleton<__ABSTRACTIONS__.IAttribute>(_ => NexusMods.MnemonicDB.SourceGenerator.Tests.MyModelArrayTest.MyAttribute);
+        services.AddSingleton(_ => new ModelDefinition("MyModelArrayTest", MyModelArrayTest.PrimaryAttribute, MyModelArrayTest.AllAttributesWithIncludes));
         return services;
     }
 
