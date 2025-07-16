@@ -39,7 +39,7 @@ public class QueryEngineTests : AMnemonicDBTest
         await InsertExampleData();
         var data = QueryEngine.Query<List<(EntityId, string)>>("SELECT DISTINCT E, V from mdb_Datoms(A := 'Mod/Name')");
 
-        data.Count.Should().Be(3);
+        await Assert.That(data).HasCount(3);
     }
 
     [Test]
@@ -48,7 +48,7 @@ public class QueryEngineTests : AMnemonicDBTest
         await InsertExampleData();
         var data = QueryEngine.Query<List<(EntityId, string)>>("SELECT Id, Name FROM mdb_Mod()"); 
 
-        data.Count.Should().Be(3);
+        await Assert.That(data).HasCount(3);
     }
 
     [Test]
@@ -99,7 +99,7 @@ public class QueryEngineTests : AMnemonicDBTest
         
         var results = QueryEngine.Query<List<(EntityId, string, string, string)>>("SELECT Id, Path, LocationPath::VARCHAR, TupleTest::VARCHAR FROM mdb_File()");
         
-        results.Count.Should().Be(3);
+        await Assert.That(results).HasCount(3);
     }
     
     [Test]

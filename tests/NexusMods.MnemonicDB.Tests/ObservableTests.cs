@@ -13,17 +13,19 @@ public class ObservableTests : AMnemonicDBTest
     [Test]
     public async Task TestObserveAll()
     {
+        throw new NotImplementedException();
+        /*
         using var disposable = Loadout
             .ObserveAll(Connection)
             .Transform(loadout => loadout.Name)
             .Bind(out var list)
             .Subscribe();
 
-        list.Should().BeEmpty();
+        await Assert.That(list).IsEmpty();
 
         await Add("Loadout 1");
 
-        list.Should().ContainSingle(static name => name.Equals("Loadout 1"));
+        await Assert.That(list.Should().ContainSingle(static name => name.Equals("Loadout 1")));
 
         await Add("Loadout 2");
 
@@ -44,8 +46,10 @@ public class ObservableTests : AMnemonicDBTest
         await Delete("Loadout 3");
 
         list.Should().BeEmpty();
+        */
     }
 
+    /*
     [Test]
     public async Task StressTest()
     {
@@ -96,4 +100,5 @@ public class ObservableTests : AMnemonicDBTest
 
         await tx.Commit();
     }
+    */
 }

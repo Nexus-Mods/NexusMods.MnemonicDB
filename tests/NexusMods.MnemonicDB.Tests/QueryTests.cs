@@ -28,7 +28,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         using var results = await db.Topology.QueryAsync(flow);
 
-        results.Should().NotBeEmpty();
+        await Assert.That(results).IsNotEmpty();
     }
     
     [Test]
@@ -45,7 +45,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         using var results = await db.Topology.QueryAsync(flow);
         
-        results.Should().NotBeEmpty();
+        await Assert.That(results).IsNotEmpty();
     }
 
     
@@ -64,7 +64,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         using var results = await Connection.Topology.QueryAsync(query);
         
-        results.Should().NotBeEmpty();
+        await Assert.That(results).IsNotEmpty();
         
         // Query how many hashes are modified in each transaction
         var historyQuery =
@@ -79,13 +79,13 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         // Validate the results
         
         // Three mods with overlapping filenames, so we expect 3 results for each
-        results.Should().BeEquivalentTo(new (RelativePath, Hash, int)[] {
+        await Assert.That(results).IsEquatableOrEqualTo(new (RelativePath, Hash, int)[] {
             ("File1", Hash.FromLong(0xDEADBEEF), 3),
             ("File2", Hash.FromLong(0xDEADBEF0), 3),
             ("File3", Hash.FromLong(0xDEADBEF1), 3),
         });
         
-        historyResults.Should().BeEquivalentTo(new (ulong, int)[] {
+        await Assert.That(historyResults).IsEquatableOrEqualTo(new (ulong, int)[] {
             // 9 hashes in the first transaction
             (3, 9),
         });
@@ -98,7 +98,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         // we swapped one file over to a different hash, so we should see 4 results now with 2 count for one
         // and 1 for the other
-        results.Should().BeEquivalentTo(new (RelativePath, Hash, int)[] {
+        await Assert.That(results).IsEquatableOrEqualTo(new (RelativePath, Hash, int)[] {
             ("File1", Hash.FromLong(0x42), 1),
             ("File2", Hash.FromLong(0xDEADBEF0), 3),
             ("File3", Hash.FromLong(0xDEADBEF1), 3),
@@ -107,8 +107,8 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
 
         
-        historyResults.Should().NotBeEmpty();
-        historyResults.Should().BeEquivalentTo(new (ulong, int)[] {
+        await Assert.That(historyResults).IsNotEmpty();
+        await Assert.That(historyResults).IsEquatableOrEqualTo(new (ulong, int)[] {
             // 9 hashes in the first transaction
             (3, 9),
             // 1 hash in the second transaction
@@ -210,7 +210,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             .Return(mod, name);
         
         using var markedResults = await Connection.Topology.QueryAsync(markedMods);
-        markedResults.Count.Should().Be(1);
+        await Assert.That(markedResults).HasCount(1);
         
         var unmarkedMods = Pattern.Create()
             .Db(mod, Mod.Name, out var name2)
@@ -218,7 +218,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             .Return(mod, name2);
         
         using var unmarkedResults = await Connection.Topology.QueryAsync(unmarkedMods);
-        unmarkedResults.Count.Should().Be(2);
+        await Assert.That(unmarkedResults).HasCount(2);
         
         using var tx2 = Connection.BeginTransaction();
         tx2.Add(testMod, Mod.Description, "Test Mod Description");
@@ -230,7 +230,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             .Return(mod, name);
         
         using var descriptionResults = await Connection.Topology.QueryAsync(modsWithDescription);
-        descriptionResults.Count.Should().Be(1);
+        await Assert.That(descriptionResults).HasCount(1);
         
         var modsWithoutDescription = Pattern.Create()
             .Db(mod, Mod.Name, name)
@@ -238,6 +238,6 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             .Return(mod, name);
         
         using var noDescriptionResults = await Connection.Topology.QueryAsync(modsWithoutDescription);
-        noDescriptionResults.Count.Should().Be(2);
+        await Assert.That(noDescriptionResults).HasCount(2);
     }
 }
