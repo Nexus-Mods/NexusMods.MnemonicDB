@@ -49,7 +49,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var oldTx = Connection.TxId;
         var result = await tx.Commit();
 
-        await Assert.That(result.NewTx).IsEqualTo(oldTx).Because("transaction id should be incremented");
+        await Assert.That(result.NewTx).IsNotEqualTo(oldTx).Because("transaction id should be incremented");
         await Assert.That(result.NewTx.Value).IsEqualTo(oldTx.Value + 1).Because("transaction id should be incremented by 1");
 
         var db = Connection.Db;
@@ -858,7 +858,17 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             .ToHashSet();
         
         var found = queryBoth.ToHashSet();
-        await Assert.That(found).IsEquatableOrEqualTo(matchingSet);
+        await Assert.That(AreEqual(matchingSet, found)).IsTrue();
+
+        bool AreEqual(HashSet<EntityId> a, HashSet<EntityId> b)
+        {
+            if (a.Count != b.Count) return false;
+            foreach (var id in a)
+            {
+                if (!b.Contains(id)) return false;
+            }
+            return true;
+        }
     }
 
     [Test]

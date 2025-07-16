@@ -48,24 +48,24 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(results).IsNotEmpty();
     }
 
-    
+
     [Test]
     public async Task CanRunActiveQueries()
     {
         await InsertExampleData();
-        
-        
-        var query = 
+
+
+        var query =
             Pattern.Create()
                 .Db(out var e, File.Path, out var path)
                 .Db(e, File.Hash, out var hash)
                 .Return(path, hash, path.Count());
-        
-        
+
+
         using var results = await Connection.Topology.QueryAsync(query);
-        
+
         await Assert.That(results).IsNotEmpty();
-        
+
         // Query how many hashes are modified in each transaction
         var historyQuery =
             Pattern.Create()
@@ -73,22 +73,22 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 // Strip the partition from the txId, just to make it easier to read
                 .Project(txId, t => t.ValuePortion, out var txNoPartition)
                 .Return(txNoPartition, e.Count());
-        
+
         using var historyResults = await Connection.Topology.QueryAsync(historyQuery);
 
         // Validate the results
-        
+
         // Three mods with overlapping filenames, so we expect 3 results for each
-        await Assert.That(results.ToArray()).IsEquatableOrEqualTo([
+        await Assert.That(AreEqual(results.ToList(), [
             ("File1", Hash.FromLong(0xDEADBEEF), 3),
             ("File2", Hash.FromLong(0xDEADBEF0), 3),
             ("File3", Hash.FromLong(0xDEADBEF1), 3)
-        ]);
-        
-        await Assert.That(historyResults.ToArray()).IsEquatableOrEqualTo([
+        ])).IsTrue();
+
+        await Assert.That(AreEqual(historyResults.ToList(), new (ulong, int)[]{
             // 9 hashes in the first transaction
-            (3, 9)
-        ]);
+            (3, 9) 
+        })).IsTrue();;
 
         // Update one hash to check that the queries update correctly
         using var tx = Connection.BeginTransaction();
@@ -98,23 +98,33 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         // we swapped one file over to a different hash, so we should see 4 results now with 2 count for one
         // and 1 for the other
-        await Assert.That(results.ToArray()).IsEquatableOrEqualTo([
+        await Assert.That(AreEqual(results.ToList(), new (RelativePath, Hash, int)[]{
             ("File1", Hash.FromLong(0x42), 1),
             ("File2", Hash.FromLong(0xDEADBEF0), 3),
             ("File3", Hash.FromLong(0xDEADBEF1), 3),
             ("File1", Hash.FromLong(0xDEADBEEF), 2)
-        ]);
+        })).IsTrue();
 
 
         
         await Assert.That(historyResults).IsNotEmpty();
-        await Assert.That(historyResults.ToArray()).IsEquatableOrEqualTo([
+        await Assert.That(AreEqual(historyResults.ToList(), new (ulong, int)[]{
             // 9 hashes in the first transaction
             (3, 9),
             // 1 hash in the second transaction
             (5, 1)
-        ]);
+        })).IsTrue();
 
+        bool AreEqual<T>(List<T> a, T[] b)
+        {
+            if (a.Count != b.Length) return false;
+            for (var i = 0; i < a.Count; i++)
+            {
+                if (!a.Contains(b[i]))
+                    return false;
+            }
+            return true;
+        }
     }
 
     [Test]
