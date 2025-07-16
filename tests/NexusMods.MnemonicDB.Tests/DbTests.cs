@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Reactive.Linq;
 using DynamicData;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
@@ -19,7 +18,6 @@ using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.MnemonicDB.TestModel.Analyzers;
-using NexusMods.MnemonicDB.TestModel.Attributes;
 using NexusMods.Paths;
 using TUnit.Assertions.AssertConditions.Throws;
 using File = NexusMods.MnemonicDB.TestModel.File;
