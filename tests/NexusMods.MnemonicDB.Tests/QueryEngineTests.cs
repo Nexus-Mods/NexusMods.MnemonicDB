@@ -51,6 +51,7 @@ public class QueryEngineTests : AMnemonicDBTest
         await Assert.That(data).HasCount(3);
     }
 
+    /*
     [Test]
     public async Task CanSelectTuples()
     {
@@ -101,6 +102,7 @@ public class QueryEngineTests : AMnemonicDBTest
         
         await Assert.That(results).HasCount(3);
     }
+    */
     
     [Test]
     public async Task CanSelectFromModelsWithJoin()

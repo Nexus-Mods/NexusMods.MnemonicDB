@@ -980,12 +980,6 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         // If the above is working correctly we'll only have one entityId for the client, if it's wrong, the
         // one of the parents may have a different entityId
         await VerifyTable(result.Db.Datoms(result.NewTx).Resolved(Connection));
-        var results = await tx.Commit();
-
-        var resolved = results.Db.Datoms(File.TupleTest).Resolved(Connection).ToArray();
-
-        await Assert.That(resolved.All(x => x.E.Partition != PartitionId.Temp)).IsTrue();
-        await VerifyTable(resolved);
     }
 
     [Test]

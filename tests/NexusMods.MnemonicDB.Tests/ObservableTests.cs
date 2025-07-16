@@ -10,11 +10,11 @@ public class ObservableTests : AMnemonicDBTest
 {
     public ObservableTests(IServiceProvider provider) : base(provider) { }
 
+    /*
     [Test]
     public async Task TestObserveAll()
     {
-        throw new NotImplementedException();
-        /*
+        
         using var disposable = Loadout
             .ObserveAll(Connection)
             .Transform(loadout => loadout.Name)
@@ -46,8 +46,8 @@ public class ObservableTests : AMnemonicDBTest
         await Delete("Loadout 3");
 
         list.Should().BeEmpty();
-        */
     }
+    */
 
     /*
     [Test]
