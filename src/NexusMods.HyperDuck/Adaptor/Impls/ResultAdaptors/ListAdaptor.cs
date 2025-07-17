@@ -8,9 +8,6 @@ public class ListAdaptor<TResult, TRowType, TRowAdaptor> : IResultAdaptor<TResul
     where TResult : IList<TRowType>
     where TRowAdaptor : IRowAdaptor<TRowType>
 {
-    public ListAdaptor(TRowAdaptor subAdaptor)
-    {
-    }
     
     public void Adapt(Result result, ref TResult value)
     {
@@ -71,7 +68,7 @@ public class ListAdaptorFactory : IResultAdaptorFactory
         priority = 0;
         return false;
     }
-
+    
     public Type CreateType(Type resultType, Type rowType, Type rowAdaptorType)
     {
         return typeof(ListAdaptor<,,>).MakeGenericType(resultType, rowType, rowAdaptorType);

@@ -13,5 +13,5 @@ public interface IResultAdaptorFactory
     /// Given a row type, create a new IResultAdaptor that uses the given row type and row adaptor type. The
     /// rowAdaptorType will inherit from IRowAdaptor 
     /// </summary>
-    public Type CreateType(Type rowType, Type rowAdaptorType);
+    public Type CreateType(Type resultType, Type rowType, Type rowAdaptorType);
 }
