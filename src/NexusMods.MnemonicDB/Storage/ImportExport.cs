@@ -7,6 +7,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage.Abstractions;
+using NexusMods.Paths;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Storage;
@@ -59,6 +60,22 @@ public partial class DatomStore
             }
         }
         Logger.LogInformation("Exported {0} datoms", exportedDatoms);
+    }
+
+    public async Task ExportJson(AbsolutePath path)
+    {
+        await using var file = path.Create();
+        await using var sw = new StreamWriter(file);
+        var snapshot = CurrentSnapshot;
+        foreach (var chunk in snapshot.DatomsChunked(SliceDescriptor.Create(IndexType.TxLog), 1024))
+        {
+            foreach (var datom in chunk)
+            {
+                var valueHex = Convert.ToHexString(datom.ValueSpan);
+                await sw.WriteLineAsync($"{{\"E\": {datom.E.Value}, \"A\": {datom.A.Value}, \"V\": \"{valueHex}\", \"T\": {datom.T.Value}, \"IsRetract\": {(datom.IsRetract ? 1 : 0)}, \"Tag\":{(byte)datom.Prefix.ValueTag}}}");
+            }
+            
+        }
     }
 
     /// <summary>
