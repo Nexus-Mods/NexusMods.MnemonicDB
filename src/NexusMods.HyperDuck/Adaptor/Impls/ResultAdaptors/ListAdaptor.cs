@@ -1,12 +1,60 @@
 using System;
 using System.Collections.Generic;
+using Microsoft.Win32;
 
 namespace NexusMods.HyperDuck.Adaptor.Impls.ResultAdaptors;
 
-public class ListAdaptor<TRowType, TRowAdaptor> : IResultAdaptor 
+public class ListAdaptor<TResult, TRowType, TRowAdaptor> : IResultAdaptor<TResult>
+    where TResult : IList<TRowType>
     where TRowAdaptor : IRowAdaptor<TRowType>
 {
+    public ListAdaptor(TRowAdaptor subAdaptor)
+    {
+    }
     
+    public void Adapt(Result result, ref TResult value)
+    {
+        var columnCount = result.ColumnCount;
+        Span<ReadOnlyVector> vectors = stackalloc ReadOnlyVector[(int)columnCount];
+
+        int totalRows = 0;
+        while (true)
+        {
+            using var chunk = result.FetchChunk();
+            if (!chunk.IsValid)
+                break;
+
+            for (var v = 0; v < vectors.Length; v++)
+                vectors[v] = chunk[(ulong)v];
+
+            var cursor = new RowCursor(vectors);
+            var listSize = value.Count;
+            for (cursor.RowIndex = 0; cursor.RowIndex < (int)chunk.Size; cursor.RowIndex++)
+            {
+                if (totalRows < listSize)
+                {
+                    var current = value[0];
+                    TRowAdaptor.Adapt(cursor, ref current);
+                    value[totalRows] = current!;
+                }
+                else
+                {
+                    TRowType? current = default;
+                    TRowAdaptor.Adapt(cursor, ref current);
+                    value.Add(current!);
+                }
+                totalRows++;
+            }
+        }
+
+        if (totalRows < value.Count)
+        {
+            for (int i = value.Count; i > totalRows; i--)
+            {
+                value.RemoveAt(i);
+            }
+        }
+    }
 }
 
 public class ListAdaptorFactory : IResultAdaptorFactory
@@ -24,8 +72,8 @@ public class ListAdaptorFactory : IResultAdaptorFactory
         return false;
     }
 
-    public Type CreateType(Type rowType, Type rowAdaptorType)
+    public Type CreateType(Type resultType, Type rowType, Type rowAdaptorType)
     {
-        return typeof(ListAdaptor<,>).MakeGenericType(rowType, rowAdaptorType);
+        return typeof(ListAdaptor<,,>).MakeGenericType(resultType, rowType, rowAdaptorType);
     }
 }
