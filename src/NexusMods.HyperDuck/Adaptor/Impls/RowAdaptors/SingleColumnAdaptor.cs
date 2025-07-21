@@ -7,7 +7,8 @@ public struct SingleColumnAdaptor<TItem, TValueAdaptor> : IRowAdaptor<TItem>
 {
     public static void Adapt(RowCursor cursor, ref TItem? value)
     {
-        TValueAdaptor.Adapt(cursor, ref value);
+        var valueCursor = new ValueCursor(cursor);
+        TValueAdaptor.Adapt(valueCursor, ref value);
     }
 }
 
@@ -22,7 +23,6 @@ public class SingleColumnAdaptorFactory : IRowAdaptorFactory
 
     public Type CreateType(Type resultType, Type[] elementTypes, Type[] elementAdaptors)
     {
-        return typeof(SingleColumnAdaptor<,>);
-        
+        return typeof(SingleColumnAdaptor<,>).MakeGenericType(elementTypes[0], elementAdaptors[0]);
     }
 }

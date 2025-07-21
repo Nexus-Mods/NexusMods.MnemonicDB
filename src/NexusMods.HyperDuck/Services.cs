@@ -2,6 +2,8 @@
 using NexusMods.HyperDuck.Adaptor;
 using NexusMods.HyperDuck.Adaptor.Impls;
 using NexusMods.HyperDuck.Adaptor.Impls.ResultAdaptors;
+using NexusMods.HyperDuck.Adaptor.Impls.RowAdaptors;
+using NexusMods.HyperDuck.Adaptor.Impls.ValueAdaptor;
 
 namespace NexusMods.HyperDuck;
 
@@ -11,7 +13,8 @@ public static class Services
     {
         s.AddSingleton<IRegistry, Registry>();
         s.AddSingleton<IResultAdaptorFactory, ListAdaptorFactory>();
-        
+        s.AddSingleton<IRowAdaptorFactory, SingleColumnAdaptorFactory>();
+        s.AddSingleton<IValueAdaptorFactory, UnmanagedValueAdaptorFactory>();
         return s;
     }
 }
