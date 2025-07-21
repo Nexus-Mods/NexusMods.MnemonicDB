@@ -10,7 +10,13 @@ namespace NexusMods.HyperDuck;
 public unsafe partial struct Connection : IDisposable
 {
     internal void* _ptr;
+    private readonly IRegistry _registry;
 
+    public Connection(IRegistry registry)
+    {
+        _registry = registry;
+    }
+    
     public void Interrupt()
     {
         ArgumentNullException.ThrowIfNull(_ptr);
@@ -21,17 +27,19 @@ public unsafe partial struct Connection : IDisposable
     public Result Query(string query)
     {
         Result result = new Result();
-        if (Native.duckdb_query(this, query, ref result) != State.Success)
+        if (Native.duckdb_query(_ptr, query, ref result) != State.Success)
             throw new QueryException(Marshal.PtrToStringUTF8((IntPtr)Native.duckdb_result_error(ref result)) ?? "Unknown error");
         return result;
     }
 
     
-    public T Query<T>(string query, Builder builder)
+    public T Query<T>(string query) where T : class, new()
     {
-        using var results = Query(query);
-        var adapter = builder.Build<T>(results);
-        return adapter(results);
+        using var dbResults = Query(query);
+        var adapter = _registry.GetAdaptor<T>(dbResults);
+        var result = new T();
+        adapter.Adapt(dbResults, ref result);
+        return result;
     }
 
     internal static partial class Native
@@ -46,7 +54,7 @@ public unsafe partial struct Connection : IDisposable
         
         [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        public static partial State duckdb_query(Connection connection, string query, ref Result result);
+        public static partial State duckdb_query(void* connection, string query, ref Result result);
         
         [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]

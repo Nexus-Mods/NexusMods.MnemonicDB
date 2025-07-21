@@ -2,6 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
+using NexusMods.HyperDuck.Adaptor;
 using NexusMods.HyperDuck.Exceptions;
 
 namespace NexusMods.HyperDuck;
@@ -9,11 +10,14 @@ namespace NexusMods.HyperDuck;
 public unsafe partial struct Database : IDisposable
 {
     private void *_ptr;
+    private IRegistry _registry;
+
 
     [MustDisposeResource]
-    public static Database Open(string path)
+    public static Database Open(string path, IRegistry registry)
     {
         var state = new Database();
+        state._registry = registry;
         var result = Native.duckdb_open(path, ref state._ptr);
         if (result != State.Success)
         {
@@ -25,17 +29,17 @@ public unsafe partial struct Database : IDisposable
     /// <summary>
     /// Open an in-memory database.
     /// </summary>
-    public static Database OpenInMemory()
+    public static Database OpenInMemory(IRegistry registry)
     {
-        return Open(":memory:");
+        return Open(":memory:", registry);
     }
 
     [MustDisposeResource]
     public Connection Connect()
     {
         ArgumentNullException.ThrowIfNull(_ptr);
-        Connection connection = new Connection();
-        if (Native.duckdb_connect( this, ref connection) != State.Success)
+        Connection connection = new Connection(_registry);
+        if (Native.duckdb_connect( this._ptr, ref connection._ptr) != State.Success)
         {
             throw new ConnectException();
         }
@@ -56,7 +60,7 @@ public unsafe partial struct Database : IDisposable
         
         [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        internal static partial State duckdb_connect(Database db, ref Connection connection);
+        internal static partial State duckdb_connect(void* db, ref void* connection);
     }
 
     public void Dispose()

@@ -8,7 +8,7 @@ public class QueryTests
     [Test]
     public async Task CanGetResultChunks()
     {
-        using var db = Database.OpenInMemory();
+        using var db = Database.OpenInMemory(null!);
         using var con = db.Connect();
         using var cmd = con.Query("SELECT 1 AS a, 2 AS b");
 
@@ -21,7 +21,7 @@ public class QueryTests
     [Test]
     public async Task CanGetIntegerResults()
     {
-        using var db = Database.OpenInMemory();
+        using var db = Database.OpenInMemory(null!);
         using var con = db.Connect();
         using var result = con.Query("SELECT * FROM generate_series(1, 10, 1);");
         
@@ -45,7 +45,7 @@ public class QueryTests
     [Test]
     public async Task GetGetStringResults()
     {
-        using var db = Database.OpenInMemory();
+        using var db = Database.OpenInMemory(null!);
         using var con = db.Connect();
         using var result = con.Query("SELECT 'Hello' AS a, 'A really long string that cannot be inlined' AS b");
 
@@ -71,7 +71,7 @@ public class QueryTests
     [Test]
     public async Task CanReadListTypes()
     {
-        using var db = Database.OpenInMemory();
+        using var db = Database.OpenInMemory(null!);
         using var con = db.Connect();
         using var result = con.Query("SELECT [1, 2, 3] as lst");
         

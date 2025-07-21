@@ -14,20 +14,20 @@ public class ScalarFunctionTests
             .Build();
 
         Services = host.Services;
-        Builder = Services.GetRequiredService<Builder>();
+        Registry = Services.GetRequiredService<IRegistry>();
     }
 
-    public Builder Builder { get; set; }
+    public IRegistry Registry { get; set; }
 
     public IServiceProvider Services { get; set; }
 
     [Test]
     public async Task BasicScalarFunctionTest()
     {
-        using var db = Database.OpenInMemory();
+        using var db = Database.OpenInMemory(Registry);
         using var con = db.Connect();
         con.Register(new MultiplyFunction());
-        var cmd = con.Query<List<int>>("SELECT my_multiply(21, 2)", Builder);
+        var cmd = con.Query<List<int>>("SELECT my_multiply(21, 2)");
         
         await Assert.That(cmd).IsEquivalentTo([42]);
     }

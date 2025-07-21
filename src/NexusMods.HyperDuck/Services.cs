@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NexusMods.HyperDuck.Adaptor;
 using NexusMods.HyperDuck.Adaptor.Impls;
+using NexusMods.HyperDuck.Adaptor.Impls.ResultAdaptors;
 
 namespace NexusMods.HyperDuck;
 
@@ -8,13 +9,9 @@ public static class Services
 {
     public static IServiceCollection AddAdapters(this IServiceCollection s)
     {
-        s.AddSingleton<Registry>();
-        s.AddSingleton<Builder>();
-        s.AddSingleton<IConverter, ListChunk>();
-        s.AddSingleton<IConverter, ScalarRow>();
-        s.AddSingleton<IConverter, TupleRowConverter>();
-        s.AddSingleton<IConverter, StringValueConverter>();
-        s.AddSingleton<IConverter, ListValueConverter>();
+        s.AddSingleton<IRegistry, Registry>();
+        s.AddSingleton<IResultAdaptorFactory, ListAdaptorFactory>();
+        
         return s;
     }
 }

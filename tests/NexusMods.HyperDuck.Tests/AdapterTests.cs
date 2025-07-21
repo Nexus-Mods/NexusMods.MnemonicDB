@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Win32;
 using NexusMods.HyperDuck.Adaptor;
 using Assert = TUnit.Assertions.Assert;
 
@@ -14,23 +15,23 @@ public class AdapterTests
             .Build();
 
         Services = host.Services;
-        Builder = Services.GetRequiredService<Builder>();
+        Registry = Services.GetRequiredService<IRegistry>();
     }
 
-    public Builder Builder { get; set; }
+    public IRegistry Registry { get; set; }
 
     public IServiceProvider Services { get; set; }
 
     [Test]
     public async Task CanGetScalarResults()
     {
-        using var db = Database.OpenInMemory();
+        using var db = Database.OpenInMemory(Registry);
         using var con = db.Connect();
-        var result = con.Query<List<int>>("SELECT 1 AS one", Builder);
+        var result = con.Query<List<int>>("SELECT 1 AS one");
 
         await Assert.That(result).IsEquivalentTo([1]);
 
-        var result2 = con.Query<List<long>>("SELECT * FROM generate_series(1, 10, 1)", Builder);
+        var result2 = con.Query<List<long>>("SELECT * FROM generate_series(1, 10, 1)");
 
         await Assert.That(result2).IsEquivalentTo(Enumerable.Range(1, 10).Select(s => (long)s));
     }
@@ -38,9 +39,9 @@ public class AdapterTests
     [Test]
     public async Task CanGetTupleResults()
     {
-        using var db = Database.OpenInMemory();
+        using var db = Database.OpenInMemory(Registry);
         using var con = db.Connect();
-        var result = con.Query<List<(int, int)>>("SELECT 1 AS one, 2 AS two", Builder);
+        var result = con.Query<List<(int, int)>>("SELECT 1 AS one, 2 AS two");
 
         await Assert.That(result).IsEquivalentTo([(1, 2)]);
     }
@@ -48,11 +49,11 @@ public class AdapterTests
     [Test]
     public async Task CanGetStringResults()
     {
-        using var db = Database.OpenInMemory();
+        using var db = Database.OpenInMemory(Registry);
         using var con = db.Connect();
         var result =
             con.Query<List<(string, string)>>(
-                "SELECT 'Hello' AS one, 'A really long string that cannot be inlined' AS two", Builder);
+                "SELECT 'Hello' AS one, 'A really long string that cannot be inlined' AS two");
 
         await Assert.That(result).IsEquivalentTo([("Hello", "A really long string that cannot be inlined")]);
     }
@@ -60,9 +61,9 @@ public class AdapterTests
     [Test]
     public async Task CanGetListResults()
     {
-        using var db = Database.OpenInMemory();
+        using var db = Database.OpenInMemory(Registry);
         using var con = db.Connect();
-        var result = con.Query<List<(List<int>, int)>>("SELECT [1, 2, 3] as lst, 42 as i", Builder);
+        var result = con.Query<List<(List<int>, int)>>("SELECT [1, 2, 3] as lst, 42 as i");
 
         await Assert.That(result).IsEquivalentTo([(new List<int> { 1, 2, 3 }, 42)]);
 

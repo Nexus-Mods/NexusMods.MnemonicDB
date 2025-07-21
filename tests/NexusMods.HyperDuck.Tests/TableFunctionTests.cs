@@ -7,7 +7,7 @@ namespace NexusMods.HyperDuck.Tests;
 
 public class TableFunctionTests
 {
-    public Builder Builder { get; set; }
+    public IRegistry Registry { get; set; }
     public IServiceProvider Services { get; set; }
     
     public TableFunctionTests()
@@ -17,16 +17,16 @@ public class TableFunctionTests
             .Build();
 
         Services = host.Services;
-        Builder = Services.GetRequiredService<Builder>();
+        Registry = Services.GetRequiredService<IRegistry>();
     }
 
     [Test]
     public async Task CanGetTableResults()
     {
-        using var db = Database.OpenInMemory();
+        using var db = Database.OpenInMemory(Registry);
         using var con = db.Connect();
         con.Register(new Squares());;
-        var result = con.Query<List<(int, int)>>("SELECT * FROM my_squares(0, 8, stride=>1)", Builder);
+        var result = con.Query<List<(int, int)>>("SELECT * FROM my_squares(0, 8, stride=>1)");
         
         await Assert.That(result).IsEquivalentTo([
             (0, 0), 
@@ -39,7 +39,7 @@ public class TableFunctionTests
             (7, 49)
         ]);
         
-        var result2 = con.Query<List<(int, int)>>("SELECT * FROM my_squares(0, 8000, stride=>1)", Builder);
+        var result2 = con.Query<List<(int, int)>>("SELECT * FROM my_squares(0, 8000, stride=>1)");
         await Assert.That(result2).IsEquivalentTo(
             Enumerable.Range(0, 8000).Select(i => (i, i * i)));
     }
