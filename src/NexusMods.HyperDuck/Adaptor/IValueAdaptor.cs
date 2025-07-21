@@ -8,5 +8,5 @@ public interface IValueAdaptor
 
 public interface IValueAdaptor<T>
 {
-    static abstract void Adapt(RowCursor cursor, ref T? value);
+    static abstract void Adapt(ValueCursor cursor, ref T? value);
 }

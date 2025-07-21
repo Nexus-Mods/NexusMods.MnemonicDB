@@ -15,4 +15,14 @@ public ref struct RowCursor
         RowIndex = 0;
         _vectors = vectors;
     }
+
+    public ReadOnlySpan<T> GetData<T>(int column) where T : unmanaged
+    {
+        throw new NotImplementedException();
+    }
+
+    public T GetValue<T>(int columnIndex) where T : unmanaged
+    {
+        throw new NotImplementedException();
+    }
 }
