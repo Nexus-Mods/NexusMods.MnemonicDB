@@ -56,7 +56,7 @@ public class ListAdaptor<TResult, TRowType, TRowAdaptor> : IResultAdaptor<TResul
 
 public class ListAdaptorFactory : IResultAdaptorFactory
 {
-    public bool TryExtractRowType(Type resultType, out Type rowType, out int priority)
+    public bool TryExtractRowType(ReadOnlySpan<Result.ColumnInfo> columns, Type resultType, out Type rowType, out int priority)
     {
         if (resultType.TryExtractGenericInterfaceArguments(typeof(List<>), out var genericArguments))
         {

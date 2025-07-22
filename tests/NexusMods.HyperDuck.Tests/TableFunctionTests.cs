@@ -44,6 +44,17 @@ public class TableFunctionTests
             Enumerable.Range(0, 8000).Select(i => (i, i * i)));
     }
 
+    [Test]
+    public async Task CanGetQueryPlanForTable()
+    {
+        using var db = Database.OpenInMemory(Registry);
+        using var con = db.Connect();
+        con.Register(new Squares());;
+        var plan = con.QueryPlan("SELECT * FROM my_squares(0, 8)");
+
+        throw new NotImplementedException();
+    }
+
 }
 
 public class Squares : ATableFunction

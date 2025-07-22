@@ -14,8 +14,14 @@ public struct SingleColumnAdaptor<TItem, TValueAdaptor> : IRowAdaptor<TItem>
 
 public class SingleColumnAdaptorFactory : IRowAdaptorFactory
 {
-    public bool TryExtractElementTypes(Type resultType, out Type[] elementTypes, out int priority)
+    public bool TryExtractElementTypes(ReadOnlySpan<Result.ColumnInfo> columns, Type resultType, out Type[] elementTypes, out int priority)
     {
+        if (columns.Length != 1)
+        {
+            priority = 0;
+            elementTypes = [];
+            return false;
+        }
         priority = -10;
         elementTypes = [resultType];
         return true;

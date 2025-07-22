@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text.Json;
 using JetBrains.Annotations;
 using NexusMods.HyperDuck.Adaptor;
 using NexusMods.HyperDuck.Exceptions;
@@ -40,6 +43,18 @@ public unsafe partial struct Connection : IDisposable
         var result = new T();
         adapter.Adapt(dbResults, ref result);
         return result;
+    }
+
+    /// <summary>
+    /// Gets the JSON query plan for a specific query
+    /// </summary>
+    public string QueryPlan(string query)
+    {
+        var result = Query<List<(string, string)>>("EXPLAIN (FORMAT JSON) " + query);
+
+        var plan = result.First().Item2;
+        throw new NotImplementedException();
+
     }
 
     internal static partial class Native

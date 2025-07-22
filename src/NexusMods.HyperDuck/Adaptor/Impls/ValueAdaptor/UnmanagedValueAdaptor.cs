@@ -18,9 +18,28 @@ public class UnmanagedValueAdaptorFactory : IValueAdaptorFactory
     {
         subTypes = [];
         priority = 0;
-        if (taggedType == DuckDbType.Integer || taggedType == DuckDbType.BigInt)
-            return true;
-        return false;
+        if (!type.IsValueType)
+            return false;
+        switch (taggedType)
+        {
+            case DuckDbType.TinyInt:
+            case DuckDbType.SmallInt:    
+            case DuckDbType.Integer:
+            case DuckDbType.BigInt:
+            case DuckDbType.UTinyInt:
+            case DuckDbType.USmallInt:
+            case DuckDbType.UInteger:
+            case DuckDbType.UBigInt:
+            case DuckDbType.Float:
+            case DuckDbType.Double:
+            case DuckDbType.Timestamp:
+            case DuckDbType.Hugeint:
+            case DuckDbType.Uhugeint:
+                break;
+            default:
+                return false;
+        }
+        return true;
     }
 
     public Type CreateType(DuckDbType taggedType, LogicalType logicalType, Type resultTypes, Type[] subTypes)

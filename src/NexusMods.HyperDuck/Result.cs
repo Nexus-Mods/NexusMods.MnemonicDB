@@ -66,7 +66,7 @@ public unsafe partial struct Result : IDisposable
         return Native.duckdb_fetch_chunk(this);
     }
 
-    public ref struct ColumnInfo
+    public struct ColumnInfo
     {
         private Result _result;
         private readonly ulong _index;

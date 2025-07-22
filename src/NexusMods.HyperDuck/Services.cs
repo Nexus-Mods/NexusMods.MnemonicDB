@@ -15,6 +15,8 @@ public static class Services
         s.AddSingleton<IResultAdaptorFactory, ListAdaptorFactory>();
         s.AddSingleton<IRowAdaptorFactory, SingleColumnAdaptorFactory>();
         s.AddSingleton<IValueAdaptorFactory, UnmanagedValueAdaptorFactory>();
+        s.AddSingleton<IRowAdaptorFactory, TupleAdaptorFactory>();
+        s.AddSingleton<IValueAdaptorFactory, StringAdaptorFactory>();
         return s;
     }
 }
