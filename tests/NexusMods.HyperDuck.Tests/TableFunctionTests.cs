@@ -50,9 +50,9 @@ public class TableFunctionTests
         using var db = Database.OpenInMemory(Registry);
         using var con = db.Connect();
         con.Register(new Squares());;
-        var plan = con.QueryPlan("SELECT * FROM my_squares(0, 8)");
+        var plan = con.GetReferencedFunctions("SELECT i FROM my_squares(0, 8)");
 
-        throw new NotImplementedException();
+        await Assert.That(plan).IsEquivalentTo(["MY_SQUARES"]);
     }
 
 }

@@ -7,6 +7,7 @@ using System.Text.Json;
 using JetBrains.Annotations;
 using NexusMods.HyperDuck.Adaptor;
 using NexusMods.HyperDuck.Exceptions;
+using NexusMods.HyperDuck.Internals;
 
 namespace NexusMods.HyperDuck;
 
@@ -48,13 +49,29 @@ public unsafe partial struct Connection : IDisposable
     /// <summary>
     /// Gets the JSON query plan for a specific query
     /// </summary>
-    public string QueryPlan(string query)
+    public HashSet<string> GetReferencedFunctions(string query)
     {
         var result = Query<List<(string, string)>>("EXPLAIN (FORMAT JSON) " + query);
 
-        var plan = result.First().Item2;
-        throw new NotImplementedException();
+        var plan = JsonSerializer.Deserialize<QueryPlanNode[]>(result.First().Item2)!;
+        
+        HashSet<string> touchedFunctions = [];
+        foreach (var node in plan)
+        {
+            AnalyzeNode(node, touchedFunctions);
+        }
+        
+        return touchedFunctions;
 
+        void AnalyzeNode(QueryPlanNode node, HashSet<string> touchedFunctions)
+        {
+            if (node.ExtraInfo?.Function is { } functionName)
+            {
+                touchedFunctions.Add(functionName);
+            }
+            foreach (var child in node.Children)
+                AnalyzeNode(child, touchedFunctions);
+        }
     }
 
     internal static partial class Native
