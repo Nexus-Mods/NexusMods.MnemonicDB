@@ -117,4 +117,9 @@ public interface IConnection : IDisposable
     /// defines what should be done with each datom.
     /// </summary>
     public Task<ICommitResult> ScanUpdate(ScanFunction function);
+
+    /// <summary>
+    /// Run an ad-hoc SQL query against the connection (using the most up-to-date version of the data)
+    /// </summary>
+    T Query<T>(string query) where T : class, new();
 }

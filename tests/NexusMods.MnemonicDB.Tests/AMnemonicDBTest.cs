@@ -29,11 +29,7 @@ public class AMnemonicDBTest : IDisposable
     
     protected TemporaryFileManager TemporaryFileManager;
     private readonly Dictionary<string, IAttribute> _attrShortNames;
-
-    public IQueryEngine QueryEngine { get; set; }
-
-
-
+    
     protected AMnemonicDBTest(IServiceProvider provider)
     {
         Provider = provider;
@@ -56,9 +52,8 @@ public class AMnemonicDBTest : IDisposable
             new DatomCountAnalyzer(),
             new AttributesAnalyzer()
         ];
-        QueryEngine = new QueryEngine(provider.GetRequiredService<ILogger<QueryEngine>>(), provider.GetServices<IConverter>());
         
-        Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, provider, _analyzers, QueryEngine);
+        Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, provider, _analyzers, provider.GetRequiredService<IQueryEngine>());
         
         Logger = provider.GetRequiredService<ILogger<AMnemonicDBTest>>();
         

@@ -1,15 +1,13 @@
-using DynamicData;
 using NexusMods.Cascade;
-using NexusMods.Cascade.Abstractions;
 using NexusMods.Cascade.Patterns;
 using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Cascade;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
-using VerifyTUnit;
 using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
@@ -54,6 +52,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     {
         await InsertExampleData();
 
+        
 
         var query =
             Pattern.Create()
@@ -202,52 +201,28 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     {
         await InsertExampleData();
 
-        var mods = Pattern.Create()
-            .Db(out var e, File.ModId, out var mod)
-            .Return(e, mod);
-        
-        var results = await Connection.Topology.QueryAsync(mods);
-
-        var testMod = results.First().Item2;
+        var mods = Connection.Query<List<(EntityId, EntityId)>>("SELECT Id, Mod FROM mdb_File()");
+        var testMod = mods.First().Item2;
         
         using var tx = Connection.BeginTransaction();
         tx.Add(testMod, Mod.Marked, Null.Instance);
         await tx.Commit();
+
+        var markedMods = Connection.Query<List<(EntityId, string)>>("SELECT Id, Name FROM mdb_Mod() WHERE Marked = true");
         
-        var markedMods = Pattern.Create()
-            .Db(mod, Mod.Name, out var name)
-            .HasAttribute(mod, Mod.Marked)
-            .Return(mod, name);
-        
-        using var markedResults = await Connection.Topology.QueryAsync(markedMods);
-        await Assert.That(markedResults).HasCount(1);
-        
-        var unmarkedMods = Pattern.Create()
-            .Db(mod, Mod.Name, out var name2)
-            .MissingAttribute(mod, Mod.Marked)
-            .Return(mod, name2);
-        
-        using var unmarkedResults = await Connection.Topology.QueryAsync(unmarkedMods);
-        await Assert.That(unmarkedResults).HasCount(2);
+        await Assert.That(markedMods).HasCount(1);
+
+        var unmarkedMods = Connection.Query<List<(EntityId, string)>>("SELECT Id, Name FROM mdb_Mod() WHERE Marked = false");
+        await Assert.That(unmarkedMods).HasCount(2);
         
         using var tx2 = Connection.BeginTransaction();
         tx2.Add(testMod, Mod.Description, "Test Mod Description");
         await tx2.Commit();
-        
-        var modsWithDescription = Pattern.Create()
-            .Db(mod, Mod.Name, name)
-            .HasAttribute(mod, Mod.Description)
-            .Return(mod, name);
-        
-        using var descriptionResults = await Connection.Topology.QueryAsync(modsWithDescription);
-        await Assert.That(descriptionResults).HasCount(1);
-        
-        var modsWithoutDescription = Pattern.Create()
-            .Db(mod, Mod.Name, name)
-            .MissingAttribute(mod, Mod.Description)
-            .Return(mod, name);
-        
-        using var noDescriptionResults = await Connection.Topology.QueryAsync(modsWithoutDescription);
-        await Assert.That(noDescriptionResults).HasCount(2);
+
+        var modsWithDescription = Connection.Query<List<(EntityId, string)>>("SELECT Id, Name FROM mdb_Mod() WHERE Description IS NOT NULL");
+        await Assert.That(modsWithDescription).HasCount(1);
+
+        var modsWithoutDescription = Connection.Query<List<(EntityId, string)>>("SELECT Id, Name FROM mdb_Mod() WHERE Description IS NULL");
+        await Assert.That(modsWithoutDescription).HasCount(2);
     }
 }

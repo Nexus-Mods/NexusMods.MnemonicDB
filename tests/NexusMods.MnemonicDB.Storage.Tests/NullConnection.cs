@@ -66,6 +66,11 @@ public class NullConnection : IConnection
         throw new NotSupportedException();
     }
 
+    public T Query<T>(string query) where T : class, new()
+    {
+        throw new NotImplementedException();
+    }
+
     public void Dispose()
     {
         // TODO release managed resources here

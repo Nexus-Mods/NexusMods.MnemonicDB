@@ -1,36 +1,34 @@
-using System.Collections.Generic;
-using Microsoft.Extensions.Logging;
+using System;
+using Microsoft.Extensions.DependencyInjection;
 using NexusMods.HyperDuck;
 using NexusMods.HyperDuck.Adaptor;
+using NexusMods.HyperDuck.Adaptor.Impls;
 using NexusMods.MnemonicDB.Abstractions;
 
 namespace NexusMods.MnemonicDB;
 
-public class QueryEngine : IQueryEngine
+/// <summary>
+/// Container class for the DuckDB based query engine elements
+/// </summary>
+public class QueryEngine : IQueryEngine, IDisposable
 {
-    private readonly ILogger<QueryEngine> _logger;
-    private Database _db;
-    private HyperDuck.Connection _conn;
-    private readonly Builder _builder;
     private readonly Registry _registry;
+    private readonly Database _db;
+    private readonly HyperDuck.Connection _conn;
 
-    public QueryEngine(ILogger<QueryEngine> logger, IEnumerable<IConverter> converters)
+    public QueryEngine(IServiceProvider services)
     {
-        _logger = logger;
-
-        _db = Database.OpenInMemory();
+        _registry = new Registry(services.GetServices<IResultAdaptorFactory>(),
+            services.GetServices<IRowAdaptorFactory>(), services.GetServices<IValueAdaptorFactory>());
+        _db = Database.OpenInMemory(_registry);
         _conn = _db.Connect();
-        _registry = new Registry(converters);
-        _builder = new Builder(_registry);
+
     }
-    
-    public void Register(ATableFunction tableFunction)
+    public void Dispose()
     {
-        _conn.Register(tableFunction);
+        _db.Dispose();
+        _conn.Dispose();
     }
 
-    public T Query<T>(string sql)
-    {
-        return _conn.Query<T>(sql, _builder);
-    }
+    public HyperDuck.Connection Connection => _conn;
 }

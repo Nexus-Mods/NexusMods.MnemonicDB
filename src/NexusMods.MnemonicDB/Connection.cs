@@ -66,7 +66,7 @@ public sealed class Connection : IConnection
     public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers, IQueryEngine? queryEngine = null, bool readOnlyMode = false)
     {
         Topology = new Topology();
-        _dbInlet = Topology.Intern(Query.Db);
+        //_dbInlet = Topology.Intern(Query.Db);
         
         ServiceProvider = provider;
         AttributeCache = store.AttributeCache;
@@ -75,18 +75,19 @@ public sealed class Connection : IConnection
         _store = (DatomStore)store;
         _dbStream = new DbStream();
         _analyzers = analyzers.ToArray();
+        _queryEngine = queryEngine;
         Bootstrap(readOnlyMode);
-        if (queryEngine is not null)
-            RegisterWithEngine(queryEngine);
+        if (queryEngine is {} engine)
+            RegisterWithEngine(engine);
     }
 
     private void RegisterWithEngine(IQueryEngine queryEngine)
     {
-        queryEngine.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes));
+        queryEngine.Connection.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes));
 
         foreach (var model in ServiceProvider.GetServices<ModelDefinition>())
         {
-            queryEngine.Register(new ModelTableFunction(this, model));
+            queryEngine.Connection.Register(new ModelTableFunction(this, model));
         }
     }
 
@@ -312,8 +313,6 @@ public sealed class Connection : IConnection
                 _logger.LogError(e, "Exception waiting on semaphore");
                 return;
             }
-
-            _dbInlet.Values = [db];
         });
     }
 
@@ -471,6 +470,11 @@ public sealed class Connection : IConnection
         return await tx.Commit();
     }
 
+    public T Query<T>(string query) where T : class, new()
+    {
+        return _queryEngine!.Connection.Query<T>(query);
+    }
+
     /// <inheritdoc />
     public async Task<ICommitResult> FlushAndCompact(bool verify = false)
     {
@@ -579,7 +583,8 @@ public sealed class Connection : IConnection
     }
     
     private bool _isDisposed;
-    private readonly InletNode<IDb> _dbInlet;
+    private readonly InletNode<IDb> _dbInlet = null!;
+    private readonly IQueryEngine? _queryEngine;
 
     /// <inheritdoc />
     public void Dispose()

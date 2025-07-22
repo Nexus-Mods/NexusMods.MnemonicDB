@@ -35,10 +35,7 @@ public static class Services
             .AddAdapters()
             .AddTransactionModel()
             .AddSingleton<IDatomStore, DatomStore>()
-                .AddSingleton<DatomStore>(s => (DatomStore)s.GetRequiredService<IDatomStore>())
-                .AddSingleton<IQueryEngine, QueryEngine>()
-                .AddSingleton<IConverter, ConvertableScalarConverter<EntityId>>(s => new ConvertableScalarConverter<EntityId>(DuckDbType.UBigInt))
-                .AddSingleton<IConverter, ConvertableScalarConverter<TxId>>(s => new ConvertableScalarConverter<TxId>(DuckDbType.UBigInt));
+            .AddSingleton<DatomStore>(s => (DatomStore)s.GetRequiredService<IDatomStore>());
         return services;
     }
     

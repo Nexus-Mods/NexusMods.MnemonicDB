@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.HyperDuck;
+using NexusMods.HyperDuck.Adaptor;
+using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
@@ -18,6 +20,8 @@ public static class Startup
             .AddTestModel()
             .AddSingleton<TemporaryFileManager>()
             .AddFileSystem()
+            .AddAdapters()
+            .AddSingleton<IQueryEngine, QueryEngine>()
             .AddLogging(builder => builder.AddConsole());
     }
 }
