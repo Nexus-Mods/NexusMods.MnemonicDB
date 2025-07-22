@@ -18,7 +18,7 @@ public class UnmanagedValueAdaptorFactory : IValueAdaptorFactory
     {
         subTypes = [];
         priority = 0;
-        if (taggedType == DuckDbType.Integer)
+        if (taggedType == DuckDbType.Integer || taggedType == DuckDbType.BigInt)
             return true;
         return false;
     }

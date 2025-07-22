@@ -99,6 +99,9 @@ public class Registry : IRegistry
             }
         }
         
+        if (bestFactory == null)
+            throw new InvalidOperationException("No value adaptor found for {" + innerType.FullName + "}");
+        
         return bestFactory.CreateType(columnInfo.Type, ddType, innerType, innerTypes);
     }
 }

@@ -23,6 +23,6 @@ public ref struct RowCursor
 
     public T GetValue<T>(int columnIndex) where T : unmanaged
     {
-        throw new NotImplementedException();
+        return _vectors[columnIndex].GetData<T>()[RowIndex];
     }
 }
