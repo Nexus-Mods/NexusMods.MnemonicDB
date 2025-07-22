@@ -44,11 +44,12 @@ public class ListAdaptor<TResult, TRowType, TRowAdaptor> : IResultAdaptor<TResul
             }
         }
 
-        if (totalRows < value.Count)
+        var toRemove = value.Count - totalRows;
+        if (toRemove > 0)
         {
-            for (int i = value.Count; i > totalRows; i--)
+            for (var i = 0; i < toRemove; i++)
             {
-                value.RemoveAt(i);
+                value.RemoveAt(value.Count - 1);
             }
         }
     }

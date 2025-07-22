@@ -5,6 +5,8 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NexusMods.HyperDuck.Adaptor;
 using NexusMods.HyperDuck.Exceptions;
@@ -16,7 +18,8 @@ public unsafe partial struct Connection : IDisposable
 {
     internal void* _ptr;
     private readonly IRegistry _registry;
-    private readonly ConcurrentDictionary<ATableFunction, ulong> _functionRevisions = new();
+    private readonly Lazy<LiveQueryUpdater> _liveQueryUpdater =  new(static () => new LiveQueryUpdater());
+    private readonly TimeSpan _delay;
 
     public Connection(IRegistry registry)
     {
@@ -29,9 +32,6 @@ public unsafe partial struct Connection : IDisposable
         Native.duckdb_interrupt(_ptr);
     }
 
-    protected void ReviseFunction(ATableFunction function)
-    {
-    }
 
     [MustUseReturnValue]
     public Result Query(string query)
@@ -42,6 +42,11 @@ public unsafe partial struct Connection : IDisposable
         return result;
     }
 
+    public Task FlushAsync()
+    {
+        return _liveQueryUpdater.Value.FlushAsync();
+    }
+
     public IDisposable ObserveQuery<T>(string query, ref T output)
     {
         var deps = GetReferencedFunctions(query);
@@ -49,11 +54,17 @@ public unsafe partial struct Connection : IDisposable
         var adapter = _registry.GetAdaptor<T>(initial);
         adapter.Adapt(initial, ref output);
 
-        while (true)
+        var live = new Internals.LiveQuery<T>
         {
-            using var dbResults = Query(query);
-            adapter.Adapt(dbResults, ref output);
-        }
+            Connection = this,
+            Query = query,
+            Output = output,
+            ResultAdaptor = adapter,
+            Updater = _liveQueryUpdater.Value
+        };
+
+        _liveQueryUpdater.Value.Add(live);
+        return live;
     }
 
     private class LiveQuery<T>
@@ -123,6 +134,10 @@ public unsafe partial struct Connection : IDisposable
     public void Dispose()
     {
         if (_ptr == null) return;
+        
+        if (_liveQueryUpdater.IsValueCreated)
+            _liveQueryUpdater.Value.Dispose();
+        
         Native.duckdb_disconnect(ref _ptr);
         _ptr = null;
     }

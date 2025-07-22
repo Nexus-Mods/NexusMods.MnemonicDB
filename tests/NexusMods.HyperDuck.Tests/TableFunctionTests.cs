@@ -55,6 +55,77 @@ public class TableFunctionTests
         await Assert.That(plan).IsEquivalentTo(["MY_SQUARES"]);
     }
 
+    [Test]
+    public async Task CanCanCreateLiveQueries()
+    {
+        var fn = new LiveArrayOfIntsTable();
+        
+        using var db = Database.OpenInMemory(Registry);
+        using var con = db.Connect();
+        con.Register(fn);
+
+        var data = new List<int>();
+        using var liveQuery = con.ObserveQuery("SELECT * FROM live_array_of_ints()", ref data);
+
+        await Assert.That(data).IsEmpty();
+        
+        fn.Ints = Enumerable.Range(0, 8).ToArray();
+
+        await con.FlushAsync();
+        
+        await Assert.That(data).IsEquivalentTo(Enumerable.Range(0, 8));
+
+        fn.Ints = [];
+        await con.FlushAsync();
+
+        await Assert.That(data).IsEmpty();
+
+    }
+
+}
+
+public class LiveArrayOfIntsTable : ATableFunction
+{
+    public int[] Ints { get; set; } = [];
+    
+    protected override void Setup(RegistrationInfo info)
+    {
+        info.SetName("live_array_of_ints");
+    }
+
+    protected override void Bind(BindInfo info)
+    {
+        info.AddColumn<int>("ints");
+    }
+
+    protected override object? Init(InitInfo initInfo, InitData initData)
+    {
+        return new ScanState
+        {
+            Index = 0,
+            Ints = Ints,
+        };
+    }
+
+    protected override void Execute(FunctionInfo functionInfo)
+    {
+        var chunk = functionInfo.Chunk;
+        var initData = functionInfo.GetInitInfo<ScanState>();
+        var vecA = chunk[0].GetData<int>();
+        
+        var fromIdx = initData.Index;
+        var length = Math.Min(vecA.Length, initData.Ints.Length - initData.Index);
+        initData.Ints.AsSpan().Slice(fromIdx, length).CopyTo(vecA);
+        chunk.Size = (ulong)length;
+        initData.Index += length;
+    }
+
+    private class ScanState
+    {
+        public required int Index { get; set; }
+        public required int[] Ints { get; init; }
+    }
+
 }
 
 public class Squares : ATableFunction
