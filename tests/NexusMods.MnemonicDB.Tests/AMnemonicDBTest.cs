@@ -1,5 +1,6 @@
 ﻿using System.IO.Compression;
 using System.IO.Hashing;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -58,6 +59,67 @@ public class AMnemonicDBTest : IDisposable
         Logger = provider.GetRequiredService<ILogger<AMnemonicDBTest>>();
         
 
+    }
+
+    protected TableData TableResults()
+    {
+        return new();
+    }
+
+    protected record TableData()
+    {
+        private StringBuilder _sb = new();
+
+        public void Add<T>(IEnumerable<T> data, string heading = "") where T : ITuple
+        {
+            _sb.AppendLine(heading);
+            _sb.AppendLine("------------------------------------");
+            List<List<string>> cells = new();
+            foreach (var item in data)
+            {
+                var row = new List<string>();
+                cells.Add(row);
+                for (var i = 0; i < item.Length; i++)
+                {
+                    row.Add(item[i]!.ToString()!);
+                }
+            }
+            
+            List<int> columnWidths = [];
+            foreach (var row in cells)
+            {
+                for (var i = 0; i < row.Count; i++)
+                {
+                    var width = row[i].Length;
+                    if (i >= columnWidths.Count)
+                    {
+                        columnWidths.Add(width);
+                    }
+                    else
+                    {
+                        columnWidths[i] = Math.Max(columnWidths[i], width);
+                    }
+                }
+            }
+
+            List<string> rowElements = new();
+            foreach (var row in cells)
+            {
+                for (var i = 0; i < row.Count; i++)
+                {
+                    rowElements.Add(row[i].PadRight(columnWidths[i]));
+                }
+                _sb.AppendLine("| " + string.Join(" | ", rowElements) + " |");
+                rowElements.Clear();
+            }
+            _sb.AppendLine("------------------------------------");
+            _sb.AppendLine();
+        }
+        
+        public override string ToString()
+        {
+            return _sb.ToString();
+        }
     }
 
 

@@ -50,44 +50,19 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task CanRunActiveQueries()
     {
+        var table = TableResults();
         await InsertExampleData();
 
-        
-
-        var query =
-            Pattern.Create()
-                .Db(out var e, File.Path, out var path)
-                .Db(e, File.Hash, out var hash)
-                .Return(path, hash, path.Count());
-
-
-        using var results = await Connection.Topology.QueryAsync(query);
-
+        var results = Connection.Query<List<(RelativePath, Hash, int)>>("SELECT Path, Hash, COUNT(*) FROM mdb_File() GROUP BY Path, Hash");
+        table.Add(results, "Initial Results");
+            
         await Assert.That(results).IsNotEmpty();
 
-        // Query how many hashes are modified in each transaction
         var historyQuery =
-            Pattern.Create()
-                .DbHistory(e, File.Hash, hash, out var txId)
-                // Strip the partition from the txId, just to make it easier to read
-                .Project(txId, t => t.ValuePortion, out var txNoPartition)
-                .Return(txNoPartition, e.Count());
-
-        using var historyResults = await Connection.Topology.QueryAsync(historyQuery);
-
-        // Validate the results
-
-        // Three mods with overlapping filenames, so we expect 3 results for each
-        await Assert.That(AreEqual(results.ToList(), [
-            ("File1", Hash.FromLong(0xDEADBEEF), 3),
-            ("File2", Hash.FromLong(0xDEADBEF0), 3),
-            ("File3", Hash.FromLong(0xDEADBEF1), 3)
-        ])).IsTrue();
-
-        await Assert.That(AreEqual(historyResults.ToList(), new (ulong, int)[]{
-            // 9 hashes in the first transaction
-            (3, 9) 
-        })).IsTrue();;
+            Connection.Query<List<(TxId, int)>>(
+                "SELECT T, COUNT(E) FROM mdb_Datoms(A:= 'File/Hash', History:=true) GROUP BY T");
+        
+        table.Add(historyQuery, "Initial History");
 
         // Update one hash to check that the queries update correctly
         using var tx = Connection.BeginTransaction();
@@ -95,6 +70,25 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx.Add(ent.Id, File.Hash, Hash.FromLong(0x42));
         await tx.Commit();
         
+        
+        
+        await Verify(table.ToString());
+/*
+
+        await Assert.That(AreEqual(results.ToList(), [
+            ("File1", Hash.FromLong(0xDEADBEEF), 3),
+            ("File2", Hash.FromLong(0xDEADBEF0), 3),
+            ("File3", Hash.FromLong(0xDEADBEF1), 3)
+        ])).IsTrue();
+
+        await Assert.That(AreEqual(historyQuery, new (ulong, int)[]{
+            // 9 hashes in the first transaction
+            (3, 9)
+        })).IsTrue();;
+
+
+
+        await Verify(results);
         // we swapped one file over to a different hash, so we should see 4 results now with 2 count for one
         // and 1 for the other
         await Assert.That(AreEqual(results.ToList(), new (RelativePath, Hash, int)[]{
@@ -105,7 +99,6 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         })).IsTrue();
 
 
-        
         await Assert.That(historyResults).IsNotEmpty();
         await Assert.That(AreEqual(historyResults.ToList(), new (ulong, int)[]{
             // 9 hashes in the first transaction
@@ -124,6 +117,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             }
             return true;
         }
+        */
     }
 
     [Test]

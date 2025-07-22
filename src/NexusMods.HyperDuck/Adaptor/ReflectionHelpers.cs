@@ -4,7 +4,22 @@ namespace NexusMods.HyperDuck.Adaptor;
 
 public static class ReflectionHelpers
 {
-      /// <summary>
+    public static bool HasImplicitConversionFrom(this Type dest, Type src)
+    {
+        if (src.IsAssignableFrom(dest))
+            return true;
+
+        foreach (var method in dest.GetMethods())
+        {
+            if (method.Name == "op_Implicit" && method.ReturnType == dest && method.GetParameters()[0].ParameterType == src)
+                return true;
+        }
+
+        return false;
+    }
+    
+    
+    /// <summary>
     /// Searches for the first time the src type inherits (or implements) the genericType. If found, the
     /// generic arguments to that interface/class are returned. Starts by searching for interfaces on the current
     /// class (and any sub-interfaces of that class), then goes to the base class (if any) and searches it and its

@@ -12,13 +12,12 @@ namespace NexusMods.MnemonicDB.QueryFunctions;
 public class DatomsTableFunction : ATableFunction
 {
     private readonly IAttribute[] _attrs;
-    private readonly LogicalType _logicalType;
     private IQueryEngine? _engine;
-    private readonly LogicalType _valueType;
     private readonly IConnection _conn;
     private readonly string _prefix;
     private readonly ushort[] _attrIdToEnum;
     private readonly Dictionary<string, IAttribute> _attrsByShortName;
+    private readonly QueryEngine _queryEngine;
 
     private enum UnionOrdering : byte
     {
@@ -29,7 +28,7 @@ public class DatomsTableFunction : ATableFunction
         End = Reference,
     }
 
-    public DatomsTableFunction(IConnection conn, IEnumerable<IAttribute> attrs, string prefix = "mdb")
+    public DatomsTableFunction(IConnection conn, IEnumerable<IAttribute> attrs, IQueryEngine queryEngine, string prefix = "mdb")
     {
         _prefix = prefix;
         _conn = conn;
@@ -38,57 +37,19 @@ public class DatomsTableFunction : ATableFunction
         _attrsByShortName = attrs.ToDictionary(a => $"{a.Id.Namespace.Split(".").Last()}/{a.Id.Name}");
         var cache = conn.AttributeCache;
         _attrIdToEnum = new ushort[cache.MaxAttrId + 1];
+        _queryEngine = (QueryEngine)queryEngine;
         for (int i = 0; i < attrs.Count(); i++)
         {
             var attr = _attrs[i];
             _attrIdToEnum[cache.GetAttributeId(attr.Id).Value] = (ushort)i;
         }
-
-        _logicalType = LogicalType.CreateEnum(_attrs.Select(a => a.ShortName).ToArray());
-
-        _valueType = CreateValueType();
     }
-
-    private LogicalType CreateValueType()
-    {
-        var boolType = LogicalType.From<bool>();
-        var uInt8Type = LogicalType.From<byte>();
-        var uInt16Type = LogicalType.From<ushort>();
-        var uInt32Type = LogicalType.From<uint>();
-        var uInt64Type = LogicalType.From<ulong>();
-        var int16Type = LogicalType.From<short>();
-        var int32Type = LogicalType.From<int>();
-        var int64Type = LogicalType.From<long>();
-        var stringType = LogicalType.From<string>();
-        return LogicalType.CreateUnion([
-            "bool",
-            //"uint16",
-            //"uint32",
-            "uint64",
-            //"int16",
-            //"int32",
-            //"int64",
-            "string",
-            "ref"
-        ],[
-            boolType,
-        //uInt8Type,
-        //uInt16Type,
-        //uInt32Type,
-        uInt64Type,
-        //int16Type,
-        //int32Type,
-        //int64Type,
-        //stringType
-            stringType,
-            uInt64Type,
-        ]);
-    }
-
+    
     protected override void Setup(RegistrationInfo info)
     {
         info.SetName($"{_prefix}_Datoms");
         info.AddNamedParameter<string>("A");
+        info.AddNamedParameter<bool>("History");
         info.SupportsPredicatePushdown();
     }
 
@@ -222,11 +183,19 @@ public class DatomsTableFunction : ATableFunction
 
     protected override void Bind(BindInfo info)
     {
-        var param = info.GetParameter("A");
-        State state;
-        if (!param.IsNull)
+        var aParam = info.GetParameter("A");
+        var historyParam = info.GetParameter("History");
+        var history = !historyParam.IsNull && historyParam.GetBool();
+        IDb db = _conn.Db;
+        if (history)
         {
-            var attrToFind = param.GetVarChar();
+            db = _conn.History();
+        }
+        
+        State state;
+        if (!aParam.IsNull)
+        {
+            var attrToFind = aParam.GetVarChar();
             if (!_attrsByShortName.TryGetValue(attrToFind, out var attr))
                 throw new Exception($"Attribute '{attrToFind}' not found");
 
@@ -257,8 +226,8 @@ public class DatomsTableFunction : ATableFunction
         else
         {
             info.AddColumn<ulong>("E");
-            info.AddColumn("A", _logicalType);
-            info.AddColumn("V", _valueType);
+            info.AddColumn("A", _queryEngine.AttrEnum);
+            info.AddColumn("V", _queryEngine.ValueUnion);
             info.AddColumn<ulong>("T");
         }
     }

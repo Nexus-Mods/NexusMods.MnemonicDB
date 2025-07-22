@@ -34,7 +34,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
     {
         
         Id = Symbol.Intern(ns, name);
-        ShortName = $"{ns.Split(".").Last()}/{name}";
+        ShortName = string.Intern($"{ns.Split(".").Last()}/{name}");
         Cardinalty = cardinality;
         IsIndexed = isIndexed;
         NoHistory = noHistory;

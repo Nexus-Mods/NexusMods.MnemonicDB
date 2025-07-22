@@ -17,7 +17,7 @@ public class StringAdaptorFactory : IValueAdaptorFactory
     {
         priority = 0;
         subTypes = [];
-        return taggedType == DuckDbType.Varchar && type.IsAssignableFrom(typeof(string));
+        return taggedType == DuckDbType.Varchar && type.IsAssignableTo(typeof(string));
     }
 
     public Type CreateType(DuckDbType taggedType, LogicalType logicalType, Type resultTypes, Type[] subTypes)

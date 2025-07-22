@@ -40,6 +40,11 @@ public abstract unsafe partial class ATableFunction
             Native.duckdb_table_function_set_name(_ptr, name);
         }
 
+        public void AddParameter(LogicalType logicalType)
+        {
+            Native.duckdb_table_function_add_parameter(_ptr, logicalType._ptr);
+        }
+
         public void AddParameter<T>()
         {
             using var logicalType = LogicalType.From<T>();

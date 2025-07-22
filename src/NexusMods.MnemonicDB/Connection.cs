@@ -51,7 +51,8 @@ public sealed class Connection : IConnection
     private readonly CancellationTokenSource _cts = new();
     private readonly BlockingCollection<IEvent> _pendingEvents = new(new ConcurrentQueue<IEvent>());
     private readonly ConcurrentBag<(Datom, Datom, IObserver<DatomChangeSet>)> _pendingObservers = [];
-
+    private readonly string _prefix;
+    
     private Thread _eventThread = null!;
 
     private static readonly IndexType[] IndexTypes =
@@ -76,6 +77,7 @@ public sealed class Connection : IConnection
         _dbStream = new DbStream();
         _analyzers = analyzers.ToArray();
         _queryEngine = queryEngine;
+        _prefix = "mdb";
         Bootstrap(readOnlyMode);
         if (queryEngine is {} engine)
             RegisterWithEngine(engine);
@@ -83,11 +85,11 @@ public sealed class Connection : IConnection
 
     private void RegisterWithEngine(IQueryEngine queryEngine)
     {
-        queryEngine.Connection.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes));
+        queryEngine.Connection.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes, _queryEngine!, _prefix));
 
         foreach (var model in ServiceProvider.GetServices<ModelDefinition>())
         {
-            queryEngine.Connection.Register(new ModelTableFunction(this, model));
+            queryEngine.Connection.Register(new ModelTableFunction(this, model, _prefix));
         }
     }
 
