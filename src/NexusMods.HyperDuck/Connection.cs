@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -15,6 +16,7 @@ public unsafe partial struct Connection : IDisposable
 {
     internal void* _ptr;
     private readonly IRegistry _registry;
+    private readonly ConcurrentDictionary<ATableFunction, ulong> _functionRevisions = new();
 
     public Connection(IRegistry registry)
     {
@@ -27,6 +29,10 @@ public unsafe partial struct Connection : IDisposable
         Native.duckdb_interrupt(_ptr);
     }
 
+    protected void ReviseFunction(ATableFunction function)
+    {
+    }
+
     [MustUseReturnValue]
     public Result Query(string query)
     {
@@ -34,6 +40,27 @@ public unsafe partial struct Connection : IDisposable
         if (Native.duckdb_query(_ptr, query, ref result) != State.Success)
             throw new QueryException(Marshal.PtrToStringUTF8((IntPtr)Native.duckdb_result_error(ref result)) ?? "Unknown error");
         return result;
+    }
+
+    public IDisposable ObserveQuery<T>(string query, ref T output)
+    {
+        var deps = GetReferencedFunctions(query);
+        using var initial = Query(query);
+        var adapter = _registry.GetAdaptor<T>(initial);
+        adapter.Adapt(initial, ref output);
+
+        while (true)
+        {
+            using var dbResults = Query(query);
+            adapter.Adapt(dbResults, ref output);
+        }
+    }
+
+    private class LiveQuery<T>
+    {
+        public required HashSet<string> Functions { get; set; }
+        public required string Query { get; set; }
+        public required T Output { get; set; }
     }
 
     

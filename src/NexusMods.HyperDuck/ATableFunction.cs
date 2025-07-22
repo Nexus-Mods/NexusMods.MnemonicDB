@@ -24,6 +24,7 @@ public abstract unsafe partial class ATableFunction
         
         if (Native.duckdb_register_table_function(connection._ptr, data._ptr) != State.Success)
             throw new InvalidOperationException("Failed to register table function.");
+        
     }
 
     protected ref struct RegistrationInfo : IDisposable
