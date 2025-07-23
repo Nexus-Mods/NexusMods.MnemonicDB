@@ -477,6 +477,11 @@ public sealed class Connection : IConnection
         return _queryEngine!.Connection.Query<T>(query);
     }
 
+    public IDisposable ObserveQuery<T>(string query, ref T results) where T : class, new()
+    {
+        return _queryEngine!.Connection.ObserveQuery(query, ref results);
+    }
+
     /// <inheritdoc />
     public async Task<ICommitResult> FlushAndCompact(bool verify = false)
     {

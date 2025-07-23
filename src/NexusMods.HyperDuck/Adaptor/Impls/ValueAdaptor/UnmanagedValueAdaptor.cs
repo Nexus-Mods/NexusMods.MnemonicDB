@@ -11,6 +11,14 @@ public class UnmanagedValueAdaptor<T> : IValueAdaptor<T>
     }
 }
 
+public class BoolAdaptor : IValueAdaptor<bool>
+{
+    public static void Adapt(ValueCursor cursor, ref bool value)
+    {
+        value = cursor.GetValue<byte>() != 0;
+    }
+}
+
 
 public class UnmanagedValueAdaptorFactory : IValueAdaptorFactory
 {
@@ -22,6 +30,7 @@ public class UnmanagedValueAdaptorFactory : IValueAdaptorFactory
             return false;
         switch (taggedType)
         {
+            case DuckDbType.Boolean:
             case DuckDbType.TinyInt:
             case DuckDbType.SmallInt:    
             case DuckDbType.Integer:
@@ -44,6 +53,8 @@ public class UnmanagedValueAdaptorFactory : IValueAdaptorFactory
 
     public Type CreateType(DuckDbType taggedType, LogicalType logicalType, Type resultTypes, Type[] subTypes)
     {
+        if (resultTypes == typeof(bool))
+            return typeof(BoolAdaptor);
         return typeof(UnmanagedValueAdaptor<>).MakeGenericType(resultTypes);
     }
 }

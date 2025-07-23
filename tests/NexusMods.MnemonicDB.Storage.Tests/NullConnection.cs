@@ -71,6 +71,11 @@ public class NullConnection : IConnection
         throw new NotImplementedException();
     }
 
+    public IDisposable ObserveQuery<T>(string query, ref T results) where T : class, new()
+    {
+        throw new NotImplementedException();
+    }
+
     public void Dispose()
     {
         // TODO release managed resources here

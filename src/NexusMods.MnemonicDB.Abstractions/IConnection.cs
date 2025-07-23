@@ -122,4 +122,6 @@ public interface IConnection : IDisposable
     /// Run an ad-hoc SQL query against the connection (using the most up-to-date version of the data)
     /// </summary>
     T Query<T>(string query) where T : class, new();
+    
+    IDisposable ObserveQuery<T>(string query, ref T results) where T : class, new();
 }

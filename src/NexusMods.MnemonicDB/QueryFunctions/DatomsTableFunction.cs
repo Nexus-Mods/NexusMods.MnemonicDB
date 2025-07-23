@@ -6,6 +6,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.ValueSerializers;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.QueryFunctions;
 
@@ -73,6 +74,11 @@ public class DatomsTableFunction : ATableFunction
         var tVec = functionInfo.GetWritableVector(2).GetData<ulong>();
         var lowLevelType = state.Attribute!.LowLevelType;
         
+        Span<byte> isRetract = Span<byte>.Empty;
+        
+        if (state.History)
+            isRetract = functionInfo.GetWritableVector(3).GetData<byte>();
+        
         var iterator = state.Segment;
         var row = 0;
         while (iterator.MoveNext())
@@ -81,11 +87,16 @@ public class DatomsTableFunction : ATableFunction
                 eVec[row] = iterator.KeyPrefix.E.Value;
             if (!tVec.IsEmpty) 
                 tVec[row] = iterator.KeyPrefix.T.Value;
-
+            if (state.History)
+                isRetract[row] = iterator.KeyPrefix.IsRetract ? (byte)1 : (byte)0;
+            
             if (vVec.IsValid)
             {
                 switch (lowLevelType)
                 {
+                    case ValueTag.UInt64:
+                        vData.CastFast<byte, ulong>()[row] = UInt64Serializer.Read(iterator.ValueSpan);
+                        break;
 
                     case ValueTag.Utf8:
                         vVec.WriteUtf8((ulong)row, iterator.ValueSpan);
@@ -114,6 +125,8 @@ public class DatomsTableFunction : ATableFunction
         var vVec = chunk[2];
         var vValidity = vVec.GetValidityMask();
         var vTag = vVec.GetStructChild(0).GetData<byte>();
+        
+
 
         var strValidity = vVec.GetStructChild((ulong)UnionOrdering.String+1).GetValidityMask();
         var row = 0;
@@ -127,6 +140,8 @@ public class DatomsTableFunction : ATableFunction
             eVec[row] = iterator.KeyPrefix.E.Value;
             aVec[row] = (byte)_attrIdToEnum[iterator.KeyPrefix.A.Value];
             tVec[row] = iterator.KeyPrefix.T.Value;
+            
+
 
             strValidity[(ulong)row] = false;
             switch (iterator.KeyPrefix.ValueTag)
@@ -203,7 +218,7 @@ public class DatomsTableFunction : ATableFunction
             {
                 Mode = ScanMode.SingleAttribute,
                 Attribute = attr,
-                Segment = _conn.Db.LightweightDatoms(SliceDescriptor.Create(attr, _conn.AttributeCache))
+                Segment = db.LightweightDatoms(SliceDescriptor.Create(attr, _conn.AttributeCache))
             };
         }
         else
@@ -212,7 +227,7 @@ public class DatomsTableFunction : ATableFunction
             {
                 Mode = ScanMode.AllAttributes,
                 Attribute = null,
-                Segment = _conn.Db.LightweightDatoms(SliceDescriptor.AllEntities(PartitionId.Entity))
+                Segment = db.LightweightDatoms(SliceDescriptor.AllEntities(PartitionId.Entity))
             };
         }
         
@@ -230,6 +245,10 @@ public class DatomsTableFunction : ATableFunction
             info.AddColumn("V", _queryEngine.ValueUnion);
             info.AddColumn<ulong>("T");
         }
+        
+        state.History = history;
+        if (history)
+            info.AddColumn<bool>("IsRetract");
     }
 
     private enum ScanMode
@@ -240,6 +259,7 @@ public class DatomsTableFunction : ATableFunction
 
     private class State
     {
+        public bool History = false;
         public required ScanMode Mode;
         public required IAttribute? Attribute;
         public required ILightweightDatomSegment Segment;

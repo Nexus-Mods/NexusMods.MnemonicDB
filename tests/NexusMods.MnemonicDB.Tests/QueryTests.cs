@@ -53,16 +53,17 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var table = TableResults();
         await InsertExampleData();
 
-        var results = Connection.Query<List<(RelativePath, Hash, int)>>("SELECT Path, Hash, COUNT(*) FROM mdb_File() GROUP BY Path, Hash");
+        var results = new List<(RelativePath, Hash, int)>();
+        var historyResults = new List<(TxId, int)>();
+        
+        using var _ = Connection.ObserveQuery("SELECT Path, Hash, COUNT(*) FROM mdb_File() GROUP BY Path, Hash ORDER BY Path, Hash", ref results);
+        using var _2 = Connection.ObserveQuery("SELECT T, COUNT(E) FROM mdb_Datoms(A:= 'File/Hash', History:=true) WHERE IsRetract = false GROUP BY T ORDER BY T", ref historyResults);
+
         table.Add(results, "Initial Results");
+        table.Add(historyResults, "Initial History");
             
         await Assert.That(results).IsNotEmpty();
-
-        var historyQuery =
-            Connection.Query<List<(TxId, int)>>(
-                "SELECT T, COUNT(E) FROM mdb_Datoms(A:= 'File/Hash', History:=true) GROUP BY T");
         
-        table.Add(historyQuery, "Initial History");
 
         // Update one hash to check that the queries update correctly
         using var tx = Connection.BeginTransaction();
@@ -70,7 +71,10 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx.Add(ent.Id, File.Hash, Hash.FromLong(0x42));
         await tx.Commit();
         
+        await Task.Delay(1000); // wait for the queries to update
         
+        table.Add(results, "After Updates Query");
+        table.Add(historyResults, "After Updates History");
         
         await Verify(table.ToString());
 /*
