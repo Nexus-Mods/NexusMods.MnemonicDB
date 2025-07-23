@@ -1,10 +1,6 @@
-using NexusMods.Cascade;
-using NexusMods.Cascade.Patterns;
 using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.Cascade;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
@@ -84,39 +80,40 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task CanGetLatestTxForEntityOnDeletedEntities()
     {
+        var tableResults = TableResults();
         await InsertExampleData();
-
-        var query = Pattern.Create()
-            .Db(out var e, File.ModId, out var mod)
-            .Db(mod, Mod.Loadout, out var loadout)
-            .DbLatestTx(e, out var txId)
-            .Return(loadout, txId.Max(), e.Count());
         
-        using var queryResults = await Connection.Topology.QueryAsync(query);
-        
-        var oldData = queryResults.ToList();
+        var results = new List<(EntityId, TxId, int)>();
+        using var _ = Connection.ObserveQuery("""
+                                              SELECT ents.Loadout, max(d.T), count(d.E) FROM 
+                                              (SELECT Id, Id as Loadout FROM mdb_Loadout() 
+                                               UNION SELECT Id, Loadout FROM mdb_Mod()
+                                               UNION SELECT file.Id, mod.Loadout FROM mdb_File() file 
+                                                     LEFT JOIN mdb_Mod() mod ON mod.Id = file.Mod) ents
+                                              LEFT JOIN mdb_Datoms() d ON d.E = ents.Id
+                                              GROUP BY ents.Loadout
+                                              """, ref results);
+        tableResults.Add(results, "Initial Results");
         
         // Delete only one datom to check that we get an update even for retracted datoms, as long as the entity is still present
         using var tx = Connection.BeginTransaction();
         var ent = File.FindByPath(Connection.Db, "File1").First();
-        tx.Retract(ent.Id, File.Path, (RelativePath)"File1");
+        tx.Retract(ent.Id, File.Hash, ent.Hash);
         await tx.Commit();
-        
-        var withoutName = queryResults.ToList();
+
+        await Connection.FlushQueries();
+
+        tableResults.Add(results, "After Retract");
         
         using var tx2 = Connection.BeginTransaction();
         tx2.Delete(ent.Id, recursive: false);
         await tx2.Commit();
         
-        var deletedEntity = queryResults.ToList();
+        await Connection.FlushQueries();
+        
+        tableResults.Add(results, "After Delete");
 
-        await Verify(new
-        {
-            Entry1 = oldData.Select(row => row.ToString()).ToArray(),
-            Entry2 = withoutName.Select(row => row.ToString()).ToArray(),
-            Entry3 = deletedEntity.Select(row => row.ToString()).ToArray(),
-        });
-
+        await Verify(tableResults.ToString());
     }
 
     [Test]
