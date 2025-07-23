@@ -5,7 +5,8 @@ namespace NexusMods.HyperDuck.Adaptor.Impls.ValueAdaptor;
 
 public class RelativePathAdaptor : IValueAdaptor<RelativePath>
 {
-    public static void Adapt(ValueCursor cursor, ref RelativePath value)
+    public static void Adapt<TCursor>(TCursor cursor, ref RelativePath value) 
+        where TCursor : IValueCursor, allows ref struct
     {
         var str = cursor.GetValue<StringElement>().GetString();
         value = RelativePath.FromUnsanitizedInput(str);
@@ -23,7 +24,7 @@ public class RelativePathAdaptorFactory : IValueAdaptorFactory
         return false;
     }
 
-    public Type CreateType(DuckDbType taggedType, LogicalType logicalType, Type resultTypes, Type[] subTypes)
+    public Type CreateType(DuckDbType taggedType, LogicalType logicalType, Type resultTypes, Type[] subTypes, Type[] subAdaptors)
     {
         return typeof(RelativePathAdaptor);
     }

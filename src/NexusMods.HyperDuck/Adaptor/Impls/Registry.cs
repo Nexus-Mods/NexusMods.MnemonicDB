@@ -77,23 +77,23 @@ public class Registry : IRegistry
         var innerAdaptors = new List<Type>(innerTypes.Length);
         for (int idx = 0; idx < innerTypes.Length; idx++)
         {
-            innerAdaptors.Add(CreateValueAdaptor(columns, idx, innerTypes[idx]));
+            using var logicalType = columns[idx].GetLogicalType();
+            innerAdaptors.Add(CreateValueAdaptor(logicalType, idx, innerTypes[idx]));
         }
         
         return bestFactory.CreateType(rowType, innerTypes, innerAdaptors.ToArray());
     }
 
-    private Type CreateValueAdaptor(ReadOnlySpan<Result.ColumnInfo> columns, int column, Type innerType)
+    private Type CreateValueAdaptor(LogicalType logicalType, int column, Type innerType)
     {
         int bestPriority = Int32.MinValue;
         IValueAdaptorFactory bestFactory = null!;
         Type[] innerTypes = [];
-        using var ddType = columns[column].GetLogicalType();
         
         foreach (var factory in _valueAdaptorFactories)
         {
 
-            if (factory.TryExtractType(columns[column].Type, ddType, innerType, out var thisInnerTypes, out var priority))
+            if (factory.TryExtractType(logicalType.TypeId, logicalType, innerType, out var thisInnerTypes, out var priority))
             {
                 if (priority > bestPriority)
                 {
@@ -107,6 +107,17 @@ public class Registry : IRegistry
         if (bestFactory == null)
             throw new InvalidOperationException("No value adaptor found for {" + innerType.FullName + "}");
         
-        return bestFactory.CreateType(columns[column].Type, ddType, innerType, innerTypes);
+        var subAdaptors = new Type[innerTypes.Length];
+        for (int idx = 0; idx < innerTypes.Length; idx++)
+        {
+            if (logicalType.TypeId == DuckDbType.List)
+            {
+                using var subType = logicalType.ListChildType();
+                subAdaptors[idx] = CreateValueAdaptor(subType, idx, innerTypes[idx]);
+            }
+            
+        }
+        
+        return bestFactory.CreateType(logicalType.TypeId, logicalType, innerType, innerTypes, subAdaptors);
     }
 }

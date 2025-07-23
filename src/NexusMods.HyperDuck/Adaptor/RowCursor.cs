@@ -21,6 +21,11 @@ public ref struct RowCursor
         throw new NotImplementedException();
     }
 
+    public ReadOnlyVector GetListSubVector(int column)
+    {
+        return _vectors[column].GetListChild();
+    }
+
     public T GetValue<T>(int columnIndex) where T : unmanaged
     {
         return _vectors[columnIndex].GetData<T>()[RowIndex];

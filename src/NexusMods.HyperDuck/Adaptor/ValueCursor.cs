@@ -2,7 +2,7 @@ using System;
 
 namespace NexusMods.HyperDuck.Adaptor;
 
-public ref struct ValueCursor
+public ref struct ValueCursor : IValueCursor
 {
     private readonly ReadOnlySpan<ReadOnlyVector> _vectors;
 
@@ -17,5 +17,10 @@ public ref struct ValueCursor
     public T GetValue<T>() where T : unmanaged
     {
         return _rowCursor.GetValue<T>(ColumnIndex);
+    }
+
+    public ReadOnlyVector GetListChild()
+    {
+        return _rowCursor.GetListSubVector(ColumnIndex);
     }
 }

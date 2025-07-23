@@ -5,7 +5,8 @@ namespace NexusMods.HyperDuck.Adaptor.Impls.ValueAdaptor;
 public class UnmanagedValueAdaptor<T> : IValueAdaptor<T>
     where T : unmanaged
 {
-    public static void Adapt(ValueCursor cursor, ref T value)
+    public static void Adapt<TCursor>(TCursor cursor, ref T value) 
+        where TCursor : IValueCursor, allows ref struct
     {
         value = cursor.GetValue<T>();
     }
@@ -13,7 +14,8 @@ public class UnmanagedValueAdaptor<T> : IValueAdaptor<T>
 
 public class BoolAdaptor : IValueAdaptor<bool>
 {
-    public static void Adapt(ValueCursor cursor, ref bool value)
+    public static void Adapt<TCursor>(TCursor cursor, ref bool value) 
+        where TCursor : IValueCursor, allows ref struct
     {
         value = cursor.GetValue<byte>() != 0;
     }
@@ -51,7 +53,7 @@ public class UnmanagedValueAdaptorFactory : IValueAdaptorFactory
         return true;
     }
 
-    public Type CreateType(DuckDbType taggedType, LogicalType logicalType, Type resultTypes, Type[] subTypes)
+    public Type CreateType(DuckDbType taggedType, LogicalType logicalType, Type resultTypes, Type[] subTypes, Type[] subAdaptors)
     {
         if (resultTypes == typeof(bool))
             return typeof(BoolAdaptor);

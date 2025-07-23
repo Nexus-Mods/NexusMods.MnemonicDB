@@ -4,7 +4,8 @@ namespace NexusMods.HyperDuck.Adaptor.Impls.ValueAdaptor;
 
 public class StringAdaptor<T> : IValueAdaptor<T>
 {
-    public static void Adapt(ValueCursor cursor, ref T? value)
+    public static void Adapt<TCursor>(TCursor cursor, ref T? value) 
+        where TCursor : IValueCursor, allows ref struct
     {
         var str = cursor.GetValue<StringElement>();
         value = (T)(object)str.GetString();
@@ -20,7 +21,7 @@ public class StringAdaptorFactory : IValueAdaptorFactory
         return taggedType == DuckDbType.Varchar && type.IsAssignableTo(typeof(string));
     }
 
-    public Type CreateType(DuckDbType taggedType, LogicalType logicalType, Type resultTypes, Type[] subTypes)
+    public Type CreateType(DuckDbType taggedType, LogicalType logicalType, Type resultTypes, Type[] subTypes, Type[] subAdaptors)
     {
         return typeof(StringAdaptor<>).MakeGenericType(resultTypes);
     }
