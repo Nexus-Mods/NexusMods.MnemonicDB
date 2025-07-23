@@ -15,38 +15,7 @@ namespace NexusMods.MnemonicDB.Tests;
 [WithServiceProvider]
 public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 {
-    [Test]
-    public async Task CanGetDatoms()
-    {
-        await InsertExampleData();
-        var db = Connection.Db;
-
-        var flow = from p in File.Path
-            select p;
-
-        using var results = await db.Topology.QueryAsync(flow);
-
-        await Assert.That(results).IsNotEmpty();
-    }
     
-    [Test]
-    public async Task CanFilterAndSelectDatoms()
-    {
-        await InsertExampleData();
-        var db = Connection.Db;
-        
-        var flow = 
-            File.Path
-                .Where(a => a.Value == "File1")
-                .LeftInnerJoin(File.Hash)
-                .Select(r => (r.Key, r.Value.Item1, r.Value.Item2));
-
-        using var results = await db.Topology.QueryAsync(flow);
-        
-        await Assert.That(results).IsNotEmpty();
-    }
-
-
     [Test]
     public async Task CanRunActiveQueries()
     {
@@ -70,74 +39,33 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var ent = File.FindByPath(Connection.Db, "File1").First();
         tx.Add(ent.Id, File.Hash, Hash.FromLong(0x42));
         await tx.Commit();
-        
-        await Task.Delay(1000); // wait for the queries to update
+
+        await Connection.FlushQueries();
         
         table.Add(results, "After Updates Query");
         table.Add(historyResults, "After Updates History");
         
         await Verify(table.ToString());
-/*
-
-        await Assert.That(AreEqual(results.ToList(), [
-            ("File1", Hash.FromLong(0xDEADBEEF), 3),
-            ("File2", Hash.FromLong(0xDEADBEF0), 3),
-            ("File3", Hash.FromLong(0xDEADBEF1), 3)
-        ])).IsTrue();
-
-        await Assert.That(AreEqual(historyQuery, new (ulong, int)[]{
-            // 9 hashes in the first transaction
-            (3, 9)
-        })).IsTrue();;
-
-
-
-        await Verify(results);
-        // we swapped one file over to a different hash, so we should see 4 results now with 2 count for one
-        // and 1 for the other
-        await Assert.That(AreEqual(results.ToList(), new (RelativePath, Hash, int)[]{
-            ("File1", Hash.FromLong(0x42), 1),
-            ("File2", Hash.FromLong(0xDEADBEF0), 3),
-            ("File3", Hash.FromLong(0xDEADBEF1), 3),
-            ("File1", Hash.FromLong(0xDEADBEEF), 2)
-        })).IsTrue();
-
-
-        await Assert.That(historyResults).IsNotEmpty();
-        await Assert.That(AreEqual(historyResults.ToList(), new (ulong, int)[]{
-            // 9 hashes in the first transaction
-            (3, 9),
-            // 1 hash in the second transaction
-            (5, 1)
-        })).IsTrue();
-
-        bool AreEqual<T>(List<T> a, T[] b)
-        {
-            if (a.Count != b.Length) return false;
-            for (var i = 0; i < a.Count; i++)
-            {
-                if (!a.Contains(b[i]))
-                    return false;
-            }
-            return true;
-        }
-        */
     }
 
     [Test]
     public async Task CanGetLatestTxForEntity()
     {
+        var table = TableResults();
         await InsertExampleData();
 
-        var query = Pattern.Create()
-            .Db(out var e, File.ModId, out var mod)
-            .Db(mod, Mod.Loadout, out var loadout)
-            .DbLatestTx(e, out var txId)
-            .Return(loadout, txId.Max());
-
-        using var queryResults = await Connection.Topology.QueryAsync(query);
+        var results = new List<(EntityId, TxId)>();
+        using var _ = Connection.ObserveQuery("""
+                                              SELECT ents.Loadout, max(d.T) FROM 
+                                              (SELECT Id, Id as Loadout FROM mdb_Loadout() 
+                                               UNION SELECT Id, Loadout FROM mdb_Mod()
+                                               UNION SELECT file.Id, mod.Loadout FROM mdb_File() file 
+                                                     LEFT JOIN mdb_Mod() mod ON mod.Id = file.Mod) ents
+                                              LEFT JOIN mdb_Datoms() d ON d.E = ents.Id
+                                              GROUP BY ents.Loadout
+                                              """, ref results);
         
-        var oldData = queryResults.ToList();
+        table.Add(results, "Initial Results");
         
         // Update one hash to check that the queries update correctly
         using var tx = Connection.BeginTransaction();
@@ -145,14 +73,11 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx.Add(ent.Id, File.Hash, Hash.FromLong(0x42));
         await tx.Commit();
         
-        var newData = queryResults.ToList();
+        await Connection.FlushQueries();
 
-        var diagram = Connection.Topology.Diagram();
-        await Verify(new
-        {
-            OldData = oldData.Select(row => row.ToString()).ToArray(),
-            NewData = newData.Select(row => row.ToString()).ToArray(),
-        });
+        table.Add(results, "After Update");
+
+        await Verify(table.ToString());
 
     }
     

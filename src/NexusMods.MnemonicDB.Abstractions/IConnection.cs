@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using DynamicData;
 using NexusMods.Cascade;
-using NexusMods.Cascade.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -124,4 +120,6 @@ public interface IConnection : IDisposable
     T Query<T>(string query) where T : class, new();
     
     IDisposable ObserveQuery<T>(string query, ref T results) where T : class, new();
+    
+    Task FlushQueries();
 }

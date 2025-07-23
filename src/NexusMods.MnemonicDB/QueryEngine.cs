@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.HyperDuck;
 using NexusMods.HyperDuck.Adaptor;
@@ -23,6 +24,7 @@ public class QueryEngine : IQueryEngine, IDisposable
     private readonly Dictionary<string, IAttribute> _attrsByShortName;
     private readonly LogicalType _attrEnumLogicalType;
     private readonly LogicalType _valueUnion;
+    private readonly LogicalType _valueTagEnum;
 
     public QueryEngine(IServiceProvider services)
     {
@@ -33,9 +35,20 @@ public class QueryEngine : IQueryEngine, IDisposable
         _declaredAttributes = services.GetServices<IAttribute>().OrderBy(a => a.Id.Id).ToArray();
         _attrsByShortName = _declaredAttributes.ToDictionary(a => a.ShortName, a => a);
         _attrEnumLogicalType = LogicalType.CreateEnum(_declaredAttributes.Select(s => s.ShortName).ToArray());
+        _valueTagEnum = MakeValueTagEnum();
         _valueUnion = CreateValueType();
     }
-    
+
+    private LogicalType MakeValueTagEnum()
+    {
+        var names = new string[(int)Enum.GetValues<ValueTag>().Max() + 1];
+        for (var i = 0; i < names.Length; i++)
+        {
+            names[i] = Enum.GetName(typeof(ValueTag), i) ?? $"UnknownValueTag{i}";
+        }
+        return LogicalType.CreateEnum(names);
+    }
+
     private LogicalType CreateValueType()
     {
         var names = new List<string>();
@@ -51,6 +64,13 @@ public class QueryEngine : IQueryEngine, IDisposable
 
     public LogicalType AttrEnum => _attrEnumLogicalType;
 
+    public int AttrEnumWidth => _attrsByShortName.Count > 255 ? 2 : 1;
+    
+    public Task FlushQueries()
+    {
+        return Connection.FlushAsync();
+    }
+
     public LogicalType ValueUnion => _valueUnion;
 
     public void Dispose()
@@ -61,4 +81,5 @@ public class QueryEngine : IQueryEngine, IDisposable
     }
 
     public HyperDuck.Connection Connection => _conn;
+    public LogicalType ValueTagEnum => _valueTagEnum;
 }

@@ -118,77 +118,39 @@ public class DatomsTableFunction : ATableFunction
     {
         
         var chunk = functionInfo.Chunk;
-        var eVec = chunk[0].GetData<ulong>();
-        var aVec = chunk[1].GetData<byte>();
-        //var vVec = chunk[2].GetData();
-        var tVec = chunk[3].GetData<ulong>();
-        var vVec = chunk[2];
-        var vValidity = vVec.GetValidityMask();
-        var vTag = vVec.GetStructChild(0).GetData<byte>();
-        
+        var eVec = functionInfo.GetWritableVector(0).GetData<ulong>();
+        var aVec = functionInfo.GetWritableVector(1).GetData<byte>();
+        var vVec = functionInfo.GetWritableVector(2);
+        var tVec = functionInfo.GetWritableVector(3).GetData<ulong>();
+        var vTagVec = functionInfo.GetWritableVector(4).GetData<byte>();
+        var historyVector = functionInfo.GetWritableVector(5).GetData<byte>();
 
-
-        var strValidity = vVec.GetStructChild((ulong)UnionOrdering.String+1).GetValidityMask();
-        var row = 0;
-
-        for (int subCol = 0; subCol <= (int)UnionOrdering.End; subCol++)
-            vVec.GetStructChild(0).GetValidityMask();
-        
         var iterator = state.Segment;
+        int row = 0;
+        int width = _queryEngine.AttrEnumWidth;
         while (iterator.MoveNext())
         {
-            eVec[row] = iterator.KeyPrefix.E.Value;
-            aVec[row] = (byte)_attrIdToEnum[iterator.KeyPrefix.A.Value];
-            tVec[row] = iterator.KeyPrefix.T.Value;
-            
-
-
-            strValidity[(ulong)row] = false;
-            switch (iterator.KeyPrefix.ValueTag)
+            if (!eVec.IsEmpty)
+                eVec[row] = iterator.KeyPrefix.E.Value;
+            if (!aVec.IsEmpty)
             {
-                case ValueTag.Null:
-                    vTag[row] = (byte)UnionOrdering.Bool;
-                    vVec.GetStructChild((ulong)(UnionOrdering.Bool + 1)).GetData<byte>()[row] = 1;
-                    vValidity[(ulong)row] = true;
-                    break;
-                case ValueTag.UInt64:
-                    vTag[row] = (byte)UnionOrdering.UInt64;
-                    var subVec = vVec.GetStructChild((ulong)(UnionOrdering.UInt64 + 1));
-                    subVec.GetData<ulong>()[row] = UInt64Serializer.Read(iterator.ValueSpan);
-                    var subVecMask = subVec.GetValidityMask();
-                    subVecMask[(ulong)row] = true;
-                    vValidity[(ulong)row] = true;
-                    break;
-                case ValueTag.Reference:
-                    vTag[row] = (byte)UnionOrdering.Reference;
-                    vVec.GetStructChild((ulong)(UnionOrdering.Reference + 1))
-                        .GetData<ulong>()[row] = UInt64Serializer.Read(iterator.ValueSpan);
-                    vValidity[(ulong)row] = true;
-                    break;
-                case ValueTag.Utf8 or ValueTag.Utf8Insensitive or ValueTag.Ascii:
-                    vTag[row] = (byte)UnionOrdering.String;
-                    var structMember = vVec.GetStructChild((ulong)(UnionOrdering.String + 1));
-                    structMember.WriteUtf8((ulong)row, iterator.ValueSpan);;
-                    var vMask = structMember.GetValidityMask();
-                    vMask[(ulong)row] = true;
-                    vValidity[(ulong)row] = true;
-                    break;
-                    
-                /*
-                case ValueTag.Utf8Insensitive:
-                    vTag[row] = (byte)UnionOrdering.String;
-                    vVec.GetStructChild((ulong)UnionOrdering.String + 1)
-                        .WriteUtf8((ulong)row, iterator.ValueSpan);
-                    vValidity[(ulong)row] = true;
-                    break;
-                    */
-                    
-                
-                default:
-                    vValidity[(ulong)row] = false;
-                    break;
+                if (width == 1)
+                    aVec[row] = (byte)_attrIdToEnum[iterator.KeyPrefix.A.Value];
+                if (width == 2)
+                    aVec.CastFast<byte, ushort>()[row] = _attrIdToEnum[iterator.KeyPrefix.A.Value];
             }
 
+            if (!tVec.IsEmpty) 
+                tVec[row] = iterator.KeyPrefix.T.Value;
+            
+            if (vVec.IsValid)
+                vVec.WriteBlob((ulong)row, iterator.ValueSpan);
+
+            if (!vTagVec.IsEmpty)
+                vTagVec[row] = (byte)iterator.KeyPrefix.ValueTag;
+            if (!historyVector.IsEmpty)
+                historyVector[row] = (byte)(iterator.KeyPrefix.IsRetract ? 1 : 0);
+                
             row++;
             if (row >= eVec.Length)
                 break;
@@ -242,8 +204,9 @@ public class DatomsTableFunction : ATableFunction
         {
             info.AddColumn<ulong>("E");
             info.AddColumn("A", _queryEngine.AttrEnum);
-            info.AddColumn("V", _queryEngine.ValueUnion);
+            info.AddColumn<byte[]>("V");
             info.AddColumn<ulong>("T");
+            info.AddColumn("ValueTag", _queryEngine.ValueTagEnum);
         }
         
         state.History = history;

@@ -482,6 +482,11 @@ public sealed class Connection : IConnection
         return _queryEngine!.Connection.ObserveQuery(query, ref results);
     }
 
+    public Task FlushQueries()
+    {
+        return _queryEngine!.FlushQueries();
+    }
+
     /// <inheritdoc />
     public async Task<ICommitResult> FlushAndCompact(bool verify = false)
     {

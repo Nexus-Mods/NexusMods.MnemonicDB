@@ -56,6 +56,14 @@ public unsafe ref partial struct WritableVector
         }
     }
     
+    public void WriteBlob(ulong idx, ReadOnlySpan<byte> data)
+    {
+        fixed (void* ptr = data)
+        {
+            Native.duckdb_vector_assign_string_element_len(_ptr, idx, ptr, (ulong)data.Length);
+        }
+    }
+    
     public WritableVector GetStructChild(ulong idx)
     {
         return new WritableVector(ReadOnlyVector.Native.duckdb_struct_vector_get_child(_ptr, idx), _rowCount);

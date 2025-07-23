@@ -46,13 +46,13 @@ public class LiveQueryUpdater : IDisposable
 
     private void Pulse()
     {
+        var flushes = Interlocked.Exchange(ref _pendingFlushes, ImmutableStack<TaskCompletionSource>.Empty);
         foreach (var liveQuery in _liveQueries.Values)
         {
-            var flushes = Interlocked.Exchange(ref _pendingFlushes, ImmutableStack<TaskCompletionSource>.Empty);
             liveQuery.Update();
-            foreach (var flush in flushes)
-                flush.SetResult();
         }
+        foreach (var flush in flushes)
+            flush.SetResult();
     }
 
     public void Dispose()

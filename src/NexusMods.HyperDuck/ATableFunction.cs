@@ -309,6 +309,8 @@ public abstract unsafe partial class ATableFunction
         /// </summary>
         public WritableVector GetWritableVector(int column)
         {
+            if (column >= _initData.FnToEngine.Length)
+                return default;
             var mappedIdx = _initData.FnToEngine[column];
             return mappedIdx >= 0 ? Chunk[(ulong)mappedIdx] : default;
         }
