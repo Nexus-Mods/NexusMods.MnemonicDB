@@ -317,6 +317,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task CanFindEntitiesByAttribute()
     {
+        var table = TableResults();
         await InsertExampleData();
 
         var db = Connection.Db;
