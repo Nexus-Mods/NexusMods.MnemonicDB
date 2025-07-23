@@ -11,9 +11,7 @@ using DynamicData;
 using Jamarino.IntervalTree;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using NexusMods.Cascade;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.Cascade;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.EventTypes;
 using NexusMods.MnemonicDB.InternalTxFunctions;
@@ -66,9 +64,6 @@ public sealed class Connection : IConnection
     /// </summary>
     public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers, IQueryEngine? queryEngine = null, bool readOnlyMode = false)
     {
-        Topology = new Topology();
-        //_dbInlet = Topology.Intern(Query.Db);
-        
         ServiceProvider = provider;
         AttributeCache = store.AttributeCache;
         AttributeResolver = new AttributeResolver(provider, AttributeCache);
@@ -399,11 +394,7 @@ public sealed class Connection : IConnection
 
     /// <inheritdoc />
     public IDatomStore DatomStore => _store;
-
-
-    /// <inheritdoc />
-    public Topology Topology { get; }
-
+    
     /// <inheritdoc />
     public IDb Db
     {
@@ -595,7 +586,6 @@ public sealed class Connection : IConnection
     }
     
     private bool _isDisposed;
-    private readonly InletNode<IDb> _dbInlet = null!;
     private readonly IQueryEngine? _queryEngine;
 
     /// <inheritdoc />

@@ -1,19 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NexusMods.Cascade;
-using NexusMods.Cascade.Abstractions;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.Attributes;
-using NexusMods.MnemonicDB.Abstractions.Cascade;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
-using NexusMods.MnemonicDB.Caching;
-using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
 namespace NexusMods.MnemonicDB;
 
@@ -43,9 +35,6 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         _snapshot = snapshot;
         BasisTxId = txId;
         _recentlyAdded = new (() => snapshot.Datoms(SliceDescriptor.Create(txId)));
-        Topology = new Topology();
-        var dbInlet = Topology.Intern(Query.Db);
-        dbInlet.Values = [this];
     }
 
     internal Db(TSnapshot newSnapshot, TxId newTxId, IndexSegment addedDatoms, Db<TSnapshot, TLowLevelIterator> src) : base(src, addedDatoms) 
@@ -54,9 +43,6 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         _snapshot = newSnapshot;
         BasisTxId = newTxId;
         _recentlyAdded = new Lazy<IndexSegment>(() => addedDatoms);
-        Topology = new Topology();
-        var dbInlet = Topology.Intern(Query.Db);
-        dbInlet.Values = [this];
     }
 
     /// <summary>
@@ -78,7 +64,6 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         }
     }
 
-    public Topology Topology { get; }
     public TxId BasisTxId { get; }
 
     public IConnection Connection

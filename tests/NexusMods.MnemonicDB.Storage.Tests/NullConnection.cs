@@ -1,16 +1,12 @@
 using DynamicData;
-using NexusMods.Cascade;
-using NexusMods.Cascade.Abstractions;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Storage.Tests;
 
 public class NullConnection : IConnection
 {
-    public Topology Topology => throw new NotSupportedException();
     public IDb Db => throw new NotSupportedException();
     public AttributeResolver AttributeResolver => throw new NotSupportedException();
     public AttributeCache AttributeCache => throw new NotSupportedException();
@@ -72,6 +68,11 @@ public class NullConnection : IConnection
     }
 
     public IDisposable ObserveQuery<T>(string query, ref T results) where T : class, new()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task FlushQueries()
     {
         throw new NotImplementedException();
     }
