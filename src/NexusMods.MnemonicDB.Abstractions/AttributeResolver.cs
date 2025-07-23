@@ -55,6 +55,18 @@ public sealed class AttributeResolver
         return attr.Resolve(datom.Prefix, datom.ValueSpan, this);
     }
 
+    public bool TryGetAttribute(AttributeId id, out IAttribute attr)
+    {
+        if (_attrsById.TryGetValue(_attributeCache.GetSymbol(id), out var found))
+        {
+            attr = found;
+            return true;
+        }
+
+        attr = default!;
+        return false;
+    }
+
     /// <summary>
     /// Gets the service object of the specified type.
     /// </summary>

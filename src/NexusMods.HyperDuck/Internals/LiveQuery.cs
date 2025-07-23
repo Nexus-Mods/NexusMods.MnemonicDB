@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using NexusMods.Hashing.xxHash3;
 using NexusMods.HyperDuck.Adaptor;
+using Reloaded.Memory.Extensions;
 
 namespace NexusMods.HyperDuck.Internals;
 
@@ -18,6 +20,10 @@ public interface ILiveQuery : IDisposable
 public class LiveQuery<T> : ILiveQuery
 {
     public ulong Id { get; } = ILiveQuery.NextId();
+    
+    private Hash _lastHash = Hash.Zero;
+    
+    public required ATableFunction[] DependsOn { get; init; }
     public required LiveQueryUpdater Updater { get; init; }
     public required Connection Connection { get; init; }
     public required string Query { get; init; }
@@ -30,8 +36,20 @@ public class LiveQuery<T> : ILiveQuery
         if (_isDisposed)
             return;
         
+        Span<ulong> ids = stackalloc ulong[DependsOn.Length];
+        for (var i = 0; i < DependsOn.Length; i++)
+        {
+            ids[i] = DependsOn[i].Revision;
+        }
+
+
+        var hash = ids.CastFast<ulong, byte>().xxHash3();
+        if (hash == _lastHash)
+            return;
+        
         using var result = Connection.Query(Query);
         ResultAdaptor.Adapt(result, ref Output);
+        _lastHash = hash;
     }
 
 

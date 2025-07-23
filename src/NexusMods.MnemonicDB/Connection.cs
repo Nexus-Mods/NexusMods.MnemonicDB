@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -83,9 +84,23 @@ public sealed class Connection : IConnection
         queryEngine.Connection.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes, _queryEngine!, _prefix));
         queryEngine.Connection.Register(new ToStringScalarFn((QueryEngine)_queryEngine!, _prefix));
 
+        var observer = Revisions.Select(r =>
+        {
+            var attr = new HashSet<IAttribute>();
+            foreach (var d in r.RecentlyAdded)
+            {
+                if (AttributeResolver.TryGetAttribute(d.A, out var attr1))
+                    attr.Add(attr1);
+            }
+
+            return attr;
+        })
+        .Publish();
+        observer.Connect();
+        
         foreach (var model in ServiceProvider.GetServices<ModelDefinition>())
         {
-            queryEngine.Connection.Register(new ModelTableFunction(this, model, _prefix));
+            queryEngine.Connection.Register(new ModelTableFunction(this, model, observer, _prefix));
         }
     }
 

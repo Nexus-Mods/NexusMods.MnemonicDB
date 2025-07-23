@@ -14,6 +14,7 @@
         <PackageReference Include="Microsoft.Extensions.Logging.Abstractions"/>
         <PackageReference Include="Microsoft.Extensions.Logging.Console" />
         <PackageReference Include="Microsoft.Extensions.ObjectPool"/>
+        <PackageReference Include="NexusMods.Hashing.xxHash3" />
         <PackageReference Include="Reloaded.Memory"/>
         <PackageReference Include="RocksDB"/>
         <PackageReference Include="System.Reactive"/>

@@ -1,19 +1,31 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using JetBrains.Annotations;
 
 namespace NexusMods.HyperDuck;
 
 public abstract unsafe partial class ATableFunction
 {
+    private ulong _revision;
+
     protected ATableFunction()
     {
+        _revision = 0;
+    }
+
+    public string Name { get; set; } = "";
+    public ulong Revision => _revision;
+
+    protected void Revise()
+    {
+        Interlocked.Increment(ref _revision);
     }
 
     public void Register(Connection connection)
     {
-        using var data = new RegistrationInfo(Native.duckdb_create_table_function());
+        using var data = new RegistrationInfo(Native.duckdb_create_table_function(), this);
         Setup(data);
         var handle = GCHandle.Alloc(this);
         Native.duckdb_table_function_set_extra_info(data._ptr, (void*)GCHandle.ToIntPtr(handle), &DeleteHandleFn);
@@ -30,13 +42,18 @@ public abstract unsafe partial class ATableFunction
     protected ref struct RegistrationInfo : IDisposable
     {
         internal void* _ptr;
-        public RegistrationInfo(void* ptr)
+        private readonly ATableFunction _fn;
+
+        public RegistrationInfo(void* ptr, ATableFunction fn)
         {
             _ptr = ptr;
+            _fn = fn;
         }
         
         public void SetName(string name)
         {
+            name = name.ToUpper();
+            _fn.Name = name;
             Native.duckdb_table_function_set_name(_ptr, name);
         }
 

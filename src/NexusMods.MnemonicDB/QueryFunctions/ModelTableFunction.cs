@@ -17,18 +17,18 @@ public class ModelTableFunction : ATableFunction
     private readonly IConnection _conn;
     private readonly string _prefix;
     
-    /// <summary>
-    /// Each time this function runs to completion we store the number of rows we emitted, and feed that data to
-    /// duckdb on the next evocation of the function. 
-    /// </summary>
-    private int _cardinality;
+    private readonly IDisposable _txWatcher;
 
-    public ModelTableFunction(IConnection conn, ModelDefinition definition, string prefix = "mdb")
+    public ModelTableFunction(IConnection conn, ModelDefinition definition, IObservable<IReadOnlySet<IAttribute>> attrUpdates, string prefix = "mdb")
     {
         _prefix = prefix;
         _conn = conn;
         _definition = definition;
-        _cardinality = -1;
+        _txWatcher = attrUpdates.Subscribe(set =>
+        {
+            if (set.Overlaps(definition.AllAttributes))
+                Revise();
+        });
     }
     
     protected override void Setup(RegistrationInfo info)

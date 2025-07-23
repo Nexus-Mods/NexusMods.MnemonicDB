@@ -13,6 +13,7 @@ public class LiveQueryUpdater : IDisposable
     private readonly ConcurrentDictionary<ulong, ILiveQuery> _liveQueries = [];
     private ImmutableStack<TaskCompletionSource> _pendingFlushes = ImmutableStack<TaskCompletionSource>.Empty;
     private Thread? _thread;
+    
 
     public LiveQueryUpdater()
     {

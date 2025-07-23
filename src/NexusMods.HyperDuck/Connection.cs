@@ -19,6 +19,7 @@ public unsafe partial struct Connection : IDisposable
     internal void* _ptr;
     private readonly IRegistry _registry;
     private readonly Lazy<LiveQueryUpdater> _liveQueryUpdater =  new(static () => new LiveQueryUpdater());
+    private readonly ConcurrentDictionary<string, ATableFunction> _tableFunctions = new();
     private readonly TimeSpan _delay;
 
     public Connection(IRegistry registry)
@@ -56,6 +57,7 @@ public unsafe partial struct Connection : IDisposable
 
         var live = new Internals.LiveQuery<T>
         {
+            DependsOn = deps.ToArray(),
             Connection = this,
             Query = query,
             Output = output,
@@ -87,29 +89,30 @@ public unsafe partial struct Connection : IDisposable
     /// <summary>
     /// Gets the JSON query plan for a specific query
     /// </summary>
-    public HashSet<string> GetReferencedFunctions(string query)
+    public HashSet<ATableFunction> GetReferencedFunctions(string query)
     {
         var result = Query<List<(string, string)>>("EXPLAIN (FORMAT JSON) " + query);
 
         var plan = JsonSerializer.Deserialize<QueryPlanNode[]>(result.First().Item2)!;
         
-        HashSet<string> touchedFunctions = [];
+        HashSet<ATableFunction> touchedFunctions = [];
         foreach (var node in plan)
         {
             AnalyzeNode(node, touchedFunctions);
         }
         
         return touchedFunctions;
-
-        void AnalyzeNode(QueryPlanNode node, HashSet<string> touchedFunctions)
+    }
+    
+    private void AnalyzeNode(QueryPlanNode node, HashSet<ATableFunction> touchedFunctions)
+    {
+        if (node.ExtraInfo?.Function is { } functionName)
         {
-            if (node.ExtraInfo?.Function is { } functionName)
-            {
-                touchedFunctions.Add(functionName);
-            }
-            foreach (var child in node.Children)
-                AnalyzeNode(child, touchedFunctions);
+            if (_tableFunctions.TryGetValue(functionName, out var function))
+                touchedFunctions.Add(function);
         }
+        foreach (var child in node.Children)
+            AnalyzeNode(child, touchedFunctions);
     }
 
     internal static partial class Native
@@ -150,5 +153,6 @@ public unsafe partial struct Connection : IDisposable
     public void Register(ATableFunction fn)
     {
         fn.Register(this);
+        _tableFunctions[fn.Name] = fn;
     }
 }
