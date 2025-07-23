@@ -18,7 +18,7 @@ public class QueryEngineTests : AMnemonicDBTest
     public async Task CanGetDatomsViaDatomsFunction()
     {
         await InsertExampleData();
-        var data = Connection.Query<List<(EntityId, string, string, TxId)>>("SELECT E, A::VARCHAR, V::VARCHAR, T from mdb_Datoms() ORDER BY T, E, A DESC");
+        var data = Connection.Query<List<(EntityId, string, string, TxId)>>("SELECT E, A::VARCHAR, mdb_ToString(V, ValueTag), T from mdb_Datoms() ORDER BY T, E, A DESC");
 
         await VerifyTable(data);
     }

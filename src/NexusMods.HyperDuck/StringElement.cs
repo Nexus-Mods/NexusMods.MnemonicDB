@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace NexusMods.HyperDuck;
@@ -29,6 +30,21 @@ public unsafe struct StringElement
         else
         {
             return Encoding.UTF8.GetString(Pointer.Ptr, (int)Pointer.Length);
+        }
+    }
+
+    public readonly ReadOnlySpan<byte> GetSpan()
+    {
+        if (IsInline)
+        {
+            fixed (byte* data = Inline.Data)
+            {
+                return new ReadOnlySpan<byte>(data, (int)Inline.Length);
+            }
+        }
+        else
+        {
+            return new ReadOnlySpan<byte>(Pointer.Ptr, (int)Pointer.Length);
         }
     }
     

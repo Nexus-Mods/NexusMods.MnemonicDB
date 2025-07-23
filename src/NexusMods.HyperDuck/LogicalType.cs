@@ -68,6 +68,7 @@ public unsafe partial struct LogicalType : IDisposable
             _ => throw new NotImplementedException("SizeInVector not implemented for enum type.")
         },
         DuckDbType.Union => 0,
+        DuckDbType.Blob => sizeof(StringElement),
         _ => throw new NotImplementedException("SizeInVector not implemented for type: " + TypeId)
     };
 

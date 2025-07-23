@@ -81,6 +81,7 @@ public sealed class Connection : IConnection
     private void RegisterWithEngine(IQueryEngine queryEngine)
     {
         queryEngine.Connection.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes, _queryEngine!, _prefix));
+        queryEngine.Connection.Register(new ToStringScalarFn((QueryEngine)_queryEngine!, _prefix));
 
         foreach (var model in ServiceProvider.GetServices<ModelDefinition>())
         {

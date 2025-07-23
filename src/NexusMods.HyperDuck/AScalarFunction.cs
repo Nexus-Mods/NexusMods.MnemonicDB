@@ -44,6 +44,14 @@ public abstract unsafe partial class AScalarFunction
     }
 
     /// <summary>
+    /// Add a required, unnamed parameter
+    /// </summary>
+    public void AddParameter(LogicalType type)
+    {
+        Native.duckdb_scalar_function_add_parameter(_ptr, type._ptr);
+    }
+
+    /// <summary>
     /// Set the return type of the parameter
     /// </summary>
     public void SetReturnType<T>()

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using JetBrains.Annotations;
 
 namespace NexusMods.HyperDuck;
@@ -51,6 +52,15 @@ public unsafe ref partial struct WritableVector
     public void WriteUtf8(ulong idx, ReadOnlySpan<byte> data)
     {
         fixed (void* ptr = data)
+        {
+            Native.duckdb_vector_assign_string_element_len(_ptr, idx, ptr, (ulong)data.Length);
+        }
+    }
+
+    public void WriteUtf16(ulong idx, string data)
+    {
+        var encoded = Encoding.UTF8.GetBytes(data);
+        fixed (void* ptr = encoded)
         {
             Native.duckdb_vector_assign_string_element_len(_ptr, idx, ptr, (ulong)data.Length);
         }
