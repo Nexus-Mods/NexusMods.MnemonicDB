@@ -51,7 +51,8 @@ public unsafe partial struct Connection : IDisposable
     public IDisposable ObserveQuery<T>(string query, ref T output)
     {
         var deps = GetReferencedFunctions(query);
-        using var initial = Query(query);
+        var statement = Prepare(query);
+        using var initial = statement.Execute();
         var adapter = _registry.GetAdaptor<T>(initial);
         adapter.Adapt(initial, ref output);
 
@@ -59,7 +60,7 @@ public unsafe partial struct Connection : IDisposable
         {
             DependsOn = deps.ToArray(),
             Connection = this,
-            Query = query,
+            Statement = statement,
             Output = output,
             ResultAdaptor = adapter,
             Updater = _liveQueryUpdater.Value
@@ -79,11 +80,22 @@ public unsafe partial struct Connection : IDisposable
     
     public T Query<T>(string query) where T : class, new()
     {
-        using var dbResults = Query(query);
+        using var stmt = Prepare(query);
+        using var dbResults = stmt.Execute();
         var adapter = _registry.GetAdaptor<T>(dbResults);
         var result = new T();
         adapter.Adapt(dbResults, ref result);
         return result;
+    }
+
+    [MustDisposeResource]
+    public PreparedStatement Prepare(string query)
+    {
+        void* stmt = default!;
+        if (Native.duckdb_prepare(_ptr, query, ref stmt) != State.Success)
+            throw new QueryException("Cannot prepare statement.");
+        
+        return new PreparedStatement(stmt, this);
     }
 
     /// <summary>
@@ -132,6 +144,10 @@ public unsafe partial struct Connection : IDisposable
         [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void* duckdb_result_error(ref Result result);
+        
+        [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial State duckdb_prepare(void* connection, string query, ref void* statement);
     }
 
     public void Dispose()

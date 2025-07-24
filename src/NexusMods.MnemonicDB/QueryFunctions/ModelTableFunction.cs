@@ -40,10 +40,10 @@ public class ModelTableFunction : ATableFunction
 
     protected override void Execute(FunctionInfo functionInfo)
     {
-        var initData = functionInfo.GetInitInfo<Iterators>();
+        var initData = functionInfo.GetInitInfo<LocalInitData>();
         var bindData = functionInfo.GetBindInfo<BindData>();
         var outChunk = functionInfo.Chunk;
-        if (!bindData.NextChunk(initData, out var idsChunk, out var emitSize))
+        if (!initData.NextChunk(out var idsChunk, out var emitSize))
         {
             outChunk.Size = 0;
             return;
@@ -66,8 +66,8 @@ public class ModelTableFunction : ATableFunction
             }
             
             var attr = _definition.AllAttributes[mapping - 1];
-            var attrId = bindData.Db.AttributeCache.GetAttributeId(attr.Id);
-            var iterator = bindData.Db.LightweightDatoms(SliceDescriptor.AttributesStartingAt(attrId, idVec[0]));
+            var attrId = initData.Db.AttributeCache.GetAttributeId(attr.Id);
+            var iterator = initData.Db.LightweightDatoms(SliceDescriptor.AttributesStartingAt(attrId, idVec[0]));
             var valueVector = outChunk[(ulong)columnIdx];
             WriteColumn(attr.LowLevelType, idVec, valueVector, iterator);
         }
@@ -235,31 +235,17 @@ public class ModelTableFunction : ATableFunction
         }
     }
 
-    private class Iterators
+    private class LocalInitData
     {
-        public int NextId = 0;
-    }
-
-    protected override object? Init(InitInfo initInfo, InitData initData)
-    {
-        var bindData = initInfo.GetBindData<BindData>();
-        initInfo.SetMaxThreads(bindData.Ids.Count);
-        return new Iterators
-        {
-            NextId = 0,
-        };
-    }
-
-    private class BindData
-    {
+        public int NextId;
         public required IDb Db;
         public required List<EntityId[]> Ids;
         public required int RowCount;
         public required int ChunkSize;
 
-        public bool NextChunk(Iterators initData, out EntityId[] ids, out int emitSize)
+        public bool NextChunk(out EntityId[] ids, out int emitSize)
         {
-            var thisId = Interlocked.Increment(ref initData.NextId) - 1;
+            var thisId = Interlocked.Increment(ref NextId) - 1;
             if (thisId >= Ids.Count)
             {
                 ids = [];
@@ -273,6 +259,33 @@ public class ModelTableFunction : ATableFunction
                 emitSize = ids.Length;
             return true;
         }
+
+    }
+
+    protected override object? Init(InitInfo initInfo, InitData initData)
+    {
+        var bindInfo = initInfo.GetBindData<BindData>();
+        IDb db = _conn.Db;
+        if (bindInfo.AsOf.HasValue)
+            db = db.Connection.AsOf(bindInfo.AsOf.Value);;
+            
+        // Load all the Ids here so we can load the rows in parallel.
+        var totalRows = db.IdsForPrimaryAttribute(bindInfo.PrimaryAttributeId, (int)GlobalConstants.DefaultVectorSize, out var chunks);
+        initInfo.SetMaxThreads(chunks.Count);
+        return new LocalInitData
+        {
+            Db = db,
+            NextId = 0,
+            Ids = chunks,
+            RowCount = totalRows,
+            ChunkSize = (int)GlobalConstants.DefaultVectorSize,
+        };
+    }
+
+    private class BindData
+    {
+        public required TxId? AsOf;
+        public AttributeId PrimaryAttributeId;
     }
     protected override void Bind(BindInfo info)
     {
@@ -283,22 +296,12 @@ public class ModelTableFunction : ATableFunction
         }
 
         using var asOf = info.GetParameter("AsOf");
-        IDb db = _conn.Db;
-        if (!asOf.IsNull)
-            db = db.Connection.AsOf(TxId.From(asOf.GetUInt64()));
-            
-        var attrId = db.AttributeCache.GetAttributeId(_definition.PrimaryAttribute.Id);
-        
-        // Load all the Ids here so we can load the rows in parallel.
-        var totalRows = db.IdsForPrimaryAttribute(attrId, (int)GlobalConstants.DefaultVectorSize, out var chunks);
-        info.SetCardinality((ulong)totalRows, true);
+        var attrId = _conn.Db.AttributeCache.GetAttributeId(_definition.PrimaryAttribute.Id);
         
         var bindData = new BindData
         {
-            Db = db,
-            Ids = chunks,
-            RowCount = totalRows,
-            ChunkSize = (int)GlobalConstants.DefaultVectorSize,
+            PrimaryAttributeId = attrId,
+            AsOf = asOf.IsNull ? null : TxId.From(asOf.GetUInt64()),
         };
         info.SetBindInfo(bindData);
     }
