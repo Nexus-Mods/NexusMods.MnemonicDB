@@ -12,6 +12,7 @@ using DynamicData;
 using Jamarino.IntervalTree;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.EventTypes;
@@ -72,17 +73,19 @@ public sealed class Connection : IConnection
         _store = (DatomStore)store;
         _dbStream = new DbStream();
         _analyzers = analyzers.ToArray();
-        _queryEngine = queryEngine;
         _prefix = "mdb";
         Bootstrap(readOnlyMode);
-        if (queryEngine is {} engine)
-            RegisterWithEngine(engine);
+        if (queryEngine is QueryEngine engine)
+        {
+            _queryEngine = engine;
+            RegisterWithEngine(engine.Database);
+        }
     }
 
-    private void RegisterWithEngine(IQueryEngine queryEngine)
+    private void RegisterWithEngine(Database database)
     {
-        queryEngine.Connection.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes, _queryEngine!, _prefix));
-        queryEngine.Connection.Register(new ToStringScalarFn((QueryEngine)_queryEngine!, _prefix));
+        database.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes, _queryEngine!, _prefix));
+        database.Register(new ToStringScalarFn(_queryEngine!, _prefix));
 
         var observer = Revisions.Select(r =>
         {
@@ -100,7 +103,7 @@ public sealed class Connection : IConnection
         
         foreach (var model in ServiceProvider.GetServices<ModelDefinition>())
         {
-            queryEngine.Connection.Register(new ModelTableFunction(this, model, observer, _prefix));
+            database.Register(new ModelTableFunction(this, model, observer, _prefix));
         }
     }
 
@@ -478,20 +481,10 @@ public sealed class Connection : IConnection
         tx.Set(new ScanUpdate(function));
         return await tx.Commit();
     }
-
-    public T Query<T>(string query) where T : class, new()
-    {
-        return _queryEngine!.Connection.Query<T>(query);
-    }
-
-    public IDisposable ObserveQuery<T>(string query, ref T results) where T : class, new()
-    {
-        return _queryEngine!.Connection.ObserveQuery(query, ref results);
-    }
-
+    
     public Task FlushQueries()
     {
-        return _queryEngine!.FlushQueries();
+        return _queryEngine!.Database.FlushQueries();
     }
 
     /// <inheritdoc />
@@ -602,7 +595,7 @@ public sealed class Connection : IConnection
     }
     
     private bool _isDisposed;
-    private readonly IQueryEngine? _queryEngine;
+    private readonly QueryEngine? _queryEngine;
 
     /// <inheritdoc />
     public void Dispose()
@@ -617,4 +610,6 @@ public sealed class Connection : IConnection
 
         _isDisposed = true;
     }
+
+    public Database DuckDBQueryEngine => _queryEngine!.Database;
 }

@@ -1,4 +1,5 @@
 using DynamicData;
+using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Query;
@@ -81,4 +82,6 @@ public class NullConnection : IConnection
     {
         // TODO release managed resources here
     }
+
+    public Database DuckDBQueryEngine => throw new NotSupportedException();
 }

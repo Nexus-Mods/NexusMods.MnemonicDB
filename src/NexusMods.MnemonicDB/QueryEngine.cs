@@ -19,7 +19,6 @@ public class QueryEngine : IQueryEngine, IDisposable
 {
     private readonly Registry _registry;
     private readonly Database _db;
-    private readonly HyperDuck.Connection _conn;
     private readonly IAttribute[] _declaredAttributes;
     private readonly Dictionary<string, IAttribute> _attrsByShortName;
     private readonly LogicalType _attrEnumLogicalType;
@@ -31,7 +30,6 @@ public class QueryEngine : IQueryEngine, IDisposable
         _registry = new Registry(services.GetServices<IResultAdaptorFactory>(),
             services.GetServices<IRowAdaptorFactory>(), services.GetServices<IValueAdaptorFactory>());
         _db = Database.OpenInMemory(_registry);
-        _conn = _db.Connect();
         _declaredAttributes = services.GetServices<IAttribute>().OrderBy(a => a.Id.Id).ToArray();
         _attrsByShortName = _declaredAttributes.ToDictionary(a => a.ShortName, a => a);
         _attrEnumLogicalType = LogicalType.CreateEnum(_declaredAttributes.Select(s => s.ShortName).ToArray());
@@ -66,10 +64,6 @@ public class QueryEngine : IQueryEngine, IDisposable
 
     public int AttrEnumWidth => _attrsByShortName.Count > 255 ? 2 : 1;
     
-    public Task FlushQueries()
-    {
-        return Connection.FlushAsync();
-    }
 
     public LogicalType ValueUnion => _valueUnion;
 
@@ -77,9 +71,8 @@ public class QueryEngine : IQueryEngine, IDisposable
     {
         _attrEnumLogicalType.Dispose();
         _db.Dispose();
-        _conn.Dispose();
     }
 
-    public HyperDuck.Connection Connection => _conn;
+    public HyperDuck.Database Database => _db;
     public LogicalType ValueTagEnum => _valueTagEnum;
 }

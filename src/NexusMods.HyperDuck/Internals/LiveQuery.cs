@@ -25,10 +25,9 @@ public class LiveQuery<T> : ILiveQuery
     
     public required ATableFunction[] DependsOn { get; init; }
     public required LiveQueryUpdater Updater { get; init; }
-    public required Connection Connection { get; init; }
-    public required PreparedStatement Statement { get; init; }
+    public required Database Database { get; init; }
+    public required CompiledQuery<T> Query { get; init; }
     public required T Output;
-    public required IResultAdaptor<T> ResultAdaptor { get; init; }
     private bool _isDisposed = false;
     
     public void Update()
@@ -47,8 +46,7 @@ public class LiveQuery<T> : ILiveQuery
         if (hash == _lastHash)
             return;
         
-        using var result = Statement.Execute();
-        ResultAdaptor.Adapt(result, ref Output);
+        Database.QueryInto(Query, ref Output);
         _lastHash = hash;
     }
 
@@ -57,6 +55,5 @@ public class LiveQuery<T> : ILiveQuery
     {
         _isDisposed = true;
         Updater.Remove(this);
-        Statement.Dispose();
     }
 }

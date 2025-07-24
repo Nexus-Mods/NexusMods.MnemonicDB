@@ -5,8 +5,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 
 public interface IQueryEngine
 {
-    public HyperDuck.Connection Connection { get; }
+    public HyperDuck.Database Database { get; }
     
     public LogicalType AttrEnum { get; }
-    Task FlushQueries();
 }

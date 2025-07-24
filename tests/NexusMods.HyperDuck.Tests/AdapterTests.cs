@@ -26,12 +26,13 @@ public class AdapterTests
     public async Task CanGetScalarResults()
     {
         using var db = Database.OpenInMemory(Registry);
-        using var con = db.Connect();
-        var result = con.Query<List<int>>("SELECT 1 AS one");
+        var queryOne = Query.Compile<List<int>>("SELECT 1 AS one");
+        var result = db.Query(queryOne);
 
         await Assert.That(result).IsEquivalentTo([1]);
 
-        var result2 = con.Query<List<long>>("SELECT * FROM generate_series(1, 10, 1)");
+        var querySeries = Query.Compile<List<long>>("SELECT * FROM generate_series(1, 10, 1)");
+        var result2 = db.Query(querySeries);
 
         await Assert.That(result2).IsEquivalentTo(Enumerable.Range(1, 10).Select(s => (long)s));
     }
@@ -40,8 +41,8 @@ public class AdapterTests
     public async Task CanGetTupleResults()
     {
         using var db = Database.OpenInMemory(Registry);
-        using var con = db.Connect();
-        var result = con.Query<List<(int, int)>>("SELECT 1 AS one, 2 AS two");
+        var queryTwoColumns = Query.Compile<List<(int, int)>>("SELECT 1 AS one, 2 AS two");
+        var result = db.Query(queryTwoColumns);
 
         await Assert.That(result).IsEquivalentTo([(1, 2)]);
     }
@@ -50,10 +51,8 @@ public class AdapterTests
     public async Task CanGetStringResults()
     {
         using var db = Database.OpenInMemory(Registry);
-        using var con = db.Connect();
-        var result =
-            con.Query<List<(string, string)>>(
-                "SELECT 'Hello' AS one, 'A really long string that cannot be inlined' AS two");
+        var queryTwoStrings = Query.Compile<List<(string, string)>>("SELECT 'Hello' AS one, 'A really long string that cannot be inlined' AS two");
+        var result = db.Query(queryTwoStrings);
 
         await Assert.That(result).IsEquivalentTo([("Hello", "A really long string that cannot be inlined")]);
     }
@@ -62,8 +61,8 @@ public class AdapterTests
     public async Task CanGetListResults()
     {
         using var db = Database.OpenInMemory(Registry);
-        using var con = db.Connect();
-        var result = con.Query<List<(List<int>, int)>>("SELECT [1, 2, 3] as lst, 42 as i");
+        var queryList = Query.Compile<List<(List<int>, int)>>("SELECT [1, 2, 3] as lst, 42 as i");
+        var result = db.Query(queryList);
 
         await Assert.That(result).IsEquivalentTo([(new List<int> { 1, 2, 3 }, 42)]);
 

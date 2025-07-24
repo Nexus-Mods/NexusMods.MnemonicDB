@@ -2,6 +2,8 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using JetBrains.Annotations;
+using NexusMods.HyperDuck.Adaptor;
+using NexusMods.HyperDuck.Adaptor.Impls;
 
 namespace NexusMods.HyperDuck;
 

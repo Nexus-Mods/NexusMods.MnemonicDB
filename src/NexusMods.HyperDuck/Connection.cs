@@ -14,17 +14,16 @@ using NexusMods.HyperDuck.Internals;
 
 namespace NexusMods.HyperDuck;
 
-public unsafe partial struct Connection : IDisposable
+public unsafe partial class Connection : IDisposable
 {
     internal void* _ptr;
     private readonly IRegistry _registry;
-    private readonly Lazy<LiveQueryUpdater> _liveQueryUpdater =  new(static () => new LiveQueryUpdater());
-    private readonly ConcurrentDictionary<string, ATableFunction> _tableFunctions = new();
-    private readonly TimeSpan _delay;
+    private readonly Database _db;
 
-    public Connection(IRegistry registry)
+    public Connection(IRegistry registry, Database db)
     {
         _registry = registry;
+        _db = db;
     }
     
     public void Interrupt()
@@ -45,30 +44,10 @@ public unsafe partial struct Connection : IDisposable
 
     public Task FlushAsync()
     {
-        return _liveQueryUpdater.Value.FlushAsync();
+        return _db.LiveQueryUpdater.Value.FlushAsync();
     }
 
-    public IDisposable ObserveQuery<T>(string query, ref T output)
-    {
-        var deps = GetReferencedFunctions(query);
-        var statement = Prepare(query);
-        using var initial = statement.Execute();
-        var adapter = _registry.GetAdaptor<T>(initial);
-        adapter.Adapt(initial, ref output);
 
-        var live = new Internals.LiveQuery<T>
-        {
-            DependsOn = deps.ToArray(),
-            Connection = this,
-            Statement = statement,
-            Output = output,
-            ResultAdaptor = adapter,
-            Updater = _liveQueryUpdater.Value
-        };
-
-        _liveQueryUpdater.Value.Add(live);
-        return live;
-    }
 
     private class LiveQuery<T>
     {
@@ -97,36 +76,7 @@ public unsafe partial struct Connection : IDisposable
         
         return new PreparedStatement(stmt, this);
     }
-
-    /// <summary>
-    /// Gets the JSON query plan for a specific query
-    /// </summary>
-    public HashSet<ATableFunction> GetReferencedFunctions(string query)
-    {
-        var result = Query<List<(string, string)>>("EXPLAIN (FORMAT JSON) " + query);
-
-        var plan = JsonSerializer.Deserialize<QueryPlanNode[]>(result.First().Item2)!;
-        
-        HashSet<ATableFunction> touchedFunctions = [];
-        foreach (var node in plan)
-        {
-            AnalyzeNode(node, touchedFunctions);
-        }
-        
-        return touchedFunctions;
-    }
     
-    private void AnalyzeNode(QueryPlanNode node, HashSet<ATableFunction> touchedFunctions)
-    {
-        if (node.ExtraInfo?.Function is { } functionName)
-        {
-            if (_tableFunctions.TryGetValue(functionName, out var function))
-                touchedFunctions.Add(function);
-        }
-        foreach (var child in node.Children)
-            AnalyzeNode(child, touchedFunctions);
-    }
-
     internal static partial class Native
     {
         [LibraryImport(GlobalConstants.LibraryName)]
@@ -154,8 +104,8 @@ public unsafe partial struct Connection : IDisposable
     {
         if (_ptr == null) return;
         
-        if (_liveQueryUpdater.IsValueCreated)
-            _liveQueryUpdater.Value.Dispose();
+        if (_db.LiveQueryUpdater.IsValueCreated)
+            _db.LiveQueryUpdater.Value.Dispose();
         
         Native.duckdb_disconnect(ref _ptr);
         _ptr = null;
@@ -169,6 +119,6 @@ public unsafe partial struct Connection : IDisposable
     public void Register(ATableFunction fn)
     {
         fn.Register(this);
-        _tableFunctions[fn.Name] = fn;
+        _db.TableFunctions[fn.Name] = fn;
     }
 }

@@ -25,9 +25,9 @@ public class ScalarFunctionTests
     public async Task BasicScalarFunctionTest()
     {
         using var db = Database.OpenInMemory(Registry);
-        using var con = db.Connect();
-        con.Register(new MultiplyFunction());
-        var cmd = con.Query<List<int>>("SELECT my_multiply(21, 2)");
+        db.Register(new MultiplyFunction());
+        var query = Query.Compile<List<int>>("SELECT my_multiply(21, 2)");
+        var cmd = db.Query(query);
         
         await Assert.That(cmd).IsEquivalentTo([42]);
     }

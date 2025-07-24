@@ -2,6 +2,7 @@
 using System.Buffers;
 using System.Threading.Tasks;
 using DynamicData;
+using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
@@ -13,7 +14,7 @@ using DatomChangeSet = ChangeSet<Datom, DatomKey, IDb>;
 /// <summary>
 ///     Represents a connection to a database.
 /// </summary>
-public interface IConnection : IDisposable
+public interface IConnection : IDisposable, IQueryMixin
 {
     /// <summary>
     ///     Gets the current database.
@@ -107,13 +108,4 @@ public interface IConnection : IDisposable
     /// defines what should be done with each datom.
     /// </summary>
     public Task<ICommitResult> ScanUpdate(ScanFunction function);
-
-    /// <summary>
-    /// Run an ad-hoc SQL query against the connection (using the most up-to-date version of the data)
-    /// </summary>
-    T Query<T>(string query) where T : class, new();
-    
-    IDisposable ObserveQuery<T>(string query, ref T results) where T : class, new();
-    
-    Task FlushQueries();
 }

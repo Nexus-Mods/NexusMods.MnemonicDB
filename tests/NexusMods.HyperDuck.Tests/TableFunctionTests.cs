@@ -24,9 +24,9 @@ public class TableFunctionTests
     public async Task CanGetTableResults()
     {
         using var db = Database.OpenInMemory(Registry);
-        using var con = db.Connect();
-        con.Register(new Squares());;
-        var result = con.Query<List<(int, int)>>("SELECT * FROM my_squares(0, 8, stride=>1)");
+        db.Register(new Squares());;
+        var querySmall = Query.Compile<List<(int, int)>>("SELECT * FROM my_squares(0, 8, stride => 1)");
+        var result = db.Query(querySmall);
         
         await Assert.That(result).IsEquivalentTo([
             (0, 0), 
@@ -39,7 +39,8 @@ public class TableFunctionTests
             (7, 49)
         ]);
         
-        var result2 = con.Query<List<(int, int)>>("SELECT * FROM my_squares(0, 8000, stride=>1)");
+        var queryLarge = Query.Compile<List<(int, int)>>("SELECT * FROM my_squares(0, 8000, stride=>1");
+        var result2 = db.Query(queryLarge);
         await Assert.That(result2).IsEquivalentTo(
             Enumerable.Range(0, 8000).Select(i => (i, i * i)));
     }
@@ -48,11 +49,12 @@ public class TableFunctionTests
     public async Task CanGetQueryPlanForTable()
     {
         using var db = Database.OpenInMemory(Registry);
-        using var con = db.Connect();
-        con.Register(new Squares());;
-        var plan = con.GetReferencedFunctions("SELECT i FROM my_squares(0, 8)");
+        var squares = new Squares();
+        db.Register(squares);
+        var plan = db.GetReferencedFunctions("SELECT i FROM my_squares(0, 8)").ToArray();
 
-        await Assert.That(plan).IsEquivalentTo(["MY_SQUARES"]);
+        await Assert.That(plan.Length).IsEqualTo(1);
+        await Assert.That(plan[0]).IsEqualTo(squares);
     }
 
     [Test]
@@ -61,22 +63,22 @@ public class TableFunctionTests
         var fn = new LiveArrayOfIntsTable();
         
         using var db = Database.OpenInMemory(Registry);
-        using var con = db.Connect();
-        con.Register(fn);
+        db.Register(fn);
 
         var data = new List<int>();
-        using var liveQuery = con.ObserveQuery("SELECT * FROM live_array_of_ints()", ref data);
+        var query = Query.Compile<List<int>>("SELECT * FROM live_array_of_ints()");
+        using var liveQuery = db.ObserveQuery(query, ref data);
 
         await Assert.That(data).IsEmpty();
         
         fn.Ints = Enumerable.Range(0, 8).ToArray();
 
-        await con.FlushAsync();
+        await db.FlushQueries();
         
         await Assert.That(data).IsEquivalentTo(Enumerable.Range(0, 8));
 
         fn.Ints = [];
-        await con.FlushAsync();
+        await db.FlushQueries();
 
         await Assert.That(data).IsEmpty();
 
