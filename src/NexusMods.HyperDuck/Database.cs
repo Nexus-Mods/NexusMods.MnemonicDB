@@ -95,7 +95,7 @@ public unsafe partial class Database : IDisposable
 
         while (_connections.TryTake(out var connection))
         {
-            connection.Dispose();
+            connection.Destory();
         }
         
         Native.duckdb_close(ref _ptr);

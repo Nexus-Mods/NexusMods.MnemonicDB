@@ -35,6 +35,11 @@ public class PooledConnection : IDisposable
         return stmt;
     }
 
+    internal void Destory()
+    {
+        _conn.Dispose();
+    }
+    
     public void Dispose()
     {
         _db.Return(this);
