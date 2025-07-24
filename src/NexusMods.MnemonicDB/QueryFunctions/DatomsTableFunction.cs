@@ -56,17 +56,19 @@ public class DatomsTableFunction : ATableFunction
 
     protected override void Execute(FunctionInfo functionInfo)
     {
-        var state = functionInfo.GetBindInfo<State>();
+        var state = functionInfo.GetBindInfo<LocalBindData>();
+        var localInitData = functionInfo.GetInitInfo<LocalInitData>();
         if (state.Mode == ScanMode.AllAttributes)
-            ExecuteAllAttributes(functionInfo, state);
+            ExecuteAllAttributes(functionInfo, state, localInitData);
         else
         {
-            ExecuteOneAttribute(functionInfo, state);
+            ExecuteOneAttribute(functionInfo, state, localInitData);
         }
     }
 
-    private void ExecuteOneAttribute(FunctionInfo functionInfo, State state)
+    private void ExecuteOneAttribute(FunctionInfo functionInfo, LocalBindData state, LocalInitData initData)
     {
+
         var chunk = functionInfo.Chunk;
         var eVec = functionInfo.GetWritableVector(0).GetData<ulong>();
         var vVec = functionInfo.GetWritableVector(1);
@@ -79,7 +81,7 @@ public class DatomsTableFunction : ATableFunction
         if (state.History)
             isRetract = functionInfo.GetWritableVector(3).GetData<byte>();
         
-        var iterator = state.Segment;
+        var iterator = initData.Segment;
         var row = 0;
         while (iterator.MoveNext())
         {
@@ -114,7 +116,7 @@ public class DatomsTableFunction : ATableFunction
         chunk.Size = (ulong)row;
     }
 
-    private void ExecuteAllAttributes(FunctionInfo functionInfo, State state)
+    private void ExecuteAllAttributes(FunctionInfo functionInfo, LocalBindData state, LocalInitData initData)
     {
         
         var chunk = functionInfo.Chunk;
@@ -125,7 +127,7 @@ public class DatomsTableFunction : ATableFunction
         var vTagVec = functionInfo.GetWritableVector(4).GetData<byte>();
         var historyVector = functionInfo.GetWritableVector(5).GetData<byte>();
 
-        var iterator = state.Segment;
+        var iterator = initData.Segment;
         int row = 0;
         int width = _queryEngine.AttrEnumWidth;
         while (iterator.MoveNext())
@@ -169,27 +171,25 @@ public class DatomsTableFunction : ATableFunction
             db = _conn.History();
         }
         
-        State state;
+        LocalBindData state;
         if (!aParam.IsNull)
         {
             var attrToFind = aParam.GetVarChar();
             if (!_attrsByShortName.TryGetValue(attrToFind, out var attr))
                 throw new Exception($"Attribute '{attrToFind}' not found");
 
-            state = new State
+            state = new LocalBindData
             {
                 Mode = ScanMode.SingleAttribute,
                 Attribute = attr,
-                Segment = db.LightweightDatoms(SliceDescriptor.Create(attr, _conn.AttributeCache))
             };
         }
         else
         {
-            state = new State
+            state = new LocalBindData
             {
                 Mode = ScanMode.AllAttributes,
-                Attribute = null,
-                Segment = db.LightweightDatoms(SliceDescriptor.AllEntities(PartitionId.Entity))
+                Attribute = null
             };
         }
         
@@ -214,17 +214,45 @@ public class DatomsTableFunction : ATableFunction
             info.AddColumn<bool>("IsRetract");
     }
 
+    protected override object? Init(InitInfo initInfo, InitData initData)
+    {
+        var bindData = initInfo.GetBindData<LocalBindData>();
+        var db = _conn.Db;
+        if (bindData.History)
+            db = _conn.History();
+        
+        if (bindData.Mode == ScanMode.SingleAttribute)
+        {
+            return new LocalInitData
+            {
+                Segment = db.LightweightDatoms(SliceDescriptor.Create(bindData.Attribute!, _conn.AttributeCache))
+            };
+        }
+        else
+        {
+            return new LocalInitData
+            {
+                Segment = db.LightweightDatoms(SliceDescriptor.AllEntities(PartitionId.Entity))
+            };
+        }
+        
+    }
+
     private enum ScanMode
     {
         SingleAttribute,
         AllAttributes,
     }
 
-    private class State
+    private class LocalBindData
     {
         public bool History = false;
         public required ScanMode Mode;
         public required IAttribute? Attribute;
+    }
+
+    private class LocalInitData
+    {
         public required ILightweightDatomSegment Segment;
     }
 }
