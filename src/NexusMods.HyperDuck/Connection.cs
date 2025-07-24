@@ -43,22 +43,21 @@ public unsafe partial struct Connection : IDisposable
         return result;
     }
 
+
     public Task FlushAsync()
     {
         return _liveQueryUpdater.Value.FlushAsync();
     }
 
-    public IDisposable ObserveQuery<T>(string query, ref T output)
+    public IDisposable ObserveQuery<T>(PreparedStatement statement, HashSet<ATableFunction> references, ref T output)
     {
-        var deps = GetReferencedFunctions(query);
-        var statement = Prepare(query);
         using var initial = statement.Execute();
         var adapter = _registry.GetAdaptor<T>(initial);
         adapter.Adapt(initial, ref output);
 
         var live = new Internals.LiveQuery<T>
         {
-            DependsOn = deps.ToArray(),
+            DependsOn = references.ToArray(),
             Connection = this,
             Statement = statement,
             Output = output,
@@ -68,6 +67,21 @@ public unsafe partial struct Connection : IDisposable
 
         _liveQueryUpdater.Value.Add(live);
         return live;
+    }
+    
+    public IDisposable ObserveQuery<T>(string query, ref T output)
+    {
+        var deps = GetReferencedFunctions(query);
+        var statement = Prepare(query);
+        return ObserveQuery(statement, deps, ref output);
+    }
+    
+    public IDisposable ObserveQuery<TArg1, TResult>(string query, TArg1 arg1, ref TResult output)
+    {
+        var deps = GetReferencedFunctions(query);
+        var statement = Prepare(query);
+        statement.Bind(1, arg1);
+        return ObserveQuery(statement, deps, ref output);
     }
 
     private class LiveQuery<T>
@@ -84,6 +98,17 @@ public unsafe partial struct Connection : IDisposable
         using var dbResults = stmt.Execute();
         var adapter = _registry.GetAdaptor<T>(dbResults);
         var result = new T();
+        adapter.Adapt(dbResults, ref result);
+        return result;
+    }
+    
+    public TReturn Query<TArg, TReturn>(string query, TArg arg1) where TReturn : class, new()
+    {
+        using var stmt = Prepare(query);
+        stmt.Bind(1, arg1);
+        using var dbResults = stmt.Execute();
+        var adapter = _registry.GetAdaptor<TReturn>(dbResults);
+        var result = new TReturn();
         adapter.Adapt(dbResults, ref result);
         return result;
     }
