@@ -72,8 +72,11 @@ public unsafe partial class Connection : IDisposable
     {
         void* stmt = default!;
         if (Native.duckdb_prepare(_ptr, query, ref stmt) != State.Success)
-            throw new QueryException("Cannot prepare statement.");
-        
+        {
+            var error = Marshal.PtrToStringUTF8((IntPtr)Native.duckdb_prepare_error(stmt));
+            throw new QueryException("Cannot prepare statement: " + error);
+        }
+
         return new PreparedStatement(stmt, this);
     }
     
@@ -98,6 +101,10 @@ public unsafe partial class Connection : IDisposable
         [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial State duckdb_prepare(void* connection, string query, ref void* statement);
+
+        [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial void* duckdb_prepare_error(void* statement);
     }
 
     public void Dispose()

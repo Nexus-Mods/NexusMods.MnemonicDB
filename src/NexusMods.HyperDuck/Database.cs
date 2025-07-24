@@ -124,9 +124,9 @@ public unsafe partial class Database : IDisposable
         adaptor.Adapt(result, ref returnValue);
     }
 
-    public async Task FlushQueries()
+    public Task FlushQueries()
     {
-        LiveQueryUpdater.Value.FlushAsync();
+        return LiveQueryUpdater.Value.FlushAsync();
     }
 
     internal void Return(PooledConnection pooledConnection)

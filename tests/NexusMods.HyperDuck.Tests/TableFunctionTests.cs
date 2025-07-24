@@ -39,7 +39,7 @@ public class TableFunctionTests
             (7, 49)
         ]);
         
-        var queryLarge = Query.Compile<List<(int, int)>>("SELECT * FROM my_squares(0, 8000, stride=>1");
+        var queryLarge = Query.Compile<List<(int, int)>>("SELECT * FROM my_squares(0, 8000, stride=>1)");
         var result2 = db.Query(queryLarge);
         await Assert.That(result2).IsEquivalentTo(
             Enumerable.Range(0, 8000).Select(i => (i, i * i)));
@@ -75,6 +75,7 @@ public class TableFunctionTests
 
         await db.FlushQueries();
         
+        await Assert.That(db.Query(query)).IsEquivalentTo(Enumerable.Range(0, 8));
         await Assert.That(data).IsEquivalentTo(Enumerable.Range(0, 8));
 
         fn.Ints = [];
@@ -88,8 +89,17 @@ public class TableFunctionTests
 
 public class LiveArrayOfIntsTable : ATableFunction
 {
-    public int[] Ints { get; set; } = [];
-    
+    private int[] _ints = [];
+    public int[] Ints
+    {
+        get => _ints;
+        set
+        {
+            _ints = value;
+            Revise();
+        }
+    }
+
     protected override void Setup(RegistrationInfo info)
     {
         info.SetName("live_array_of_ints");
