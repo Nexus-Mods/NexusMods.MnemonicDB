@@ -18,6 +18,18 @@ public unsafe partial struct PreparedStatement : IDisposable
         _connection = connection;
     }
 
+    public void Bind<T>(int idx, T value)
+    {
+        switch (value)
+        {
+            case ulong v:
+                Native.duckdb_bind_uint64(_ptr, idx, v);
+                break;
+            default:
+                throw new NotImplementedException("No way to bind {value.GetType().Name}");
+        }
+    }
+
     internal static partial class Native
     {
         [LibraryImport(GlobalConstants.LibraryName)]
@@ -27,6 +39,10 @@ public unsafe partial struct PreparedStatement : IDisposable
         [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial State duckdb_execute_prepared(void* stmt, ref Result result);
+        
+        [LibraryImport(GlobalConstants.LibraryName)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial void duckdb_bind_uint64(void* stmt, int idx, ulong val);
     }
 
     [MustDisposeResource]
