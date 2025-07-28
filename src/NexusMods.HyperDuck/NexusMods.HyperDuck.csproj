@@ -5,10 +5,10 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
     <ItemGroup>
-      <PackageReference Include="DuckDB.NET.Bindings.Full">
-          <IncludeAssets>all</IncludeAssets>
-          <PrivateAssets>none</PrivateAssets>
-      </PackageReference>
+        <PackageReference Include="DuckDB.NET.Bindings.Full">
+            <IncludeAssets>runtime; native; build; buildtransitive; contentfiles</IncludeAssets>
+            <PrivateAssets>compile</PrivateAssets>
+        </PackageReference>
       <PackageReference Include="JetBrains.Annotations" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
       <PackageReference Include="Microsoft.Extensions.Hosting" />
