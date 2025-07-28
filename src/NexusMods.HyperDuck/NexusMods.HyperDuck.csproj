@@ -27,6 +27,7 @@
         </None>
     </ItemGroup>
     <ItemGroup>
+      <PackageReference Include="DuckDB.NET.Bindings.Full" />
       <PackageReference Include="JetBrains.Annotations" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
       <PackageReference Include="Microsoft.Extensions.Hosting" />
