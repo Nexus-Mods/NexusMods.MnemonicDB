@@ -39,7 +39,10 @@
         </None>
     </ItemGroup>
     <ItemGroup>
-      <PackageReference Include="DuckDB.NET.Bindings.Full" />
+      <PackageReference Include="DuckDB.NET.Bindings.Full">
+          <IncludeAssets>all</IncludeAssets>
+          <PrivateAssets>none</PrivateAssets>
+      </PackageReference>
       <PackageReference Include="JetBrains.Annotations" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
       <PackageReference Include="Microsoft.Extensions.Hosting" />
