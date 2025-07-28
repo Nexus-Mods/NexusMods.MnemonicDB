@@ -9,17 +9,23 @@ public class Query
     {
         return new CompiledQuery<TResult>(query);
     }
+
+    public static CompiledQuery<TResult, TArg1> Compile<TResult, TArg1>(string query)
+    {
+        return new CompiledQuery<TResult, TArg1>(query);
+    }
 }
 
-public class CompiledQuery
+public abstract class ACompiledQuery
 {
     
 }
 
-public class CompiledQuery<TResult> : CompiledQuery
+public abstract class ACompiledQuery<TResult> : ACompiledQuery
 {
     private IResultAdaptor<TResult>? _resultAdaptor;
-    public CompiledQuery(string query)
+    
+    public ACompiledQuery(string query)
     {
         Sql = query;
     }
@@ -36,5 +42,20 @@ public class CompiledQuery<TResult> : CompiledQuery
     public override string ToString()
     {
         return $"CompiledQuery: {Sql}";
+    }
+}
+
+public class CompiledQuery<TResult> : ACompiledQuery<TResult>
+{
+    public CompiledQuery(string query) : base(query)
+    {
+    }
+}
+
+
+public class CompiledQuery<TResult, TArg1> : ACompiledQuery<TResult>
+{
+    public CompiledQuery(string query) : base(query)
+    {
     }
 }

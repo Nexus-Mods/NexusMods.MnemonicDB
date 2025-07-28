@@ -8,7 +8,7 @@ public class PooledConnection : IDisposable
 {
     private readonly Database _db;
     private readonly Connection _conn;
-    private ConcurrentDictionary<CompiledQuery, PreparedStatement> _preparedStatements = new();
+    private ConcurrentDictionary<ACompiledQuery, PreparedStatement> _preparedStatements = new();
 
     public PooledConnection(Connection connection, Database db)
     {
@@ -20,7 +20,7 @@ public class PooledConnection : IDisposable
     public Connection Connection => _conn;
 
 
-    internal PreparedStatement Prepare<TResult>(CompiledQuery<TResult> query)
+    internal PreparedStatement Prepare<TResult>(ACompiledQuery<TResult> query)
     {
         if (_preparedStatements.TryGetValue(query, out var prepared))
             return prepared;

@@ -22,6 +22,9 @@ public unsafe partial struct PreparedStatement : IDisposable
     {
         switch (value)
         {
+            case int i:
+                Native.duckdb_bind_int32(_ptr, idx, i);
+                break;
             case ulong v:
                 Native.duckdb_bind_uint64(_ptr, idx, v);
                 break;
@@ -39,6 +42,10 @@ public unsafe partial struct PreparedStatement : IDisposable
         [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial State duckdb_execute_prepared(void* stmt, ref Result result);
+        
+        [LibraryImport(GlobalConstants.LibraryName)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial void duckdb_bind_int32(void* stmt, int idx, int val);
         
         [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]

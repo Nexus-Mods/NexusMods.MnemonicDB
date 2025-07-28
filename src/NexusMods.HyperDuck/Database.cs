@@ -123,6 +123,29 @@ public unsafe partial class Database : IDisposable
         var adaptor = query.Adaptor(result, Registry);
         adaptor.Adapt(result, ref returnValue);
     }
+    
+    /// <summary>
+    /// Executes the query and returns the result, adapting it to the given return type. 
+    /// </summary>
+    public TResult Query<TResult, TArg1>(CompiledQuery<TResult, TArg1> query, TArg1 arg1) where TResult : new()
+    {
+        var returnValue = new TResult();
+        QueryInto(query, arg1, ref returnValue);
+        return returnValue;
+    }
+    
+    /// <summary>
+    /// Same as Query, except the results are adapted into a provided preexisting result value
+    /// </summary>
+    public void QueryInto<TResult, TArg1>(CompiledQuery<TResult, TArg1> query, TArg1 arg1, ref TResult returnValue)
+    {
+        using var conn = Connect();
+        var prepared = conn.Prepare(query);
+        prepared.Bind(1, arg1);
+        using var result = prepared.Execute();
+        var adaptor = query.Adaptor(result, Registry);
+        adaptor.Adapt(result, ref returnValue);
+    }
 
     public Task FlushQueries()
     {

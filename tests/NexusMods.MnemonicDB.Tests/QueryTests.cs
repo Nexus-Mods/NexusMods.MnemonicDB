@@ -156,4 +156,14 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var modsWithoutDescription = Connection.Query(modsWithoutDescriptionQuery);
         await Assert.That(modsWithoutDescription).HasCount(2);
     }
+
+    [Test]
+    public async Task CanSendParametersToQuery()
+    {
+        var query = Query.Compile<List<int>, int>("SELECT $1");
+        var result = Connection.Query(query, 42);
+
+        await Assert.That(result.First()).IsEqualTo(42);
+
+    }
 }
