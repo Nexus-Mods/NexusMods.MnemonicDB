@@ -235,7 +235,7 @@ public sealed partial class DatomStore : IDatomStore
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError(ex, "While commiting transaction");
+                    //Logger.LogError(ex, "While commiting transaction");
                     txFn.SetException(ex);
                 }
             }
