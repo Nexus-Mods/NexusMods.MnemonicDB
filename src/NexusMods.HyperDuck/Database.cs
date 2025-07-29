@@ -24,6 +24,11 @@ public unsafe partial class Database : IDisposable
     internal readonly ConcurrentDictionary<string, ATableFunction> TableFunctions = new();
     private readonly TimeSpan _delay;
 
+    static Database()
+    {
+        using var v = new DuckDB.NET.Data.DuckDBConnection();
+    }
+    
     public Database(IRegistry registry)
     {
         _registry = registry;

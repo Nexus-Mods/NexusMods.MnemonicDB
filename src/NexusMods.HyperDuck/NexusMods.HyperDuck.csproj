@@ -9,6 +9,7 @@
             <IncludeAssets>runtime; native; build; buildtransitive; contentfiles</IncludeAssets>
             <PrivateAssets>compile</PrivateAssets>
         </PackageReference>
+        <PackageReference Include="DuckDB.NET.Data.Full" />
       <PackageReference Include="JetBrains.Annotations" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
       <PackageReference Include="Microsoft.Extensions.Hosting" />
