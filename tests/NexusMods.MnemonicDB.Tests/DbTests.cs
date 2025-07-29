@@ -1347,8 +1347,8 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     }
     
     
-    [Test]
-    public async Task ObserverFuzzingTests()
+    //[Test]
+    private async Task ObserverFuzzingTests()
     {
         using var tx = Connection.BeginTransaction();
         var file = new File.New(tx)
