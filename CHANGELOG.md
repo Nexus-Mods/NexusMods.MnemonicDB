@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.19.0 - 
+* Switch to DuckDB as the query engine
+
 ### 0.18.0 - 2025-06-24
 * Add `HasAttribute` and `MissingAttribute` operators for matching entities based on the presence or absence of attributes
 
