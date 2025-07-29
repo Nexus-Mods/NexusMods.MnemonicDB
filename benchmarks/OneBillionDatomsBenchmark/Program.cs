@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -8,6 +9,9 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Hashing.xxHash3;
 using NexusMods.Paths;
+
+if (Environment.GetCommandLineArgs().First() != "RUN")
+    return 0;
 
 var host = Host.CreateDefaultBuilder()
     .ConfigureServices(s =>
@@ -78,3 +82,5 @@ for (ulong i = 0; i < batches; i++)
 
 Console.WriteLine(
     $"Elapsed: {globalSw.ElapsedMilliseconds}ms - Datoms per second: {datomCount / globalSw.Elapsed.TotalSeconds}");
+
+return 0;
