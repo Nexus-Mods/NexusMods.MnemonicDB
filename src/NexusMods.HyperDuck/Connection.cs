@@ -111,9 +111,6 @@ public unsafe partial class Connection : IDisposable
     {
         if (_ptr == null) return;
         
-        if (_db.LiveQueryUpdater.IsValueCreated)
-            _db.LiveQueryUpdater.Value.Dispose();
-        
         Native.duckdb_disconnect(ref _ptr);
         _ptr = null;
     }
