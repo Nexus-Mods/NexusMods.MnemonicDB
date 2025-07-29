@@ -93,26 +93,15 @@ public unsafe partial class Database : IDisposable
             return;
         }
         
+        if (LiveQueryUpdater.IsValueCreated)
+            LiveQueryUpdater.Value.Dispose();
+        
         while (_connections.TryTake(out var connection))
         {
-            try
-            {
-                connection.Destory();
-            }
-            catch (Exception)
-            {
-                // Do nothing
-            }
+            connection.Destory();
         }
 
-        try
-        {
-            Native.duckdb_close(ref _ptr);
-        }
-        catch (Exception)
-        {
-            // Do nothing
-        }
+        Native.duckdb_close(ref _ptr);
 
         _ptr = null;
     }
