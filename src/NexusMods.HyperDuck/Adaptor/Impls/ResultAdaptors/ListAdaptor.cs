@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using Microsoft.Win32;
 
 namespace NexusMods.HyperDuck.Adaptor.Impls.ResultAdaptors;
@@ -13,7 +14,7 @@ public class ListAdaptor<TResult, TRowType, TRowAdaptor> : IResultAdaptor<TResul
     {
         var columnCount = result.ColumnCount;
         Span<ReadOnlyVector> vectors = stackalloc ReadOnlyVector[(int)columnCount];
-
+        
         int totalRows = 0;
         while (true)
         {

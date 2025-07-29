@@ -42,6 +42,8 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         await Connection.FlushQueries();
         
+        var also = Connection.Query(historyQuery);
+        
         table.Add(results, "After Updates Query");
         table.Add(historyResults, "After Updates History");
         

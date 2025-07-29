@@ -265,9 +265,9 @@ public class ModelTableFunction : ATableFunction
     protected override object? Init(InitInfo initInfo, InitData initData)
     {
         var bindInfo = initInfo.GetBindData<BindData>();
-        IDb db = _conn.Db;
+        var db = _conn.Db;
         if (bindInfo.AsOf.HasValue)
-            db = db.Connection.AsOf(bindInfo.AsOf.Value);;
+            db = db.Connection.AsOf(bindInfo.AsOf.Value);
             
         // Load all the Ids here so we can load the rows in parallel.
         var totalRows = db.IdsForPrimaryAttribute(bindInfo.PrimaryAttributeId, (int)GlobalConstants.DefaultVectorSize, out var chunks);

@@ -52,6 +52,11 @@ public class LiveQueryUpdater : IDisposable
         {
             liveQuery.Update();
         }
+        // The adaptor will mutate the collections it targets, which may
+        // be on other threads or have parts of their data cached in various
+        // processor cores. So this MemoryBarrier will flush the data written
+        // out of those caches. 
+        Thread.MemoryBarrier();
         foreach (var flush in flushes)
             flush.SetResult();
     }

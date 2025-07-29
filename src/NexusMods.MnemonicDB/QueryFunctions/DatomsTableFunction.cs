@@ -165,11 +165,6 @@ public class DatomsTableFunction : ATableFunction
         var aParam = info.GetParameter("A");
         var historyParam = info.GetParameter("History");
         var history = !historyParam.IsNull && historyParam.GetBool();
-        IDb db = _conn.Db;
-        if (history)
-        {
-            db = _conn.History();
-        }
         
         LocalBindData state;
         if (!aParam.IsNull)
