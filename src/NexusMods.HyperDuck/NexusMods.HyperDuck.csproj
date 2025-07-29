@@ -5,11 +5,6 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
     <ItemGroup>
-        <PackageReference Include="DuckDB.NET.Bindings.Full">
-            <IncludeAssets>runtime; native; build; buildtransitive; contentfiles</IncludeAssets>
-            <PrivateAssets>compile</PrivateAssets>
-        </PackageReference>
-        <PackageReference Include="DuckDB.NET.Data.Full" />
       <PackageReference Include="JetBrains.Annotations" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
       <PackageReference Include="Microsoft.Extensions.Hosting" />
@@ -20,6 +15,17 @@
       <PackageReference Include="NexusMods.Hashing.xxHash3" />
       <PackageReference Include="NexusMods.Paths" />
       <PackageReference Include="R3" />
+    </ItemGroup>
+    <ItemGroup>
+      <None Update="runtimes\linux-x64\native\libduckdb.so">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+        <None Update="runtimes\osx-arm64\native\libduckdb.dylib">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="runtimes\osx-win64\native\duckdb.dll">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
     </ItemGroup>
 
 
