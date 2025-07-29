@@ -38,8 +38,17 @@ jobs:
   
       - name: Install dependencies
         run: dotnet restore
-  
-      - name: Test
-        run: dotnet test --no-restore --logger "GitHubActions"
+
+      - name: Test HyperDuck
+        run: dotnet run --no-restore --project test/NexusMods.HyperDuck.Tests
+
+      - name: Test SourceGenerator
+        run: dotnet run --no-restore --project test/NexusMods.MnemonicDB.SourceGenerator.Tests
+
+      - name: Test Storage
+        run: dotnet run --no-restore --project test/NexusMods.MnemonicDB.Storage.Tests
+
+      - name: Test MnemonicDB
+        run: dotnet run --no-restore --project test/NexusMods.MnemonicDB.Tests
         
         
