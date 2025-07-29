@@ -5,6 +5,7 @@ using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
+using ObservableCollections;
 using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
@@ -19,11 +20,11 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var table = TableResults();
         await InsertExampleData();
 
-        var resultsQuery = Query.Compile<List<(RelativePath, Hash, long)>>("SELECT Path, Hash, COUNT(*) FROM mdb_File() GROUP BY Path, Hash ORDER BY Path, Hash");
-        var historyQuery = Query.Compile<List<(TxId, long)>>("SELECT T, COUNT(E) FROM mdb_Datoms(A:= 'File/Hash', History:=true) WHERE IsRetract = false GROUP BY T ORDER BY T");
+        var resultsQuery = Query.Compile<ObservableList<(RelativePath, Hash, long)>>("SELECT Path, Hash, COUNT(*) FROM mdb_File() GROUP BY Path, Hash ORDER BY Path, Hash");
+        var historyQuery = Query.Compile<ObservableList<(TxId, long)>>("SELECT T, COUNT(E) FROM mdb_Datoms(A:= 'File/Hash', History:=true) WHERE IsRetract = false GROUP BY T ORDER BY T");
         
-        var results = new List<(RelativePath, Hash, long)>();
-        var historyResults = new List<(TxId, long)>();
+        var results = new ObservableList<(RelativePath, Hash, long)>();
+        var historyResults = new ObservableList<(TxId, long)>();
         
         using var _ = Connection.ObserveInto(resultsQuery, ref results);
         using var _2 = Connection.ObserveInto(historyQuery, ref historyResults);
@@ -41,9 +42,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await tx.Commit();
 
         await Connection.FlushQueries();
-        
-        var also = Connection.Query(historyQuery);
-        
+
         table.Add(results, "After Updates Query");
         table.Add(historyResults, "After Updates History");
         
