@@ -37,7 +37,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.MnemonicDB.Benchm
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.MnemonicDB.Storage.Tests", "tests\NexusMods.MnemonicDB.Storage.Tests\NexusMods.MnemonicDB.Storage.Tests.csproj", "{33A3DA79-D3FD-46DC-8D14-82E23D5B608D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneBillionDatomsTest", "benchmarks\OneBillionDatomsTest\OneBillionDatomsTest.csproj", "{EA397BAE-9726-486F-BC9B-87BD86DF157F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OneBillionDatomsBenchmark", "benchmarks\OneBillionDatomsBenchmark\OneBillionDatomsBenchmark.csproj", "{EA397BAE-9726-486F-BC9B-87BD86DF157F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NexusMods.MnemonicDB.SourceGenerator", "src\NexusMods.MnemonicDB.SourceGenerator\NexusMods.MnemonicDB.SourceGenerator.csproj", "{0EE4BFCE-9E72-4BCC-B179-416E16136A1E}"
 EndProject
