@@ -37,7 +37,7 @@ jobs:
         run: dotnet --info
   
       - name: Install dependencies
-        run: dotnet restore ${{ inputs.project-file }}
+        run: dotnet restore
   
       - name: Test
         env:
