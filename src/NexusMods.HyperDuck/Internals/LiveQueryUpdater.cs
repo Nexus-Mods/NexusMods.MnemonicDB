@@ -63,7 +63,7 @@ public class LiveQueryUpdater : IDisposable
 
     public void Dispose()
     {
-        _cancelationToken.Dispose();
+        _cancelationToken.Cancel();
     }
 
     public void Remove(ILiveQuery liveQuery)
