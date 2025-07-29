@@ -187,8 +187,7 @@ public class DatomsTableFunction : ATableFunction
                 Attribute = null
             };
         }
-        
-        info.SetBindInfo(state);
+
         if (state.Mode == ScanMode.SingleAttribute)
         {
             info.AddColumn<ulong>("E");
@@ -207,6 +206,7 @@ public class DatomsTableFunction : ATableFunction
         state.History = history;
         if (history)
             info.AddColumn<bool>("IsRetract");
+        info.SetBindInfo(state);
     }
 
     protected override object? Init(InitInfo initInfo, InitData initData)

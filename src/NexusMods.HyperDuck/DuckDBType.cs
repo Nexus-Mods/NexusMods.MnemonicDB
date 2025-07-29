@@ -1,4 +1,6 @@
-﻿namespace NexusMods.HyperDuck;
+﻿using System;
+
+namespace NexusMods.HyperDuck;
 
 public enum DuckDbType : ulong
 {
@@ -79,4 +81,28 @@ public enum DuckDbType : ulong
 	StringLiteral = 37,
 	// enum type, only useful as logical type
 	IntegerLiteral = 38,
+}
+
+
+public static class DuckDbTypeExtensions
+{
+    public static Type ElementType(this DuckDbType type)
+    {
+        return type switch
+        {
+            DuckDbType.TinyInt => typeof(sbyte),
+            DuckDbType.SmallInt => typeof(short),
+            DuckDbType.Integer => typeof(int),
+            DuckDbType.BigInt => typeof(long),
+            DuckDbType.Hugeint => typeof(Int128),
+            DuckDbType.UTinyInt => typeof(byte),
+            DuckDbType.USmallInt => typeof(ushort),
+            DuckDbType.UBigInt => typeof(ulong),
+            DuckDbType.Uhugeint => typeof(UInt128),
+            DuckDbType.Float => typeof(float),
+            DuckDbType.Double => typeof(double),
+            DuckDbType.Varchar => typeof(StringElement),
+            _ => throw new NotSupportedException("Element type not supported for type: " + type)
+        };
+    }
 }

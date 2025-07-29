@@ -31,7 +31,7 @@ public class ListAdaptor<TResult, TRowType, TRowAdaptor> : IResultAdaptor<TResul
             {
                 if (totalRows < listSize)
                 {
-                    var current = value[0];
+                    var current = value[totalRows];
                     TRowAdaptor.Adapt(cursor, ref current);
                     value[totalRows] = current!;
                 }

@@ -1,4 +1,5 @@
 using System;
+using TransparentValueObjects;
 
 namespace NexusMods.HyperDuck.Adaptor.Impls.ValueAdaptor;
 
@@ -50,13 +51,20 @@ public class UnmanagedValueAdaptorFactory : IValueAdaptorFactory
             default:
                 return false;
         }
+        
+        var elementType = taggedType.ElementType();
+        if (!elementType.IsAssignableTo(type) && !type.IsAssignableTo(typeof(IValueObject<>).MakeGenericType(elementType)))
+            return false;
+        
         return true;
     }
+    
 
-    public Type CreateType(DuckDbType taggedType, LogicalType logicalType, Type resultTypes, Type[] subTypes, Type[] subAdaptors)
+    public Type CreateType(DuckDbType taggedType, LogicalType logicalType, Type resultType, Type[] subTypes, Type[] subAdaptors)
     {
-        if (resultTypes == typeof(bool))
+        if (resultType == typeof(bool))
             return typeof(BoolAdaptor);
-        return typeof(UnmanagedValueAdaptor<>).MakeGenericType(resultTypes);
+        
+        return typeof(UnmanagedValueAdaptor<>).MakeGenericType(resultType);
     }
 }

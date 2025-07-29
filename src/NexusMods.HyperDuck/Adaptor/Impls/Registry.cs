@@ -105,7 +105,7 @@ public class Registry : IRegistry
         }
         
         if (bestFactory == null)
-            throw new InvalidOperationException("No value adaptor found for {" + innerType.FullName + "}");
+            throw new InvalidOperationException("No value adaptor found for {" + innerType.FullName + "} from DuckDB type {" + logicalType.TypeId + "}");
         
         var subAdaptors = new Type[innerTypes.Length];
         for (int idx = 0; idx < innerTypes.Length; idx++)

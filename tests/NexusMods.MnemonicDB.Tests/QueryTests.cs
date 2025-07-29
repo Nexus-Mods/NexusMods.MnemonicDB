@@ -19,11 +19,11 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var table = TableResults();
         await InsertExampleData();
 
-        var resultsQuery = Query.Compile<List<(RelativePath, Hash, int)>>("SELECT Path, Hash, COUNT(*) FROM mdb_File() GROUP BY Path, Hash ORDER BY Path, Hash");
-        var historyQuery = Query.Compile<List<(TxId, int)>>("SELECT T, COUNT(E) FROM mdb_Datoms(A:= 'File/Hash', History:=true) WHERE IsRetract = false GROUP BY T ORDER BY T");
+        var resultsQuery = Query.Compile<List<(RelativePath, Hash, long)>>("SELECT Path, Hash, COUNT(*) FROM mdb_File() GROUP BY Path, Hash ORDER BY Path, Hash");
+        var historyQuery = Query.Compile<List<(TxId, long)>>("SELECT T, COUNT(E) FROM mdb_Datoms(A:= 'File/Hash', History:=true) WHERE IsRetract = false GROUP BY T ORDER BY T");
         
-        var results = new List<(RelativePath, Hash, int)>();
-        var historyResults = new List<(TxId, int)>();
+        var results = new List<(RelativePath, Hash, long)>();
+        var historyResults = new List<(TxId, long)>();
         
         using var _ = Connection.ObserveInto(resultsQuery, ref results);
         using var _2 = Connection.ObserveInto(historyQuery, ref historyResults);
@@ -90,8 +90,8 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var tableResults = TableResults();
         await InsertExampleData();
         
-        var results = new List<(EntityId, TxId, int)>();
-        var query = Query.Compile<List<(EntityId, TxId, int)>>("""
+        var results = new List<(EntityId, TxId, long)>();
+        var query = Query.Compile<List<(EntityId, TxId, long)>>("""
                                                                SELECT ents.Loadout, max(d.T), count(d.E) FROM 
                                                                (SELECT Id, Id as Loadout FROM mdb_Loadout() 
                                                                 UNION SELECT Id, Loadout FROM mdb_Mod()
