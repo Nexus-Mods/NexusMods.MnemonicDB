@@ -271,6 +271,7 @@ public class AMnemonicDBTest : IDisposable
     {
         Connection.Dispose();
         _store.Dispose();
+        _backend.Dispose();
     }
 
 

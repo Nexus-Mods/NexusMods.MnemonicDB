@@ -81,7 +81,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
 
         var loadoutRO = result.Remap(loadout);
 
-        await Assert.That(loadoutRO.Mods.Count).IsEqualTo(modCount, "all mods should be loaded");
+        await Assert.That(loadoutRO.Mods.Count).IsEqualTo(modCount).Because("all mods should be loaded");
 
         await Assert.That(loadoutRO.Collections.Count).IsEqualTo(2).Because("all collections should be loaded");
 

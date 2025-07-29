@@ -75,6 +75,8 @@ public abstract class AStorageTest : IDisposable
 
     public void Dispose()
     {
+        DatomStore.Dispose();
+        Backend.Dispose();
     }
 
     public EntityId NextTempId()
