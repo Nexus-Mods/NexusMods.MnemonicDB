@@ -42,7 +42,7 @@ jobs:
       - name: Test
         env:
           # https://github.com/microsoft/vstest/issues/2952#issuecomment-2234253765
-          VSTEST_TESTHOST_SHUTDOWN_TIMEOUT: 60000 #ms
+          VSTEST_TESTHOST_SHUTDOWN_TIMEOUT: 120000 #ms
         run: dotnet test --no-restore --logger "GitHubActions"
         
         
