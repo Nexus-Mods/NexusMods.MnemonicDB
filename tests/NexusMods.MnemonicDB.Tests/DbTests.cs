@@ -667,7 +667,6 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         }
 
         var sw = Stopwatch.StartNew();
-        Logger.LogInformation("BEEEEE");
         await tx.Commit();
 
         var allLoadouts = Loadout.All(Connection.Db).Count;

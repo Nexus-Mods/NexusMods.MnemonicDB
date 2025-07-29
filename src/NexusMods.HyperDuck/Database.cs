@@ -92,13 +92,28 @@ public unsafe partial class Database : IDisposable
         {
             return;
         }
-
+        
         while (_connections.TryTake(out var connection))
         {
-            connection.Destory();
+            try
+            {
+                connection.Destory();
+            }
+            catch (Exception)
+            {
+                // Do nothing
+            }
         }
-        
-        Native.duckdb_close(ref _ptr);
+
+        try
+        {
+            Native.duckdb_close(ref _ptr);
+        }
+        catch (Exception)
+        {
+            // Do nothing
+        }
+
         _ptr = null;
     }
     
