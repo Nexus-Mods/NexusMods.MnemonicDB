@@ -14,6 +14,7 @@
       <PackageReference Include="Microsoft.Extensions.ObjectPool" />
       <PackageReference Include="NexusMods.Hashing.xxHash3" />
       <PackageReference Include="NexusMods.Paths" />
+      <PackageReference Include="ObservableCollections" />
       <PackageReference Include="R3" />
     </ItemGroup>
     <ItemGroup>

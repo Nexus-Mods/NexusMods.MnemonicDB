@@ -19,6 +19,7 @@ public static class Services
         s.AddSingleton<IValueAdaptorFactory, StringAdaptorFactory>();
         s.AddSingleton<IValueAdaptorFactory, RelativePathAdaptorFactory>();
         s.AddSingleton<IValueAdaptorFactory, ListValueAdaptorFactory>();
+        s.AddSingleton<IResultAdaptorFactory, ObservableListAdaptorFactory>();
         return s;
     }
 }
