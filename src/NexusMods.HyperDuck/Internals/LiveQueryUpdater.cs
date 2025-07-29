@@ -64,6 +64,10 @@ public class LiveQueryUpdater : IDisposable
     public void Dispose()
     {
         _cancelationToken.Cancel();
+        _thread?.Join();
+        _thread = null;
+        _liveQueries.Clear();
+        _pendingFlushes = ImmutableStack<TaskCompletionSource>.Empty;
     }
 
     public void Remove(ILiveQuery liveQuery)
