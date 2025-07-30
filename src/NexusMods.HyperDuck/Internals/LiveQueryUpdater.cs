@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NexusMods.HyperDuck.Internals;
 
-public class LiveQueryUpdater : IDisposable
+public class LiveQueryUpdater : IAsyncDisposable
 {
     private readonly TimeSpan _delay;
     private readonly CancellationTokenSource _cancelationToken;
@@ -31,10 +31,17 @@ public class LiveQueryUpdater : IDisposable
     {
         _task = Task.Run(async () =>
         {
-            while (!_cancelationToken.IsCancellationRequested)
+            try
             {
-                Pulse();
-                await Task.Delay(_delay, _cancelationToken.Token);
+                while (!_cancelationToken.IsCancellationRequested)
+                {
+                    Pulse();
+                    await Task.Delay(_delay, _cancelationToken.Token);
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                // Do Nothing, this is normal
             }
         });
     }
@@ -55,16 +62,15 @@ public class LiveQueryUpdater : IDisposable
             flush.SetResult();
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        // What happens if we never clean up?
-        /*
-        _cancelationToken.Cancel();
-        _task?.Wait();
+        if (_task == null) 
+            return;
+        await _cancelationToken.CancelAsync(); 
+        await _task;
         _task = null;
         _liveQueries.Clear();
         _pendingFlushes = ImmutableStack<TaskCompletionSource>.Empty;
-        */
     }
 
     public void Remove(ILiveQuery liveQuery)

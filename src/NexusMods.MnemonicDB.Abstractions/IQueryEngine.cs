@@ -5,7 +5,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 
 public interface IQueryEngine
 {
-    public HyperDuck.Database Database { get; }
+    public HyperDuck.DuckDB DuckDb { get; }
     
     public LogicalType AttrEnum { get; }
 }

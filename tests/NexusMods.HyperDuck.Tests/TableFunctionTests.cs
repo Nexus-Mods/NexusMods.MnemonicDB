@@ -23,7 +23,7 @@ public class TableFunctionTests
     [Test]
     public async Task CanGetTableResults()
     {
-        using var db = Database.OpenInMemory(Registry);
+        await using var db = DuckDB.Open(Registry);
         db.Register(new Squares());;
         var querySmall = Query.Compile<List<(int, int)>>("SELECT * FROM my_squares(0, 8, stride => 1)");
         var result = db.Query(querySmall);
@@ -48,7 +48,7 @@ public class TableFunctionTests
     [Test]
     public async Task CanGetQueryPlanForTable()
     {
-        using var db = Database.OpenInMemory(Registry);
+        await using var db = DuckDB.Open(Registry);
         var squares = new Squares();
         db.Register(squares);
         var plan = db.GetReferencedFunctions("SELECT i FROM my_squares(0, 8)").ToArray();
@@ -62,7 +62,7 @@ public class TableFunctionTests
     {
         var fn = new LiveArrayOfIntsTable();
         
-        using var db = Database.OpenInMemory(Registry);
+        await using var db = DuckDB.Open(Registry);
         db.Register(fn);
 
         var data = new List<int>();

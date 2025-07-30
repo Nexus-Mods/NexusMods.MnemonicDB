@@ -10,7 +10,7 @@ namespace NexusMods.HyperDuck;
 /// </summary>
 public interface IQueryMixin
 {
-    public Database DuckDBQueryEngine { get; }
+    public DuckDB DuckDBQueryEngine { get; }
 
     public TResult Query<TResult>(CompiledQuery<TResult> query) where TResult : new() 
         => DuckDBQueryEngine.Query(query);

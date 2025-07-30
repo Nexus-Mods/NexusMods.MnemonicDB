@@ -17,13 +17,10 @@ namespace NexusMods.HyperDuck;
 public unsafe partial class Connection : IDisposable
 {
     internal void* _ptr;
-    private readonly IRegistry _registry;
-    private readonly Database _db;
 
-    public Connection(IRegistry registry, Database db)
+    public Connection(void *ptr)
     {
-        _registry = registry;
-        _db = db;
+        _ptr = ptr;
     }
     
     public void Interrupt()
@@ -41,32 +38,7 @@ public unsafe partial class Connection : IDisposable
             throw new QueryException(Marshal.PtrToStringUTF8((IntPtr)Native.duckdb_result_error(ref result)) ?? "Unknown error");
         return result;
     }
-
-    public Task FlushAsync()
-    {
-        return _db.LiveQueryUpdater.Value.FlushAsync();
-    }
-
-
-
-    private class LiveQuery<T>
-    {
-        public required HashSet<string> Functions { get; set; }
-        public required string Query { get; set; }
-        public required T Output { get; set; }
-    }
-
     
-    public T Query<T>(string query) where T : class, new()
-    {
-        using var stmt = Prepare(query);
-        using var dbResults = stmt.Execute();
-        var adapter = _registry.GetAdaptor<T>(dbResults);
-        var result = new T();
-        adapter.Adapt(dbResults, ref result);
-        return result;
-    }
-
     [MustDisposeResource]
     public PreparedStatement Prepare(string query)
     {
@@ -113,16 +85,5 @@ public unsafe partial class Connection : IDisposable
         
         Native.duckdb_disconnect(ref _ptr);
         _ptr = null;
-    }
-
-    public void Register(AScalarFunction fn)
-    {
-        fn.Register(this);
-    }
-
-    public void Register(ATableFunction fn)
-    {
-        fn.Register(this);
-        _db.TableFunctions[fn.Name] = fn;
     }
 }
