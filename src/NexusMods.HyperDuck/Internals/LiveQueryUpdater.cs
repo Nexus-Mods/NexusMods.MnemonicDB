@@ -29,7 +29,7 @@ public class LiveQueryUpdater : IDisposable
     
     public void StartUpdater()
     {
-        _thread = Task.Run(async () =>
+        _task = Task.Run(async () =>
         {
             while (!_cancelationToken.IsCancellationRequested)
             {
@@ -58,15 +58,15 @@ public class LiveQueryUpdater : IDisposable
     public void Dispose()
     {
         _cancelationToken.Cancel();
-        _thread?.Wait();
-        _thread = null;
+        _task?.Wait();
+        _task = null;
         _liveQueries.Clear();
         _pendingFlushes = ImmutableStack<TaskCompletionSource>.Empty;
     }
 
     public void Remove(ILiveQuery liveQuery)
     {
-        _liveQueries.TryRemove(liveQuery.Id, out _task);
+        _liveQueries.TryRemove(liveQuery.Id, out _);
     }
 
     public Task FlushAsync()
