@@ -214,7 +214,8 @@ public class ModelTableFunction : ATableFunction
 
     private void WriteVarCharColumn(ReadOnlySpan<EntityId> ids, WritableVector vector, ILightweightDatomSegment datoms)
     {
-        WritableValidityMask mask = vector.GetValidityMask();
+        var mask = vector.GetValidityMask();
+        mask.SetAllValid();
         for (var rowIdx = 0; rowIdx < ids.Length; rowIdx++)
         {
             var rowId = ids[rowIdx];
