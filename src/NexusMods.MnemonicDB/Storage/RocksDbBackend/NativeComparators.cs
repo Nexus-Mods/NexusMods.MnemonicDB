@@ -15,13 +15,16 @@ internal static unsafe class NativeComparators
 {
     public static IntPtr GetNativeFnPtr()
     {
-        var name = nameof(GlobalCompare);
-        return typeof(NativeComparators).GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic)!.MethodHandle.GetFunctionPointer();
+        delegate* unmanaged[Cdecl]<byte*, byte*, int, byte*, int, int> ptr;
+        ptr = &GlobalCompare;
+        return (IntPtr) ptr;
     }
     
     public static IntPtr GetDestructorPtr()
     {
-        return typeof(NativeComparators).GetMethod(nameof(Destructor), BindingFlags.Static | BindingFlags.NonPublic)!.MethodHandle.GetFunctionPointer();
+        delegate* unmanaged[Cdecl]<IntPtr, void> ptr;
+        ptr = &Destructor;
+        return (IntPtr) ptr;
     }
     
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
@@ -32,8 +35,9 @@ internal static unsafe class NativeComparators
 
     public static IntPtr GetNamePtr()
     {
-        var name = nameof(GlobalCompareName);
-        return typeof(NativeComparators).GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic)!.MethodHandle.GetFunctionPointer();
+        delegate* unmanaged[Cdecl]<IntPtr, IntPtr> ptr;
+        ptr = &GlobalCompareName;
+        return (IntPtr) ptr;
     }
     
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
