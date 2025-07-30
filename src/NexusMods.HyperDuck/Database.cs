@@ -88,6 +88,7 @@ public unsafe partial class Database : IDisposable
 
     public void Dispose()
     {
+        /*
         if (_ptr == null)
         {
             return;
@@ -104,6 +105,7 @@ public unsafe partial class Database : IDisposable
         Native.duckdb_close(ref _ptr);
 
         _ptr = null;
+        */
     }
     
     /// <summary>
