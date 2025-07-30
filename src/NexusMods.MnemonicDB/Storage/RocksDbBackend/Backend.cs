@@ -19,12 +19,14 @@ public class Backend : IStoreBackend
     private readonly bool _isReadOnly;
     private Env? _env;
     private IntPtr _sliceTransform;
+    private volatile bool _disposed;
 
     /// <summary>
     /// Default constructor
     /// </summary>
     public Backend(bool readOnly = false)
     {
+        _disposed = false;
         _isReadOnly = readOnly;
         AttributeCache = new AttributeCache();
     }
@@ -134,6 +136,8 @@ public class Backend : IStoreBackend
     /// <inheritdoc />
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
         Db?.Dispose();
     }
 }

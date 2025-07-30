@@ -46,7 +46,7 @@ jobs:
         run: dotnet run --no-restore -c Release --project tests/NexusMods.MnemonicDB.SourceGenerator.Tests
 
       - name: Test Storage
-        run: dotnet run --no-restore -c Release --project tests/NexusMods.MnemonicDB.Storage.Tests -- --ignore-exit-code 139
+        run: dotnet run --no-restore -c Release --project tests/NexusMods.MnemonicDB.Storage.Tests
 
       - name: Test MnemonicDB
         run: dotnet run --no-restore -c Release --project tests/NexusMods.MnemonicDB.Tests
