@@ -69,8 +69,10 @@ public class QueryEngine : IQueryEngine, IDisposable
 
     public void Dispose()
     {
+        /*
         _attrEnumLogicalType.Dispose();
         _db.Dispose();
+        */
     }
 
     public HyperDuck.Database Database => _db;
