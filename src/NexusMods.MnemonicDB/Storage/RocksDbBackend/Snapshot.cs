@@ -32,6 +32,8 @@ internal sealed class Snapshot : ADatomsIndex<RocksDbIteratorWrapper>, IRefDatom
         _readOptions = readOptions;
         _snapshot = snapshot;
     }
+    
+    internal RocksDbSharp.Snapshot NativeSnapshot => _snapshot;
 
     public IDb MakeDb(TxId txId, AttributeCache attributeCache, IConnection? connection)
     {
