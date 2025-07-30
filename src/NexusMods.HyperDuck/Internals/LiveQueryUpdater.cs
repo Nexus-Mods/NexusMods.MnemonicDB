@@ -12,7 +12,7 @@ public class LiveQueryUpdater : IDisposable
     private readonly CancellationTokenSource _cancelationToken;
     private readonly ConcurrentDictionary<ulong, ILiveQuery> _liveQueries = [];
     private ImmutableStack<TaskCompletionSource> _pendingFlushes = ImmutableStack<TaskCompletionSource>.Empty;
-    private Thread? _thread;
+    private Task? _task;
     
 
     public LiveQueryUpdater()
@@ -29,20 +29,14 @@ public class LiveQueryUpdater : IDisposable
     
     public void StartUpdater()
     {
-        _thread = new Thread(() =>
+        _thread = Task.Run(async () =>
         {
             while (!_cancelationToken.IsCancellationRequested)
             {
                 Pulse();
-                Thread.Sleep(_delay);
+                await Task.Delay(_delay, _cancelationToken.Token);
             }
-
-        })
-        {
-            Name = "LiveQueryUpdater",
-            IsBackground = true
-        };
-        _thread.Start();
+        });
     }
 
     private void Pulse()
@@ -64,7 +58,7 @@ public class LiveQueryUpdater : IDisposable
     public void Dispose()
     {
         _cancelationToken.Cancel();
-        _thread?.Join();
+        _thread?.Wait();
         _thread = null;
         _liveQueries.Clear();
         _pendingFlushes = ImmutableStack<TaskCompletionSource>.Empty;
@@ -72,7 +66,7 @@ public class LiveQueryUpdater : IDisposable
 
     public void Remove(ILiveQuery liveQuery)
     {
-        _liveQueries.TryRemove(liveQuery.Id, out _);
+        _liveQueries.TryRemove(liveQuery.Id, out _task);
     }
 
     public Task FlushAsync()
