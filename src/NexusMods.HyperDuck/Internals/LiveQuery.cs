@@ -25,7 +25,7 @@ public class LiveQuery<T> : ILiveQuery
     
     public required ATableFunction[] DependsOn { get; init; }
     public required LiveQueryUpdater Updater { get; init; }
-    public required Database Database { get; init; }
+    public required DuckDB DuckDb { get; init; }
     public required CompiledQuery<T> Query { get; init; }
     public required T Output;
     private bool _isDisposed = false;
@@ -46,7 +46,7 @@ public class LiveQuery<T> : ILiveQuery
         if (hash == _lastHash)
             return;
         
-        Database.QueryInto(Query, ref Output);
+        DuckDb.QueryInto(Query, ref Output);
         _lastHash = hash;
     }
 

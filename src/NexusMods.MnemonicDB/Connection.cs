@@ -78,11 +78,11 @@ public sealed class Connection : IConnection
         if (queryEngine is QueryEngine engine)
         {
             _queryEngine = engine;
-            RegisterWithEngine(engine.Database);
+            RegisterWithEngine(engine.DuckDb);
         }
     }
 
-    private void RegisterWithEngine(Database database)
+    private void RegisterWithEngine(DuckDB duckDb)
     {
         var observer = Revisions.Select(r =>
             {
@@ -98,14 +98,14 @@ public sealed class Connection : IConnection
             .Publish();
         observer.Connect();
         
-        database.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes, _queryEngine!, observer, _prefix));
-        database.Register(new ToStringScalarFn(_queryEngine!, _prefix));
+        duckDb.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes, _queryEngine!, observer, _prefix));
+        duckDb.Register(new ToStringScalarFn(_queryEngine!, _prefix));
 
 
         
         foreach (var model in ServiceProvider.GetServices<ModelDefinition>())
         {
-            database.Register(new ModelTableFunction(this, model, observer, _prefix));
+            duckDb.Register(new ModelTableFunction(this, model, observer, _prefix));
         }
     }
 
@@ -486,7 +486,7 @@ public sealed class Connection : IConnection
     
     public Task FlushQueries()
     {
-        return _queryEngine!.Database.FlushQueries();
+        return _queryEngine!.DuckDb.FlushQueries();
     }
 
     /// <inheritdoc />
@@ -613,5 +613,5 @@ public sealed class Connection : IConnection
         _isDisposed = true;
     }
 
-    public Database DuckDBQueryEngine => _queryEngine!.Database;
+    public DuckDB DuckDBQueryEngine => _queryEngine!.DuckDb;
 }

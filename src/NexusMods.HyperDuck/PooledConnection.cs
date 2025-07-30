@@ -6,11 +6,11 @@ namespace NexusMods.HyperDuck;
 
 public class PooledConnection : IDisposable
 {
-    private readonly Database _db;
+    private readonly DuckDB _db;
     private readonly Connection _conn;
     private ConcurrentDictionary<ACompiledQuery, PreparedStatement> _preparedStatements = new();
 
-    public PooledConnection(Connection connection, Database db)
+    public PooledConnection(Connection connection, DuckDB db)
     {
         _db = db;
         _conn = connection;
