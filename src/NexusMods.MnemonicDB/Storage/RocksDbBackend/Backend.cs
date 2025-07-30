@@ -130,7 +130,7 @@ public class Backend : IStoreBackend
             }
             prevPtrCache.CopyFrom(thisPtr);
             iterator.Next();
-        }
+        } 
     }
 
     /// <inheritdoc />
@@ -138,6 +138,7 @@ public class Backend : IStoreBackend
     {
         if (_disposed) return;
         _disposed = true;
+        Db?.Flush(new FlushOptions().SetWaitForFlush(true));
         Db?.Dispose();
     }
 }
