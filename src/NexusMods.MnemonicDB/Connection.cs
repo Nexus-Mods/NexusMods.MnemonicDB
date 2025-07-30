@@ -84,22 +84,24 @@ public sealed class Connection : IConnection
 
     private void RegisterWithEngine(Database database)
     {
-        database.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes, _queryEngine!, _prefix));
+        var observer = Revisions.Select(r =>
+            {
+                var attr = new HashSet<IAttribute>();
+                foreach (var d in r.RecentlyAdded)
+                {
+                    if (AttributeResolver.TryGetAttribute(d.A, out var attr1))
+                        attr.Add(attr1);
+                }
+
+                return attr;
+            })
+            .Publish();
+        observer.Connect();
+        
+        database.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes, _queryEngine!, observer, _prefix));
         database.Register(new ToStringScalarFn(_queryEngine!, _prefix));
 
-        var observer = Revisions.Select(r =>
-        {
-            var attr = new HashSet<IAttribute>();
-            foreach (var d in r.RecentlyAdded)
-            {
-                if (AttributeResolver.TryGetAttribute(d.A, out var attr1))
-                    attr.Add(attr1);
-            }
 
-            return attr;
-        })
-        .Publish();
-        observer.Connect();
         
         foreach (var model in ServiceProvider.GetServices<ModelDefinition>())
         {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Subjects;
 using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
@@ -19,6 +20,7 @@ public class DatomsTableFunction : ATableFunction
     private readonly ushort[] _attrIdToEnum;
     private readonly Dictionary<string, IAttribute> _attrsByShortName;
     private readonly QueryEngine _queryEngine;
+    private readonly IDisposable _txWatcher;
 
     private enum UnionOrdering : byte
     {
@@ -29,7 +31,8 @@ public class DatomsTableFunction : ATableFunction
         End = Reference,
     }
 
-    public DatomsTableFunction(IConnection conn, IEnumerable<IAttribute> attrs, IQueryEngine queryEngine, string prefix = "mdb")
+    public DatomsTableFunction(IConnection conn, IEnumerable<IAttribute> attrs, IQueryEngine queryEngine,
+        IObservable<HashSet<IAttribute>> observer, string prefix = "mdb")
     {
         _prefix = prefix;
         _conn = conn;
@@ -39,6 +42,7 @@ public class DatomsTableFunction : ATableFunction
         var cache = conn.AttributeCache;
         _attrIdToEnum = new ushort[cache.MaxAttrId + 1];
         _queryEngine = (QueryEngine)queryEngine;
+        _txWatcher = observer.Subscribe(_ => Revise());
         for (int i = 0; i < attrs.Count(); i++)
         {
             var attr = _attrs[i];
