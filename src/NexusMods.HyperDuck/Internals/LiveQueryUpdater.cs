@@ -57,11 +57,14 @@ public class LiveQueryUpdater : IDisposable
 
     public void Dispose()
     {
+        // What happens if we never clean up?
+        /*
         _cancelationToken.Cancel();
         _task?.Wait();
         _task = null;
         _liveQueries.Clear();
         _pendingFlushes = ImmutableStack<TaskCompletionSource>.Empty;
+        */
     }
 
     public void Remove(ILiveQuery liveQuery)
