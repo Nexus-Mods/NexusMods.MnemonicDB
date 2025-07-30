@@ -1,134 +1,73 @@
-using DynamicData;
-using NexusMods.Cascade;
-using NexusMods.Cascade.Abstractions;
-using NexusMods.Cascade.Patterns;
 using NexusMods.Hashing.xxHash3;
+using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.Cascade;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
+using ObservableCollections;
 using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
 
+[WithServiceProvider]
 public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 {
-    [Fact]
-    public async Task CanGetDatoms()
-    {
-        await InsertExampleData();
-        var db = Connection.Db;
-
-        var flow = from p in File.Path
-            select p;
-
-        using var results = await db.Topology.QueryAsync(flow);
-
-        results.Should().NotBeEmpty();
-    }
     
-    [Fact]
-    public async Task CanFilterAndSelectDatoms()
-    {
-        await InsertExampleData();
-        var db = Connection.Db;
-        
-        var flow = 
-            File.Path
-                .Where(a => a.Value == "File1")
-                .LeftInnerJoin(File.Hash)
-                .Select(r => (r.Key, r.Value.Item1, r.Value.Item2));
-
-        using var results = await db.Topology.QueryAsync(flow);
-        
-        results.Should().NotBeEmpty();
-    }
-
-    
-    [Fact]
+    [Test]
     public async Task CanRunActiveQueries()
     {
+        var table = TableResults();
         await InsertExampleData();
-        
-        
-        var query = 
-            Pattern.Create()
-                .Db(out var e, File.Path, out var path)
-                .Db(e, File.Hash, out var hash)
-                .Return(path, hash, path.Count());
-        
-        
-        using var results = await Connection.Topology.QueryAsync(query);
-        
-        results.Should().NotBeEmpty();
-        
-        // Query how many hashes are modified in each transaction
-        var historyQuery =
-            Pattern.Create()
-                .DbHistory(e, File.Hash, hash, out var txId)
-                // Strip the partition from the txId, just to make it easier to read
-                .Project(txId, t => t.ValuePortion, out var txNoPartition)
-                .Return(txNoPartition, e.Count());
-        
-        using var historyResults = await Connection.Topology.QueryAsync(historyQuery);
 
-        // Validate the results
+        var resultsQuery = Query.Compile<ObservableList<(RelativePath, Hash, long)>>("SELECT Path, Hash, COUNT(*) FROM mdb_File() GROUP BY Path, Hash ORDER BY Path, Hash");
+        var historyQuery = Query.Compile<ObservableList<(TxId, long)>>("SELECT T, COUNT(E) FROM mdb_Datoms(A:= 'File/Hash', History:=true) WHERE IsRetract = false GROUP BY T ORDER BY T");
         
-        // Three mods with overlapping filenames, so we expect 3 results for each
-        results.Should().BeEquivalentTo(new (RelativePath, Hash, int)[] {
-            ("File1", Hash.FromLong(0xDEADBEEF), 3),
-            ("File2", Hash.FromLong(0xDEADBEF0), 3),
-            ("File3", Hash.FromLong(0xDEADBEF1), 3),
-        });
+        var results = new ObservableList<(RelativePath, Hash, long)>();
+        var historyResults = new ObservableList<(TxId, long)>();
         
-        historyResults.Should().BeEquivalentTo(new (ulong, int)[] {
-            // 9 hashes in the first transaction
-            (3, 9),
-        });
+        using var _ = Connection.ObserveInto(resultsQuery, ref results);
+        using var _2 = Connection.ObserveInto(historyQuery, ref historyResults);
+
+        table.Add(results, "Initial Results");
+        table.Add(historyResults, "Initial History");
+            
+        await Assert.That(results).IsNotEmpty();
+        
 
         // Update one hash to check that the queries update correctly
         using var tx = Connection.BeginTransaction();
         var ent = File.FindByPath(Connection.Db, "File1").First();
         tx.Add(ent.Id, File.Hash, Hash.FromLong(0x42));
         await tx.Commit();
+
+        await Connection.FlushQueries();
+
+        table.Add(results, "After Updates Query");
+        table.Add(historyResults, "After Updates History");
         
-        // we swapped one file over to a different hash, so we should see 4 results now with 2 count for one
-        // and 1 for the other
-        results.Should().BeEquivalentTo(new (RelativePath, Hash, int)[] {
-            ("File1", Hash.FromLong(0x42), 1),
-            ("File2", Hash.FromLong(0xDEADBEF0), 3),
-            ("File3", Hash.FromLong(0xDEADBEF1), 3),
-            ("File1", Hash.FromLong(0xDEADBEEF), 2),
-        });
-
-
-        
-        historyResults.Should().NotBeEmpty();
-        historyResults.Should().BeEquivalentTo(new (ulong, int)[] {
-            // 9 hashes in the first transaction
-            (3, 9),
-            // 1 hash in the second transaction
-            (5, 1)
-        });
-
+        await Verify(table.ToString());
     }
 
-    [Fact]
+    [Test]
     public async Task CanGetLatestTxForEntity()
     {
+        var table = TableResults();
         await InsertExampleData();
 
-        var query = Pattern.Create()
-            .Db(out var e, File.ModId, out var mod)
-            .Db(mod, Mod.Loadout, out var loadout)
-            .DbLatestTx(e, out var txId)
-            .Return(loadout, txId.Max());
-
-        using var queryResults = await Connection.Topology.QueryAsync(query);
+        var results = new List<(EntityId, TxId)>();
+        var query = Query.Compile<List<(EntityId, TxId)>>("""
+                                                          SELECT ents.Loadout, max(d.T) FROM 
+                                                          (SELECT Id, Id as Loadout FROM mdb_Loadout() 
+                                                           UNION SELECT Id, Loadout FROM mdb_Mod()
+                                                           UNION SELECT file.Id, mod.Loadout FROM mdb_File() file 
+                                                                 LEFT JOIN mdb_Mod() mod ON mod.Id = file.Mod) ents
+                                                          LEFT JOIN mdb_Datoms() d ON d.E = ents.Id
+                                                          GROUP BY ents.Loadout
+                                                          """);
+        using var _ = Connection.ObserveInto(query, ref results);
         
-        var oldData = queryResults.ToList();
+        table.Add(results, "Initial Results");
         
         // Update one hash to check that the queries update correctly
         using var tx = Connection.BeginTransaction();
@@ -136,106 +75,96 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx.Add(ent.Id, File.Hash, Hash.FromLong(0x42));
         await tx.Commit();
         
-        var newData = queryResults.ToList();
+        await Connection.FlushQueries();
 
-        var diagram = Connection.Topology.Diagram();
-        await Verify(new
-        {
-            OldData = oldData.Select(row => row.ToString()).ToArray(),
-            NewData = newData.Select(row => row.ToString()).ToArray(),
-        });
+        table.Add(results, "After Update");
+
+        await Verify(table.ToString());
 
     }
     
-    [Fact]
+    [Test]
     public async Task CanGetLatestTxForEntityOnDeletedEntities()
     {
+        var tableResults = TableResults();
         await InsertExampleData();
-
-        var query = Pattern.Create()
-            .Db(out var e, File.ModId, out var mod)
-            .Db(mod, Mod.Loadout, out var loadout)
-            .DbLatestTx(e, out var txId)
-            .Return(loadout, txId.Max(), e.Count());
         
-        using var queryResults = await Connection.Topology.QueryAsync(query);
-        
-        var oldData = queryResults.ToList();
+        var results = new List<(EntityId, TxId, long)>();
+        var query = Query.Compile<List<(EntityId, TxId, long)>>("""
+                                                               SELECT ents.Loadout, max(d.T), count(d.E) FROM 
+                                                               (SELECT Id, Id as Loadout FROM mdb_Loadout() 
+                                                                UNION SELECT Id, Loadout FROM mdb_Mod()
+                                                                UNION SELECT file.Id, mod.Loadout FROM mdb_File() file 
+                                                                      LEFT JOIN mdb_Mod() mod ON mod.Id = file.Mod) ents
+                                                               LEFT JOIN mdb_Datoms() d ON d.E = ents.Id
+                                                               GROUP BY ents.Loadout
+                                                               """);
+        using var _ = Connection.ObserveInto(query, ref results);
+        tableResults.Add(results, "Initial Results");
         
         // Delete only one datom to check that we get an update even for retracted datoms, as long as the entity is still present
         using var tx = Connection.BeginTransaction();
         var ent = File.FindByPath(Connection.Db, "File1").First();
-        tx.Retract(ent.Id, File.Path, (RelativePath)"File1");
+        tx.Retract(ent.Id, File.Hash, ent.Hash);
         await tx.Commit();
-        
-        var withoutName = queryResults.ToList();
+
+        await Connection.FlushQueries();
+
+        tableResults.Add(results, "After Retract");
         
         using var tx2 = Connection.BeginTransaction();
         tx2.Delete(ent.Id, recursive: false);
         await tx2.Commit();
         
-        var deletedEntity = queryResults.ToList();
+        await Connection.FlushQueries();
+        
+        tableResults.Add(results, "After Delete");
 
-        await Verify(new
-        {
-            Entry1 = oldData.Select(row => row.ToString()).ToArray(),
-            Entry2 = withoutName.Select(row => row.ToString()).ToArray(),
-            Entry3 = deletedEntity.Select(row => row.ToString()).ToArray(),
-        });
-
+        await Verify(tableResults.ToString());
     }
 
-    [Fact]
+    [Test]
     public async Task TestMissingAndHaveQueries()
     {
         await InsertExampleData();
 
-        var mods = Pattern.Create()
-            .Db(out var e, File.ModId, out var mod)
-            .Return(e, mod);
-        
-        var results = await Connection.Topology.QueryAsync(mods);
-
-        var testMod = results.First().Item2;
+        var modsQuery = Query.Compile<List<(EntityId, EntityId)>>("SELECT Id, Mod FROM mdb_File()");
+        var mods = Connection.Query(modsQuery);
+        var testMod = mods.First().Item2;
         
         using var tx = Connection.BeginTransaction();
         tx.Add(testMod, Mod.Marked, Null.Instance);
         await tx.Commit();
+
+        var markedModsQuery = Query.Compile<List<(EntityId, string)>>("SELECT Id, Name FROM mdb_Mod() WHERE Marked = true");
+        var markedMods = Connection.Query(markedModsQuery);
         
-        var markedMods = Pattern.Create()
-            .Db(mod, Mod.Name, out var name)
-            .HasAttribute(mod, Mod.Marked)
-            .Return(mod, name);
-        
-        using var markedResults = await Connection.Topology.QueryAsync(markedMods);
-        markedResults.Count.Should().Be(1);
-        
-        var unmarkedMods = Pattern.Create()
-            .Db(mod, Mod.Name, out var name2)
-            .MissingAttribute(mod, Mod.Marked)
-            .Return(mod, name2);
-        
-        using var unmarkedResults = await Connection.Topology.QueryAsync(unmarkedMods);
-        unmarkedResults.Count.Should().Be(2);
+        await Assert.That(markedMods).HasCount(1);
+
+        var unmarkedModsQuery = Query.Compile<List<(EntityId, string)>>("SELECT Id, Name FROM mdb_Mod() WHERE Marked = false"); 
+        var unmarkedMods = Connection.Query(unmarkedModsQuery);
+        await Assert.That(unmarkedMods).HasCount(2);
         
         using var tx2 = Connection.BeginTransaction();
         tx2.Add(testMod, Mod.Description, "Test Mod Description");
         await tx2.Commit();
-        
-        var modsWithDescription = Pattern.Create()
-            .Db(mod, Mod.Name, name)
-            .HasAttribute(mod, Mod.Description)
-            .Return(mod, name);
-        
-        using var descriptionResults = await Connection.Topology.QueryAsync(modsWithDescription);
-        descriptionResults.Count.Should().Be(1);
-        
-        var modsWithoutDescription = Pattern.Create()
-            .Db(mod, Mod.Name, name)
-            .MissingAttribute(mod, Mod.Description)
-            .Return(mod, name);
-        
-        using var noDescriptionResults = await Connection.Topology.QueryAsync(modsWithoutDescription);
-        noDescriptionResults.Count.Should().Be(2);
+
+        var modsWithDescriptionQuery = Query.Compile<List<(EntityId, string)>>("SELECT Id, Name FROM mdb_Mod() WHERE Description IS NOT NULL");
+        var modsWithDescription = Connection.Query(modsWithDescriptionQuery);
+        await Assert.That(modsWithDescription).HasCount(1);
+
+        var modsWithoutDescriptionQuery = Query.Compile<List<(EntityId, string)>>("SELECT Id, Name FROM mdb_Mod() WHERE Description IS NULL");
+        var modsWithoutDescription = Connection.Query(modsWithoutDescriptionQuery);
+        await Assert.That(modsWithoutDescription).HasCount(2);
+    }
+
+    [Test]
+    public async Task CanSendParametersToQuery()
+    {
+        var query = Query.Compile<List<int>, int>("SELECT $1");
+        var result = Connection.Query(query, 42);
+
+        await Assert.That(result.First()).IsEqualTo(42);
+
     }
 }

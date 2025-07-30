@@ -51,6 +51,11 @@ public sealed class AttributeCache
     public IEnumerable<Symbol> AllAttributeIds => _attributeIdsBySymbol.Keys;
 
     /// <summary>
+    /// Gets the largest declared attributeId
+    /// </summary>
+    public ushort MaxAttrId => _attributeIdsBySymbol.Values.Max(x => x.Value); 
+
+    /// <summary>
     /// Resets the cache, causing it to re-query the database for the latest definitions.
     /// </summary>
     public void Reset(IDb db)

@@ -3,19 +3,21 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DynamicData;
 using Jamarino.IntervalTree;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using NexusMods.Cascade;
+using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.Cascade;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.EventTypes;
 using NexusMods.MnemonicDB.InternalTxFunctions;
+using NexusMods.MnemonicDB.QueryFunctions;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using R3;
@@ -49,7 +51,8 @@ public sealed class Connection : IConnection
     private readonly CancellationTokenSource _cts = new();
     private readonly BlockingCollection<IEvent> _pendingEvents = new(new ConcurrentQueue<IEvent>());
     private readonly ConcurrentBag<(Datom, Datom, IObserver<DatomChangeSet>)> _pendingObservers = [];
-
+    private readonly string _prefix;
+    
     private Thread _eventThread = null!;
 
     private static readonly IndexType[] IndexTypes =
@@ -61,11 +64,8 @@ public sealed class Connection : IConnection
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers, bool readOnlyMode = false)
+    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers, IQueryEngine? queryEngine = null, bool readOnlyMode = false)
     {
-        Topology = new Topology();
-        _dbInlet = Topology.Intern(Query.Db);
-        
         ServiceProvider = provider;
         AttributeCache = store.AttributeCache;
         AttributeResolver = new AttributeResolver(provider, AttributeCache);
@@ -73,7 +73,38 @@ public sealed class Connection : IConnection
         _store = (DatomStore)store;
         _dbStream = new DbStream();
         _analyzers = analyzers.ToArray();
+        _prefix = "mdb";
         Bootstrap(readOnlyMode);
+        if (queryEngine is QueryEngine engine)
+        {
+            _queryEngine = engine;
+            RegisterWithEngine(engine.Database);
+        }
+    }
+
+    private void RegisterWithEngine(Database database)
+    {
+        database.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes, _queryEngine!, _prefix));
+        database.Register(new ToStringScalarFn(_queryEngine!, _prefix));
+
+        var observer = Revisions.Select(r =>
+        {
+            var attr = new HashSet<IAttribute>();
+            foreach (var d in r.RecentlyAdded)
+            {
+                if (AttributeResolver.TryGetAttribute(d.A, out var attr1))
+                    attr.Add(attr1);
+            }
+
+            return attr;
+        })
+        .Publish();
+        observer.Connect();
+        
+        foreach (var model in ServiceProvider.GetServices<ModelDefinition>())
+        {
+            database.Register(new ModelTableFunction(this, model, observer, _prefix));
+        }
     }
 
     private void ProcessEvents()
@@ -298,8 +329,6 @@ public sealed class Connection : IConnection
                 _logger.LogError(e, "Exception waiting on semaphore");
                 return;
             }
-
-            _dbInlet.Values = [db];
         });
     }
 
@@ -384,11 +413,7 @@ public sealed class Connection : IConnection
 
     /// <inheritdoc />
     public IDatomStore DatomStore => _store;
-
-
-    /// <inheritdoc />
-    public Topology Topology { get; }
-
+    
     /// <inheritdoc />
     public IDb Db
     {
@@ -455,6 +480,11 @@ public sealed class Connection : IConnection
         var tx = new Transaction(this);
         tx.Set(new ScanUpdate(function));
         return await tx.Commit();
+    }
+    
+    public Task FlushQueries()
+    {
+        return _queryEngine!.Database.FlushQueries();
     }
 
     /// <inheritdoc />
@@ -565,7 +595,7 @@ public sealed class Connection : IConnection
     }
     
     private bool _isDisposed;
-    private readonly InletNode<IDb> _dbInlet;
+    private readonly QueryEngine? _queryEngine;
 
     /// <inheritdoc />
     public void Dispose()
@@ -580,4 +610,6 @@ public sealed class Connection : IConnection
 
         _isDisposed = true;
     }
+
+    public Database DuckDBQueryEngine => _queryEngine!.Database;
 }

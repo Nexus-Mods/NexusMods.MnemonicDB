@@ -1,14 +1,10 @@
 ﻿using System;
 using System.Buffers;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 using DynamicData;
-using NexusMods.Cascade;
-using NexusMods.Cascade.Abstractions;
+using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -18,13 +14,8 @@ using DatomChangeSet = ChangeSet<Datom, DatomKey, IDb>;
 /// <summary>
 ///     Represents a connection to a database.
 /// </summary>
-public interface IConnection : IDisposable
+public interface IConnection : IDisposable, IQueryMixin
 {
-    /// <summary>
-    /// The dedicated flow for this connection
-    /// </summary>
-    public Topology Topology { get; }
-    
     /// <summary>
     ///     Gets the current database.
     /// </summary>

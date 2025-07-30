@@ -15,4 +15,9 @@ public interface ILightweightDatomSegment : IDisposable
     /// Move to the next datom in the segment, returns false if there are no more datoms
     /// </summary>
     public bool MoveNext();
+
+    /// <summary>
+    /// Attempts to fast forward to the next datom that equals the given EntityId
+    /// </summary>
+    bool FastForwardTo(EntityId from);
 }

@@ -1,4 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using NexusMods.HyperDuck;
+using NexusMods.HyperDuck.Adaptor;
+using NexusMods.HyperDuck.Adaptor.Impls;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Storage;
@@ -29,9 +32,10 @@ public static class Services
     public static IServiceCollection AddMnemonicDBStorage(this IServiceCollection services)
     {
         services.AddAttributeDefinitionModel()
-                .AddTransactionModel()
-                .AddSingleton<IDatomStore, DatomStore>()
-                .AddSingleton<DatomStore>(s => (DatomStore)s.GetRequiredService<IDatomStore>());
+            .AddAdapters()
+            .AddTransactionModel()
+            .AddSingleton<IDatomStore, DatomStore>()
+            .AddSingleton<DatomStore>(s => (DatomStore)s.GetRequiredService<IDatomStore>());
         return services;
     }
     

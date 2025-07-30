@@ -412,4 +412,9 @@ public struct SliceDescriptor : ISliceDescriptor
     {
         return new AllReverseAttributesInPartition(partition);
     }
+
+    public static AttributeStartingAtId AttributesStartingAt(AttributeId attrId, EntityId id)
+    {
+        return new AttributeStartingAtId(attrId, id);
+    }
 }

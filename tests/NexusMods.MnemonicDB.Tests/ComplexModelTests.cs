@@ -8,18 +8,19 @@ using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
 
+[WithServiceProvider]
 public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 {
 
-    [Theory]
-    [InlineData(1, 1)]
-    [InlineData(1, 16)]
-    [InlineData(16, 1)]
-    [InlineData(16, 16)]
-    [InlineData(16, 128)]
-    [InlineData(128, 16)]
-    [InlineData(128, 128)]
-    [InlineData(1024, 128)]
+    [Test]
+    [Arguments(1, 1)]
+    [Arguments(1, 16)]
+    [Arguments(16, 1)]
+    [Arguments(16, 16)]
+    [Arguments(16, 128)]
+    [Arguments(128, 16)]
+    [Arguments(128, 128)]
+    [Arguments(1024, 128)]
     public async Task CanCreateLoadout(int modCount, int filesPerMod)
     {
 
@@ -80,18 +81,21 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
 
         var loadoutRO = result.Remap(loadout);
 
-        loadoutRO.Mods.Count.Should().Be(modCount, "all mods should be loaded");
+        await Assert.That(loadoutRO.Mods.Count).IsEqualTo(modCount).Because("all mods should be loaded");
 
-        loadoutRO.Collections.Count.Should().Be(2, "all collections should be loaded");
+        await Assert.That(loadoutRO.Collections.Count).IsEqualTo(2).Because("all collections should be loaded");
 
-        loadoutRO.Collections.SelectMany(c => c.ModIds)
-            .Count().Should().Be(loadoutRO.Mods.Count(), "all mods should be in a collection");
+        await Assert.That(loadoutRO.Collections.SelectMany(c => c.ModIds).Count())
+            .IsEqualTo(loadoutRO.Mods.Count)
+            .Because("all mods should be in a collection");
 
         sw.Restart();
         
         foreach (var mod in loadoutRO.Mods)
             //totalSize += mod.Files.Sum(f => f.Size);
-            mod.Files.Count().Should().Be(filesPerMod, "every mod should have the same amount of files");
+            await Assert.That(mod.Files.Count)
+                .IsEqualTo(filesPerMod)
+                .Because("every mod should have the same amount of files");
 
 
         //totalSize.Should().BeGreaterThan(Size.FromLong(modCount * filesPerMod * "File ".Length), "total size should be the sum of all file sizes");
@@ -102,16 +106,16 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
     }
 
 
-    [Theory]
-    [InlineData(1, 1, 1)]
-    [InlineData(1, 16, 16)]
-    [InlineData(16, 1, 1)]
-    [InlineData(16, 16, 16)]
-    [InlineData(16, 128, 128)]
-    [InlineData(128, 16, 16)]
-    [InlineData(128, 128, 128)]
-    [InlineData(1024, 128, 128)]
-    [InlineData(128, 1024, 128)]
+    [Test]
+    [Arguments(1, 1, 1)]
+    [Arguments(1, 16, 16)]
+    [Arguments(16, 1, 1)]
+    [Arguments(16, 16, 16)]
+    [Arguments(16, 128, 128)]
+    [Arguments(128, 16, 16)]
+    [Arguments(128, 128, 128)]
+    [Arguments(1024, 128, 128)]
+    [Arguments(128, 1024, 128)]
     public async Task CanRestartStorage(int modCount, int filesPerMod, int extraFiles)
     {
         using var tx = Connection.BeginTransaction();
@@ -174,15 +178,22 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         await extraTx.Commit();
 
         Logger.LogInformation("Restarting storage");
-        Connection.Db.RecentlyAdded.Should().NotBeEmpty("the last transaction added data");
+        await Assert.That(Connection.Db.RecentlyAdded.ToArray()).IsNotEmpty().Because("the last transaction added data");
 
         var lastTxId = Connection.TxId;
         await RestartDatomStore();
+
+        await Assert.That(Connection.TxId).IsEqualTo(lastTxId)
+            .Because("the transaction id should be the same after a restart");
+       
         
-        Connection.TxId.Should().Be(lastTxId, "the transaction id should be the same after a restart");
-        Connection.Db.BasisTxId.Should().Be(lastTxId, "the basis transaction id should be the same after a restart");
         
-        Connection.Db.RecentlyAdded.Should().NotBeEmpty("the restarted database should populate the recently added");
+        await Assert.That(Connection.Db.BasisTxId).IsEqualTo(lastTxId)
+            .Because("the basis transaction id should be the same after a restart");
+        
+        await Assert.That(Connection.Db.RecentlyAdded.ToArray()).IsNotEmpty()
+            .Because("the restarted database should populate the recently added");
+        
         Logger.LogInformation("Storage restarted");
 
 
@@ -190,15 +201,19 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
 
         var totalSize = Size.Zero;
 
-        loadout.Mods.Count().Should().Be(modCount, "all mods should be loaded");
+        await Assert.That(loadout.Mods.Count).IsEqualTo(modCount)
+            .Because("all mods should be loaded");
+        
         foreach (var mod in loadout.Mods)
         {
             totalSize += mod.Files.Sum(f => f.Size);
 
             if (mod.Id == firstMod.Id)
-                mod.Files.Count.Should().Be(filesPerMod + extraFiles, "first mod should have the extra files");
+                await Assert.That(mod.Files.Count).IsEqualTo(filesPerMod + extraFiles)
+                    .Because("first mod should have the extra files");
             else
-                mod.Files.Count.Should().Be(filesPerMod, "every mod should have the same amount of files");
+                await Assert.That(mod.Files.Count).IsEqualTo(filesPerMod)
+                    .Because("every mod should have the same amount of files");
         }
 
         using var tx2 = Connection.BeginTransaction();
@@ -210,11 +225,11 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         var result2 = await tx2.Commit();
         var newNewLoadOut = result2.Remap(newNewLoadOutNew);
 
-        newNewLoadOut.Id.Should().NotBe(loadout.Id,
-            "new loadout should have a different id because the connection re-detected the max EntityId");
+        await Assert.That(newNewLoadOut.Id).IsNotEqualTo(loadout.Id)
+            .Because("new loadout should have a different id because the connection re-detected the max EntityId");
     }
 
-    [Fact]
+    [Test]
     public async Task CanGetFromTransaction()
     {
         using var tx = Connection.BeginTransaction();
@@ -232,13 +247,13 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
             },
         };
 
-        archiveFile.GetFile(tx).Path.Should().Be("foo");
+        await Assert.That(archiveFile.GetFile(tx).Path).IsEqualTo("foo");
         archiveFile.GetFile(tx).Path = "bar";
-        archiveFile.GetFile(tx).Path.Should().Be("bar");
+        await Assert.That(archiveFile.GetFile(tx).Path).IsEqualTo("bar");
 
         var result = await tx.Commit();
         var remap = result.Remap(archiveFile);
-        remap.AsFile().Path.Should().Be("bar");
+        await Assert.That(remap.AsFile().Path).IsEqualTo("bar");
     }
 
     private static Hash HashAsUtf8(string value) => Hash.FromLong(Encoding.UTF8.GetBytes(value).xxHash3());

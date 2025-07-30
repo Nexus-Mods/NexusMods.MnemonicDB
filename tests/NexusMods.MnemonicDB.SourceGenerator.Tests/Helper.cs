@@ -17,7 +17,7 @@ public static class Helper
 
         var path = FileSystem.Shared.FromUnsanitizedFullPath(sourceFile);
         var inputPath = path.ReplaceExtension(new Extension(".input.cs"));
-        inputPath.FileExists.Should().BeTrue();
+        await Assert.That(inputPath.FileExists).IsTrue();
 
         var input = await inputPath.ReadAllTextAsync();
 
@@ -37,7 +37,7 @@ public static class Helper
         );
 
         var result = driver.RunGenerators(compilation).GetRunResult();
-        result.GeneratedTrees.Should().HaveCountGreaterThan(0);
+        await Assert.That(result.GeneratedTrees.Length).IsGreaterThan(0);
 
         // ReSharper disable once ExplicitCallerInfoArgument
         await Verify(result, sourceFile: sourceFile).UseFileName(path.GetFileNameWithoutExtension());

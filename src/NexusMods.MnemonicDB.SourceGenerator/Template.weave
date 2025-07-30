@@ -87,6 +87,13 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         {{= attr.FieldName}},
         {{/each}}
     };
+    
+    public static __ABSTRACTIONS__.IAttribute[] AllAttributesWithIncludes => 
+        AllAttributes
+       {{each include in model.Includes}}
+       .Concat({{= include}}.AllAttributesWithIncludes)
+       {{/each}}
+       .ToArray();
 
     /// <summary>
     /// Returns all {{= model.Name}} entities in the database.
@@ -572,6 +579,7 @@ public static class {{= model.Name}}Extensions {
         {{each attr in model.Attributes}}
         services.AddSingleton<__ABSTRACTIONS__.IAttribute>(_ => {{= attr.FieldName}});
         {{/each}}
+        services.AddSingleton(_ => new ModelDefinition("{{= model.Name}}", {{= model.Name}}.PrimaryAttribute, {{=model.Name}}.AllAttributesWithIncludes));
         return services;
     }
 

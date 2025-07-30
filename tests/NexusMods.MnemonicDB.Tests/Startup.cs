@@ -1,20 +1,31 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Runtime.CompilerServices;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using NexusMods.MnemonicDB.Storage;
+using NexusMods.Hashing.xxHash3;
+using NexusMods.HyperDuck;
+using NexusMods.HyperDuck.Adaptor;
+using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
-using Xunit.DependencyInjection.Logging;
 
 namespace NexusMods.MnemonicDB.Tests;
 
-public class Startup
+public static class Startup
 {
-    public void ConfigureServices(IServiceCollection services)
+    
+    
+    public static IServiceCollection ConfigureServices(this IServiceCollection services)
     {
-        services.AddTestModel()
+        return services
+            .AddAttributeDefinitionModel()
+            .AddAdapters()
+            .AddTransactionModel()
+            .AddTestModel()
             .AddSingleton<TemporaryFileManager>()
             .AddFileSystem()
-            .AddLogging(builder => builder.AddXunitOutput().SetMinimumLevel(LogLevel.Debug))
-            .AddMnemonicDBStorage();
+            .AddAdapters()
+            .AddSingleton<IQueryEngine, QueryEngine>()
+            .AddLogging(builder => builder.AddConsole());
     }
 }

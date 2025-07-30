@@ -19,16 +19,16 @@ public abstract class ABackendTest(
     bool isInMemory)
     : AStorageTest(provider, isInMemory)
 {
-    [Theory]
-    [InlineData(IndexType.TxLog)]
-    [InlineData(IndexType.EAVTHistory)]
-    [InlineData(IndexType.EAVTCurrent)]
-    [InlineData(IndexType.AEVTCurrent)]
-    [InlineData(IndexType.AEVTHistory)]
-    [InlineData(IndexType.VAETCurrent)]
-    [InlineData(IndexType.VAETHistory)]
-    [InlineData(IndexType.AVETCurrent)]
-    [InlineData(IndexType.AVETHistory)]
+    [Test]
+    [Arguments(IndexType.TxLog)]
+    [Arguments(IndexType.EAVTHistory)]
+    [Arguments(IndexType.EAVTCurrent)]
+    [Arguments(IndexType.AEVTCurrent)]
+    [Arguments(IndexType.AEVTHistory)]
+    [Arguments(IndexType.VAETCurrent)]
+    [Arguments(IndexType.VAETHistory)]
+    [Arguments(IndexType.AVETCurrent)]
+    [Arguments(IndexType.AVETHistory)]
     public async Task InsertedDatomsShowUpInTheIndex(IndexType type)
     {
         var tx = await GenerateData();
@@ -41,16 +41,16 @@ public abstract class ABackendTest(
             .UseParameters(type);
     }
 
-    [Theory]
-    [InlineData(IndexType.TxLog)]
-    [InlineData(IndexType.EAVTHistory)]
-    [InlineData(IndexType.EAVTCurrent)]
-    [InlineData(IndexType.AEVTCurrent)]
-    [InlineData(IndexType.AEVTHistory)]
-    [InlineData(IndexType.VAETCurrent)]
-    [InlineData(IndexType.VAETHistory)]
-    [InlineData(IndexType.AVETCurrent)]
-    [InlineData(IndexType.AVETHistory)]
+    [Test]
+    [Arguments(IndexType.TxLog)]
+    [Arguments(IndexType.EAVTHistory)]
+    [Arguments(IndexType.EAVTCurrent)]
+    [Arguments(IndexType.AEVTCurrent)]
+    [Arguments(IndexType.AEVTHistory)]
+    [Arguments(IndexType.VAETCurrent)]
+    [Arguments(IndexType.VAETHistory)]
+    [Arguments(IndexType.AVETCurrent)]
+    [Arguments(IndexType.AVETHistory)]
     public async Task CanStoreDataInBlobs(IndexType type)
     {
         // 256 bytes of data
@@ -106,15 +106,15 @@ public abstract class ABackendTest(
     }
 
 
-    [Theory]
-    [InlineData(IndexType.EAVTHistory)]
-    [InlineData(IndexType.EAVTCurrent)]
-    [InlineData(IndexType.AEVTCurrent)]
-    [InlineData(IndexType.AEVTHistory)]
-    [InlineData(IndexType.VAETCurrent)]
-    [InlineData(IndexType.VAETHistory)]
-    [InlineData(IndexType.AVETCurrent)]
-    [InlineData(IndexType.AVETHistory)]
+    [Test]
+    [Arguments(IndexType.EAVTHistory)]
+    [Arguments(IndexType.EAVTCurrent)]
+    [Arguments(IndexType.AEVTCurrent)]
+    [Arguments(IndexType.AEVTHistory)]
+    [Arguments(IndexType.VAETCurrent)]
+    [Arguments(IndexType.VAETHistory)]
+    [Arguments(IndexType.AVETCurrent)]
+    [Arguments(IndexType.AVETHistory)]
     public async Task HistoricalQueriesReturnAllDataSorted(IndexType type)
     {
         var tx = await GenerateData();
@@ -130,7 +130,7 @@ public abstract class ABackendTest(
             .UseParameters(type);
     }
 
-    [Fact]
+    [Test]
     public async Task CaseInsenstiveUTF8DoesntCrashTheComparator()
     {
         using var segment = new IndexSegmentBuilder(AttributeCache);
@@ -205,16 +205,16 @@ public abstract class ABackendTest(
         return tx;
     }
 
-    [Theory]
-    [InlineData(IndexType.TxLog)]
-    [InlineData(IndexType.EAVTHistory)]
-    [InlineData(IndexType.EAVTCurrent)]
-    [InlineData(IndexType.AEVTCurrent)]
-    [InlineData(IndexType.AEVTHistory)]
-    [InlineData(IndexType.VAETCurrent)]
-    [InlineData(IndexType.VAETHistory)]
-    [InlineData(IndexType.AVETCurrent)]
-    [InlineData(IndexType.AVETHistory)]
+    [Test]
+    [Arguments(IndexType.TxLog)]
+    [Arguments(IndexType.EAVTHistory)]
+    [Arguments(IndexType.EAVTCurrent)]
+    [Arguments(IndexType.AEVTCurrent)]
+    [Arguments(IndexType.AEVTHistory)]
+    [Arguments(IndexType.VAETCurrent)]
+    [Arguments(IndexType.VAETHistory)]
+    [Arguments(IndexType.AVETCurrent)]
+    [Arguments(IndexType.AVETHistory)]
     public async Task RetractedValuesAreSupported(IndexType type)
     {
         var id = NextTempId();
@@ -258,7 +258,7 @@ public abstract class ABackendTest(
     }
 
 
-    [Fact]
+    [Test]
     public async Task CanLoadExistingAttributes()
     {
         var attrs = DatomStore.GetSnapshot().Datoms(SliceDescriptor.Create(AttributeDefinition.UniqueId, AttributeCache))

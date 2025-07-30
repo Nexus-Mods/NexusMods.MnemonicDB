@@ -39,6 +39,7 @@ $NuGetBasePath = Join-Path -Path $HomeDir -ChildPath ".nuget" | Join-Path -Child
 
 # Define the projects to build
 $Projects = @(
+    "src/NexusMods.HyperDuck/NexusMods.HyperDuck.csproj",
     "src/NexusMods.MnemonicDB/NexusMods.MnemonicDB.csproj",
     "src/NexusMods.MnemonicDB.Abstractions/NexusMods.MnemonicDB.Abstractions.csproj",
     "src/NexusMods.MnemonicDB.SourceGenerator/NexusMods.MnemonicDB.SourceGenerator.csproj"
@@ -108,6 +109,10 @@ foreach ($Project in $Projects) {
             Add-Type -AssemblyName System.IO.Compression.FileSystem
             [System.IO.Compression.ZipFile]::ExtractToDirectory($NupkgFile.FullName, $VersionPath, $true)
         }
+        
+        # Copy the original .nupkg file to the directory for NuGet to recognize it properly
+        # This is crucial for packages with runtime assets
+        Copy-Item -Path "$($NupkgFile.FullName).zip" -Destination $NupkgFile.FullName -Force
         
         # Write the .nupkg.metadata file to make the package recognized by NuGet
         # You think `contentHash` is used? Think again, muahahahaha~

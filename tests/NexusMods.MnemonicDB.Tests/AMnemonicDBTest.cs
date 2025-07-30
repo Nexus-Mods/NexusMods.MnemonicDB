@@ -1,5 +1,6 @@
 ﻿using System.IO.Compression;
 using System.IO.Hashing;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -7,6 +8,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.Hashing.xxHash3;
+using NexusMods.HyperDuck.Adaptor;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.MnemonicDB.TestModel.Analyzers;
 using NexusMods.Paths;
@@ -27,13 +29,15 @@ public class AMnemonicDBTest : IDisposable
     private readonly IAnalyzer[] _analyzers;
     
     protected TemporaryFileManager TemporaryFileManager;
-
-
+    private readonly Dictionary<string, IAttribute> _attrShortNames;
+    
     protected AMnemonicDBTest(IServiceProvider provider)
     {
         Provider = provider;
         TemporaryFileManager = provider.GetRequiredService<TemporaryFileManager>();
         _attributes = provider.GetRequiredService<IEnumerable<IAttribute>>().ToArray();
+
+        _attrShortNames = _attributes.ToDictionary(d => d.Id.Namespace.Split(".").Last() + "/" + d.Id.Name);
 
         Config = new DatomStoreSettings
         {
@@ -50,10 +54,74 @@ public class AMnemonicDBTest : IDisposable
             new AttributesAnalyzer()
         ];
         
-        Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, provider, _analyzers);
-
+        Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, provider, _analyzers, provider.GetRequiredService<IQueryEngine>());
+        
         Logger = provider.GetRequiredService<ILogger<AMnemonicDBTest>>();
+        
+
     }
+
+    protected TableData TableResults()
+    {
+        return new();
+    }
+
+    protected record TableData()
+    {
+        private StringBuilder _sb = new();
+
+        public void Add<T>(IEnumerable<T> data, string heading = "") where T : ITuple
+        {
+            _sb.AppendLine(heading);
+            _sb.AppendLine("------------------------------------");
+            List<List<string>> cells = new();
+            foreach (var item in data)
+            {
+                var row = new List<string>();
+                cells.Add(row);
+                for (var i = 0; i < item.Length; i++)
+                {
+                    row.Add(item[i]!.ToString()!);
+                }
+            }
+            
+            List<int> columnWidths = [];
+            foreach (var row in cells)
+            {
+                for (var i = 0; i < row.Count; i++)
+                {
+                    var width = row[i].Length;
+                    if (i >= columnWidths.Count)
+                    {
+                        columnWidths.Add(width);
+                    }
+                    else
+                    {
+                        columnWidths[i] = Math.Max(columnWidths[i], width);
+                    }
+                }
+            }
+
+            List<string> rowElements = new();
+            foreach (var row in cells)
+            {
+                for (var i = 0; i < row.Count; i++)
+                {
+                    rowElements.Add(row[i].PadRight(columnWidths[i]));
+                }
+                _sb.AppendLine("| " + string.Join(" | ", rowElements) + " |");
+                rowElements.Clear();
+            }
+            _sb.AppendLine("------------------------------------");
+            _sb.AppendLine();
+        }
+        
+        public override string ToString()
+        {
+            return _sb.ToString();
+        }
+    }
+
 
 
     protected async Task LoadDatamodel(RelativePath name)
@@ -81,10 +149,16 @@ public class AMnemonicDBTest : IDisposable
 
     protected SettingsTask VerifyTable(IEnumerable<IReadDatom> datoms)
     {
-        return Verify(ToTable(datoms, AttributeCache));
+        return Verify(ToTable(datoms, AttributeCache, r => (r.E, r.A, r.ObjectValue, r.T, r.IsRetract)));
     }
+
+    protected SettingsTask VerifyTable(IEnumerable<(EntityId E, string A, string V, TxId Tx)> datoms)
+    {
+        return Verify(ToTable(datoms, AttributeCache, r => (r.E, _attrShortNames[r.A], r.V, r.Tx, false)));
+    }
+
     
-    public static string ToTable(IEnumerable<IReadDatom> datoms, AttributeCache cache)
+    public static string ToTable<T>(IEnumerable<T> datoms, AttributeCache cache, Func<T, (EntityId E, IAttribute A, object V, TxId T, bool IsRetract)> rowSelector)
     {
         string TruncateOrPad(string val, int length)
         {
@@ -100,8 +174,9 @@ public class AMnemonicDBTest : IDisposable
         var dateTimeCount = 0;
 
         var sb = new StringBuilder();
-        foreach (var datom in datoms)
+        foreach (var src in datoms)
         {
+            var datom = rowSelector(src);
             var isRetract = datom.IsRetract;
 
             var symColumn = TruncateOrPad(datom.A.Id.Name, 24);
@@ -115,7 +190,7 @@ public class AMnemonicDBTest : IDisposable
 
 
 
-            switch (datom.ObjectValue)
+            switch (datom.V)
             {
                 case EntityId eid:
                     sb.Append(eid.Value.ToString("X16").PadRight(48));
@@ -132,7 +207,7 @@ public class AMnemonicDBTest : IDisposable
                     sb.Append($"DateTime : {dateTimeCount++}".PadRight(48));
                     break;
                 default:
-                    sb.Append(TruncateOrPad(datom.ObjectValue.ToString()!, 48));
+                    sb.Append(TruncateOrPad(datom.V.ToString()!, 48));
                     break;
             }
 
@@ -196,6 +271,7 @@ public class AMnemonicDBTest : IDisposable
     {
         Connection.Dispose();
         _store.Dispose();
+        _backend.Dispose();
     }
 
 

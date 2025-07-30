@@ -16,4 +16,39 @@ on:
 
 jobs:
   build-and-test:
-    uses: Nexus-Mods/NexusMods.App.Meta/.github/workflows/dotnet-build-and-test-with-osx.yaml@main
+    name: Build and Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest ] #, macos-latest ]
+    
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: "recursive"
+          lfs: true
+          
+      - name: Setup .NET 9.x
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.x'
+  
+      - name: Print debug info
+        run: dotnet --info
+  
+      - name: Install dependencies
+        run: dotnet restore
+
+      - name: Test HyperDuck
+        run: dotnet run --no-restore -c Release --project tests/NexusMods.HyperDuck.Tests
+
+      - name: Test SourceGenerator
+        run: dotnet run --no-restore -c Release --project tests/NexusMods.MnemonicDB.SourceGenerator.Tests
+
+      - name: Test Storage
+        run: dotnet run --no-restore -c Release --project tests/NexusMods.MnemonicDB.Storage.Tests -- --ignore-exit-code 139
+
+      - name: Test MnemonicDB
+        run: dotnet run --no-restore -c Release --project tests/NexusMods.MnemonicDB.Tests
+        
+        

@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <Import Project="$([MSBuild]::GetPathOfFileAbove('NuGet.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
+    <PropertyGroup>
+        <RootNamespace>NexusMods.HyperDuck</RootNamespace>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    </PropertyGroup>
+    <ItemGroup>
+      <PackageReference Include="JetBrains.Annotations" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+      <PackageReference Include="Microsoft.Extensions.Hosting" />
+      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+      <PackageReference Include="Microsoft.Extensions.Logging" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Console" />
+      <PackageReference Include="Microsoft.Extensions.ObjectPool" />
+      <PackageReference Include="NexusMods.Hashing.xxHash3" />
+      <PackageReference Include="NexusMods.Paths" />
+      <PackageReference Include="ObservableCollections" />
+      <PackageReference Include="R3" />
+    </ItemGroup>
+    <ItemGroup>
+      <None Update="runtimes\linux-x64\native\libduckdb.so">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+        <None Update="runtimes\osx-arm64\native\libduckdb.dylib">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+        <None Update="runtimes\osx-win64\native\duckdb.dll">
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        </None>
+    </ItemGroup>
+
+
+    <PropertyGroup>
+        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('Windows'))">$(DefineConstants);IS_WINDOWS</DefineConstants>
+        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('Linux'))">$(DefineConstants);IS_LINUX</DefineConstants>
+        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('OSX'))">$(DefineConstants);IS_MACOS</DefineConstants>
+    </PropertyGroup>
+    
+    <!-- Non-NuGet Only -->
+    <Import Project="build\NexusMods.HyperDuck.targets" />
+</Project>

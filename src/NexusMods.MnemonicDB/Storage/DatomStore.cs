@@ -235,7 +235,7 @@ public sealed partial class DatomStore : IDatomStore
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogError(ex, "While commiting transaction");
+                    //Logger.LogError(ex, "While commiting transaction");
                     txFn.SetException(ex);
                 }
             }
@@ -246,7 +246,14 @@ public sealed partial class DatomStore : IDatomStore
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Transaction consumer crashed");
+            try
+            {
+                Logger.LogError(ex, "Transaction consumer crashed");
+            }
+            catch (Exception)
+            {
+                // Do nothing, if the logger itself is not usable
+            }
         }
     }
 

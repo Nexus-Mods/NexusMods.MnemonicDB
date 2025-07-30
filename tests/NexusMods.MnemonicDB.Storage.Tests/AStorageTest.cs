@@ -4,11 +4,9 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.MnemonicDB.Storage.Tests.TestAttributes;
 using NexusMods.MnemonicDB.TestModel;
-using NexusMods.MnemonicDB.TestModel.Attributes;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.File;
 
@@ -77,6 +75,8 @@ public abstract class AStorageTest : IDisposable
 
     public void Dispose()
     {
+        DatomStore.Dispose();
+        Backend.Dispose();
     }
 
     public EntityId NextTempId()

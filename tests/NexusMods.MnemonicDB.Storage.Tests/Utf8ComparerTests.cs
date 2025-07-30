@@ -1,14 +1,12 @@
 using System.Text;
-using FluentAssertions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using static NexusMods.MnemonicDB.Abstractions.ElementComparers.Utf8Comparer;
 
 namespace NexusMods.MnemonicDB.Storage.Tests
 {
-    public unsafe class Utf8ComparerTests
+    public class Utf8ComparerTests
     {
         // Helper to invoke the unmanaged compare
-        private static int CompareUtf8(byte[] a, byte[] b)
+        private static unsafe int CompareUtf8(byte[] a, byte[] b)
         {
             fixed (byte* pa = a)
             fixed (byte* pb = b)
@@ -18,19 +16,19 @@ namespace NexusMods.MnemonicDB.Storage.Tests
         }
 
         
-        [Theory]
-        [InlineData("", "")]
-        [InlineData("hello", "hello")]
-        [InlineData("Hello", "heLLo")]
-        [InlineData("/_R", "/Ao")]
-        [InlineData("abc", "abd")]
-        [InlineData("Z", "a")]
-        [InlineData("å", "Å")]         
-        [InlineData("ß", "SS")]        
-        [InlineData("Γειά", "γειΆ")]   
-        [InlineData("こんにちは", "こんばんは")]
-        [InlineData("😊", "😃")]
-        public void KnownStrings_MatchOrdinalIgnoreCase(string a, string b)
+        [Test]
+        [Arguments("", "")]
+        [Arguments("hello", "hello")]
+        [Arguments("Hello", "heLLo")]
+        [Arguments("/_R", "/Ao")]
+        [Arguments("abc", "abd")]
+        [Arguments("Z", "a")]
+        [Arguments("å", "Å")]         
+        [Arguments("ß", "SS")]        
+        [Arguments("Γειά", "γειΆ")]   
+        [Arguments("こんにちは", "こんばんは")]
+        [Arguments("😊", "😃")]
+        public async Task KnownStrings_MatchOrdinalIgnoreCase(string a, string b)
         {
             // derive expected from .NET's OrdinalIgnoreCase
             var expected = Math.Sign(string.Compare(a, b, StringComparison.CurrentCultureIgnoreCase));
@@ -39,11 +37,11 @@ namespace NexusMods.MnemonicDB.Storage.Tests
             var bb = Encoding.UTF8.GetBytes(b);
 
             var result = CompareUtf8(ba, bb);
-            Math.Sign(result).Should().Be(expected);
+            await Assert.That(Math.Sign(result)).IsEqualTo(expected);
         }
 
-        [Fact]
-        public void LongAsciiAndNonAscii_CompareAtVariousPositions()
+        [Test]
+        public async Task LongAsciiAndNonAscii_CompareAtVariousPositions()
         {
             var sb1 = new StringBuilder();
             for (var i = 0; i < 300; i++)
@@ -69,7 +67,7 @@ namespace NexusMods.MnemonicDB.Storage.Tests
                 var b2 = Encoding.UTF8.GetBytes(s2);
 
                 var cmp = CompareUtf8(b1, b2);
-                Math.Sign(cmp).Should().Be(expected);
+                await Assert.That(cmp).IsEqualTo(expected);
             }
         }
 
