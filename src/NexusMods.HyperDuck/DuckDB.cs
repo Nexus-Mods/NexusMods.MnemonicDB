@@ -122,7 +122,6 @@ public class DuckDB : IAsyncDisposable
         using var conn = Connect();
         var prepared = conn.Prepare(query);
         prepared.Bind(1, arg1);
-        conn.Query(query.Sql);
         using var result = prepared.Execute();
         var adaptor = query.Adaptor(result, Registry);
         adaptor.Adapt(result, ref returnValue);
