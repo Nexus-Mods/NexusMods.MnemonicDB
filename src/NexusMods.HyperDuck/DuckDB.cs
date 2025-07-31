@@ -119,7 +119,6 @@ public class DuckDB : IAsyncDisposable
     /// </summary>
     public void QueryInto<TResult, TArg1>(CompiledQuery<TResult, TArg1> query, TArg1 arg1, ref TResult returnValue)
     {
-        throw new NotImplementedException();
         using var conn = Connect();
         var prepared = conn.Prepare(query);
         prepared.Bind(1, arg1);

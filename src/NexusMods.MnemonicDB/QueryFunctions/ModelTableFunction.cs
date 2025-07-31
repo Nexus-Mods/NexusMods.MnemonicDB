@@ -267,7 +267,7 @@ public class ModelTableFunction : ATableFunction
             
         // Load all the Ids here so we can load the rows in parallel.
         var totalRows = db.IdsForPrimaryAttribute(bindInfo.PrimaryAttributeId, (int)GlobalConstants.DefaultVectorSize, out var chunks);
-        initInfo.SetMaxThreads(chunks.Count);
+        //initInfo.SetMaxThreads(chunks.Count);
         return new LocalInitData
         {
             Db = db,
