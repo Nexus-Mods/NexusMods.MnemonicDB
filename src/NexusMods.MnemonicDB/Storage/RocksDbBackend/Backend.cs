@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Text;
+using System.Threading;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Storage.Abstractions;
@@ -21,7 +23,6 @@ public class Backend : IStoreBackend
     private Env? _env;
     private IntPtr _sliceTransform;
     private volatile bool _disposed;
-    private readonly ConcurrentBag<Snapshot> _snapshots;
 
     /// <summary>
     /// Default constructor
@@ -31,7 +32,6 @@ public class Backend : IStoreBackend
         _disposed = false;
         _isReadOnly = readOnly;
         AttributeCache = new AttributeCache();
-        _snapshots = [];
     }
 
     /// <inheritdoc />
@@ -52,7 +52,6 @@ public class Backend : IStoreBackend
             .SetSnapshot(snapShot)
             .SetPinData(true);
         var snapshot = new Snapshot(this, AttributeCache, readOptions, snapShot);
-        _snapshots.Add(snapshot);
         return snapshot;
     }
 
@@ -143,15 +142,6 @@ public class Backend : IStoreBackend
     {
         if (_disposed) return;
         _disposed = true;
-        if (Db == null) 
-            return;
-        
-        while (_snapshots.TryTake(out var snapshot))
-            snapshot.NativeSnapshot.Dispose();
-        
-        var opts = Native.Instance.rocksdb_wait_for_compact_options_create();
-        Native.Instance.rocksdb_wait_for_compact_options_set_close_db(opts, true);
-        Native.Instance.rocksdb_wait_for_compact(Db.Handle, opts);
         Db?.Dispose();
     }
 }
