@@ -15,7 +15,7 @@ namespace NexusMods.MnemonicDB;
 /// <summary>
 /// Container class for the DuckDB based query engine elements
 /// </summary>
-public class QueryEngine : IQueryEngine, IDisposable
+public class QueryEngine : IQueryEngine, IAsyncDisposable
 {
     private readonly Registry _registry;
     private readonly DuckDB _db;
@@ -67,12 +67,10 @@ public class QueryEngine : IQueryEngine, IDisposable
 
     public LogicalType ValueUnion => _valueUnion;
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        /*
         _attrEnumLogicalType.Dispose();
-        _db.Dispose();
-        */
+        await _db.DisposeAsync();
     }
 
     public HyperDuck.DuckDB DuckDb => _db;

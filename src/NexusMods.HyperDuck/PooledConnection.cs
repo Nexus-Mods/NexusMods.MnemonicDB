@@ -14,7 +14,6 @@ public class PooledConnection : IDisposable
     {
         _db = db;
         _conn = connection;
-
     }
 
     public Connection Connection => _conn;
@@ -37,6 +36,10 @@ public class PooledConnection : IDisposable
 
     internal void Destory()
     {
+        var oldStatements = _preparedStatements;
+        _preparedStatements = null!;
+        foreach (var prepared in oldStatements.Values)
+            prepared.Dispose();
         _conn.Dispose();
     }
     

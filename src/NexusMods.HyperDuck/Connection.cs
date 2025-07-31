@@ -1,16 +1,8 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NexusMods.HyperDuck.Adaptor;
 using NexusMods.HyperDuck.Exceptions;
-using NexusMods.HyperDuck.Internals;
 
 namespace NexusMods.HyperDuck;
 
@@ -82,6 +74,7 @@ public unsafe partial class Connection : IDisposable
     public void Dispose()
     {
         if (_ptr == null) return;
+        
         
         Native.duckdb_disconnect(ref _ptr);
         _ptr = null;

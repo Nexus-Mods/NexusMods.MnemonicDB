@@ -66,10 +66,14 @@ public class DuckDB : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        if (_disposed)
+            return;
+        
+        _disposed = true;
         if (LiveQueryUpdater.IsValueCreated)
             await LiveQueryUpdater.Value.DisposeAsync();
         
-        while (_connections.TryTake(out var connection))
+        while (_allConnections.TryTake(out var connection))
         {
             connection.Destory();
         }
