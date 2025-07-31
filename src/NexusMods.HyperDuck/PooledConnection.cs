@@ -6,15 +6,14 @@ namespace NexusMods.HyperDuck;
 
 public class PooledConnection : IDisposable
 {
-    private readonly Database _db;
+    private readonly DuckDB _db;
     private readonly Connection _conn;
     private ConcurrentDictionary<ACompiledQuery, PreparedStatement> _preparedStatements = new();
 
-    public PooledConnection(Connection connection, Database db)
+    public PooledConnection(Connection connection, DuckDB db)
     {
         _db = db;
         _conn = connection;
-
     }
 
     public Connection Connection => _conn;
@@ -35,8 +34,12 @@ public class PooledConnection : IDisposable
         return stmt;
     }
 
-    internal void Destory()
+    internal void Destroy()
     {
+        var oldStatements = _preparedStatements;
+        _preparedStatements = null!;
+        foreach (var prepared in oldStatements.Values)
+            prepared.Dispose();
         _conn.Dispose();
     }
     

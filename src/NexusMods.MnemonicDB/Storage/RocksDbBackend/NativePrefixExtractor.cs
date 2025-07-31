@@ -80,15 +80,27 @@ public static class NativePrefixExtractor
         return typeof(NativePrefixExtractor).GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic)!.MethodHandle.GetFunctionPointer();
     }
 
-    public static IntPtr MakeSliceTransform()
+    public static unsafe IntPtr MakeSliceTransform()
     {
+        delegate* unmanaged[Cdecl]<IntPtr, void> destructorPtr;
+        destructorPtr = &DestructorFunc;
+        delegate* unmanaged[Cdecl]<IntPtr, IntPtr, UIntPtr, UIntPtr*, IntPtr> transformPtr;
+        transformPtr = &TransformFunc;
+        delegate* unmanaged[Cdecl]<IntPtr, IntPtr, UIntPtr, byte> inDomainPtr;
+        inDomainPtr = &InDomain;
+        delegate* unmanaged[Cdecl]<IntPtr, IntPtr, UIntPtr, byte> inRangePtr;
+        inRangePtr = &InRange;
+        delegate* unmanaged[Cdecl]<IntPtr> namePtr;
+        namePtr = &NameFunc;
+        
+        
         var ptr = Native.Instance.rocksdb_slicetransform_create(
             IntPtr.Zero,
-            GetNativeFnPtr(nameof(DestructorFunc)),
-            GetNativeFnPtr(nameof(TransformFunc)),
-            GetNativeFnPtr(nameof(InDomain)),
-            GetNativeFnPtr(nameof(InRange)),
-            GetNativeFnPtr(nameof(NameFunc)));
+            (IntPtr)destructorPtr,
+            (IntPtr)transformPtr,
+            (IntPtr)inDomainPtr,
+            (IntPtr)inRangePtr,
+            (IntPtr)namePtr);
         return ptr;
     }
 }

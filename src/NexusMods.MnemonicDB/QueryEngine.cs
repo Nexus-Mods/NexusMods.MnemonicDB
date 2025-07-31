@@ -15,21 +15,21 @@ namespace NexusMods.MnemonicDB;
 /// <summary>
 /// Container class for the DuckDB based query engine elements
 /// </summary>
-public class QueryEngine : IQueryEngine, IDisposable
+public class QueryEngine : IQueryEngine, IAsyncDisposable
 {
     private readonly Registry _registry;
-    private readonly Database _db;
+    private readonly DuckDB _db;
     private readonly IAttribute[] _declaredAttributes;
     private readonly Dictionary<string, IAttribute> _attrsByShortName;
-    private readonly LogicalType _attrEnumLogicalType;
-    private readonly LogicalType _valueUnion;
-    private readonly LogicalType _valueTagEnum;
+    private LogicalType _attrEnumLogicalType;
+    private LogicalType _valueUnion;
+    private LogicalType _valueTagEnum;
 
     public QueryEngine(IServiceProvider services)
     {
         _registry = new Registry(services.GetServices<IResultAdaptorFactory>(),
             services.GetServices<IRowAdaptorFactory>(), services.GetServices<IValueAdaptorFactory>());
-        _db = Database.OpenInMemory(_registry);
+        _db = DuckDB.Open(_registry);
         _declaredAttributes = services.GetServices<IAttribute>().OrderBy(a => a.Id.Id).ToArray();
         _attrsByShortName = _declaredAttributes.ToDictionary(a => a.ShortName, a => a);
         _attrEnumLogicalType = LogicalType.CreateEnum(_declaredAttributes.Select(s => s.ShortName).ToArray());
@@ -67,12 +67,14 @@ public class QueryEngine : IQueryEngine, IDisposable
 
     public LogicalType ValueUnion => _valueUnion;
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
+        _valueUnion.Dispose();
+        _valueTagEnum.Dispose();
         _attrEnumLogicalType.Dispose();
-        _db.Dispose();
+        await _db.DisposeAsync();
     }
 
-    public HyperDuck.Database Database => _db;
+    public HyperDuck.DuckDB DuckDb => _db;
     public LogicalType ValueTagEnum => _valueTagEnum;
 }

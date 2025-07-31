@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Text;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -19,14 +20,18 @@ public class Backend : IStoreBackend
     private readonly bool _isReadOnly;
     private Env? _env;
     private IntPtr _sliceTransform;
+    private volatile bool _disposed;
+    private readonly ConcurrentBag<Snapshot> _snapshots;
 
     /// <summary>
     /// Default constructor
     /// </summary>
     public Backend(bool readOnly = false)
     {
+        _disposed = false;
         _isReadOnly = readOnly;
         AttributeCache = new AttributeCache();
+        _snapshots = [];
     }
 
     /// <inheritdoc />
@@ -46,7 +51,9 @@ public class Backend : IStoreBackend
             .SetTotalOrderSeek(false)
             .SetSnapshot(snapShot)
             .SetPinData(true);
-        return new Snapshot(this, AttributeCache, readOptions, snapShot);
+        var snapshot = new Snapshot(this, AttributeCache, readOptions, snapShot);
+        _snapshots.Add(snapshot);
+        return snapshot;
     }
 
     /// <inheritdoc />
@@ -128,12 +135,23 @@ public class Backend : IStoreBackend
             }
             prevPtrCache.CopyFrom(thisPtr);
             iterator.Next();
-        }
+        } 
     }
 
     /// <inheritdoc />
     public void Dispose()
     {
+        if (_disposed) return;
+        _disposed = true;
+        if (Db == null) 
+            return;
+        
+        while (_snapshots.TryTake(out var snapshot))
+            snapshot.NativeSnapshot.Dispose();
+        
+        var opts = Native.Instance.rocksdb_wait_for_compact_options_create();
+        Native.Instance.rocksdb_wait_for_compact_options_set_close_db(opts, true);
+        Native.Instance.rocksdb_wait_for_compact(Db.Handle, opts);
         Db?.Dispose();
     }
 }

@@ -55,16 +55,16 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var table = TableResults();
         await InsertExampleData();
 
-        var results = new List<(EntityId, TxId)>();
-        var query = Query.Compile<List<(EntityId, TxId)>>("""
-                                                          SELECT ents.Loadout, max(d.T) FROM 
-                                                          (SELECT Id, Id as Loadout FROM mdb_Loadout() 
-                                                           UNION SELECT Id, Loadout FROM mdb_Mod()
-                                                           UNION SELECT file.Id, mod.Loadout FROM mdb_File() file 
-                                                                 LEFT JOIN mdb_Mod() mod ON mod.Id = file.Mod) ents
-                                                          LEFT JOIN mdb_Datoms() d ON d.E = ents.Id
-                                                          GROUP BY ents.Loadout
-                                                          """);
+        var results = new ObservableList<(EntityId, TxId)>();
+        var query = Query.Compile<ObservableList<(EntityId, TxId)>>("""
+                                                                    SELECT ents.Loadout, max(d.T) FROM 
+                                                                    (SELECT Id, Id as Loadout FROM mdb_Loadout() 
+                                                                     UNION SELECT Id, Loadout FROM mdb_Mod()
+                                                                     UNION SELECT file.Id, mod.Loadout FROM mdb_File() file 
+                                                                           LEFT JOIN mdb_Mod() mod ON mod.Id = file.Mod) ents
+                                                                    LEFT JOIN mdb_Datoms() d ON d.E = ents.Id
+                                                                    GROUP BY ents.Loadout
+                                                                    """);
         using var _ = Connection.ObserveInto(query, ref results);
         
         table.Add(results, "Initial Results");
@@ -158,6 +158,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(modsWithoutDescription).HasCount(2);
     }
 
+    
     [Test]
     public async Task CanSendParametersToQuery()
     {

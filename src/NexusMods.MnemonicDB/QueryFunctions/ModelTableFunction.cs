@@ -214,22 +214,17 @@ public class ModelTableFunction : ATableFunction
 
     private void WriteVarCharColumn(ReadOnlySpan<EntityId> ids, WritableVector vector, ILightweightDatomSegment datoms)
     {
-        WritableValidityMask mask = default;
+        var mask = vector.GetValidityMask();
         for (var rowIdx = 0; rowIdx < ids.Length; rowIdx++)
         {
             var rowId = ids[rowIdx];
             if (datoms.FastForwardTo(rowId))
             {
                 vector.WriteUtf8((ulong)rowIdx, datoms.ValueSpan);
+                mask[(ulong)rowIdx] = true;
             }
             else
             {
-                if (!mask.IsValid)
-                {
-                    mask = vector.GetValidityMask();
-                    mask.SetAllValid();
-                }
-
                 mask[(ulong)rowIdx] = false;
             }
         }

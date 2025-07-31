@@ -25,7 +25,7 @@ public class AdapterTests
     [Test]
     public async Task CanGetScalarResults()
     {
-        using var db = Database.OpenInMemory(Registry);
+        await using var db = DuckDB.Open(Registry);
         var queryOne = Query.Compile<List<int>>("SELECT 1 AS one");
         var result = db.Query(queryOne);
 
@@ -40,7 +40,7 @@ public class AdapterTests
     [Test]
     public async Task CanGetTupleResults()
     {
-        using var db = Database.OpenInMemory(Registry);
+        await using var db = DuckDB.Open(Registry);
         var queryTwoColumns = Query.Compile<List<(int, int)>>("SELECT 1 AS one, 2 AS two");
         var result = db.Query(queryTwoColumns);
 
@@ -50,7 +50,7 @@ public class AdapterTests
     [Test]
     public async Task CanGetStringResults()
     {
-        using var db = Database.OpenInMemory(Registry);
+        await using var db = DuckDB.Open(Registry);
         var queryTwoStrings = Query.Compile<List<(string, string)>>("SELECT 'Hello' AS one, 'A really long string that cannot be inlined' AS two");
         var result = db.Query(queryTwoStrings);
 
@@ -60,7 +60,7 @@ public class AdapterTests
     [Test]
     public async Task CanGetListResults()
     {
-        using var db = Database.OpenInMemory(Registry);
+        await using var db = DuckDB.Open(Registry);
         var queryList = Query.Compile<List<(List<int>, int)>>("SELECT [1, 2, 3] as lst, 42 as i");
         var result = db.Query(queryList);
 

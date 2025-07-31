@@ -76,7 +76,7 @@ public abstract unsafe partial class ATableFunction
         
         public void Dispose()
         {
-            Native.duckdb_destroy_table_function(ref _ptr);
+            //Native.duckdb_destroy_table_function(ref _ptr);
         }
 
         /// <summary>
