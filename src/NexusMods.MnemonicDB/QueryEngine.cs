@@ -15,15 +15,15 @@ namespace NexusMods.MnemonicDB;
 /// <summary>
 /// Container class for the DuckDB based query engine elements
 /// </summary>
-public class QueryEngine : IQueryEngine, IDisposable
+public class QueryEngine : IQueryEngine, IAsyncDisposable
 {
     private readonly Registry _registry;
     private readonly DuckDB _db;
     private readonly IAttribute[] _declaredAttributes;
     private readonly Dictionary<string, IAttribute> _attrsByShortName;
-    private readonly LogicalType _attrEnumLogicalType;
-    private readonly LogicalType _valueUnion;
-    private readonly LogicalType _valueTagEnum;
+    private LogicalType _attrEnumLogicalType;
+    private LogicalType _valueUnion;
+    private LogicalType _valueTagEnum;
 
     public QueryEngine(IServiceProvider services)
     {
@@ -67,12 +67,12 @@ public class QueryEngine : IQueryEngine, IDisposable
 
     public LogicalType ValueUnion => _valueUnion;
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        /*
+        _valueUnion.Dispose();
+        _valueTagEnum.Dispose();
         _attrEnumLogicalType.Dispose();
-        _db.Dispose();
-        */
+        await _db.DisposeAsync();
     }
 
     public HyperDuck.DuckDB DuckDb => _db;

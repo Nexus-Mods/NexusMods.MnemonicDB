@@ -66,12 +66,16 @@ public class DuckDB : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        if (_disposed)
+            return;
+        
+        _disposed = true;
         if (LiveQueryUpdater.IsValueCreated)
             await LiveQueryUpdater.Value.DisposeAsync();
         
-        while (_connections.TryTake(out var connection))
+        while (_allConnections.TryTake(out var connection))
         {
-            connection.Destory();
+            connection.Destroy();
         }
 
         _db.Dispose();
@@ -93,8 +97,9 @@ public class DuckDB : IAsyncDisposable
     public void QueryInto<TResult>(CompiledQuery<TResult> query, ref TResult returnValue)
     {
         using var conn = Connect();
-        var prepared = conn.Prepare(query);
-        using var result = prepared.Execute();
+        //var prepared = conn.Prepare(query);
+        //using var result = prepared.Execute();
+        using var result = conn.Query(query.Sql);
         var adaptor = query.Adaptor(result, Registry);
         adaptor.Adapt(result, ref returnValue);
     }
