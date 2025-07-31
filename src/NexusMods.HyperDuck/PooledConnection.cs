@@ -34,7 +34,7 @@ public class PooledConnection : IDisposable
         return stmt;
     }
 
-    internal void Destory()
+    internal void Destroy()
     {
         var oldStatements = _preparedStatements;
         _preparedStatements = null!;

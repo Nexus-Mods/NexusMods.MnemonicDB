@@ -75,7 +75,6 @@ public unsafe partial class Connection : IDisposable
     {
         if (_ptr == null) return;
         
-        
         Native.duckdb_disconnect(ref _ptr);
         _ptr = null;
     }

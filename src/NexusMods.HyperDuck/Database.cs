@@ -62,6 +62,9 @@ public unsafe partial struct Database : IDisposable
 
     public void Dispose()
     {
+        if (_ptr == null) 
+            return;
+        
         Native.duckdb_close(ref _ptr);
         _ptr = null;
     }

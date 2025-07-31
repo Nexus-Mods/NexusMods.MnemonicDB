@@ -21,9 +21,9 @@ public class QueryEngine : IQueryEngine, IAsyncDisposable
     private readonly DuckDB _db;
     private readonly IAttribute[] _declaredAttributes;
     private readonly Dictionary<string, IAttribute> _attrsByShortName;
-    private readonly LogicalType _attrEnumLogicalType;
-    private readonly LogicalType _valueUnion;
-    private readonly LogicalType _valueTagEnum;
+    private LogicalType _attrEnumLogicalType;
+    private LogicalType _valueUnion;
+    private LogicalType _valueTagEnum;
 
     public QueryEngine(IServiceProvider services)
     {
@@ -69,6 +69,8 @@ public class QueryEngine : IQueryEngine, IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
+        _valueUnion.Dispose();
+        _valueTagEnum.Dispose();
         _attrEnumLogicalType.Dispose();
         await _db.DisposeAsync();
     }

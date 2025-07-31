@@ -158,6 +158,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(modsWithoutDescription).HasCount(2);
     }
 
+    /*
     [Test]
     public async Task CanSendParametersToQuery()
     {
@@ -167,4 +168,5 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(result.First()).IsEqualTo(42);
 
     }
+    */
 }

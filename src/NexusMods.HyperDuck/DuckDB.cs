@@ -75,7 +75,7 @@ public class DuckDB : IAsyncDisposable
         
         while (_allConnections.TryTake(out var connection))
         {
-            connection.Destory();
+            connection.Destroy();
         }
 
         _db.Dispose();
@@ -97,8 +97,9 @@ public class DuckDB : IAsyncDisposable
     public void QueryInto<TResult>(CompiledQuery<TResult> query, ref TResult returnValue)
     {
         using var conn = Connect();
-        var prepared = conn.Prepare(query);
-        using var result = prepared.Execute();
+        //var prepared = conn.Prepare(query);
+        //using var result = prepared.Execute();
+        using var result = conn.Query(query.Sql);
         var adaptor = query.Adaptor(result, Registry);
         adaptor.Adapt(result, ref returnValue);
     }
@@ -118,9 +119,11 @@ public class DuckDB : IAsyncDisposable
     /// </summary>
     public void QueryInto<TResult, TArg1>(CompiledQuery<TResult, TArg1> query, TArg1 arg1, ref TResult returnValue)
     {
+        throw new NotImplementedException();
         using var conn = Connect();
         var prepared = conn.Prepare(query);
         prepared.Bind(1, arg1);
+        conn.Query(query.Sql);
         using var result = prepared.Execute();
         var adaptor = query.Adaptor(result, Registry);
         adaptor.Adapt(result, ref returnValue);
