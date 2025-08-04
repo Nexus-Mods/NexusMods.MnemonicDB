@@ -14,7 +14,7 @@ using NexusMods.HyperDuck.Internals;
 
 namespace NexusMods.HyperDuck;
 
-public class DuckDB : IAsyncDisposable
+public class DuckDB : IAsyncDisposable, IQueryMixin
 {
 
     private Database _db;
@@ -80,52 +80,8 @@ public class DuckDB : IAsyncDisposable
 
         _db.Dispose();
     }
-    
-    /// <summary>
-    /// Executes the query and returns the result, adapting it to the given return type. 
-    /// </summary>
-    public TResult Query<TResult>(CompiledQuery<TResult> query) where TResult : new()
-    {
-        var returnValue = new TResult();
-        QueryInto(query, ref returnValue);
-        return returnValue;
-    }
-    
-    /// <summary>
-    /// Same as Query, except the results are adapted into a provided preexisting result value
-    /// </summary>
-    public void QueryInto<TResult>(CompiledQuery<TResult> query, ref TResult returnValue)
-    {
-        using var conn = Connect();
-        //var prepared = conn.Prepare(query);
-        //using var result = prepared.Execute();
-        using var result = conn.Query(query.Sql);
-        var adaptor = query.Adaptor(result, Registry);
-        adaptor.Adapt(result, ref returnValue);
-    }
-    
-    /// <summary>
-    /// Executes the query and returns the result, adapting it to the given return type. 
-    /// </summary>
-    public TResult Query<TResult, TArg1>(CompiledQuery<TResult, TArg1> query, TArg1 arg1) where TResult : new()
-    {
-        var returnValue = new TResult();
-        QueryInto(query, arg1, ref returnValue);
-        return returnValue;
-    }
-    
-    /// <summary>
-    /// Same as Query, except the results are adapted into a provided preexisting result value
-    /// </summary>
-    public void QueryInto<TResult, TArg1>(CompiledQuery<TResult, TArg1> query, TArg1 arg1, ref TResult returnValue)
-    {
-        using var conn = Connect();
-        var prepared = conn.Prepare(query);
-        prepared.Bind(1, arg1);
-        using var result = prepared.Execute();
-        var adaptor = query.Adaptor(result, Registry);
-        adaptor.Adapt(result, ref returnValue);
-    }
+
+    public DuckDB DuckDBQueryEngine => this;
 
     public Task FlushQueries()
     {
@@ -155,7 +111,7 @@ public class DuckDB : IAsyncDisposable
     /// </summary>
     public HashSet<ATableFunction> GetReferencedFunctions(string query)
     {
-        var result = Query(HyperDuck.Query.Compile<List<(string, string)>>("EXPLAIN (FORMAT JSON) " + query));
+        var result = ((IQueryMixin)this).Query<(string, string)>("EXPLAIN (FORMAT JSON) " + query);
 
         var plan = JsonSerializer.Deserialize<QueryPlanNode[]>(result.First().Item2)!;
         
@@ -181,6 +137,8 @@ public class DuckDB : IAsyncDisposable
     
     public IDisposable ObserveQuery<T>(CompiledQuery<T> query, ref T output)
     {
+        throw new NotImplementedException();
+        /*
         var deps = GetReferencedFunctions(query.Sql);
         QueryInto(query, ref output);
 
@@ -195,5 +153,6 @@ public class DuckDB : IAsyncDisposable
 
         LiveQueryUpdater.Value.Add(live);
         return live;
+        */
     }
 }

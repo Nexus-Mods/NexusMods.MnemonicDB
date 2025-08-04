@@ -12,20 +12,13 @@ public interface IQueryMixin
 {
     public DuckDB DuckDBQueryEngine { get; }
 
-    public TResult Query<TResult>(CompiledQuery<TResult> query) where TResult : new() 
-        => DuckDBQueryEngine.Query(query);
-    
-    public void QueryInto<TResult>(CompiledQuery<TResult> query, ref TResult returnValue)
-        => DuckDBQueryEngine.QueryInto(query, ref returnValue);
-    
-    public TResult Query<TResult, TArg1>(CompiledQuery<TResult, TArg1> query, TArg1 arg1) where TResult : new() 
-        => DuckDBQueryEngine.Query(query, arg1);
-    
-    public void QueryInto<TResult, TArg1>(CompiledQuery<TResult, TArg1> query, TArg1 arg1, ref TResult returnValue)
-        => DuckDBQueryEngine.QueryInto(query, arg1, ref returnValue);
-    
-    public IDisposable ObserveInto<TResult>(CompiledQuery<TResult> query, ref TResult target)
-        => DuckDBQueryEngine.ObserveQuery(query, ref target);
+    public Query<TResult> Query<TResult>(string sql, params object[] args)
+        => new()
+        {
+            Sql = sql,
+            Parameters = args,
+            DuckDBQueryEngine = DuckDBQueryEngine,
+        };
     
     public Task FlushQueries() => DuckDBQueryEngine.FlushQueries();
 
