@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.HyperDuck;
 using NexusMods.HyperDuck.Adaptor;
@@ -18,7 +19,7 @@ namespace NexusMods.MnemonicDB;
 public class QueryEngine : IQueryEngine, IAsyncDisposable
 {
     private readonly Registry _registry;
-    private readonly DuckDB _db;
+    private readonly HyperDuck.DuckDB _db;
     private readonly IAttribute[] _declaredAttributes;
     private readonly Dictionary<string, IAttribute> _attrsByShortName;
     private LogicalType _attrEnumLogicalType;
@@ -29,12 +30,25 @@ public class QueryEngine : IQueryEngine, IAsyncDisposable
     {
         _registry = new Registry(services.GetServices<IResultAdaptorFactory>(),
             services.GetServices<IRowAdaptorFactory>(), services.GetServices<IValueAdaptorFactory>());
-        _db = DuckDB.Open(_registry);
+        _db = HyperDuck.DuckDB.Open(_registry);
+        DbContext = new DbContext(new DbContextOptions<DbContext>()
+            Conn
+        );
         _declaredAttributes = services.GetServices<IAttribute>().OrderBy(a => a.Id.Id).ToArray();
         _attrsByShortName = _declaredAttributes.ToDictionary(a => a.ShortName, a => a);
         _attrEnumLogicalType = LogicalType.CreateEnum(_declaredAttributes.Select(s => s.ShortName).ToArray());
         _valueTagEnum = MakeValueTagEnum();
         _valueUnion = CreateValueType();
+    }
+
+    internal QueryEngineDbContext DbContext { get; }
+
+    internal class QueryEngineDbContext : DbContext
+    {
+        
+        protected override void OnConfiguring(DbContextOptionsBuilder options)
+          => options.Conn
+        
     }
 
     private LogicalType MakeValueTagEnum()

@@ -1,10 +1,8 @@
-using NexusMods.Hashing.xxHash3;
+using Microsoft.EntityFrameworkCore;
 using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.TestModel;
-using NexusMods.MnemonicDB.TestModel.Attributes;
-using NexusMods.Paths;
-using File = NexusMods.MnemonicDB.TestModel.File;
 
 namespace NexusMods.MnemonicDB.Tests;
 
@@ -56,6 +54,17 @@ public class QueryEngineTests : AMnemonicDBTest
 
         await Assert.That(data).HasCount(3);
     }
+
+    [Test]
+    public async Task EfCoreTests()
+    {
+        var conn = from mod in Mod.From(Connection)
+            where mod.Name == "test"
+            select mod;
+        
+        await Assert.That(conn.ToList()).HasCount(3);
+    }
+
 
     /*
     [Test]

@@ -2,6 +2,8 @@
   <ItemGroup>
     <PackageVersion Include="DynamicData" Version="9.3.2" />
     <PackageVersion Include="Halgari.Jamarino.IntervalTree" Version="1.0.0-alpha" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="9.0.7" />
+    <PackageVersion Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.7" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.7" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.7" />
     <PackageVersion Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.7" />

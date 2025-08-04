@@ -10,10 +10,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using DynamicData;
 using Jamarino.IntervalTree;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.EventTypes;
 using NexusMods.MnemonicDB.InternalTxFunctions;
@@ -82,7 +84,7 @@ public sealed class Connection : IConnection
         }
     }
 
-    private void RegisterWithEngine(DuckDB duckDb)
+    private void RegisterWithEngine(HyperDuck.DuckDB duckDb)
     {
         var observer = Revisions.Select(r =>
             {
@@ -483,7 +485,13 @@ public sealed class Connection : IConnection
         tx.Set(new ScanUpdate(function));
         return await tx.Commit();
     }
-    
+
+    public IQueryable<T> Query<T>()
+    {
+        DbSet<AttributeDefinition> f = null!;
+        return f.FromSql("SELECT 1");
+    }
+
     public Task FlushQueries()
     {
         return _queryEngine!.DuckDb.FlushQueries();
@@ -613,5 +621,5 @@ public sealed class Connection : IConnection
         _isDisposed = true;
     }
 
-    public DuckDB DuckDBQueryEngine => _queryEngine!.DuckDb;
+    public HyperDuck.DuckDB DuckDBQueryEngine => _queryEngine!.DuckDb;
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Buffers;
+using System.Linq;
 using System.Threading.Tasks;
 using DynamicData;
 using NexusMods.HyperDuck;
@@ -108,4 +109,6 @@ public interface IConnection : IDisposable, IQueryMixin
     /// defines what should be done with each datom.
     /// </summary>
     public Task<ICommitResult> ScanUpdate(ScanFunction function);
+
+    public IQueryable<T> Query<T>();
 }

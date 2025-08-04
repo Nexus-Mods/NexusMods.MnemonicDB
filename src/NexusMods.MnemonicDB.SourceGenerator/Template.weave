@@ -21,6 +21,7 @@ using global::Microsoft.Extensions.DependencyInjection;
 using global::NexusMods.MnemonicDB.Abstractions;
 using global::System.Diagnostics.CodeAnalysis;
 using global::System.Diagnostics.Contracts;
+using global::Microsoft.EntityFrameworkCore;
 
 using __ABSTRACTIONS__ = NexusMods.MnemonicDB.Abstractions;
 using __MODELS__ = NexusMods.MnemonicDB.Abstractions.Models;
@@ -44,6 +45,13 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     {{else}}
     {{/if}}
     {{/each}}
+    
+    #region EF Query Methods
+    
+    [DbFunction("mdb_{{= model.Name}}")]
+    public static IQueryable<{{= model.Name}}.QueryModel> From(__ABSTRACTIONS__.IConnection conn) => conn.Query<{{= model.Name}}.QueryModel>();
+    
+    #endregion
 
     #region CRUD Methods
 
@@ -460,6 +468,13 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
                return {{= model.Name}}Id.From(model!.Value.Id);
            }
         }
+        
+    public class QueryModel
+    {
+       {{each attr in model.Attributes}}
+       public required {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} { get; set;}
+       {{/each}}
+    }
 }
 
 /// <summary>
@@ -639,5 +654,6 @@ public static class {{= model.Name}}Extensions {
     public static {{= model.Name}}.ReadOnly Remap(this __ABSTRACTIONS__.ICommitResult result, {{= model.Name}}.New model) {
         return new {{= model.Name}}.ReadOnly(result.Db, result[model.Id]);
     }
-
+    
 }
+
