@@ -28,7 +28,9 @@ public class QueryEngine : IQueryEngine, IAsyncDisposable
     public QueryEngine(IServiceProvider services)
     {
         _registry = new Registry(services.GetServices<IResultAdaptorFactory>(),
-            services.GetServices<IRowAdaptorFactory>(), services.GetServices<IValueAdaptorFactory>());
+            services.GetServices<IRowAdaptorFactory>(), 
+            services.GetServices<IValueAdaptorFactory>(),
+            services.GetServices<IBindingConverter>());
         _db = DuckDB.Open(_registry);
         _declaredAttributes = services.GetServices<IAttribute>().OrderBy(a => a.Id.Id).ToArray();
         _attrsByShortName = _declaredAttributes.ToDictionary(a => a.ShortName, a => a);

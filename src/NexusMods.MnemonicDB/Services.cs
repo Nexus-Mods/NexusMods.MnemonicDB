@@ -4,6 +4,7 @@ using NexusMods.HyperDuck.Adaptor;
 using NexusMods.HyperDuck.Adaptor.Impls;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
+using NexusMods.MnemonicDB.BindingConverters;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
@@ -18,12 +19,19 @@ public static class Services
     /// <summary>
     ///     Registers the event sourcing services with the service collection.
     /// </summary>
-    public static IServiceCollection AddMnemonicDB(this IServiceCollection services)
+    public static IServiceCollection AddMnemonicDB(this IServiceCollection s)
     {
-        services.AddSingleton<IConnection, Connection>();
-        services.AddMnemonicDBStorage();
+        s.AddSingleton<IConnection, Connection>();
+        s.AddConverters();
+        s.AddMnemonicDBStorage();
 
-        return services;
+        return s;
+    }
+
+    public static IServiceCollection AddConverters(this IServiceCollection s)
+    {
+        s.AddSingleton<IBindingConverter, DbBindingConverter>();
+        return s;
     }
     
     /// <summary>

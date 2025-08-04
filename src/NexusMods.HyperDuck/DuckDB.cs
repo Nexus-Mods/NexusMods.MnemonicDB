@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NexusMods.HyperDuck.Adaptor;
@@ -21,6 +22,9 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
     private readonly IRegistry _registry;
     private readonly ConcurrentBag<PooledConnection> _connections = [];
     private readonly ConcurrentBag<PooledConnection> _allConnections = [];
+    private uint _nextGlobalId = 0;
+    private readonly ConcurrentDictionary<object, ushort> _globalIds = new();
+    private readonly ConcurrentDictionary<ushort, object> _globalObjects = new();
     
     internal readonly Lazy<LiveQueryUpdater> LiveQueryUpdater =  new(static () => new LiveQueryUpdater());
     internal readonly ConcurrentDictionary<string, ATableFunction> TableFunctions = new();
@@ -36,7 +40,7 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
 
     public static DuckDB Open()
     {
-        return new DuckDB(new Registry([], [], []));
+        return new DuckDB(new Registry([], [], [], []));
     }
 
     public static DuckDB Open(IRegistry registry)
@@ -55,7 +59,7 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
         if (_connections.TryTake(out var pooledConnection))
             return pooledConnection;
         
-        var connection = _db.Connect();
+        var connection = _db.Connect(this);
         pooledConnection = new PooledConnection(connection, this);
         _allConnections.Add(pooledConnection);
         return pooledConnection;
@@ -133,5 +137,30 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
         }
         foreach (var child in node.Children)
             AnalyzeNode(child, touchedFunctions);
+    }
+
+    public ushort RegisterGlobalObject(object obj)
+    {
+        var globalId = (ushort)Interlocked.Increment(ref _nextGlobalId);
+        _globalIds[obj] = globalId;
+        _globalObjects[globalId] = obj;
+        return globalId;
+    }
+
+    public void DisposeGlobalObject(object obj)
+    {
+        var id = _globalIds[obj];
+        _globalIds.TryRemove(obj, out _);
+        _globalObjects.TryRemove(id, out _);
+    }
+
+    public ushort IdFor(object conn)
+    {
+        return _globalIds[conn];
+    }
+
+    public object ObjectFor(ushort id)
+    {
+        return _globalObjects[id];
     }
 }

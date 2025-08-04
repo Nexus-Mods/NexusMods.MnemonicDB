@@ -9,10 +9,12 @@ namespace NexusMods.HyperDuck;
 public unsafe partial class Connection : IDisposable
 {
     internal void* _ptr;
+    private readonly DuckDB _duckDb;
 
-    public Connection(void *ptr)
+    public Connection(void *ptr, DuckDB duckDb)
     {
         _ptr = ptr;
+        _duckDb = duckDb;
     }
     
     public void Interrupt()
@@ -41,7 +43,7 @@ public unsafe partial class Connection : IDisposable
             throw new QueryException("Cannot prepare statement: " + error);
         }
 
-        return new PreparedStatement(stmt, this);
+        return new PreparedStatement(stmt, _duckDb.Registry, this);
     }
     
     internal static partial class Native

@@ -9,31 +9,24 @@ namespace NexusMods.HyperDuck;
 
 public unsafe partial struct PreparedStatement : IDisposable
 {
-    private void* _ptr;
+    public void* _ptr;
     private readonly Connection _connection;
+    private readonly IRegistry _registry;
 
-    public PreparedStatement(void* ptr, Connection connection)
+    public PreparedStatement(void* ptr, IRegistry registry, Connection connection)
     {
         _ptr = ptr;
         _connection = connection;
+        _registry = registry;
     }
 
     public void Bind<T>(int idx, T value)
     {
-        switch (value)
-        {
-            case int i:
-                Native.duckdb_bind_int32(_ptr, idx, i);
-                break;
-            case ulong v:
-                Native.duckdb_bind_uint64(_ptr, idx, v);
-                break;
-            default:
-                throw new NotImplementedException("No way to bind {value.GetType().Name}");
-        }
+        var converter = _registry.GetBindingConverter<T>(value);
+        converter.Bind(this, idx, value);
     }
 
-    internal static partial class Native
+    public static partial class Native
     {
         [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
@@ -58,8 +51,9 @@ public unsafe partial struct PreparedStatement : IDisposable
         Result resultPtr = new Result();
         if (Native.duckdb_execute_prepared(_ptr, ref resultPtr) != State.Success)
         {
+            var error = Marshal.PtrToStringUTF8((nint)Connection.Native.duckdb_result_error(ref resultPtr));
             resultPtr.Dispose();
-            throw new InvalidOperationException("Failed to execute prepared statement.");
+            throw new InvalidOperationException("Failed to execute prepared statement: " + error);
         }
         return resultPtr;
     }
