@@ -64,7 +64,7 @@ public class TableFunctionTests
         db.Register(fn);
 
         var data = new List<int>();
-        using var liveQuery = ((IQueryMixin)db).Query<int>("SELECT * FROM live_array_of_ints()").ObserveInto(ref data);
+        using var liveQuery = ((IQueryMixin)db).Query<int>("SELECT * FROM live_array_of_ints()").ObserveInto(data);
 
         await Assert.That(data).IsEmpty();
         

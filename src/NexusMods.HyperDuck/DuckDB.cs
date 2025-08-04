@@ -134,25 +134,4 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
         foreach (var child in node.Children)
             AnalyzeNode(child, touchedFunctions);
     }
-    
-    public IDisposable ObserveQuery<T>(CompiledQuery<T> query, ref T output)
-    {
-        throw new NotImplementedException();
-        /*
-        var deps = GetReferencedFunctions(query.Sql);
-        QueryInto(query, ref output);
-
-        var live = new Internals.LiveQuery<T>
-        {
-            DependsOn = deps.ToArray(),
-            DuckDb = this,
-            Query = query,
-            Output = output,
-            Updater = LiveQueryUpdater.Value
-        };
-
-        LiveQueryUpdater.Value.Add(live);
-        return live;
-        */
-    }
 }

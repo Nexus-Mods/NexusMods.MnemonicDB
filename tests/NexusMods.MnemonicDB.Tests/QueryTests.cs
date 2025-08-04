@@ -24,9 +24,9 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var historyResults = new ObservableList<(TxId, long)>();
         
         using var _ = Connection.Query<(RelativePath, Hash, long)>("SELECT Path, Hash, COUNT(*) FROM mdb_File() GROUP BY Path, Hash ORDER BY Path, Hash")
-            .ObserveInto(ref results);
+            .ObserveInto(results);
         using var _2 = Connection.Query<(TxId, long)>("SELECT T, COUNT(E) FROM mdb_Datoms(A:= 'File/Hash', History:=true) WHERE IsRetract = false GROUP BY T ORDER BY T")
-            .ObserveInto(ref historyResults);
+            .ObserveInto(historyResults);
 
         table.Add(results, "Initial Results");
         table.Add(historyResults, "Initial History");
@@ -63,7 +63,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                                                                 LEFT JOIN mdb_Mod() mod ON mod.Id = file.Mod) ents
                                                          LEFT JOIN mdb_Datoms() d ON d.E = ents.Id
                                                          GROUP BY ents.Loadout
-                                                         """).ObserveInto(ref results);
+                                                         """).ObserveInto(results);
         
         table.Add(results, "Initial Results");
         
@@ -96,7 +96,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                                                                       LEFT JOIN mdb_Mod() mod ON mod.Id = file.Mod) ents
                                                                LEFT JOIN mdb_Datoms() d ON d.E = ents.Id
                                                                GROUP BY ents.Loadout
-                                                               """).ObserveInto(ref results);
+                                                               """).ObserveInto(results);
         tableResults.Add(results, "Initial Results");
         
         // Delete only one datom to check that we get an update even for retracted datoms, as long as the entity is still present

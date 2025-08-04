@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using NexusMods.HyperDuck.Internals;
 
 namespace NexusMods.HyperDuck;
 
@@ -20,6 +22,9 @@ public class Query<T> : IEnumerable<T>
         var compiled = new CompiledQuery<T>(Sql);
         using var conn = DuckDBQueryEngine.Connect();
         var prepared = conn.Prepare(compiled);
+        for (int i = 0; i < Parameters.Length; i++)
+            // DuckDB Parameters are 1 indexed
+            prepared.Bind(i + 1, Parameters[i]);
         using var result = prepared.Execute();
         var adaptor = DuckDBQueryEngine.Registry.GetAdaptor<List<T>>(result);
         List<T> returnValue = [];
@@ -34,11 +39,34 @@ public class Query<T> : IEnumerable<T>
 
     public void QueryInto<TIntoColl>(ref TIntoColl intoColl)
     {
-        throw new NotImplementedException();
+        var compiled = new CompiledQuery<T>(Sql);
+        using var conn = DuckDBQueryEngine.Connect();
+        var prepared = conn.Prepare(compiled);
+        using var result = prepared.Execute();
+        var adaptor = DuckDBQueryEngine.Registry.GetAdaptor<TIntoColl>(result);
+        adaptor.Adapt(result, ref intoColl);
     }
 
-    public IDisposable ObserveInto<TIntoColl>(ref TIntoColl intoColl)
+    public IDisposable ObserveInto<TIntoColl>(TIntoColl intoColl)
     {
-        throw new NotImplementedException();
+        var deps = DuckDBQueryEngine.GetReferencedFunctions(Sql);
+        QueryInto<TIntoColl>(ref intoColl);
+
+        var live = new Internals.LiveQuery<TIntoColl>
+        {
+            DependsOn = deps.ToArray(),
+            DuckDb = this.DuckDBQueryEngine,
+            Query = new Query<TIntoColl>
+            {
+                Sql = Sql,
+                Parameters = Parameters,
+                DuckDBQueryEngine = DuckDBQueryEngine,
+            },
+            Output = intoColl,
+            Updater = DuckDBQueryEngine.LiveQueryUpdater.Value
+        };
+
+        DuckDBQueryEngine.LiveQueryUpdater.Value.Add(live);
+        return live;
     }
 }
