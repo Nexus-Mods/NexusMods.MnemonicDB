@@ -41,6 +41,9 @@ jobs:
 
       - name: Build
         run: dotnet build --no-restore -c Release
+        
+      - name: Build 2 (but why?)
+        run: dotnet build --no-restore -c Release        
 
       - name: Test HyperDuck
         run: dotnet run --no-restore --no-build -c Release --project tests/NexusMods.HyperDuck.Tests
