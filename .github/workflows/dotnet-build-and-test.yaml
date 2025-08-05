@@ -40,7 +40,7 @@ jobs:
         run: dotnet restore
 
       - name: Build
-        run: dotnet build --no-restore
+        run: dotnet build --no-restore -c Release
 
       - name: Test HyperDuck
         run: dotnet run --no-restore --no-build -c Release --project tests/NexusMods.HyperDuck.Tests
