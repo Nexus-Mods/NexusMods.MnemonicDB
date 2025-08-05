@@ -1,7 +1,9 @@
 ## Changelog
 
-### 0.19.0 - 
+### 0.19.0 - 2025-08-05
 * Switch to DuckDB as the query engine
+* Cascade code is removed and replaced with DuckDB
+* WARNING: this code is still in testing, should not be used in production until tested a bit more
 
 ### 0.18.0 - 2025-06-24
 * Add `HasAttribute` and `MissingAttribute` operators for matching entities based on the presence or absence of attributes
