@@ -17,7 +17,7 @@ public interface ILiveQuery : IDisposable
     public static ulong NextId() => Interlocked.Increment(ref _nextId);
 }
 
-public class LiveQuery<T> : ILiveQuery
+public class LiveQuery<T> : ILiveQuery where T : notnull
 {
     public ulong Id { get; } = ILiveQuery.NextId();
     

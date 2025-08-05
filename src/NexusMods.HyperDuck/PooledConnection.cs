@@ -51,7 +51,6 @@ public class PooledConnection : IDisposable
     [MustDisposeResource]
     public Result Query(string sqlQuery)
     {
-        var stmt = _conn.Prepare(sqlQuery);
-        return stmt.Execute();
+        return _conn.Query(sqlQuery);
     }
 }

@@ -113,9 +113,9 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
     /// <summary>
     /// Gets the JSON query plan for a specific query
     /// </summary>
-    public HashSet<ATableFunction> GetReferencedFunctions(string query)
+    public HashSet<ATableFunction> GetReferencedFunctions(string query, object[] parameters)
     {
-        var result = ((IQueryMixin)this).Query<(string, string)>("EXPLAIN (FORMAT JSON) " + query);
+        var result = ((IQueryMixin)this).Query<(string, string)>("EXPLAIN (FORMAT JSON) " + query, parameters);
 
         var plan = JsonSerializer.Deserialize<QueryPlanNode[]>(result.First().Item2)!;
         
@@ -162,5 +162,11 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
     public object ObjectFor(ushort id)
     {
         return _globalObjects[id];
+    }
+
+    public void ExecuteNoPepare(string sql)
+    {
+        using var conn = Connect();
+        using var _ = conn.Query(sql);
     }
 }

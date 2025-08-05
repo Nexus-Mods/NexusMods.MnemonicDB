@@ -22,6 +22,7 @@ public static class Services
     public static IServiceCollection AddMnemonicDB(this IServiceCollection s)
     {
         s.AddSingleton<IConnection, Connection>();
+        s.AddSingleton<IQueryEngine, QueryEngine>();
         s.AddConverters();
         s.AddMnemonicDBStorage();
 
@@ -31,6 +32,8 @@ public static class Services
     public static IServiceCollection AddConverters(this IServiceCollection s)
     {
         s.AddSingleton<IBindingConverter, DbBindingConverter>();
+        s.AddSingleton<IBindingConverter, ConnectionBindingConverter>();
+        s.AddSingleton<IBindingConverter, EntityIdConverter>();
         return s;
     }
     

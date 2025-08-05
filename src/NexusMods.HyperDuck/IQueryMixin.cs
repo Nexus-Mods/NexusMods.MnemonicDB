@@ -12,13 +12,20 @@ public interface IQueryMixin
 {
     public DuckDB DuckDBQueryEngine { get; }
 
-    public Query<TResult> Query<TResult>(string sql, params object[] args)
-        => new()
+    public Query<TResult> Query<TResult>(string sql, params object[] args) 
+        where TResult : notnull => new()
         {
             Sql = sql,
             Parameters = args,
             DuckDBQueryEngine = DuckDBQueryEngine,
         };
+
+    /// <summary>
+    /// Execute statements without preparing them first
+    /// </summary>
+    public void ExecuteNoPrepare(string sql) => DuckDBQueryEngine.ExecuteNoPepare(sql);
+
+    public void StartUI() => ExecuteNoPrepare("INSTALL ui; LOAD ui; CALL start_ui();");
     
     public Task FlushQueries() => DuckDBQueryEngine.FlushQueries();
 

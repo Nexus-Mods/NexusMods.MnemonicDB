@@ -49,7 +49,7 @@ public class TableFunctionTests
         await using var db = DuckDB.Open(Registry);
         var squares = new Squares();
         db.Register(squares);
-        var plan = db.GetReferencedFunctions("SELECT i FROM my_squares(0, 8)").ToArray();
+        var plan = db.GetReferencedFunctions("SELECT i FROM my_squares(0, 8)", []).ToArray();
 
         await Assert.That(plan.Length).IsEqualTo(1);
         await Assert.That(plan[0]).IsEqualTo(squares);

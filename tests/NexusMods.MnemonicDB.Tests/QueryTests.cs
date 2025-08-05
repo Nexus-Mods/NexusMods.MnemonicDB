@@ -48,6 +48,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Verify(table.ToString());
     }
 
+
     [Test]
     public async Task CanGetLatestTxForEntity()
     {
@@ -179,6 +180,29 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         table.Add( Connection.Query<(EntityId, string)>(queryText, firstDb), "After update, old DB");
         
         table.Add( Connection.Query<(EntityId, string)>(queryText, Connection.Db), "After update, new DB");
+        
+        await Verify(table.ToString());
+    }
+    
+    [Test]
+    public async Task CanQueryWithoutPassing()
+    {
+        const string queryText = "SELECT Id, Name FROM mdb_Mod()";
+        await InsertExampleData();
+
+        var firstDb = Connection.Db;
+        var result = Connection.Query<(EntityId, string)>(queryText, firstDb).ToArray();
+        
+        var table = TableResults();
+        
+        table.Add(result, "Initial Results");
+        
+        var id1 = result.First().Item1;
+        using var tx = Connection.BeginTransaction();
+        tx.Add(id1, Mod.Name, "Renamed - Mod");
+        await tx.Commit();
+        
+        table.Add( Connection.Query<(EntityId, string)>(queryText), "After update, new DB");
         
         await Verify(table.ToString());
     }

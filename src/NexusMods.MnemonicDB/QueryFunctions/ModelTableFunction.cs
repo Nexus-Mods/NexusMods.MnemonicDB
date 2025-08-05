@@ -264,7 +264,12 @@ public class ModelTableFunction : ATableFunction
     protected override object? Init(InitInfo initInfo, InitData initData)
     {
         var bindInfo = initInfo.GetBindData<BindData>();
-        var db = bindInfo.Connection.AsOf(bindInfo.AsOf);
+        IDb db;
+        // Asof 0 means "always use latest"
+        if (bindInfo.AsOf == TxId.MinValue)
+            db = bindInfo.Connection.Db;
+        else 
+            db = bindInfo.Connection.AsOf(bindInfo.AsOf);
             
         // Load all the Ids here so we can load the rows in parallel.
         var totalRows = db.IdsForPrimaryAttribute(bindInfo.PrimaryAttributeId, (int)GlobalConstants.DefaultVectorSize, out var chunks);
@@ -312,8 +317,9 @@ public class ModelTableFunction : ATableFunction
         if (!asOfParam.IsNull)
             asOf = TxId.From(asOfParam.GetUInt64());
 
-        asOf ??= conn.TxId;
-
+        asOf ??= TxId.MinValue;
+        
+        
         var attrId = conn.AttributeCache.GetAttributeId(_definition.PrimaryAttribute.Id);
         
         var bindData = new BindData

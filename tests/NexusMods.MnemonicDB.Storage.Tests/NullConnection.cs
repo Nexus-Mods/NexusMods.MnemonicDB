@@ -83,5 +83,5 @@ public class NullConnection : IConnection
         // TODO release managed resources here
     }
 
-    public DuckDB DuckDBQueryEngine => throw new NotSupportedException();
+    public HyperDuck.DuckDB DuckDBQueryEngine => throw new NotSupportedException();
 }

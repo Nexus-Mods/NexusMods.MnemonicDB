@@ -82,7 +82,7 @@ public sealed class Connection : IConnection
         }
     }
 
-    private void RegisterWithEngine(DuckDB duckDb)
+    private void RegisterWithEngine(HyperDuck.DuckDB duckDb)
     {
         _globalId = duckDb.RegisterGlobalObject(this);
         var observer = Revisions.Select(r =>
@@ -621,5 +621,5 @@ public sealed class Connection : IConnection
         _isDisposed = true;
     }
 
-    public DuckDB DuckDBQueryEngine => _queryEngine!.DuckDb;
+    public HyperDuck.DuckDB DuckDBQueryEngine => _queryEngine!.DuckDb;
 }
