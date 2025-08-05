@@ -22,15 +22,26 @@
       <PackageReference Include="R3" />
     </ItemGroup>
 
-    <Target Name="DownloadNativeLibs" BeforeTargets="BeforeBuild">
+    <Target Name="DownloadNativeLibs" BeforeTargets="Compile">
         <MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=win-x64;LibUrl=$(DuckDbArtifactRoot)/libduckdb-windows-amd64.zip" />
         <MSBuild Condition="'$(SkipArm)' == ''" Projects="DownloadNativeLibs.targets" Properties="Rid=win-arm64;LibUrl=$(DuckDbArtifactRoot)/libduckdb-windows-arm64.zip" />
         <MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=linux-x64;LibUrl=$(DuckDbArtifactRoot)/libduckdb-linux-amd64.zip" />
         <MSBuild Condition="'$(SkipArm)' == ''" Projects="DownloadNativeLibs.targets" Properties="Rid=linux-arm64;LibUrl=$(DuckDbArtifactRoot)/libduckdb-linux-arm64.zip" />
         <MSBuild Projects="DownloadNativeLibs.targets" Properties="Rid=osx;LibUrl=$(DuckDbArtifactRoot)/libduckdb-osx-universal.zip" />
     </Target>
-    
-    
+
+    <Target Name="AddDownloadedRuntimeFiles" AfterTargets="DownloadNativeLibs;PrepareForBuild">
+        <ItemGroup>
+            <RuntimeFiles Include="obj\runtimes\**\*.dll;obj\runtimes\**\*.so;obj\runtimes\**\*.dylib" />
+        </ItemGroup>
+
+        <Copy SourceFiles="@(RuntimeFiles)"
+              DestinationFolder="$(OutDir)runtimes\%(RecursiveDir)"
+              SkipUnchangedFiles="true" />
+    </Target>
+
+
+
     <Target Name="CleanNativeLibs" BeforeTargets="Clean">
         <RemoveDir Directories="obj\runtimes" />
     </Target>
