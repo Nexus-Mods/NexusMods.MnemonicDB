@@ -25,8 +25,7 @@ public class TableFunctionTests
     {
         await using var db = DuckDB.Open(Registry);
         db.Register(new Squares());;
-        var querySmall = Query.Compile<List<(int, int)>>("SELECT * FROM my_squares(0, 8, stride => 1)");
-        var result = db.Query(querySmall);
+        var result = ((IQueryMixin)db).Query<(int, int)>("SELECT * FROM my_squares(0, 8, stride => 1)");
         
         await Assert.That(result).IsEquivalentTo([
             (0, 0), 
@@ -39,8 +38,7 @@ public class TableFunctionTests
             (7, 49)
         ]);
         
-        var queryLarge = Query.Compile<List<(int, int)>>("SELECT * FROM my_squares(0, 8000, stride=>1)");
-        var result2 = db.Query(queryLarge);
+        var result2 = ((IQueryMixin)db).Query<(int, int)>("SELECT * FROM my_squares(0, 8000, stride=>1)");
         await Assert.That(result2).IsEquivalentTo(
             Enumerable.Range(0, 8000).Select(i => (i, i * i)));
     }
@@ -51,7 +49,7 @@ public class TableFunctionTests
         await using var db = DuckDB.Open(Registry);
         var squares = new Squares();
         db.Register(squares);
-        var plan = db.GetReferencedFunctions("SELECT i FROM my_squares(0, 8)").ToArray();
+        var plan = db.GetReferencedFunctions("SELECT i FROM my_squares(0, 8)", []).ToArray();
 
         await Assert.That(plan.Length).IsEqualTo(1);
         await Assert.That(plan[0]).IsEqualTo(squares);
@@ -66,8 +64,7 @@ public class TableFunctionTests
         db.Register(fn);
 
         var data = new List<int>();
-        var query = Query.Compile<List<int>>("SELECT * FROM live_array_of_ints()");
-        using var liveQuery = db.ObserveQuery(query, ref data);
+        using var liveQuery = ((IQueryMixin)db).Query<int>("SELECT * FROM live_array_of_ints()").ObserveInto(data);
 
         await Assert.That(data).IsEmpty();
         
@@ -75,7 +72,7 @@ public class TableFunctionTests
 
         await db.FlushQueries();
         
-        await Assert.That(db.Query(query)).IsEquivalentTo(Enumerable.Range(0, 8));
+        await Assert.That(((IQueryMixin)db).Query<int>("SELECT * FROM live_array_of_ints()")).IsEquivalentTo(Enumerable.Range(0, 8));
         await Assert.That(data).IsEquivalentTo(Enumerable.Range(0, 8));
 
         fn.Ints = [];

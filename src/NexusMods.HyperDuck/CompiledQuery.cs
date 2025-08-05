@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NexusMods.HyperDuck.Adaptor;
 
@@ -32,13 +34,6 @@ public abstract class ACompiledQuery<TResult> : ACompiledQuery
     
     public string Sql { get; }
     
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public IResultAdaptor<TResult> Adaptor(Result result, IRegistry dbRegistry)
-    {
-        _resultAdaptor ??= dbRegistry.GetAdaptor<TResult>(result);
-        return _resultAdaptor;
-    }
-
     public override string ToString()
     {
         return $"CompiledQuery: {Sql}";

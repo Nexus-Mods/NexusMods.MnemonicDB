@@ -17,7 +17,7 @@ public interface ILiveQuery : IDisposable
     public static ulong NextId() => Interlocked.Increment(ref _nextId);
 }
 
-public class LiveQuery<T> : ILiveQuery
+public class LiveQuery<T> : ILiveQuery where T : notnull
 {
     public ulong Id { get; } = ILiveQuery.NextId();
     
@@ -26,7 +26,7 @@ public class LiveQuery<T> : ILiveQuery
     public required ATableFunction[] DependsOn { get; init; }
     public required LiveQueryUpdater Updater { get; init; }
     public required DuckDB DuckDb { get; init; }
-    public required CompiledQuery<T> Query { get; init; }
+    public required Query<T> Query { get; init; }
     public required T Output;
     private bool _isDisposed = false;
     
@@ -46,7 +46,7 @@ public class LiveQuery<T> : ILiveQuery
         if (hash == _lastHash)
             return;
         
-        DuckDb.QueryInto(Query, ref Output);
+        Query.QueryInto(ref Output);
         _lastHash = hash;
     }
 

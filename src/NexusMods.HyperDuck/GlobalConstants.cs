@@ -11,7 +11,7 @@ public static class GlobalConstants
     #elif IS_LINUX
     public const string LibraryName = "runtimes/linux-x64/native/libduckdb.so";
     #elif IS_MACOS
-    public const string LibraryName = "runtimes/osx-arm64/native/libduckdb.dylib";
+    public const string LibraryName = "runtimes/osx/native/libduckdb.dylib";
     #else
     public const string LibraryName = "NO_KNOWN_DLL_MAPPING FOR THIS OS";
     #endif

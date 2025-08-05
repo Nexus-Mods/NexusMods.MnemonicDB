@@ -26,14 +26,12 @@ public class AdapterTests
     public async Task CanGetScalarResults()
     {
         await using var db = DuckDB.Open(Registry);
-        var queryOne = Query.Compile<List<int>>("SELECT 1 AS one");
-        var result = db.Query(queryOne);
+        var result = ((IQueryMixin)db).Query<int>("SELECT 1 AS one");
 
         await Assert.That(result).IsEquivalentTo([1]);
 
-        var querySeries = Query.Compile<List<long>>("SELECT * FROM generate_series(1, 10, 1)");
-        var result2 = db.Query(querySeries);
-
+        var result2 = ((IQueryMixin)db).Query<long>("SELECT * FROM generate_series(1, 10, 1)");
+        
         await Assert.That(result2).IsEquivalentTo(Enumerable.Range(1, 10).Select(s => (long)s));
     }
 
@@ -41,8 +39,7 @@ public class AdapterTests
     public async Task CanGetTupleResults()
     {
         await using var db = DuckDB.Open(Registry);
-        var queryTwoColumns = Query.Compile<List<(int, int)>>("SELECT 1 AS one, 2 AS two");
-        var result = db.Query(queryTwoColumns);
+        var result = ((IQueryMixin)db).Query<(int, int)>("SELECT 1 AS one, 2 AS two");
 
         await Assert.That(result).IsEquivalentTo([(1, 2)]);
     }
@@ -51,8 +48,7 @@ public class AdapterTests
     public async Task CanGetStringResults()
     {
         await using var db = DuckDB.Open(Registry);
-        var queryTwoStrings = Query.Compile<List<(string, string)>>("SELECT 'Hello' AS one, 'A really long string that cannot be inlined' AS two");
-        var result = db.Query(queryTwoStrings);
+        var result = ((IQueryMixin)db).Query<(string, string)>("SELECT 'Hello' AS one, 'A really long string that cannot be inlined' AS two");
 
         await Assert.That(result).IsEquivalentTo([("Hello", "A really long string that cannot be inlined")]);
     }
@@ -61,8 +57,7 @@ public class AdapterTests
     public async Task CanGetListResults()
     {
         await using var db = DuckDB.Open(Registry);
-        var queryList = Query.Compile<List<(List<int>, int)>>("SELECT [1, 2, 3] as lst, 42 as i");
-        var result = db.Query(queryList);
+        var result = ((IQueryMixin)db).Query<(List<int>, int)>("SELECT [1, 2, 3] as lst, 42 as i");
 
         await Assert.That(result).IsEquivalentTo([(new List<int> { 1, 2, 3 }, 42)]);
 

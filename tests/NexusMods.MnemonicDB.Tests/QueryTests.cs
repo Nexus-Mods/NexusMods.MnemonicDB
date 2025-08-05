@@ -20,14 +20,13 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var table = TableResults();
         await InsertExampleData();
 
-        var resultsQuery = Query.Compile<ObservableList<(RelativePath, Hash, long)>>("SELECT Path, Hash, COUNT(*) FROM mdb_File() GROUP BY Path, Hash ORDER BY Path, Hash");
-        var historyQuery = Query.Compile<ObservableList<(TxId, long)>>("SELECT T, COUNT(E) FROM mdb_Datoms(A:= 'File/Hash', History:=true) WHERE IsRetract = false GROUP BY T ORDER BY T");
-        
         var results = new ObservableList<(RelativePath, Hash, long)>();
         var historyResults = new ObservableList<(TxId, long)>();
         
-        using var _ = Connection.ObserveInto(resultsQuery, ref results);
-        using var _2 = Connection.ObserveInto(historyQuery, ref historyResults);
+        using var _ = Connection.Query<(RelativePath, Hash, long)>("SELECT Path, Hash, COUNT(*) FROM mdb_File() GROUP BY Path, Hash ORDER BY Path, Hash")
+            .ObserveInto(results);
+        using var _2 = Connection.Query<(TxId, long)>("SELECT T, COUNT(E) FROM mdb_Datoms(A:= 'File/Hash', History:=true) WHERE IsRetract = false GROUP BY T ORDER BY T")
+            .ObserveInto(historyResults);
 
         table.Add(results, "Initial Results");
         table.Add(historyResults, "Initial History");
@@ -49,6 +48,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Verify(table.ToString());
     }
 
+
     [Test]
     public async Task CanGetLatestTxForEntity()
     {
@@ -56,16 +56,15 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await InsertExampleData();
 
         var results = new ObservableList<(EntityId, TxId)>();
-        var query = Query.Compile<ObservableList<(EntityId, TxId)>>("""
-                                                                    SELECT ents.Loadout, max(d.T) FROM 
-                                                                    (SELECT Id, Id as Loadout FROM mdb_Loadout() 
-                                                                     UNION SELECT Id, Loadout FROM mdb_Mod()
-                                                                     UNION SELECT file.Id, mod.Loadout FROM mdb_File() file 
-                                                                           LEFT JOIN mdb_Mod() mod ON mod.Id = file.Mod) ents
-                                                                    LEFT JOIN mdb_Datoms() d ON d.E = ents.Id
-                                                                    GROUP BY ents.Loadout
-                                                                    """);
-        using var _ = Connection.ObserveInto(query, ref results);
+        using var _ = Connection.Query<(EntityId, TxId)>("""
+                                                         SELECT ents.Loadout, max(d.T) FROM 
+                                                         (SELECT Id, Id as Loadout FROM mdb_Loadout() 
+                                                          UNION SELECT Id, Loadout FROM mdb_Mod()
+                                                          UNION SELECT file.Id, mod.Loadout FROM mdb_File() file 
+                                                                LEFT JOIN mdb_Mod() mod ON mod.Id = file.Mod) ents
+                                                         LEFT JOIN mdb_Datoms() d ON d.E = ents.Id
+                                                         GROUP BY ents.Loadout
+                                                         """).ObserveInto(results);
         
         table.Add(results, "Initial Results");
         
@@ -90,7 +89,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await InsertExampleData();
         
         var results = new List<(EntityId, TxId, long)>();
-        var query = Query.Compile<List<(EntityId, TxId, long)>>("""
+        using var _ = Connection.Query<(EntityId, TxId, long)>("""
                                                                SELECT ents.Loadout, max(d.T), count(d.E) FROM 
                                                                (SELECT Id, Id as Loadout FROM mdb_Loadout() 
                                                                 UNION SELECT Id, Loadout FROM mdb_Mod()
@@ -98,8 +97,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                                                                       LEFT JOIN mdb_Mod() mod ON mod.Id = file.Mod) ents
                                                                LEFT JOIN mdb_Datoms() d ON d.E = ents.Id
                                                                GROUP BY ents.Loadout
-                                                               """);
-        using var _ = Connection.ObserveInto(query, ref results);
+                                                               """).ObserveInto(results);
         tableResults.Add(results, "Initial Results");
         
         // Delete only one datom to check that we get an update even for retracted datoms, as long as the entity is still present
@@ -128,33 +126,27 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     {
         await InsertExampleData();
 
-        var modsQuery = Query.Compile<List<(EntityId, EntityId)>>("SELECT Id, Mod FROM mdb_File()");
-        var mods = Connection.Query(modsQuery);
+        var mods = Connection.Query<(EntityId, EntityId)>("SELECT Id, Mod FROM mdb_File()");
         var testMod = mods.First().Item2;
         
         using var tx = Connection.BeginTransaction();
         tx.Add(testMod, Mod.Marked, Null.Instance);
         await tx.Commit();
 
-        var markedModsQuery = Query.Compile<List<(EntityId, string)>>("SELECT Id, Name FROM mdb_Mod() WHERE Marked = true");
-        var markedMods = Connection.Query(markedModsQuery);
-        
+        var markedMods = Connection.Query<(EntityId, string)>("SELECT Id, Name FROM mdb_Mod() WHERE Marked = true");
         await Assert.That(markedMods).HasCount(1);
 
-        var unmarkedModsQuery = Query.Compile<List<(EntityId, string)>>("SELECT Id, Name FROM mdb_Mod() WHERE Marked = false"); 
-        var unmarkedMods = Connection.Query(unmarkedModsQuery);
+        var unmarkedMods = Connection.Query<(EntityId, string)>("SELECT Id, Name FROM mdb_Mod() WHERE Marked = false");
         await Assert.That(unmarkedMods).HasCount(2);
         
         using var tx2 = Connection.BeginTransaction();
         tx2.Add(testMod, Mod.Description, "Test Mod Description");
         await tx2.Commit();
 
-        var modsWithDescriptionQuery = Query.Compile<List<(EntityId, string)>>("SELECT Id, Name FROM mdb_Mod() WHERE Description IS NOT NULL");
-        var modsWithDescription = Connection.Query(modsWithDescriptionQuery);
+        var modsWithDescription = Connection.Query<(EntityId, string)>("SELECT Id, Name FROM mdb_Mod() WHERE Description IS NOT NULL");
         await Assert.That(modsWithDescription).HasCount(1);
 
-        var modsWithoutDescriptionQuery = Query.Compile<List<(EntityId, string)>>("SELECT Id, Name FROM mdb_Mod() WHERE Description IS NULL");
-        var modsWithoutDescription = Connection.Query(modsWithoutDescriptionQuery);
+        var modsWithoutDescription = Connection.Query<(EntityId, string)>("SELECT Id, Name FROM mdb_Mod() WHERE Description IS NULL");
         await Assert.That(modsWithoutDescription).HasCount(2);
     }
 
@@ -162,10 +154,56 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task CanSendParametersToQuery()
     {
-        var query = Query.Compile<List<int>, int>("SELECT $1");
-        var result = Connection.Query(query, 42);
+        var result = Connection.Query<int>("SELECT $1", 42);
 
         await Assert.That(result.First()).IsEqualTo(42);
+    }
+    
+    [Test]
+    public async Task CanPassDBToQuery()
+    {
+        const string queryText = "SELECT Id, Name FROM mdb_Mod(Db=>$1)";
+        await InsertExampleData();
 
+        var firstDb = Connection.Db;
+        var result = Connection.Query<(EntityId, string)>(queryText, firstDb).ToArray();
+        
+        var table = TableResults();
+        
+        table.Add(result, "Initial Results");
+        
+        var id1 = result.First().Item1;
+        using var tx = Connection.BeginTransaction();
+        tx.Add(id1, Mod.Name, "Renamed - Mod");
+        await tx.Commit();
+        
+        table.Add( Connection.Query<(EntityId, string)>(queryText, firstDb), "After update, old DB");
+        
+        table.Add( Connection.Query<(EntityId, string)>(queryText, Connection.Db), "After update, new DB");
+        
+        await Verify(table.ToString());
+    }
+    
+    [Test]
+    public async Task CanQueryWithoutPassing()
+    {
+        const string queryText = "SELECT Id, Name FROM mdb_Mod()";
+        await InsertExampleData();
+
+        var firstDb = Connection.Db;
+        var result = Connection.Query<(EntityId, string)>(queryText, firstDb).ToArray();
+        
+        var table = TableResults();
+        
+        table.Add(result, "Initial Results");
+        
+        var id1 = result.First().Item1;
+        using var tx = Connection.BeginTransaction();
+        tx.Add(id1, Mod.Name, "Renamed - Mod");
+        await tx.Commit();
+        
+        table.Add( Connection.Query<(EntityId, string)>(queryText), "After update, new DB");
+        
+        await Verify(table.ToString());
     }
 }

@@ -82,8 +82,9 @@ public sealed class Connection : IConnection
         }
     }
 
-    private void RegisterWithEngine(DuckDB duckDb)
+    private void RegisterWithEngine(HyperDuck.DuckDB duckDb)
     {
+        _globalId = duckDb.RegisterGlobalObject(this);
         var observer = Revisions.Select(r =>
             {
                 var attr = new HashSet<IAttribute>();
@@ -447,6 +448,10 @@ public sealed class Connection : IConnection
     /// <inheritdoc />
     public IDb AsOf(TxId txId)
     {
+        var db = Db;
+        if (db.BasisTxId == txId) 
+            return db;
+        
         var snapshot = new AsOfSnapshot((Snapshot)_store.GetSnapshot(), txId, AttributeCache);
         return snapshot.MakeDb(txId, AttributeCache, this);
     }
@@ -598,11 +603,14 @@ public sealed class Connection : IConnection
     
     private bool _isDisposed;
     private readonly QueryEngine? _queryEngine;
+    private ushort _globalId;
 
     /// <inheritdoc />
     public void Dispose()
     {
         if (_isDisposed) return;
+
+        _queryEngine?.DuckDb.DisposeGlobalObject(this);
 
         _cts.Cancel();
 
@@ -613,5 +621,5 @@ public sealed class Connection : IConnection
         _isDisposed = true;
     }
 
-    public DuckDB DuckDBQueryEngine => _queryEngine!.DuckDb;
+    public HyperDuck.DuckDB DuckDBQueryEngine => _queryEngine!.DuckDb;
 }

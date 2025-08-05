@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
 using NexusMods.HyperDuck.Adaptor;
@@ -14,13 +15,16 @@ using NexusMods.HyperDuck.Internals;
 
 namespace NexusMods.HyperDuck;
 
-public class DuckDB : IAsyncDisposable
+public class DuckDB : IAsyncDisposable, IQueryMixin
 {
 
     private Database _db;
     private readonly IRegistry _registry;
     private readonly ConcurrentBag<PooledConnection> _connections = [];
     private readonly ConcurrentBag<PooledConnection> _allConnections = [];
+    private uint _nextGlobalId = 0;
+    private readonly ConcurrentDictionary<object, ushort> _globalIds = new();
+    private readonly ConcurrentDictionary<ushort, object> _globalObjects = new();
     
     internal readonly Lazy<LiveQueryUpdater> LiveQueryUpdater =  new(static () => new LiveQueryUpdater());
     internal readonly ConcurrentDictionary<string, ATableFunction> TableFunctions = new();
@@ -36,7 +40,7 @@ public class DuckDB : IAsyncDisposable
 
     public static DuckDB Open()
     {
-        return new DuckDB(new Registry([], [], []));
+        return new DuckDB(new Registry([], [], [], []));
     }
 
     public static DuckDB Open(IRegistry registry)
@@ -55,7 +59,7 @@ public class DuckDB : IAsyncDisposable
         if (_connections.TryTake(out var pooledConnection))
             return pooledConnection;
         
-        var connection = _db.Connect();
+        var connection = _db.Connect(this);
         pooledConnection = new PooledConnection(connection, this);
         _allConnections.Add(pooledConnection);
         return pooledConnection;
@@ -80,52 +84,8 @@ public class DuckDB : IAsyncDisposable
 
         _db.Dispose();
     }
-    
-    /// <summary>
-    /// Executes the query and returns the result, adapting it to the given return type. 
-    /// </summary>
-    public TResult Query<TResult>(CompiledQuery<TResult> query) where TResult : new()
-    {
-        var returnValue = new TResult();
-        QueryInto(query, ref returnValue);
-        return returnValue;
-    }
-    
-    /// <summary>
-    /// Same as Query, except the results are adapted into a provided preexisting result value
-    /// </summary>
-    public void QueryInto<TResult>(CompiledQuery<TResult> query, ref TResult returnValue)
-    {
-        using var conn = Connect();
-        //var prepared = conn.Prepare(query);
-        //using var result = prepared.Execute();
-        using var result = conn.Query(query.Sql);
-        var adaptor = query.Adaptor(result, Registry);
-        adaptor.Adapt(result, ref returnValue);
-    }
-    
-    /// <summary>
-    /// Executes the query and returns the result, adapting it to the given return type. 
-    /// </summary>
-    public TResult Query<TResult, TArg1>(CompiledQuery<TResult, TArg1> query, TArg1 arg1) where TResult : new()
-    {
-        var returnValue = new TResult();
-        QueryInto(query, arg1, ref returnValue);
-        return returnValue;
-    }
-    
-    /// <summary>
-    /// Same as Query, except the results are adapted into a provided preexisting result value
-    /// </summary>
-    public void QueryInto<TResult, TArg1>(CompiledQuery<TResult, TArg1> query, TArg1 arg1, ref TResult returnValue)
-    {
-        using var conn = Connect();
-        var prepared = conn.Prepare(query);
-        prepared.Bind(1, arg1);
-        using var result = prepared.Execute();
-        var adaptor = query.Adaptor(result, Registry);
-        adaptor.Adapt(result, ref returnValue);
-    }
+
+    public DuckDB DuckDBQueryEngine => this;
 
     public Task FlushQueries()
     {
@@ -153,9 +113,9 @@ public class DuckDB : IAsyncDisposable
     /// <summary>
     /// Gets the JSON query plan for a specific query
     /// </summary>
-    public HashSet<ATableFunction> GetReferencedFunctions(string query)
+    public HashSet<ATableFunction> GetReferencedFunctions(string query, object[] parameters)
     {
-        var result = Query(HyperDuck.Query.Compile<List<(string, string)>>("EXPLAIN (FORMAT JSON) " + query));
+        var result = ((IQueryMixin)this).Query<(string, string)>("EXPLAIN (FORMAT JSON) " + query, parameters);
 
         var plan = JsonSerializer.Deserialize<QueryPlanNode[]>(result.First().Item2)!;
         
@@ -178,22 +138,35 @@ public class DuckDB : IAsyncDisposable
         foreach (var child in node.Children)
             AnalyzeNode(child, touchedFunctions);
     }
-    
-    public IDisposable ObserveQuery<T>(CompiledQuery<T> query, ref T output)
+
+    public ushort RegisterGlobalObject(object obj)
     {
-        var deps = GetReferencedFunctions(query.Sql);
-        QueryInto(query, ref output);
+        var globalId = (ushort)Interlocked.Increment(ref _nextGlobalId);
+        _globalIds[obj] = globalId;
+        _globalObjects[globalId] = obj;
+        return globalId;
+    }
 
-        var live = new Internals.LiveQuery<T>
-        {
-            DependsOn = deps.ToArray(),
-            DuckDb = this,
-            Query = query,
-            Output = output,
-            Updater = LiveQueryUpdater.Value
-        };
+    public void DisposeGlobalObject(object obj)
+    {
+        var id = _globalIds[obj];
+        _globalIds.TryRemove(obj, out _);
+        _globalObjects.TryRemove(id, out _);
+    }
 
-        LiveQueryUpdater.Value.Add(live);
-        return live;
+    public ushort IdFor(object conn)
+    {
+        return _globalIds[conn];
+    }
+
+    public object ObjectFor(ushort id)
+    {
+        return _globalObjects[id];
+    }
+
+    public void ExecuteNoPepare(string sql)
+    {
+        using var conn = Connect();
+        using var _ = conn.Query(sql);
     }
 }

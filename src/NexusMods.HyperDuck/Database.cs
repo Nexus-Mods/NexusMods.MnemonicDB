@@ -32,7 +32,7 @@ public unsafe partial struct Database : IDisposable
         return Open(":memory:");
     }
 
-    public Connection Connect()
+    public Connection Connect(DuckDB db)
     {
         ArgumentNullException.ThrowIfNull(_ptr);
         var conPtr = default(void*);
@@ -41,7 +41,7 @@ public unsafe partial struct Database : IDisposable
             throw new ConnectException();
         }
 
-        return new Connection(conPtr);
+        return new Connection(conPtr, db);
     }
     
     private static partial class Native

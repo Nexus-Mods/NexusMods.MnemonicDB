@@ -26,8 +26,7 @@ public class ScalarFunctionTests
     {
         await using var db = DuckDB.Open(Registry);
         db.Register(new MultiplyFunction());
-        var query = Query.Compile<List<int>>("SELECT my_multiply(21, 2)");
-        var cmd = db.Query(query);
+        var cmd = ((IQueryMixin)db).Query<int>("SELECT my_multiply(21, 2)");
         
         await Assert.That(cmd).IsEquivalentTo([42]);
     }

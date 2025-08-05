@@ -18,7 +18,7 @@ namespace NexusMods.MnemonicDB;
 public class QueryEngine : IQueryEngine, IAsyncDisposable
 {
     private readonly Registry _registry;
-    private readonly DuckDB _db;
+    private readonly HyperDuck.DuckDB _db;
     private readonly IAttribute[] _declaredAttributes;
     private readonly Dictionary<string, IAttribute> _attrsByShortName;
     private LogicalType _attrEnumLogicalType;
@@ -28,8 +28,10 @@ public class QueryEngine : IQueryEngine, IAsyncDisposable
     public QueryEngine(IServiceProvider services)
     {
         _registry = new Registry(services.GetServices<IResultAdaptorFactory>(),
-            services.GetServices<IRowAdaptorFactory>(), services.GetServices<IValueAdaptorFactory>());
-        _db = DuckDB.Open(_registry);
+            services.GetServices<IRowAdaptorFactory>(), 
+            services.GetServices<IValueAdaptorFactory>(),
+            services.GetServices<IBindingConverter>());
+        _db = HyperDuck.DuckDB.Open(_registry);
         _declaredAttributes = services.GetServices<IAttribute>().OrderBy(a => a.Id.Id).ToArray();
         _attrsByShortName = _declaredAttributes.ToDictionary(a => a.ShortName, a => a);
         _attrEnumLogicalType = LogicalType.CreateEnum(_declaredAttributes.Select(s => s.ShortName).ToArray());

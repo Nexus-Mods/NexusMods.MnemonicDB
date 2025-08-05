@@ -19,12 +19,12 @@ public static class Startup
     {
         return services
             .AddAttributeDefinitionModel()
-            .AddAdapters()
             .AddTransactionModel()
             .AddTestModel()
             .AddSingleton<TemporaryFileManager>()
             .AddFileSystem()
             .AddAdapters()
+            .AddConverters()
             .AddSingleton<IQueryEngine, QueryEngine>()
             .AddLogging(builder => builder.AddConsole());
     }

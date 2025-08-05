@@ -36,6 +36,7 @@ public class ModelTableFunction : ATableFunction
         info.SetName($"{_prefix}_{_definition.Name}");
         info.SupportsPredicatePushdown();
         info.AddNamedParameter<ulong>("AsOf");
+        info.AddNamedParameter<ulong>("Db");
     }
 
     protected override void Execute(FunctionInfo functionInfo)
@@ -50,6 +51,9 @@ public class ModelTableFunction : ATableFunction
         }
 
         outChunk.Size = (ulong)emitSize;
+        if (emitSize == 0)
+            return;
+
         var idVec = idsChunk.AsSpan().SliceFast(0, emitSize);
         
         var engineToFn = functionInfo.EngineToFn;
@@ -260,9 +264,12 @@ public class ModelTableFunction : ATableFunction
     protected override object? Init(InitInfo initInfo, InitData initData)
     {
         var bindInfo = initInfo.GetBindData<BindData>();
-        var db = _conn.Db;
-        if (bindInfo.AsOf.HasValue)
-            db = db.Connection.AsOf(bindInfo.AsOf.Value);
+        IDb db;
+        // Asof 0 means "always use latest"
+        if (bindInfo.AsOf == TxId.MinValue)
+            db = bindInfo.Connection.Db;
+        else 
+            db = bindInfo.Connection.AsOf(bindInfo.AsOf);
             
         // Load all the Ids here so we can load the rows in parallel.
         var totalRows = db.IdsForPrimaryAttribute(bindInfo.PrimaryAttributeId, (int)GlobalConstants.DefaultVectorSize, out var chunks);
@@ -279,8 +286,9 @@ public class ModelTableFunction : ATableFunction
 
     private class BindData
     {
-        public required TxId? AsOf;
+        public required TxId AsOf;
         public AttributeId PrimaryAttributeId;
+        public required IConnection Connection;
     }
     protected override void Bind(BindInfo info)
     {
@@ -290,13 +298,35 @@ public class ModelTableFunction : ATableFunction
             info.AddColumn(attr.Id.Name, attr.LowLevelType.DuckDbType());
         }
 
-        using var asOf = info.GetParameter("AsOf");
-        var attrId = _conn.Db.AttributeCache.GetAttributeId(_definition.PrimaryAttribute.Id);
+        using var dbParam = info.GetParameter("Db");
+        using var asOfParam = info.GetParameter("AsOf");
+        TxId? asOf = null;
+        IConnection conn;
+
+        if (dbParam.IsNull)
+        {
+            conn = _conn;
+        }
+        else
+        {
+            var dbAndAsOf = dbParam.GetUInt64();
+            asOf = TxId.From(PartitionId.Transactions.MakeEntityId(dbAndAsOf >> 16).Value);
+            conn = _conn;
+        }
+        
+        if (!asOfParam.IsNull)
+            asOf = TxId.From(asOfParam.GetUInt64());
+
+        asOf ??= TxId.MinValue;
+        
+        
+        var attrId = conn.AttributeCache.GetAttributeId(_definition.PrimaryAttribute.Id);
         
         var bindData = new BindData
         {
             PrimaryAttributeId = attrId,
-            AsOf = asOf.IsNull ? null : TxId.From(asOf.GetUInt64()),
+            Connection = conn,
+            AsOf = asOf!.Value,
         };
         info.SetBindInfo(bindData);
     }

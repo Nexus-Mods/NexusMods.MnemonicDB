@@ -18,9 +18,11 @@ public class QueryEngineTests : AMnemonicDBTest
     [Test]
     public async Task CanGetDatomsViaDatomsFunction()
     {
-        var query = Query.Compile<List<(EntityId, string, string, TxId)>>("SELECT E, A::VARCHAR, mdb_ToString(V, ValueTag), T from mdb_Datoms() ORDER BY T, E, A DESC");
         await InsertExampleData();
-        var data = Connection.Query(query);
+        var data = Connection.Query<(EntityId, string, string, TxId)>(
+                "SELECT E, A::VARCHAR, mdb_ToString(V, ValueTag), T " +
+                    "  FROM mdb_Datoms() " +
+                    "ORDER BY T, E, A DESC");
 
         await VerifyTable(data);
     }
@@ -28,10 +30,10 @@ public class QueryEngineTests : AMnemonicDBTest
     [Test]
     public async Task CanGetDatomsForSpecificAttribute()
     {
-        var query = Query.Compile<List<(EntityId, string, TxId)>>(
-            "SELECT E, V, T from mdb_Datoms(A := 'Mod/Name') ORDER BY T, E  DESC");
+
         await InsertExampleData();
-        var data = Connection.Query(query)
+        var data = Connection
+            .Query<(EntityId, string, TxId)>("SELECT E, V, T from mdb_Datoms(A := 'Mod/Name') ORDER BY T, E  DESC")
             .Select(x => (x.Item1, "Mod/Name", x.Item2, x.Item3));
 
         await VerifyTable(data);
@@ -40,9 +42,8 @@ public class QueryEngineTests : AMnemonicDBTest
     [Test]
     public async Task CanPushdownProjection()
     {
-        var query = Query.Compile<List<(EntityId, string)>>("SELECT DISTINCT E, V from mdb_Datoms(A := 'Mod/Name')");
         await InsertExampleData();
-        var data = Connection.Query(query);
+        var data = Connection.Query<(EntityId, string)>("SELECT DISTINCT E, V from mdb_Datoms(A := 'Mod/Name')");
 
         await Assert.That(data).HasCount(3);
     }
@@ -50,9 +51,8 @@ public class QueryEngineTests : AMnemonicDBTest
     [Test]
     public async Task CanSelectFromModels()
     {
-        var allModIdsAndNames = Query.Compile<List<(EntityId, string)>>("SELECT Id, Name FROM mdb_Mod()");
         await InsertExampleData();
-        var data = Connection.Query(allModIdsAndNames);
+        var data = Connection.Query<(EntityId, string)>("SELECT Id, Name FROM mdb_Mod()");
 
         await Assert.That(data).HasCount(3);
     }

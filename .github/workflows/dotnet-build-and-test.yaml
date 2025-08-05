@@ -35,20 +35,17 @@ jobs:
   
       - name: Print debug info
         run: dotnet --info
-  
+
       - name: Install dependencies
         run: dotnet restore
 
-      - name: Test HyperDuck
-        run: dotnet run --no-restore -c Release --project tests/NexusMods.HyperDuck.Tests
+      - name: Build
+        run: dotnet build --no-restore -c Release
+        
+      - name: Build 2 (but why?)
+        run: dotnet build --no-restore -c Release        
 
-      - name: Test SourceGenerator
-        run: dotnet run --no-restore -c Release --project tests/NexusMods.MnemonicDB.SourceGenerator.Tests
-
-      - name: Test Storage
-        run: dotnet run --no-restore -c Release --project tests/NexusMods.MnemonicDB.Storage.Tests
-
-      - name: Test MnemonicDB
-        run: dotnet run --no-restore -c Release --project tests/NexusMods.MnemonicDB.Tests
+      - name: Test
+        run: dotnet test -c Release
         
         
