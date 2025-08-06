@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.19.3 - 2025-08-06
+* Allow returning datetime values from queries
+
 ### 0.19.2 - 2025-08-06
 * Use .NET's built-in DLL path resolver vs hardcoded relative paths
 

@@ -94,19 +94,57 @@ public class DatomsTableFunction : ATableFunction
                 eVec[row] = iterator.KeyPrefix.E.Value;
             if (!tVec.IsEmpty) 
                 tVec[row] = iterator.KeyPrefix.T.Value;
-            if (state.History)
+            if (state.History && !isRetract.IsEmpty)
                 isRetract[row] = iterator.KeyPrefix.IsRetract ? (byte)1 : (byte)0;
             
             if (vVec.IsValid)
             {
                 switch (lowLevelType)
                 {
+                    case ValueTag.UInt8:
+                        vData.CastFast<byte, byte>()[row] = iterator.ValueSpan[0];
+                        break;
+                    case ValueTag.UInt16:
+                        vData.CastFast<byte, ushort>()[row] = iterator.ValueSpan.CastFast<byte, ushort>()[0];
+                        break;
+                    case ValueTag.UInt32:
+                        vData.CastFast<byte, uint>()[row] = iterator.ValueSpan.CastFast<byte, uint>()[0];
+                        break;
                     case ValueTag.UInt64:
                         vData.CastFast<byte, ulong>()[row] = UInt64Serializer.Read(iterator.ValueSpan);
                         break;
-
+                    case ValueTag.UInt128:
+                        vData.CastFast<byte, UInt128>()[row] = UInt128Serializer.Read(iterator.ValueSpan);
+                        break;
+                    case ValueTag.Int16:
+                        vData.CastFast<byte, short>()[row] = iterator.ValueSpan.CastFast<byte, short>()[0];
+                        break;
+                    case ValueTag.Int32:
+                        vData.CastFast<byte, int>()[row] = iterator.ValueSpan.CastFast<byte, int>()[0];
+                        break;
+                    case ValueTag.Int64:
+                        vData.CastFast<byte, long>()[row] = iterator.ValueSpan.CastFast<byte, long>()[0];
+                        break;
+                    case ValueTag.Int128:
+                        vData.CastFast<byte, Int128>()[row] = Int128Serializer.Read(iterator.ValueSpan);
+                        break;
+                    case ValueTag.Float32:
+                        vData.CastFast<byte, float>()[row] = iterator.ValueSpan.CastFast<byte, float>()[0];
+                        break;
+                    case ValueTag.Float64:
+                        vData.CastFast<byte, double>()[row] = iterator.ValueSpan.CastFast<byte, double>()[0];
+                        break;
+                    case ValueTag.Ascii:
+                        vVec.WriteUtf8((ulong)row, iterator.ValueSpan);
+                        break;
                     case ValueTag.Utf8:
                         vVec.WriteUtf8((ulong)row, iterator.ValueSpan);
+                        break;
+                    case ValueTag.Utf8Insensitive:
+                        vVec.WriteUtf8((ulong)row, iterator.ValueSpan);
+                        break;
+                    case ValueTag.Reference:
+                        vData.CastFast<byte, ulong>()[row] = iterator.ValueSpan.CastFast<byte, ulong>()[0];
                         break;
                     default:
                         throw new NotImplementedException($"Not implemented for {lowLevelType}");
