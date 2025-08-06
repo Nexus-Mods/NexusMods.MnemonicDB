@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.19.1 - 2025-08-05
+* Fixes for build, include external DuckDB native deps
+
 ### 0.19.0 - 2025-08-05
 * Switch to DuckDB as the query engine
 * Cascade code is removed and replaced with DuckDB
