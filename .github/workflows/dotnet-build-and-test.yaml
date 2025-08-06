@@ -40,10 +40,7 @@ jobs:
         run: dotnet restore
 
       - name: Build
-        run: dotnet build --no-restore -c Release
-        
-      - name: Build 2 (but why?)
-        run: dotnet build --no-restore -c Release        
+        run: dotnet build --no-restore -c Release  
 
       - name: Test
         run: dotnet test -c Release
