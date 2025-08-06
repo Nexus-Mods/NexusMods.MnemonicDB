@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.19.2 - 2025-08-06
+* Use .NET's built-in DLL path resolver vs hardcoded relative paths
+
 ### 0.19.1 - 2025-08-05
 * Fixes for build, include external DuckDB native deps
 
