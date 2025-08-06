@@ -55,6 +55,7 @@ public class DatomsTableFunction : ATableFunction
         info.SetName($"{_prefix}_Datoms");
         info.AddNamedParameter<string>("A");
         info.AddNamedParameter<bool>("History");
+        info.AddNamedParameter<ulong>("Db");
         info.SupportsPredicatePushdown();
     }
 
@@ -170,6 +171,22 @@ public class DatomsTableFunction : ATableFunction
         var historyParam = info.GetParameter("History");
         var history = !historyParam.IsNull && historyParam.GetBool();
         
+        var dbParam = info.GetParameter("Db");
+        IConnection connection;
+        TxId asOf;
+        if (!dbParam.IsNull)
+        {
+            var db = dbParam.GetUInt64();
+            var dbAndAsOf = dbParam.GetUInt64();
+            asOf = TxId.From(PartitionId.Transactions.MakeEntityId(dbAndAsOf >> 16).Value);
+            connection = _conn;
+        }
+        else
+        {
+            asOf = TxId.MinValue;
+            connection = _conn;
+        }
+        
         LocalBindData state;
         if (!aParam.IsNull)
         {
@@ -179,6 +196,8 @@ public class DatomsTableFunction : ATableFunction
 
             state = new LocalBindData
             {
+                Connection = connection,
+                AsOf = asOf,
                 Mode = ScanMode.SingleAttribute,
                 Attribute = attr,
             };
@@ -187,6 +206,8 @@ public class DatomsTableFunction : ATableFunction
         {
             state = new LocalBindData
             {
+                Connection = connection,
+                AsOf = asOf,
                 Mode = ScanMode.AllAttributes,
                 Attribute = null
             };
@@ -216,7 +237,11 @@ public class DatomsTableFunction : ATableFunction
     protected override object? Init(InitInfo initInfo, InitData initData)
     {
         var bindData = initInfo.GetBindData<LocalBindData>();
-        var db = _conn.Db;
+        IDb db;
+        if (bindData.AsOf == TxId.MinValue)
+            db = _conn.Db;
+        else
+            db = _conn.AsOf(bindData.AsOf);
         if (bindData.History)
             db = _conn.History();
         
@@ -245,6 +270,8 @@ public class DatomsTableFunction : ATableFunction
 
     private class LocalBindData
     {
+        public required IConnection Connection;
+        public required TxId AsOf;
         public bool History = false;
         public required ScanMode Mode;
         public required IAttribute? Attribute;
