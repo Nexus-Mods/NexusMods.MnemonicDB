@@ -66,7 +66,10 @@ public class LiveQueryUpdater : IAsyncDisposable
     {
         if (_task == null) 
             return;
-        await _cancelationToken.CancelAsync(); 
+        // It's a bit of deep async lore, but `.CancelAsync` will sometimes run
+        // the cancellation callbacks on the caller threads, which can hang the code
+        // The CancelAfter variant doesn't have that issue. 
+        _cancelationToken.CancelAfter(0); 
         await _task;
         _task = null;
         _liveQueries.Clear();

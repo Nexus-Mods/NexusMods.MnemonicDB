@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.19.4 - 2025-08-07
+* Use CancelAfter to solve a deadlock issue on shutdown
+
 ### 0.19.3 - 2025-08-06
 * Allow returning datetime values from queries
 
