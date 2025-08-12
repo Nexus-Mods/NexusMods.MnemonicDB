@@ -74,7 +74,7 @@ public class QueryEngine : IQueryEngine, IAsyncDisposable
         _valueUnion.Dispose();
         _valueTagEnum.Dispose();
         _attrEnumLogicalType.Dispose();
-        await _db.DisposeAsync();
+        await _db.DisposeAsync().ConfigureAwait(false);
     }
 
     public HyperDuck.DuckDB DuckDb => _db;
