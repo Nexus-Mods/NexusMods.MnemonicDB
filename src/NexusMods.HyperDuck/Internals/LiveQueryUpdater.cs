@@ -69,8 +69,8 @@ public class LiveQueryUpdater : IAsyncDisposable
         // It's a bit of deep async lore, but `.CancelAsync` will sometimes run
         // the cancellation callbacks on the caller threads, which can hang the code
         // The CancelAfter variant doesn't have that issue. 
-        _cancelationToken.CancelAfter(0); 
-        await _task;
+        _cancelationToken.CancelAfter(0);
+        await _task.ConfigureAwait(false);
         _task = null;
         _liveQueries.Clear();
         _pendingFlushes = ImmutableStack<TaskCompletionSource>.Empty;
@@ -83,7 +83,7 @@ public class LiveQueryUpdater : IAsyncDisposable
 
     public Task FlushAsync()
     {
-        var tcs = new TaskCompletionSource();
+        var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         while (true)
         {
             var oldFlushes = _pendingFlushes;

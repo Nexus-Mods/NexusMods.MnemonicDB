@@ -75,7 +75,7 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
         
         _disposed = true;
         if (LiveQueryUpdater.IsValueCreated)
-            await LiveQueryUpdater.Value.DisposeAsync();
+            await LiveQueryUpdater.Value.DisposeAsync().ConfigureAwait(false);
         
         while (_allConnections.TryTake(out var connection))
         {
