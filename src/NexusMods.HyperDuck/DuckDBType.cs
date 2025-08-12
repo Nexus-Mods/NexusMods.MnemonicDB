@@ -90,6 +90,7 @@ public static class DuckDbTypeExtensions
     {
         return type switch
         {
+            DuckDbType.Boolean => typeof(bool),
             DuckDbType.TinyInt => typeof(sbyte),
             DuckDbType.SmallInt => typeof(short),
             DuckDbType.Integer => typeof(int),
@@ -97,6 +98,7 @@ public static class DuckDbTypeExtensions
             DuckDbType.Hugeint => typeof(Int128),
             DuckDbType.UTinyInt => typeof(byte),
             DuckDbType.USmallInt => typeof(ushort),
+            DuckDbType.UInteger => typeof(uint),
             DuckDbType.UBigInt => typeof(ulong),
             DuckDbType.Uhugeint => typeof(UInt128),
             DuckDbType.Float => typeof(float),

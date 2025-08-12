@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.20.0 - 2025-08-12
+* Added binding converters and value adaptors for all the main primitive types (including 128 ints)
+
 ### 0.19.5 - 2025-08-12
 * Fixed several shutdown errors by better handling "wait on same thread" async issues
 

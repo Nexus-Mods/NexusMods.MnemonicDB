@@ -5,8 +5,7 @@ using NexusMods.HyperDuck.Adaptor.Impls;
 using NexusMods.HyperDuck.Adaptor.Impls.ResultAdaptors;
 using NexusMods.HyperDuck.Adaptor.Impls.RowAdaptors;
 using NexusMods.HyperDuck.Adaptor.Impls.ValueAdaptor;
-using Int32Converter = NexusMods.HyperDuck.BindingConverters.Int32Converter;
-using UInt64Converter = NexusMods.HyperDuck.BindingConverters.UInt64Converter;
+using NexusMods.HyperDuck.BindingConverters;
 
 namespace NexusMods.HyperDuck;
 
@@ -25,10 +24,9 @@ public static class Services
         s.AddSingleton<IResultAdaptorFactory, ObservableListAdaptorFactory>();
         s.AddSingleton<IResultAdaptorFactory, SourceCacheAdaptorFactory>();
         s.AddSingleton<IValueAdaptorFactory, DateTimeOffsetAdaptorFactory>();
-
-        s.AddSingleton<IBindingConverter, UInt64Converter>();
-        s.AddSingleton<IBindingConverter, Int32Converter>();
-
+        
+        s.AddSingleton<IBindingConverter, GenericBindingConverter>();
+        
         return s;
     }
 }

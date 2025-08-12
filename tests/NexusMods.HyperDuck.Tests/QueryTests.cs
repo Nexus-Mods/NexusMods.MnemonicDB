@@ -1,4 +1,8 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading.Tasks;
+using TUnit.Assertions.Extensions;
+using TUnit.Core;
 using Assert = TUnit.Assertions.Assert;
 
 namespace NexusMods.HyperDuck.Tests;
@@ -98,6 +102,4 @@ public class QueryTests
 
         }
     }
-    
-
 }

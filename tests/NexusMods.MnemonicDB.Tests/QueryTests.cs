@@ -206,4 +206,57 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         await Verify(table.ToString());
     }
+
+    [Test]
+    [Arguments(false, "false bool")]
+    [Arguments(true, "true bool")]
+    [Arguments((byte)0, "byte 0")]
+    [Arguments((byte)1, "byte 1")]
+    [Arguments((sbyte)1, "sbyte 1")]
+    [Arguments((ushort)1, "ushort 1")]
+    [Arguments((short)1, "short 1")]
+    [Arguments((uint)1, "uint 1")]
+    [Arguments((int)1, "int 1")]
+    [Arguments((ulong)1, "ulong 1")]
+    [Arguments((long)1, "long 1")]
+    [Arguments((float)1, "float 1")]
+    [Arguments((double)1, "double 1")]
+    [Arguments("A string", "string value")]
+    public async Task QueryParamOfType<T>(T value, string name) where T : notnull
+    {
+        var result = Connection.Query<T>("SELECT $1", value)
+            .ToArray()
+            .First();
+        
+        await Assert.That(result).IsEqualTo(value);
+    }
+
+    [Test]
+    public async Task CanQueryWithUInt128()
+    {
+        UInt128[] values = [(UInt128)1];
+        foreach (var value in values)
+        {
+            var result = Connection.Query<UInt128>("SELECT $1", value)
+                .ToArray()
+                .First();
+
+            await Assert.That(result).IsEqualTo(value);
+        }
+    }
+    
+    
+    [Test]
+    public async Task CanQueryWithInt128()
+    {
+        Int128[] values = [(Int128)1];
+        foreach (var value in values)
+        {
+            var result = Connection.Query<Int128>("SELECT $1", value)
+                .ToArray()
+                .First();
+
+            await Assert.That(result).IsEqualTo(value);
+        }
+    }
 }
