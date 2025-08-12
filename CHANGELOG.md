@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.19.5 - 2025-08-12
+* Fixed several shutdown errors by better handling "wait on same thread" async issues
+
 ### 0.19.4 - 2025-08-07
 * Use CancelAfter to solve a deadlock issue on shutdown
 
