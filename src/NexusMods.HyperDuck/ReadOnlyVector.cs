@@ -56,6 +56,15 @@ public unsafe partial struct ReadOnlyVector
         return MemoryMarshal.Cast<byte, T>(data);
     }
     
+    /// <summary>
+    /// Returns true if the value at the given row is null
+    /// </summary>
+    public readonly bool IsNull(ulong rowIndex)
+    {
+        var mask = GetValidityMask();
+        return !mask.IsValid(rowIndex);
+    }
+    
     [MustDisposeResource]
     public LogicalType GetColumnType()
     {
@@ -75,8 +84,7 @@ public unsafe partial struct ReadOnlyVector
         if (validityPtr == null)
             throw new InvalidOperationException("Failed to get vector validity mask.");
 
-        ulong size = Native.duckdb_list_vector_get_size(_ptr);
-        return new ReadOnlyValidityMask(validityPtr, size);
+        return new ReadOnlyValidityMask(validityPtr, _rowCount);
     }
 
     public ReadOnlyVector GetListChild()
@@ -137,5 +145,4 @@ public unsafe partial struct ReadOnlyVector
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial ulong duckdb_vector_size();
     }
-
 }

@@ -24,7 +24,8 @@ public class RelativePathAdaptorFactory : IValueAdaptorFactory
         return false;
     }
 
-    public Type CreateType(DuckDbType taggedType, LogicalType logicalType, Type resultTypes, Type[] subTypes, Type[] subAdaptors)
+    public Type CreateType(Registry registry, DuckDbType taggedType, LogicalType logicalType, Type resultTypes,
+        Type[] subTypes, Type[] subAdaptors)
     {
         return typeof(RelativePathAdaptor);
     }

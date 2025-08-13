@@ -282,4 +282,14 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         await Verify(table.ToString());
     }
+
+    [Test]
+    public async Task CanQueryNullValue()
+    {
+        var results = Connection.Query<(ulong?, string?)>("SELECT NULL::UBIGINT, NULL::VARCHAR");
+        
+        await Assert.That(results).HasCount(1);
+        await Assert.That(results.First().Item1).IsNull();
+        await Assert.That(results.First().Item2).IsNull();
+    }
 }

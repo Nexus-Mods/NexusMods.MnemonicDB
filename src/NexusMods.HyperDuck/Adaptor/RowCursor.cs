@@ -30,4 +30,6 @@ public ref struct RowCursor
     {
         return _vectors[columnIndex].GetData<T>()[RowIndex];
     }
+
+    public bool IsNull(int columnIndex) => _vectors[columnIndex].IsNull((ulong)RowIndex);
 }

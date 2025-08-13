@@ -11,4 +11,9 @@ public interface IValueCursor
     /// Get the vector of the list child
     /// </summary>
     public ReadOnlyVector GetListChild();
+
+    /// <summary>
+    /// Returns true if the value is null;
+    /// </summary>
+    public bool IsNull { get; }
 }
