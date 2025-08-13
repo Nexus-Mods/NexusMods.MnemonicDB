@@ -259,4 +259,27 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             await Assert.That(result).IsEqualTo(value);
         }
     }
+
+
+    [Test]
+    public async Task CanQueryMultiCardinalityAttributes()
+    {
+        await InsertExampleData();
+        var mod1 = Connection.Query<(EntityId, string)>("SELECT Id, Name FROM mdb_Mod(Db=>$1)", Connection).First().Item1;
+        
+        using var tx = Connection.BeginTransaction();
+        tx.Add(mod1, Mod.Tags, "tag1");
+        tx.Add(mod1, Mod.Tags, "tag2");
+        tx.Add(mod1, Mod.Tags, "tag3");
+        await tx.Commit();
+
+        var results = Connection.Query<(EntityId, string, List<string>)>("""
+                                                                  SELECT Id, Name, Tags FROM mdb_Mod(Db=>$1)
+                                                                  """, Connection);
+        var table = TableResults();
+        
+        table.Add(results, "Initial Results all mods");
+        
+        await Verify(table.ToString());
+    }
 }

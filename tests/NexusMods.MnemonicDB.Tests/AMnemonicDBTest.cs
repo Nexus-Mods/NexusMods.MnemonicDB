@@ -1,4 +1,5 @@
-﻿using System.IO.Compression;
+﻿using System.Collections;
+using System.IO.Compression;
 using System.IO.Hashing;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -81,7 +82,28 @@ public class AMnemonicDBTest : IDisposable
                 cells.Add(row);
                 for (var i = 0; i < item.Length; i++)
                 {
-                    row.Add(item[i]!.ToString()!);
+                    var cell = item[i]!;
+                    switch (cell)
+                    {
+                        case string:
+                            row.Add(item[i]!.ToString()!);
+                            break;
+                        case IEnumerable enumerable:
+                        {
+                            var sb = new StringBuilder();
+                            sb.Append('[');
+                            var lst = new List<string>();
+                            foreach (var obj in enumerable)
+                                lst.Add(obj.ToString()!);
+                            sb.Append(string.Join(", ", lst));
+                            sb.Append(']');
+                            row.Add(sb.ToString());
+                            break;
+                        }
+                        default:
+                            row.Add(item[i]!.ToString()!);
+                            break;
+                    }
                 }
             }
             

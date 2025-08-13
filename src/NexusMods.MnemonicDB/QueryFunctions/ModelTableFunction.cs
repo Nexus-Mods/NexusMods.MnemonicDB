@@ -73,12 +73,106 @@ public class ModelTableFunction : ATableFunction
             var attrId = initData.Db.AttributeCache.GetAttributeId(attr.Id);
             var iterator = initData.Db.LightweightDatoms(SliceDescriptor.AttributesStartingAt(attrId, idVec[0]));
             var valueVector = outChunk[(ulong)columnIdx];
-            WriteColumn(attr.LowLevelType, idVec, valueVector, iterator);
+            if (attr.Cardinalty == Cardinality.Many)
+                WriteMultiCardinality(attr.LowLevelType, idVec, valueVector, iterator);
+            else
+                WriteColumn(attr.LowLevelType, idVec, valueVector, iterator);
         }
         ArrayPool<EntityId>.Shared.Return(idsChunk);
     }
 
-    private void WriteColumn(ValueTag tag, ReadOnlySpan<EntityId> ids, WritableVector vector, ILightweightDatomSegment datoms)
+    private void WriteMultiCardinality<TVector>(ValueTag attrLowLevelType, Span<EntityId> ids, TVector valueVector, ILightweightDatomSegment datoms)
+        where TVector : IWritableVector, allows ref struct
+    {
+        switch (attrLowLevelType)
+        {
+            case ValueTag.UInt8:
+                WriteMultiCardinalityCore<TVector, byte>(attrLowLevelType, ids, valueVector, datoms);
+                break;
+            case ValueTag.UInt16:
+                WriteMultiCardinalityCore<TVector, ushort>(attrLowLevelType, ids, valueVector, datoms);
+                break;
+            case ValueTag.UInt32:
+                WriteMultiCardinalityCore<TVector, uint>(attrLowLevelType, ids, valueVector, datoms);
+                break;
+            case ValueTag.UInt64:
+                WriteMultiCardinalityCore<TVector, ulong>(attrLowLevelType, ids, valueVector, datoms);
+                break;
+            case ValueTag.UInt128:
+                WriteMultiCardinalityCore<TVector, UInt128>(attrLowLevelType, ids, valueVector, datoms);
+                break;
+            case ValueTag.Int16:
+                WriteMultiCardinalityCore<TVector, short>(attrLowLevelType, ids, valueVector, datoms);
+                break;
+            case ValueTag.Int32:
+                WriteMultiCardinalityCore<TVector, int>(attrLowLevelType, ids, valueVector, datoms);
+                break;
+            case ValueTag.Int64:
+                WriteMultiCardinalityCore<TVector, long>(attrLowLevelType, ids, valueVector, datoms);
+                break;
+            case ValueTag.Int128:
+                WriteMultiCardinalityCore<TVector, Int128>(attrLowLevelType, ids, valueVector, datoms);
+                break;
+            case ValueTag.Float32:
+                WriteMultiCardinalityCore<TVector, float>(attrLowLevelType, ids, valueVector, datoms);
+                break;
+            case ValueTag.Float64:
+                WriteMultiCardinalityCore<TVector, double>(attrLowLevelType, ids, valueVector, datoms);
+                break;
+            case ValueTag.Ascii:
+                WriteMultiCardinalityCore<TVector, StringElement>(attrLowLevelType, ids, valueVector, datoms);
+                break;
+            case ValueTag.Utf8Insensitive:
+                WriteMultiCardinalityCore<TVector, StringElement>(attrLowLevelType, ids, valueVector, datoms);
+                break;
+            case ValueTag.Utf8:
+                WriteMultiCardinalityCore<TVector, StringElement>(attrLowLevelType, ids, valueVector, datoms);
+                break;
+            case ValueTag.Reference:
+                WriteMultiCardinalityCore<TVector, ulong>(attrLowLevelType, ids, valueVector, datoms);
+                break;
+            default:
+                throw new NotImplementedException("Not implemented for list vector of " + attrLowLevelType);
+        }
+    }
+
+    private void WriteMultiCardinalityCore<TVector, TType>(ValueTag attrLowLevelType, Span<EntityId> ids, TVector valueVector, ILightweightDatomSegment datoms)
+        where TVector : IWritableVector, allows ref struct 
+        where TType : unmanaged
+    {
+        using var writer = new ListWriter<TVector, TType>(valueVector);
+
+        for (var rowIdx = 0; rowIdx < ids.Length; rowIdx++)
+        {
+            var rowId = ids[rowIdx];
+            if (datoms.FastForwardTo(rowId))
+            {
+                writer.SetStart();
+                while (datoms.KeyPrefix.E.Value == rowId)
+                {
+                    if (typeof(TType) == typeof(StringElement))
+                    {
+                        writer.WriteUtf8(datoms.ValueSpan);
+                    }
+                    else
+                    {
+                        writer.Write(datoms.ValueSpan);
+                    }
+                    
+                    if (!datoms.MoveNext())
+                        break;
+                }
+
+                writer.WriteCurrentEntry();
+            }
+            else
+            {
+                writer.WriteCurrentEntry();
+            }
+        }
+    }
+
+    private void WriteColumn<TVector>(ValueTag tag, ReadOnlySpan<EntityId> ids, TVector vector, ILightweightDatomSegment datoms) where TVector : IWritableVector, allows ref struct
     {
         switch (tag)
         {
@@ -86,37 +180,37 @@ public class ModelTableFunction : ATableFunction
                 WriteNullColumn(ids, vector, datoms);
                 break;
             case ValueTag.UInt8:
-                WriteUnmanagedColumn<byte>(ids, vector, datoms);
+                WriteUnmanagedColumn<TVector, byte>(ids, vector, datoms);
                 break;
             case ValueTag.UInt16:
-                WriteUnmanagedColumn<ushort>(ids, vector, datoms);
+                WriteUnmanagedColumn<TVector, ushort>(ids, vector, datoms);
                 break;
             case ValueTag.UInt32:
-                WriteUnmanagedColumn<uint>(ids, vector, datoms);
+                WriteUnmanagedColumn<TVector, uint>(ids, vector, datoms);
                 break;
             case ValueTag.UInt64:
-                WriteUnmanagedColumn<ulong>(ids, vector, datoms);
+                WriteUnmanagedColumn<TVector, ulong>(ids, vector, datoms);
                 break;
             case ValueTag.UInt128:
-                WriteUnmanagedColumn<UInt128>(ids, vector, datoms);
+                WriteUnmanagedColumn<TVector, UInt128>(ids, vector, datoms);
                 break;
             case ValueTag.Int16:
-                WriteUnmanagedColumn<short>(ids, vector, datoms);
+                WriteUnmanagedColumn<TVector, short>(ids, vector, datoms);
                 break;
             case ValueTag.Int32:
-                WriteUnmanagedColumn<int>(ids, vector, datoms);
+                WriteUnmanagedColumn<TVector, int>(ids, vector, datoms);
                 break;
             case ValueTag.Int64:
-                WriteUnmanagedColumn<long>(ids, vector, datoms);
+                WriteUnmanagedColumn<TVector, long>(ids, vector, datoms);
                 break;
             case ValueTag.Int128:
-                WriteUnmanagedColumn<Int128>(ids, vector, datoms);
+                WriteUnmanagedColumn<TVector, Int128>(ids, vector, datoms);
                 break;
             case ValueTag.Float32:
-                WriteUnmanagedColumn<float>(ids, vector, datoms);
+                WriteUnmanagedColumn<TVector, float>(ids, vector, datoms);
                 break;
             case ValueTag.Float64:
-                WriteUnmanagedColumn<double>(ids, vector, datoms);
+                WriteUnmanagedColumn<TVector, double>(ids, vector, datoms);
                 break;
             case ValueTag.Ascii:
                 WriteVarCharColumn(ids, vector, datoms);
@@ -128,7 +222,7 @@ public class ModelTableFunction : ATableFunction
                 WriteVarCharColumn(ids, vector, datoms);
                 break;
             case ValueTag.Reference:
-                WriteUnmanagedColumn<ulong>(ids, vector, datoms);
+                WriteUnmanagedColumn<TVector, ulong>(ids, vector, datoms);
                 break;
             case ValueTag.Tuple2_UShort_Utf8I:
                 WriteTuple2Column(ids, vector, datoms);
@@ -141,7 +235,8 @@ public class ModelTableFunction : ATableFunction
         }
     }
 
-    private void WriteNullColumn(ReadOnlySpan<EntityId> ids, WritableVector vector, ILightweightDatomSegment datoms)
+    private void WriteNullColumn<TVector>(ReadOnlySpan<EntityId> ids, TVector vector, ILightweightDatomSegment datoms) 
+        where TVector : IWritableVector, allows ref struct
     {
         var dataSpan = vector.GetData<byte>();
         for (var rowIdx = 0; rowIdx < ids.Length; rowIdx++)
@@ -158,7 +253,8 @@ public class ModelTableFunction : ATableFunction
         }
     }
 
-    private void WriteTuple3Column(ReadOnlySpan<EntityId> ids, WritableVector vector, ILightweightDatomSegment datoms)
+    private void WriteTuple3Column<TVector>(ReadOnlySpan<EntityId> ids, TVector vector, ILightweightDatomSegment datoms)
+        where TVector : IWritableVector, allows ref struct
     {
         var validityMask = vector.GetValidityMask();
         var refVector = vector.GetStructChild(0).GetData<ulong>();
@@ -181,7 +277,8 @@ public class ModelTableFunction : ATableFunction
         }
     }
 
-    private void WriteTuple2Column(ReadOnlySpan<EntityId> ids, WritableVector vector, ILightweightDatomSegment datoms)
+    private void WriteTuple2Column<TVector>(ReadOnlySpan<EntityId> ids, TVector vector, ILightweightDatomSegment datoms) 
+        where TVector : IWritableVector, allows ref struct
     {
         var validityMask = vector.GetValidityMask();
         var shortVector = vector.GetStructChild(0).GetData<ushort>();
@@ -202,7 +299,8 @@ public class ModelTableFunction : ATableFunction
         }
     }
 
-    private void WriteUnmanagedColumn<T>(ReadOnlySpan<EntityId> ids, WritableVector vector, ILightweightDatomSegment datoms) 
+    private void WriteUnmanagedColumn<TVector, T>(ReadOnlySpan<EntityId> ids, TVector vector, ILightweightDatomSegment datoms) 
+        where TVector : IWritableVector, allows ref struct
         where T : unmanaged
     {
         var dataSpan = vector.GetData<T>();
@@ -216,7 +314,8 @@ public class ModelTableFunction : ATableFunction
         }
     }
 
-    private void WriteVarCharColumn(ReadOnlySpan<EntityId> ids, WritableVector vector, ILightweightDatomSegment datoms)
+    private void WriteVarCharColumn<TVector>(ReadOnlySpan<EntityId> ids, TVector vector, ILightweightDatomSegment datoms)
+        where TVector : IWritableVector, allows ref struct
     {
         var mask = vector.GetValidityMask();
         for (var rowIdx = 0; rowIdx < ids.Length; rowIdx++)
@@ -295,7 +394,16 @@ public class ModelTableFunction : ATableFunction
         info.AddColumn<ulong>("Id");
         foreach (var attr in _definition.AllAttributes)
         {
-            info.AddColumn(attr.Id.Name, attr.LowLevelType.DuckDbType());
+            if (attr.Cardinalty == Cardinality.Many)
+            {
+                var baseType = attr.LowLevelType.DuckDbType();
+                using var listType = LogicalType.CreateListOf(baseType);
+                info.AddColumn(attr.Id.Name, listType);
+            }
+            else
+            {
+                info.AddColumn(attr.Id.Name, attr.LowLevelType.DuckDbType());
+            }
         }
 
         using var dbParam = info.GetParameter("Db");
