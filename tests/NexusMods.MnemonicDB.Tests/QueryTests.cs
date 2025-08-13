@@ -292,4 +292,14 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(results.First().Item1).IsNull();
         await Assert.That(results.First().Item2).IsNull();
     }
+
+    [Test]
+    public async Task CanUsedNamedParameters()
+    {
+        var results = Connection.Query<(int, string)>("SELECT $Integer, $Name", new { Integer = 42, Name = "test" });
+        
+        await Assert.That(results).HasCount(1);
+        await Assert.That(results.First().Item1).IsEqualTo(42);
+        await Assert.That(results.First().Item2).IsEqualTo("test");
+    }
 }

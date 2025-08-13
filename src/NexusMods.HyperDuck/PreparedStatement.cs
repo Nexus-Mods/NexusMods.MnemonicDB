@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Dynamitey;
 using JetBrains.Annotations;
 using NexusMods.HyperDuck.Adaptor;
 using NexusMods.HyperDuck.Adaptor.Impls;
@@ -12,18 +13,52 @@ public unsafe partial struct PreparedStatement : IDisposable
     public void* _ptr;
     private readonly Connection _connection;
     private readonly IRegistry _registry;
+    private readonly ulong _parameterCount;
+    private string[]? _names;
 
     public PreparedStatement(void* ptr, IRegistry registry, Connection connection)
     {
         _ptr = ptr;
         _connection = connection;
         _registry = registry;
+        _parameterCount = Native.duckdb_nparams(_ptr);
     }
 
-    public void Bind<T>(int idx, T value)
+    public void Bind(object parameters)
+    {
+        if (parameters is Array arr)
+        {
+            for (var i = 0UL; i < (ulong)arr.Length; i++)
+                // DuckDB Parameters are 1 indexed
+                Bind(i + 1, arr.GetValue((int)i));
+        }
+        else if (_parameterCount == 1)
+        {
+            // DuckDB Parameters are 1 indexed
+            Bind(1, parameters);
+        }
+        else
+        {
+            BindFrom(parameters);
+        }
+    }
+
+    public void Bind<T>(ulong idx, T value)
     {
         var converter = _registry.GetBindingConverter<T>(value);
-        converter.Bind(this, idx, value);
+        converter.Bind(this, (int)idx, value);
+    }
+
+    public string[] GetParameterNames()
+    {
+        var count = Native.duckdb_nparams(_ptr);
+        var paramNames = new string[count];
+        for (ulong i = 0; i < count; i++)
+        {
+            // Names are 1 based indexes
+            paramNames[i] = Native.duckdb_parameter_name(_ptr, i + 1);
+        }
+        return paramNames;
     }
 
     /// <summary>
@@ -203,6 +238,14 @@ public unsafe partial struct PreparedStatement : IDisposable
         [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial State duckdb_bind_null(void* stmt, int param_idx);
+        
+        [LibraryImport(GlobalConstants.LibraryName)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial ulong duckdb_nparams(void* stmt);
+        
+        [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial string duckdb_parameter_name(void* stmt, ulong index);
     }
 
     [MustDisposeResource]
@@ -224,5 +267,22 @@ public unsafe partial struct PreparedStatement : IDisposable
             return;
         Native.duckdb_destroy_prepare(ref _ptr);
         _ptr = null;
+    }
+
+    public void BindFrom(object parameters)
+    {
+        CacheNames();
+        for (ulong i = 0; i < _parameterCount; i++)
+        {
+            var obj = Dynamic.InvokeGet(parameters, _names![i]);
+            Bind(i + 1, obj);
+        }
+    }
+
+    private void CacheNames()
+    {
+        if (_names != null)
+            return;
+        _names = GetParameterNames();
     }
 }

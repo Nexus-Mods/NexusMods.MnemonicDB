@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
@@ -15,8 +16,8 @@ namespace NexusMods.HyperDuck;
 public class Query<T> : IEnumerable<T> where T : notnull
 {
     public required string Sql { get; init; }
-    
-    public object[] Parameters { get; init; } = [];
+
+    public object Parameters { get; init; } = Array.Empty<object>();
     
     public required DuckDB DuckDBQueryEngine { get; init; }
 
@@ -25,9 +26,7 @@ public class Query<T> : IEnumerable<T> where T : notnull
         var compiled = new CompiledQuery<T>(Sql);
         using var conn = DuckDBQueryEngine.Connect();
         var prepared = conn.Prepare(compiled);
-        for (int i = 0; i < Parameters.Length; i++)
-            // DuckDB Parameters are 1 indexed
-            prepared.Bind(i + 1, Parameters[i]);
+        prepared.Bind(Parameters);
         using var result = prepared.Execute();
         var adaptor = DuckDBQueryEngine.Registry.GetAdaptor<List<T>>(result);
         List<T> returnValue = [];
@@ -45,9 +44,7 @@ public class Query<T> : IEnumerable<T> where T : notnull
         var compiled = new CompiledQuery<T>(Sql);
         using var conn = DuckDBQueryEngine.Connect();
         var prepared = conn.Prepare(compiled);
-        for (int i = 0; i < Parameters.Length; i++)
-            // DuckDB Parameters are 1 indexed
-            prepared.Bind(i + 1, Parameters[i]);
+        prepared.Bind(Parameters);
         using var result = prepared.Execute();
         var adaptor = DuckDBQueryEngine.Registry.GetAdaptor<TIntoColl>(result);
         adaptor.Adapt(result, ref intoColl);

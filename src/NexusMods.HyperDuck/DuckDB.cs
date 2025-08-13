@@ -113,7 +113,7 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
     /// <summary>
     /// Gets the JSON query plan for a specific query
     /// </summary>
-    public HashSet<ATableFunction> GetReferencedFunctions(string query, object[] parameters)
+    public HashSet<ATableFunction> GetReferencedFunctions(string query, object parameters)
     {
         var result = ((IQueryMixin)this).Query<(string, string)>("EXPLAIN (FORMAT JSON) " + query, parameters);
 
