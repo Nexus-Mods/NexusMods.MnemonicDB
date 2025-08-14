@@ -1,5 +1,10 @@
 ## Changelog
 
+### 0.21.0 - 2025-08-13
+* Implement support for querying cardinality many attributes with DuckDB
+* Support for nullable types returned from DuckDB queries
+* Added support for named parameters in Query
+
 ### 0.20.0 - 2025-08-12
 * Added binding converters and value adaptors for all the main primitive types (including 128 ints)
 
