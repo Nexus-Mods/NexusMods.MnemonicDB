@@ -6,10 +6,11 @@ using JetBrains.Annotations;
 
 namespace NexusMods.HyperDuck;
 
-public unsafe ref partial struct WritableVector
+public unsafe ref partial struct WritableVector : IWritableVector
 {
     private readonly void* _ptr;
     private readonly ulong _rowCount;
+    private bool _isListVector = false;
     private Span<byte> _data = Span<byte>.Empty;
 
     internal WritableVector(void* ptr, ulong rowCount)
@@ -30,6 +31,7 @@ public unsafe ref partial struct WritableVector
             return Span<byte>.Empty;
         if (!_data.IsEmpty) 
             return _data;
+        
         
         var dataPtr = ReadOnlyVector.Native.duckdb_vector_get_data(_ptr);
         // Assuming the size of the vector can be determined by some means, e.g., a property or method
@@ -100,6 +102,16 @@ public unsafe ref partial struct WritableVector
         [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void duckdb_vector_assign_string_element_len(void* vector, ulong offset, void* str, ulong length);
+        
+        [LibraryImport(GlobalConstants.LibraryName)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial void duckdb_list_vector_reserve(void* vector, ulong capacity);
+        
+        [LibraryImport(GlobalConstants.LibraryName)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial void duckdb_list_vector_set_size(void* vector, ulong capacity);
     }
+
+    public unsafe void* GetPtr() => _ptr;
 
 }

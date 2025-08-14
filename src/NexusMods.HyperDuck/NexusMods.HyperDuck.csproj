@@ -9,6 +9,7 @@
     <ItemGroup>
       <PackageReference Include="DuckDB.NativeBinaries" />
       <PackageReference Include="DynamicData" />
+      <PackageReference Include="Dynamitey" />
       <PackageReference Include="JetBrains.Annotations" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
       <PackageReference Include="Microsoft.Extensions.Hosting" />

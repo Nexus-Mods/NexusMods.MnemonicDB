@@ -60,7 +60,8 @@ public class UnmanagedValueAdaptorFactory : IValueAdaptorFactory
     }
     
 
-    public Type CreateType(DuckDbType taggedType, LogicalType logicalType, Type resultType, Type[] subTypes, Type[] subAdaptors)
+    public Type CreateType(Registry registry, DuckDbType taggedType, LogicalType logicalType, Type resultType,
+        Type[] subTypes, Type[] subAdaptors)
     {
         if (resultType == typeof(bool))
             return typeof(BoolAdaptor);

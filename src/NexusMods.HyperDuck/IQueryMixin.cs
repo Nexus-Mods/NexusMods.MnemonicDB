@@ -12,13 +12,25 @@ public interface IQueryMixin
 {
     public DuckDB DuckDBQueryEngine { get; }
 
-    public Query<TResult> Query<TResult>(string sql, params object[] args) 
+    public Query<TResult> Query<TResult>(string sql, object args) 
         where TResult : notnull => new()
-        {
-            Sql = sql,
-            Parameters = args,
-            DuckDBQueryEngine = DuckDBQueryEngine,
-        };
+    {
+        Sql = sql,
+        Parameters = args,
+        DuckDBQueryEngine = DuckDBQueryEngine,
+    };
+    
+    /// <summary>
+    /// Create a query that takes no parameters
+    /// </summary>
+    public Query<TResult> Query<TResult>(string sql) 
+        where TResult : notnull => Query<TResult>(sql, Array.Empty<object>());
+
+    /// <summary>
+    /// Create a query that takes no parameters
+    /// </summary>
+    public Query<TResult> Query<TResult>(string sql, params object[] args) 
+        where TResult : notnull => Query<TResult>(sql, (object)args);
 
     /// <summary>
     /// Execute statements without preparing them first

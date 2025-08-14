@@ -9,13 +9,13 @@ public unsafe partial struct ReadOnlyVector
 {
     private void* _ptr;
     private ulong _rowCount;
-    
+
     internal ReadOnlyVector(void* ptr, ulong rowCount)
     {
         _ptr = ptr;
         _rowCount = rowCount;
     }
-    
+
     public int Length => (int)_rowCount;
 
     /// <summary>
@@ -24,7 +24,7 @@ public unsafe partial struct ReadOnlyVector
     public ReadOnlySpan<byte> GetData()
     {
         ArgumentNullException.ThrowIfNull(_ptr);
-        
+
         // Assuming duckdb_vector_get_data returns a pointer to the data
         void* dataPtr = Native.duckdb_vector_get_data(_ptr);
         if (dataPtr == null)
@@ -39,7 +39,7 @@ public unsafe partial struct ReadOnlyVector
     /// <summary>
     /// Slice the vector from the given input list entry 
     /// </summary>
-    public ReadOnlySpan<T> Slice<T>(ListEntry entry) 
+    public ReadOnlySpan<T> Slice<T>(ListEntry entry)
         where T : unmanaged
     {
         return GetData<T>().Slice((int)entry.Offset, (int)entry.Length);
@@ -51,34 +51,39 @@ public unsafe partial struct ReadOnlyVector
     public ReadOnlySpan<T> GetData<T>() where T : unmanaged
     {
         ArgumentNullException.ThrowIfNull(_ptr);
-        
+
         var data = GetData();
         return MemoryMarshal.Cast<byte, T>(data);
     }
-    
+
+    /// <summary>
+    /// Returns true if the value at the given row is null
+    /// </summary>
+    public readonly bool IsNull(ulong rowIndex)
+    {
+        var mask = GetValidityMask();
+        return !mask.IsValid(rowIndex);
+    }
+
     [MustDisposeResource]
     public LogicalType GetColumnType()
     {
         ArgumentNullException.ThrowIfNull(_ptr);
-        
+
         // Assuming duckdb_vector_get_column_type returns a LogicalType
         var type = Native.duckdb_vector_get_column_type(_ptr);
         return type;
     }
-    
+
     public ReadOnlyValidityMask GetValidityMask()
     {
         ArgumentNullException.ThrowIfNull(_ptr);
-        
+
         // Assuming duckdb_vector_get_validity returns a pointer to the validity mask
         ulong* validityPtr = Native.duckdb_vector_get_validity(_ptr);
-        if (validityPtr == null)
-            throw new InvalidOperationException("Failed to get vector validity mask.");
-
-        ulong size = Native.duckdb_list_vector_get_size(_ptr);
-        return new ReadOnlyValidityMask(validityPtr, size);
+        return new ReadOnlyValidityMask(validityPtr, _rowCount);
     }
-
+    
     public ReadOnlyVector GetListChild()
     {
         ArgumentNullException.ThrowIfNull(_ptr);
@@ -137,5 +142,4 @@ public unsafe partial struct ReadOnlyVector
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial ulong duckdb_vector_size();
     }
-
 }

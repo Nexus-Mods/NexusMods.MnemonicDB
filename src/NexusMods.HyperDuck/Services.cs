@@ -24,6 +24,7 @@ public static class Services
         s.AddSingleton<IResultAdaptorFactory, ObservableListAdaptorFactory>();
         s.AddSingleton<IResultAdaptorFactory, SourceCacheAdaptorFactory>();
         s.AddSingleton<IValueAdaptorFactory, DateTimeOffsetAdaptorFactory>();
+        s.AddSingleton<IValueAdaptorFactory, NullableValueAdaptorFactory>();
         
         s.AddSingleton<IBindingConverter, GenericBindingConverter>();
         

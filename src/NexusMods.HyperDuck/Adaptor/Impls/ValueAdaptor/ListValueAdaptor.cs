@@ -64,7 +64,8 @@ public class ListValueAdaptorFactory : IValueAdaptorFactory
         return false;
     }
 
-    public Type CreateType(DuckDbType taggedType, LogicalType logicalType, Type resultType, Type[] subTypes, Type[] subAdaptors)
+    public Type CreateType(Registry registry, DuckDbType taggedType, LogicalType logicalType, Type resultType,
+        Type[] subTypes, Type[] subAdaptors)
     {
         return typeof(ListValueAdaptor<,,>).MakeGenericType(resultType, subTypes[0], subAdaptors[0]);
     }

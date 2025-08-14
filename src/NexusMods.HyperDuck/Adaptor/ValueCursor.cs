@@ -23,4 +23,6 @@ public ref struct ValueCursor : IValueCursor
     {
         return _rowCursor.GetListSubVector(ColumnIndex);
     }
+
+    public bool IsNull => _rowCursor.IsNull(ColumnIndex);
 }

@@ -20,4 +20,6 @@ public ref struct SubVectorCursor : IValueCursor
     {
         throw new System.NotImplementedException();
     }
+
+    public bool IsNull => _vector.IsNull(RowIndex);
 }

@@ -119,7 +119,7 @@ public class Registry : IRegistry
         return bestFactory.CreateType(rowType, innerTypes, innerAdaptors.ToArray());
     }
 
-    private Type CreateValueAdaptor(LogicalType logicalType, int column, Type innerType)
+    public Type CreateValueAdaptor(LogicalType logicalType, int column, Type innerType)
     {
         int bestPriority = Int32.MinValue;
         IValueAdaptorFactory bestFactory = null!;
@@ -153,6 +153,6 @@ public class Registry : IRegistry
             
         }
         
-        return bestFactory.CreateType(logicalType.TypeId, logicalType, innerType, innerTypes, subAdaptors);
+        return bestFactory.CreateType(this, logicalType.TypeId, logicalType, innerType, innerTypes, subAdaptors);
     }
 }

@@ -1,6 +1,12 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using NexusMods.HyperDuck.Adaptor;
+using TUnit.Assertions.Extensions;
+using TUnit.Core;
 using Assert = TUnit.Assertions.Assert;
 
 namespace NexusMods.HyperDuck.Tests;
@@ -49,7 +55,7 @@ public class TableFunctionTests
         await using var db = DuckDB.Open(Registry);
         var squares = new Squares();
         db.Register(squares);
-        var plan = db.GetReferencedFunctions("SELECT i FROM my_squares(0, 8)", []).ToArray();
+        var plan = db.GetReferencedFunctions("SELECT i FROM my_squares(0, 8)", Array.Empty<object>()).ToArray();
 
         await Assert.That(plan.Length).IsEqualTo(1);
         await Assert.That(plan[0]).IsEqualTo(squares);
