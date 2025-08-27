@@ -30,7 +30,8 @@ public class QueryEngine : IQueryEngine, IAsyncDisposable
         _registry = new Registry(services.GetServices<IResultAdaptorFactory>(),
             services.GetServices<IRowAdaptorFactory>(), 
             services.GetServices<IValueAdaptorFactory>(),
-            services.GetServices<IBindingConverter>());
+            services.GetServices<IBindingConverter>(),
+            services.GetServices<AmbientSqlFragment>());
         _db = HyperDuck.DuckDB.Open(_registry);
         _declaredAttributes = services.GetServices<IAttribute>().OrderBy(a => a.Id.Id).ToArray();
         _attrsByShortName = _declaredAttributes.ToDictionary(a => a.ShortName, a => a);

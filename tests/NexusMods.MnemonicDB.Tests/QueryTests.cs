@@ -302,4 +302,16 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(results.First().Item1).IsEqualTo(42);
         await Assert.That(results.First().Item2).IsEqualTo("test");
     }
+
+    [Test]
+    public async Task CanCallAmbientSql()
+    {
+        await InsertExampleData();
+
+        var loadout1 = Connection.Query<(EntityId, string)>("SELECT Id, Name FROM mdb_Loadout()").First().Item1;
+        
+        var results = Connection.Query<(ulong, string)>("SELECT * FROM FilesForLoadout($Id, $Db)", new { Id = loadout1, Db = Connection.Db });
+        
+        await Assert.That(results).HasCount(9);
+    }
 }

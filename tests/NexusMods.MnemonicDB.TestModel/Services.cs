@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using fff;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace NexusMods.MnemonicDB.TestModel;
 
@@ -13,5 +14,6 @@ public static class Services
             .AddCollectionModel()
             .AddParentAModel()
             .AddParentBModel()
-            .AddChildModel();
+            .AddChildModel()
+            .AddExampleQueriesSql();
 }

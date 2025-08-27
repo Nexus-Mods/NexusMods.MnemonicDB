@@ -11,14 +11,18 @@ public class Registry : IRegistry
     private readonly IValueAdaptorFactory[] _valueAdaptorFactories;
     private readonly IBindingConverter[] _bindingConverters;
     private readonly Dictionary<Type, IBindingConverter> _bindingCache = new();
+    private readonly AmbientSqlFragment[] _fragments;
 
-    public Registry(IEnumerable<IResultAdaptorFactory> resultAdaptors, IEnumerable<IRowAdaptorFactory> rowAdaptors, IEnumerable<IValueAdaptorFactory> valueAdaptors, IEnumerable<IBindingConverter> bindingConverters)
+    public Registry(IEnumerable<IResultAdaptorFactory> resultAdaptors, IEnumerable<IRowAdaptorFactory> rowAdaptors, IEnumerable<IValueAdaptorFactory> valueAdaptors, IEnumerable<IBindingConverter> bindingConverters, IEnumerable<AmbientSqlFragment> sqlFragments)
     {
         _resultAdaptorFactories = resultAdaptors.ToArray();
         _rowAdaptorFactories = rowAdaptors.ToArray();
         _valueAdaptorFactories = valueAdaptors.ToArray();
         _bindingConverters = bindingConverters.ToArray();
+        _fragments = sqlFragments.ToArray();
     }
+    
+    public AmbientSqlFragment[] Fragments => _fragments;
     
     public IResultAdaptor<T> GetAdaptor<T>(Result result)
     {

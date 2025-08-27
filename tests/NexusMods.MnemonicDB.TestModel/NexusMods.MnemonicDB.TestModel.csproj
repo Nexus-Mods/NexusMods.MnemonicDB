@@ -24,4 +24,10 @@
         <PackageReference Include="TransparentValueObjects" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
+    <ItemGroup>
+      <None Remove="ExampleQueries.sql" />
+      <AdditionalFiles Include="ExampleQueries.sql" />
+      <UpToDateCheckInput Include="ExampleQueries.sql"/>  
+    </ItemGroup>
+
 </Project>
