@@ -1,5 +1,8 @@
 ## Changelog
 
+## 0.22.0 - 2025-08-27
+* Add support for .sql query files, that will be loaded into the DuckDB engine at startup
+
 ### 0.21.0 - 2025-08-13
 * Implement support for querying cardinality many attributes with DuckDB
 * Support for nullable types returned from DuckDB queries
