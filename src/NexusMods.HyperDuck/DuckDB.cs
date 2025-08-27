@@ -36,11 +36,17 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
         _disposed = false;
         _registry = registry;
         _db = Database.OpenInMemory();
+
+        using var conn = Connect();
+        foreach (var fragment in _registry.Fragments)
+        {
+            using var _ = conn.Query(fragment.SQL);
+        }
     }
 
     public static DuckDB Open()
     {
-        return new DuckDB(new Registry([], [], [], []));
+        return new DuckDB(new Registry([], [], [], [], []));
     }
 
     public static DuckDB Open(IRegistry registry)

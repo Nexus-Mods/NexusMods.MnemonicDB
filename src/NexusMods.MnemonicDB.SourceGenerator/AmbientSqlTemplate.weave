@@ -1,0 +1,20 @@
+@namespace NexusMods.MnemonicDB.SourceGenerator
+@classname AmbientSqlTemplate
+@methodname RenderSqlFragment
+@model AmbientSqlModel
+
+#nullable enable
+
+using __HYPERDUCK__ = NexusMods.HyperDuck;
+using global::Microsoft.Extensions.DependencyInjection;
+
+namespace {{= model.Namespace}};
+
+public static class {{= model.Name }}Extensions
+{
+    public static IServiceCollection Add{{= model.Name }}Sql(this IServiceCollection services)
+    {
+        services.AddSingleton(new __HYPERDUCK__.AmbientSqlFragment("{{=model.Name}}", {{=model.Sql}}));
+        return services;
+    }
+}
