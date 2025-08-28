@@ -64,7 +64,7 @@ public sealed class Connection : IConnection
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers, IQueryEngine? queryEngine = null, bool readOnlyMode = false)
+    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers, IQueryEngine? queryEngine = null, bool readOnlyMode = false, string? prefix = null)
     {
         ServiceProvider = provider;
         AttributeCache = store.AttributeCache;
@@ -73,7 +73,7 @@ public sealed class Connection : IConnection
         _store = (DatomStore)store;
         _dbStream = new DbStream();
         _analyzers = analyzers.ToArray();
-        _prefix = "mdb";
+        _prefix = prefix ?? "mdb";
         Bootstrap(readOnlyMode);
         if (queryEngine is QueryEngine engine)
         {

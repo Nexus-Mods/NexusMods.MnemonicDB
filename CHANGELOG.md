@@ -1,5 +1,8 @@
 ## Changelog
 
+## 0.22.1 - 2025-08-27
+* Add a prefix parameter to Connection
+
 ## 0.22.0 - 2025-08-27
 * Add support for .sql query files, that will be loaded into the DuckDB engine at startup
 
