@@ -77,6 +77,23 @@ public interface ITransaction : IDisposable
         => Add(entityId, attribute, val, isRetract: true);
 
     /// <summary>
+    /// Retracts all datoms for the given attribute for the given entity as seen by the given db. If none are found,
+    /// nothing happens
+    /// </summary>
+    void RetractAll(IDb db, EntityId entityId, IAttribute attribute)
+    {
+        var ent = db.Get(entityId);
+        var aid = db.AttributeCache.GetAttributeId(attribute.Id);
+        var range = ent.GetRange(aid);
+
+        for (var idx = range.Start.Value; idx < range.End.Value; idx++)
+        {
+            var span = ent.GetValueSpan(idx, out var valueTag);
+            Add(entityId, aid, valueTag, span, isRetract: true);
+        }
+    }
+    
+    /// <summary>
     /// Retract a specific datom
     /// </summary>
     void Add(Datom datom);

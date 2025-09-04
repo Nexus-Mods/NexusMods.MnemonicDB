@@ -107,4 +107,23 @@ public static class DuckDbTypeExtensions
             _ => throw new NotSupportedException("Element type not supported for type: " + type)
         };
     }
+
+    public static DuckDbType ToDuckDbEnum<T>()
+    {
+        if (typeof(T) == typeof(bool)) return DuckDbType.Boolean;
+        if (typeof(T) == typeof(sbyte)) return DuckDbType.TinyInt;
+        if (typeof(T) == typeof(short)) return DuckDbType.SmallInt;
+        if (typeof(T) == typeof(int)) return DuckDbType.Integer;
+        if (typeof(T) == typeof(long)) return DuckDbType.BigInt;
+        if (typeof(T) == typeof(Int128)) return DuckDbType.Hugeint;
+        if (typeof(T) == typeof(byte)) return DuckDbType.UTinyInt;
+        if (typeof(T) == typeof(ushort)) return DuckDbType.USmallInt;
+        if (typeof(T) == typeof(uint)) return DuckDbType.UInteger;
+        if (typeof(T) == typeof(ulong)) return DuckDbType.UBigInt;
+        if (typeof(T) == typeof(UInt128)) return DuckDbType.Uhugeint;
+        if (typeof(T) == typeof(float)) return DuckDbType.Float;
+        if (typeof(T) == typeof(double)) return DuckDbType.Double;
+        if (typeof(T) == typeof(StringElement)) return DuckDbType.Varchar;
+        throw new NotSupportedException("DuckDB type not supported for type: " + typeof(T));
+    }
 }
