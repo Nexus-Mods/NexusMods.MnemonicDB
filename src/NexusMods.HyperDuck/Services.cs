@@ -18,15 +18,15 @@ public static class Services
         s.AddSingleton<IRowAdaptorFactory, SingleColumnAdaptorFactory>();
         s.AddSingleton<IValueAdaptorFactory, UnmanagedValueAdaptorFactory>();
         s.AddSingleton<IRowAdaptorFactory, TupleAdaptorFactory>();
-        s.AddSingleton<IValueAdaptorFactory, StringAdaptorFactory>();
         s.AddSingleton<IValueAdaptorFactory, RelativePathAdaptorFactory>();
         s.AddSingleton<IValueAdaptorFactory, ListValueAdaptorFactory>();
         s.AddSingleton<IResultAdaptorFactory, ObservableListAdaptorFactory>();
         s.AddSingleton<IResultAdaptorFactory, SourceCacheAdaptorFactory>();
         s.AddSingleton<IValueAdaptorFactory, DateTimeOffsetAdaptorFactory>();
         s.AddSingleton<IValueAdaptorFactory, NullableValueAdaptorFactory>();
-        
         s.AddSingleton<IBindingConverter, GenericBindingConverter>();
+        s.AddValueAdaptor<StringElement, string>(static s => s.GetString());
+        
         
         return s;
     }

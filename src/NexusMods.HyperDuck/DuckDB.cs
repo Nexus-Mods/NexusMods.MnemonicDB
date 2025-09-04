@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -30,6 +31,8 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
     internal readonly ConcurrentDictionary<string, ATableFunction> TableFunctions = new();
     private readonly TimeSpan _delay;
     private bool _disposed;
+
+    private static byte[] ReferencedFunctionsPrefix = "EXPLAIN (FORMAT JSON) "u8.ToArray();
 
     private DuckDB(IRegistry registry)
     {
@@ -119,11 +122,18 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
     /// <summary>
     /// Gets the JSON query plan for a specific query
     /// </summary>
-    public HashSet<ATableFunction> GetReferencedFunctions(string query, object parameters)
+    public HashSet<ATableFunction> GetReferencedFunctions(IQuery query)
     {
-        var result = ((IQueryMixin)this).Query<(string, string)>("EXPLAIN (FORMAT JSON) " + query, parameters);
 
-        var plan = JsonSerializer.Deserialize<QueryPlanNode[]>(result.First().Item2)!;
+        var fullSql = ReferencedFunctionsPrefix.Length + query.Sql.Sql.Length;
+        var fullbytes = new byte[fullSql];
+        Array.Copy(ReferencedFunctionsPrefix, fullbytes, ReferencedFunctionsPrefix.Length);
+        query.Sql.Sql.CopyTo(fullbytes, ReferencedFunctionsPrefix.Length);
+
+        var result = ((IQueryMixin)this).Query<(string, string)>(new HashedQuery(fullbytes), query.Parameters);
+
+        var plan
+            = JsonSerializer.Deserialize<QueryPlanNode[]>(result.First().Item2)!;
         
         HashSet<ATableFunction> touchedFunctions = [];
         foreach (var node in plan)

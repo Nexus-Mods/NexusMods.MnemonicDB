@@ -154,7 +154,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task CanSendParametersToQuery()
     {
-        var result = Connection.Query<int>("SELECT $1", 42);
+        var result = Connection.Query<int>($"SELECT {42}");
 
         await Assert.That(result.First()).IsEqualTo(42);
     }
@@ -166,7 +166,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await InsertExampleData();
 
         var firstDb = Connection.Db;
-        var result = Connection.Query<(EntityId, string)>(queryText, firstDb).ToArray();
+        var result = Connection.Query<(EntityId, string)>($"SELECT Id, Name FROM mdb_Mod(Db={firstDb})").ToArray();
         
         var table = TableResults();
         
@@ -177,9 +177,9 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx.Add(id1, Mod.Name, "Renamed - Mod");
         await tx.Commit();
         
-        table.Add( Connection.Query<(EntityId, string)>(queryText, firstDb), "After update, old DB");
+        table.Add( Connection.Query<(EntityId, string)>($"SELECT Id, Name FROM mdb_Mod(Db={firstDb})"), "After update, old DB");
         
-        table.Add( Connection.Query<(EntityId, string)>(queryText, Connection.Db), "After update, new DB");
+        table.Add( Connection.Query<(EntityId, string)>($"SELECT Id, Name FROM mdb_Mod(Db={Connection.Db})"), "After update, new DB");
         
         await Verify(table.ToString());
     }
@@ -187,11 +187,10 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task CanQueryWithoutPassing()
     {
-        const string queryText = "SELECT Id, Name FROM mdb_Mod()";
         await InsertExampleData();
 
         var firstDb = Connection.Db;
-        var result = Connection.Query<(EntityId, string)>(queryText, firstDb).ToArray();
+        var result = Connection.Query<(EntityId, string)>("SELECT Id, Name FROM mdb_Mod()").ToArray();
         
         var table = TableResults();
         
@@ -202,7 +201,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx.Add(id1, Mod.Name, "Renamed - Mod");
         await tx.Commit();
         
-        table.Add( Connection.Query<(EntityId, string)>(queryText), "After update, new DB");
+        table.Add( Connection.Query<(EntityId, string)>("SELECT Id, Name FROM mdb_Mod()"), "After update, new DB");
         
         await Verify(table.ToString());
     }
@@ -224,7 +223,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Arguments("A string", "string value")]
     public async Task QueryParamOfType<T>(T value, string name) where T : notnull
     {
-        var result = Connection.Query<T>("SELECT $1", value)
+        var result = Connection.Query<T>($"SELECT {value}")
             .ToArray()
             .First();
         
@@ -237,7 +236,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         UInt128[] values = [(UInt128)1];
         foreach (var value in values)
         {
-            var result = Connection.Query<UInt128>("SELECT $1", value)
+            var result = Connection.Query<UInt128>($"SELECT {value}")
                 .ToArray()
                 .First();
 
@@ -252,7 +251,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         Int128[] values = [(Int128)1];
         foreach (var value in values)
         {
-            var result = Connection.Query<Int128>("SELECT $1", value)
+            var result = Connection.Query<Int128>($"SELECT {value}")
                 .ToArray()
                 .First();
 
@@ -265,7 +264,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     public async Task CanQueryMultiCardinalityAttributes()
     {
         await InsertExampleData();
-        var mod1 = Connection.Query<(EntityId, string)>("SELECT Id, Name FROM mdb_Mod(Db=>$1)", Connection).First().Item1;
+        var mod1 = Connection.Query<(EntityId, string)>($"SELECT Id, Name FROM mdb_Mod(Db=>{Connection})").First().Item1;
         
         using var tx = Connection.BeginTransaction();
         tx.Add(mod1, Mod.Tags, "tag1");
@@ -273,9 +272,9 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx.Add(mod1, Mod.Tags, "tag3");
         await tx.Commit();
 
-        var results = Connection.Query<(EntityId, string, List<string>)>("""
-                                                                  SELECT Id, Name, Tags FROM mdb_Mod(Db=>$1)
-                                                                  """, Connection);
+        var results = Connection.Query<(EntityId, string, List<string>)>($"""
+                                                                  SELECT Id, Name, Tags FROM mdb_Mod(Db=>{Connection})
+                                                                  """);
         var table = TableResults();
         
         table.Add(results, "Initial Results all mods");
@@ -296,7 +295,8 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task CanUsedNamedParameters()
     {
-        var results = Connection.Query<(int, string)>("SELECT $Integer, $Name", new { Integer = 42, Name = "test" });
+        var s = "test";
+        var results = Connection.Query<(int, string)>($"SELECT {42}, {s}");
         
         await Assert.That(results).HasCount(1);
         await Assert.That(results.First().Item1).IsEqualTo(42);
@@ -310,7 +310,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var loadout1 = Connection.Query<(EntityId, string)>("SELECT Id, Name FROM mdb_Loadout()").First().Item1;
         
-        var results = Connection.Query<(ulong, string)>("SELECT * FROM FilesForLoadout($Id, $Db)", new { Id = loadout1, Db = Connection.Db });
+        var results = Connection.Query<(ulong, string)>($"SELECT * FROM FilesForLoadout({loadout1}, {Connection.Db})");
         
         await Assert.That(results).HasCount(9);
     }
