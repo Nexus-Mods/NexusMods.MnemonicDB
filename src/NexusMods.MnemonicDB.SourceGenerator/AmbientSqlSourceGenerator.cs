@@ -33,7 +33,7 @@ public class AmbientSqlSourceGenerator : IIncrementalGenerator
 
                 var model = new AmbientSqlModel
                 {
-                    Namespace = "fff",
+                    Namespace = GetNamespace(sql),
                     Name = item.Name,
                     Sql = CSharpVerbatimString(sql),
                 };
@@ -74,6 +74,18 @@ public class AmbientSqlSourceGenerator : IIncrementalGenerator
             for (int i = 0; i < 5; i++)
                 sb.Append(bytes[i].ToString("x2")); // lowercase hex
             return sb.ToString();
+        }
+
+        private static string GetNamespace(string sql)
+        {
+            var lines = sql.Split('\n');
+            foreach (var line in lines)
+            { 
+                var l = line.Trim();
+                if (l.StartsWith("-- namespace:"))
+                    return l.Substring("-- namespace:".Length).Trim();
+            }
+            throw new Exception("No namespace found");
         }
 
         private static string Escape(string s) => s.Replace("\"", "\\\"");
