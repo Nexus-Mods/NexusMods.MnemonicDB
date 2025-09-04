@@ -1,10 +1,8 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Dynamitey;
 using JetBrains.Annotations;
 using NexusMods.HyperDuck.Adaptor;
-using NexusMods.HyperDuck.Adaptor.Impls;
 
 namespace NexusMods.HyperDuck;
 
@@ -22,25 +20,6 @@ public unsafe partial struct PreparedStatement : IDisposable
         _connection = connection;
         _registry = registry;
         _parameterCount = Native.duckdb_nparams(_ptr);
-    }
-
-    public void Bind(object parameters)
-    {
-        if (parameters is Array arr)
-        {
-            for (var i = 0UL; i < (ulong)arr.Length; i++)
-                // DuckDB Parameters are 1 indexed
-                Bind(i + 1, arr.GetValue((int)i));
-        }
-        else if (_parameterCount == 1)
-        {
-            // DuckDB Parameters are 1 indexed
-            Bind(1, parameters);
-        }
-        else
-        {
-            BindFrom(parameters);
-        }
     }
 
     public void Bind<T>(ulong idx, T value)
@@ -268,17 +247,7 @@ public unsafe partial struct PreparedStatement : IDisposable
         Native.duckdb_destroy_prepare(ref _ptr);
         _ptr = null;
     }
-
-    public void BindFrom(object parameters)
-    {
-        CacheNames();
-        for (ulong i = 0; i < _parameterCount; i++)
-        {
-            var obj = Dynamic.InvokeGet(parameters, _names![i]);
-            Bind(i + 1, obj);
-        }
-    }
-
+    
     private void CacheNames()
     {
         if (_names != null)
