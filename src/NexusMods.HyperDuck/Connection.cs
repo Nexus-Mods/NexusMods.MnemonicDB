@@ -34,16 +34,19 @@ public unsafe partial class Connection : IDisposable
     }
     
     [MustDisposeResource]
-    public PreparedStatement Prepare(string query)
+    public PreparedStatement Prepare(HashedQuery query)
     {
         void* stmt = default!;
-        if (Native.duckdb_prepare(_ptr, query, ref stmt) != State.Success)
+        fixed (byte* ptr = query.Sql)
         {
-            var error = Marshal.PtrToStringUTF8((IntPtr)Native.duckdb_prepare_error(stmt));
-            throw new QueryException("Cannot prepare statement: " + error);
-        }
+            if (Native.duckdb_prepare(_ptr, ptr, ref stmt) != State.Success)
+            {
+                var error = Marshal.PtrToStringUTF8((IntPtr)Native.duckdb_prepare_error(stmt));
+                throw new QueryException("Cannot prepare statement: " + error);
+            }
 
-        return new PreparedStatement(stmt, _duckDb.Registry, this);
+            return new PreparedStatement(stmt, _duckDb.Registry, this);
+        }
     }
     
     internal static partial class Native
@@ -64,9 +67,9 @@ public unsafe partial class Connection : IDisposable
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial void* duckdb_result_error(ref Result result);
         
-        [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
+        [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
-        public static partial State duckdb_prepare(void* connection, string query, ref void* statement);
+        public static partial State duckdb_prepare(void* connection, void* query, ref void* statement);
 
         [LibraryImport(GlobalConstants.LibraryName, StringMarshalling = StringMarshalling.Utf8)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]

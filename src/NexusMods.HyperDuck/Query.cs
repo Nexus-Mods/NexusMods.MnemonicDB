@@ -10,23 +10,30 @@ using NexusMods.HyperDuck.Internals;
 
 namespace NexusMods.HyperDuck;
 
+
+public interface IQuery
+{
+    public HashedQuery Sql { get;}
+    public object?[] Parameters { get; }
+    public DuckDB DuckDBQueryEngine { get; }
+}
+
 /// <summary>
 /// A query that returns rows of a given type
 /// </summary>
-public class Query<T> : IEnumerable<T> where T : notnull
+public class Query<T> : IQuery, IEnumerable<T> where T : notnull
 {
-    public required string Sql { get; init; }
+    // SQL string in UTF8 0 terminated format
+    public required HashedQuery Sql { get; init; }
 
-    public object Parameters { get; init; } = Array.Empty<object>();
+    public object?[] Parameters { get; init; } = [];
     
     public required DuckDB DuckDBQueryEngine { get; init; }
 
     public IEnumerator<T> GetEnumerator()
     {
-        var compiled = new CompiledQuery<T>(Sql);
         using var conn = DuckDBQueryEngine.Connect();
-        var prepared = conn.Prepare(compiled);
-        prepared.Bind(Parameters);
+        var prepared = conn.PrepareAndBind(this);
         using var result = prepared.Execute();
         var adaptor = DuckDBQueryEngine.Registry.GetAdaptor<List<T>>(result);
         List<T> returnValue = [];
@@ -41,10 +48,8 @@ public class Query<T> : IEnumerable<T> where T : notnull
 
     public void QueryInto<TIntoColl>(ref TIntoColl intoColl)
     {
-        var compiled = new CompiledQuery<T>(Sql);
         using var conn = DuckDBQueryEngine.Connect();
-        var prepared = conn.Prepare(compiled);
-        prepared.Bind(Parameters);
+        var prepared = conn.PrepareAndBind(this);
         using var result = prepared.Execute();
         var adaptor = DuckDBQueryEngine.Registry.GetAdaptor<TIntoColl>(result);
         adaptor.Adapt(result, ref intoColl);
@@ -52,7 +57,7 @@ public class Query<T> : IEnumerable<T> where T : notnull
 
     public IDisposable ObserveInto<TIntoColl>(TIntoColl intoColl) where TIntoColl : notnull
     {
-        var deps = DuckDBQueryEngine.GetReferencedFunctions(Sql, Parameters);
+        var deps = DuckDBQueryEngine.GetReferencedFunctions(this);
         QueryInto<TIntoColl>(ref intoColl);
 
         var live = new Internals.LiveQuery<TIntoColl>
@@ -81,7 +86,7 @@ public class Query<T> : IEnumerable<T> where T : notnull
             var sourceCache = new SourceCache<T, TKey>(keySelector);
             var observerDisposable = sourceCache.Connect()
                 .Subscribe(observer);
-            var deps = DuckDBQueryEngine.GetReferencedFunctions(Sql, Parameters);
+            var deps = DuckDBQueryEngine.GetReferencedFunctions(this);
             QueryInto(ref sourceCache);
             
             var live = new Internals.LiveQuery<SourceCache<T, TKey>>

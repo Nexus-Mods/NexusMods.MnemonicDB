@@ -9,12 +9,12 @@ public class SimpleBindingConverter<TFrom, TTo>(Func<TFrom, TTo> converter) : IB
 {
     public bool CanConvert(Type type, out int priority)
     {
-        if (type == typeof(TTo))
+        if (type == typeof(TFrom))
         {
             priority = 10;
             return true;
         }
-        else if (type.IsAssignableTo(typeof(TTo)))
+        else if (type.IsAssignableTo(typeof(TFrom)))
         {
             priority = 5;
             return true;

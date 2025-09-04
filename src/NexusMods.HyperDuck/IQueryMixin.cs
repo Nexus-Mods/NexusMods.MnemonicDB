@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace NexusMods.HyperDuck;
@@ -12,7 +13,7 @@ public interface IQueryMixin
 {
     public DuckDB DuckDBQueryEngine { get; }
 
-    public Query<TResult> Query<TResult>(string sql, object args) 
+    internal Query<TResult> Query<TResult>(HashedQuery sql, object?[] args) 
         where TResult : notnull => new()
     {
         Sql = sql,
@@ -24,13 +25,14 @@ public interface IQueryMixin
     /// Create a query that takes no parameters
     /// </summary>
     public Query<TResult> Query<TResult>(string sql) 
-        where TResult : notnull => Query<TResult>(sql, Array.Empty<object>());
+        where TResult : notnull => Query<TResult>(HashedQuery.Create(sql), []);
 
-    /// <summary>
-    /// Create a query that takes no parameters
-    /// </summary>
-    public Query<TResult> Query<TResult>(string sql, params object[] args) 
-        where TResult : notnull => Query<TResult>(sql, (object)args);
+    
+    public Query<TResult> Query<TResult>([InterpolatedStringHandlerArgument] InterpolatedQueryHandler handler) 
+        where TResult : notnull
+    {
+        return handler.ToQuery<TResult>(DuckDBQueryEngine);
+    }
 
     /// <summary>
     /// Execute statements without preparing them first

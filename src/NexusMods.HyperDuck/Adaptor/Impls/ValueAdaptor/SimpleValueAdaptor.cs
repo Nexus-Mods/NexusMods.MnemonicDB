@@ -16,6 +16,12 @@ public class SimpleValueAdaptor<TFrom, TTo, TConverter> : IValueAdaptor<TTo>
 {
     public static void Adapt<TCursor>(TCursor cursor, ref TTo? value) where TCursor : IValueCursor, allows ref struct
     {
+        if (cursor.IsNull)
+        {
+            value = default;
+            return;
+        }
+
         var rawValue = cursor.GetValue<TFrom>();
         TConverter.Convert(rawValue, ref value!);
     }

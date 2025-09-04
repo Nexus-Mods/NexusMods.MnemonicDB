@@ -16,7 +16,7 @@ public static class Services
         s.AddSingleton<IRegistry, Registry>();
         s.AddSingleton<IResultAdaptorFactory, ListAdaptorFactory>();
         s.AddSingleton<IRowAdaptorFactory, SingleColumnAdaptorFactory>();
-        //s.AddSingleton<IValueAdaptorFactory, UnmanagedValueAdaptorFactory>();
+        s.AddSingleton<IValueAdaptorFactory, UnmanagedValueAdaptorFactory>();
         s.AddSingleton<IRowAdaptorFactory, TupleAdaptorFactory>();
         s.AddSingleton<IValueAdaptorFactory, RelativePathAdaptorFactory>();
         s.AddSingleton<IValueAdaptorFactory, ListValueAdaptorFactory>();
@@ -26,6 +26,7 @@ public static class Services
         s.AddSingleton<IValueAdaptorFactory, NullableValueAdaptorFactory>();
         s.AddSingleton<IBindingConverter, GenericBindingConverter>();
         s.AddValueAdaptor<StringElement, string>(static s => s.GetString());
+        
         
         return s;
     }
