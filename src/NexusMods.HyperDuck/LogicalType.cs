@@ -151,6 +151,17 @@ public unsafe partial struct LogicalType : IDisposable
         return new LogicalType(Native.duckdb_list_type_child_type(_ptr));
     }
 
+    public readonly int StructTypeChildCount()
+    {
+        return (int)Native.duckdb_struct_type_child_count(_ptr);
+    }
+    
+    [MustDisposeResource]
+    public readonly LogicalType StructTypeChildType(int idx)
+    {
+        return new LogicalType(Native.duckdb_struct_type_child_type(_ptr, idx));   
+    }
+
     private static partial class Native
     {
         [LibraryImport(GlobalConstants.LibraryName)]
@@ -188,6 +199,15 @@ public unsafe partial struct LogicalType : IDisposable
         [LibraryImport(GlobalConstants.LibraryName)]
         [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
         public static partial DuckDbType duckdb_enum_internal_type(void* type);
+        
+        [LibraryImport(GlobalConstants.LibraryName)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial nint duckdb_struct_type_child_count(void* type);
+        
+        [LibraryImport(GlobalConstants.LibraryName)]
+        [UnmanagedCallConv(CallConvs = [typeof(CallConvCdecl)])]
+        public static partial void* duckdb_struct_type_child_type(void* type, int idx);
+        
     }
 
 
