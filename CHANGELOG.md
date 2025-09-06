@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.23.2 - 2025-09-06
+* Add adaptors for 5-8 element tuples
+
 ### 0.23.1 - 2025-09-06
 * Add bindings for getting child values from a struct logical type in HyperDuck
 
