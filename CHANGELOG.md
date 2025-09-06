@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.23.1 - 2025-09-06
+* Add bindings for getting child values from a struct logical type in HyperDuck
+
 ### 0.23.0 - 2025-09-04
 * Fix namespacing issue with ambient queries
 * Simplify type conversion for binding and value adaptors
