@@ -149,14 +149,15 @@ public class Registry : IRegistry
         var subAdaptors = new Type[innerTypes.Length];
         for (var idx = 0; idx < innerTypes.Length; idx++)
         {
-            using var subType = logicalType.TypeId switch
+            if (logicalType.TypeId is DuckDbType.List)
             {
-                DuckDbType.List => logicalType.ListChildType(),
-                DuckDbType.Struct => logicalType.StructTypeChildType(idx),
-                _ => throw new NotSupportedException($"Type {logicalType.TypeId} is not a supported container")
-            };
-
-            subAdaptors[idx] = CreateValueAdaptor(subType, idx, innerTypes[idx]);
+                using var subType = logicalType.ListChildType();
+                subAdaptors[idx] = CreateValueAdaptor(subType, idx, innerTypes[idx]);
+            } else if (logicalType.TypeId is DuckDbType.Struct)
+            {
+                using var subType = logicalType.StructTypeChildType(idx);
+                subAdaptors[idx] = CreateValueAdaptor(subType, idx, innerTypes[idx]);
+            }
         }
 
         return bestFactory.CreateType(this, logicalType.TypeId, logicalType, innerType, innerTypes, subAdaptors);
