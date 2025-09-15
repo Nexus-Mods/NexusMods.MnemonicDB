@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace NexusMods.HyperDuck.Adaptor.Impls;
@@ -143,20 +144,21 @@ public class Registry : IRegistry
             }
         }
         
-        if (bestFactory == null)
-            throw new InvalidOperationException("No value adaptor found for {" + innerType.FullName + "} from DuckDB type {" + logicalType.TypeId + "}");
-        
+        if (bestFactory == null) throw new InvalidOperationException("No value adaptor found for {" + innerType.FullName + "} from DuckDB type {" + logicalType.TypeId + "}");
+
         var subAdaptors = new Type[innerTypes.Length];
-        for (int idx = 0; idx < innerTypes.Length; idx++)
+        for (var idx = 0; idx < innerTypes.Length; idx++)
         {
-            if (logicalType.TypeId == DuckDbType.List)
+            using var subType = logicalType.TypeId switch
             {
-                using var subType = logicalType.ListChildType();
-                subAdaptors[idx] = CreateValueAdaptor(subType, idx, innerTypes[idx]);
-            }
-            
+                DuckDbType.List => logicalType.ListChildType(),
+                DuckDbType.Struct => logicalType.StructTypeChildType(idx),
+                _ => throw new NotSupportedException($"Type {logicalType.TypeId} is not a supported container")
+            };
+
+            subAdaptors[idx] = CreateValueAdaptor(subType, idx, innerTypes[idx]);
         }
-        
+
         return bestFactory.CreateType(this, logicalType.TypeId, logicalType, innerType, innerTypes, subAdaptors);
     }
 }
