@@ -1,7 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 
-namespace NexusMods.HyperDuck.Adaptor.Impls.RowAdaptors;
+namespace NexusMods.HyperDuck.Adaptor.Impls;
 
 public class TupleAdaptor<T1, T2, TAdaptor1, TAdaptor2> : IRowAdaptor<(T1, T2)>, IValueAdaptor<(T1, T2)>
     where TAdaptor1 : IValueAdaptor<T1>
