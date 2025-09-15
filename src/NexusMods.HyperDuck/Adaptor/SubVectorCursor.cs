@@ -9,7 +9,7 @@ public ref struct SubVectorCursor : IValueCursor
         _vector = vector;
     }
 
-    public ulong RowIndex;
+    public ulong RowIndex { get; set; }
 
     public T GetValue<T>() where T : unmanaged
     {
@@ -20,6 +20,8 @@ public ref struct SubVectorCursor : IValueCursor
     {
         throw new System.NotImplementedException();
     }
+
+    public ReadOnlyVector GetStructChild(ulong fieldIndex) => _vector.GetStructChild(idx: fieldIndex);
 
     public bool IsNull => _vector.IsNull(RowIndex);
 }

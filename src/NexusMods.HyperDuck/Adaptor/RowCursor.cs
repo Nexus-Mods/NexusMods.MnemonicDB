@@ -26,6 +26,8 @@ public ref struct RowCursor
         return _vectors[column].GetListChild();
     }
 
+    public ReadOnlyVector GetStructChild(int column, ulong fieldIndex) => _vectors[column].GetStructChild(idx: fieldIndex);
+
     public T GetValue<T>(int columnIndex) where T : unmanaged
     {
         return _vectors[columnIndex].GetData<T>()[RowIndex];

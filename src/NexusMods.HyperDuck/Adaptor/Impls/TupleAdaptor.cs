@@ -17,7 +17,13 @@ public class TupleAdaptor<T1, T2, TAdaptor1, TAdaptor2> : IRowAdaptor<(T1, T2)>,
 
     public static void Adapt<TCursor>(TCursor cursor, ref (T1, T2) value) where TCursor : IValueCursor, allows ref struct
     {
-        throw new NotImplementedException();
+        var subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 0));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor1.Adapt(subCursor, ref value.Item1!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 1));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor2.Adapt(subCursor, ref value.Item2!);
     }
 }
 
@@ -38,7 +44,17 @@ public class TupleAdaptor<T1, T2, T3, TAdaptor1, TAdaptor2, TAdaptor3> : IRowAda
 
     public static void Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3) value) where TCursor : IValueCursor, allows ref struct
     {
-        throw new NotImplementedException();
+        var subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 0));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor1.Adapt(subCursor, ref value.Item1!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 1));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor2.Adapt(subCursor, ref value.Item2!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 2));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor3.Adapt(subCursor, ref value.Item3!);
     }
 }
 
@@ -62,7 +78,21 @@ public class TupleAdaptor<T1, T2, T3, T4, TAdaptor1, TAdaptor2, TAdaptor3, TAdap
 
     public static void Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3, T4) value) where TCursor : IValueCursor, allows ref struct
     {
-        throw new NotImplementedException();
+        var subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 0));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor1.Adapt(subCursor, ref value.Item1!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 1));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor2.Adapt(subCursor, ref value.Item2!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 2));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor3.Adapt(subCursor, ref value.Item3!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 3));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor4.Adapt(subCursor, ref value.Item4!);
     }
 }
 
@@ -90,7 +120,25 @@ public class TupleAdaptor<T1, T2, T3, T4, T5, TAdaptor1, TAdaptor2, TAdaptor3, T
 
     public static void Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3, T4, T5) value) where TCursor : IValueCursor, allows ref struct
     {
-        throw new NotImplementedException();
+        var subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 0));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor1.Adapt(subCursor, ref value.Item1!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 1));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor2.Adapt(subCursor, ref value.Item2!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 2));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor3.Adapt(subCursor, ref value.Item3!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 3));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor4.Adapt(subCursor, ref value.Item4!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 4));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor5.Adapt(subCursor, ref value.Item5!);
     }
 }
 
@@ -120,7 +168,29 @@ public class TupleAdaptor<T1, T2, T3, T4, T5, T6, TAdaptor1, TAdaptor2, TAdaptor
 
     public static void Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3, T4, T5, T6) value) where TCursor : IValueCursor, allows ref struct
     {
-        throw new NotImplementedException();
+        var subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 0));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor1.Adapt(subCursor, ref value.Item1!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 1));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor2.Adapt(subCursor, ref value.Item2!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 2));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor3.Adapt(subCursor, ref value.Item3!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 3));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor4.Adapt(subCursor, ref value.Item4!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 4));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor5.Adapt(subCursor, ref value.Item5!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 5));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor6.Adapt(subCursor, ref value.Item6!);
     }
 }
 
@@ -153,7 +223,33 @@ public class TupleAdaptor<T1, T2, T3, T4, T5, T6, T7, TAdaptor1, TAdaptor2, TAda
 
     public static void Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3, T4, T5, T6, T7) value) where TCursor : IValueCursor, allows ref struct
     {
-        throw new NotImplementedException();
+        var subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 0));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor1.Adapt(subCursor, ref value.Item1!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 1));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor2.Adapt(subCursor, ref value.Item2!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 2));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor3.Adapt(subCursor, ref value.Item3!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 3));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor4.Adapt(subCursor, ref value.Item4!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 4));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor5.Adapt(subCursor, ref value.Item5!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 5));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor6.Adapt(subCursor, ref value.Item6!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 6));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor7.Adapt(subCursor, ref value.Item7!);
     }
 }
 
@@ -189,7 +285,37 @@ public class TupleAdaptor<T1, T2, T3, T4, T5, T6, T7, T8, TAdaptor1, TAdaptor2, 
 
     public static void Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3, T4, T5, T6, T7, T8) value) where TCursor : IValueCursor, allows ref struct
     {
-        throw new NotImplementedException();
+        var subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 0));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor1.Adapt(subCursor, ref value.Item1!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 1));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor2.Adapt(subCursor, ref value.Item2!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 2));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor3.Adapt(subCursor, ref value.Item3!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 3));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor4.Adapt(subCursor, ref value.Item4!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 4));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor5.Adapt(subCursor, ref value.Item5!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 5));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor6.Adapt(subCursor, ref value.Item6!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 6));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor7.Adapt(subCursor, ref value.Item7!);
+
+        subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 7));
+        subCursor.RowIndex = cursor.RowIndex;
+        TAdaptor8.Adapt(subCursor, ref value.Item8!);
     }
 }
 

@@ -12,6 +12,10 @@ public interface IValueCursor
     /// </summary>
     public ReadOnlyVector GetListChild();
 
+    ReadOnlyVector GetStructChild(ulong fieldIndex);
+
+    ulong RowIndex { get; }
+
     /// <summary>
     /// Returns true if the value is null;
     /// </summary>
