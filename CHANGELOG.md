@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.24.0 - 2025-10-13
+* Add support for list value results
+
 ### 0.23.2 - 2025-09-06
 * Add adaptors for 5-8 element tuples
 
