@@ -63,5 +63,12 @@ public class AdapterTests
 
     }
 
+    [Test]
+    public async Task CanGetTupleAsValues()
+    {
+        await using var db = DuckDB.Open(Registry);
+        var result = ((IQueryMixin)db).Query<List<(int, int)>>("SELECT [(100, 200), (300, 400), (500, 600)] as lst");
 
+        await Assert.That(result).IsEquivalentTo([(new List<(int, int)> { (100, 200), (300, 400), (500, 600) })]);
+    }
 }
