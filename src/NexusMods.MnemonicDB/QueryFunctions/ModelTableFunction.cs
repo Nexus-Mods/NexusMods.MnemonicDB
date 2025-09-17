@@ -396,13 +396,13 @@ public class ModelTableFunction : ATableFunction
         {
             if (attr.Cardinalty == Cardinality.Many)
             {
-                var baseType = attr.LowLevelType.DuckDbType();
+                var baseType = attr.LowLevelType.DuckDbType(attr.ValueType);
                 using var listType = LogicalType.CreateListOf(baseType);
                 info.AddColumn(attr.Id.Name, listType);
             }
             else
             {
-                info.AddColumn(attr.Id.Name, attr.LowLevelType.DuckDbType());
+                info.AddColumn(attr.Id.Name, attr.LowLevelType.DuckDbType(attr.ValueType));
             }
         }
 

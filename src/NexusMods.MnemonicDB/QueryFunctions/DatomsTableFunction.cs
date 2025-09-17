@@ -254,7 +254,7 @@ public class DatomsTableFunction : ATableFunction
         if (state.Mode == ScanMode.SingleAttribute)
         {
             info.AddColumn<ulong>("E");
-            info.AddColumn("V", state.Attribute!.LowLevelType.DuckDbType());
+            info.AddColumn("V", state.Attribute!.LowLevelType.DuckDbType(state.Attribute.ValueType));
             info.AddColumn<ulong>("T");
         }
         else
