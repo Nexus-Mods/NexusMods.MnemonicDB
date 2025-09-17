@@ -1,6 +1,7 @@
 ﻿// ReSharper disable InconsistentNaming
 
 using System;
+using System.Diagnostics;
 using NexusMods.HyperDuck;
 // ReSharper disable NotDisposedResource
 
@@ -131,8 +132,15 @@ public static class ValueTagsExtensions
             [LogicalType.From<ushort>(), LogicalType.From<string>()]);
     }
 
-    public static LogicalType DuckDbType(this ValueTag tag)
+    public static LogicalType DuckDbType(this ValueTag tag, Type valueType)
     {
+        if (valueType == typeof(bool) && tag == ValueTag.UInt8)
+        {
+            var type = _duckDbTypes[(int)ValueTag.Null];
+            Debug.Assert(type.TypeId == HyperDuck.DuckDbType.Boolean);
+            return type;
+        }
+
         return _duckDbTypes[(int)tag];
     }
 }

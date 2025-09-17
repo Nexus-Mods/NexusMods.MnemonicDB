@@ -22,7 +22,6 @@ public class QueryEngine : IQueryEngine, IAsyncDisposable
     private readonly IAttribute[] _declaredAttributes;
     private readonly Dictionary<string, IAttribute> _attrsByShortName;
     private LogicalType _attrEnumLogicalType;
-    private LogicalType _valueUnion;
     private LogicalType _valueTagEnum;
 
     public QueryEngine(IServiceProvider services)
@@ -37,7 +36,6 @@ public class QueryEngine : IQueryEngine, IAsyncDisposable
         _attrsByShortName = _declaredAttributes.ToDictionary(a => a.ShortName, a => a);
         _attrEnumLogicalType = LogicalType.CreateEnum(_declaredAttributes.Select(s => s.ShortName).ToArray());
         _valueTagEnum = MakeValueTagEnum();
-        _valueUnion = CreateValueType();
     }
 
     private LogicalType MakeValueTagEnum()
@@ -50,29 +48,13 @@ public class QueryEngine : IQueryEngine, IAsyncDisposable
         return LogicalType.CreateEnum(names);
     }
 
-    private LogicalType CreateValueType()
-    {
-        var names = new List<string>();
-        var types = new List<LogicalType>();
-        
-        foreach (var value in Enum.GetNames<ValueTag>())
-        {
-            names.Add(value);
-            types.Add(Enum.Parse<ValueTag>(value).DuckDbType());
-        }
-        return LogicalType.CreateUnion(names.ToArray(), CollectionsMarshal.AsSpan(types));
-    }
-
     public LogicalType AttrEnum => _attrEnumLogicalType;
 
     public int AttrEnumWidth => _attrsByShortName.Count > 255 ? 2 : 1;
-    
 
-    public LogicalType ValueUnion => _valueUnion;
 
     public async ValueTask DisposeAsync()
     {
-        _valueUnion.Dispose();
         _valueTagEnum.Dispose();
         _attrEnumLogicalType.Dispose();
         await _db.DisposeAsync().ConfigureAwait(false);
