@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using DynamicData;
 
 namespace NexusMods.HyperDuck.Adaptor.Impls.ResultAdaptors;
@@ -9,33 +10,42 @@ public class SourceCacheAdaptor<TRowType, TKey, TRowAdaptor> : IResultAdaptor<So
     where TRowType : notnull
     where TKey : notnull
 {
-    
     public void Adapt(Result result, ref SourceCache<TRowType, TKey> value)
     {
         var columnCount = result.ColumnCount;
+        var keySelector = value.KeySelector;
         
-        value.Edit(updater => {
-            updater.Clear();
+        value.Edit(updater =>
+        {
+            var existingKeys = new HashSet<TKey>(updater.Items.Select(keySelector));
+    
             Span<ReadOnlyVector> vectors = stackalloc ReadOnlyVector[(int)columnCount];
             while (true)
             {
                 using var chunk = result.FetchChunk();
                 if (!chunk.IsValid)
                     break;
-
+    
                 for (var v = 0; v < vectors.Length; v++)
                     vectors[v] = chunk[(ulong)v];
-
+    
                 var cursor = new RowCursor(vectors);
                 for (cursor.RowIndex = 0; cursor.RowIndex < (int)chunk.Size; cursor.RowIndex++)
                 {
                     TRowType? current = default;
                     TRowAdaptor.Adapt(cursor, ref current);
+                    var key = keySelector(current!);
+                    // TODO: only update if different
                     updater.AddOrUpdate(current!);
+                    existingKeys.Remove(key);
                 }
             }
+    
+            foreach (var key in existingKeys)
+                updater.RemoveKey(key);
         });
     }
+    
 }
 
 public class SourceCacheAdaptorFactory : IResultAdaptorFactory
