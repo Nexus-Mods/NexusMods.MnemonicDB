@@ -17,7 +17,7 @@ public class SourceCacheAdaptor<TRowType, TKey, TRowAdaptor> : IResultAdaptor<So
         
         value.Edit(updater =>
         {
-            var existingKeys = new HashSet<TKey>(updater.Items.Select(keySelector));
+            var existingKeys = updater.Keys.ToHashSet();
     
             Span<ReadOnlyVector> vectors = stackalloc ReadOnlyVector[(int)columnCount];
             while (true)
