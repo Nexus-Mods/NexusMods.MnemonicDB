@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.HyperDuck;
@@ -303,6 +304,7 @@ public class ModelTableFunction : ATableFunction
         where TVector : IWritableVector, allows ref struct
         where T : unmanaged
     {
+        var validityMask = vector.GetValidityMask();
         var dataSpan = vector.GetData<T>();
         for (var rowIdx = 0; rowIdx < ids.Length; rowIdx++)
         {
@@ -310,6 +312,11 @@ public class ModelTableFunction : ATableFunction
             if (datoms.FastForwardTo(rowId))
             {
                 dataSpan[rowIdx] = datoms.ValueSpan.CastFast<byte, T>()[0];
+                validityMask[(ulong)rowIdx] = true;
+            }
+            else
+            {
+                validityMask[(ulong)rowIdx] = false;
             }
         }
     }
