@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.25.0 - 2025-10-13
+* Add support for MDB bool types as DuckDB bool types
+* Fix for unmanaged types not propagating as nulls in DuckDB
+
 ### 0.24.0 - 2025-10-13
 * Add support for list value results
 
