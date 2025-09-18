@@ -104,9 +104,12 @@ public enum ValueTag : byte
 public static class ValueTagsExtensions
 {
     private static readonly LogicalType[] _duckDbTypes;
+    private static readonly LogicalType _dateTimeOffsetType;
 
     static ValueTagsExtensions()
     {
+        _dateTimeOffsetType = LogicalType.Create(HyperDuck.DuckDbType.TimestampNs);
+
         _duckDbTypes = new LogicalType[(int)(ValueTag.Tuple2_UShort_Utf8I + 1)];
         _duckDbTypes[(int)ValueTag.Null] = LogicalType.From<bool>();
         _duckDbTypes[(int)ValueTag.UInt8] = LogicalType.From<byte>();
@@ -139,6 +142,11 @@ public static class ValueTagsExtensions
             var type = _duckDbTypes[(int)ValueTag.Null];
             Debug.Assert(type.TypeId == HyperDuck.DuckDbType.Boolean);
             return type;
+        }
+
+        if (valueType == typeof(DateTimeOffset) && tag == ValueTag.Int64)
+        {
+            return _dateTimeOffsetType;
         }
 
         return _duckDbTypes[(int)tag];

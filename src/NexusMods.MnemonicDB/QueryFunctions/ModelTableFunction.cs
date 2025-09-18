@@ -77,7 +77,7 @@ public class ModelTableFunction : ATableFunction
             if (attr.Cardinalty == Cardinality.Many)
                 WriteMultiCardinality(attr.LowLevelType, idVec, valueVector, iterator);
             else
-                WriteColumn(attr.LowLevelType, idVec, valueVector, iterator);
+                WriteColumn(attr.LowLevelType, attr.ValueType, idVec, valueVector, iterator);
         }
         ArrayPool<EntityId>.Shared.Return(idsChunk);
     }
@@ -173,7 +173,7 @@ public class ModelTableFunction : ATableFunction
         }
     }
 
-    private void WriteColumn<TVector>(ValueTag tag, ReadOnlySpan<EntityId> ids, TVector vector, ILightweightDatomSegment datoms) where TVector : IWritableVector, allows ref struct
+    private void WriteColumn<TVector>(ValueTag tag, Type type, ReadOnlySpan<EntityId> ids, TVector vector, ILightweightDatomSegment datoms) where TVector : IWritableVector, allows ref struct
     {
         switch (tag)
         {
@@ -202,8 +202,11 @@ public class ModelTableFunction : ATableFunction
                 WriteUnmanagedColumn<TVector, int>(ids, vector, datoms);
                 break;
             case ValueTag.Int64:
-                WriteUnmanagedColumn<TVector, long>(ids, vector, datoms);
+            {
+                if (type == typeof(DateTimeOffset)) WriteDateTimeOffset(ids, vector, datoms);
+                else WriteUnmanagedColumn<TVector, long>(ids, vector, datoms);
                 break;
+            }
             case ValueTag.Int128:
                 WriteUnmanagedColumn<TVector, Int128>(ids, vector, datoms);
                 break;
@@ -300,7 +303,33 @@ public class ModelTableFunction : ATableFunction
         }
     }
 
-    private void WriteUnmanagedColumn<TVector, T>(ReadOnlySpan<EntityId> ids, TVector vector, ILightweightDatomSegment datoms) 
+    private static void WriteDateTimeOffset<TVector>(ReadOnlySpan<EntityId> ids, TVector vector, ILightweightDatomSegment datoms)
+        where TVector : IWritableVector, allows ref struct
+    {
+        var validityMask = vector.GetValidityMask();
+        var dataSpan = vector.GetData<long>();
+        for (var rowIdx = 0; rowIdx < ids.Length; rowIdx++)
+        {
+            var rowId = ids[rowIdx];
+            if (datoms.FastForwardTo(rowId))
+            {
+                // NOTE(erri120): TIMESTAMP_NS is stored as nanoseconds since 1970-01-01 in int64_t.
+                var ticks = datoms.ValueSpan.CastFast<byte, long>()[0];
+                var dateTimeOffset = new DateTimeOffset(ticks, offset: TimeSpan.Zero);
+                var timeSpan = dateTimeOffset - DateTimeOffset.UnixEpoch;
+                var nanoseconds = (long)timeSpan.TotalNanoseconds;
+
+                dataSpan[rowIdx] = nanoseconds;
+                validityMask[(ulong)rowIdx] = true;
+            }
+            else
+            {
+                validityMask[(ulong)rowIdx] = false;
+            }
+        }
+    }
+    
+    private static void WriteUnmanagedColumn<TVector, T>(ReadOnlySpan<EntityId> ids, TVector vector, ILightweightDatomSegment datoms) 
         where TVector : IWritableVector, allows ref struct
         where T : unmanaged
     {
