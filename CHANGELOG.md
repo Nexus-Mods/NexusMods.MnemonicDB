@@ -1,10 +1,13 @@
 ## Changelog
 
-### 0.25.0 - 2025-10-13
+### 0.25.1 - 2025-09-18
+* Make unconstrained calls to mdb_Datoms total-ordered
+
+### 0.25.0 - 2025-09-13
 * Add support for MDB bool types as DuckDB bool types
 * Fix for unmanaged types not propagating as nulls in DuckDB
 
-### 0.24.0 - 2025-10-13
+### 0.24.0 - 2025-09-13
 * Add support for list value results
 
 ### 0.23.2 - 2025-09-06
