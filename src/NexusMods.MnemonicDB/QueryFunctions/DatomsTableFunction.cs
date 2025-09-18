@@ -294,7 +294,7 @@ public class DatomsTableFunction : ATableFunction
         {
             return new LocalInitData
             {
-                Segment = db.LightweightDatoms(SliceDescriptor.AllEntities(PartitionId.Entity))
+                Segment = db.LightweightDatoms(SliceDescriptor.AllEntities(PartitionId.Entity), totalOrdered: true)
             };
         }
         
