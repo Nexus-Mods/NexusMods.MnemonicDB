@@ -10,7 +10,7 @@ public class SourceCacheAdaptor<TRowType, TKey, TRowAdaptor> : IResultAdaptor<So
     where TKey : notnull
 {
     
-    public void Adapt(Result result, ref SourceCache<TRowType, TKey> value)
+    public bool Adapt(Result result, ref SourceCache<TRowType, TKey> value)
     {
         var columnCount = result.ColumnCount;
         

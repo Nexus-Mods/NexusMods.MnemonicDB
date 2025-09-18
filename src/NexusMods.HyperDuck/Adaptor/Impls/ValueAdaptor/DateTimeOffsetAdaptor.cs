@@ -4,10 +4,10 @@ namespace NexusMods.HyperDuck.Adaptor.Impls.ValueAdaptor;
 
 public class DateTimeOffsetAdaptor : IValueAdaptor<DateTimeOffset>
 {
-    public static void Adapt<TCursor>(TCursor cursor, ref DateTimeOffset value) where TCursor : IValueCursor, allows ref struct
+    public static bool Adapt<TCursor>(TCursor cursor, ref DateTimeOffset value) where TCursor : IValueCursor, allows ref struct
     {
         var longValue = cursor.GetValue<long>();
-        value = new DateTimeOffset(longValue, TimeSpan.Zero);
+        return Helpers.AssignNotEq(ref value, new DateTimeOffset(longValue, TimeSpan.Zero));
     }
 }
 

@@ -2,19 +2,18 @@ using System;
 
 namespace NexusMods.HyperDuck.Adaptor.Impls.ValueAdaptor;
 
-public class StringAdaptor<T> : IValueAdaptor<T>
+public class StringAdaptor<T> : IValueAdaptor<T> where T : IEquatable<T>
 {
-    public static void Adapt<TCursor>(TCursor cursor, ref T? value) 
+    public static bool Adapt<TCursor>(TCursor cursor, ref T? value) 
         where TCursor : IValueCursor, allows ref struct
     {
         if (cursor.IsNull)
         {
-            value = default(T);
-            return;
+            return Helpers.AssignNotEq(ref value, default(T)!);       
         }
 
         var str = cursor.GetValue<StringElement>();
-        value = (T)(object)str.GetString();
+        return Helpers.AssignNotEq(ref value, (T)(object)str.GetString());
     }
 }
 

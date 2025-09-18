@@ -7,20 +7,22 @@ public class ListValueAdaptor<TList, TValue, TAdaptor> : IValueAdaptor<TList>
     where TList : IList<TValue>, new()
     where TAdaptor : IValueAdaptor<TValue>
 {
-    public static void Adapt<TCursor>(TCursor cursor, ref TList? value) 
+    public static bool Adapt<TCursor>(TCursor cursor, ref TList? value) 
         where TCursor : IValueCursor, allows ref struct
     {
         var element = cursor.GetValue<ListEntry>();
         var subVector = new SubVectorCursor(cursor.GetListChild());
         SetCapacity(ref value, (int)element.Length);
-        
+        bool hasChange = false;
         for (ulong i = 0; i < element.Length; i++)
         {
             subVector.RowIndex = element.Offset + i;
             var itm = value![(int)i];
-            TAdaptor.Adapt(subVector, ref itm);
+            hasChange |= TAdaptor.Adapt(subVector, ref itm);
             value[(int)i] = itm!;
         }
+
+        return hasChange;
     }
 
     private static void SetCapacity(ref TList? value, int size)

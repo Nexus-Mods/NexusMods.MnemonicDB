@@ -6,15 +6,15 @@ public class NullableValueAdaptor<TInnerAdaptor, TType> : IValueAdaptor<Nullable
     where TInnerAdaptor : IValueAdaptor<TType>
     where TType : struct
 {
-    public static void Adapt<TCursor>(TCursor cursor, ref TType? value) where TCursor : IValueCursor, allows ref struct
+    public static bool Adapt<TCursor>(TCursor cursor, ref TType? value) where TCursor : IValueCursor, allows ref struct
     {
         if (cursor.IsNull)
-            value = null;
+            return Helpers.AssignNotEq(ref value, null);
         else
         {
             TType innerValue = default!;
-            TInnerAdaptor.Adapt(cursor, ref innerValue);
-            value = innerValue;
+            var change = TInnerAdaptor.Adapt(cursor, ref innerValue);
+            return Helpers.AssignNotEq(ref value, innerValue) || change; 
         }
     }
 }

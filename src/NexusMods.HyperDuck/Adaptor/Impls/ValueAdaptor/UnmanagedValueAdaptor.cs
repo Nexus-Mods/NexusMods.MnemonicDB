@@ -6,19 +6,19 @@ namespace NexusMods.HyperDuck.Adaptor.Impls.ValueAdaptor;
 public class UnmanagedValueAdaptor<T> : IValueAdaptor<T>
     where T : unmanaged
 {
-    public static void Adapt<TCursor>(TCursor cursor, ref T value) 
+    public static bool Adapt<TCursor>(TCursor cursor, ref T value) 
         where TCursor : IValueCursor, allows ref struct
     {
-        value = cursor.GetValue<T>();
+        return Helpers.AssignNotEq(ref value, cursor.GetValue<T>());
     }
 }
 
 public class BoolAdaptor : IValueAdaptor<bool>
 {
-    public static void Adapt<TCursor>(TCursor cursor, ref bool value) 
+    public static bool Adapt<TCursor>(TCursor cursor, ref bool value) 
         where TCursor : IValueCursor, allows ref struct
     {
-        value = cursor.GetValue<byte>() != 0;
+        return Helpers.AssignNotEq(ref value, cursor.GetValue<byte>() != 0);
     }
 }
 

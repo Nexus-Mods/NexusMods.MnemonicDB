@@ -7,7 +7,7 @@ public class ObserverAdaptor<TResult, TValue, TRowAdaptor> : IResultAdaptor<TRes
     where TRowAdaptor : IRowAdaptor<TValue>
     where TResult : Observer<TValue>
 {
-    public void Adapt(Result result, ref TResult value)
+    public bool Adapt(Result result, ref TResult value)
     {
         TValue row = default!;
         var columnCount = result.ColumnCount;
@@ -15,8 +15,9 @@ public class ObserverAdaptor<TResult, TValue, TRowAdaptor> : IResultAdaptor<TRes
         var cursor = new RowCursor(vectors);
         
         using var chunk = result.FetchChunk();
+        bool hasChange = false;
         if (chunk.Size == 0)
-            return;
+            return hasChange;
 
         if (chunk.Size > 0)
         {
@@ -24,8 +25,9 @@ public class ObserverAdaptor<TResult, TValue, TRowAdaptor> : IResultAdaptor<TRes
         }
         
         cursor.RowIndex = 0;
-        TRowAdaptor.Adapt(cursor, ref row!);
+        hasChange = TRowAdaptor.Adapt(cursor, ref row!);
         value.OnNext(row);
+        return hasChange;
     }
 }
 

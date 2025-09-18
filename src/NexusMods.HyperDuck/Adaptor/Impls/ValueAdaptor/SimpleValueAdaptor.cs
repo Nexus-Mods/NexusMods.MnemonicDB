@@ -14,16 +14,17 @@ public class SimpleValueAdaptor<TFrom, TTo, TConverter> : IValueAdaptor<TTo>
     where TConverter : IConverter<TFrom, TTo>
 
 {
-    public static void Adapt<TCursor>(TCursor cursor, ref TTo? value) where TCursor : IValueCursor, allows ref struct
+    public static bool Adapt<TCursor>(TCursor cursor, ref TTo? value) where TCursor : IValueCursor, allows ref struct
     {
         if (cursor.IsNull)
         {
-            value = default;
-            return;
+            return Helpers.AssignNotEq(ref value, default!);
         }
 
         var rawValue = cursor.GetValue<TFrom>();
-        TConverter.Convert(rawValue, ref value!);
+        TTo converted = default!;
+        TConverter.Convert(rawValue, ref converted!);
+        return Helpers.AssignNotEq(ref value, converted);
     }
 }
 

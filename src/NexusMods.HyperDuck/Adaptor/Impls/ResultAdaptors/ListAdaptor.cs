@@ -10,12 +10,13 @@ public class ListAdaptor<TResult, TRowType, TRowAdaptor> : IResultAdaptor<TResul
     where TRowAdaptor : IRowAdaptor<TRowType>
 {
     
-    public void Adapt(Result result, ref TResult value)
+    public bool Adapt(Result result, ref TResult value)
     {
         var columnCount = result.ColumnCount;
         Span<ReadOnlyVector> vectors = stackalloc ReadOnlyVector[(int)columnCount];
         
         int totalRows = 0;
+        bool hasChange = false;
         while (true)
         {
             using var chunk = result.FetchChunk();
@@ -32,13 +33,13 @@ public class ListAdaptor<TResult, TRowType, TRowAdaptor> : IResultAdaptor<TResul
                 if (totalRows < listSize)
                 {
                     var current = value[totalRows];
-                    TRowAdaptor.Adapt(cursor, ref current);
+                    hasChange |= TRowAdaptor.Adapt(cursor, ref current);
                     value[totalRows] = current!;
                 }
                 else
                 {
                     TRowType? current = default;
-                    TRowAdaptor.Adapt(cursor, ref current);
+                    hasChange |= TRowAdaptor.Adapt(cursor, ref current);
                     value.Add(current!);
                 }
                 totalRows++;
@@ -48,11 +49,14 @@ public class ListAdaptor<TResult, TRowType, TRowAdaptor> : IResultAdaptor<TResul
         var toRemove = value.Count - totalRows;
         if (toRemove > 0)
         {
+            hasChange = true;
             for (var i = 0; i < toRemove; i++)
             {
                 value.RemoveAt(value.Count - 1);
             }
         }
+
+        return hasChange;
     }
 }
 

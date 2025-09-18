@@ -5,11 +5,11 @@ namespace NexusMods.HyperDuck.Adaptor.Impls.ValueAdaptor;
 
 public class RelativePathAdaptor : IValueAdaptor<RelativePath>
 {
-    public static void Adapt<TCursor>(TCursor cursor, ref RelativePath value) 
+    public static bool Adapt<TCursor>(TCursor cursor, ref RelativePath value) 
         where TCursor : IValueCursor, allows ref struct
     {
         var str = cursor.GetValue<StringElement>().GetString();
-        value = RelativePath.FromUnsanitizedInput(str);
+        return Helpers.AssignNotEq(ref value, RelativePath.FromUnsanitizedInput(str));
     }
 }
 

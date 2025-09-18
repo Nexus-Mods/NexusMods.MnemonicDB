@@ -9,12 +9,13 @@ public class ObservableListAdaptor<TResult, TRowType, TRowAdaptor> : IResultAdap
     where TRowAdaptor : IRowAdaptor<TRowType>
 {
     
-    public void Adapt(Result result, ref TResult value)
+    public bool Adapt(Result result, ref TResult value)
     {
         var columnCount = result.ColumnCount;
         Span<ReadOnlyVector> vectors = stackalloc ReadOnlyVector[(int)columnCount];
         
         int totalRows = 0;
+        bool hasChange = false;
         while (true)
         {
             using var chunk = result.FetchChunk();
@@ -31,13 +32,13 @@ public class ObservableListAdaptor<TResult, TRowType, TRowAdaptor> : IResultAdap
                 if (totalRows < listSize)
                 {
                     var current = value[totalRows];
-                    TRowAdaptor.Adapt(cursor, ref current);
+                    hasChange |= TRowAdaptor.Adapt(cursor, ref current);
                     value[totalRows] = current!;
                 }
                 else
                 {
                     TRowType? current = default;
-                    TRowAdaptor.Adapt(cursor, ref current);
+                    hasChange |= TRowAdaptor.Adapt(cursor, ref current);
                     value.Add(current!);
                 }
                 totalRows++;
@@ -47,11 +48,13 @@ public class ObservableListAdaptor<TResult, TRowType, TRowAdaptor> : IResultAdap
         var toRemove = value.Count - totalRows;
         if (toRemove > 0)
         {
+            hasChange = true;
             for (var i = 0; i < toRemove; i++)
             {
                 value.RemoveAt(value.Count - 1);
             }
         }
+        return hasChange;
     }
 }
 

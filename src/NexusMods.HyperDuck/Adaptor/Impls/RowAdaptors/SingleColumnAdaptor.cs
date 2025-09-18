@@ -5,10 +5,10 @@ namespace NexusMods.HyperDuck.Adaptor.Impls.RowAdaptors;
 public struct SingleColumnAdaptor<TItem, TValueAdaptor> : IRowAdaptor<TItem>
     where TValueAdaptor : IValueAdaptor<TItem>, new()
 {
-    public static void Adapt(RowCursor cursor, ref TItem? value)
+    public static bool Adapt(RowCursor cursor, ref TItem? value)
     {
         var valueCursor = new ValueCursor(cursor);
-        TValueAdaptor.Adapt(valueCursor, ref value);
+        return TValueAdaptor.Adapt(valueCursor, ref value);
     }
 }
 
