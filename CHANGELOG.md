@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.26.0 - 2025-09-22
+* Expose MDB timestamps as DuckDB timestamps
+* SourceCache adaptors now better track changes to specific rows and values
+
 ### 0.25.1 - 2025-09-18
 * Make unconstrained calls to mdb_Datoms total-ordered
 
