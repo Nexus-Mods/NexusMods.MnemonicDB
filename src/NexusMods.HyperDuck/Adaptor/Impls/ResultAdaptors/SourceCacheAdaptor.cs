@@ -10,11 +10,11 @@ public class SourceCacheAdaptor<TRowType, TKey, TRowAdaptor> : IResultAdaptor<So
     where TRowType : notnull
     where TKey : notnull
 {
-    public void Adapt(Result result, ref SourceCache<TRowType, TKey> value)
+    public bool Adapt(Result result, ref SourceCache<TRowType, TKey> value)
     {
         var columnCount = result.ColumnCount;
         var keySelector = value.KeySelector;
-        
+        var thisHasChange = false;
         value.Edit(updater =>
         {
             var existingKeys = updater.Keys.ToHashSet();
@@ -33,17 +33,25 @@ public class SourceCacheAdaptor<TRowType, TKey, TRowAdaptor> : IResultAdaptor<So
                 for (cursor.RowIndex = 0; cursor.RowIndex < (int)chunk.Size; cursor.RowIndex++)
                 {
                     TRowType? current = default;
-                    TRowAdaptor.Adapt(cursor, ref current);
+                    var rowChanged = TRowAdaptor.Adapt(cursor, ref current);
                     var key = keySelector(current!);
-                    // TODO: only update if different
-                    updater.AddOrUpdate(current!);
+                    if (rowChanged)
+                    {
+                        thisHasChange = true;
+                        updater.AddOrUpdate(current!);
+                    }
+
                     existingKeys.Remove(key);
                 }
             }
-    
+
             foreach (var key in existingKeys)
+            {
+                thisHasChange = true;
                 updater.RemoveKey(key);
+            }
         });
+        return thisHasChange;
     }
     
 }

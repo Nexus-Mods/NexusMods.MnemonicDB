@@ -7,23 +7,25 @@ public class TupleAdaptor<T1, T2, TAdaptor1, TAdaptor2> : IRowAdaptor<(T1, T2)>,
     where TAdaptor1 : IValueAdaptor<T1>
     where TAdaptor2 : IValueAdaptor<T2>
 {
-    public static void Adapt(RowCursor cursor, ref (T1, T2) value)
+    public static bool Adapt(RowCursor cursor, ref (T1, T2) value)
     {
         var valCursor = new ValueCursor(cursor);
-        TAdaptor1.Adapt(valCursor, ref value.Item1!);
+        var aEq = TAdaptor1.Adapt(valCursor, ref value.Item1!);
         valCursor.ColumnIndex++;
-        TAdaptor2.Adapt(valCursor, ref value.Item2!);
+        var bEq = TAdaptor2.Adapt(valCursor, ref value.Item2!);
+        return aEq || bEq;
     }
 
-    public static void Adapt<TCursor>(TCursor cursor, ref (T1, T2) value) where TCursor : IValueCursor, allows ref struct
+    public static bool Adapt<TCursor>(TCursor cursor, ref (T1, T2) value) where TCursor : IValueCursor, allows ref struct
     {
         var subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 0));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor1.Adapt(subCursor, ref value.Item1!);
+        var aEq = TAdaptor1.Adapt(subCursor, ref value.Item1!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 1));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor2.Adapt(subCursor, ref value.Item2!);
+        var bEq = TAdaptor2.Adapt(subCursor, ref value.Item2!);
+        return aEq || bEq;
     }
 }
 
@@ -32,29 +34,31 @@ public class TupleAdaptor<T1, T2, T3, TAdaptor1, TAdaptor2, TAdaptor3> : IRowAda
     where TAdaptor2 : IValueAdaptor<T2>
     where TAdaptor3 : IValueAdaptor<T3>
 {
-    public static void Adapt(RowCursor cursor, ref (T1, T2, T3) value)
+    public static bool Adapt(RowCursor cursor, ref (T1, T2, T3) value)
     {
         var valCursor = new ValueCursor(cursor);
-        TAdaptor1.Adapt(valCursor, ref value.Item1!);
+        var aEq = TAdaptor1.Adapt(valCursor, ref value.Item1!);
         valCursor.ColumnIndex++;
-        TAdaptor2.Adapt(valCursor, ref value.Item2!);
+        var bEq = TAdaptor2.Adapt(valCursor, ref value.Item2!);
         valCursor.ColumnIndex++;
-        TAdaptor3.Adapt(valCursor, ref value.Item3!);
+        var cEq = TAdaptor3.Adapt(valCursor, ref value.Item3!);
+        return aEq || bEq || cEq;
     }
 
-    public static void Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3) value) where TCursor : IValueCursor, allows ref struct
+    public static bool Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3) value) where TCursor : IValueCursor, allows ref struct
     {
         var subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 0));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor1.Adapt(subCursor, ref value.Item1!);
+        var aEq = TAdaptor1.Adapt(subCursor, ref value.Item1!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 1));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor2.Adapt(subCursor, ref value.Item2!);
+        var bEq = TAdaptor2.Adapt(subCursor, ref value.Item2!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 2));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor3.Adapt(subCursor, ref value.Item3!);
+        var cEq = TAdaptor3.Adapt(subCursor, ref value.Item3!);
+        return aEq || bEq || cEq;
     }
 }
 
@@ -64,35 +68,37 @@ public class TupleAdaptor<T1, T2, T3, T4, TAdaptor1, TAdaptor2, TAdaptor3, TAdap
     where TAdaptor3 : IValueAdaptor<T3>
     where TAdaptor4 : IValueAdaptor<T4>
 {
-    public static void Adapt(RowCursor cursor, ref (T1, T2, T3, T4) value)
+    public static bool Adapt(RowCursor cursor, ref (T1, T2, T3, T4) value)
     {
         var valCursor = new ValueCursor(cursor);
-        TAdaptor1.Adapt(valCursor, ref value.Item1!);
+        var aEq = TAdaptor1.Adapt(valCursor, ref value.Item1!);
         valCursor.ColumnIndex++;
-        TAdaptor2.Adapt(valCursor, ref value.Item2!);
+        var bEq = TAdaptor2.Adapt(valCursor, ref value.Item2!);
         valCursor.ColumnIndex++;
-        TAdaptor3.Adapt(valCursor, ref value.Item3!);
+        var cEq = TAdaptor3.Adapt(valCursor, ref value.Item3!);
         valCursor.ColumnIndex++;
-        TAdaptor4.Adapt(valCursor, ref value.Item4!);
+        var dEq = TAdaptor4.Adapt(valCursor, ref value.Item4!);
+        return aEq || bEq || cEq || dEq;
     }
 
-    public static void Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3, T4) value) where TCursor : IValueCursor, allows ref struct
+    public static bool Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3, T4) value) where TCursor : IValueCursor, allows ref struct
     {
         var subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 0));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor1.Adapt(subCursor, ref value.Item1!);
+        var aEq = TAdaptor1.Adapt(subCursor, ref value.Item1!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 1));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor2.Adapt(subCursor, ref value.Item2!);
+        var bEq = TAdaptor2.Adapt(subCursor, ref value.Item2!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 2));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor3.Adapt(subCursor, ref value.Item3!);
+        var cEq = TAdaptor3.Adapt(subCursor, ref value.Item3!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 3));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor4.Adapt(subCursor, ref value.Item4!);
+        var dEq = TAdaptor4.Adapt(subCursor, ref value.Item4!);
+        return aEq || bEq || cEq || dEq;
     }
 }
 
@@ -104,41 +110,43 @@ public class TupleAdaptor<T1, T2, T3, T4, T5, TAdaptor1, TAdaptor2, TAdaptor3, T
     where TAdaptor4 : IValueAdaptor<T4>
     where TAdaptor5 : IValueAdaptor<T5>
 {
-    public static void Adapt(RowCursor cursor, ref (T1, T2, T3, T4, T5) value)
+    public static bool Adapt(RowCursor cursor, ref (T1, T2, T3, T4, T5) value)
     {
         var valCursor = new ValueCursor(cursor);
-        TAdaptor1.Adapt(valCursor, ref value.Item1!);
+        var aEq = TAdaptor1.Adapt(valCursor, ref value.Item1!);
         valCursor.ColumnIndex++;
-        TAdaptor2.Adapt(valCursor, ref value.Item2!);
+        var bEq = TAdaptor2.Adapt(valCursor, ref value.Item2!);
         valCursor.ColumnIndex++;
-        TAdaptor3.Adapt(valCursor, ref value.Item3!);
+        var cEq = TAdaptor3.Adapt(valCursor, ref value.Item3!);
         valCursor.ColumnIndex++;
-        TAdaptor4.Adapt(valCursor, ref value.Item4!);
+        var dEq = TAdaptor4.Adapt(valCursor, ref value.Item4!);
         valCursor.ColumnIndex++;
-        TAdaptor5.Adapt(valCursor, ref value.Item5!);
+        var eEq = TAdaptor5.Adapt(valCursor, ref value.Item5!);
+        return aEq || bEq || cEq || dEq || eEq;
     }
 
-    public static void Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3, T4, T5) value) where TCursor : IValueCursor, allows ref struct
+    public static bool Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3, T4, T5) value) where TCursor : IValueCursor, allows ref struct
     {
         var subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 0));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor1.Adapt(subCursor, ref value.Item1!);
+        var aEq = TAdaptor1.Adapt(subCursor, ref value.Item1!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 1));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor2.Adapt(subCursor, ref value.Item2!);
+        var bEq = TAdaptor2.Adapt(subCursor, ref value.Item2!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 2));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor3.Adapt(subCursor, ref value.Item3!);
+        var cEq = TAdaptor3.Adapt(subCursor, ref value.Item3!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 3));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor4.Adapt(subCursor, ref value.Item4!);
+        var dEq = TAdaptor4.Adapt(subCursor, ref value.Item4!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 4));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor5.Adapt(subCursor, ref value.Item5!);
+        var eEq = TAdaptor5.Adapt(subCursor, ref value.Item5!);
+        return aEq || bEq || cEq || dEq || eEq;
     }
 }
 
@@ -150,47 +158,49 @@ public class TupleAdaptor<T1, T2, T3, T4, T5, T6, TAdaptor1, TAdaptor2, TAdaptor
     where TAdaptor5 : IValueAdaptor<T5>
     where TAdaptor6 : IValueAdaptor<T6>
 {
-    public static void Adapt(RowCursor cursor, ref (T1, T2, T3, T4, T5, T6) value)
+    public static bool Adapt(RowCursor cursor, ref (T1, T2, T3, T4, T5, T6) value)
     {
         var valCursor = new ValueCursor(cursor);
-        TAdaptor1.Adapt(valCursor, ref value.Item1!);
+        var aEq = TAdaptor1.Adapt(valCursor, ref value.Item1!);
         valCursor.ColumnIndex++;
-        TAdaptor2.Adapt(valCursor, ref value.Item2!);
+        var bEq = TAdaptor2.Adapt(valCursor, ref value.Item2!);
         valCursor.ColumnIndex++;
-        TAdaptor3.Adapt(valCursor, ref value.Item3!);
+        var cEq = TAdaptor3.Adapt(valCursor, ref value.Item3!);
         valCursor.ColumnIndex++;
-        TAdaptor4.Adapt(valCursor, ref value.Item4!);
+        var dEq = TAdaptor4.Adapt(valCursor, ref value.Item4!);
         valCursor.ColumnIndex++;
-        TAdaptor5.Adapt(valCursor, ref value.Item5!);
+        var eEq = TAdaptor5.Adapt(valCursor, ref value.Item5!);
         valCursor.ColumnIndex++;
-        TAdaptor6.Adapt(valCursor, ref value.Item6!);
+        var fEq = TAdaptor6.Adapt(valCursor, ref value.Item6!);
+        return aEq || bEq || cEq || dEq || eEq || fEq;
     }
 
-    public static void Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3, T4, T5, T6) value) where TCursor : IValueCursor, allows ref struct
+    public static bool Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3, T4, T5, T6) value) where TCursor : IValueCursor, allows ref struct
     {
         var subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 0));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor1.Adapt(subCursor, ref value.Item1!);
+        var aEq = TAdaptor1.Adapt(subCursor, ref value.Item1!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 1));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor2.Adapt(subCursor, ref value.Item2!);
+        var bEq = TAdaptor2.Adapt(subCursor, ref value.Item2!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 2));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor3.Adapt(subCursor, ref value.Item3!);
+        var cEq = TAdaptor3.Adapt(subCursor, ref value.Item3!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 3));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor4.Adapt(subCursor, ref value.Item4!);
+        var dEq = TAdaptor4.Adapt(subCursor, ref value.Item4!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 4));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor5.Adapt(subCursor, ref value.Item5!);
+        var eEq = TAdaptor5.Adapt(subCursor, ref value.Item5!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 5));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor6.Adapt(subCursor, ref value.Item6!);
+        var fEq = TAdaptor6.Adapt(subCursor, ref value.Item6!);
+        return aEq || bEq || cEq || dEq || eEq || fEq;
     }
 }
 
@@ -203,53 +213,55 @@ public class TupleAdaptor<T1, T2, T3, T4, T5, T6, T7, TAdaptor1, TAdaptor2, TAda
     where TAdaptor6 : IValueAdaptor<T6>
     where TAdaptor7 : IValueAdaptor<T7>
 {
-    public static void Adapt(RowCursor cursor, ref (T1, T2, T3, T4, T5, T6, T7) value)
+    public static bool Adapt(RowCursor cursor, ref (T1, T2, T3, T4, T5, T6, T7) value)
     {
         var valCursor = new ValueCursor(cursor);
-        TAdaptor1.Adapt(valCursor, ref value.Item1!);
+        var aEq = TAdaptor1.Adapt(valCursor, ref value.Item1!);
         valCursor.ColumnIndex++;
-        TAdaptor2.Adapt(valCursor, ref value.Item2!);
+        var bEq = TAdaptor2.Adapt(valCursor, ref value.Item2!);
         valCursor.ColumnIndex++;
-        TAdaptor3.Adapt(valCursor, ref value.Item3!);
+        var cEq = TAdaptor3.Adapt(valCursor, ref value.Item3!);
         valCursor.ColumnIndex++;
-        TAdaptor4.Adapt(valCursor, ref value.Item4!);
+        var dEq = TAdaptor4.Adapt(valCursor, ref value.Item4!);
         valCursor.ColumnIndex++;
-        TAdaptor5.Adapt(valCursor, ref value.Item5!);
+        var eEq = TAdaptor5.Adapt(valCursor, ref value.Item5!);
         valCursor.ColumnIndex++;
-        TAdaptor6.Adapt(valCursor, ref value.Item6!);
+        var fEq = TAdaptor6.Adapt(valCursor, ref value.Item6!);
         valCursor.ColumnIndex++;
-        TAdaptor7.Adapt(valCursor, ref value.Item7!);
+        var gEq = TAdaptor7.Adapt(valCursor, ref value.Item7!);
+        return aEq || bEq || cEq || dEq || eEq || fEq || gEq;
     }
 
-    public static void Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3, T4, T5, T6, T7) value) where TCursor : IValueCursor, allows ref struct
+    public static bool Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3, T4, T5, T6, T7) value) where TCursor : IValueCursor, allows ref struct
     {
         var subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 0));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor1.Adapt(subCursor, ref value.Item1!);
+        var aEq = TAdaptor1.Adapt(subCursor, ref value.Item1!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 1));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor2.Adapt(subCursor, ref value.Item2!);
+        var bEq = TAdaptor2.Adapt(subCursor, ref value.Item2!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 2));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor3.Adapt(subCursor, ref value.Item3!);
+        var cEq = TAdaptor3.Adapt(subCursor, ref value.Item3!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 3));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor4.Adapt(subCursor, ref value.Item4!);
+        var dEq = TAdaptor4.Adapt(subCursor, ref value.Item4!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 4));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor5.Adapt(subCursor, ref value.Item5!);
+        var eEq = TAdaptor5.Adapt(subCursor, ref value.Item5!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 5));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor6.Adapt(subCursor, ref value.Item6!);
+        var fEq = TAdaptor6.Adapt(subCursor, ref value.Item6!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 6));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor7.Adapt(subCursor, ref value.Item7!);
+        var gEq = TAdaptor7.Adapt(subCursor, ref value.Item7!);
+        return aEq || bEq || cEq || dEq || eEq || fEq || gEq;
     }
 }
 
@@ -263,59 +275,61 @@ public class TupleAdaptor<T1, T2, T3, T4, T5, T6, T7, T8, TAdaptor1, TAdaptor2, 
     where TAdaptor7 : IValueAdaptor<T7>
     where TAdaptor8 : IValueAdaptor<T8>
 {
-    public static void Adapt(RowCursor cursor, ref (T1, T2, T3, T4, T5, T6, T7, T8) value)
+    public static bool Adapt(RowCursor cursor, ref (T1, T2, T3, T4, T5, T6, T7, T8) value)
     {
         var valCursor = new ValueCursor(cursor);
-        TAdaptor1.Adapt(valCursor, ref value.Item1!);
+        var aEq = TAdaptor1.Adapt(valCursor, ref value.Item1!);
         valCursor.ColumnIndex++;
-        TAdaptor2.Adapt(valCursor, ref value.Item2!);
+        var bEq = TAdaptor2.Adapt(valCursor, ref value.Item2!);
         valCursor.ColumnIndex++;
-        TAdaptor3.Adapt(valCursor, ref value.Item3!);
+        var cEq = TAdaptor3.Adapt(valCursor, ref value.Item3!);
         valCursor.ColumnIndex++;
-        TAdaptor4.Adapt(valCursor, ref value.Item4!);
+        var dEq = TAdaptor4.Adapt(valCursor, ref value.Item4!);
         valCursor.ColumnIndex++;
-        TAdaptor5.Adapt(valCursor, ref value.Item5!);
+        var eEq = TAdaptor5.Adapt(valCursor, ref value.Item5!);
         valCursor.ColumnIndex++;
-        TAdaptor6.Adapt(valCursor, ref value.Item6!);
+        var fEq = TAdaptor6.Adapt(valCursor, ref value.Item6!);
         valCursor.ColumnIndex++;
-        TAdaptor7.Adapt(valCursor, ref value.Item7!);
+        var gEq = TAdaptor7.Adapt(valCursor, ref value.Item7!);
         valCursor.ColumnIndex++;
-        TAdaptor8.Adapt(valCursor, ref value.Item8!);
+        var hEq = TAdaptor8.Adapt(valCursor, ref value.Item8!);
+        return aEq || bEq || cEq || dEq || eEq || fEq || gEq || hEq;
     }
 
-    public static void Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3, T4, T5, T6, T7, T8) value) where TCursor : IValueCursor, allows ref struct
+    public static bool Adapt<TCursor>(TCursor cursor, ref (T1, T2, T3, T4, T5, T6, T7, T8) value) where TCursor : IValueCursor, allows ref struct
     {
         var subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 0));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor1.Adapt(subCursor, ref value.Item1!);
+        var aEq = TAdaptor1.Adapt(subCursor, ref value.Item1!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 1));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor2.Adapt(subCursor, ref value.Item2!);
+        var bEq = TAdaptor2.Adapt(subCursor, ref value.Item2!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 2));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor3.Adapt(subCursor, ref value.Item3!);
+        var cEq = TAdaptor3.Adapt(subCursor, ref value.Item3!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 3));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor4.Adapt(subCursor, ref value.Item4!);
+        var dEq = TAdaptor4.Adapt(subCursor, ref value.Item4!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 4));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor5.Adapt(subCursor, ref value.Item5!);
+        var eEq = TAdaptor5.Adapt(subCursor, ref value.Item5!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 5));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor6.Adapt(subCursor, ref value.Item6!);
+        var fEq = TAdaptor6.Adapt(subCursor, ref value.Item6!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 6));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor7.Adapt(subCursor, ref value.Item7!);
+        var gEq = TAdaptor7.Adapt(subCursor, ref value.Item7!);
 
         subCursor = new SubVectorCursor(cursor.GetStructChild(fieldIndex: 7));
         subCursor.RowIndex = cursor.RowIndex;
-        TAdaptor8.Adapt(subCursor, ref value.Item8!);
+        var hEq = TAdaptor8.Adapt(subCursor, ref value.Item8!);
+        return aEq || bEq || cEq || dEq || eEq || fEq || gEq || hEq;
     }
 }
 
