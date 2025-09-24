@@ -651,6 +651,52 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     }
 
     [Test]
+    public async Task ObserveDatomsEmitsUpdatesForScalarChanges()
+    {
+        var loadout = await InsertExampleData();
+        var targetMod = loadout.Mods.First();
+        var originalName = targetMod.Name;
+        var newName = originalName + " (Renamed)";
+
+        var slice = SliceDescriptor.Create(Mod.Name, AttributeCache);
+
+        var tcs = new TaskCompletionSource<IChangeSet<Datom, DatomKey>>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        using var subscription = Connection.ObserveDatoms(slice)
+            .Subscribe(changeSet =>
+            {
+                if (changeSet.Updates == 0)
+                    return;
+
+                tcs.TrySetResult(changeSet);
+            });
+
+        using (var tx = Connection.BeginTransaction())
+        {
+            tx.Add(targetMod.Id, Mod.Name, newName);
+            await tx.Commit();
+        }
+
+        var changeSet = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        await Assert.That(changeSet.Adds).IsEqualTo(0).Because("scalar updates should not appear as adds");
+        await Assert.That(changeSet.Removes).IsEqualTo(0).Because("scalar updates should not appear as removes");
+        await Assert.That(changeSet.Updates).IsEqualTo(1).Because("the change should surface as a single update");
+
+        var update = changeSet.Single(change => change.Reason == ChangeReason.Update);
+        var resolver = Connection.AttributeResolver;
+
+        var currentName = resolver.Resolve(update.Current).ObjectValue?.ToString();
+        await Assert.That(currentName).IsEqualTo(newName);
+
+        var previous = update.Previous;
+        await Assert.That(previous.HasValue).IsTrue();
+
+        var previousName = resolver.Resolve(previous.Value).ObjectValue?.ToString();
+        await Assert.That(previousName).IsEqualTo(originalName);
+    }
+
+    [Test]
     public async Task ObserveLargeDatomChanges()
     {
         var list = Connection.ObserveDatoms(Loadout.Name)
