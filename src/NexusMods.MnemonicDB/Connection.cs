@@ -351,34 +351,25 @@ public sealed class Connection : IConnection
                 
             var isMany = cache.IsCardinalityMany(datom.A);
             var attr = datom.A;
+            if (!isMany && i + 1 < recentlyAdded.Count)
+            {
+                var nextDatom = recentlyAdded[i + 1];
+                if (nextDatom.E == datom.E && nextDatom.A == datom.A && nextDatom.IsRetract != datom.IsRetract)
+                {
+                    var newDatom = datom.IsRetract ? nextDatom : datom;
+                    var oldDatom = datom.IsRetract ? datom : nextDatom;
+
+                    // Skip the paired datom and issue an update.
+                    _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Update, CreateKey(datom, attr), newDatom, oldDatom));
+                    i++;
+                    goto PROCESS_CHANGES;
+                }
+            }
+
             if (datom.IsRetract)
             {
-                    
-                // If the attribute is cardinality many, we can just remove the datom
-                if (isMany)
-                {
-                    _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, CreateKey(datom, attr, true), datom));
-                    goto PROCESS_CHANGES;
-                }
-                    
-                // If at the end of the segment
-                if (i + 1 >= recentlyAdded.Count)
-                {
-                    _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, CreateKey(datom, attr), datom));
-                    goto PROCESS_CHANGES;
-                }
-
-                // If the next datom is not the same E or A, we can remove the datom
-                var nextDatom = recentlyAdded[i + 1];
-                if (nextDatom.E != datom.E || nextDatom.A != datom.A)
-                {
-                    _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, CreateKey(datom, attr), datom));
-                    goto PROCESS_CHANGES;
-                }
-
-                // Otherwise we skip the add, and issue an update, and skip the add because we've already processed it
-                _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Update, CreateKey(datom, attr), nextDatom, datom));
-                i++;
+                var key = CreateKey(datom, attr, isMany);
+                _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, key, datom));
             }
             else
             {
