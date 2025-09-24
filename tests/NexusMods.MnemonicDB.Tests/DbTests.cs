@@ -697,6 +697,168 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     }
 
     [Test]
+    public async Task ObserveDatomsEmitsAddsForCollectionAttributes()
+    {
+        var loadout = await InsertExampleData();
+        var targetMod = loadout.Mods.First();
+        const string newTag = "New Tag";
+
+        var slice = SliceDescriptor.Create(Mod.Tags, AttributeCache);
+        var resolver = Connection.AttributeResolver;
+
+        var tcs = new TaskCompletionSource<IChangeSet<Datom, DatomKey>>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        using var subscription = Connection.ObserveDatoms(slice)
+            .Subscribe(changeSet =>
+            {
+                foreach (var change in changeSet)
+                {
+                    if (change.Reason != ChangeReason.Add)
+                        continue;
+
+                    var value = resolver.Resolve(change.Current).ObjectValue?.ToString();
+                    if (value == newTag)
+                    {
+                        tcs.TrySetResult(changeSet);
+                        break;
+                    }
+                }
+            });
+
+        using (var tx = Connection.BeginTransaction())
+        {
+            tx.Add(targetMod.Id, Mod.Tags, newTag);
+            await tx.Commit();
+        }
+
+        var changeSet = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        await Assert.That(changeSet.Adds).IsEqualTo(1).Because("collection additions should surface as adds");
+        await Assert.That(changeSet.Removes).IsEqualTo(0);
+        await Assert.That(changeSet.Updates).IsEqualTo(0);
+
+        var addition = changeSet.Single(change => change.Reason == ChangeReason.Add);
+        var addedValue = resolver.Resolve(addition.Current).ObjectValue?.ToString();
+        await Assert.That(addedValue).IsEqualTo(newTag);
+    }
+
+    [Test]
+    public async Task ObserveDatomsEmitsRemovesForCollectionAttributes()
+    {
+        var loadout = await InsertExampleData();
+        var targetMod = loadout.Mods.First();
+        const string tagToRemove = "To Remove";
+
+        using (var tx = Connection.BeginTransaction())
+        {
+            tx.Add(targetMod.Id, Mod.Tags, tagToRemove);
+            await tx.Commit();
+        }
+
+        var slice = SliceDescriptor.Create(Mod.Tags, AttributeCache);
+        var resolver = Connection.AttributeResolver;
+        var tcs = new TaskCompletionSource<IChangeSet<Datom, DatomKey>>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        using var subscription = Connection.ObserveDatoms(slice)
+            .Subscribe(changeSet =>
+            {
+                foreach (var change in changeSet)
+                {
+                    if (change.Reason != ChangeReason.Remove)
+                        continue;
+
+                    var value = resolver.Resolve(change.Current).ObjectValue?.ToString();
+                    if (value == tagToRemove)
+                    {
+                        tcs.TrySetResult(changeSet);
+                        break;
+                    }
+                }
+            });
+
+        using (var tx = Connection.BeginTransaction())
+        {
+            tx.Retract(targetMod.Id, Mod.Tags, tagToRemove);
+            await tx.Commit();
+        }
+
+        var changeSet = await tcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        await Assert.That(changeSet.Adds).IsEqualTo(0);
+        await Assert.That(changeSet.Removes).IsEqualTo(1).Because("collection removals should surface as removes");
+        await Assert.That(changeSet.Updates).IsEqualTo(0);
+
+        var removal = changeSet.Single(change => change.Reason == ChangeReason.Remove);
+        var removedValue = resolver.Resolve(removal.Current).ObjectValue?.ToString();
+        await Assert.That(removedValue).IsEqualTo(tagToRemove);
+    }
+
+    [Test]
+    public async Task ObserveDatomsSeparatesScalarAddAndRemoveAcrossTransactions()
+    {
+        var loadout = await InsertExampleData();
+        var targetMod = loadout.Mods.First();
+        var originalName = targetMod.Name;
+        var replacementName = originalName + " (Replacement)";
+
+        var slice = SliceDescriptor.Create(Mod.Name, AttributeCache);
+        var resolver = Connection.AttributeResolver;
+
+        var removeTcs = new TaskCompletionSource<IChangeSet<Datom, DatomKey>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var addTcs = new TaskCompletionSource<IChangeSet<Datom, DatomKey>>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        using var subscription = Connection.ObserveDatoms(slice)
+            .Subscribe(changeSet =>
+            {
+                foreach (var change in changeSet)
+                {
+                    var value = resolver.Resolve(change.Current).ObjectValue?.ToString();
+                    switch (change.Reason)
+                    {
+                        case ChangeReason.Remove when value == originalName:
+                            removeTcs.TrySetResult(changeSet);
+                            break;
+                        case ChangeReason.Add when value == replacementName:
+                            addTcs.TrySetResult(changeSet);
+                            break;
+                    }
+                }
+            });
+
+        using (var tx = Connection.BeginTransaction())
+        {
+            tx.Retract(targetMod.Id, Mod.Name, originalName);
+            await tx.Commit();
+        }
+
+        var removeChanges = await removeTcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        using (var tx = Connection.BeginTransaction())
+        {
+            tx.Add(targetMod.Id, Mod.Name, replacementName);
+            await tx.Commit();
+        }
+
+        var addChanges = await addTcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
+
+        await Assert.That(removeChanges.Adds).IsEqualTo(0);
+        await Assert.That(removeChanges.Removes).IsEqualTo(1).Because("scalar retracts in their own transaction should surface as removes");
+        await Assert.That(removeChanges.Updates).IsEqualTo(0);
+
+        var removal = removeChanges.Single(change => change.Reason == ChangeReason.Remove);
+        var removedName = resolver.Resolve(removal.Current).ObjectValue?.ToString();
+        await Assert.That(removedName).IsEqualTo(originalName);
+
+        await Assert.That(addChanges.Adds).IsEqualTo(1).Because("scalar asserts in their own transaction should surface as adds");
+        await Assert.That(addChanges.Removes).IsEqualTo(0);
+        await Assert.That(addChanges.Updates).IsEqualTo(0);
+
+        var addition = addChanges.Single(change => change.Reason == ChangeReason.Add);
+        var addedName = resolver.Resolve(addition.Current).ObjectValue?.ToString();
+        await Assert.That(addedName).IsEqualTo(replacementName);
+    }
+
+    [Test]
     public async Task ObserveLargeDatomChanges()
     {
         var list = Connection.ObserveDatoms(Loadout.Name)
