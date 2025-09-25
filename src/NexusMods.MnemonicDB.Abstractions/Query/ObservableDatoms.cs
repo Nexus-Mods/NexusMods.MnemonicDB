@@ -55,7 +55,7 @@ public static class ObservableDatoms
             var newChanges = new ChangeSet<Datom, EntityId>();
             foreach (var change in changes)
             {
-                newChanges.Add(new Change<Datom, EntityId>(change.Reason, change.Key.E, change.Current));
+                newChanges.Add(new Change<Datom, EntityId>(change.Reason, change.Key.E, change.Current, change.Previous, change.CurrentIndex, change.PreviousIndex));
             }
             return newChanges;
         });
