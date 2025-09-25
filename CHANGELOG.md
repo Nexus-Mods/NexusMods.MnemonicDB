@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.26.1 - 2025-09-24
+* Fix ObserveDatoms bug with adds and subtracts in the same transaction on the same attribute
+
 ### 0.26.0 - 2025-09-22
 * Expose MDB timestamps as DuckDB timestamps
 * SourceCache adaptors now better track changes to specific rows and values
