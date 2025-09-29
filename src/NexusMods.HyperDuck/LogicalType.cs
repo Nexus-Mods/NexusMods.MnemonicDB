@@ -69,6 +69,7 @@ public unsafe partial struct LogicalType : IDisposable
         },
         DuckDbType.Union => 0,
         DuckDbType.Blob => sizeof(StringElement),
+        DuckDbType.TimestampNs => sizeof(long),
         _ => throw new NotImplementedException("SizeInVector not implemented for type: " + TypeId)
     };
 
