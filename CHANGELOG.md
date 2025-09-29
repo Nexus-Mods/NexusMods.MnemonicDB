@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.27.1 - 2025-09-24
+* Fix a bug with table registration
+
 ### 0.27.0 - 2025-09-24
 * Fix several bugs
 * Allow injection of functions via DI
