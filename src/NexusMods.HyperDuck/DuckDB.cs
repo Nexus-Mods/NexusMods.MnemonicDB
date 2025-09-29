@@ -66,6 +66,11 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
     {
         return new DuckDB(registry, [], []);
     }
+    
+    public static DuckDB Open(IRegistry registry, IEnumerable<ATableFunction> tableFunctions, IEnumerable<AScalarFunction> scalarFunctions)
+    {
+        return new DuckDB(registry, tableFunctions, scalarFunctions);
+    }
 
     public IRegistry Registry => _registry;
 

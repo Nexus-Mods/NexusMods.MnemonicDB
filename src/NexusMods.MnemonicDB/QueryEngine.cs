@@ -31,7 +31,7 @@ public class QueryEngine : IQueryEngine, IAsyncDisposable
             services.GetServices<IValueAdaptorFactory>(),
             services.GetServices<IBindingConverter>(),
             services.GetServices<AmbientSqlFragment>());
-        _db = HyperDuck.DuckDB.Open(_registry);
+        _db = HyperDuck.DuckDB.Open(_registry, services.GetServices<ATableFunction>(), services.GetServices<AScalarFunction>());
         _declaredAttributes = services.GetServices<IAttribute>().OrderBy(a => a.Id.Id).ToArray();
         _attrsByShortName = _declaredAttributes.ToDictionary(a => a.ShortName, a => a);
         _attrEnumLogicalType = LogicalType.CreateEnum(_declaredAttributes.Select(s => s.ShortName).ToArray());
