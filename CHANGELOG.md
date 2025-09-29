@@ -1,5 +1,10 @@
 ## Changelog
 
+### 0.27.0 - 2025-09-24
+* Fix several bugs
+* Allow injection of functions via DI
+* Upgrade to DuckDB 1.4
+
 ### 0.26.1 - 2025-09-24
 * Fix ObserveDatoms bug with adds and subtracts in the same transaction on the same attribute
 
