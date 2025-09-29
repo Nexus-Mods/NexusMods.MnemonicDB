@@ -69,6 +69,7 @@ public unsafe partial struct LogicalType : IDisposable
         },
         DuckDbType.Union => 0,
         DuckDbType.Blob => sizeof(StringElement),
+        // NOTE(erri120): TIMESTAMP_NS is stored as nanoseconds since 1970-01-01 in int64_t.
         DuckDbType.TimestampNs => sizeof(long),
         _ => throw new NotImplementedException("SizeInVector not implemented for type: " + TypeId)
     };
