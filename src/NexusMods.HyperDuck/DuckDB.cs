@@ -34,7 +34,7 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
 
     private static byte[] ReferencedFunctionsPrefix = "EXPLAIN (FORMAT JSON) "u8.ToArray();
 
-    private DuckDB(IRegistry registry)
+    private DuckDB(IRegistry registry, IEnumerable<ATableFunction> tableFunctions, IEnumerable<AScalarFunction> scalarFunctions)
     {
         _disposed = false;
         _registry = registry;
@@ -45,16 +45,26 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
         {
             using var _ = conn.Query(fragment.SQL);
         }
+        
+        foreach (var tableFunction in tableFunctions)
+        {
+            Register(tableFunction);
+        }
+        
+        foreach (var scalarFunction in scalarFunctions)
+        {
+            Register(scalarFunction);
+        }
     }
 
     public static DuckDB Open()
     {
-        return new DuckDB(new Registry([], [], [], [], []));
+        return new DuckDB(new Registry([], [], [], [], []), [], []);
     }
 
     public static DuckDB Open(IRegistry registry)
     {
-        return new DuckDB(registry);
+        return new DuckDB(registry, [], []);
     }
 
     public IRegistry Registry => _registry;
