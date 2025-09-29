@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.27.2 - 2025-09-24
+* Fix a bug datoms table initialization
+
 ### 0.27.1 - 2025-09-24
 * Fix a bug with table registration
 

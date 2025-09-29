@@ -38,15 +38,16 @@ public class DatomsTableFunction : ATableFunction
         _conn = conn;
         _engine = null;
         _attrs = attrs.OrderBy(attr => attr.Id.Id).ToArray();
-        _attrsByShortName = attrs.ToDictionary(a => $"{a.Id.Namespace.Split(".").Last()}/{a.Id.Name}");
+        _attrsByShortName = _attrs.ToDictionary(a => $"{a.Id.Namespace.Split(".").Last()}/{a.Id.Name}");
         var cache = conn.AttributeCache;
         _attrIdToEnum = new ushort[cache.MaxAttrId + 1];
         _queryEngine = (QueryEngine)queryEngine;
         _txWatcher = observer.Subscribe(_ => Revise());
-        for (int i = 0; i < attrs.Count(); i++)
+        for (int i = 0; i < _attrs.Count(); i++)
         {
             var attr = _attrs[i];
-            _attrIdToEnum[cache.GetAttributeId(attr.Id).Value] = (ushort)i;
+            if (cache.TryGetAttributeId(attr.Id, out var attrId))
+                _attrIdToEnum[attrId.Value] = (ushort)i;
         }
     }
     
