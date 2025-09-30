@@ -33,10 +33,9 @@ public abstract unsafe partial class ATableFunction
         Native.duckdb_table_function_set_init(data._ptr, &InitFn);
         Native.duckdb_table_function_set_local_init(data._ptr, &LocalInitFn);
         Native.duckdb_table_function_set_function(data._ptr, &Fn);
-        
+
         if (Native.duckdb_register_table_function(connection._ptr, data._ptr) != State.Success)
-            throw new InvalidOperationException("Failed to register table function.");
-        
+            throw new InvalidOperationException($"Failed to register table function `{Name}`");
     }
 
     protected ref struct RegistrationInfo : IDisposable
