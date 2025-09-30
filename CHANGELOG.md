@@ -1,5 +1,11 @@
 ## Changelog
 
+### 0.28.0 - 2025-09-30
+* Rework how connections are registered with DuckDB. Now each active MnemonicDB connection is registered with a separate
+global Id. This information is exposed via the `mnemonicdb_active_connections` table function.
+* Datoms and models can be queried via their connection name via the `DbName=>{name}` syntax. In this case the function will use the most recent TxId for that connection
+or use the AsOf TxId if provided
+
 ### 0.27.3 - 2025-09-30
 * Fix reading `TimestampNs` values
 

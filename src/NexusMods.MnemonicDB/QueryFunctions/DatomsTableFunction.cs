@@ -32,6 +32,7 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
         info.AddNamedParameter<string>("A");
         info.AddNamedParameter<bool>("History");
         info.AddNamedParameter<ulong>("Db");
+        info.AddNamedParameter<string>("DbName");
         info.SupportsPredicatePushdown();
     }
 
@@ -185,19 +186,25 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
 
     protected override void Bind(BindInfo info)
     {
-        var aParam = info.GetParameter("A");
-        var historyParam = info.GetParameter("History");
+        using var aParam = info.GetParameter("A");
+        using var historyParam = info.GetParameter("History");
         var history = !historyParam.IsNull && historyParam.GetBool();
         
-        var dbParam = info.GetParameter("Db");
+        using var dbParam = info.GetParameter("Db");
+        using var dbNameParam = info.GetParameter("DbName");
         IConnection connection;
         TxId asOf;
         if (!dbParam.IsNull)
         {
-            var db = dbParam.GetUInt64();
             var dbAndAsOf = dbParam.GetUInt64();
             asOf = TxId.From(PartitionId.Transactions.MakeEntityId(dbAndAsOf >> 16).Value);
             connection = _queryEngine.GetConnectionByUid((ushort)(dbAndAsOf & 0xFFFF))!;
+        }
+        else if (!dbNameParam.IsNull)
+        {
+            var namedConn = _queryEngine.GetConnectionByName(dbNameParam.GetVarChar());
+            connection = namedConn ?? throw new Exception($"No database named {dbNameParam.GetVarChar()}");
+            asOf = TxId.MinValue;
         }
         else
         {

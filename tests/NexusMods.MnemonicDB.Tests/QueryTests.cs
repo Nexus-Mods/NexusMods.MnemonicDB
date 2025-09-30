@@ -324,4 +324,12 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         table.Add(results, "Active Connections");
         await Verify(table.ToString());
     }
+
+    [Test]
+    public async Task CanQueryByConnectionName()
+    {
+        await InsertExampleData();
+        var loadouts = Connection.Query<EntityId>("SELECT Id FROM mdb_Loadout(DbName=>'default')");
+        await Assert.That(loadouts).HasCount().GreaterThan(0);
+    }
 }

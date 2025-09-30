@@ -95,7 +95,7 @@ public class QueryEngine : IQueryEngine, IAsyncDisposable
     internal IConnection? GetConnectionByName(string name = "default")
     {
         foreach (var (_, item) in _connections)
-            if (item.Name == name)
+            if (string.Equals(item.Name, name, StringComparison.OrdinalIgnoreCase))
                 return item.Connection;
         return null;
     }

@@ -40,6 +40,7 @@ public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
         info.SupportsPredicatePushdown();
         info.AddNamedParameter<ulong>("AsOf");
         info.AddNamedParameter<ulong>("Db");
+        info.AddNamedParameter<string>("DbName");
     }
 
     protected override void Execute(FunctionInfo functionInfo)
@@ -446,12 +447,18 @@ public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
 
         using var dbParam = info.GetParameter("Db");
         using var asOfParam = info.GetParameter("AsOf");
+        using var dbNameParam = info.GetParameter("DbName");
         TxId? asOf = null;
         IConnection conn;
 
-        if (dbParam.IsNull)
+        if (dbParam.IsNull && dbNameParam.IsNull)
         {
             conn = _engine.GetConnectionByName()!;
+        }
+        else if (!dbNameParam.IsNull)
+        {
+            var namedConn = _engine.GetConnectionByName(dbNameParam.GetVarChar());
+            conn = namedConn ?? throw new Exception($"No database named {dbNameParam.GetVarChar()}");
         }
         else
         {
