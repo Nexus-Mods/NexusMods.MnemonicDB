@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.27.3 - 2025-09-30
+* Fix reading `TimestampNs` values
+
 ### 0.27.2 - 2025-09-24
 * Fix a bug datoms table initialization
 
