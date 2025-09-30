@@ -178,11 +178,10 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
         return globalId;
     }
 
-    public void DisposeGlobalObject(object obj)
+    public void DisposeGlobalObject(ushort id)
     {
-        var id = _globalIds[obj];
-        _globalIds.TryRemove(obj, out _);
-        _globalObjects.TryRemove(id, out _);
+        if (_globalIds.TryGetValue(id, out var obj))
+            _globalObjects.TryRemove(obj, out _);
     }
 
     public ushort IdFor(object conn)

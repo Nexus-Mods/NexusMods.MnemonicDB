@@ -314,4 +314,14 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         await Assert.That(results).HasCount(9);
     }
+
+    [Test]
+    public async Task CanQueryActiveConnections()
+    {
+        await InsertExampleData();
+        var results = Connection.Query<(ushort, string, TxId, bool)>($"SELECT GlobalObjectId, Name, LastTxId, IsReadOnly FROM mnemonicdb_active_connections()");
+        var table = new TableData();
+        table.Add(results, "Active Connections");
+        await Verify(table.ToString());
+    }
 }

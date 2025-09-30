@@ -6,6 +6,7 @@ using NexusMods.HyperDuck.BindingConverters;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.BindingConverters;
+using NexusMods.MnemonicDB.QueryFunctions;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
@@ -25,6 +26,7 @@ public static class Services
     {
         s.AddSingleton<IConnection, Connection>();
         s.AddSingleton<IQueryEngine, QueryEngine>();
+        s.AddSingleton<AScalarFunction, ToStringScalarFn>();
         s.AddConverters();
         s.AddMnemonicDBStorage();
 

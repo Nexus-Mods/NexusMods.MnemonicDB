@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Subjects;
@@ -11,44 +13,17 @@ using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.QueryFunctions;
 
-public class DatomsTableFunction : ATableFunction
+public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
 {
-    private readonly IAttribute[] _attrs;
-    private IQueryEngine? _engine;
-    private readonly IConnection _conn;
     private readonly string _prefix;
-    private readonly ushort[] _attrIdToEnum;
-    private readonly Dictionary<string, IAttribute> _attrsByShortName;
     private readonly QueryEngine _queryEngine;
-    private readonly IDisposable _txWatcher;
-
-    private enum UnionOrdering : byte
-    {
-        Bool = 0,
-        UInt64, // 64 bit unsigned integer
-        String,
-        Reference, // Reference to another MDB entity
-        End = Reference,
-    }
-
-    public DatomsTableFunction(IConnection conn, IEnumerable<IAttribute> attrs, IQueryEngine queryEngine,
-        IObservable<HashSet<IAttribute>> observer, string prefix = "mdb")
+    
+    private readonly ConcurrentDictionary<IConnection, FrozenDictionary<AttributeId, ushort>> _attributeToEnumMappings = new();
+    
+    public DatomsTableFunction(IQueryEngine queryEngine, string prefix = "mdb")
     {
         _prefix = prefix;
-        _conn = conn;
-        _engine = null;
-        _attrs = attrs.OrderBy(attr => attr.Id.Id).ToArray();
-        _attrsByShortName = _attrs.ToDictionary(a => $"{a.Id.Namespace.Split(".").Last()}/{a.Id.Name}");
-        var cache = conn.AttributeCache;
-        _attrIdToEnum = new ushort[cache.MaxAttrId + 1];
         _queryEngine = (QueryEngine)queryEngine;
-        _txWatcher = observer.Subscribe(_ => Revise());
-        for (int i = 0; i < _attrs.Count(); i++)
-        {
-            var attr = _attrs[i];
-            if (cache.TryGetAttributeId(attr.Id, out var attrId))
-                _attrIdToEnum[attrId.Value] = (ushort)i;
-        }
     }
     
     protected override void Setup(RegistrationInfo info)
@@ -162,7 +137,6 @@ public class DatomsTableFunction : ATableFunction
 
     private void ExecuteAllAttributes(FunctionInfo functionInfo, LocalBindData state, LocalInitData initData)
     {
-        
         var chunk = functionInfo.Chunk;
         var eVec = functionInfo.GetWritableVector(0).GetData<ulong>();
         var aVec = functionInfo.GetWritableVector(1).GetData<byte>();
@@ -170,20 +144,25 @@ public class DatomsTableFunction : ATableFunction
         var tVec = functionInfo.GetWritableVector(3).GetData<ulong>();
         var vTagVec = functionInfo.GetWritableVector(4).GetData<byte>();
         var historyVector = functionInfo.GetWritableVector(5).GetData<byte>();
+        var mappings = initData.Mappings;
 
         var iterator = initData.Segment;
         int row = 0;
         int width = _queryEngine.AttrEnumWidth;
+        
         while (iterator.MoveNext())
         {
             if (!eVec.IsEmpty)
                 eVec[row] = iterator.KeyPrefix.E.Value;
             if (!aVec.IsEmpty)
             {
+                if (!mappings.TryGetValue(iterator.KeyPrefix.A, out var value))
+                    value = 0; // Translates to "UNKNOWN"
+
                 if (width == 1)
-                    aVec[row] = (byte)_attrIdToEnum[iterator.KeyPrefix.A.Value];
+                    aVec[row] = (byte)value;
                 if (width == 2)
-                    aVec.CastFast<byte, ushort>()[row] = _attrIdToEnum[iterator.KeyPrefix.A.Value];
+                    aVec.CastFast<byte, ushort>()[row] = value;
             }
 
             if (!tVec.IsEmpty) 
@@ -218,19 +197,19 @@ public class DatomsTableFunction : ATableFunction
             var db = dbParam.GetUInt64();
             var dbAndAsOf = dbParam.GetUInt64();
             asOf = TxId.From(PartitionId.Transactions.MakeEntityId(dbAndAsOf >> 16).Value);
-            connection = _conn;
+            connection = _queryEngine.GetConnectionByUid((ushort)(dbAndAsOf & 0xFFFF))!;
         }
         else
         {
             asOf = TxId.MinValue;
-            connection = _conn;
+            connection = _queryEngine.GetConnectionByName()!;
         }
         
         LocalBindData state;
         if (!aParam.IsNull)
         {
             var attrToFind = aParam.GetVarChar();
-            if (!_attrsByShortName.TryGetValue(attrToFind, out var attr))
+            if (!_queryEngine.AttributesByShortName.TryGetValue(attrToFind, out var attr))
                 throw new Exception($"Attribute '{attrToFind}' not found");
 
             state = new LocalBindData
@@ -264,7 +243,7 @@ public class DatomsTableFunction : ATableFunction
             info.AddColumn("A", _queryEngine.AttrEnum);
             info.AddColumn<byte[]>("V");
             info.AddColumn<ulong>("T");
-            info.AddColumn("ValueTag", _queryEngine.ValueTagEnum);
+            info.AddColumn("ValueTag", ValueTagsExtensions.ValueTagsEnum);
         }
         
         state.History = history;
@@ -278,27 +257,61 @@ public class DatomsTableFunction : ATableFunction
         var bindData = initInfo.GetBindData<LocalBindData>();
         IDb db;
         if (bindData.AsOf == TxId.MinValue)
-            db = _conn.Db;
+            db = bindData.Connection.Db;
         else
-            db = _conn.AsOf(bindData.AsOf);
+            db = bindData.Connection.AsOf(bindData.AsOf);
         if (bindData.History)
-            db = _conn.History();
+            db = bindData.Connection.History();
+
+        var mappings = GetAttrIdToEnumMappings(db.Connection);
         
         if (bindData.Mode == ScanMode.SingleAttribute)
         {
+            var aid = AttributeId.Max;
+            // This attribute may not exist in the database, if it doesn't we'll use the max Id so we return no data
+            if (db.AttributeCache.TryGetAttributeId(bindData.Attribute!.Id, out var foundId))
+                aid = foundId;
+            
             return new LocalInitData
             {
-                Segment = db.LightweightDatoms(SliceDescriptor.Create(bindData.Attribute!, _conn.AttributeCache))
+                Segment = db.LightweightDatoms(SliceDescriptor.Create(aid)),
+                Mappings = mappings,
             };
         }
         else
         {
             return new LocalInitData
             {
-                Segment = db.LightweightDatoms(SliceDescriptor.AllEntities(PartitionId.Entity), totalOrdered: true)
+                Segment = db.LightweightDatoms(SliceDescriptor.AllEntities(PartitionId.Entity), totalOrdered: true),
+                Mappings = mappings,
             };
         }
         
+    }
+
+    private FrozenDictionary<AttributeId, ushort> GetAttrIdToEnumMappings(IConnection dbConnection)
+    {
+        if (_attributeToEnumMappings.TryGetValue(dbConnection, out var mappings))
+            return mappings;
+        
+        var cache = dbConnection.AttributeCache;
+        var dict = new Dictionary<AttributeId, ushort>();
+        foreach (var entry in _queryEngine.AttrEnumEntries)
+        {
+            if (entry.EnumId == 0)
+                // This is the "UNKNOWN" entry
+                continue;
+            
+            // Not all attributes in code will have a match in this database
+            if (!cache.TryGetAttributeId(entry.Attribute.Id, out var foundId))
+                continue;
+
+            dict.Add(foundId, entry.EnumId);
+        }
+
+        var frozen = dict.ToFrozenDictionary();
+        _attributeToEnumMappings[dbConnection] = frozen;
+        return frozen;
     }
 
     private enum ScanMode
@@ -319,5 +332,11 @@ public class DatomsTableFunction : ATableFunction
     private class LocalInitData
     {
         public required ILightweightDatomSegment Segment;
+        public required FrozenDictionary<AttributeId, ushort> Mappings;
+    }
+
+    public void ReviseFromAttrs(IReadOnlySet<IAttribute> attrs)
+    {
+        Revise();
     }
 }

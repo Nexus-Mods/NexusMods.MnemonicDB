@@ -52,6 +52,8 @@ public sealed class Connection : IConnection
     private readonly BlockingCollection<IEvent> _pendingEvents = new(new ConcurrentQueue<IEvent>());
     private readonly ConcurrentBag<(Datom, Datom, IObserver<DatomChangeSet>)> _pendingObservers = [];
     private readonly string _prefix;
+    private readonly ushort _queryUId = 0;
+    private IDisposable? _reviser;
     
     private Thread _eventThread = null!;
 
@@ -73,42 +75,30 @@ public sealed class Connection : IConnection
         _store = (DatomStore)store;
         _dbStream = new DbStream();
         _analyzers = analyzers.ToArray();
-        _prefix = prefix ?? "mdb";
+        _prefix = prefix ?? "default";
+        ReadOnlyMode = readOnlyMode;
         Bootstrap(readOnlyMode);
         if (queryEngine is QueryEngine engine)
         {
             _queryEngine = engine;
-            RegisterWithEngine(engine.DuckDb);
-        }
-    }
-
-    private void RegisterWithEngine(HyperDuck.DuckDB duckDb)
-    {
-        _globalId = duckDb.RegisterGlobalObject(this);
-        var observer = Revisions.Select(r =>
-            {
-                var attr = new HashSet<IAttribute>();
-                foreach (var d in r.RecentlyAdded)
+            _queryUId = _queryEngine.RegisterConnection(this, _prefix);
+            _reviser = Revisions
+                .Subscribe(r =>
                 {
-                    if (AttributeResolver.TryGetAttribute(d.A, out var attr1))
-                        attr.Add(attr1);
-                }
+                    var attrs = new HashSet<IAttribute>();
+                    foreach (var d in r.RecentlyAdded)
+                    {
+                        if (AttributeResolver.TryGetAttribute(d.A, out var attr1))
+                            attrs.Add(attr1);
+                    }
 
-                return attr;
-            })
-            .Publish();
-        observer.Connect();
-        
-        duckDb.Register(new DatomsTableFunction(this, AttributeResolver.DefinedAttributes, _queryEngine!, observer, _prefix));
-        duckDb.Register(new ToStringScalarFn(_queryEngine!, _prefix));
-
-
-        
-        foreach (var model in ServiceProvider.GetServices<ModelDefinition>())
-        {
-            duckDb.Register(new ModelTableFunction(this, model, observer, _prefix));
+                    foreach (var tableFunction in _queryEngine?.RegisteredTableFunctions.OfType<IRevisableFromAttributes>() ?? [])
+                        tableFunction.ReviseFromAttrs(attrs);
+                });
         }
     }
+
+    public bool ReadOnlyMode { get;}
 
     private void ProcessEvents()
     {
@@ -594,15 +584,14 @@ public sealed class Connection : IConnection
     
     private bool _isDisposed;
     private readonly QueryEngine? _queryEngine;
-    private ushort _globalId;
-
     /// <inheritdoc />
     public void Dispose()
     {
         if (_isDisposed) return;
 
-        _queryEngine?.DuckDb.DisposeGlobalObject(this);
-
+        _reviser?.Dispose();
+        _queryEngine?.RemoveConnection(_queryUId);
+        
         _cts.Cancel();
 
         _dbStreamDisposable?.Dispose();

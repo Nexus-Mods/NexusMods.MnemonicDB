@@ -20,7 +20,7 @@ public class QueryEngineTests : AMnemonicDBTest
     {
         await InsertExampleData();
         var data = Connection.Query<(EntityId, string, string, TxId)>(
-                "SELECT E, A::VARCHAR, mdb_ToString(V, ValueTag), T " +
+                "SELECT E, A::VARCHAR, mnemonicdb_ToString(V, ValueTag), T " +
                     "  FROM mdb_Datoms() " +
                     "ORDER BY T, E, A DESC");
 

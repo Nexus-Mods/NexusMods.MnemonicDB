@@ -34,7 +34,7 @@ public sealed partial class DatomStore : IDatomStore
     internal readonly ILogger<DatomStore> Logger;
     private readonly PooledMemoryBufferWriter _retractWriter;
     private readonly AttributeCache _attributeCache;
-    private readonly DatomStoreSettings _settings;
+    public readonly DatomStoreSettings Settings;
 
     private readonly BlockingCollection<IInternalTxFunctionImpl> _pendingTransactions;
     private readonly DbStream _dbStream;
@@ -127,7 +127,7 @@ public sealed partial class DatomStore : IDatomStore
         _prevWriter = new PooledMemoryBufferWriter();
 
         Logger = logger;
-        _settings = settings;
+        Settings = settings;
         
         Backend.Init(settings);
 

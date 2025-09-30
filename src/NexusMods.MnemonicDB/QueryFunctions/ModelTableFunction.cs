@@ -12,24 +12,26 @@ using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.QueryFunctions;
 
-public class ModelTableFunction : ATableFunction
+public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
 {
     private readonly ModelDefinition _definition;
-    private readonly IConnection _conn;
+    private readonly QueryEngine _engine;
     private readonly string _prefix;
     
-    private readonly IDisposable _txWatcher;
-
-    public ModelTableFunction(IConnection conn, ModelDefinition definition, IObservable<IReadOnlySet<IAttribute>> attrUpdates, string prefix = "mdb")
+    public ModelTableFunction(QueryEngine engine, ModelDefinition definition, string prefix = "mdb")
     {
         _prefix = prefix;
-        _conn = conn;
+        _engine = engine;
         _definition = definition;
-        _txWatcher = attrUpdates.Subscribe(set =>
-        {
-            if (set.Overlaps(definition.AllAttributes))
-                Revise();
-        });
+    }
+
+    /// <summary>
+    /// Possibly revise the function if it depends on any of the changed attributes
+    /// </summary>
+    public void ReviseFromAttrs(IReadOnlySet<IAttribute> attrs)
+    {
+        if (attrs.Overlaps(_definition.AllAttributes))
+            Revise();
     }
     
     protected override void Setup(RegistrationInfo info)
@@ -449,13 +451,13 @@ public class ModelTableFunction : ATableFunction
 
         if (dbParam.IsNull)
         {
-            conn = _conn;
+            conn = _engine.GetConnectionByName()!;
         }
         else
         {
             var dbAndAsOf = dbParam.GetUInt64();
             asOf = TxId.From(PartitionId.Transactions.MakeEntityId(dbAndAsOf >> 16).Value);
-            conn = _conn;
+            conn = _engine.GetConnectionByUid((ushort)(dbAndAsOf & 0xFFFF))!;
         }
         
         if (!asOfParam.IsNull)

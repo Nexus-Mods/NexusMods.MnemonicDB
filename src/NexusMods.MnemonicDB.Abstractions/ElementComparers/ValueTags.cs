@@ -2,6 +2,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Linq;
 using NexusMods.HyperDuck;
 // ReSharper disable NotDisposedResource
 
@@ -105,6 +106,7 @@ public static class ValueTagsExtensions
 {
     private static readonly LogicalType[] _duckDbTypes;
     private static readonly LogicalType _dateTimeOffsetType;
+    public static readonly LogicalType ValueTagsEnum;
 
     static ValueTagsExtensions()
     {
@@ -133,6 +135,17 @@ public static class ValueTagsExtensions
             [LogicalType.From<ulong>(), LogicalType.From<ushort>(), LogicalType.From<string>()]);
         _duckDbTypes[(int)ValueTag.Tuple2_UShort_Utf8I] = LogicalType.CreateStruct(["Item1", "Item2"], 
             [LogicalType.From<ushort>(), LogicalType.From<string>()]);
+        ValueTagsEnum = MakeValueTagEnum();
+    }
+
+    private static LogicalType MakeValueTagEnum()
+    {
+        var names = new string[(int)Enum.GetValues<ValueTag>().Max() + 1];
+        for (var i = 0; i < names.Length; i++)
+        {
+            names[i] = Enum.GetName(typeof(ValueTag), i) ?? $"UnknownValueTag{i}";
+        }
+        return LogicalType.CreateEnum(names);
     }
 
     public static LogicalType DuckDbType(this ValueTag tag, Type valueType)

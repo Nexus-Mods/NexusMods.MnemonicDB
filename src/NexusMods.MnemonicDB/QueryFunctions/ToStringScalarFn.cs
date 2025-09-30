@@ -8,20 +8,12 @@ namespace NexusMods.MnemonicDB.QueryFunctions;
 
 public class ToStringScalarFn : AScalarFunction
 {
-    private readonly QueryEngine _engine;
-    private readonly string _prefix;
 
-    public ToStringScalarFn(QueryEngine engine, string prefix)
-    {
-        _engine = engine;
-        _prefix = prefix;
-    }
-    
     public override void Setup()
     {
-        SetName($"{_prefix}_ToString");
+        SetName("mnemonicdb_tostring");
         AddParameter<byte[]>();
-        AddParameter(_engine.ValueTagEnum);
+        AddParameter(ValueTagsExtensions.ValueTagsEnum);
         SetReturnType<string>();
     }
 

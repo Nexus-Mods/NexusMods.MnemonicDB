@@ -6,6 +6,7 @@ using NexusMods.HyperDuck;
 using NexusMods.HyperDuck.Adaptor;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
+using NexusMods.MnemonicDB.QueryFunctions;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
 
@@ -26,6 +27,7 @@ public static class Startup
             .AddAdapters()
             .AddConverters()
             .AddSingleton<IQueryEngine, QueryEngine>()
+            .AddSingleton<AScalarFunction, ToStringScalarFn>()
             .AddLogging(builder => builder.AddConsole());
     }
 }
