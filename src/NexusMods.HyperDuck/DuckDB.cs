@@ -31,6 +31,7 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
     internal readonly ConcurrentDictionary<string, ATableFunction> TableFunctions = new();
     private readonly TimeSpan _delay;
     private bool _disposed;
+    private readonly JsonSerializerOptions _referencedFunctionsJsonOptions;
 
     private static byte[] ReferencedFunctionsPrefix = "EXPLAIN (FORMAT JSON) "u8.ToArray();
 
@@ -39,6 +40,12 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
         _disposed = false;
         _registry = registry;
         _db = Database.OpenInMemory();
+        
+        // Query plans get get pretty deep, and the default of 64 levels is not enough 
+        _referencedFunctionsJsonOptions = new JsonSerializerOptions(JsonSerializerOptions.Default)
+        {
+            MaxDepth = 1024
+        };
 
         using var conn = Connect();
         foreach (var fragment in _registry.Fragments)
@@ -148,7 +155,7 @@ public class DuckDB : IAsyncDisposable, IQueryMixin
         var result = ((IQueryMixin)this).Query<(string, string)>(new HashedQuery(fullbytes), query.Parameters);
 
         var plan
-            = JsonSerializer.Deserialize<QueryPlanNode[]>(result.First().Item2)!;
+            = JsonSerializer.Deserialize<QueryPlanNode[]>(result.First().Item2, _referencedFunctionsJsonOptions)!;
         
         HashSet<ATableFunction> touchedFunctions = [];
         foreach (var node in plan)
