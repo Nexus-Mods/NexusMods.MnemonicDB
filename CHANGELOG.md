@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.28.1 - 2025-10-02
+* JSON query plans can get complex, up the JSON deserializer limit from 64 to 1024
+
 ### 0.28.0 - 2025-09-30
 * Rework how connections are registered with DuckDB. Now each active MnemonicDB connection is registered with a separate
 global Id. This information is exposed via the `mnemonicdb_active_connections` table function.
