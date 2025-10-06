@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Win32;
 using NexusMods.HyperDuck.Adaptor;
 using Assert = TUnit.Assertions.Assert;
@@ -10,7 +11,8 @@ public class AdapterTests
 {
     public AdapterTests()
     {
-        var host = Host.CreateDefaultBuilder()
+        var host = new HostBuilder()
+            .ConfigureAppConfiguration((_, cfg) => cfg.AddInMemoryCollection())
             .ConfigureServices(s => s.AddAdapters())
             .Build();
 

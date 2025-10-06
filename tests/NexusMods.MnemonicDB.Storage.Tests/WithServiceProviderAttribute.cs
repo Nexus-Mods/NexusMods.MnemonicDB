@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
 
 namespace NexusMods.MnemonicDB.Storage.Tests;
 
@@ -6,7 +7,11 @@ public class WithServiceProviderAttribute : DependencyInjectionDataSourceAttribu
 {
     public override IHost CreateScope(DataGeneratorMetadata dataGeneratorMetadata)
     {
-        var host = Host.CreateDefaultBuilder()
+        var host = new HostBuilder()
+            .ConfigureAppConfiguration((_, cfg) =>
+            {
+                cfg.AddInMemoryCollection();
+            })
             .ConfigureServices(s => s.ConfigureServices())
             .Build();
         return host;

@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
 using NexusMods.HyperDuck.Adaptor;
 using TUnit.Assertions.Extensions;
 using TUnit.Core;
@@ -18,7 +19,8 @@ public class TableFunctionTests
     
     public TableFunctionTests()
     {
-        var host = Host.CreateDefaultBuilder()
+        var host = new HostBuilder()
+            .ConfigureAppConfiguration((_, cfg) => cfg.AddInMemoryCollection())
             .ConfigureServices(s => s.AddAdapters())
             .Build();
 
