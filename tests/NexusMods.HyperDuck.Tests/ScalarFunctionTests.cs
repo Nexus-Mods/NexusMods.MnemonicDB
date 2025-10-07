@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Configuration;
 using NexusMods.HyperDuck.Adaptor;
 using Assert = TUnit.Assertions.Assert;
 
@@ -9,7 +10,8 @@ public class ScalarFunctionTests
 {
     public ScalarFunctionTests()
     {
-        var host = Host.CreateDefaultBuilder()
+        var host = new HostBuilder()
+            .ConfigureAppConfiguration((_, cfg) => cfg.AddInMemoryCollection())
             .ConfigureServices(s => s.AddAdapters())
             .Build();
 
