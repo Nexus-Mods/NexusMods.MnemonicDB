@@ -317,10 +317,12 @@ public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
             if (datoms.FastForwardTo(rowId))
             {
                 // NOTE(erri120): TIMESTAMP_NS is stored as nanoseconds since 1970-01-01 in int64_t.
-                var ticks = datoms.ValueSpan.CastFast<byte, long>()[0];
-                var dateTimeOffset = new DateTimeOffset(ticks, offset: TimeSpan.Zero);
-                var timeSpan = dateTimeOffset - DateTimeOffset.UnixEpoch;
-                var nanoseconds = (long)timeSpan.TotalNanoseconds;
+                // The stored value is UTC ticks (100ns units) since 0001-01-01.
+                // Convert exactly using integer math to avoid precision loss.
+                var utcTicks = datoms.ValueSpan.CastFast<byte, long>()[0];
+                var unixEpochTicks = DateTimeOffset.UnixEpoch.Ticks; // ticks since 0001-01-01
+                var ticksSinceUnixEpoch = utcTicks - unixEpochTicks;
+                var nanoseconds = ticksSinceUnixEpoch * TimeSpan.NanosecondsPerTick; // 100 ns per tick
 
                 dataSpan[rowIdx] = nanoseconds;
                 validityMask[(ulong)rowIdx] = true;

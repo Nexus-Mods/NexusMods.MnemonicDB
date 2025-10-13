@@ -17,8 +17,9 @@ public class DateTimeOffsetNanoAdaptor : IValueAdaptor<DateTimeOffset>
     {
         // NOTE(erri120): TIMESTAMP_NS is stored as nanoseconds since 1970-01-01 in int64_t.
         var nanoseconds = cursor.GetValue<long>();
-        var ticks = nanoseconds / TimeSpan.NanosecondsPerTick;
-        return Helpers.AssignNotEq(ref value, new DateTimeOffset(ticks, TimeSpan.Zero));
+        var ticksSinceUnixEpoch = nanoseconds / TimeSpan.NanosecondsPerTick;
+        var utcTicks = DateTimeOffset.UnixEpoch.Ticks + ticksSinceUnixEpoch;
+        return Helpers.AssignNotEq(ref value, new DateTimeOffset(utcTicks, TimeSpan.Zero));
     }
 }
 
