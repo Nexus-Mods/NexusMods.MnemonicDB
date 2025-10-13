@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.28.2 - 2025-10-13
+* Fix the encoding of dates into DuckDB
+
 ### 0.28.1 - 2025-10-02
 * JSON query plans can get complex, up the JSON deserializer limit from 64 to 1024
 
