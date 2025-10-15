@@ -284,13 +284,12 @@ public sealed partial class DatomStore : IDatomStore
             {
                 Logger.LogInformation("Bootstrapping the datom store no existing state found");
                 _currentDb = CurrentSnapshot.MakeDb(TxId.MinValue, _attributeCache);
-                using var builder = new IndexSegmentBuilder(_attributeCache);
-                var internalTx = new InternalTransaction(null!, builder);
-                AttributeDefinition.AddInitial(internalTx);
+                var tx = new DatomList(_currentDb.AttributeCache);
+                var internalTx = new InternalTransaction(null!, tx);
+                AttributeDefinition.AddInitial(tx);
                 internalTx.ProcessTemporaryEntities();
                 // Call directly into `Log` as the transaction channel is not yet set up
-                throw new NotImplementedException();
-                //Log(new IndexSegmentTransaction(builder.Build()));
+                Log(new IndexSegmentTransaction(tx));
                 CurrentSnapshot = Backend.GetSnapshot();
                 _currentDb = CurrentSnapshot.MakeDb(_asOfTx, _attributeCache);
             }

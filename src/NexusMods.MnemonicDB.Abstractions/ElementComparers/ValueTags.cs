@@ -100,6 +100,11 @@ public enum ValueTag : byte
     /// A tuple of two values: an unsigned 16-bit integer and a UTF-8 (case insensitive) string
     /// </summary>
     Tuple2_UShort_Utf8I = 65,
+    
+    /// <summary>
+    /// Never actually written to the database, but used to represent a transaction function encoded as a datom
+    /// </summary>
+    TxFunction = byte.MaxValue,
 }
 
 public static class ValueTagsExtensions

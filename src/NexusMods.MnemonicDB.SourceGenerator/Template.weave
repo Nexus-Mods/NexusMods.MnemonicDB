@@ -170,7 +170,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// </summary>
         public New(__ABSTRACTIONS__.ITransaction tx) : base() {
             Id = tx.TempId();
-            tx.Attach(this);
+            throw new NotImplementedException();
+            //tx.Attach(this);
         }
         
         {{else}}
@@ -181,7 +182,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         public New(__ABSTRACTIONS__.ITransaction tx, out __ABSTRACTIONS__.EntityId id) : base() {
             Id = tx.TempId();
             id = Id;
-            tx.Attach(this);
+            throw new NotImplementedException();
+            //tx.Attach(this);
         }
         
         /// <summary>
@@ -190,7 +192,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.PartitionId partition, out __ABSTRACTIONS__.EntityId id) : base() {
             Id = tx.TempId(partition);
             id = Id;
-            tx.Attach(this);
+            throw new NotImplementedException();
+            //tx.Attach(this);
         }
         
         {{/if}}
@@ -200,7 +203,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// </summary>
         public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.EntityId eid) : base() {
             Id = eid;
-            tx.Attach(this);
+            throw new NotImplementedException();
+            //tx.Attach(this);
         }
 
         {{each include in model.Includes}}

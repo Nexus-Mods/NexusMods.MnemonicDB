@@ -42,8 +42,8 @@ public abstract class AStorageTest : IDisposable
         DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), DatomStoreSettings, new Backend());
         
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
-        
-        var tx = new List<IDatomLikeRO>();
+
+        var tx = new DatomList(DatomStore.AttributeCache);
         AddAttr(tx, File.Path, AttributeId.From(20));
         AddAttr(tx, File.Hash, AttributeId.From(21));
         AddAttr(tx, File.Size, AttributeId.From(22));
@@ -61,18 +61,18 @@ public abstract class AStorageTest : IDisposable
     }
 
 
-    private void AddAttr(List<IDatomLikeRO> tx, IAttribute attribute, AttributeId attributeId)
+    private void AddAttr(DatomList tx, IAttribute attribute, AttributeId attributeId)
     { 
         var eid = EntityId.From(attributeId.Value);
-        tx.Add(ValueDatom.Create(eid, AttributeDefinition.UniqueId, attribute.Id, DatomStore.AttributeCache));
-        tx.Add(ValueDatom.Create(eid, AttributeDefinition.ValueType, attribute.LowLevelType, DatomStore.AttributeCache));
-        tx.Add(ValueDatom.Create(eid, AttributeDefinition.Cardinality, attribute.Cardinalty, DatomStore.AttributeCache));
-        tx.Add(ValueDatom.Create(eid, AttributeDefinition.Indexed, attribute.IndexedFlags, DatomStore.AttributeCache));
+        tx.Add(eid, AttributeDefinition.UniqueId, attribute.Id);
+        tx.Add(eid, AttributeDefinition.ValueType, attribute.LowLevelType);
+        tx.Add(eid, AttributeDefinition.Cardinality, attribute.Cardinalty);
+        tx.Add(eid, AttributeDefinition.Indexed, attribute.IndexedFlags);
 
         if (attribute.NoHistory)
-            tx.Add(ValueDatom.Create(eid, AttributeDefinition.NoHistory, Null.Instance, DatomStore.AttributeCache));
+            tx.Add(eid, AttributeDefinition.NoHistory, Null.Instance);
         if (attribute.DeclaredOptional)
-            tx.Add(ValueDatom.Create(eid, AttributeDefinition.Optional, Null.Instance, DatomStore.AttributeCache));
+            tx.Add(eid, AttributeDefinition.Optional, Null.Instance);
     }
 
     public void Dispose()

@@ -467,18 +467,14 @@ public sealed class Connection : IConnection
     /// <inheritdoc />
     public async Task<ICommitResult> Excise(EntityId[] entityIds)
     {
-        var tx = new Transaction(this);
-        tx.Set(new Excise(entityIds));
-        return await tx.Commit();
+        return await Transact(new Excise(entityIds));
     }
 
 
     /// <inheritdoc />
     public async Task<ICommitResult> ScanUpdate(IConnection.ScanFunction function)
     {
-        var tx = new Transaction(this);
-        tx.Set(new ScanUpdate(function));
-        return await tx.Commit();
+        return await Transact(new ScanUpdate(function));
     }
     
     public Task FlushQueries()
@@ -489,9 +485,7 @@ public sealed class Connection : IConnection
     /// <inheritdoc />
     public async Task<ICommitResult> FlushAndCompact(bool verify = false)
     {
-        var tx = new Transaction(this);
-        tx.Set(new FlushAndCompact(verify));
-        return await tx.Commit();
+        return await Transact(new FlushAndCompact(verify));
     }
 
     /// <inheritdoc />

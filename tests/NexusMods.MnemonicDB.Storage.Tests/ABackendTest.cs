@@ -68,20 +68,20 @@ public abstract class ABackendTest(
         {
             using var segment = new IndexSegmentBuilder(AttributeCache);
             var entityId = NextTempId();
-            var (result, _) = await DatomStore.TransactAsync([
-                ValueDatom.Create(entityId, Blobs.InKeyBlob, smallData, DatomStore.AttributeCache),
-                ValueDatom.Create(entityId, Blobs.InValueBlob, largeData, DatomStore.AttributeCache)
-            ]);
+            var (result, _) = await DatomStore.TransactAsync(new DatomList(DatomStore) {
+                { entityId, Blobs.InKeyBlob, smallData },
+                { entityId, Blobs.InValueBlob, largeData }
+            });
             ids.Add(result.Remaps[entityId]);
         }
 
         // Retract the first 2
         for (var i = 0; i < 2; i++)
         {
-            await DatomStore.TransactAsync([
-                ValueDatom.Create(ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true, DatomStore.AttributeCache),
-                ValueDatom.Create(ids[i], Blobs.InValueBlob, largeData.AsMemory(), true, DatomStore.AttributeCache)
-            ]);
+            await DatomStore.TransactAsync(new DatomList(DatomStore) {
+                { ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true },
+                { ids[i], Blobs.InValueBlob, largeData.AsMemory(), true }
+            });
         }
 
         smallData[0] = 1;
@@ -90,10 +90,10 @@ public abstract class ABackendTest(
         // Change the other 2
         for (var i = 5; i < 2; i++)
         {
-            await DatomStore.TransactAsync([
-                ValueDatom.Create(ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true, DatomStore.AttributeCache),
-                ValueDatom.Create(ids[i], Blobs.InValueBlob, largeData.AsMemory(), true, DatomStore.AttributeCache)
-            ]);
+            await DatomStore.TransactAsync(new DatomList(DatomStore) {
+                { ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true },
+                { ids[i], Blobs.InValueBlob, largeData.AsMemory(), true },
+            });
         }
 
         var datoms = DatomStore.GetSnapshot()

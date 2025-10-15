@@ -10,6 +10,7 @@ using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.InternalTxFunctions;
 
@@ -20,24 +21,23 @@ internal sealed class Transaction : IMainTransaction, ISubTransaction
     private readonly Transaction? _parentTransaction;
 
     private readonly Connection _connection;
-    private readonly IndexSegmentBuilder _datoms;
+    private readonly DatomList _datoms;
     private readonly Lock _lock = new();
-
-    private HashSet<ITxFunction>? _txFunctions;
-    private List<ITemporaryEntity>? _tempEntities;
-    private IInternalTxFunction? _internalTxFunction;
 
     private bool _disposed;
     private bool _committed;
-    private ulong _tempId = PartitionId.Temp.MakeEntityId(1).Value;
 
     public Transaction(Connection connection, Transaction? parentTransaction = null)
     {
         _connection = connection;
-        _datoms = new IndexSegmentBuilder(connection.AttributeCache);
+        _datoms = new DatomList(connection.AttributeCache);
 
         _parentTransaction = parentTransaction;
     }
+
+    List<IDatomLikeRO> IDatomsListLike.Datoms => _datoms;
+
+    public AttributeCache AttributeCache => _datoms.AttributeCache;
 
     /// <inheritdoc />
     public TxId ThisTxId => _parentTransaction?.ThisTxId ?? TxId.From(PartitionId.Temp.MakeEntityId(0).Value);
@@ -47,139 +47,12 @@ internal sealed class Transaction : IMainTransaction, ISubTransaction
 
     /// <inhertdoc />
     public EntityId TempId() => Abstractions.TempId.Next();
-
-    public void Add<TVal, TAttribute>(EntityId entityId, TAttribute attribute, TVal val, bool isRetract = false) 
-        where TAttribute : IWritableAttribute<TVal>
-    {
-        lock (_lock)
-        {
-            CheckAccess();
-            _datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
-        }
-    }
-
-    public void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false) where TSerializer : IValueSerializer<TLowLevel> 
-        where TVal : notnull 
-        where TLowLevel : notnull
-    {
-        lock (_lock)
-        {
-            CheckAccess();
-            _datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
-        }
-    }
-
-    public void Add(EntityId entityId, ReferencesAttribute attribute, IEnumerable<EntityId> ids)
-    {
-        lock (_lock)
-        {
-            CheckAccess();
-            foreach (var id in ids)
-            {
-                _datoms.Add(entityId, attribute, id, ThisTxId, isRetract: false);
-            }
-        }
-    }
-
-    public void Add(EntityId e, AttributeId a, ValueTag valueTag, ReadOnlySpan<byte> valueSpan, bool isRetract = false)
-    {
-        lock (_lock)
-        {
-            CheckAccess();
-            _datoms.Add(e, a, valueTag, valueSpan, isRetract);
-        }
-    }
-
-    /// <inheritdoc />
-    public void Add(Datom datom)
-    {
-        lock (_lock)
-        {
-            CheckAccess();
-            _datoms.Add(datom);
-        }
-    }
-
-    public void Add(ITxFunction fn)
-    {
-        lock (_lock)
-        {
-            CheckAccess();
-
-            _txFunctions ??= [];
-            _txFunctions?.Add(fn);
-        }
-    }
-
-    /// <summary>
-    /// Sets the internal transaction function to the given function.
-    /// </summary>
-    public void Set(IInternalTxFunction fn)
-    {
-        _internalTxFunction = fn;
-    }
-
-    public void Attach(ITemporaryEntity entity)
-    {
-        lock (_lock)
-        {
-            CheckAccess();
-            _tempEntities ??= [];
-            _tempEntities.Add(entity);
-        }
-    }
-
-    public bool TryGet<TEntity>(EntityId entityId, [NotNullWhen(true)] out TEntity? entity)
-        where TEntity : class, ITemporaryEntity
-    {
-        entity = null;
-        if (_tempEntities is null) return false;
-
-        lock (_lock)
-        {
-            // NOTE(erri120): this can probably be optimized,
-            // as the list is very likely to be sorted by ID.
-            foreach (var tempEntity in _tempEntities)
-            {
-                if (tempEntity.Id != entityId) continue;
-                if (tempEntity is not TEntity actual) continue;
-
-                entity = actual;
-                return true;
-            }
-        }
-
-        return false;
-    }
-
+    
     public void CommitToParent()
     {
         CheckAccess();
         Debug.Assert(_parentTransaction is not null);
-
-        var indexSegment = _datoms.Build();
-        foreach (var datom in indexSegment)
-        {
-            _parentTransaction.Add(datom);
-        }
-
-        if (_tempEntities is not null)
-        {
-            foreach (var tmpEntity in _tempEntities)
-            {
-                _parentTransaction.Attach(tmpEntity);
-            }
-        }
-
-        if (_txFunctions is not null)
-        {
-            foreach (var txFunction in _txFunctions)
-            {
-                _parentTransaction.Add(txFunction);
-            }
-        }
-
-        _committed = true;
+        ((IDatomsListLike)_parentTransaction).Add(_datoms);
     }
 
     public async Task<ICommitResult> Commit()
@@ -187,33 +60,14 @@ internal sealed class Transaction : IMainTransaction, ISubTransaction
         CheckAccess();
         Debug.Assert(_parentTransaction is null);
 
-        IndexSegment built;
+        IInternalTxFunction fn;
         lock (_lock)
         {
-            if (_tempEntities is not null)
-            {
-                foreach (var entity in _tempEntities)
-                {
-                    entity.AddTo(this);
-                }
-            }
-
+            fn = new IndexSegmentTransaction(_datoms);
             _committed = true;
-
-            // Build the datoms block here, so that future calls to add won't modify this while we're building
-            built = _datoms.Build();
+            Reset();
         }
-        
-        if (_internalTxFunction is not null)
-            return await _connection.Transact(_internalTxFunction);
-
-        throw new NotImplementedException();
-        /*
-        if (_txFunctions is not null) 
-            return await _connection.Transact(new CompoundTransaction(built, _txFunctions) { Connection = _connection });
-        
-        return await _connection.Transact(new IndexSegmentTransaction(built));
-        */
+        return await _connection.Transact(fn);
     }
 
     public ISubTransaction CreateSubTransaction()
@@ -223,13 +77,7 @@ internal sealed class Transaction : IMainTransaction, ISubTransaction
 
     public void Reset()
     {
-        _datoms.Reset();
-
-        _tempEntities?.Clear();
-        _tempEntities = null;
-
-        _txFunctions?.Clear();
-        _txFunctions = null;
+        _datoms.Clear();
     }
 
     public void Dispose()
