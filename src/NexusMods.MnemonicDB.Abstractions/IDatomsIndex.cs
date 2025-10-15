@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -12,7 +13,7 @@ public interface IDatomsIndex
     /// <summary>
     /// Get the datoms for a specific descriptor
     /// </summary>
-    public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor;
+    public IReadOnlyList<IDatomLikeRO> Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor;
 
     /// <summary>
     /// Return a chunked sequence of datoms for a specific descriptor, chunks will be of the specified size
@@ -54,7 +55,7 @@ public interface IDatomsIndex
     /// <summary>
     /// Get the datoms for a specific transaction id
     /// </summary>
-    IndexSegment Datoms(TxId txId);
+    IReadOnlyList<IDatomLikeRO> Datoms(TxId txId);
 
     /// <summary>
     /// Loads sorted chunks of ids (of the given size) for the given attribute.  

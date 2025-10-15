@@ -1,16 +1,11 @@
 using System;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
-public interface ILightweightDatomSegment : IDisposable
+public interface ILightweightDatomSegment : IDisposable, ISpanDatomLikeRO
 {
-    public KeyPrefix KeyPrefix { get; }
-    
-    public ReadOnlySpan<byte> ValueSpan { get; }
-    
-    public ReadOnlySpan<byte> ExtraValueSpan { get; }
-
     /// <summary>
     /// Move to the next datom in the segment, returns false if there are no more datoms
     /// </summary>

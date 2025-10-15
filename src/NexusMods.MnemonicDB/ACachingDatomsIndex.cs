@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
@@ -8,6 +9,7 @@ using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 using NexusMods.MnemonicDB.Caching;
 
 namespace NexusMods.MnemonicDB;
@@ -19,7 +21,7 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
     ADatomsIndex<TRefEnumerator>
     where TRefEnumerator : IRefDatomEnumerator
 {
-    protected ACachingDatomsIndex(ACachingDatomsIndex<TRefEnumerator> other, IndexSegment addedDatoms) : base(other.AttributeCache)
+    protected ACachingDatomsIndex(ACachingDatomsIndex<TRefEnumerator> other, IReadOnlyList<IDatomLikeRO> addedDatoms) : base(other.AttributeCache)
     {
         EntityCache = other.EntityCache.Fork(addedDatoms, new EntityCacheStrategy(this));
         BackReferenceCache = other.BackReferenceCache.Fork(addedDatoms, new BackReferenceCacheStrategy(this));
@@ -49,7 +51,7 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
             return new EntitySegment(key, new AVSegment(bytes), db);
         }
 
-        public override IEnumerable<EntityId> GetKeysFromRecentlyAdded(IndexSegment segment)
+        public override IEnumerable<EntityId> GetKeysFromRecentlyAdded(IReadOnlyList<IDatomLikeRO> segment)
         {
             foreach (var datom in segment)
             {
@@ -73,16 +75,11 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
             return new EntityIds { Data = bytes };
         }
 
-        public override IEnumerable<(AttributeId A, EntityId E)> GetKeysFromRecentlyAdded(IndexSegment segment)
+        public override IEnumerable<(AttributeId A, EntityId E)> GetKeysFromRecentlyAdded(IReadOnlyList<IDatomLikeRO> segment)
         {
-            foreach (var datom in segment)
-            {
-                if (datom.Prefix.ValueTag == ValueTag.Reference)
-                {
-                    var eVal = MemoryMarshal.Read<EntityId>(datom.ValueSpan);
-                    yield return (datom.A, eVal);
-                }
-            }
+            return segment
+                .OfType<ValueDatom<EntityId>>()
+                .Select(static d => (((IKeyPrefixLikeRO)d).A, d.Value));
         }
     }
 

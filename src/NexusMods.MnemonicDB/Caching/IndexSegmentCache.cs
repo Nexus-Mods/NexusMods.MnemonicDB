@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Caching;
 
@@ -35,7 +37,7 @@ public class IndexSegmentCache<TKey, TValue>
     /// <summary>
     /// Forks the cache and evicts entries based on the given store result's recently added datoms.
     /// </summary>
-    public IndexSegmentCache<TKey, TValue> Fork(IndexSegment segment, CacheStrategy<TKey,TValue> newStrategy)
+    public IndexSegmentCache<TKey, TValue> Fork(IReadOnlyList<IDatomLikeRO> segment, CacheStrategy<TKey,TValue> newStrategy)
     {
         var newRoot = _root.Evict(_strategy.GetKeysFromRecentlyAdded(segment));
         return new IndexSegmentCache<TKey, TValue>(newStrategy, newRoot);

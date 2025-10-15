@@ -151,7 +151,7 @@ public readonly struct EntitySegment : IEnumerable<Datom>
     /// <summary>
     /// Returns the enumerator.
     /// </summary>
-    public IndexSegment.Enumerator GetEnumerator() => _db.Datoms(SliceDescriptor.Create(_id)).GetEnumerator();
+    public IndexSegment.Enumerator GetEnumerator() => throw new NotImplementedException();
 
     /// <inheritdoc />
     IEnumerator<Datom> IEnumerable<Datom>.GetEnumerator() => GetEnumerator();

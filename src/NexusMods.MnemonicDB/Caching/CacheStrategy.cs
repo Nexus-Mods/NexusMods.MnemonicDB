@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.Caching;
@@ -39,5 +40,5 @@ public abstract class CacheStrategy<TKey, TValue>
     /// <summary>
     /// Get the keys to evict from the cache due to the given segment being recently added.
     /// </summary>
-    public abstract IEnumerable<TKey> GetKeysFromRecentlyAdded(IndexSegment segment);
+    public abstract IEnumerable<TKey> GetKeysFromRecentlyAdded(IReadOnlyList<IDatomLikeRO> segment);
 }

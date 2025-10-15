@@ -28,14 +28,14 @@ public struct TimeFilteredEnumerator<TInner> : IRefDatomEnumerator
     {
         while (_inner.MoveNext(descriptor, useHistory))
         {
-            if (_inner.KeyPrefix.T <= _txId)
+            if (_inner.T <= _txId)
                 return true;
         }
 
         return false;
     }
 
-    public KeyPrefix KeyPrefix => _inner.KeyPrefix;
+    public KeyPrefix Prefix => _inner.Prefix;
     public Ptr Current => _inner.Current;
     public Ptr ValueSpan => _inner.ValueSpan;
     public Ptr ExtraValueSpan => _inner.ExtraValueSpan;

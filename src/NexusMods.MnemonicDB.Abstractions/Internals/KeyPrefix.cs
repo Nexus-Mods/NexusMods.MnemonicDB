@@ -19,15 +19,15 @@ namespace NexusMods.MnemonicDB.Abstractions.Internals;
 ///   - Bits 1-7: ValueTag (7 bits)
 /// </summary>
 [StructLayout(LayoutKind.Explicit, Size = Size)]
-public readonly record struct KeyPrefix
+public struct KeyPrefix
 {
     /// <summary>
     ///     Fixed size of the KeyPrefix
     /// </summary>
     public const int Size = 16;
 
-    [FieldOffset(0)] public readonly ulong Upper;
-    [FieldOffset(8)] public readonly ulong Lower;
+    [FieldOffset(0)] public ulong Upper;
+    [FieldOffset(8)] public ulong Lower;
     
     
     /// <summary>
@@ -65,7 +65,7 @@ public readonly record struct KeyPrefix
     public IndexType Index
     {
         get => (IndexType)((Upper >> 40) & 0xFF);
-        init => Upper = (Upper & 0xFFFF00FFFFFFFFFF) | ((ulong)value << 40);
+        set => Upper = (Upper & 0xFFFF00FFFFFFFFFF) | ((ulong)value << 40);
     }
     
 
@@ -79,7 +79,7 @@ public readonly record struct KeyPrefix
             var val = Lower & 0xFF00000000000000 | ((Lower >> 8) & 0x0000FFFFFFFFFFFF);
             return Unsafe.As<ulong, EntityId>(ref val);
         }
-        init => Lower = (Lower & 0xFF) | ((ulong)value & 0xFF00000000000000) | (((ulong)value & 0x0000FFFFFFFFFFFF) << 8);
+        set => Lower = (Lower & 0xFF) | ((ulong)value & 0xFF00000000000000) | (((ulong)value & 0x0000FFFFFFFFFFFF) << 8);
     }
     
     /// <summary>
@@ -88,7 +88,7 @@ public readonly record struct KeyPrefix
     public bool IsRetract
     {
         get => (Lower & 1) == 1;
-        init => Lower = value ? Lower | 1UL : Lower & ~1UL;
+        set => Lower = value ? Lower | 1UL : Lower & ~1UL;
     }
 
     /// <summary>
@@ -97,7 +97,7 @@ public readonly record struct KeyPrefix
     public ValueTag ValueTag
     {
         get => (ValueTag)((Lower >> 1) & 0x7F);
-        init => Lower = (Lower & 0xFFFFFFFFFFFFFF01) | ((ulong)value << 1);
+        set => Lower = (Lower & 0xFFFFFFFFFFFFFF01) | ((ulong)value << 1);
     }
 
     /// <summary>
@@ -110,7 +110,7 @@ public readonly record struct KeyPrefix
             var val = (ushort)(Upper >> 48);
             return Unsafe.As<ushort, AttributeId>(ref val);
         }
-        init => Upper = (Upper & 0x0000FFFFFFFFFFFF) | ((ulong)value << 48);
+        set => Upper = (Upper & 0x0000FFFFFFFFFFFF) | ((ulong)value << 48);
     }
 
     /// <summary>
@@ -124,7 +124,7 @@ public readonly record struct KeyPrefix
             var id = PartitionId.Transactions.MakeEntityId(Upper & 0x000000FFFFFFFFFF).Value;
             return Unsafe.As<ulong, TxId>(ref id);
         }
-        init => Upper = (Upper & 0xFFFFFF0000000000) | ((ulong)value & 0x000000FFFFFFFFFF);
+        set => Upper = (Upper & 0xFFFFFF0000000000) | ((ulong)value & 0x000000FFFFFFFFFF);
     }
 
     /// <inheritdoc />

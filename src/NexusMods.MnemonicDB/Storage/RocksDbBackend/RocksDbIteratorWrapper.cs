@@ -43,7 +43,7 @@ internal struct RocksDbIteratorWrapper : ILowLevelIterator, IRefDatomPeekingEnum
     }
 
 
-    public KeyPrefix KeyPrefix => _key.Read<KeyPrefix>(0);
+    public KeyPrefix Prefix => _key.Read<KeyPrefix>(0);
     public Ptr Current => _key;
     public Ptr ValueSpan => _key.SliceFast(KeyPrefix.Size);
 

@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -23,7 +25,7 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// <summary>
     ///     The datoms that were added in the most recent transaction (indicated by the basis TxId).
     /// </summary>
-    IndexSegment RecentlyAdded { get; }
+    IReadOnlyList<IDatomLikeRO> RecentlyAdded { get; }
 
     /// <summary>
     /// The snapshot that this database is based on.

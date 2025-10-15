@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 using NexusMods.MnemonicDB.EventTypes;
 using NexusMods.MnemonicDB.InternalTxFunctions;
 using NexusMods.MnemonicDB.QueryFunctions;
@@ -532,9 +533,10 @@ public sealed class Connection : IConnection
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static DatomKey CreateKey(Datom datom, AttributeId attrId, bool isMany = false)
+    internal static DatomKey CreateKey<TDatom>(TDatom datom, AttributeId attrId, bool isMany = false) 
+        where TDatom : IDatomLikeRO
     {
-        return new DatomKey(datom.E, attrId, isMany ? datom.ValueMemory : Memory<byte>.Empty);
+        return new DatomKey(datom.E, attrId, isMany ? datom.ValueObject : null);
     }
 
     /// <inheritdoc />

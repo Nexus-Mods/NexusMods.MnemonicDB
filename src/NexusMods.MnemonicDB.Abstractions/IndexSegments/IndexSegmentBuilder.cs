@@ -152,7 +152,7 @@ public readonly struct IndexSegmentBuilder : IIndexSegmentBuilder, IDisposable
     public void AddCurrent<T>(in T enumerator) where T : IRefDatomEnumerator, allows ref struct
     {
         _offsets.Add(_data.Length);
-        var prefix = enumerator.KeyPrefix;
+        var prefix = enumerator.Prefix;
         var prefixSpan = _data.GetSpan(KeyPrefix.Size);
         MemoryMarshal.Write(prefixSpan, prefix);
         _data.Advance(KeyPrefix.Size);

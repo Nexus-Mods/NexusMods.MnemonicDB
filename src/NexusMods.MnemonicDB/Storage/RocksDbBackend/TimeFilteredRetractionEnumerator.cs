@@ -111,7 +111,7 @@ namespace NexusMods.MnemonicDB.Storage.RocksDbBackend
             }
         }
 
-        public KeyPrefix KeyPrefix => _keyCache.Ptr.Read<KeyPrefix>(0);
+        public KeyPrefix Prefix => _keyCache.Ptr.Read<KeyPrefix>(0);
         public Ptr Current => _keyCache.Ptr;
         public Ptr ValueSpan => _keyCache.Ptr.SliceFast(KeyPrefix.Size);
         public Ptr ExtraValueSpan => _extraCache.Ptr;

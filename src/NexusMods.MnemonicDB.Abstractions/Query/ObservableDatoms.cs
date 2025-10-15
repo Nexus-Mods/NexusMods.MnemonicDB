@@ -112,22 +112,6 @@ public static class ObservableDatoms
         return changes;
     }
 
-    private static ChangeSet<Datom, DatomKey> Setup(IDb db, SliceDescriptor descriptor)
-    {
-        var datoms = db.Datoms(descriptor);
-        var cache = db.AttributeCache;
-        var changes = new ChangeSet<Datom, DatomKey>();
-        
-        foreach (var datom in datoms)
-        {
-            var isMany = cache.IsCardinalityMany(datom.A);
-            changes.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, datom.A, isMany), datom));
-        }
-
-        if (changes.Count == 0)
-            return ChangeSet<Datom, DatomKey>.Empty;
-        return changes;
-    }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static DatomKey CreateKey(Datom datom, AttributeId attrId, bool isMany = false)

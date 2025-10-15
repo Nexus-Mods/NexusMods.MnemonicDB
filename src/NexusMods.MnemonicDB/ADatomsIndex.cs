@@ -5,6 +5,7 @@ using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB;
 
@@ -20,12 +21,16 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
     /// <summary>
     /// Get datoms for a specific descriptor
     /// </summary>
-    public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
+    public IReadOnlyList<IDatomLikeRO> Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
     {
         using var builder = new IndexSegmentBuilder(AttributeCache);
         using var iterator = GetRefDatomEnumerator(descriptor is SliceDescriptor);
-        builder.AddRange(iterator, descriptor);
-        return builder.Build();
+        var result = new List<IDatomLikeRO>();
+        while (iterator.MoveNext(descriptor))
+        {
+            result.Add(ValueDatom.Create(iterator));
+        }
+        return result;
     }
     
     public IEnumerable<IndexSegment> DatomsChunked<TSliceDescriptor>(TSliceDescriptor descriptor, int chunkSize) 
@@ -67,7 +72,7 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         int chunkOffset = 0;
         while (iterator.MoveNext(slice))
         {
-            chunk[chunkOffset] = iterator.KeyPrefix.E;
+            chunk[chunkOffset] = iterator.E;
             chunkOffset++;
             if (chunkOffset >= chunk.Length)
             {
@@ -113,12 +118,14 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         return builder.Build();
     }
 
-    public IndexSegment Datoms(TxId txId)
+    public IReadOnlyList<IDatomLikeRO> Datoms(TxId txId)
     {
-        using var builder = new IndexSegmentBuilder(AttributeCache);
         using var iterator = GetRefDatomEnumerator();
-        builder.AddRange(iterator, SliceDescriptor.Create(txId));
-        return builder.Build();
+        var slice = SliceDescriptor.Create(txId);
+        var list = new List<IDatomLikeRO>();
+        while (iterator.MoveNext(slice))
+            list.Add(ValueDatom.Create(iterator));
+        return list;
     }
 
     /// <inheritdoc />
