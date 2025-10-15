@@ -43,22 +43,10 @@ internal sealed class Transaction : IMainTransaction, ISubTransaction
     public TxId ThisTxId => _parentTransaction?.ThisTxId ?? TxId.From(PartitionId.Temp.MakeEntityId(0).Value);
 
     /// <inhertdoc />
-    public EntityId TempId(PartitionId entityPartition)
-    {
-        if (_parentTransaction is not null) return _parentTransaction.TempId(entityPartition);
-
-        var tempId = Interlocked.Increment(ref _tempId);
-        // Add the partition to the id
-        var actualId = ((ulong)entityPartition << 40) | tempId;
-        return EntityId.From(actualId);
-    }
+    public EntityId TempId(PartitionId entityPartition) => Abstractions.TempId.Next(entityPartition);
 
     /// <inhertdoc />
-    public EntityId TempId()
-    {
-        if (_parentTransaction is not null) return _parentTransaction.TempId();
-        return TempId(PartitionId.Entity);
-    }
+    public EntityId TempId() => Abstractions.TempId.Next();
 
     public void Add<TVal, TAttribute>(EntityId entityId, TAttribute attribute, TVal val, bool isRetract = false) 
         where TAttribute : IWritableAttribute<TVal>
