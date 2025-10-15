@@ -33,35 +33,61 @@ public class DatomList : List<IDatomLikeRO>, IDatomsListLike
 public interface IDatomsListLike
 {
     public List<IDatomLikeRO> Datoms { get; }
-    
+
     public AttributeCache AttributeCache { get; }
+}
+
+public static class DatomListLikeExtensions
+{ 
+    public static void Add<THighLevel, TLowLevel, TSerializer>(this IDatomsListLike lst, EntityId e, Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value)
+        where THighLevel : notnull
+        where TLowLevel : notnull
+        where TSerializer : IValueSerializer<TLowLevel>
+    {
+        lst.Add(e, attr, value, false, TxId.Tmp);
+    }
     
-    public void Add<THighLevel, TLowLevel, TSerializer>(EntityId e, Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value, bool isRetract = false, TxId? txId = null) 
+    public static void Retract<THighLevel, TLowLevel, TSerializer>(this IDatomsListLike lst, EntityId e, Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value)
+        where THighLevel : notnull
+        where TLowLevel : notnull
+        where TSerializer : IValueSerializer<TLowLevel>
+    {
+        lst.Add(e, attr, value, true, TxId.Tmp);
+    }
+    
+    public static void Add<THighLevel, TLowLevel, TSerializer>(this IDatomsListLike lst, EntityId e, Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value, bool isRetract)
+        where THighLevel : notnull
+        where TLowLevel : notnull
+        where TSerializer : IValueSerializer<TLowLevel>
+    {
+        lst.Add(e, attr, value, isRetract, TxId.Tmp);
+    }
+    
+    public static void Add<THighLevel, TLowLevel, TSerializer>(this IDatomsListLike lst, EntityId e, Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value, bool isRetract, TxId txId) 
         where THighLevel : notnull 
         where TLowLevel : notnull
         where TSerializer : IValueSerializer<TLowLevel>
     {
-        var attrId = AttributeCache!.GetAttributeId(attr.Id);
-        var prefix = new KeyPrefix(e, attrId, txId ?? TxId.Tmp, isRetract, attr.LowLevelType);
+        var attrId = lst.AttributeCache!.GetAttributeId(attr.Id);
+        var prefix = new KeyPrefix(e, attrId, txId, isRetract, attr.LowLevelType);
         var converted = attr.ToLowLevel(value);
-        Datoms.Add(new ValueDatom<TLowLevel>(prefix, converted));
+        lst.Datoms.Add(new ValueDatom<TLowLevel>(prefix, converted));
     }
 
     /// <summary>
     /// Adds a txFunction to the datoms list, this will be encoded as a special datom whos's value is the txFunction.
     /// </summary>
-    /// <param name="txFunction"></param>
-    public void Add(ITxFunction txFunction)
+    public static void Add(this IDatomsListLike lst, ITxFunction txFunction)
     {
-        Datoms.Add(ValueDatom.Create(EntityId.MinValueNoPartition, AttributeId.Max, ValueTag.TxFunction, txFunction));
+        lst.Datoms.Add(ValueDatom.Create(EntityId.MinValueNoPartition, AttributeId.Max, ValueTag.TxFunction, txFunction));
     }
 
     /// <summary>
     /// Adds all the datoms in the given list to the datoms list.
     /// </summary>
     /// <param name="datoms"></param>
-    public void Add(List<IDatomLikeRO> datoms)
+    public static void Add(this IDatomsListLike lst, List<IDatomLikeRO> datoms)
     {
-        Datoms.AddRange(datoms);
+        lst.Datoms.AddRange(datoms);
     }
 }

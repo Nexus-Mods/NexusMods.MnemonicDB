@@ -61,7 +61,7 @@ public abstract class AStorageTest : IDisposable
     }
 
 
-    private void AddAttr(DatomList tx, IAttribute attribute, AttributeId attributeId)
+    private void AddAttr(IDatomsListLike tx, IAttribute attribute, AttributeId attributeId)
     { 
         var eid = EntityId.From(attributeId.Value);
         tx.Add(eid, AttributeDefinition.UniqueId, attribute.Id);
