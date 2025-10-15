@@ -95,6 +95,8 @@ internal class SimpleMigration : AInternalFn
     /// </summary>
     internal static void AddIndex(DatomStore store, AttributeId id, IWriteBatch batch, IndexedFlags newFlags)
     {
+        throw new NotImplementedException();
+        /*
         foreach (var datom in store.CurrentSnapshot.Datoms(SliceDescriptor.Create(id)))
         {
             batch.Add(IndexType.AVETCurrent, datom);
@@ -110,6 +112,7 @@ internal class SimpleMigration : AInternalFn
         var built = builder.Build();
         
         store.LogDatoms(batch, built);
+        */
     }
 
     /// <summary>
@@ -117,6 +120,8 @@ internal class SimpleMigration : AInternalFn
     /// </summary>
     internal static void RemoveIndex(DatomStore store, AttributeId id, IWriteBatch batch, IndexedFlags newFlags)
     {
+        throw new NotImplementedException();
+        /*
         foreach (var datom in store.CurrentSnapshot.Datoms(SliceDescriptor.Create(id)))
         {
             batch.Delete(IndexType.AVETCurrent, datom);
@@ -132,5 +137,6 @@ internal class SimpleMigration : AInternalFn
         var built = builder.Build();
         
         store.LogDatoms(batch, built);
+        */
     }
 }

@@ -10,8 +10,8 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 public sealed class CardinalityAttribute(string ns, string name) : ScalarAttribute<Cardinality, byte, UInt8Serializer>(ns, name)
 {
     /// <inheritdoc />
-    protected override byte ToLowLevel(Cardinality value) => (byte)value;
+    public override byte ToLowLevel(Cardinality value) => (byte)value;
 
     /// <inheritdoc />
-    protected override Cardinality FromLowLevel(byte value, AttributeResolver resolver) => (Cardinality)value;
+    public override Cardinality FromLowLevel(byte value, AttributeResolver resolver) => (Cardinality)value;
 }

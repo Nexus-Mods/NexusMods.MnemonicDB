@@ -10,8 +10,8 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 public sealed class UInt64Attribute(string ns, string name) : ScalarAttribute<ulong, ulong, UInt64Serializer>(ns, name)
 {
     /// <inheritdoc />
-    protected override ulong ToLowLevel(ulong value) => value;
+    public override ulong ToLowLevel(ulong value) => value;
 
     /// <inheritdoc />
-    protected override ulong FromLowLevel(ulong value, AttributeResolver resolver) => value;
+    public override ulong FromLowLevel(ulong value, AttributeResolver resolver) => value;
 }

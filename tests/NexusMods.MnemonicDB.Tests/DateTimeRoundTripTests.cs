@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Tests;
 

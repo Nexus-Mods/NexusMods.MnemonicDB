@@ -97,12 +97,12 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         BackReferenceCache.Clear();
     }
     
-    public IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)
+    public IReadOnlyList<IDatomLikeRO> Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)
     {
         return Datoms(SliceDescriptor.Create(attribute, value, AttributeCache));
     }
     
-    public IndexSegment Datoms(IAttribute attribute)
+    public IReadOnlyList<IDatomLikeRO> Datoms(IAttribute attribute)
     {
         return Datoms(SliceDescriptor.Create(attribute, AttributeCache));
     }
@@ -110,7 +110,7 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
     [MustDisposeResource]
     public override TLowLevelIterator GetRefDatomEnumerator(bool totalOrdered) => _snapshot.GetRefDatomEnumerator(totalOrdered);
 
-    public IndexSegment Datoms(TxId txId)
+    public IReadOnlyList<IDatomLikeRO> Datoms(TxId txId)
     {
         return Snapshot.Datoms(SliceDescriptor.Create(txId));
     }

@@ -1,3 +1,4 @@
+using System;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
@@ -21,6 +22,8 @@ internal class Excise(EntityId[]  ids) : AInternalFn
         using var historyDatomsBuilder = new IndexSegmentBuilder(store.AttributeCache);
         foreach (var entityId in ids)
         {
+            throw new NotImplementedException();
+            /*
             // All Current datoms
             var segment = snapshot.Datoms(SliceDescriptor.Create(entityId));
             currentDatomsBuilder.Add(segment);
@@ -28,6 +31,7 @@ internal class Excise(EntityId[]  ids) : AInternalFn
             // All History datoms
             segment = snapshot.Datoms(SliceDescriptor.Create(EAVTHistory, entityId));
             historyDatomsBuilder.Add(segment);
+            */
         }
         
         // Build the datoms
@@ -62,7 +66,10 @@ internal class Excise(EntityId[]  ids) : AInternalFn
             using var builder = new IndexSegmentBuilder(store.AttributeCache);
             var txId = EntityId.From(PartitionId.Temp.MakeEntityId(0).Value);
             builder.Add(txId, Abstractions.BuiltInEntities.Transaction.ExcisedDatoms, (ulong)currentDatoms.Count);
+            throw new NotImplementedException();
+            /*
             store.LogDatoms(builder.Build());
+            */
         }
     }
 }

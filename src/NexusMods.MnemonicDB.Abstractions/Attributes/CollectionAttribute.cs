@@ -12,6 +12,7 @@ public abstract class CollectionAttribute<TValue, TLowLevel, TSerializer>(string
     : Attribute<TValue, TLowLevel, TSerializer>(ns, name, cardinality: Cardinality.Many) 
     where TSerializer : IValueSerializer<TLowLevel> 
     where TValue : notnull
+    where TLowLevel : notnull
 {
 
     /// <summary>

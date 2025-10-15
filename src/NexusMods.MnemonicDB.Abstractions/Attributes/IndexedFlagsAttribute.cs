@@ -33,13 +33,13 @@ public class IndexedFlagsAttribute : ScalarAttribute<IndexedFlags, byte, UInt8Se
     }
 
     /// <inheritdoc />
-    protected override byte ToLowLevel(IndexedFlags value)
+    public override byte ToLowLevel(IndexedFlags value)
     {
         return (byte)value;
     }
 
     /// <inheritdoc />
-    protected override IndexedFlags FromLowLevel(byte value, AttributeResolver resolver)
+    public override IndexedFlags FromLowLevel(byte value, AttributeResolver resolver)
     {
         throw new NotSupportedException("This method should never be called.");
     }

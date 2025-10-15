@@ -33,22 +33,23 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         return result;
     }
     
-    public IEnumerable<IndexSegment> DatomsChunked<TSliceDescriptor>(TSliceDescriptor descriptor, int chunkSize) 
+    public IEnumerable<IReadOnlyList<IDatomLikeRO>> DatomsChunked<TSliceDescriptor>(TSliceDescriptor descriptor, int chunkSize) 
         where TSliceDescriptor : ISliceDescriptor
     {
-        using var builder = new IndexSegmentBuilder(AttributeCache);
         using var iterator = GetRefDatomEnumerator();
+        var currentResult = new List<IDatomLikeRO>();
         while (iterator.MoveNext(descriptor))
         {
-            builder.AddCurrent(iterator);
-            if (builder.Count == chunkSize)
+            currentResult.Add(ValueDatom.Create(iterator));
+            if (currentResult.Count == chunkSize)
             {
-                yield return builder.Build();
-                builder.Reset();
+                yield return currentResult;
+                currentResult = new();
             }
         }
-        if (builder.Count > 0)
-            yield return builder.Build();
+
+        if (currentResult.Count > 0)
+            yield return currentResult;
     }
 
     /// <summary>
@@ -92,8 +93,11 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         using var builder = new IndexSegmentBuilder(AttributeCache);
         using var iterator = GetRefDatomEnumerator();
         builder.AddRange(iterator, SliceDescriptor.Create(entityId));
+        throw new NotImplementedException();
+        /*
         var avSegment = AVSegment.Build(builder);
         return new EntitySegment(entityId, new AVSegment(avSegment), db);
+        */
     }
 
     public virtual EntityIds GetEntityIdsPointingTo(AttributeId attrId, EntityId entityId)
@@ -110,12 +114,14 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         return GetEntityIdsPointingTo(attribute, id);
     }
 
-    public IndexSegment ReferencesTo(EntityId eid)
+    public IReadOnlyList<IDatomLikeRO> ReferencesTo(EntityId eid)
     {
-        using var builder = new IndexSegmentBuilder(AttributeCache);
         using var iterator = GetRefDatomEnumerator();
-        builder.AddRange(iterator, SliceDescriptor.CreateReferenceTo(eid));
-        return builder.Build();
+        var slice = SliceDescriptor.Create(eid);
+        var results = new List<IDatomLikeRO>();
+        while (iterator.MoveNext(slice))
+            results.Add(ValueDatom.Create(iterator));
+        return results;
     }
 
     public IReadOnlyList<IDatomLikeRO> Datoms(TxId txId)

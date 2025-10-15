@@ -11,10 +11,10 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 public class ReferenceAttribute(string ns, string name) : ScalarAttribute<EntityId, EntityId, EntityIdSerializer>(ns, name)
 {
     /// <inheritdoc />
-    protected override EntityId ToLowLevel(EntityId value) => value;
+    public override EntityId ToLowLevel(EntityId value) => value;
 
     /// <inheritdoc />
-    protected override EntityId FromLowLevel(EntityId value, AttributeResolver resolver) => value;
+    public override EntityId FromLowLevel(EntityId value, AttributeResolver resolver) => value;
 }
 
 /// <summary>

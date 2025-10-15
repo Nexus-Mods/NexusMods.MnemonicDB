@@ -16,6 +16,7 @@ using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Query;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 using NexusMods.MnemonicDB.InternalTxFunctions;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 using Reloaded.Memory.Extensions;
@@ -46,7 +47,7 @@ public sealed partial class DatomStore : IDatomStore
 
     private static readonly TimeSpan TransactionTimeout = TimeSpan.FromMinutes(120);
     
-    private Dictionary<EntityId, IndexSegment> _avCache = new();
+    private Dictionary<EntityId, IReadOnlyList<IDatomLikeRO>> _avCache = new();
 
     /// <summary>
     /// Cached function to remap temporary entity ids to real entity ids
@@ -181,15 +182,17 @@ public sealed partial class DatomStore : IDatomStore
     public IObservable<IDb> TxLog => _dbStream;
 
     /// <inheritdoc />
-    public (StoreResult, IDb) Transact(IndexSegment segment)
+    public (StoreResult, IDb) Transact(IReadOnlyList<IDatomLikeRO> segment)
     {
-        return Transact(new IndexSegmentTransaction(segment));
+        throw new NotImplementedException();
+        //return Transact(new IndexSegmentTransaction(segment));
     }
 
     /// <inheritdoc />
-    public Task<(StoreResult, IDb)> TransactAsync(IndexSegment segment)
+    public Task<(StoreResult, IDb)> TransactAsync(IReadOnlyList<IDatomLikeRO> segment)
     {
-        return TransactAsync(new IndexSegmentTransaction(segment));
+        throw new NotImplementedException();
+        //return TransactAsync(new IndexSegmentTransaction(segment));
     }
 
     /// <inheritdoc />
@@ -286,7 +289,8 @@ public sealed partial class DatomStore : IDatomStore
                 AttributeDefinition.AddInitial(internalTx);
                 internalTx.ProcessTemporaryEntities();
                 // Call directly into `Log` as the transaction channel is not yet set up
-                Log(new IndexSegmentTransaction(builder.Build()));
+                throw new NotImplementedException();
+                //Log(new IndexSegmentTransaction(builder.Build()));
                 CurrentSnapshot = Backend.GetSnapshot();
                 _currentDb = CurrentSnapshot.MakeDb(_asOfTx, _attributeCache);
             }
@@ -360,7 +364,7 @@ public sealed partial class DatomStore : IDatomStore
     }
 
     internal void LogDatoms<TSource>(TSource datoms, bool advanceTx = true, bool enableStats = false) 
-        where TSource : IEnumerable<Datom>
+        where TSource : IEnumerable<IDatomLikeRO>
     {
         var swPrepare = Stopwatch.StartNew();
         _remaps.Clear();
@@ -374,7 +378,8 @@ public sealed partial class DatomStore : IDatomStore
             if (enableStats)
             {
                 datomCount++;
-                dataSize += datom.ValueSpan.Length + KeyPrefix.Size;
+                throw new NotImplementedException();
+                //dataSize += datom.ValueSpan.Length + KeyPrefix.Size;
             }
             LogDatom(in datom, batch);
         }
@@ -427,8 +432,9 @@ public sealed partial class DatomStore : IDatomStore
     internal void LogDatoms<TSource>(IWriteBatch batch, TSource datoms,  bool advanceTx = false)
         where TSource : IEnumerable<Datom>
     {
-        foreach (var datom in datoms)
-            LogDatom(in datom, batch);
+        throw new NotImplementedException();
+        //foreach (var datom in datoms)
+        //    LogDatom(in datom, batch);
         
         if (advanceTx) 
             LogTx(batch);
@@ -454,14 +460,17 @@ public sealed partial class DatomStore : IDatomStore
         MemoryMarshal.Write(_txScratchSpace.Span, _timeProvider.GetUtcNow().UtcTicks);
         var id = EntityId.From(_thisTx.Value);
         var keyPrefix = new KeyPrefix(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), _thisTx, false, ValueTag.Int64);
+        throw new NotImplementedException();
+        /*
         var datom = new Datom(keyPrefix, _txScratchSpace[..sizeof(long)]);
         LogDatom(in datom, batch);
+        */
     }
 
     /// <summary>
     /// Log a single datom, this is the inner loop of the transaction processing
     /// </summary>
-    internal void LogDatom(in Datom datom, IWriteBatch batch)
+    internal void LogDatom(in IDatomLikeRO datom, IWriteBatch batch)
     {
         _writer.Reset();
 
@@ -475,11 +484,13 @@ public sealed partial class DatomStore : IDatomStore
 
         {
             _writer.WriteMarshal(keyPrefix);
-            var valueSpan = datom.ValueSpan;
+            throw new NotImplementedException();
+            Serializer.Write(keyPrefix.ValueTag, datom.ValueObject, _writer);
+            /*var valueSpan = datom.ValueSpan;
             var span = _writer.GetSpan(valueSpan.Length);
             valueSpan.CopyTo(span);
             keyPrefix.ValueTag.Remap(span, _remapFunc);
-            _writer.Advance(valueSpan.Length);
+            _writer.Advance(valueSpan.Length);*/
         }
 
         var newSpan = _writer.AsDatom();
@@ -603,6 +614,8 @@ public sealed partial class DatomStore : IDatomStore
             IsReverse = false
         };
 
+        throw new NotImplementedException();
+        /*
         var prevDatom = iterator.Datoms(sliceDescriptor)
             .Select(d => d.Clone())
             .FirstOrDefault();
@@ -648,6 +661,7 @@ public sealed partial class DatomStore : IDatomStore
             batch.Add(AVETHistory, prevDatom);
             batch.Add(AVETHistory, datom);
         }
+        */
     }
 
     private static unsafe void RetractionSantiyCheck(Datom datom, Datom prevDatom)
@@ -700,6 +714,8 @@ public sealed partial class DatomStore : IDatomStore
             _avCache.Add(toFind.E, cached);
         }
 
+        throw new NotImplementedException();
+        /*
         if (_attributeCache.IsCardinalityMany(attrId))
         {
             var indexOf = FirstIndexOf(cached, attrId);
@@ -743,6 +759,7 @@ public sealed partial class DatomStore : IDatomStore
 
             return PrevState.Exists;
         }
+        */
 
     }
 

@@ -8,6 +8,7 @@ using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -16,6 +17,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// </summary>
 public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> : IAttribute<TValueType>
     where TValueType : notnull
+    where TLowLevelType : notnull
     where TSerializer : IValueSerializer<TLowLevelType>
 {
     
@@ -40,15 +42,20 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
 
     public string ShortName { get; }
 
+    public object FromLowLevelObject(object lowLevel, AttributeResolver resolver)
+    {
+        return FromLowLevel((TLowLevelType)lowLevel, resolver);
+    }
+
     /// <summary>
     /// Converts a high-level value to a low-level value
     /// </summary>
-    protected abstract TLowLevelType ToLowLevel(TValueType value);
+    public abstract TLowLevelType ToLowLevel(TValueType value);
     
     /// <summary>
     /// Converts a high-level value to a low-level value
     /// </summary>
-    protected abstract TValueType FromLowLevel(TLowLevelType value, AttributeResolver resolver);
+    public abstract TValueType FromLowLevel(TLowLevelType value, AttributeResolver resolver);
 
     /// <inheritdoc />
     public ValueTag LowLevelType => TSerializer.ValueTag;
@@ -98,7 +105,15 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
     {
         return new ReadDatom(in prefix, ReadValue(valueSpan, prefix.ValueTag, resolver), this);
     }
-    
+
+    /// <inheritdoc />
+    public IReadDatom Resolve(IDatomLikeRO srcDatom, AttributeResolver resolver)
+    {
+        if (srcDatom is IDatomLikeRO<TLowLevelType> datom)
+            return new ReadDatom(datom.Prefix, FromLowLevel(datom.Value, resolver), this);
+        return new ReadDatom(srcDatom.Prefix, FromLowLevel((TLowLevelType)srcDatom.ValueObject, resolver), this);
+    }
+
     /// <summary>
     /// Resolves the value from the given value span into a high-level ReadDatom
     /// </summary>
@@ -110,10 +125,11 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
     /// <summary>
     /// Resolves the low-level Datom into a high-level ReadDatom
     /// </summary>
-    public ReadDatom Resolve(in Datom datom, AttributeResolver resolver)
+    public ReadDatom Resolve<TDatom>(in TDatom datom, AttributeResolver resolver)
+       where TDatom : IDatomLikeRO
     {
         var prefix = datom.Prefix;
-        return new ReadDatom(in prefix, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver), this);
+        return new ReadDatom(in prefix, FromLowLevel(((IDatomLikeRO<TLowLevelType>)datom).Value, resolver), this);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]

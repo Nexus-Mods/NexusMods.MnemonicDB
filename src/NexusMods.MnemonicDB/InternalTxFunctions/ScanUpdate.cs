@@ -18,6 +18,8 @@ internal class ScanUpdate : AInternalFn
     
     public override void Execute(DatomStore store)
     {
+        throw new NotImplementedException();
+        /* 
         using var batch = store.Backend.CreateBatch();
         using var writer = new PooledMemoryBufferWriter();
 
@@ -51,5 +53,6 @@ internal class ScanUpdate : AInternalFn
         {
             store.LogDatoms(batch, Array.Empty<Datom>(), advanceTx: false);
         }
+        */
     }
 }

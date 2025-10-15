@@ -19,7 +19,7 @@ public interface IDatomsIndex
     /// Return a chunked sequence of datoms for a specific descriptor, chunks will be of the specified size
     /// except for the last chunk which may be smaller
     /// </summary>
-    public IEnumerable<IndexSegment> DatomsChunked<TSliceDescriptor>(TSliceDescriptor descriptor, int chunkSize)
+    public IEnumerable<IReadOnlyList<IDatomLikeRO>> DatomsChunked<TSliceDescriptor>(TSliceDescriptor descriptor, int chunkSize)
         where TSliceDescriptor : ISliceDescriptor;
     
     /// <summary>
@@ -50,7 +50,7 @@ public interface IDatomsIndex
     /// <summary>
     /// Returns an index segment of all the datoms that are a reference pointing to the given entity id.
     /// </summary>
-    IndexSegment ReferencesTo(EntityId eid);
+    IReadOnlyList<IDatomLikeRO> ReferencesTo(EntityId eid);
     
     /// <summary>
     /// Get the datoms for a specific transaction id

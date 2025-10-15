@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -40,13 +42,13 @@ public interface IDatomStore : IDisposable
     /// <summary>
     ///    Transacts (adds) the given datoms into the store.
     /// </summary>
-    public (StoreResult, IDb) Transact(IndexSegment segment);
+    public (StoreResult, IDb) Transact(IReadOnlyList<IDatomLikeRO> segment);
     
     
     /// <summary>
     ///   Transacts (adds) the given datoms into the store.
     /// </summary>
-    public Task<(StoreResult, IDb)> TransactAsync(IndexSegment segment);
+    public Task<(StoreResult, IDb)> TransactAsync(IReadOnlyList<IDatomLikeRO> segment);
     
     /// <summary>
     ///     Create a snapshot of the current state of the store.

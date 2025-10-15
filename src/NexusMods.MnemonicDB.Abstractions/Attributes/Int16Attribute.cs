@@ -10,8 +10,8 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 public sealed class Int16Attribute(string ns, string name) : ScalarAttribute<short, short, Int16Serializer>(ns, name)
 {
     /// <inheritdoc />
-    protected override short ToLowLevel(short value) => value;
+    public override short ToLowLevel(short value) => value;
 
     /// <inheritdoc />
-    protected override short FromLowLevel(short value, AttributeResolver resolver) => value;
+    public override short FromLowLevel(short value, AttributeResolver resolver) => value;
 }

@@ -55,41 +55,26 @@ public readonly struct EntitySegment : IEnumerable<Datom>
     public bool TryGetValue<TAttribute, TValueType>(TAttribute attr, int i, out TValueType value)
         where TAttribute : IReadableAttribute<TValueType>
     {
-        var offset = _data.GetOffsets()[i];
-        var dataSpan = offset.GetSpan(_data);
-        var valueTag = _data.GetValueTypes()[i];
-        value = attr.ReadValue(dataSpan, valueTag, _db.Connection.AttributeResolver);
+        value = (TValueType)_data.Values[i];
         return true;
     }
 
     /// <summary>
     /// Returns true if the value/attribute and entity represented by the datom is in this segment
     /// </summary>
-    public unsafe bool Contains(in AVData avData)
+    public bool Contains(AttributeId attr, object value)
     {
-        var index = FirstOffsetOf(avData.A);
+        var index = FirstOffsetOf(attr);
         if (index == -1)
             return false;
-
-        fixed (byte* aPtr = avData.Value.Span)
+        for (var i = index; i < _data.Values.Length; i++)
         {
-            for (var i = index; i < _data.GetCount(); i++)
-            {
-                if (avData.A != _data.GetAttributeIds()[i])
-                    return false;
-                
-                var otherType = _data.GetValueTypes()[i];
-                if (avData.ValueType != otherType)
-                    return false;
-                
-                var valueSpan = _data.GetOffsets()[i].GetSpan(_data);
-                fixed (byte* bPtr = valueSpan)
-                {
-                    var cmp = avData.ValueType.Compare(aPtr, avData.Value.Span.Length, bPtr, valueSpan.Length);
-                    if (cmp == 0)
-                        return true;
-                }
-            }
+            if (attr != _data.AttributeIds[i])
+                return false;
+
+            var otherValue = _data.Values[i];
+            if (otherValue.Equals(value))
+                return true;
         }
 
         return false;
@@ -131,12 +116,12 @@ public readonly struct EntitySegment : IEnumerable<Datom>
     /// <summary>
     /// Get the attribute Ids in this segment, in datom order;
     /// </summary>
-    public ReadOnlySpan<AttributeId> AttributeIds => _data.GetAttributeIds();
+    public ReadOnlySpan<AttributeId> AttributeIds => _data.AttributeIds;
 
     /// <summary>
     /// The number of datoms in the segment
     /// </summary>
-    public int Count => _data.GetCount();
+    public int Count => _data.AttributeIds.Length;
     
 
     /// <summary>
@@ -166,63 +151,6 @@ public readonly struct EntitySegment : IEnumerable<Datom>
         {
             yield return resolver.Resolve(datom);
         }
-    }
-    
-    /// <summary>
-    /// Returns a very light weight enumerable for the AV data in this segment. Unlike the normal enumerator,
-    /// this doesn't return the datom nor re-query the database for the datom, but instead returns the attribute id,
-    /// value type and the value span.
-    /// </summary>
-    public AVEnumerable GetAVEnumerable() => new(this);
-
-    public struct AVEnumerable(EntitySegment segment)
-    {
-        public AVEnumerator GetEnumerator() => new(segment);
-    }
-
-    public ref struct AVEnumerator
-    {
-        private int _idx;
-        private readonly EntitySegment _segment;
-        private AVData _current;
-
-        public AVEnumerator(EntitySegment segment)
-        {
-            _idx = -1;
-            _segment = segment;
-        }
-
-        public bool MoveNext()
-        {
-            if (_idx + 1 >= _segment.Count)
-                return false;
-            _idx++;
-            _current = new AVData(_segment._data.GetAttributeIds()[_idx], _segment._data.GetValueTypes()[_idx], _segment._data.GetOffsets()[_idx].GetMemory(_segment._data));
-            return true;
-        }
-
-        public AVData Current => _current;
-    }
-
-    public readonly struct AVData
-    {
-        public AVData(AttributeId a, ValueTag valueType, ReadOnlyMemory<byte> valueSpan)
-        {
-            A = a;
-            ValueType = valueType;
-            Value = valueSpan;
-        }
-        
-        public readonly AttributeId A;
-        public readonly ValueTag ValueType;
-        public readonly ReadOnlyMemory<byte> Value;
-    }
-
-    public ReadOnlySpan<byte> GetValueSpan(int index, out ValueTag valueType)
-    {
-        var offset = _data.GetOffsets()[index];
-        valueType = _data.GetValueTypes()[index];
-        return offset.GetMemory(_data).Span;
     }
 }
 

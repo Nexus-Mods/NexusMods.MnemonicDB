@@ -7,6 +7,7 @@ using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -44,7 +45,7 @@ public interface ITransaction : IDisposable
     ///    Adds a new datom to the transaction
     /// </summary>
     void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false)
-        where TSerializer : IValueSerializer<TLowLevel> where TVal : notnull;
+        where TSerializer : IValueSerializer<TLowLevel> where TVal : notnull where TLowLevel : notnull;
     
     /// <summary>
     ///     Adds datoms for adding the given ids to the transaction under the given attribute
@@ -88,8 +89,9 @@ public interface ITransaction : IDisposable
 
         for (var idx = range.Start.Value; idx < range.End.Value; idx++)
         {
-            var span = ent.GetValueSpan(idx, out var valueTag);
-            Add(entityId, aid, valueTag, span, isRetract: true);
+            throw new NotImplementedException();
+            //var span = ent.GetValueSpan(idx, out var valueTag);
+            //Add(entityId, aid, valueTag, span, isRetract: true);
         }
     }
     
@@ -97,7 +99,12 @@ public interface ITransaction : IDisposable
     /// Retract a specific datom
     /// </summary>
     void Add(Datom datom);
-
+    
+    void Add(IDatomLikeRO datom)
+    {
+        throw new NotSupportedException();
+    }
+    
     /// <summary>
     /// Tries to find and return a previously attached entity by ID.
     /// </summary>

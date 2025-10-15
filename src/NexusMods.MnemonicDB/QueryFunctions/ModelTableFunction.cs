@@ -152,6 +152,8 @@ public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
             if (datoms.FastForwardTo(rowId))
             {
                 writer.SetStart();
+                throw new NotImplementedException();
+                /*
                 while (datoms.KeyPrefix.E.Value == rowId)
                 {
                     if (typeof(TType) == typeof(StringElement))
@@ -166,6 +168,7 @@ public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
                     if (!datoms.MoveNext())
                         break;
                 }
+                */
 
                 writer.WriteCurrentEntry();
             }

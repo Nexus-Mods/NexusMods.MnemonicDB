@@ -239,13 +239,16 @@ public sealed class Connection : IConnection
                 Debug.Assert(observeDatomsEvent is not null);
 
                 var (from, to, observer) = observeDatomsEvent.Prime(Db);
-                _datomObservers.Add(from, to, observer);
+                throw new NotImplementedException();
+                //_datomObservers.Add(from, to, observer);
             }
         }
         else
         {
             _pendingObservers.Clear();
 
+            throw new NotImplementedException();
+            /*
             Parallel.For(fromInclusive: range.Start.Value, toExclusive: range.End.Value, i =>
             {
                 var observeDatomsEvent = events[i] as IObserveDatomsEvent;
@@ -261,6 +264,7 @@ public sealed class Connection : IConnection
             }
 
             _pendingObservers.Clear();
+            */
         }
     }
 
@@ -351,7 +355,8 @@ public sealed class Connection : IConnection
                     var oldDatom = datom.IsRetract ? datom : nextDatom;
 
                     // Skip the paired datom and issue an update.
-                    _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Update, CreateKey(datom, attr), newDatom, oldDatom));
+                    throw new NotImplementedException();
+                    //_localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Update, CreateKey(datom, attr), newDatom, oldDatom));
                     i++;
                     goto PROCESS_CHANGES;
                 }
@@ -360,11 +365,13 @@ public sealed class Connection : IConnection
             if (datom.IsRetract)
             {
                 var key = CreateKey(datom, attr, isMany);
-                _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, key, datom));
+                throw new NotImplementedException();
+                //_localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, key, datom));
             }
             else
             {
-                _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, attr, isMany), datom));
+                throw new NotImplementedException();
+                //_localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, attr, isMany), datom));
             }
 
             // Yes, I know this is a goto, but we need a way to run some code at the end of each loop after we early exit
@@ -376,6 +383,8 @@ public sealed class Connection : IConnection
             // We could likely be cleaner about how we do this, but this will work for now
             foreach (var index in IndexTypes)
             {
+                throw new NotImplementedException();
+                /*
                 var reindex = datom.WithIndex(index);
                 foreach (var overlap in _datomObservers.Query(reindex))
                 {
@@ -383,6 +392,7 @@ public sealed class Connection : IConnection
                     changeSet ??= new DatomChangeSet(db);
                     changeSet.AddRange(_localChanges);
                 }
+                */
             }
         }
         
@@ -497,9 +507,10 @@ public sealed class Connection : IConnection
         {
             if (_isDisposed) return Disposable.Empty;
 
+            throw new NotImplementedException();
             try
             {
-                _pendingEvents.Add(new ObserveDatomsEvent<TDescriptor>(descriptor, observer), _cts.Token);
+                //_pendingEvents.Add(new ObserveDatomsEvent<TDescriptor>(descriptor, observer), _cts.Token);
             }
             catch (Exception e) when (e is OperationCanceledException or InvalidOperationException)
             {

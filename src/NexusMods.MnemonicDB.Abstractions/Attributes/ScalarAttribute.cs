@@ -15,6 +15,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     Attribute<TValue, TLowLevel, TSerializer>(ns, name)
     where TSerializer : IValueSerializer<TLowLevel>
     where TValue : notnull
+    where TLowLevel : notnull
 {
     /// <summary>
     /// True if the attribute is optional, and not required by models

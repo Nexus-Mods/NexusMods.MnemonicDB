@@ -58,7 +58,9 @@ internal sealed class Transaction : IMainTransaction, ISubTransaction
         }
     }
 
-    public void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false) where TSerializer : IValueSerializer<TLowLevel> where TVal : notnull
+    public void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false) where TSerializer : IValueSerializer<TLowLevel> 
+        where TVal : notnull 
+        where TLowLevel : notnull
     {
         lock (_lock)
         {
@@ -205,10 +207,13 @@ internal sealed class Transaction : IMainTransaction, ISubTransaction
         if (_internalTxFunction is not null)
             return await _connection.Transact(_internalTxFunction);
 
+        throw new NotImplementedException();
+        /*
         if (_txFunctions is not null) 
             return await _connection.Transact(new CompoundTransaction(built, _txFunctions) { Connection = _connection });
         
         return await _connection.Transact(new IndexSegmentTransaction(built));
+        */
     }
 
     public ISubTransaction CreateSubTransaction()

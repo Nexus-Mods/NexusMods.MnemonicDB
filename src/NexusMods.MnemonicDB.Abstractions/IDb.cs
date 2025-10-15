@@ -48,17 +48,17 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// <summary>
     ///     Gets the datoms for the given transaction id.
     /// </summary>
-    public IndexSegment Datoms(TxId txId);
+    public IReadOnlyList<IDatomLikeRO> Datoms(TxId txId);
     
     /// <summary>
     /// Finds all datoms that have the given attribute
     /// </summary>
-    IndexSegment Datoms(IAttribute attribute);
+    IReadOnlyList<IDatomLikeRO> Datoms(IAttribute attribute);
     
     /// <summary>
     /// Finds all the datoms that have the given attribute with the given value.
     /// </summary>
-    IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value);
+    IReadOnlyList<IDatomLikeRO> Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value);
     
     /// <summary>
     /// Gets and caches all the models that point to the given entity via the given attribute.

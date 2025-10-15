@@ -3,7 +3,7 @@
 /// <summary>
 /// Represents the cardinality of an attribute
 /// </summary>
-public enum Cardinality
+public enum Cardinality : byte
 {
     /// <summary>
     /// Only one value per entity

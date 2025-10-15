@@ -1,37 +1,27 @@
 using System;
+using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
-public readonly struct AVSegment : ISegment<AttributeId, ValueTag, Offset>
+public readonly struct AVSegment
 {
-    public ReadOnlyMemory<byte> Data { get; }
+    public AttributeId[] AttributeIds { get; init; }
+    public object[] Values { get; init; }
+    
+    public AVSegment(IReadOnlyList<IDatomLikeRO> datoms, AttributeResolver resolver)
+    {
+        AttributeIds = GC.AllocateUninitializedArray<AttributeId>(datoms.Count);
+        Values = GC.AllocateUninitializedArray<object>(datoms.Count);
 
-    public AVSegment(ReadOnlyMemory<byte> data)
-    {
-        Data = data;
-    }
-    
-    /// <summary>
-    /// Gets the attribute IDs column
-    /// </summary>
-    public ReadOnlySpan<AttributeId> GetAttributeIds() => this.GetValues1<AVSegment, AttributeId>();
-    
-    /// <summary>
-    /// Gets the value types column
-    /// </summary>
-    public ReadOnlySpan<ValueTag> GetValueTypes() => this.GetValues2<AVSegment, AttributeId, ValueTag>();
-    
-    /// <summary>
-    /// Gets the offsets column
-    /// </summary>
-    public ReadOnlySpan<Offset> GetOffsets() => this.GetValues3<AVSegment, AttributeId, ValueTag, Offset>();
-    
-    /// <summary>
-    /// Builds the segment of this type from the given builder
-    /// </summary>
-    public static Memory<byte> Build<T>(in T builder) where T : IIndexSegmentBuilder, allows ref struct
-    {
-        return builder.Build<AttributeId, ValueTag, Offset>();
+        for (var i = 0; i < datoms.Count; i++)
+        {
+            var d = datoms[i];
+            if (!resolver.TryGetAttribute(d.A, out var attr))
+                continue;
+            AttributeIds[i] = d.A;
+            Values[i] = attr.FromLowLevelObject(d.ValueObject, resolver);
+        }
     }
 }

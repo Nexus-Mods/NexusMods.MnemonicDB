@@ -10,9 +10,85 @@ namespace NexusMods.MnemonicDB.Abstractions;
 
 public static class ValueDatom
 {
+    public static IDatomLikeRO Create<T>(EntityId e, AttributeId attr, ValueTag tag, T value) 
+        where T : notnull
+    {
+        var prefix = new KeyPrefix(e, attr, TxId.Tmp, false, tag);
+        return new ValueDatom<T>(prefix, value);
+    }
+    
+    public static ValueDatom<TLowLevel> Create<THighLevel, TLowLevel, TSerializer>(EntityId e, Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value, AttributeCache attributeCache) 
+        where THighLevel : notnull 
+        where TLowLevel : notnull
+        where TSerializer : IValueSerializer<TLowLevel>
+    {
+        var attrId = attributeCache.GetAttributeId(attr.Id);
+        var prefix = new KeyPrefix(e, attrId, TxId.Tmp, false, attr.LowLevelType);
+        var converted = attr.ToLowLevel(value);
+        return new ValueDatom<TLowLevel>(prefix, converted);
+    }
+    
+    public static ValueDatom<TLowLevel> Create<THighLevel, TLowLevel, TSerializer>(EntityId e, Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value, bool isRetract, AttributeCache attributeCache) 
+        where THighLevel : notnull 
+        where TLowLevel : notnull
+        where TSerializer : IValueSerializer<TLowLevel>
+    {
+        var attrId = attributeCache.GetAttributeId(attr.Id);
+        var prefix = new KeyPrefix(e, attrId, TxId.Tmp, isRetract, attr.LowLevelType);
+        var converted = attr.ToLowLevel(value);
+        return new ValueDatom<TLowLevel>(prefix, converted);
+    }
+    
+    public static IDatomLikeRO Create(KeyPrefix prefix, IDatomLikeRO valueSrc)
+    {
+        switch (valueSrc.ValueTag)
+        {
+            case ValueTag.UInt8:
+                return new ValueDatom<byte>(prefix, ((IDatomLikeRO<byte>)valueSrc).Value);
+            case ValueTag.UInt16:
+                return new ValueDatom<ushort>(prefix, ((IDatomLikeRO<ushort>)valueSrc).Value);
+            case ValueTag.UInt32:
+                return new ValueDatom<uint>(prefix, ((IDatomLikeRO<uint>)valueSrc).Value);
+            case ValueTag.UInt64:
+                return new ValueDatom<ulong>(prefix, ((IDatomLikeRO<ulong>)valueSrc).Value);
+            case ValueTag.UInt128:
+                return new ValueDatom<UInt128>(prefix, ((IDatomLikeRO<UInt128>)valueSrc).Value);
+            case ValueTag.Int16:
+                return new ValueDatom<short>(prefix, ((IDatomLikeRO<short>)valueSrc).Value);
+            case ValueTag.Int32:
+                return new ValueDatom<int>(prefix, ((IDatomLikeRO<int>)valueSrc).Value);
+            case ValueTag.Int64:
+                return new ValueDatom<long>(prefix, ((IDatomLikeRO<long>)valueSrc).Value);
+            case ValueTag.Int128:
+                return new ValueDatom<Int128>(prefix, ((IDatomLikeRO<Int128>)valueSrc).Value);
+            case ValueTag.Float32:
+                return new ValueDatom<float>(prefix, ((IDatomLikeRO<float>)valueSrc).Value);
+            case ValueTag.Float64:
+                return new ValueDatom<double>(prefix, ((IDatomLikeRO<double>)valueSrc).Value);
+            case ValueTag.Ascii:
+                return new ValueDatom<string>(prefix, ((IDatomLikeRO<string>)valueSrc).Value);
+            case ValueTag.Utf8:
+                return new ValueDatom<string>(prefix, ((IDatomLikeRO<string>)valueSrc).Value);
+            case ValueTag.Utf8Insensitive:
+                return new ValueDatom<string>(prefix, ((IDatomLikeRO<string>)valueSrc).Value);
+            case ValueTag.Blob:
+                return new ValueDatom<Memory<byte>>(prefix, ((IDatomLikeRO<Memory<byte>>)valueSrc).Value);
+            case ValueTag.HashedBlob:
+                return new ValueDatom<Memory<byte>>(prefix, ((IDatomLikeRO<Memory<byte>>)valueSrc).Value);
+            case ValueTag.Reference:
+                return new ValueDatom<EntityId>(prefix, ((IDatomLikeRO<EntityId>)valueSrc).Value);
+            case ValueTag.Tuple2_UShort_Utf8I:
+                return new ValueDatom<(ushort, string)>(prefix, ((IDatomLikeRO<(ushort, string)>)valueSrc).Value);
+            case ValueTag.Tuple3_Ref_UShort_Utf8I:
+                return new ValueDatom<(EntityId, ushort, string)>(prefix, ((IDatomLikeRO<(EntityId, ushort, string)>)valueSrc).Value);
+            default:
+                throw new ArgumentOutOfRangeException(nameof(prefix), prefix, "Unknown prefix");
+        }
+    }
+    
     public static IDatomLikeRO Create(KeyPrefix prefix, ReadOnlySpan<byte> valueSpan)
     {
-         switch (prefix.ValueTag)
+        switch (prefix.ValueTag)
         {
             case ValueTag.UInt8:
                 return new ValueDatom<byte>(prefix, prefix.ValueTag.Read<byte>(valueSpan));

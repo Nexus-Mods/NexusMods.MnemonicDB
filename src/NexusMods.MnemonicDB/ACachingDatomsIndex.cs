@@ -43,12 +43,14 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
             var builder = new IndexSegmentBuilder(parent.AttributeCache);
             using var iterator = parent.GetRefDatomEnumerator();
             builder.AddRange(iterator, SliceDescriptor.Create(key));
-            return AVSegment.Build(builder);
+            throw new NotImplementedException();
+            //return AVSegment.Build(builder);
         }
 
         public override EntitySegment GetValue(EntityId key, IDb db, Memory<byte> bytes)
         {
-            return new EntitySegment(key, new AVSegment(bytes), db);
+            throw new NotImplementedException();
+            //return new EntitySegment(key, new AVSegment(bytes), db);
         }
 
         public override IEnumerable<EntityId> GetKeysFromRecentlyAdded(IReadOnlyList<IDatomLikeRO> segment)
@@ -102,82 +104,12 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
 
     public void BulkCache(EntityIds ids)
     {
-        var numThreads = Environment.ProcessorCount;
-        var chunkSize = ids.Count / numThreads;
-
-        if (ids.Count == 0)
-            return;
-        
-        if (ids.Count < 1024)
-        {
-            BulkCache(ids.Span);
-            return;
-        }
-        
-        var partioner = Partitioner.Create(0, ids.Count, chunkSize);
-
-        Parallel.ForEach(partioner, range =>
-        {
-            BulkCache(ids.Span.Slice(range.Item1, range.Item2 - range.Item1));
-        });
+        throw new NotImplementedException();
 
     }
     public void BulkCache(ReadOnlySpan<EntityId> ids)
     {
-        if (ids.Length == 0)
-            return;
-        
-        // Now we are going to bulk load and cache the entities. We make an assumption here that a
-        // seek in RocksDB is going to be way slower than a single iteration over a large number of 
-        // mostly useless datoms. So we walk the entity ids in hand with the EAVT index and do a sorted
-        // merge join of the two sets.
-
-        // We're going to re-use this builder for each entity
-        using var builder = new IndexSegmentBuilder(AttributeCache);
-        var slice = SliceDescriptor.Create(ids[0], ids[^1]);
-        
-        // One enumerator for the entire entity segment
-        using var enumerator = GetRefDatomEnumerator();
-
-        var eidIndex = 0;
-        var readingE = EntityId.MinValueNoPartition;
-        var currentId = ids[eidIndex];
-        while (enumerator.MoveNext(slice))
-        {
-            // New Entity, so cache what we have so far if we have anything
-            if (enumerator.KeyPrefix.E != readingE)
-            {
-                if (builder.Count != 0)
-                {
-                    EntityCache.AddValue(readingE, AVSegment.Build(builder));
-                    builder.Reset();
-                }
-                readingE = enumerator.KeyPrefix.E;
-                if (currentId < readingE)
-                {
-                    eidIndex++;
-
-                    // If we're out of range for the ids, we have all we need
-                    if (eidIndex >= ids.Length)
-                        break;
-
-                    currentId = ids[eidIndex];
-                }
-            }
-            
-            // If we don't want this entity, skip it
-            if (currentId > readingE)
-                continue;
-            
-            // otherwise, add it to the builder
-            builder.AddCurrent(enumerator);
-        }
-
-        // If we have extra stuff left in the buffer, make sure to cache it
-        if (builder.Count != 0)
-        {
-            EntityCache.AddValue(readingE, AVSegment.Build(builder));
-        }
+        throw new NotImplementedException();
     }
     
     /// <summary>

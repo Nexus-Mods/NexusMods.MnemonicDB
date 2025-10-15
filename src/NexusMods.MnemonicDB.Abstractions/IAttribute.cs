@@ -4,6 +4,7 @@ using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -76,6 +77,11 @@ public interface IAttribute
     IReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, AttributeResolver resolver);
     
     /// <summary>
+    ///     Converts the given values into a typed datom
+    /// </summary>
+    IReadDatom Resolve(IDatomLikeRO srcDatom, AttributeResolver resolver);
+    
+    /// <summary>
     /// Adds the value to the transaction on the given entity/attribute, assumes the value is of the correct type
     /// </summary>
     void Add(ITransaction tx, EntityId entityId, object value, bool isRetract);
@@ -84,6 +90,11 @@ public interface IAttribute
     ///     Returns true if the attribute is in the given entity
     /// </summary>
     bool IsIn<T>(T entity) where T : IHasIdAndEntitySegment;
+
+    /// <summary>
+    /// Returns the high level value converted from the low level value
+    /// </summary>
+    object FromLowLevelObject(object o, AttributeResolver resolver);
 }
 
 /// <summary>

@@ -56,7 +56,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     {{if attr.IsReference}}
         return db.GetBackrefModels<{{= model.Name}}.ReadOnly>({{= attr.FieldName}}, value);    
     {{else}}
-        return db.Datoms({{= attr.FieldName}}, value).AsModels<{{= model.Name}}.ReadOnly>(db);
+        //return db.Datoms({{= attr.FieldName}}, value).AsModels<{{= model.Name}}.ReadOnly>(db);
+        throw new NotImplementedException();
     {{/if}}    
     }
     {{/if}}
@@ -99,7 +100,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     /// Returns all {{= model.Name}} entities in the database.
     /// </summary>
     public static __SEGMENTS__.Entities<{{=model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
-        return db.Datoms(PrimaryAttribute).AsModels<{{= model.Name}}.ReadOnly>(db);
+        //return db.Datoms(PrimaryAttribute).AsModels<{{= model.Name}}.ReadOnly>(db);
+        throw new NotImplementedException();
     }
 
 

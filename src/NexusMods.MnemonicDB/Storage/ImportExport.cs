@@ -48,6 +48,8 @@ public partial class DatomStore
             var slice = SliceDescriptor.Create(indexType);
             var chunks = snapshot.DatomsChunked(slice, ChunkSize);
 
+            throw new NotSupportedException();
+            /*
             foreach (var chunk in chunks)
             {
                 var data = chunk.Data;
@@ -57,6 +59,7 @@ public partial class DatomStore
                 binaryWriter.Write(data.Span);
                 exportedDatoms += chunk.Count;
             }
+            */
         }
         Logger.LogInformation("Exported {0} datoms", exportedDatoms);
     }
@@ -120,11 +123,13 @@ public partial class DatomStore
             
             var slice = SliceDescriptor.Create(index);
             var datoms = snapshot.Datoms(slice);
+            throw new NotImplementedException();
+            /*
             foreach (var datom in datoms)
             {
                 batch.Delete(index, datom);
                 datomCount++;
-            }
+            }*/
         }
         batch.Commit();
         Logger.LogInformation("Cleaned {0} datoms", datomCount);

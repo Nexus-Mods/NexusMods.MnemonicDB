@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -53,6 +54,20 @@ public sealed class AttributeResolver
             throw new InvalidOperationException($"Attribute {symbol} not found");
         }
         return attr.Resolve(datom.Prefix, datom.ValueSpan, this);
+    }
+    
+    /// <summary>
+    /// Resolves a datom into a IReadDatom
+    /// </summary>
+    public IReadDatom Resolve(IDatomLikeRO datom)
+    {
+        var dbId = datom.A;
+        var symbol = _attributeCache.GetSymbol(dbId);
+        if (!_attrsById.TryGetValue(symbol, out var attr))
+        {
+            throw new InvalidOperationException($"Attribute {symbol} not found");
+        }
+        return attr.Resolve(datom, this);
     }
 
     public bool TryGetAttribute(AttributeId id, out IAttribute attr)

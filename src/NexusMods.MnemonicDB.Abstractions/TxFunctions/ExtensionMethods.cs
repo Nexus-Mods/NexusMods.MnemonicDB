@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
@@ -30,7 +31,7 @@ public static class ExtensionMethods
     /// <param name="tx"></param>
     /// <param name="id"></param>
     /// <param name="recursive"></param>
-    public static void Delete(this ITransaction tx, EntityId id, bool recursive)
+    public static void Delete(this ITransaction tx, EntityId id, bool recursive = false)
     {
         if (recursive)
         {
@@ -80,7 +81,7 @@ public static class ExtensionMethods
     /// Decide if the entity that contains the given datom should be deleted recursively if this
     /// datom needs to be removed.
     /// </summary>
-    private static bool ShouldRecursiveDelete(IDb db, AttributeCache cache, Datom referenceDatom)
+    private static bool ShouldRecursiveDelete(IDb db, AttributeCache cache, IDatomLikeRO referenceDatom)
     {
         // If the reference is not a collection, then we can delete the whole thing as it's a child of this entity
         // We can get more detailed, but for now we assume that if the reference is a collection, we should not delete it

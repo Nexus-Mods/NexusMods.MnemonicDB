@@ -33,8 +33,7 @@ public abstract class ABackendTest(
     {
         var tx = await GenerateData();
         var datoms = tx.Snapshot
-            .Datoms(SliceDescriptor.Create(type))
-            .ToArray();
+            .Datoms(SliceDescriptor.Create(type));
 
         await Verify(datoms.ToTable(AttributeCache))
             .UseDirectory("BackendTestVerifyData")
@@ -69,19 +68,20 @@ public abstract class ABackendTest(
         {
             using var segment = new IndexSegmentBuilder(AttributeCache);
             var entityId = NextTempId();
-            segment.Add(entityId, Blobs.InKeyBlob, smallData);
-            segment.Add(entityId, Blobs.InValueBlob, largeData);
-            var (result, _) = await DatomStore.TransactAsync(segment.Build());
+            var (result, _) = await DatomStore.TransactAsync([
+                ValueDatom.Create(entityId, Blobs.InKeyBlob, smallData, DatomStore.AttributeCache),
+                ValueDatom.Create(entityId, Blobs.InValueBlob, largeData, DatomStore.AttributeCache)
+            ]);
             ids.Add(result.Remaps[entityId]);
         }
 
         // Retract the first 2
         for (var i = 0; i < 2; i++)
         {
-            using var segment = new IndexSegmentBuilder(AttributeCache);
-            segment.Add(ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true);
-            segment.Add(ids[i], Blobs.InValueBlob, largeData.AsMemory(), true);
-            await DatomStore.TransactAsync(segment.Build());
+            await DatomStore.TransactAsync([
+                ValueDatom.Create(ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true, DatomStore.AttributeCache),
+                ValueDatom.Create(ids[i], Blobs.InValueBlob, largeData.AsMemory(), true, DatomStore.AttributeCache)
+            ]);
         }
 
         smallData[0] = 1;
@@ -90,10 +90,10 @@ public abstract class ABackendTest(
         // Change the other 2
         for (var i = 5; i < 2; i++)
         {
-            using var segment = new IndexSegmentBuilder(AttributeCache);
-            segment.Add(ids[i], Blobs.InKeyBlob, smallData);
-            segment.Add(ids[i], Blobs.InValueBlob, largeData);
-            await DatomStore.TransactAsync(segment.Build());
+            await DatomStore.TransactAsync([
+                ValueDatom.Create(ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true, DatomStore.AttributeCache),
+                ValueDatom.Create(ids[i], Blobs.InValueBlob, largeData.AsMemory(), true, DatomStore.AttributeCache)
+            ]);
         }
 
         var datoms = DatomStore.GetSnapshot()
@@ -117,6 +117,8 @@ public abstract class ABackendTest(
     [Arguments(IndexType.AVETHistory)]
     public async Task HistoricalQueriesReturnAllDataSorted(IndexType type)
     {
+        throw new NotImplementedException();
+        /*
         var tx = await GenerateData();
         var current = tx.Snapshot.Datoms(SliceDescriptor.Create(type.CurrentVariant()));
         var history = tx.Snapshot.Datoms(SliceDescriptor.Create(type.HistoryVariant()));
@@ -128,11 +130,14 @@ public abstract class ABackendTest(
         await Verify(merged.ToTable(AttributeCache))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
+            */
     }
 
     [Test]
     public async Task CaseInsenstiveUTF8DoesntCrashTheComparator()
     {
+        throw new NotImplementedException();
+        /*
         using var segment = new IndexSegmentBuilder(AttributeCache);
         var id1 = NextTempId();
         var id2 = NextTempId();
@@ -142,6 +147,7 @@ public abstract class ABackendTest(
         segment.Add(id3, File.Path, "foo/bar");
         
         var (tx, _) = await DatomStore.TransactAsync(segment.Build());
+        */
     }
 
     private static Func<Datom, Datom, int> CompareDatoms(IDatomComparator comparer)
@@ -152,57 +158,60 @@ public abstract class ABackendTest(
 
     private async Task<StoreResult> GenerateData()
     {
-        var id1 = NextTempId();
-        var id2 = NextTempId();
+        throw new NotSupportedException();
+        /*
+    var id1 = NextTempId();
+    var id2 = NextTempId();
 
-        var modId1 = NextTempId();
-        var modId2 = NextTempId();
-        var loadoutId = NextTempId();
-        var collectionId = NextTempId();
-
-
-        StoreResult tx;
-
-        {
-
-            using var segment = new IndexSegmentBuilder(AttributeCache);
-
-            segment.Add(id1, File.Path, "foo/bar");
-            segment.Add(id1, File.Hash, Hash.From(0xDEADBEEF));
-            segment.Add(id1, File.Size, Size.From(42));
-            segment.Add(id2, File.Path, "qix/bar");
-            segment.Add(id2, File.Hash, Hash.From(0xDEADBEAF));
-            segment.Add(id2, File.Size, Size.From(77));
-            segment.Add(id1, File.ModId, modId1);
-            segment.Add(id2, File.ModId, modId1);
-
-            segment.Add(modId1, Mod.Name, "Test Mod 1");
-            segment.Add(modId1, Mod.LoadoutId, loadoutId);
-            segment.Add(modId2, Mod.Name, "Test Mod 2");
-            segment.Add(modId2, Mod.LoadoutId, loadoutId);
-            segment.Add(loadoutId, Loadout.Name, "Test Loadout 1");
-            segment.Add(collectionId, Collection.Name, "Test Collection 1");
-            segment.Add(collectionId, Collection.LoadoutId, loadoutId);
-            segment.Add(collectionId, Collection.ModIds, modId1);
-            segment.Add(collectionId, Collection.ModIds, modId2);
+    var modId1 = NextTempId();
+    var modId2 = NextTempId();
+    var loadoutId = NextTempId();
+    var collectionId = NextTempId();
 
 
-            (tx, _) = await DatomStore.TransactAsync(segment.Build());
-        }
+    StoreResult tx;
 
-        id1 = tx.Remaps[id1];
-        id2 = tx.Remaps[id2];
-        modId2 = tx.Remaps[modId2];
-        collectionId = tx.Remaps[collectionId];
+    {
 
-        {
-            using var segment = new IndexSegmentBuilder(AttributeCache);
-            segment.Add(id2, File.Path, "foo/qux");
-            segment.Add(id1, File.ModId, modId2);
-            segment.Add(collectionId, Collection.ModIds, modId2, true);
-            (tx, _) = await DatomStore.TransactAsync(segment.Build());
-        }
-        return tx;
+        using var segment = new IndexSegmentBuilder(AttributeCache);
+
+        segment.Add(id1, File.Path, "foo/bar");
+        segment.Add(id1, File.Hash, Hash.From(0xDEADBEEF));
+        segment.Add(id1, File.Size, Size.From(42));
+        segment.Add(id2, File.Path, "qix/bar");
+        segment.Add(id2, File.Hash, Hash.From(0xDEADBEAF));
+        segment.Add(id2, File.Size, Size.From(77));
+        segment.Add(id1, File.ModId, modId1);
+        segment.Add(id2, File.ModId, modId1);
+
+        segment.Add(modId1, Mod.Name, "Test Mod 1");
+        segment.Add(modId1, Mod.LoadoutId, loadoutId);
+        segment.Add(modId2, Mod.Name, "Test Mod 2");
+        segment.Add(modId2, Mod.LoadoutId, loadoutId);
+        segment.Add(loadoutId, Loadout.Name, "Test Loadout 1");
+        segment.Add(collectionId, Collection.Name, "Test Collection 1");
+        segment.Add(collectionId, Collection.LoadoutId, loadoutId);
+        segment.Add(collectionId, Collection.ModIds, modId1);
+        segment.Add(collectionId, Collection.ModIds, modId2);
+
+
+        (tx, _) = await DatomStore.TransactAsync(segment.Build());
+    }
+
+    id1 = tx.Remaps[id1];
+    id2 = tx.Remaps[id2];
+    modId2 = tx.Remaps[modId2];
+    collectionId = tx.Remaps[collectionId];
+
+    {
+        using var segment = new IndexSegmentBuilder(AttributeCache);
+        segment.Add(id2, File.Path, "foo/qux");
+        segment.Add(id1, File.ModId, modId2);
+        segment.Add(collectionId, Collection.ModIds, modId2, true);
+        (tx, _) = await DatomStore.TransactAsync(segment.Build());
+    }
+    return tx;
+    */
     }
 
     [Test]
@@ -217,6 +226,8 @@ public abstract class ABackendTest(
     [Arguments(IndexType.AVETHistory)]
     public async Task RetractedValuesAreSupported(IndexType type)
     {
+        throw new NotImplementedException();
+        /*
         var id = NextTempId();
         var modId = NextTempId();
 
@@ -255,6 +266,7 @@ public abstract class ABackendTest(
         await Verify(datoms.ToTable(AttributeCache))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
+            */
     }
 
 
