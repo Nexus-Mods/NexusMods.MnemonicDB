@@ -31,5 +31,8 @@
         <Compile Update="Storage\ImportExport.cs">
           <DependentUpon>DatomStore.cs</DependentUpon>
         </Compile>
+        <Compile Update="Storage\TxProcessing.cs">
+          <DependentUpon>DatomStore.cs</DependentUpon>
+        </Compile>
     </ItemGroup>
 </Project>
