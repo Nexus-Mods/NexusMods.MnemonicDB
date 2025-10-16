@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions.DatomComparators;
 
@@ -15,7 +16,31 @@ public abstract unsafe class ADatomComparator<TA, TB, TC, TD> : IDatomComparator
     where TC : IElementComparer
     where TD : IElementComparer
 {
-    
+    public int CompareInstance<TD1, TD2>(in TD1 d1, in TD2 d2) 
+        where TD1 : IDatomLikeRO, allows ref struct 
+        where TD2 : IDatomLikeRO, allows ref struct
+    {
+        var cmp = TA.Compare(d1, d2);
+        if (cmp != 0) return cmp;
+        var cmp2 = TB.Compare(d1, d2);
+        if (cmp2 != 0) return cmp2;
+        var cmp3 = TC.Compare(d1, d2);
+        if (cmp3 != 0) return cmp3;
+        return TD.Compare(d1, d2);
+    }
+
+    public static int Compare<TD1, TD2>(in TD1 d1, in TD2 d2) 
+        where TD1 : IDatomLikeRO, allows ref struct 
+        where TD2 : IDatomLikeRO, allows ref struct
+    {
+        var cmp = TA.Compare(d1, d2);
+        if (cmp != 0) return cmp;
+        var cmp2 = TB.Compare(d1, d2);
+        if (cmp2 != 0) return cmp2;
+        var cmp3 = TC.Compare(d1, d2);
+        if (cmp3 != 0) return cmp3;
+        return TD.Compare(d1, d2);
+    }
 
     /// <inheritdoc />
     public static int Compare(KeyPrefix* aPrefix, byte* aPtr, int aLen, KeyPrefix* bPrefix, byte* bPtr, int bLen)

@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
@@ -79,5 +80,13 @@ public sealed class ValueComparer : IElementComparer
         }
     }
 
-   
+    public static int Compare<T1, T2>(in T1 a, in T2 b) 
+        where T1 : IDatomLikeRO, allows ref struct 
+        where T2 : IDatomLikeRO, allows ref struct
+    {
+        var tcmp = a.ValueTag.CompareTo(b.ValueTag);
+        if (tcmp != 0)
+            return tcmp;
+        return a.ValueTag.Compare(a.Value, b.Value);
+    }
 }

@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
@@ -40,5 +41,12 @@ public sealed class EComparer : IElementComparer
         var keyA = KeyPrefix.Read(a);
         var keyB = KeyPrefix.Read(b);
         return keyA.E.CompareTo(keyB.E);
+    }
+
+    public static int Compare<T1, T2>(in T1 a, in T2 b) 
+        where T1 : IDatomLikeRO, allows ref struct 
+        where T2 : IDatomLikeRO, allows ref struct
+    {
+        return a.E.CompareTo(b.E);   
     }
 }

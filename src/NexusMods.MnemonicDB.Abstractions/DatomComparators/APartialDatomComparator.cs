@@ -2,6 +2,7 @@
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions.DatomComparators;
 
@@ -96,6 +97,32 @@ public abstract unsafe class APartialDatomComparator<TA, TB, TC> : IDatomCompara
         if (cmp != 0) return cmp;
 
         return TC.Compare(a, b);
+    }
+
+    public int CompareInstance<TD1, TD2>(in TD1 d1, in TD2 d2) 
+        where TD1 : IDatomLikeRO, allows ref struct 
+        where TD2 : IDatomLikeRO, allows ref struct
+    {
+        var cmp = TA.Compare(d1, d2);
+        if (cmp != 0) return cmp;
+
+        cmp = TB.Compare(d1, d2);
+        if (cmp != 0) return cmp;
+
+        return TC.Compare(d1, d2);
+    }
+
+    public static int Compare<TD1, TD2>(in TD1 d1, in TD2 d2) 
+        where TD1 : IDatomLikeRO, allows ref struct 
+        where TD2 : IDatomLikeRO, allows ref struct
+    {
+        var cmp = TA.Compare(d1, d2);
+        if (cmp != 0) return cmp;
+
+        cmp = TB.Compare(d1, d2);
+        if (cmp != 0) return cmp;
+
+        return TC.Compare(d1, d2);
     }
 
     /// <inheritdoc />

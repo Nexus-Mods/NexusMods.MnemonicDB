@@ -21,6 +21,7 @@ public abstract class AStorageTest : IDisposable
     public Backend Backend { get; }
 
     protected AttributeCache AttributeCache => DatomStore.AttributeCache;
+    protected AttributeResolver AttributeResolver { get; }
 
     protected readonly ILogger Logger;
 
@@ -37,9 +38,11 @@ public abstract class AStorageTest : IDisposable
         {
             Path = isInMemory ? null : _path,
         };
-
+        
         Backend = new Backend();
         DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), DatomStoreSettings, new Backend());
+        
+        AttributeResolver = new AttributeResolver(_provider, AttributeCache);
         
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
 

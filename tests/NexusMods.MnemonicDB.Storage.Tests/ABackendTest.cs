@@ -6,6 +6,7 @@ using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 using NexusMods.MnemonicDB.Storage.Tests.TestAttributes;
 using NexusMods.MnemonicDB.TestModel;
 using NexusMods.Paths;
@@ -35,7 +36,7 @@ public abstract class ABackendTest(
         var datoms = tx.Snapshot
             .Datoms(SliceDescriptor.Create(type));
 
-        await Verify(datoms.ToTable(AttributeCache))
+        await Verify(datoms.ToTable(AttributeResolver))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }
@@ -100,7 +101,7 @@ public abstract class ABackendTest(
             .Datoms(SliceDescriptor.Create(type))
             .ToArray();
 
-        await Verify(datoms.ToTable(AttributeCache))
+        await Verify(datoms.ToTable(AttributeResolver))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }
@@ -117,8 +118,6 @@ public abstract class ABackendTest(
     [Arguments(IndexType.AVETHistory)]
     public async Task HistoricalQueriesReturnAllDataSorted(IndexType type)
     {
-        throw new NotImplementedException();
-        /*
         var tx = await GenerateData();
         var current = tx.Snapshot.Datoms(SliceDescriptor.Create(type.CurrentVariant()));
         var history = tx.Snapshot.Datoms(SliceDescriptor.Create(type.HistoryVariant()));
@@ -127,10 +126,9 @@ public abstract class ABackendTest(
             .Merge(history, CompareDatoms(comparer))
             .ToArray();
 
-        await Verify(merged.ToTable(AttributeCache))
+        await Verify(merged.ToTable(AttributeResolver))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
-            */
     }
 
     [Test]
@@ -150,7 +148,7 @@ public abstract class ABackendTest(
         */
     }
 
-    private static Func<Datom, Datom, int> CompareDatoms(IDatomComparator comparer)
+    private static Func<IDatomLikeRO, IDatomLikeRO, int> CompareDatoms(IDatomComparator comparer)
     {
         return (a, b) => comparer.CompareInstance(a, b);
     }
@@ -261,7 +259,7 @@ public abstract class ABackendTest(
         var datoms = tx2.Snapshot
             .Datoms(SliceDescriptor.Create(type))
             .ToArray();
-        await Verify(datoms.ToTable(AttributeCache))
+        await Verify(datoms.ToTable(AttributeResolver))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }
@@ -273,6 +271,6 @@ public abstract class ABackendTest(
         var attrs = DatomStore.GetSnapshot().Datoms(SliceDescriptor.Create(AttributeDefinition.UniqueId, AttributeCache))
             .ToArray();
 
-        await Verify(attrs.ToTable(AttributeCache));
+        await Verify(attrs.ToTable(AttributeResolver));
     }
 }

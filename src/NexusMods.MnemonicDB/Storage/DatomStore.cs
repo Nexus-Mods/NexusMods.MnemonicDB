@@ -468,8 +468,8 @@ public sealed partial class DatomStore : IDatomStore
     private void LogTx(IWriteBatch batch)
     {
         var id = EntityId.From(_thisTx.Value);
-        var timestamp = _timeProvider.GetUtcNow().UtcTicks;
-        var datom = ValueDatom.Create(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), ValueTag.Int64, timestamp);
+        var taggedValue = new TaggedValue(ValueTag.Int64, _timeProvider.GetUtcNow().UtcTicks);
+        var datom = ValueDatom.Create(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), taggedValue, _thisTx, true);
         LogAssert(batch, datom);
     }
 
@@ -492,17 +492,17 @@ public sealed partial class DatomStore : IDatomStore
 
         // The retract datom is the input datom, marked as an retract and with the TxId of the retracting transaction
         var retractDatom = oldDatom.With(newTxId).WithRetract(true);
+        // Add the retract datom to the tx log
+        batch.Add(retractDatom.With(IndexType.TxLog));
         
         // Now we move the datom into the history index, but only if the attribute is not a no history attribute
         if (!_attributeCache.IsNoHistory(a))
         {
-            batch.Add(retractDatom.With(IndexType.TxLog));
-            
             batch.Add(oldDatom.With(EAVTHistory));
             batch.Add(retractDatom.With(EAVTHistory));
             
-            batch.Add(oldDatom.With(AVETHistory));
-            batch.Add(retractDatom.With(AVETHistory));
+            batch.Add(oldDatom.With(AEVTHistory));
+            batch.Add(retractDatom.With(AEVTHistory));
             
             if (isIndexed)
             {

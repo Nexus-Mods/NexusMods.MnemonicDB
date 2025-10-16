@@ -148,6 +148,81 @@ public static class Serializer
         return aTag.Compare(aVal, aLen, bVal, bLen);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static int Compare<T1, T2>(this ValueTag tag, in T1 obj1, in T2 obj2)
+        where T1 : notnull
+        where T2 : notnull
+    {
+        switch (tag)
+        {
+            case ValueTag.Null:
+                return 0;
+            case ValueTag.UInt8:
+                return CompareCore<T1, T2, byte>(obj1, obj2);
+            case ValueTag.UInt16:
+                return CompareCore<T1, T2, ushort>(obj1, obj2);
+            case ValueTag.UInt32:
+                return CompareCore<T1, T2, uint>(obj1, obj2);
+            case ValueTag.UInt64:
+                return CompareCore<T1, T2, ulong>(obj1, obj2);
+            case ValueTag.UInt128:
+                return CompareCore<T1, T2, UInt128>(obj1, obj2);
+            case ValueTag.Int16:
+                return CompareCore<T1, T2, short>(obj1, obj2);
+            case ValueTag.Int32:
+                return CompareCore<T1, T2, int>(obj1, obj2);
+            case ValueTag.Int64:
+                return CompareCore<T1, T2, long>(obj1, obj2);
+            case ValueTag.Int128:
+                return CompareCore<T1, T2, Int128>(obj1, obj2);
+            case ValueTag.Float32:
+                return CompareCore<T1, T2, float>(obj1, obj2);
+            case ValueTag.Float64:
+                return CompareCore<T1, T2, double>(obj1, obj2);
+            case ValueTag.Ascii:
+                return CompareCore<T1, T2, string>(obj1, obj2);
+            case ValueTag.Utf8:
+                return CompareCore<T1, T2, string>(obj1, obj2);
+            case ValueTag.Utf8Insensitive:
+                return ((string)(object)obj1).CompareTo((string)(object)obj2, StringComparison.InvariantCultureIgnoreCase);
+            case ValueTag.Reference:
+                return CompareCore<T1, T2, EntityId>(obj1, obj2);
+            case ValueTag.Tuple2_UShort_Utf8I:
+            {
+                var (u1, s1) = (Tuple2_UShort_Utf8I)(object)obj1;
+                var (u2, s2) = (Tuple2_UShort_Utf8I)(object)obj2;
+                var cmp = u1.CompareTo(u2);
+                if (cmp != 0)
+                    return cmp;
+                return s1.CompareTo(s2, StringComparison.InvariantCulture);
+            }
+            case ValueTag.Tuple3_Ref_UShort_Utf8I:
+            {
+                var (r1, u1, s1) = (Tuple3_Ref_UShort_Utf8I)(object)obj1;
+                var (r2, u2, s2) = (Tuple3_Ref_UShort_Utf8I)(object)obj2;
+                var cmp = r1.CompareTo(r2);
+                if (cmp != 0)
+                    return cmp;
+                cmp = u1.CompareTo(u2);
+                if (cmp != 0)
+                    return cmp;
+                return s1.CompareTo(s2, StringComparison.InvariantCulture);
+            }
+            default:
+                throw new ArgumentOutOfRangeException(nameof(tag), tag, "Unknown tag");
+        }
+        
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    private static int CompareCore<T1, T2, TCmp>(in T1 obj1, in T2 obj2)
+        where T1 : notnull
+        where T2 : notnull
+        where TCmp : IComparable<TCmp>
+    {
+        return ((TCmp)(object)obj1).CompareTo((TCmp)(object)obj2);
+    }
+    
     /// <summary>
     /// Compares two datoms with the given prefixes and value pointers
     /// </summary>

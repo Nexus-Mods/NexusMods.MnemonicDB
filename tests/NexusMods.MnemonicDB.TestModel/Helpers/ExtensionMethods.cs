@@ -11,10 +11,10 @@ namespace NexusMods.MnemonicDB.TestModel.Helpers;
 
 public static class ExtensionMethods
 {
-    public static string ToTable(this IEnumerable<IDatomLikeRO> datoms, AttributeCache cache)
+    public static string ToTable(this IEnumerable<IDatomLikeRO> datoms, AttributeResolver resolver)
     {
-        var valueTagId = cache.GetAttributeId(AttributeDefinition.ValueType.Id);
-        var timestampId = cache.GetAttributeId(Transaction.Timestamp.Id);
+        var cache = resolver.AttributeCache;
+        int timestampCount = 0;
         
         string TruncateOrPad(string val, int length)
         {
@@ -32,6 +32,7 @@ public static class ExtensionMethods
         var sb = new StringBuilder();
         foreach (var datom in datoms)
         {
+            var resolved = resolver.Resolve(datom);
             var isRetract = datom.IsRetract;
 
             var aName = cache.GetSymbol(datom.A);
@@ -45,7 +46,16 @@ public static class ExtensionMethods
             sb.Append($"({attrId}) {symColumn}");
             sb.Append(" | ");
 
-            sb.Append(TruncateOrPad(datom.Value.ToString() ?? "", 48));
+            var o = resolved.ObjectValue;
+            if (o is DateTimeOffset)
+            {
+                sb.Append(TruncateOrPad("DateTime : " + timestampCount, 48));
+                timestampCount++;
+            }
+            else
+            {
+                sb.Append(TruncateOrPad(resolved.ObjectValue.ToString() ?? "", 48));
+            }
 
             sb.Append(" | ");
             sb.Append(datom.T);

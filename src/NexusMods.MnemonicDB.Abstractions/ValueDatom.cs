@@ -66,6 +66,12 @@ public struct ValueDatom : IDatomLikeRO
         return new ValueDatom(prefix, tValue.Value);
     }
     
+    public static ValueDatom Create(EntityId e, AttributeId attr, TaggedValue tValue, TxId tx, bool isRetract)
+    {
+        var prefix = new KeyPrefix(e, attr, tx, isRetract, tValue.Tag);
+        return new ValueDatom(prefix, tValue.Value);
+    }
+    
     public static ValueDatom Create<THighLevel, TLowLevel, TSerializer>(EntityId e, Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value, AttributeCache attributeCache) 
         where THighLevel : notnull 
         where TLowLevel : notnull
