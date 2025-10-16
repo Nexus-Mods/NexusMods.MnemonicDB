@@ -541,7 +541,7 @@ public sealed class Connection : IConnection
     internal static DatomKey CreateKey<TDatom>(TDatom datom, AttributeId attrId, bool isMany = false) 
         where TDatom : IDatomLikeRO
     {
-        return new DatomKey(datom.E, attrId, isMany ? datom.ValueObject : null);
+        return new DatomKey(datom.E, attrId, isMany ? datom.Value : null);
     }
 
     /// <inheritdoc />

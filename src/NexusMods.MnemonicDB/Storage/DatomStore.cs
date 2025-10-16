@@ -182,14 +182,14 @@ public sealed partial class DatomStore : IDatomStore
     public IObservable<IDb> TxLog => _dbStream;
 
     /// <inheritdoc />
-    public (StoreResult, IDb) Transact(IReadOnlyList<IDatomLikeRO> segment)
+    public (StoreResult, IDb) Transact(IDatomsListLike segment)
     {
         throw new NotImplementedException();
         //return Transact(new IndexSegmentTransaction(segment));
     }
 
     /// <inheritdoc />
-    public Task<(StoreResult, IDb)> TransactAsync(IReadOnlyList<IDatomLikeRO> segment)
+    public Task<(StoreResult, IDb)> TransactAsync(IDatomsListLike segment)
     {
         throw new NotImplementedException();
         //return TransactAsync(new IndexSegmentTransaction(segment));
@@ -366,7 +366,8 @@ public sealed partial class DatomStore : IDatomStore
     {
         var swPrepare = Stopwatch.StartNew();
         var retractionList = new List<IDatomLikeRO>();
-        ProcessRetractions(datoms, retractionList);
+        throw new NotImplementedException();
+        //ProcessRetractions(datoms, retractionList);
         _remaps.Clear();
         _currentUniqueDatoms.Clear();
         using var batch = Backend.CreateBatch();
@@ -381,7 +382,8 @@ public sealed partial class DatomStore : IDatomStore
                 throw new NotImplementedException();
                 //dataSize += datom.ValueSpan.Length + KeyPrefix.Size;
             }
-            LogDatom(in datom, batch);
+            throw new NotImplementedException();
+            //LogDatom(in datom, batch);
         }
 
         if (advanceTx) 
@@ -411,49 +413,7 @@ public sealed partial class DatomStore : IDatomStore
         // Update the snapshot
         CurrentSnapshot = Backend.GetSnapshot();
     }
-
-    private void ProcessRetractions(IDatomsListLike datoms, IDatomsListLike retractionList)
-    {
-        var retractions = new DatomList(_attributeCache);
-        var needRetractions = new DatomList(_attributeCache);
-        
-        foreach (var datom in datoms)
-        {
-            if (datom.IsRetract)
-            {
-                retractions.Add(datom);
-                continue;
-            }
-
-            // Can't have a retract on a temp entity
-            if (datom.E.InPartition(PartitionId.Temp))
-                continue;
-            
-            // We don't automatically process retracts on cardinality many
-            if (_attributeCache.IsCardinalityMany(datom.A))
-                continue;
-            
-            needRetractions.Add(datom);
-        }
-
-        retractionList.SortBy(EAVTCurrent);
-        
-        foreach (var datom in needRetractions)
-        {
-            // No previous datom to retract
-            var hasPrevious = TryGetPreviousDatom(datom, out var previousDatom);
-            var userSuppliedRetracts = retractions.GetBy(datom.E, datom.A);
-            
-            if (userSuppliedRetracts.Length > 0 && !hasPrevious)
-                throw new Exception("Tried to retract a datom that doesn't exist");
-            
-            
-            
-            // Insert the retraction
-            retractionList.Add(previousDatom.Retract());
-        }
-    }
-
+    
     public bool TryGetPreviousDatom(IDatomLikeRO d, out IDatomLikeRO found)
     {
         var slice = SliceDescriptor.Create(d.E, d.A);
@@ -541,7 +501,7 @@ public sealed partial class DatomStore : IDatomStore
         {
             _writer.WriteMarshal(keyPrefix);
             throw new NotImplementedException();
-            Serializer.Write(keyPrefix.ValueTag, datom.ValueObject, _writer);
+            Serializer.Write(keyPrefix.ValueTag, datom.Value, _writer);
             /*var valueSpan = datom.ValueSpan;
             var span = _writer.GetSpan(valueSpan.Length);
             valueSpan.CopyTo(span);

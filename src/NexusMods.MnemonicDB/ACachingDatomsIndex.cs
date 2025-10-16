@@ -80,8 +80,8 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
         public override IEnumerable<(AttributeId A, EntityId E)> GetKeysFromRecentlyAdded(IReadOnlyList<IDatomLikeRO> segment)
         {
             return segment
-                .OfType<ValueDatom<EntityId>>()
-                .Select(static d => (((IKeyPrefixLikeRO)d).A, d.Value));
+                .Where(static d => d.Value is EntityId)
+                .Select(static d => (d.A, (EntityId)d.Value));
         }
     }
 
