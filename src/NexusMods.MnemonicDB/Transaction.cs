@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -35,7 +36,7 @@ internal sealed class Transaction : IMainTransaction, ISubTransaction
         _parentTransaction = parentTransaction;
     }
 
-    List<IDatomLikeRO> IDatomsListLike.Datoms => _datoms;
+    List<ValueDatom> IDatomsListLike.Datoms => _datoms;
 
     public AttributeCache AttributeCache => _datoms.AttributeCache;
 
@@ -92,5 +93,15 @@ internal sealed class Transaction : IMainTransaction, ISubTransaction
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (_committed) throw new InvalidOperationException("Transaction has already been committed!");
+    }
+
+    public IEnumerator<ValueDatom> GetEnumerator()
+    {
+        return _datoms.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
     }
 }

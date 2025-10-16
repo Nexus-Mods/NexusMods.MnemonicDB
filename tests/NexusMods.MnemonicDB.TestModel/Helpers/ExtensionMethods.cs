@@ -45,7 +45,7 @@ public static class ExtensionMethods
             sb.Append($"({attrId}) {symColumn}");
             sb.Append(" | ");
 
-            sb.Append(TruncateOrPad(datom.ValueObject?.ToString() ?? "", 48));
+            sb.Append(TruncateOrPad(datom.Value.ToString() ?? "", 48));
 
             sb.Append(" | ");
             sb.Append(datom.T.Value.ToString("X16"));

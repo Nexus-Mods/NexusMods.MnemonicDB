@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading;
@@ -103,6 +104,15 @@ internal class InternalTransaction(IDb basisDb, IDatomsListLike datoms) : ITrans
     {
     }
 
-    public List<IDatomLikeRO> Datoms => datoms.Datoms;
+    public List<ValueDatom> Datoms => datoms.Datoms;
     public AttributeCache AttributeCache => datoms.AttributeCache;
+    public IEnumerator<ValueDatom> GetEnumerator()
+    {
+        return Datoms.GetEnumerator();
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
 }

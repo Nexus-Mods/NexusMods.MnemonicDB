@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Traits;
@@ -8,7 +10,7 @@ using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
-public class DatomList : List<IDatomLikeRO>, IDatomsListLike
+public class DatomList : List<ValueDatom>, IDatomsListLike
 {
     public DatomList(AttributeCache attributeCache) : base()
     {
@@ -25,20 +27,27 @@ public class DatomList : List<IDatomLikeRO>, IDatomsListLike
         AttributeCache = store.AttributeCache;
     }
 
-    public List<IDatomLikeRO> Datoms => this;
+    public List<ValueDatom> Datoms => this;
 
     [field: AllowNull, MaybeNull] public AttributeCache AttributeCache { get; }
 }
 
-public interface IDatomsListLike
+public interface IDatomsListLike : IEnumerable<ValueDatom>
 {
-    public List<IDatomLikeRO> Datoms { get; }
+    public List<ValueDatom> Datoms { get; }
 
     public AttributeCache AttributeCache { get; }
 }
 
 public static class DatomListLikeExtensions
-{ 
+{
+    public static int Count(this IDatomsListLike lst) => lst.Datoms.Count;
+    
+    public static void Add(this IDatomsListLike lst, IDatomLikeRO datomLike)
+    {
+        lst.Add(datomLike);
+    }
+    
     public static void Add<THighLevel, TLowLevel, TSerializer>(this IDatomsListLike lst, EntityId e, Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value)
         where THighLevel : notnull
         where TLowLevel : notnull
@@ -71,7 +80,7 @@ public static class DatomListLikeExtensions
         var attrId = lst.AttributeCache!.GetAttributeId(attr.Id);
         var prefix = new KeyPrefix(e, attrId, txId, isRetract, attr.LowLevelType);
         var converted = attr.ToLowLevel(value);
-        lst.Datoms.Add(new ValueDatom<TLowLevel>(prefix, converted));
+        lst.Datoms.Add(new ValueDatom(prefix, converted));
     }
 
     /// <summary>
@@ -86,7 +95,7 @@ public static class DatomListLikeExtensions
     /// Adds all the datoms in the given list to the datoms list.
     /// </summary>
     /// <param name="datoms"></param>
-    public static void Add(this IDatomsListLike lst, List<IDatomLikeRO> datoms)
+    public static void Add(this IDatomsListLike lst, List<ValueDatom> datoms)
     {
         lst.Datoms.AddRange(datoms);
     }

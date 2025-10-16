@@ -7,7 +7,7 @@ public interface IDatomLikeRO : IKeyPrefixLikeRO
     /// <summary>
     /// Gets the value of the datom as an object.
     /// </summary>
-    public object ValueObject { get; }
+    public object Value { get; }
 
     public IDatomLikeRO Retract()
     {

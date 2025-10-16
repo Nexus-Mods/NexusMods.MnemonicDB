@@ -21,7 +21,7 @@ public readonly struct AVSegment
             if (!resolver.TryGetAttribute(d.A, out var attr))
                 continue;
             AttributeIds[i] = d.A;
-            Values[i] = attr.FromLowLevelObject(d.ValueObject, resolver);
+            Values[i] = attr.FromLowLevelObject(d.Value, resolver);
         }
     }
 }

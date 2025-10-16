@@ -111,7 +111,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
     {
         if (srcDatom is IDatomLikeRO<TLowLevelType> datom)
             return new ReadDatom(datom.Prefix, FromLowLevel(datom.Value, resolver), this);
-        return new ReadDatom(srcDatom.Prefix, FromLowLevel((TLowLevelType)srcDatom.ValueObject, resolver), this);
+        return new ReadDatom(srcDatom.Prefix, FromLowLevel((TLowLevelType)srcDatom.Value, resolver), this);
     }
 
     /// <summary>

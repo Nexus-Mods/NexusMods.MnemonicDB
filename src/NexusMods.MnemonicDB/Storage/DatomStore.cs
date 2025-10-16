@@ -362,10 +362,11 @@ public sealed partial class DatomStore : IDatomStore
         };
     }
 
-    internal void LogDatoms<TSource>(TSource datoms, bool advanceTx = true, bool enableStats = false) 
-        where TSource : IEnumerable<IDatomLikeRO>
+    internal void LogDatoms(IDatomsListLike datoms, bool advanceTx = true, bool enableStats = false) 
     {
         var swPrepare = Stopwatch.StartNew();
+        var retractionList = new List<IDatomLikeRO>();
+        ProcessRetractions(datoms, retractionList);
         _remaps.Clear();
         _currentUniqueDatoms.Clear();
         using var batch = Backend.CreateBatch();
@@ -409,6 +410,62 @@ public sealed partial class DatomStore : IDatomStore
         _avCache.Clear();
         // Update the snapshot
         CurrentSnapshot = Backend.GetSnapshot();
+    }
+
+    private void ProcessRetractions(IDatomsListLike datoms, IDatomsListLike retractionList)
+    {
+        var retractions = new DatomList(_attributeCache);
+        var needRetractions = new DatomList(_attributeCache);
+        
+        foreach (var datom in datoms)
+        {
+            if (datom.IsRetract)
+            {
+                retractions.Add(datom);
+                continue;
+            }
+
+            // Can't have a retract on a temp entity
+            if (datom.E.InPartition(PartitionId.Temp))
+                continue;
+            
+            // We don't automatically process retracts on cardinality many
+            if (_attributeCache.IsCardinalityMany(datom.A))
+                continue;
+            
+            needRetractions.Add(datom);
+        }
+
+        retractionList.SortBy(EAVTCurrent);
+        
+        foreach (var datom in needRetractions)
+        {
+            // No previous datom to retract
+            var hasPrevious = TryGetPreviousDatom(datom, out var previousDatom);
+            var userSuppliedRetracts = retractions.GetBy(datom.E, datom.A);
+            
+            if (userSuppliedRetracts.Length > 0 && !hasPrevious)
+                throw new Exception("Tried to retract a datom that doesn't exist");
+            
+            
+            
+            // Insert the retraction
+            retractionList.Add(previousDatom.Retract());
+        }
+    }
+
+    public bool TryGetPreviousDatom(IDatomLikeRO d, out IDatomLikeRO found)
+    {
+        var slice = SliceDescriptor.Create(d.E, d.A);
+        using var iterator = _currentDb!.Snapshot.LightweightDatoms(slice);
+        if (!iterator.MoveNext())
+        {
+            found = null!;
+            return false;
+        }
+
+        found = ValueDatom.Create(iterator);
+        return true;
     }
 
     /// <summary>
