@@ -41,4 +41,9 @@ public interface IWriteBatch : IDisposable
     /// Add a delete operation to the batch
     /// </summary>
     public void Delete(Datom datom);
+    
+    /// <summary>
+    /// Add a delete operation to the batch
+    /// </summary>
+    public void Delete(ValueDatom datom);
 }

@@ -40,7 +40,7 @@ public readonly partial struct EntityId : IAugmentWith<JsonAugment>
     /// <inheritdoc />
     public override string ToString()
     {
-        return "EId:" + Value.ToString("X");
+        return "EId:" + Value.ToString("X16");
     }
 
     /// <summary>

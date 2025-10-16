@@ -369,8 +369,14 @@ public sealed partial class DatomStore : IDatomStore
         
         using var batch = Backend.CreateBatch();
         datomCount += asserts.Datoms.Count;
-        if (retracts.Datoms.Any())
-            throw new NotImplementedException();
+        
+        // Retracts first
+        foreach (var retract in retracts)
+        {
+            LogRetract(batch, retract, _thisTx);
+        }
+        
+        // Asserts next
         foreach (var assert in asserts)
         {
             var withTx = assert.With(_thisTx).WithRemaps(_remapFunc);
@@ -465,6 +471,50 @@ public sealed partial class DatomStore : IDatomStore
         var timestamp = _timeProvider.GetUtcNow().UtcTicks;
         var datom = ValueDatom.Create(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), ValueTag.Int64, timestamp);
         LogAssert(batch, datom);
+    }
+
+    private void LogRetract(IWriteBatch batch, in ValueDatom oldDatom, TxId newTxId)
+    {
+        Debug.Assert(!oldDatom.Prefix.IsRetract, "The datom handed to LogRetract is expected to be the old datom");
+        Debug.Assert(oldDatom.Prefix.T < newTxId, "The datom handed to LogRetract is expected to be the old datom");
+        
+        var a = oldDatom.Prefix.A;
+        var isIndexed = _attributeCache.IsIndexed(a);
+        var isReference = _attributeCache.IsReference(a);
+        
+        // First we issue deletes for all the old datoms
+        batch.Delete(oldDatom.With(EAVTCurrent));
+        batch.Delete(oldDatom.With(AEVTCurrent));
+        if (isIndexed) 
+            batch.Delete(oldDatom.With(AVETCurrent));
+        if (isReference)
+            batch.Delete(oldDatom.With(VAETCurrent));
+
+        // The retract datom is the input datom, marked as an retract and with the TxId of the retracting transaction
+        var retractDatom = oldDatom.With(newTxId).WithRetract(true);
+        
+        // Now we move the datom into the history index, but only if the attribute is not a no history attribute
+        if (!_attributeCache.IsNoHistory(a))
+        {
+            batch.Add(retractDatom.With(IndexType.TxLog));
+            
+            batch.Add(oldDatom.With(EAVTHistory));
+            batch.Add(retractDatom.With(EAVTHistory));
+            
+            batch.Add(oldDatom.With(AVETHistory));
+            batch.Add(retractDatom.With(AVETHistory));
+            
+            if (isIndexed)
+            {
+                batch.Add(oldDatom.With(AVETHistory));
+                batch.Add(retractDatom.With(AVETHistory));
+            }
+            if (isReference)
+            {
+                batch.Add(oldDatom.With(VAETHistory));
+                batch.Add(retractDatom.With(VAETHistory));
+            }
+        }
     }
 
     private void LogAssert(IWriteBatch batch, in ValueDatom assert)

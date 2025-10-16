@@ -40,7 +40,7 @@ public static class ExtensionMethods
 
             sb.Append(isRetract ? "-" : "+");
             sb.Append(" | ");
-            sb.Append(datom.E.Value.ToString("X16"));
+            sb.Append(datom.E);
             sb.Append(" | ");
             sb.Append($"({attrId}) {symColumn}");
             sb.Append(" | ");
@@ -48,7 +48,7 @@ public static class ExtensionMethods
             sb.Append(TruncateOrPad(datom.Value.ToString() ?? "", 48));
 
             sb.Append(" | ");
-            sb.Append(datom.T.Value.ToString("X16"));
+            sb.Append(datom.T);
 
             sb.AppendLine();
         }

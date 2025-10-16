@@ -80,7 +80,25 @@ internal class Batch(RocksDb db) : IWriteBatch
 
             _batch.Delete(keySpan);
         }
-
+    }
+    
+    public void Delete(ValueDatom datom)
+    {
+        if (datom.Prefix.ValueTag == ValueTag.HashedBlob)
+        {
+            Span<byte> keySpan = stackalloc byte[Serializer.HashedBlobPrefixSize];
+            var value = (Memory<byte>)datom.Value;
+            MemoryMarshal.Write(keySpan, datom.Prefix);
+            value.Span.SliceFast(0, Serializer.HashedBlobHeaderSize).CopyTo(keySpan.SliceFast(KeyPrefix.Size));
+            _batch.Delete(keySpan);
+        }
+        else
+        {
+            _writer.Reset();
+            _writer.WriteMarshal(datom.Prefix);
+            datom.Prefix.ValueTag.Write(datom.Value, _writer);
+            _batch.Delete(_writer.GetWrittenSpan());
+        }
     }
 
     /// <inheritdoc />

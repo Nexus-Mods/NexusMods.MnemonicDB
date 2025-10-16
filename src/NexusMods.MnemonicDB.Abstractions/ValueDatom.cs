@@ -97,6 +97,8 @@ public struct ValueDatom : IDatomLikeRO
     {
         switch (prefix.ValueTag)
         {
+            case ValueTag.Null:
+                return new ValueDatom(prefix, Null.Instance);
             case ValueTag.UInt8:
                 return new ValueDatom(prefix, prefix.ValueTag.Read<byte>(valueSpan));
             case ValueTag.UInt16:
@@ -136,7 +138,7 @@ public struct ValueDatom : IDatomLikeRO
             case ValueTag.Tuple3_Ref_UShort_Utf8I:
                 return new ValueDatom(prefix, prefix.ValueTag.Read<(EntityId, ushort, string)>(valueSpan));
             default:
-                throw new ArgumentOutOfRangeException(nameof(prefix), prefix, "Unknown prefix");
+                throw new ArgumentOutOfRangeException(nameof(prefix), prefix, $"Unknown prefix tag {prefix.ValueTag}");
         }
     }
     public static ValueDatom Create(ReadOnlySpan<byte> span)
@@ -152,5 +154,10 @@ public struct ValueDatom : IDatomLikeRO
         if (prefix.ValueTag == ValueTag.HashedBlob)
             return Create(prefix, spanDatomLike.ExtraValueSpan);
         return Create(spanDatomLike.Prefix, spanDatomLike.ValueSpan);
+    }
+
+    public readonly ValueDatom WithRetract(bool b)
+    {
+        return new ValueDatom(Prefix with { IsRetract = b }, Value);   
     }
 }
