@@ -134,18 +134,18 @@ public abstract class ABackendTest(
     [Test]
     public async Task CaseInsenstiveUTF8DoesntCrashTheComparator()
     {
-        throw new NotImplementedException();
-        /*
-        using var segment = new IndexSegmentBuilder(AttributeCache);
         var id1 = NextTempId();
         var id2 = NextTempId();
         var id3 = NextTempId();
-        segment.Add(id1, File.Path, "foo/bar");
-        segment.Add(id2, File.Path, "foo/bar");
-        segment.Add(id3, File.Path, "foo/bar");
-        
-        var (tx, _) = await DatomStore.TransactAsync(segment.Build());
-        */
+
+        var segment = new DatomList(AttributeCache)
+        {
+            { id1, File.Path, "foo/bar" },
+            { id2, File.Path, "foo/bar" },
+            { id3, File.Path, "foo/bar" }
+        };
+
+        var (tx, _) = await DatomStore.TransactAsync(segment);
     }
 
     private static Func<IDatomLikeRO, IDatomLikeRO, int> CompareDatoms(IDatomComparator comparer)
