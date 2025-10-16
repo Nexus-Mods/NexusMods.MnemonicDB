@@ -1,4 +1,5 @@
 ﻿using System;
+using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 
@@ -24,6 +25,11 @@ public interface IWriteBatch : IDisposable
     /// Add a datom to the batch
     /// </summary>
     public void Add(Datom datom);
+    
+    /// <summary>
+    /// Add a datom to the batch
+    /// </summary>
+    public void Add(ValueDatom datom);
     
     /// <summary>
     /// Add a delete operation to the batch, after remapping the datom to the given index

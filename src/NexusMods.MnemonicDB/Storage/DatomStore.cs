@@ -182,17 +182,15 @@ public sealed partial class DatomStore : IDatomStore
     public IObservable<IDb> TxLog => _dbStream;
 
     /// <inheritdoc />
-    public (StoreResult, IDb) Transact(IDatomsListLike segment)
+    public (StoreResult, IDb) Transact(DatomList segment)
     {
-        throw new NotImplementedException();
-        //return Transact(new IndexSegmentTransaction(segment));
+        return Transact(new IndexSegmentTransaction(segment));
     }
 
     /// <inheritdoc />
-    public Task<(StoreResult, IDb)> TransactAsync(IDatomsListLike segment)
+    public Task<(StoreResult, IDb)> TransactAsync(DatomList segment)
     {
-        throw new NotImplementedException();
-        //return TransactAsync(new IndexSegmentTransaction(segment));
+        return TransactAsync(new IndexSegmentTransaction(segment));
     }
 
     /// <inheritdoc />
@@ -362,34 +360,25 @@ public sealed partial class DatomStore : IDatomStore
         };
     }
 
-    internal void LogDatoms(IDatomsListLike datoms, bool advanceTx = true, bool enableStats = false) 
+    internal void LogDatoms(IDatomsListLike datoms, bool advanceTx = true, bool enableStats = false)
     {
-        var swPrepare = Stopwatch.StartNew();
-        var retractionList = new List<IDatomLikeRO>();
-        throw new NotImplementedException();
-        //ProcessRetractions(datoms, retractionList);
-        _remaps.Clear();
-        _currentUniqueDatoms.Clear();
-        using var batch = Backend.CreateBatch();
-
         var datomCount = 0;
-        var dataSize = 0;
-        foreach (var datom in datoms)
-        {
-            if (enableStats)
-            {
-                datomCount++;
-                throw new NotImplementedException();
-                //dataSize += datom.ValueSpan.Length + KeyPrefix.Size;
-            }
+        var swPrepare = Stopwatch.StartNew();
+        var datomsSpan = CollectionsMarshal.AsSpan(datoms.Datoms);
+        var (retracts, asserts) = NormalizeWithTxIds(datomsSpan);
+        
+        using var batch = Backend.CreateBatch();
+        datomCount += asserts.Datoms.Count;
+        if (retracts.Datoms.Any())
             throw new NotImplementedException();
-            //LogDatom(in datom, batch);
+        foreach (var assert in asserts)
+        {
+            var withTx = assert.With(_thisTx).WithRemaps(_remapFunc);
+            LogAssert(batch, withTx);
         }
-
+        
         if (advanceTx) 
             LogTx(batch);
-        
-        CheckForUniqueViolations();
         
         batch.Commit();
         var swWrite = Stopwatch.StartNew();
@@ -397,10 +386,9 @@ public sealed partial class DatomStore : IDatomStore
         // Print statistics if requested
         if (enableStats)
         {
-            Logger.LogDebug("{TxId} ({Count} datoms, {Size}) prepared in {Elapsed}ms, written in {WriteElapsed}ms",
+            Logger.LogDebug("{TxId} ({Count} datoms) prepared in {Elapsed}ms, written in {WriteElapsed}ms",
                 _thisTx,
                 datomCount,
-                dataSize,
                 swPrepare.ElapsedMilliseconds - swWrite.ElapsedMilliseconds,
                 swWrite.ElapsedMilliseconds);
         }
@@ -473,14 +461,21 @@ public sealed partial class DatomStore : IDatomStore
     /// <exception cref="NotImplementedException"></exception>
     private void LogTx(IWriteBatch batch)
     {
-        MemoryMarshal.Write(_txScratchSpace.Span, _timeProvider.GetUtcNow().UtcTicks);
         var id = EntityId.From(_thisTx.Value);
-        var keyPrefix = new KeyPrefix(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), _thisTx, false, ValueTag.Int64);
-        throw new NotImplementedException();
-        /*
-        var datom = new Datom(keyPrefix, _txScratchSpace[..sizeof(long)]);
-        LogDatom(in datom, batch);
-        */
+        var timestamp = _timeProvider.GetUtcNow().UtcTicks;
+        var datom = ValueDatom.Create(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), ValueTag.Int64, timestamp);
+        LogAssert(batch, datom);
+    }
+
+    private void LogAssert(IWriteBatch batch, in ValueDatom assert)
+    {
+        batch.Add(assert.With(IndexType.TxLog));
+        batch.Add(assert.With(IndexType.EAVTCurrent));
+        batch.Add(assert.With(IndexType.AEVTCurrent));
+        if (_attributeCache.IsIndexed(assert.Prefix.A))
+            batch.Add(assert.With(IndexType.AVETCurrent));
+        if (assert.Prefix.ValueTag == ValueTag.Reference)
+            batch.Add(assert.With(IndexType.VAETCurrent));
     }
 
     /// <summary>

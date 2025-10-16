@@ -22,12 +22,48 @@ public struct ValueDatom : IDatomLikeRO
         Prefix = prefix;
         Value = value;
     }
+
+    public readonly ValueDatom With(IndexType indexType) 
+        => new(Prefix with { Index = indexType }, Value);
     
+    public readonly ValueDatom With(TxId txId) 
+        => new(Prefix with { T = txId }, Value);
+
+    public readonly ValueDatom WithRemaps(Func<EntityId, EntityId> remapFn)
+    {
+        var newPrefix = Prefix with { E = remapFn(Prefix.E) };
+        switch (Prefix.ValueTag)
+        {
+            case ValueTag.Reference:
+                return new ValueDatom(newPrefix, remapFn((EntityId)Value));
+            case ValueTag.Tuple3_Ref_UShort_Utf8I:
+            {
+                var (r, u, s) = (ValueTuple<EntityId, ushort, string>)Value;
+                var newValue = (remapFn(r), u, s);
+                return new ValueDatom(newPrefix, newValue);
+            }
+            default:
+                return new ValueDatom(newPrefix, Value);
+        }
+    }
+
     public static ValueDatom Create<T>(EntityId e, AttributeId attr, ValueTag tag, T value) 
         where T : notnull
     {
         var prefix = new KeyPrefix(e, attr, TxId.Tmp, false, tag);
         return new ValueDatom(prefix, value);
+    }
+    
+    public static ValueDatom Create(EntityId e, AttributeId attr, TaggedValue tValue)
+    {
+        var prefix = new KeyPrefix(e, attr, TxId.Tmp, false, tValue.Tag);
+        return new ValueDatom(prefix, tValue.Value);
+    }
+    
+    public static ValueDatom Create(EntityId e, AttributeId attr, TaggedValue tValue, TxId tx)
+    {
+        var prefix = new KeyPrefix(e, attr, tx, false, tValue.Tag);
+        return new ValueDatom(prefix, tValue.Value);
     }
     
     public static ValueDatom Create<THighLevel, TLowLevel, TSerializer>(EntityId e, Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value, AttributeCache attributeCache) 
