@@ -150,6 +150,22 @@ public partial class DatomStore
                 }
             }
 
+            // Preserve existing values unless explicitly retracted in this transaction
+            foreach (var (v, _) in oldMap)
+            {
+                if (!lastOpMany.TryGetValue((E, A, v), out var isAssert))
+                {
+                    // no op on this value -> keep it
+                    finalSet.Add(v);
+                }
+                else if (isAssert)
+                {
+                    // explicitly asserted -> keep it
+                    finalSet.Add(v);
+                }
+                // else: explicitly retracted -> do not add; will be retracted below
+            }
+
 
             // final \ old -> asserts
             foreach (var v in finalSet)
