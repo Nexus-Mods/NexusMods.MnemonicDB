@@ -15,6 +15,14 @@ public struct ValueDatom : IDatomLikeRO
     public KeyPrefix Prefix { get; }
     public object Value { get; }
     
+    public EntityId E => Prefix.E;
+    
+    public AttributeId A => Prefix.A;
+    
+    public TxId T => Prefix.T;
+    
+    public ValueTag Tag => Prefix.ValueTag;
+    
     public TaggedValue TaggedValue => new(Prefix.ValueTag, Value);
 
     public ValueDatom(KeyPrefix prefix, object value)
@@ -148,7 +156,8 @@ public struct ValueDatom : IDatomLikeRO
         }
     }
 
-    public static ValueDatom Create<TEnum>(in TEnum spanDatomLike) where TEnum : ISpanDatomLikeRO
+    public static ValueDatom Create<TEnum>(in TEnum spanDatomLike) 
+        where TEnum : ISpanDatomLikeRO, allows ref struct
     {
         var prefix = spanDatomLike.Prefix;
         if (prefix.ValueTag == ValueTag.HashedBlob)
@@ -163,7 +172,7 @@ public struct ValueDatom : IDatomLikeRO
         return Create(spanDatomLike.Prefix, spanDatomLike.ValueSpan);
     }
 
-    public readonly ValueDatom WithRetract(bool b)
+    public readonly ValueDatom WithRetract(bool b = true)
     {
         return new ValueDatom(Prefix with { IsRetract = b }, Value);   
     }

@@ -11,5 +11,5 @@ public interface IHasIdAndEntitySegment : IHasEntityIdAndDb
     /// <summary>
     /// The index segment for this entity
     /// </summary>
-    public EntitySegment EntitySegment { get; }
+    public DatomList EntitySegment { get; }
 }

@@ -25,7 +25,7 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// <summary>
     ///     The datoms that were added in the most recent transaction (indicated by the basis TxId).
     /// </summary>
-    IReadOnlyList<IDatomLikeRO> RecentlyAdded { get; }
+    DatomList RecentlyAdded { get; }
 
     /// <summary>
     /// The snapshot that this database is based on.
@@ -38,27 +38,19 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     AttributeCache AttributeCache { get; }
     
     /// <summary>
-    /// Get all the datoms for the given entity id.
-    /// </summary>
-    public EntitySegment Datoms(EntityId id)
-    {
-        return GetEntitySegment(this, id);
-    }
-    
-    /// <summary>
     ///     Gets the datoms for the given transaction id.
     /// </summary>
-    public IReadOnlyList<IDatomLikeRO> Datoms(TxId txId);
+    public DatomList Datoms(TxId txId);
     
     /// <summary>
     /// Finds all datoms that have the given attribute
     /// </summary>
-    IReadOnlyList<IDatomLikeRO> Datoms(IAttribute attribute);
+    DatomList Datoms(IAttribute attribute);
     
     /// <summary>
     /// Finds all the datoms that have the given attribute with the given value.
     /// </summary>
-    IReadOnlyList<IDatomLikeRO> Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value);
+    DatomList Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value);
     
     /// <summary>
     /// Gets and caches all the models that point to the given entity via the given attribute.
@@ -101,14 +93,6 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// Create the next version of the database with the given result and the transaction id that the result was assigned.
     /// </summary>
     IDb WithNext(StoreResult result, TxId resultAssignedTxId);
-    
-    /// <summary>
-    /// Gets the index segment for the given entity id.
-    /// </summary>
-    public EntitySegment Get(EntityId entityId)
-    {
-        return GetEntitySegment(this, entityId);
-    }
 
     /// <summary>
     /// Process and store the data from the given analyzers.

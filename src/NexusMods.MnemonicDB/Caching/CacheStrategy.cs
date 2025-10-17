@@ -10,7 +10,7 @@ namespace NexusMods.MnemonicDB.Caching;
 /// <summary>
 /// A cache strategy for a cache of index segments, defines the max size of the cache and how to get the bytes for a key.
 /// </summary>
-public abstract class CacheStrategy<TKey, TValue>
+public abstract class CacheStrategy<TKey>
 {
     /// <summary>
     /// The maximum number of entries in the cache.
@@ -28,17 +28,12 @@ public abstract class CacheStrategy<TKey, TValue>
     public double EvictPercentage { get; set; } = 0.25;
     
     /// <summary>
-    /// On a cache miss, this method will be called to get the actual bytes for the index segment
+    /// On a cache miss, this method will be called to get the actual values for the given key
     /// </summary>
-    public abstract Memory<byte> GetBytes(TKey key);
-    
-    /// <summary>
-    /// Construct a value from the given bytes, key, and db. Useful for wrapping the bytes into a segment
-    /// </summary>
-    public abstract TValue GetValue(TKey key, IDb db, Memory<byte> bytes);
+    public abstract DatomList GetDatoms(TKey key);
     
     /// <summary>
     /// Get the keys to evict from the cache due to the given segment being recently added.
     /// </summary>
-    public abstract IEnumerable<TKey> GetKeysFromRecentlyAdded(IReadOnlyList<IDatomLikeRO> segment);
+    public abstract IEnumerable<TKey> GetKeysFromRecentlyAdded(DatomList segment);
 }

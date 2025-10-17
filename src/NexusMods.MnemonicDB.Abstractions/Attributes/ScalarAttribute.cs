@@ -37,25 +37,24 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     /// <summary>
     ///  Tries to get the value of the attribute from the entity.
     /// </summary>
-    public bool TryGetValue(EntitySegment segment, [NotNullWhen(true)] out TValue? value)
+    public bool TryGetValue<TList>(TList segment, [NotNullWhen(true)] out TValue? value) 
+        where TList : IDatomsListLike
     {
-        var attributeId = segment.Db.AttributeCache.GetAttributeId(Id);
-        return segment.TryGetValue(this, attributeId, out value);
+        var attributeId = segment.AttributeCache.GetAttributeId(Id);
+        if (segment.TryGetOne(this, out var foundValue))
+        {
+            value = (TValue)foundValue;
+            return true;
+        }
+        value = default;
+        return false;
     }
 
-    /// <summary>
-    /// Tries to get the value of the attribute from the entity.
-    /// </summary>
-    public bool TryGetValue<T>(T entity, [NotNullWhen(true)] out TValue? value)
-        where T : IHasIdAndEntitySegment
-    {
-        return TryGetValue(segment: entity.EntitySegment, out value);
-    }
 
     /// <summary>
     /// Gets the value of the attribute from the entity.
     /// </summary>
-    public TValue Get<T>(T entity, EntitySegment segment)
+    public TValue Get<T>(T entity, DatomList segment)
         where T : IHasEntityIdAndDb
     {
         if (TryGetValue(segment, out var value)) 
@@ -72,9 +71,9 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
         where T : IHasIdAndEntitySegment
     {
         var aid = entity.Db.AttributeCache.GetAttributeId(Id);
-        if (!entity.EntitySegment.TryGetValue<ScalarAttribute<TValue, TLowLevel, TSerializer>, TValue>(this, aid, out var value))
+        if (!entity.EntitySegment.TryGetOne(this, out var value))
             return DefaultValue.HasValue ? DefaultValue.Value : ThrowKeyNotfoundException(entity.Id);
-        return value;
+        return (TValue)value;
     }
 
     /// <summary>
@@ -84,8 +83,8 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
         where T : IHasIdAndEntitySegment
     {
         var aid = entity.Db.AttributeCache.GetAttributeId(Id);
-        if (entity.EntitySegment.TryGetValue<ScalarAttribute<TValue, TLowLevel, TSerializer>, TValue>(this, aid, out var value))
-            return value;
+        if (entity.EntitySegment.TryGetOne(this, out var value))
+            return (TValue)value;
         return DefaultValue.HasValue ? DefaultValue : Optional<TValue>.None;
     }
 
@@ -94,7 +93,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     /// </summary>
     public void Retract(IAttachedEntity entityWithTx)
     {
-        Retract(entityWithTx, value: Get(entityWithTx, segment: entityWithTx.Db.Get(entityWithTx.Id)));
+        Retract(entityWithTx, value: Get(entityWithTx, segment: entityWithTx.Db[entityWithTx.Id]));
     }
 
     [DoesNotReturn]

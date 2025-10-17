@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
@@ -12,7 +13,7 @@ public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<IRead
 {
     private readonly IDb _db;
     private readonly EntityId _id;
-    private readonly EntitySegment _segment;
+    private readonly DatomList _segment;
 
     /// <summary>
     /// An entity is a reference to the attributes of a specific EnityId. Think of this as a hashmap
@@ -22,7 +23,8 @@ public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<IRead
     {
         _db = db;
         _id = id;
-        _segment = db.Get(id);
+        throw new NotImplementedException();
+        //_segment = db.Get(id);
     }
 
     /// <inheritdoc />
@@ -68,5 +70,5 @@ public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<IRead
     }
 
     /// <inheritdoc />
-    public EntitySegment EntitySegment => _segment;
+    public DatomList EntitySegment => _segment;
 }

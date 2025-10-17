@@ -248,7 +248,8 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         };
 
         await Assert.That(archiveFile.GetFile(tx).Path).IsEqualTo("foo");
-        archiveFile.GetFile(tx).Path = "bar";
+        throw new NotImplementedException();
+        //archiveFile.GetFile(tx).Path = "bar";
         await Assert.That(archiveFile.GetFile(tx).Path).IsEqualTo("bar");
 
         var result = await tx.Commit();

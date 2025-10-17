@@ -166,8 +166,12 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
     /// </summary>
     public bool IsIn(IDb db, EntityId id)
     {
-        var index = db.Get(id);
-        return index.Contains(this);
+        var attrId = db.AttributeCache.GetAttributeId(Id);
+        var index = db[id];
+        foreach (var datom in index)
+            if (datom.Prefix.A == attrId)
+                return true;
+        return false;
     }
 
     /// <summary>

@@ -47,7 +47,7 @@ public sealed partial class DatomStore : IDatomStore
 
     private static readonly TimeSpan TransactionTimeout = TimeSpan.FromMinutes(120);
     
-    private Dictionary<EntityId, IReadOnlyList<IDatomLikeRO>> _avCache = new();
+    private Dictionary<EntityId, DatomList> _avCache = new();
 
     /// <summary>
     /// Cached function to remap temporary entity ids to real entity ids

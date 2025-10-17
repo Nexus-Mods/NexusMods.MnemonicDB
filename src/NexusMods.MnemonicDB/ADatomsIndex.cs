@@ -18,33 +18,40 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
     }
     public AttributeCache AttributeCache { get; }
 
-    /// <summary>
-    /// Get datoms for a specific descriptor
-    /// </summary>
-    public IReadOnlyList<IDatomLikeRO> Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
+    private DatomList Load<TSlice>(TSlice slice)
+       where TSlice : ISliceDescriptor, allows ref struct
     {
-        using var builder = new IndexSegmentBuilder(AttributeCache);
-        using var iterator = GetRefDatomEnumerator(descriptor is SliceDescriptor);
-        var result = new List<IDatomLikeRO>();
-        while (iterator.MoveNext(descriptor))
-        {
-            result.Add(ValueDatom.Create(iterator));
-        }
-        return result;
+        using var en = GetRefDatomEnumerator();
+        return DatomList.Create(en, slice, AttributeCache);
     }
     
-    public IEnumerable<IReadOnlyList<IDatomLikeRO>> DatomsChunked<TSliceDescriptor>(TSliceDescriptor descriptor, int chunkSize) 
+    public DatomList Datoms<TSlice>(TSlice slice) where TSlice : ISliceDescriptor 
+        => Load(slice);
+
+    /// <inheritdoc />
+    public DatomList this[EntityId e] => Load(SliceDescriptor.Create(e));
+
+    /// <inheritdoc />
+    public DatomList this[AttributeId a] => Load(SliceDescriptor.Create(a));
+
+    /// <inheritdoc />
+    public DatomList this[TxId t] => Load(SliceDescriptor.Create(t));
+    
+    /// <inheritdoc />
+    public DatomList this[AttributeId a, EntityId e] => Load(SliceDescriptor.Create(a, e));
+
+    public IEnumerable<DatomList> DatomsChunked<TSliceDescriptor>(TSliceDescriptor descriptor, int chunkSize) 
         where TSliceDescriptor : ISliceDescriptor
     {
         using var iterator = GetRefDatomEnumerator();
-        var currentResult = new List<IDatomLikeRO>();
+        var currentResult = new DatomList(AttributeCache);
         while (iterator.MoveNext(descriptor))
         {
             currentResult.Add(ValueDatom.Create(iterator));
             if (currentResult.Count == chunkSize)
             {
                 yield return currentResult;
-                currentResult = new();
+                currentResult = new(AttributeCache);
             }
         }
 
@@ -87,53 +94,11 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         return (result.Count - 1) * chunkSize + chunkOffset;
     }
     
-    
-    public virtual EntitySegment GetEntitySegment(IDb db, EntityId entityId)
+    public DatomList ReferencesTo(EntityId eid)
     {
-        using var builder = new IndexSegmentBuilder(AttributeCache);
-        using var iterator = GetRefDatomEnumerator();
-        builder.AddRange(iterator, SliceDescriptor.Create(entityId));
-        throw new NotImplementedException();
-        /*
-        var avSegment = AVSegment.Build(builder);
-        return new EntitySegment(entityId, new AVSegment(avSegment), db);
-        */
-    }
-
-    public virtual EntityIds GetEntityIdsPointingTo(AttributeId attrId, EntityId entityId)
-    {
-        var slice = SliceDescriptor.Create(attrId, entityId);
-        using var builder = new IndexSegmentBuilder(AttributeCache);
-        using var iterator = GetRefDatomEnumerator();
-        builder.AddRange(iterator, slice);
-        return new EntityIds { Data = EntityIds.Build(builder) };
+        return Load(SliceDescriptor.CreateReferenceTo(eid));
     }
     
-    public virtual EntityIds GetBackRefs(AttributeId attribute, EntityId id)
-    {
-        return GetEntityIdsPointingTo(attribute, id);
-    }
-
-    public IReadOnlyList<IDatomLikeRO> ReferencesTo(EntityId eid)
-    {
-        using var iterator = GetRefDatomEnumerator();
-        var slice = SliceDescriptor.Create(eid);
-        var results = new List<IDatomLikeRO>();
-        while (iterator.MoveNext(slice))
-            results.Add(ValueDatom.Create(iterator));
-        return results;
-    }
-
-    public IReadOnlyList<IDatomLikeRO> Datoms(TxId txId)
-    {
-        using var iterator = GetRefDatomEnumerator();
-        var slice = SliceDescriptor.Create(txId);
-        var list = new List<IDatomLikeRO>();
-        while (iterator.MoveNext(slice))
-            list.Add(ValueDatom.Create(iterator));
-        return list;
-    }
-
     /// <inheritdoc />
     public abstract TRefEnumerator GetRefDatomEnumerator(bool totalOrder = false);
 }

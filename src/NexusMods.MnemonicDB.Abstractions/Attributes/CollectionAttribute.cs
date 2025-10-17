@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System;
+using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
@@ -22,8 +23,11 @@ public abstract class CollectionAttribute<TValue, TLowLevel, TSerializer>(string
     {
         var segment = ent.EntitySegment;
         var dbId = ent.Db.AttributeCache.GetAttributeId(Id);
+        throw new NotImplementedException();
+        /*
         var range = segment.GetRange(dbId);
         return new Values<TValue>(segment, range, this);
+        */
     }
     
     /// <summary>
@@ -32,10 +36,13 @@ public abstract class CollectionAttribute<TValue, TLowLevel, TSerializer>(string
     /// </summary>
     protected Values<TValue> Get(IHasEntityIdAndDb ent)
     {
-        var segment = ent.Db.Get(ent.Id);
+        var segment = ent.Db[ent.Id];
         var dbId = ent.Db.AttributeCache.GetAttributeId(Id);
+        throw new NotImplementedException();
+        /*
         var range = segment.GetRange(dbId);
         return new Values<TValue>(segment, range, this);
+        */
     }
 
     /// <summary>

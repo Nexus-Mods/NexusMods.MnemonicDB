@@ -161,17 +161,17 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     /// Constructs a new {{= model.Name}} model from the given entity id, used to provide a typed structured
     /// way to interact with the entity before it is commited to the database.
     /// </summary>
-    public partial class New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
+    public partial struct New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
+        private readonly __ABSTRACTIONS__.IDatomsListLike _datoms;
 
         {{if model.Includes.Count == 0}}
         
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with a generated temporary id.
         /// </summary>
-        public New(__ABSTRACTIONS__.ITransaction tx) : base() {
-            Id = tx.TempId();
-            throw new NotImplementedException();
-            //tx.Attach(this);
+        public New(__ABSTRACTIONS__.IDatomsListLike tx) {
+            Id = TempId.Next();
+            _datoms = tx;
         }
         
         {{else}}
@@ -179,21 +179,19 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with the given entity id.
         /// </summary>
-        public New(__ABSTRACTIONS__.ITransaction tx, out __ABSTRACTIONS__.EntityId id) : base() {
-            Id = tx.TempId();
+        public New(__ABSTRACTIONS__.IDatomsListLike tx, out __ABSTRACTIONS__.EntityId id) {
+            _datoms = tx;
+            Id = TempId.Next();
             id = Id;
-            throw new NotImplementedException();
-            //tx.Attach(this);
         }
         
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with the given entity partition for the generated temporary id.
         /// </summary>
-        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.PartitionId partition, out __ABSTRACTIONS__.EntityId id) : base() {
-            Id = tx.TempId(partition);
+        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.PartitionId partition, out __ABSTRACTIONS__.EntityId id) {
+            _datoms = tx;
+            Id = TempId.Next(partition);
             id = Id;
-            throw new NotImplementedException();
-            //tx.Attach(this);
         }
         
         {{/if}}
@@ -201,10 +199,9 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with the given entity id.
         /// </summary>
-        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.EntityId eid) : base() {
+        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.EntityId eid) {
+            _datoms = tx;
             Id = eid;
-            throw new NotImplementedException();
-            //tx.Attach(this);
         }
 
         {{each include in model.Includes}}
@@ -212,10 +209,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// Gets the included entity of type {{= include.Name}} from the transaction.
         /// </summary>
         public {{= include.ToDisplayString()}}.New Get{{=include.Name}}(__ABSTRACTIONS__.ITransaction tx) {
-            if (!tx.TryGet<{{= include.ToDisplayString()}}.New>(Id, out var value))
-                throw new InvalidOperationException($"Unable to find {typeof({{= include.ToDisplayString()}}.New)} with ID {Id} in transaction!");
-
-            return value;
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -319,14 +313,14 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            /// <summary>
            /// The database segment containing the datoms for this entity in EAVT order.
            /// </summary>
-           public readonly __SEGMENTS__.EntitySegment EntitySegment;
+           public readonly __ABSTRACTIONS__.DatomList EntitySegment;
            
-           __SEGMENTS__.EntitySegment __MODELS__.IHasIdAndEntitySegment.EntitySegment => this.EntitySegment; 
+           __ABSTRACTIONS__.DatomList __MODELS__.IHasIdAndEntitySegment.EntitySegment => this.EntitySegment; 
 
            /// <summary>
            /// Constructs a new ReadOnly model of the entity from the given segment and id.
            /// </summary>
-           public ReadOnly(__ABSTRACTIONS__.IDb db, __SEGMENTS__.EntitySegment segment, __ABSTRACTIONS__.EntityId id) {
+           public ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.DatomList segment, __ABSTRACTIONS__.EntityId id) {
                Db = db;
                Id = id;
                EntitySegment = segment;
@@ -336,7 +330,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            /// Constructs a new ReadOnly model of the entity.
            /// </summary>
            public ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) :
-               this(db, db.Get(id), id)
+               this(db, db[id], id)
            {
            }
 
@@ -362,7 +356,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            /// Constructs a new ReadOnly model of the entity.
            /// </summary>
            public static ReadOnly Create(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) {
-               return new ReadOnly(db, db.Get(id), id);
+               return new ReadOnly(db, db[id], id);
            }
 
            /// <inheritdoc />

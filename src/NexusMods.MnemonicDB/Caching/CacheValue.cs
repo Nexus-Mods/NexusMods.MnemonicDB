@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.CompilerServices;
+using NexusMods.MnemonicDB.Abstractions;
 
 namespace NexusMods.MnemonicDB.Caching;
 
@@ -16,13 +17,13 @@ public struct CacheValue : IEquatable<CacheValue>
     /// <summary>
     /// The cached index segment.
     /// </summary>
-    public readonly Memory<byte> Segment;
+    public readonly DatomList Segment;
     
     /// <summary>
     /// Create a new cache value.
     /// </summary>
     /// <param name="segment"></param>
-    public CacheValue(Memory<byte> segment)
+    public CacheValue(DatomList segment)
     {
         LastAccessed = CreateLastAccessed();
         Segment = segment;

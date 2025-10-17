@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.Caching;
@@ -25,9 +26,9 @@ public record CacheRoot<TKey>(Size Size, ImmutableDictionary<TKey, CacheValue> C
     /// <summary>
     /// Create a new instance of the cache root with the given key and data added to the cache.
     /// </summary>
-    public CacheRoot<TKey> With(TKey key, Memory<byte> data)
+    public CacheRoot<TKey> With(TKey key, DatomList data)
     {
-        return new CacheRoot<TKey>(Size + Size.FromLong(data.Length), Cache.SetItem(key, new CacheValue(data)));
+        return new CacheRoot<TKey>(Size + Size.FromLong(data.Count), Cache.SetItem(key, new CacheValue(data)));
     }
     
     /// <summary>
@@ -52,7 +53,7 @@ public record CacheRoot<TKey>(Size Size, ImmutableDictionary<TKey, CacheValue> C
         while (currentSize > desiredSize || currentEntries > desiredEntries)
         {
             var entry = entriesByAge[stopPoint];
-            currentSize -= Size.FromLong(entry.Value.Segment.Length);
+            currentSize -= Size.FromLong(entry.Value.Segment.Count);
             currentEntries -= 1;
             stopPoint += 1;
         }
@@ -77,7 +78,7 @@ public record CacheRoot<TKey>(Size Size, ImmutableDictionary<TKey, CacheValue> C
             if (!builder.TryGetValue(key, out var value)) 
                 continue;
             
-            currentSize -= Size.FromLong(value.Segment.Length);
+            currentSize -= Size.FromLong(value.Segment.Datoms.Count);
             builder.Remove(key);
         }
         return new CacheRoot<TKey>(currentSize, builder.ToImmutable());

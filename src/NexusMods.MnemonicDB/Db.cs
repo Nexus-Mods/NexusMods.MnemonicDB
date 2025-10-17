@@ -24,9 +24,9 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
     private IConnection? _connection;
     public ISnapshot Snapshot => _snapshot;
 
-    private readonly Lazy<IReadOnlyList<IDatomLikeRO>> _recentlyAdded;
+    private readonly Lazy<DatomList> _recentlyAdded;
     private readonly TSnapshot _snapshot;
-    public IReadOnlyList<IDatomLikeRO> RecentlyAdded => _recentlyAdded.Value;
+    public DatomList RecentlyAdded => _recentlyAdded.Value;
 
     internal Dictionary<Type, object> AnalyzerData { get; } = new();
 
@@ -38,12 +38,12 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         _recentlyAdded = new (() => snapshot.Datoms(SliceDescriptor.Create(txId)));
     }
 
-    internal Db(TSnapshot newSnapshot, TxId newTxId, IReadOnlyList<IDatomLikeRO> addedDatoms, Db<TSnapshot, TLowLevelIterator> src) : base(src, addedDatoms) 
+    internal Db(TSnapshot newSnapshot, TxId newTxId, DatomList addedDatoms, Db<TSnapshot, TLowLevelIterator> src) : base(src, addedDatoms) 
     {
         _connection = src._connection;
         _snapshot = newSnapshot;
         BasisTxId = newTxId;
-        _recentlyAdded = new Lazy<IReadOnlyList<IDatomLikeRO>>(() => addedDatoms);
+        _recentlyAdded = new Lazy<DatomList>(() => addedDatoms);
     }
 
     /// <summary>
@@ -52,7 +52,7 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
     /// </summary>
     public IDb WithNext(StoreResult storeResult, TxId txId)
     {
-        var newDatoms = storeResult.Snapshot.Datoms(txId);
+        var newDatoms = storeResult.Snapshot[txId];
         return new Db<TSnapshot, TLowLevelIterator>((TSnapshot)storeResult.Snapshot, txId, newDatoms, this);
     }
     
@@ -82,7 +82,7 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
     }
     
     public Entities<TModel> GetBackrefModels<TModel>(AttributeId aid, EntityId id) where TModel : IReadOnlyModel<TModel> 
-        => GetBackrefModels<TModel>(this, aid, id);
+        => GetBackrefModels<TModel>(aid, id);
 
     TReturn IDb.AnalyzerData<TAnalyzer, TReturn>()
     {
@@ -97,12 +97,12 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         BackReferenceCache.Clear();
     }
     
-    public IReadOnlyList<IDatomLikeRO> Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)
+    public DatomList Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)
     {
         return Datoms(SliceDescriptor.Create(attribute, value, AttributeCache));
     }
     
-    public IReadOnlyList<IDatomLikeRO> Datoms(IAttribute attribute)
+    public DatomList Datoms(IAttribute attribute)
     {
         return Datoms(SliceDescriptor.Create(attribute, AttributeCache));
     }
@@ -110,7 +110,7 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
     [MustDisposeResource]
     public override TLowLevelIterator GetRefDatomEnumerator(bool totalOrdered) => _snapshot.GetRefDatomEnumerator(totalOrdered);
 
-    public IReadOnlyList<IDatomLikeRO> Datoms(TxId txId)
+    public DatomList Datoms(TxId txId)
     {
         return Snapshot.Datoms(SliceDescriptor.Create(txId));
     }

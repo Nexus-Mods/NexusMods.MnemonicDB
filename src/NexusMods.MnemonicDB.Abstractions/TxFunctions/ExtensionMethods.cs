@@ -71,7 +71,7 @@ public static class ExtensionMethods
                 else
                 {
                     // Otherwise, just delete the reference
-                    tx.Add(reference.Retract());
+                    tx.Add(reference.WithRetract(true));
                 }
             }
         }
@@ -92,9 +92,9 @@ public static class ExtensionMethods
 
     private static void DeleteThisOnly(ITransaction tx, IDb db, EntityId eid)
     {
-        foreach (var datom in db.Get(eid))
+        foreach (var datom in db[eid])
         {
-            tx.Add(datom.Retract());
+            tx.Add(datom.WithRetract());
         }
     }
 }

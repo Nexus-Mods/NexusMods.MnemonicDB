@@ -12,22 +12,22 @@ namespace NexusMods.MnemonicDB.Caching;
 /// A cache of index segments, implemented as an immutable LRU cache, immutable so that each subsequent
 /// Db instance can reuse the cache and all its contents.
 /// </summary>
-public class IndexSegmentCache<TKey, TValue>
+public class IndexSegmentCache<TKey>
     where TKey : notnull
 {
     private CacheRoot<TKey> _root;
-    private readonly CacheStrategy<TKey,TValue> _strategy;
+    private readonly CacheStrategy<TKey> _strategy;
 
     /// <summary>
     /// Create a new index segment cache.
     /// </summary>
-    public IndexSegmentCache(CacheStrategy<TKey, TValue> strategy)
+    public IndexSegmentCache(CacheStrategy<TKey> strategy)
     {
         _root = CacheRoot<TKey>.Create();
         _strategy = strategy;
     }
 
-    private IndexSegmentCache(CacheStrategy<TKey, TValue> strategy, CacheRoot<TKey> newRoot)
+    private IndexSegmentCache(CacheStrategy<TKey> strategy, CacheRoot<TKey> newRoot)
     {
         _strategy = strategy;
         _root = newRoot;
@@ -37,36 +37,36 @@ public class IndexSegmentCache<TKey, TValue>
     /// <summary>
     /// Forks the cache and evicts entries based on the given store result's recently added datoms.
     /// </summary>
-    public IndexSegmentCache<TKey, TValue> Fork(IReadOnlyList<IDatomLikeRO> segment, CacheStrategy<TKey,TValue> newStrategy)
+    public IndexSegmentCache<TKey> Fork(DatomList segment, CacheStrategy<TKey> newStrategy)
     {
         var newRoot = _root.Evict(_strategy.GetKeysFromRecentlyAdded(segment));
-        return new IndexSegmentCache<TKey, TValue>(newStrategy, newRoot);
+        return new IndexSegmentCache<TKey>(newStrategy, newRoot);
     }
 
     /// <summary>
     /// Get a value (possibly cached) for the given key. CacheHit is set to true if the value was already
     /// in the cache.
     /// </summary>
-    public TValue GetValue(TKey key, IDb context, out bool cacheHit)
+    public DatomList GetDatoms(TKey key, IDb context, out bool cacheHit)
     {
         if (_root.Cache.TryGetValue(key, out var value))
         {
             value.Hit();
             cacheHit = true;
-            return _strategy.GetValue(key, context, value.Segment);
+            return _strategy.GetDatoms(key);
         }
 
-        var valueBytes = _strategy.GetBytes(key);
-        AddValue(key, valueBytes);
+        var datoms = _strategy.GetDatoms(key);
+        AddValue(key, datoms);
         cacheHit = false;
-        return _strategy.GetValue(key, context, AddValue(key, valueBytes));
+        return datoms;
     }
 
     /// <summary>
     /// Adds the given value to the cache, and returns the actual stored value (may differ from the input if
     /// there was contention on the cache).
     /// </summary>
-    public Memory<byte> AddValue(TKey key, Memory<byte> valueBytes)
+    public DatomList AddValue(TKey key, DatomList datoms)
     {
         while (true)
         {
@@ -77,17 +77,17 @@ public class IndexSegmentCache<TKey, TValue>
                 return newlyAdded.Segment;
             
             // Otherwise, add the new value to the cache.
-            var newRoot = oldRoot.With(key, valueBytes).Evict(_strategy.MaxBytes, _strategy.MaxEntries, _strategy.EvictPercentage);
+            var newRoot = oldRoot.With(key, datoms).Evict(_strategy.MaxBytes, _strategy.MaxEntries, _strategy.EvictPercentage);
             var result = Interlocked.CompareExchange(ref _root, newRoot, oldRoot);
             if (ReferenceEquals(result, oldRoot))
-                return valueBytes;
+                return datoms;
         }
     }
 
     /// <inheritdoc />
     public override string ToString()
     {
-        return $"{typeof(TValue).Name} Cache with {_root.Cache.Count} ({_root.Size}) entries";
+        return $"{_strategy.GetType().Name} Cache with {_root.Cache.Count} ({_root.Size}) entries";
     }
 
     /// <summary>
