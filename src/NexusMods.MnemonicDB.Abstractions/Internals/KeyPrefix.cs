@@ -47,6 +47,13 @@ public struct KeyPrefix
     {
         throw new InvalidOperationException("This constructor should not be called, use the Create method instead");
     }
+    
+    /// <summary>
+    /// A KeyPrefix pointing to the start of an index
+    /// </summary>
+    public KeyPrefix(IndexType index)
+        : this(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, index)
+    {}
 
     /// <summary>
     /// Creates a new KeyPrefix with the given values

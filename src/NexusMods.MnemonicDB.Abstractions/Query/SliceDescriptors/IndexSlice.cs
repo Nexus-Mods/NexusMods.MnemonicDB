@@ -6,26 +6,24 @@ using NexusMods.MnemonicDB.Abstractions.Internals;
 namespace NexusMods.MnemonicDB.Abstractions.Query.SliceDescriptors;
 
 /// <summary>
-/// A slice descriptor for a specific AttributeId in the AEVT index
+/// A index slice for all datoms in a given index
 /// </summary>
-public readonly struct AttributeSlice(AttributeId attrId) : ISliceDescriptor
+/// <param name="attrId"></param>
+public readonly struct IndexSlice(IndexType index) : ISliceDescriptor
 {
     /// <inheritdoc />
     public void Reset<T>(T iterator, bool useHistory) where T : ILowLevelIterator, allows ref struct
     {
-        var index = useHistory ? IndexType.AEVTHistory : IndexType.AEVTCurrent;
-        var prefix = new KeyPrefix(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false, ValueTag.Null, index);
-        iterator.SeekTo(prefix);
+        iterator.SeekTo(new KeyPrefix(index));
     }
 
     /// <inheritdoc />
     public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool useHistory)
     {
-        var index = useHistory ? IndexType.AEVTHistory : IndexType.AEVTCurrent;
         var prefix = KeyPrefix.Read(keySpan);
-        return prefix.A == attrId && prefix.Index == index;
+        return prefix.Index == index;
     }
 
     /// <inheritdoc />
-    public bool IsTotalOrdered => false;
+    public bool IsTotalOrdered => true;
 }

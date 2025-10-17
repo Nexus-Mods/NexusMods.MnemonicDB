@@ -15,14 +15,7 @@ public readonly struct AttributeStartingAtId(AttributeId attrId, EntityId eid) :
     {
         var index = useHistory ? IndexType.AEVTHistory : IndexType.AEVTCurrent;
         var prefix = new KeyPrefix(eid, attrId, TxId.MinValue, false, ValueTag.Null, index);
-        var spanTo = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in prefix, 1));
-        iterator.SeekTo(spanTo);
-    }
-
-    /// <inheritdoc />
-    public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct
-    {
-        iterator.Next();
+        iterator.SeekTo(prefix);
     }
 
     /// <inheritdoc />
@@ -32,12 +25,6 @@ public readonly struct AttributeStartingAtId(AttributeId attrId, EntityId eid) :
         var prefix = KeyPrefix.Read(keySpan);
         return prefix.A == attrId && prefix.Index == index;
     }
-    
-    /// <inheritdoc />
-    public void Deconstruct(out Datom from, out Datom to, out bool isReversed)
-    {
-        from = new Datom(new KeyPrefix(eid, attrId, TxId.MinValue, false, ValueTag.Null, IndexType.AEVTCurrent), ReadOnlyMemory<byte>.Empty);
-        to = new Datom(new KeyPrefix(EntityId.MaxValueNoPartition, attrId, TxId.MaxValue, false, ValueTag.Null, IndexType.AEVTCurrent), ReadOnlyMemory<byte>.Empty);
-        isReversed = false;
-    }
+
+    public bool IsTotalOrdered => false;
 }

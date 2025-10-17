@@ -13,11 +13,6 @@ public interface ISliceDescriptor
     public void Reset<T>(T iterator, bool history = false) where T : ILowLevelIterator, allows ref struct;
     
     /// <summary>
-    /// Move the iterator to the next element, which should either call `Next` or `Prev` on the iterator.
-    /// </summary>
-    public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct;
-
-    /// <summary>
     /// Given the current iterator position, and this key, should we continue iterating (is the given span inside the bounds of the iterator)?
     /// </summary>
     public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool history = false);

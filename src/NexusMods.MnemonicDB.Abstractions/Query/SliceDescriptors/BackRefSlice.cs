@@ -21,12 +21,6 @@ public readonly struct BackRefSlice(AttributeId aid, EntityId eid) : ISliceDescr
         MemoryMarshal.Write(fullSpan.SliceFast(KeyPrefix.Size), eid);
         iterator.SeekTo(fullSpan);
     }
-    
-    /// <inheritdoc />
-    public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct
-    {
-        iterator.Next();
-    }
 
     /// <inheritdoc />
     public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool useHistory)
@@ -40,15 +34,5 @@ public readonly struct BackRefSlice(AttributeId aid, EntityId eid) : ISliceDescr
         return eidValue == eid;
     }
 
-
-    /// <inheritdoc />
-    public void Deconstruct(out Datom from, out Datom to, out bool isReversed)
-    {
-        var valueMemory = GC.AllocateUninitializedArray<byte>(sizeof(ulong));
-        MemoryMarshal.Write(valueMemory, eid);
-
-        from = new Datom(new KeyPrefix(EntityId.MinValueNoPartition, aid, TxId.MinValue, false, ValueTag.Reference, IndexType.VAETCurrent), valueMemory);
-        to = new Datom(new KeyPrefix(EntityId.MaxValueNoPartition, aid, TxId.MaxValue, false, ValueTag.Reference, IndexType.VAETCurrent), valueMemory);
-        isReversed = false;
-    }    
+    public bool IsTotalOrdered => false;
 }

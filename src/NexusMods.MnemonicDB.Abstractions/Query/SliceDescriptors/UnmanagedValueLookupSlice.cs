@@ -21,11 +21,6 @@ public readonly unsafe struct UnmanagedValueLookupSlice<T>(AttributeId attrId, V
         iterator.SeekTo(buffer);
     }
 
-    public void MoveNext<T1>(T1 iterator) where T1 : ILowLevelIterator, allows ref struct
-    {
-        iterator.Next();
-    }
-
     public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool history = false)
     {
         var index = history ? IndexType.AVETHistory : IndexType.AVETCurrent;
@@ -44,12 +39,5 @@ public readonly unsafe struct UnmanagedValueLookupSlice<T>(AttributeId attrId, V
         return false;
     }
 
-    public void Deconstruct(out Datom from, out Datom to, out bool isReversed)
-    {
-        var array = GC.AllocateUninitializedArray<byte>(sizeof(T));
-        MemoryMarshal.Write(array, value);
-        from = new Datom(new KeyPrefix(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false, ValueTag.Null, IndexType.AVETCurrent), array);
-        to = new Datom(new KeyPrefix(EntityId.MaxValueNoPartition, attrId, TxId.MaxValue, false, ValueTag.Null, IndexType.AVETCurrent), array);
-        isReversed = false;
-    }
+    public bool IsTotalOrdered => false;
 }
