@@ -184,7 +184,7 @@ public static class Serializer
             case ValueTag.Utf8:
                 return CompareCore<T1, T2, string>(obj1, obj2);
             case ValueTag.Utf8Insensitive:
-                return ((string)(object)obj1).CompareTo((string)(object)obj2, StringComparison.InvariantCultureIgnoreCase);
+                return string.Compare(((string)(object)obj1), (string)(object)obj2, StringComparison.InvariantCultureIgnoreCase);
             case ValueTag.Reference:
                 return CompareCore<T1, T2, EntityId>(obj1, obj2);
             case ValueTag.Tuple2_UShort_Utf8I:
@@ -194,7 +194,7 @@ public static class Serializer
                 var cmp = u1.CompareTo(u2);
                 if (cmp != 0)
                     return cmp;
-                return s1.CompareTo(s2, StringComparison.InvariantCulture);
+                return string.Compare(s1, s2, StringComparison.InvariantCulture);
             }
             case ValueTag.Tuple3_Ref_UShort_Utf8I:
             {
@@ -206,7 +206,7 @@ public static class Serializer
                 cmp = u1.CompareTo(u2);
                 if (cmp != 0)
                     return cmp;
-                return s1.CompareTo(s2, StringComparison.InvariantCulture);
+                return string.Compare(s1, s2, StringComparison.InvariantCulture);
             }
             default:
                 throw new ArgumentOutOfRangeException(nameof(tag), tag, "Unknown tag");

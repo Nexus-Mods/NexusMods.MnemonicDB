@@ -31,11 +31,6 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// The snapshot that this database is based on.
     /// </summary>
     ISnapshot Snapshot { get; }
-
-    /// <summary>
-    /// The attribute cache for this database.
-    /// </summary>
-    AttributeCache AttributeCache { get; }
     
     /// <summary>
     ///     Gets the datoms for the given transaction id.

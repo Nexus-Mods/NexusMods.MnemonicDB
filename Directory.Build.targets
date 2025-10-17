@@ -1,9 +1,9 @@
 <Project>
     <PropertyGroup>
         <Nullable>enable</Nullable>
-        <LangVersion>14</LangVersion>
+        <LangVersion>13</LangVersion>
         <ImplicitUsings>false</ImplicitUsings>
         <WarningsAsErrors>Nullable</WarningsAsErrors>
-        <TargetFramework>net10.0</TargetFramework>
+        <TargetFramework>net9.0</TargetFramework>
     </PropertyGroup>
 </Project>
