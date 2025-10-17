@@ -1,6 +1,7 @@
 ﻿using System.IO.Hashing;
 using System.Runtime.InteropServices;
 using System.Text;
+using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomIterators;
@@ -51,6 +52,18 @@ public static class ExtensionMethods
             {
                 sb.Append(TruncateOrPad("DateTime : " + timestampCount, 48));
                 timestampCount++;
+            }
+            else if (datom.ValueTag == ValueTag.Blob)
+            {
+                var memory = (Memory<byte>)datom.Value;
+                var hash = ((Memory<byte>)datom.Value).xxHash3();
+                sb.Append(TruncateOrPad($"Blob {hash} {memory.Length} bytes" , 48));
+            }
+            else if (datom.ValueTag == ValueTag.HashedBlob)
+            {
+                var memory = (Memory<byte>)datom.Value;
+                var hash = ((Memory<byte>)datom.Value).xxHash3();
+                sb.Append(TruncateOrPad($"HashedBlob {hash} {memory.Length} bytes", 48));
             }
             else
             {

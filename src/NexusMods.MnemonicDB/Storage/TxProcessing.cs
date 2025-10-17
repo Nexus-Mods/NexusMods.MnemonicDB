@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Query;
@@ -16,8 +17,8 @@ public partial class DatomStore
         using var iterator = _currentDb!.LightweightDatoms(slice);
         if (iterator.MoveNext())
         {
-            var valueTag = iterator.Prefix.ValueTag;
-            value = new TaggedValue(valueTag, valueTag.Read<object>(iterator.ValueSpan));
+            var datom = ValueDatom.Create(iterator);
+            value = datom.TaggedValue;
             t = iterator.T;
             return true;
         }

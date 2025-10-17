@@ -147,18 +147,19 @@ public struct ValueDatom : IDatomLikeRO
                 throw new ArgumentOutOfRangeException(nameof(prefix), prefix, $"Unknown prefix tag {prefix.ValueTag}");
         }
     }
-    public static ValueDatom Create(ReadOnlySpan<byte> span)
-    {
-        var prefix = MemoryMarshal.Read<KeyPrefix>(span);
-        var rest = span.SliceFast(KeyPrefix.Size);
-        return Create(prefix, rest);
-    }
 
     public static ValueDatom Create<TEnum>(in TEnum spanDatomLike) where TEnum : ISpanDatomLikeRO
     {
         var prefix = spanDatomLike.Prefix;
         if (prefix.ValueTag == ValueTag.HashedBlob)
-            return Create(prefix, spanDatomLike.ExtraValueSpan);
+        {
+            var extraData = spanDatomLike.ExtraValueSpan;
+            var blob = GC.AllocateArray<byte>(extraData.Length + sizeof(ulong));
+            extraData.CopyTo(blob.AsSpan().SliceFast(sizeof(ulong)));
+            spanDatomLike.ValueSpan.CopyTo(blob.AsSpan());
+            return new(prefix, blob.AsMemory());
+        }
+
         return Create(spanDatomLike.Prefix, spanDatomLike.ValueSpan);
     }
 
