@@ -107,10 +107,8 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
     }
 
     /// <inheritdoc />
-    public IReadDatom Resolve(IDatomLikeRO srcDatom, AttributeResolver resolver)
+    public IReadDatom Resolve(ValueDatom srcDatom, AttributeResolver resolver)
     {
-        if (srcDatom is IDatomLikeRO<TLowLevelType> datom)
-            return new ReadDatom(datom.Prefix, FromLowLevel(datom.Value, resolver), this);
         return new ReadDatom(srcDatom.Prefix, FromLowLevel((TLowLevelType)srcDatom.Value, resolver), this);
     }
 
@@ -125,11 +123,10 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
     /// <summary>
     /// Resolves the low-level Datom into a high-level ReadDatom
     /// </summary>
-    public ReadDatom Resolve<TDatom>(in TDatom datom, AttributeResolver resolver)
-       where TDatom : IDatomLikeRO
+    public ReadDatom Resolve(in ValueDatom datom, AttributeResolver resolver)
     {
         var prefix = datom.Prefix;
-        return new ReadDatom(in prefix, FromLowLevel(((IDatomLikeRO<TLowLevelType>)datom).Value, resolver), this);
+        return new ReadDatom(in prefix, FromLowLevel((TLowLevelType)datom.Value, resolver), this);
     }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
@@ -183,34 +180,6 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
         return entity.EntitySegment.Contains(this);
     }
     
-    /// <summary>
-    /// Adds a datom to the active transaction for this entity that adds the given value to this attribute
-    /// </summary>
-    public void Add(IAttachedEntity entity, TValueType value)
-    {
-        entity.Transaction.Add(entity.Id, this, value);
-    }
-
-
-    /// <inheritdoc />
-    public void Add(ITransaction tx, EntityId entityId, TValueType value, bool isRetract = false)
-    {
-        tx.Add(entityId, this, value, isRetract);
-    }
-
-    /// <inheritdoc />
-    public void Add(ITransaction tx, EntityId entityId, object value, bool isRetract)
-    {
-        tx.Add(entityId, this, (TValueType)value, isRetract);
-    }
-
-    /// <summary>
-    /// Adds a datom to the active transaction for this entity that retracts the given value from this attribute
-    /// </summary>
-    public void Retract(IAttachedEntity entity, TValueType value)
-    {
-        entity.Transaction.Add(entity.Id, this, value, isRetract:true);
-    }
 
 
     /// <inheritdoc />
@@ -270,7 +239,8 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
         /// <inheritdoc />
         public void Retract(ITransaction tx)
         {
-            tx.Add(E, (Attribute<TValueType, TLowLevelType, TSerializer>)A, V, true);
+            throw new NotImplementedException();
+            //tx.Add(E, (Attribute<TValueType, TLowLevelType, TSerializer>)A, V, true);
         }
 
         /// <inheritdoc />

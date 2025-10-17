@@ -21,7 +21,7 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
     ADatomsIndex<TRefEnumerator>
     where TRefEnumerator : IRefDatomEnumerator
 {
-    protected ACachingDatomsIndex(ACachingDatomsIndex<TRefEnumerator> other, DatomList addedDatoms) : base(other.AttributeCache)
+    protected ACachingDatomsIndex(ACachingDatomsIndex<TRefEnumerator> other, Datoms addedDatoms) : base(other.AttributeCache)
     {
         EntityCache = other.EntityCache.Fork(addedDatoms, new EntityCacheStrategy(this));
         BackReferenceCache = other.BackReferenceCache.Fork(addedDatoms, new BackReferenceCacheStrategy(this));
@@ -38,14 +38,14 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
 
     private class EntityCacheStrategy(ACachingDatomsIndex<TRefEnumerator> parent) : CacheStrategy<EntityId>
     {
-        public override DatomList GetDatoms(EntityId key)
+        public override Datoms GetDatoms(EntityId key)
         {
-            var datoms = new DatomList(parent.AttributeCache);
+            var datoms = new Datoms(parent.AttributeCache);
             using var iterator = parent.GetRefDatomEnumerator();
             datoms.Add(iterator, SliceDescriptor.Create(key));
             return datoms;
         }
-        public override IEnumerable<EntityId> GetKeysFromRecentlyAdded(DatomList segment)
+        public override IEnumerable<EntityId> GetKeysFromRecentlyAdded(Datoms segment)
         {
             foreach (var datom in segment)
             {
@@ -56,15 +56,15 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
     
     private class BackReferenceCacheStrategy(ACachingDatomsIndex<TRefEnumerator> parent) : CacheStrategy<(AttributeId A, EntityId E)>
     {
-        public override DatomList GetDatoms((AttributeId A, EntityId E) key)
+        public override Datoms GetDatoms((AttributeId A, EntityId E) key)
         {
-            var datoms = new DatomList(parent.AttributeCache);
+            var datoms = new Datoms(parent.AttributeCache);
             using var iterator = parent.GetRefDatomEnumerator();
             datoms.Add(iterator, SliceDescriptor.Create(key.A, key.E));
             return datoms;
         }
 
-        public override IEnumerable<(AttributeId A, EntityId E)> GetKeysFromRecentlyAdded(DatomList segment)
+        public override IEnumerable<(AttributeId A, EntityId E)> GetKeysFromRecentlyAdded(Datoms segment)
         {
             return segment
                 .Where(static d => d.Value is EntityId)

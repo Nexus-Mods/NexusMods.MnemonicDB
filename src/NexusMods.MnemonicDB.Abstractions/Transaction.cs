@@ -1,45 +1,27 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
-using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.Attributes;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Models;
-using NexusMods.MnemonicDB.Abstractions.Traits;
-using NexusMods.MnemonicDB.Abstractions.TxFunctions;
-using NexusMods.MnemonicDB.InternalTxFunctions;
 
-namespace NexusMods.MnemonicDB;
+namespace NexusMods.MnemonicDB.Abstractions;
 
-internal sealed class Transaction : IMainTransaction, ISubTransaction 
+public abstract class ATransaction : Datoms, IMainTransaction, ISubTransaction 
 {
-    private readonly Transaction? _parentTransaction;
+    private readonly ATransaction? _parentTransaction;
 
-    private readonly Connection _connection;
-    private readonly DatomList _datoms;
+    private readonly IConnection _connection;
     private readonly Lock _lock = new();
 
     private bool _disposed;
     private bool _committed;
 
-    public Transaction(Connection connection, Transaction? parentTransaction = null)
+    public ATransaction(IConnection connection, ATransaction? parentTransaction = null) : base(connection.AttributeCache)
     {
         _connection = connection;
-        _datoms = new DatomList(connection.AttributeCache);
-
         _parentTransaction = parentTransaction;
     }
-
-    List<ValueDatom> IDatomsListLike.Datoms => _datoms;
-
-    public AttributeCache AttributeCache => _datoms.AttributeCache;
-
+    
     /// <inheritdoc />
     public TxId ThisTxId => _parentTransaction?.ThisTxId ?? TxId.From(PartitionId.Temp.MakeEntityId(0).Value);
 
@@ -53,7 +35,8 @@ internal sealed class Transaction : IMainTransaction, ISubTransaction
     {
         CheckAccess();
         Debug.Assert(_parentTransaction is not null);
-        ((IDatomsListLike)_parentTransaction).Add(_datoms);
+        throw new NotImplementedException();
+        //(_parentTransaction).Add(_datoms);
     }
 
     public async Task<ICommitResult> Commit()
@@ -61,24 +44,24 @@ internal sealed class Transaction : IMainTransaction, ISubTransaction
         CheckAccess();
         Debug.Assert(_parentTransaction is null);
 
-        IInternalTxFunction fn;
         lock (_lock)
         {
-            fn = new IndexSegmentTransaction(_datoms);
+            var result = _connection.Commit(this);
             _committed = true;
             Reset();
+            return result;
         }
-        return await _connection.Transact(fn);
     }
 
     public ISubTransaction CreateSubTransaction()
     {
-        return new Transaction(_connection, parentTransaction: this);
+        throw new NotImplementedException();
+        //return new Transaction(_connection, parentTransaction: this);
     }
 
     public void Reset()
     {
-        _datoms.Clear();
+        Clear();
     }
 
     public void Dispose()
@@ -97,11 +80,15 @@ internal sealed class Transaction : IMainTransaction, ISubTransaction
 
     public IEnumerator<ValueDatom> GetEnumerator()
     {
-        return _datoms.GetEnumerator();
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
         return GetEnumerator();
     }
+
 }
+
+public class MainTransaction : ATransaction
+{
+    public MainTransaction(IConnection connection) : base(connection)
+    {
+    }
+}
+

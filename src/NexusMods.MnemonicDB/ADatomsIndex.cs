@@ -18,33 +18,33 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
     }
     public AttributeCache AttributeCache { get; }
 
-    private DatomList Load<TSlice>(TSlice slice)
+    private Datoms Load<TSlice>(TSlice slice)
        where TSlice : ISliceDescriptor, allows ref struct
     {
         using var en = GetRefDatomEnumerator();
-        return DatomList.Create(en, slice, AttributeCache);
+        return Abstractions.Datoms.Create(en, slice, AttributeCache);
     }
     
-    public DatomList Datoms<TSlice>(TSlice slice) where TSlice : ISliceDescriptor 
+    public Datoms Datoms<TSlice>(TSlice slice) where TSlice : ISliceDescriptor 
         => Load(slice);
 
     /// <inheritdoc />
-    public DatomList this[EntityId e] => Load(SliceDescriptor.Create(e));
+    public Datoms this[EntityId e] => Load(SliceDescriptor.Create(e));
 
     /// <inheritdoc />
-    public DatomList this[AttributeId a] => Load(SliceDescriptor.Create(a));
+    public Datoms this[AttributeId a] => Load(SliceDescriptor.Create(a));
 
     /// <inheritdoc />
-    public DatomList this[TxId t] => Load(SliceDescriptor.Create(t));
+    public Datoms this[TxId t] => Load(SliceDescriptor.Create(t));
     
     /// <inheritdoc />
-    public DatomList this[AttributeId a, EntityId e] => Load(SliceDescriptor.Create(a, e));
+    public Datoms this[AttributeId a, EntityId e] => Load(SliceDescriptor.Create(a, e));
 
-    public IEnumerable<DatomList> DatomsChunked<TSliceDescriptor>(TSliceDescriptor descriptor, int chunkSize) 
+    public IEnumerable<Datoms> DatomsChunked<TSliceDescriptor>(TSliceDescriptor descriptor, int chunkSize) 
         where TSliceDescriptor : ISliceDescriptor
     {
         using var iterator = GetRefDatomEnumerator();
-        var currentResult = new DatomList(AttributeCache);
+        var currentResult = new Datoms(AttributeCache);
         while (iterator.MoveNext(descriptor))
         {
             currentResult.Add(ValueDatom.Create(iterator));
@@ -94,7 +94,7 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         return (result.Count - 1) * chunkSize + chunkOffset;
     }
     
-    public DatomList ReferencesTo(EntityId eid)
+    public Datoms ReferencesTo(EntityId eid)
     {
         return Load(SliceDescriptor.CreateReferenceTo(eid));
     }

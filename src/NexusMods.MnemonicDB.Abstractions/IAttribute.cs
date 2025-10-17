@@ -79,13 +79,8 @@ public interface IAttribute
     /// <summary>
     ///     Converts the given values into a typed datom
     /// </summary>
-    IReadDatom Resolve(IDatomLikeRO srcDatom, AttributeResolver resolver);
+    IReadDatom Resolve(ValueDatom srcDatom, AttributeResolver resolver);
     
-    /// <summary>
-    /// Adds the value to the transaction on the given entity/attribute, assumes the value is of the correct type
-    /// </summary>
-    void Add(ITransaction tx, EntityId entityId, object value, bool isRetract);
-
     /// <summary>
     ///     Returns true if the attribute is in the given entity
     /// </summary>

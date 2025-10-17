@@ -69,7 +69,7 @@ public abstract class ABackendTest(
         {
             using var segment = new IndexSegmentBuilder(AttributeCache);
             var entityId = NextTempId();
-            var (result, _) = await DatomStore.TransactAsync(new DatomList(DatomStore) {
+            var (result, _) = await DatomStore.TransactAsync(new Datoms(DatomStore) {
                 { entityId, Blobs.InKeyBlob, smallData },
                 { entityId, Blobs.InValueBlob, largeData }
             });
@@ -79,7 +79,7 @@ public abstract class ABackendTest(
         // Retract the first 2
         for (var i = 0; i < 2; i++)
         {
-            await DatomStore.TransactAsync(new DatomList(DatomStore) {
+            await DatomStore.TransactAsync(new Datoms(DatomStore) {
                 { ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true },
                 { ids[i], Blobs.InValueBlob, largeData.AsMemory(), true }
             });
@@ -91,7 +91,7 @@ public abstract class ABackendTest(
         // Change the other 2
         for (var i = 5; i < 2; i++)
         {
-            await DatomStore.TransactAsync(new DatomList(DatomStore) {
+            await DatomStore.TransactAsync(new Datoms(DatomStore) {
                 { ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true },
                 { ids[i], Blobs.InValueBlob, largeData.AsMemory(), true },
             });
@@ -138,7 +138,7 @@ public abstract class ABackendTest(
         var id2 = NextTempId();
         var id3 = NextTempId();
 
-        var segment = new DatomList(AttributeCache)
+        var segment = new Datoms(AttributeCache)
         {
             { id1, File.Path, "foo/bar" },
             { id2, File.Path, "foo/bar" },
@@ -148,7 +148,7 @@ public abstract class ABackendTest(
         var (tx, _) = await DatomStore.TransactAsync(segment);
     }
 
-    private static Func<IDatomLikeRO, IDatomLikeRO, int> CompareDatoms(IDatomComparator comparer)
+    private static Func<ValueDatom, ValueDatom, int> CompareDatoms(IDatomComparator comparer)
     {
         return (a, b) => comparer.CompareInstance(a, b);
     }
@@ -169,7 +169,7 @@ public abstract class ABackendTest(
 
         {
 
-            var segment = new DatomList(AttributeCache)
+            var segment = new Datoms(AttributeCache)
             {
                 { id1, File.Path, "foo/bar" },
                 { id1, File.Hash, Hash.From(0xDEADBEEF) },
@@ -199,7 +199,7 @@ public abstract class ABackendTest(
         collectionId = tx.Remaps[collectionId];
 
         {
-            var segment = new DatomList(AttributeCache)
+            var segment = new Datoms(AttributeCache)
             {
                 { id2, File.Path, "foo/qux" },
                 { id1, File.ModId, modId2 },
@@ -228,7 +228,7 @@ public abstract class ABackendTest(
         StoreResult tx1, tx2;
 
         {
-            var segment = new DatomList(AttributeCache)
+            var segment = new Datoms(AttributeCache)
             {
                 { id, File.Path, "foo/bar" },
                 { id, File.Hash, Hash.From(0xDEADBEEF) },
@@ -243,7 +243,7 @@ public abstract class ABackendTest(
         modId = tx1.Remaps[modId];
 
         {
-            var segment = new DatomList(AttributeCache)
+            var segment = new Datoms(AttributeCache)
             {
                 { id, File.Path, "foo/bar", true },
                 { id, File.Hash, Hash.From(0xDEADBEEF), true },

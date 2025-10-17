@@ -46,7 +46,7 @@ public abstract class AStorageTest : IDisposable
         
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
 
-        var tx = new DatomList(DatomStore.AttributeCache);
+        var tx = new Datoms(DatomStore.AttributeCache);
         AddAttr(tx, File.Path, AttributeId.From(20));
         AddAttr(tx, File.Hash, AttributeId.From(21));
         AddAttr(tx, File.Size, AttributeId.From(22));
@@ -64,7 +64,7 @@ public abstract class AStorageTest : IDisposable
     }
 
 
-    private void AddAttr(IDatomsListLike tx, IAttribute attribute, AttributeId attributeId)
+    private void AddAttr(Datoms tx, IAttribute attribute, AttributeId attributeId)
     { 
         var eid = EntityId.From(attributeId.Value);
         tx.Add(eid, AttributeDefinition.UniqueId, attribute.Id);

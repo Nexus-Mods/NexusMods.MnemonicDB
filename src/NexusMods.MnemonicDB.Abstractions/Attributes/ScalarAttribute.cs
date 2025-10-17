@@ -37,8 +37,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     /// <summary>
     ///  Tries to get the value of the attribute from the entity.
     /// </summary>
-    public bool TryGetValue<TList>(TList segment, [NotNullWhen(true)] out TValue? value) 
-        where TList : IDatomsListLike
+    public bool TryGetValue(Datoms segment, [NotNullWhen(true)] out TValue? value) 
     {
         var attributeId = segment.AttributeCache.GetAttributeId(Id);
         if (segment.TryGetOne(this, out var foundValue))
@@ -54,7 +53,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     /// <summary>
     /// Gets the value of the attribute from the entity.
     /// </summary>
-    public TValue Get<T>(T entity, DatomList segment)
+    public TValue Get<T>(T entity, Datoms segment)
         where T : IHasEntityIdAndDb
     {
         if (TryGetValue(segment, out var value)) 
@@ -87,14 +86,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
             return (TValue)value;
         return DefaultValue.HasValue ? DefaultValue : Optional<TValue>.None;
     }
-
-    /// <summary>
-    /// Retracts the attribute from the entity.
-    /// </summary>
-    public void Retract(IAttachedEntity entityWithTx)
-    {
-        Retract(entityWithTx, value: Get(entityWithTx, segment: entityWithTx.Db[entityWithTx.Id]));
-    }
+    
 
     [DoesNotReturn]
     private TValue ThrowKeyNotfoundException(EntityId entityId)

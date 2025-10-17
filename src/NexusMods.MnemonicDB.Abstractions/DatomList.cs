@@ -11,25 +11,25 @@ using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
-public class DatomList : List<ValueDatom>, IDatomsListLike
+public class Datoms : List<ValueDatom>
 {
-    public DatomList(AttributeCache attributeCache) : base()
+    public Datoms(AttributeCache attributeCache) : base()
     {
         AttributeCache = attributeCache;
     }
 
-    public static DatomList Create<TEnumerator, TSlice>(TEnumerator enumerator, TSlice slice, AttributeCache attributeCache)
+    public static Datoms Create<TEnumerator, TSlice>(TEnumerator enumerator, TSlice slice, AttributeCache attributeCache)
         where TEnumerator : IRefDatomEnumerator, allows ref struct
         where TSlice : ISliceDescriptor, allows ref struct
     {
-        var datoms = new DatomList(attributeCache)
+        var datoms = new Datoms(attributeCache)
         {
             { enumerator, slice }
         };
         return datoms;
     }
     
-    public static DatomList Create<TFactory, TEnum, TSlice>(in TFactory factory, TSlice slice, AttributeCache attributeCache, bool totalOrdered = false)
+    public static Datoms Create<TFactory, TEnum, TSlice>(in TFactory factory, TSlice slice, AttributeCache attributeCache, bool totalOrdered = false)
         where TFactory : IRefDatomEnumeratorFactory<TEnum>, allows ref struct
         where TSlice : ISliceDescriptor, allows ref struct
         where TEnum : IRefDatomEnumerator
@@ -38,128 +38,118 @@ public class DatomList : List<ValueDatom>, IDatomsListLike
         return Create(enumerator, slice, attributeCache);
     }
 
-    public DatomList(IDb db)
+    public Datoms(IDb db)
     {
         AttributeCache = db.AttributeCache;
     }
 
-    public DatomList(IDatomStore store)
+    public Datoms(IDatomStore store)
     {
         AttributeCache = store.AttributeCache;
     }
 
-    public List<ValueDatom> Datoms => this;
-
     [field: AllowNull, MaybeNull] public AttributeCache AttributeCache { get; }
-}
-
-public interface IDatomsListLike : IEnumerable<ValueDatom>
-{
-    public List<ValueDatom> Datoms { get; }
-
-    public AttributeCache AttributeCache { get; }
-}
-
-public static class DatomListLikeExtensions
-{
-    public static int Count(this IDatomsListLike lst) => lst.Datoms.Count;
-
-    public static void Add(this IDatomsListLike lst, IDatomLikeRO datomLike)
+    
+    public void Add(ValueDatom datomLike)
     {
-        lst.Add(datomLike);
+        Add(datomLike);
     }
 
-    public static void Add<THighLevel, TLowLevel, TSerializer>(this IDatomsListLike lst, EntityId e,
+    public void Add<THighLevel, TLowLevel, TSerializer>(EntityId e,
         Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value)
         where THighLevel : notnull
         where TLowLevel : notnull
         where TSerializer : IValueSerializer<TLowLevel>
     {
-        lst.Add(e, attr, value, false, TxId.Tmp);
+        Add(e, attr, value, false, TxId.Tmp);
     }
 
-    public static void Retract<THighLevel, TLowLevel, TSerializer>(this IDatomsListLike lst, EntityId e,
+    public void Retract<THighLevel, TLowLevel, TSerializer>(EntityId e,
         Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value)
         where THighLevel : notnull
         where TLowLevel : notnull
         where TSerializer : IValueSerializer<TLowLevel>
     {
-        lst.Add(e, attr, value, true, TxId.Tmp);
+        Add(e, attr, value, true, TxId.Tmp);
     }
 
-    public static void Add<THighLevel, TLowLevel, TSerializer>(this IDatomsListLike lst, EntityId e,
+    public void Add<THighLevel, TLowLevel, TSerializer>(EntityId e,
         Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value, bool isRetract)
         where THighLevel : notnull
         where TLowLevel : notnull
         where TSerializer : IValueSerializer<TLowLevel>
     {
-        lst.Add(e, attr, value, isRetract, TxId.Tmp);
+        Add(e, attr, value, isRetract, TxId.Tmp);
     }
 
-    public static void Add<THighLevel, TLowLevel, TSerializer>(this IDatomsListLike lst, EntityId e,
+    public void Add<THighLevel, TLowLevel, TSerializer>(EntityId e,
         Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value, bool isRetract, TxId txId)
         where THighLevel : notnull
         where TLowLevel : notnull
         where TSerializer : IValueSerializer<TLowLevel>
     {
-        var attrId = lst.AttributeCache!.GetAttributeId(attr.Id);
+        var attrId = AttributeCache!.GetAttributeId(attr.Id);
         var prefix = new KeyPrefix(e, attrId, txId, isRetract, attr.LowLevelType);
         var converted = attr.ToLowLevel(value);
-        lst.Datoms.Add(new ValueDatom(prefix, converted));
+        Add(new ValueDatom(prefix, converted));
     }
 
     /// <summary>
     /// Adds a txFunction to the datoms list, this will be encoded as a special datom whos's value is the txFunction.
     /// </summary>
-    public static void Add(this IDatomsListLike lst, ITxFunction txFunction)
+    public void Add(ITxFunction txFunction)
     {
-        lst.Datoms.Add(
-            ValueDatom.Create(EntityId.MinValueNoPartition, AttributeId.Max, ValueTag.TxFunction, txFunction));
+        Add(ValueDatom.Create(EntityId.MinValueNoPartition, AttributeId.Max, ValueTag.TxFunction, txFunction));
     }
 
     /// <summary>
     /// Adds all the datoms in the given list to the datoms list.
     /// </summary>
     /// <param name="datoms"></param>
-    public static void Add(this IDatomsListLike lst, List<ValueDatom> datoms)
+    public void Add(List<ValueDatom> datoms)
     {
-        lst.Datoms.AddRange(datoms);
+        AddRange(datoms);
     }
 
-    public static void Add<TEnumerator, TSlice>(this IDatomsListLike lst, TEnumerator datoms, TSlice slice)
+    public void Add<TEnumerator, TSlice>(TEnumerator datoms, TSlice slice)
         where TEnumerator : IRefDatomEnumerator, allows ref struct
         where TSlice : ISliceDescriptor, allows ref struct
     {
         while (datoms.MoveNext(slice))
-            lst.Add(datoms);
-
+            Add(datoms);
     }
 
-    public static void Add<TEnum>(this IDatomsListLike lst, in TEnum spanDatomLike)
+    public void Add<TEnum>(in TEnum spanDatomLike)
         where TEnum : ISpanDatomLikeRO, allows ref struct
     {
-        lst.Add(ValueDatom.Create(spanDatomLike));
+        Add(ValueDatom.Create(spanDatomLike));
     }
 
-    public static bool TryGetOne(this IDatomsListLike lst, IAttribute attr, out object value)
+    public bool TryGetOne(IAttribute attr, out object value)
     {
-        var id = lst.AttributeCache.GetAttributeId(attr.Id);
-        foreach (var t in lst.Datoms)
+        var id = AttributeCache.GetAttributeId(attr.Id);
+        for (var index = 0; index < Count; index++)
         {
+            var t = this[index];
             if (t.Prefix.A != id) continue;
             value = t.Value;
             return true;
         }
+
         value = default!;
         return false;
     }
 
-    public static bool Contains(this IDatomsListLike lst, IAttribute attr)
+    public bool Contains(IAttribute attr)
     {
-        var attrId = lst.AttributeCache.GetAttributeId(attr.Id);
-        foreach (var t in lst.Datoms)
+        var attrId = AttributeCache.GetAttributeId(attr.Id);
+        for (var index = 0; index < Count; index++)
+        {
+            var t = this[index];
             if (t.Prefix.A == attrId)
                 return true;
+        }
+
         return false;
     }
 }

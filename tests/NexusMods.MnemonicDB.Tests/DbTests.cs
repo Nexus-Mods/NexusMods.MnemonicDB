@@ -91,7 +91,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         foreach (var txId in txEs)
         {
             var db = Connection.AsOf(txId);
-            var resolved = db.Datoms(modId).Resolved(Connection);
+            var resolved = db[modId].Resolved(Connection);
             await VerifyTable(resolved).UseTextForParameters("mod data_" + txId.Value);
 
             // Make sure we can still look up mods by indexed attributes

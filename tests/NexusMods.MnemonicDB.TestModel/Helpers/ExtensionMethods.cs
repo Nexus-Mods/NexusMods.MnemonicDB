@@ -12,7 +12,7 @@ namespace NexusMods.MnemonicDB.TestModel.Helpers;
 
 public static class ExtensionMethods
 {
-    public static string ToTable(this IEnumerable<IDatomLikeRO> datoms, AttributeResolver resolver)
+    public static string ToTable(this IEnumerable<ValueDatom> datoms, AttributeResolver resolver)
     {
         var cache = resolver.AttributeCache;
         int timestampCount = 0;
@@ -53,13 +53,13 @@ public static class ExtensionMethods
                 sb.Append(TruncateOrPad("DateTime : " + timestampCount, 48));
                 timestampCount++;
             }
-            else if (datom.ValueTag == ValueTag.Blob)
+            else if (datom.Tag == ValueTag.Blob)
             {
                 var memory = (Memory<byte>)datom.Value;
                 var hash = ((Memory<byte>)datom.Value).xxHash3();
                 sb.Append(TruncateOrPad($"Blob {hash} {memory.Length} bytes" , 48));
             }
-            else if (datom.ValueTag == ValueTag.HashedBlob)
+            else if (datom.Tag == ValueTag.HashedBlob)
             {
                 var memory = (Memory<byte>)datom.Value;
                 var hash = ((Memory<byte>)datom.Value).xxHash3();

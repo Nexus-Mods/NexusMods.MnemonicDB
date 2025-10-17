@@ -15,7 +15,7 @@ using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
 namespace NexusMods.MnemonicDB.Storage;
 
-internal class InternalTransaction(IDb basisDb, IDatomsListLike datoms) : ITransaction
+internal class InternalTransaction(IDb basisDb, Datoms datoms) : ITransaction
 {
     private ulong _tempId = PartitionId.Temp.MakeEntityId(0).Value;
     private List<ITemporaryEntity>? _temporaryEntities = null;
@@ -104,15 +104,11 @@ internal class InternalTransaction(IDb basisDb, IDatomsListLike datoms) : ITrans
     {
     }
 
-    public List<ValueDatom> Datoms => datoms.Datoms;
+    public List<ValueDatom> Datoms => datoms;
     public AttributeCache AttributeCache => datoms.AttributeCache;
     public IEnumerator<ValueDatom> GetEnumerator()
     {
         return Datoms.GetEnumerator();
     }
 
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
-    }
 }

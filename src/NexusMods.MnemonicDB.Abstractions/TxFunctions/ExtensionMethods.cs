@@ -16,13 +16,15 @@ public static class ExtensionMethods
     /// Adds a function to the transaction as a TxFunction
     /// </summary>
     public static void Add<T>(this ITransaction tx, T arg, Action<ITransaction, IDb, T> fn) =>
-        tx.Add(new TxFunction<T>(fn, arg));
+    throw new NotImplementedException();
+        //tx.Add(new TxFunction<T>(fn, arg));
 
     /// <summary>
     /// Adds a function to the transaction as a TxFunction
     /// </summary>
     public static void Add<TA, TB>(this ITransaction tx, TA a, TB b, Action<ITransaction, IDb, TA, TB> fn) =>
-        tx.Add(new TxFunction<TA, TB>(fn, a, b));
+        throw new NotImplementedException();
+        //tx.Add(new TxFunction<TA, TB>(fn, a, b));
 
     /// <summary>
     /// Adds a function to the transaction that will delete the entity with the given id. If `recursive` is true, it will
@@ -81,7 +83,7 @@ public static class ExtensionMethods
     /// Decide if the entity that contains the given datom should be deleted recursively if this
     /// datom needs to be removed.
     /// </summary>
-    private static bool ShouldRecursiveDelete(IDb db, AttributeCache cache, IDatomLikeRO referenceDatom)
+    private static bool ShouldRecursiveDelete(IDb db, AttributeCache cache, ValueDatom referenceDatom)
     {
         // If the reference is not a collection, then we can delete the whole thing as it's a child of this entity
         // We can get more detailed, but for now we assume that if the reference is a collection, we should not delete it

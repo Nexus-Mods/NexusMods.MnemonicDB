@@ -10,7 +10,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 
 public readonly record struct TaggedValue(ValueTag Tag, object Value);
 
-public struct ValueDatom : IDatomLikeRO
+public struct ValueDatom
 {
     public KeyPrefix Prefix { get; }
     public object Value { get; }
@@ -24,6 +24,8 @@ public struct ValueDatom : IDatomLikeRO
     public ValueTag Tag => Prefix.ValueTag;
     
     public TaggedValue TaggedValue => new(Prefix.ValueTag, Value);
+    
+    public bool IsRetract => Prefix.IsRetract;
 
     public ValueDatom(KeyPrefix prefix, object value)
     {
@@ -102,7 +104,7 @@ public struct ValueDatom : IDatomLikeRO
         return new ValueDatom(prefix, converted);
     }
     
-    public static ValueDatom Create(KeyPrefix prefix, IDatomLikeRO valueSrc)
+    public static ValueDatom Create(KeyPrefix prefix, ValueDatom valueSrc)
     {
         return new ValueDatom(prefix, valueSrc.Value);
     }

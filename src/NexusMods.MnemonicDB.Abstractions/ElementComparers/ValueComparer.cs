@@ -80,13 +80,11 @@ public sealed class ValueComparer : IElementComparer
         }
     }
 
-    public static int Compare<T1, T2>(in T1 a, in T2 b) 
-        where T1 : IDatomLikeRO, allows ref struct 
-        where T2 : IDatomLikeRO, allows ref struct
+    public static int Compare(in ValueDatom a, in ValueDatom b)
     {
-        var tcmp = a.ValueTag.CompareTo(b.ValueTag);
+        var tcmp = a.Tag.CompareTo(b.Tag);
         if (tcmp != 0)
             return tcmp;
-        return a.ValueTag.Compare(a.Value, b.Value);
+        return a.Tag.Compare(a.Value, b.Value);
     }
 }

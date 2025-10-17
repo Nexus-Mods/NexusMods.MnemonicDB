@@ -42,13 +42,13 @@ public interface IDatomStore : IDisposable
     /// <summary>
     ///    Transacts (adds) the given datoms into the store.
     /// </summary>
-    public (StoreResult, IDb) Transact(DatomList segment);
+    public (StoreResult, IDb) Transact(Datoms segment);
     
     
     /// <summary>
     ///   Transacts (adds) the given datoms into the store.
     /// </summary>
-    public Task<(StoreResult, IDb)> TransactAsync(DatomList segment);
+    public Task<(StoreResult, IDb)> TransactAsync(Datoms segment);
     
     /// <summary>
     ///     Create a snapshot of the current state of the store.

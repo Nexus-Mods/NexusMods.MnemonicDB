@@ -56,7 +56,7 @@ public partial class DatomStore
     /// </summary>
     /// <param name="datoms"></param>
     /// <returns></returns>
-    private (DatomList Retracts, DatomList Asserts) NormalizeWithTxIds(ReadOnlySpan<ValueDatom> datoms)
+    private (Datoms Retracts, Datoms Asserts) NormalizeWithTxIds(ReadOnlySpan<ValueDatom> datoms)
     {
         // ---- PASS 1: collect final intent ----
 
@@ -86,8 +86,8 @@ public partial class DatomStore
 
         // ---- PASS 2: emit minimal deltas (capturing old txids for retracts) ----
 
-        var retracts = new DatomList(_attributeCache);
-        var asserts  = new DatomList(_attributeCache);
+        var retracts = new Datoms(_attributeCache);
+        var asserts  = new Datoms(_attributeCache);
 
         // Dedup retracts by (E,A,V) (txid is implied by snapshot's current)
         var haveRetract = new HashSet<(EntityId E, AttributeId A, object V)>();

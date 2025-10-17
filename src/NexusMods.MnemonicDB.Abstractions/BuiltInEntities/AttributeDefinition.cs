@@ -54,7 +54,7 @@ public partial class AttributeDefinition : IModelDefinition
     /// <summary>
     /// Inserts an attribute into the transaction.
     /// </summary>
-    public static void Insert(IDatomsListLike tx, IAttribute attribute, ushort id = 0)
+    public static void Insert(Datoms tx, IAttribute attribute, ushort id = 0)
     {
         if (id == 0)
             id = HardcodedIds[attribute];
@@ -90,7 +90,7 @@ public partial class AttributeDefinition : IModelDefinition
     /// <summary>
     /// Adds the initial set of attributes to the transaction, these will be created when the transaction is committed.
     /// </summary>
-    public static void AddInitial(DatomList tx)
+    public static void AddInitial(Datoms tx)
     {
         Insert(tx, UniqueId);
         Insert(tx, ValueType);

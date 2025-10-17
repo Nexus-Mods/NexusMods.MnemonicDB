@@ -26,7 +26,7 @@ public record CacheRoot<TKey>(Size Size, ImmutableDictionary<TKey, CacheValue> C
     /// <summary>
     /// Create a new instance of the cache root with the given key and data added to the cache.
     /// </summary>
-    public CacheRoot<TKey> With(TKey key, DatomList data)
+    public CacheRoot<TKey> With(TKey key, Datoms data)
     {
         return new CacheRoot<TKey>(Size + Size.FromLong(data.Count), Cache.SetItem(key, new CacheValue(data)));
     }
@@ -78,7 +78,7 @@ public record CacheRoot<TKey>(Size Size, ImmutableDictionary<TKey, CacheValue> C
             if (!builder.TryGetValue(key, out var value)) 
                 continue;
             
-            currentSize -= Size.FromLong(value.Segment.Datoms.Count);
+            currentSize -= Size.FromLong(value.Segment.Count);
             builder.Remove(key);
         }
         return new CacheRoot<TKey>(currentSize, builder.ToImmutable());

@@ -37,7 +37,7 @@ public class IndexSegmentCache<TKey>
     /// <summary>
     /// Forks the cache and evicts entries based on the given store result's recently added datoms.
     /// </summary>
-    public IndexSegmentCache<TKey> Fork(DatomList segment, CacheStrategy<TKey> newStrategy)
+    public IndexSegmentCache<TKey> Fork(Datoms segment, CacheStrategy<TKey> newStrategy)
     {
         var newRoot = _root.Evict(_strategy.GetKeysFromRecentlyAdded(segment));
         return new IndexSegmentCache<TKey>(newStrategy, newRoot);
@@ -47,7 +47,7 @@ public class IndexSegmentCache<TKey>
     /// Get a value (possibly cached) for the given key. CacheHit is set to true if the value was already
     /// in the cache.
     /// </summary>
-    public DatomList GetDatoms(TKey key, IDb context, out bool cacheHit)
+    public Datoms GetDatoms(TKey key, IDb context, out bool cacheHit)
     {
         if (_root.Cache.TryGetValue(key, out var value))
         {
@@ -66,7 +66,7 @@ public class IndexSegmentCache<TKey>
     /// Adds the given value to the cache, and returns the actual stored value (may differ from the input if
     /// there was contention on the cache).
     /// </summary>
-    public DatomList AddValue(TKey key, DatomList datoms)
+    public Datoms AddValue(TKey key, Datoms datoms)
     {
         while (true)
         {

@@ -46,14 +46,9 @@ public unsafe interface IDatomComparator
     /// </summary>
     public int CompareInstance(in Datom a, in Datom b);
 
-    public int CompareInstance<TD1, TD2>(in TD1 d1, in TD2 d2)
-        where TD1 : IDatomLikeRO, allows ref struct
-        where TD2 : IDatomLikeRO, allows ref struct;
+    public int CompareInstance(in ValueDatom d1, in ValueDatom d2);
 
-    public static abstract int Compare<TD1, TD2>(in TD1 d1, in TD2 d2)
-        where TD1 : IDatomLikeRO, allows ref struct
-        where TD2 : IDatomLikeRO, allows ref struct;
-
+    public static abstract int Compare(in ValueDatom d1, in ValueDatom d2);
     
 
     /// <summary>

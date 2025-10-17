@@ -42,10 +42,8 @@ public sealed class AComparer : IElementComparer
         return keyA.A.CompareTo(keyB.A);
     }
 
-    public static int Compare<T1, T2>(in T1 a, in T2 b) 
-        where T1 : IDatomLikeRO, allows ref struct 
-        where T2 : IDatomLikeRO, allows ref struct
+    public static int Compare(in ValueDatom d1, in ValueDatom d2)
     {
-        return a.A.CompareTo(b.A);
+        return d1.A.CompareTo(d2.A);
     }
 }

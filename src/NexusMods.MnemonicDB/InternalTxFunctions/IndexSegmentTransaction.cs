@@ -11,12 +11,12 @@ namespace NexusMods.MnemonicDB.InternalTxFunctions;
 /// </summary>
 internal sealed class IndexSegmentTransaction : AInternalFn
 {
-    private readonly DatomList _indexSegment;
+    private readonly Datoms _indexSegment;
 
     /// <summary>
     /// A standard transaction that simply processes an index segment
     /// </summary>
-    public IndexSegmentTransaction(DatomList indexSegment)
+    public IndexSegmentTransaction(Datoms indexSegment)
     {
         _indexSegment = indexSegment;
     }

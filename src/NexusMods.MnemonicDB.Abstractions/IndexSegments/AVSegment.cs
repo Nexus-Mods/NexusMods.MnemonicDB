@@ -10,7 +10,7 @@ public readonly struct AVSegment
     public AttributeId[] AttributeIds { get; init; }
     public object[] Values { get; init; }
     
-    public AVSegment(DatomList datoms, AttributeResolver resolver)
+    public AVSegment(Datoms datoms, AttributeResolver resolver)
     {
         AttributeIds = GC.AllocateUninitializedArray<AttributeId>(datoms.Count);
         Values = GC.AllocateUninitializedArray<object>(datoms.Count);

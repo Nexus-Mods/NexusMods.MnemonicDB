@@ -47,7 +47,7 @@ public sealed partial class DatomStore : IDatomStore
 
     private static readonly TimeSpan TransactionTimeout = TimeSpan.FromMinutes(120);
     
-    private Dictionary<EntityId, DatomList> _avCache = new();
+    private Dictionary<EntityId, Datoms> _avCache = new();
 
     /// <summary>
     /// Cached function to remap temporary entity ids to real entity ids
@@ -182,13 +182,13 @@ public sealed partial class DatomStore : IDatomStore
     public IObservable<IDb> TxLog => _dbStream;
 
     /// <inheritdoc />
-    public (StoreResult, IDb) Transact(DatomList segment)
+    public (StoreResult, IDb) Transact(Datoms segment)
     {
         return Transact(new IndexSegmentTransaction(segment));
     }
 
     /// <inheritdoc />
-    public Task<(StoreResult, IDb)> TransactAsync(DatomList segment)
+    public Task<(StoreResult, IDb)> TransactAsync(Datoms segment)
     {
         return TransactAsync(new IndexSegmentTransaction(segment));
     }
@@ -282,7 +282,7 @@ public sealed partial class DatomStore : IDatomStore
             {
                 Logger.LogInformation("Bootstrapping the datom store no existing state found");
                 _currentDb = CurrentSnapshot.MakeDb(TxId.MinValue, _attributeCache);
-                var tx = new DatomList(_currentDb.AttributeCache);
+                var tx = new Datoms(_currentDb.AttributeCache);
                 var internalTx = new InternalTransaction(null!, tx);
                 AttributeDefinition.AddInitial(tx);
                 internalTx.ProcessTemporaryEntities();
@@ -360,15 +360,15 @@ public sealed partial class DatomStore : IDatomStore
         };
     }
 
-    internal void LogDatoms(IDatomsListLike datoms, bool advanceTx = true, bool enableStats = false)
+    internal void LogDatoms(Datoms datoms, bool advanceTx = true, bool enableStats = false)
     {
         var datomCount = 0;
         var swPrepare = Stopwatch.StartNew();
-        var datomsSpan = CollectionsMarshal.AsSpan(datoms.Datoms);
+        var datomsSpan = CollectionsMarshal.AsSpan(datoms);
         var (retracts, asserts) = NormalizeWithTxIds(datomsSpan);
         
         using var batch = Backend.CreateBatch();
-        datomCount += asserts.Datoms.Count;
+        datomCount += asserts.Count;
         
         // Retracts first
         foreach (var retract in retracts)
@@ -408,13 +408,13 @@ public sealed partial class DatomStore : IDatomStore
         CurrentSnapshot = Backend.GetSnapshot();
     }
     
-    public bool TryGetPreviousDatom(IDatomLikeRO d, out IDatomLikeRO found)
+    public bool TryGetPreviousDatom(ValueDatom d, out ValueDatom found)
     {
         var slice = SliceDescriptor.Create(d.E, d.A);
         using var iterator = _currentDb!.Snapshot.LightweightDatoms(slice);
         if (!iterator.MoveNext())
         {
-            found = null!;
+            found = default!;
             return false;
         }
 
@@ -531,7 +531,7 @@ public sealed partial class DatomStore : IDatomStore
     /// <summary>
     /// Log a single datom, this is the inner loop of the transaction processing
     /// </summary>
-    internal void LogDatom(in IDatomLikeRO datom, IWriteBatch batch)
+    internal void LogDatom(in ValueDatom datom, IWriteBatch batch)
     {
         _writer.Reset();
 

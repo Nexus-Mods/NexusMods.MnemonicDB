@@ -59,7 +59,7 @@ public sealed class AttributeResolver
     /// <summary>
     /// Resolves a datom into a IReadDatom
     /// </summary>
-    public IReadDatom Resolve(IDatomLikeRO datom)
+    public IReadDatom Resolve(ValueDatom datom)
     {
         var dbId = datom.A;
         var symbol = AttributeCache.GetSymbol(dbId);

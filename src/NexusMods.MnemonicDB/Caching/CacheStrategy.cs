@@ -30,10 +30,10 @@ public abstract class CacheStrategy<TKey>
     /// <summary>
     /// On a cache miss, this method will be called to get the actual values for the given key
     /// </summary>
-    public abstract DatomList GetDatoms(TKey key);
+    public abstract Datoms GetDatoms(TKey key);
     
     /// <summary>
     /// Get the keys to evict from the cache due to the given segment being recently added.
     /// </summary>
-    public abstract IEnumerable<TKey> GetKeysFromRecentlyAdded(DatomList segment);
+    public abstract IEnumerable<TKey> GetKeysFromRecentlyAdded(Datoms segment);
 }

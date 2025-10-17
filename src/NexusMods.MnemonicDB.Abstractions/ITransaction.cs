@@ -16,7 +16,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 ///     Represents a transaction, which is a set of proposed changes to the datom store
 /// </summary>
 [PublicAPI]
-public interface ITransaction : IDisposable, IDatomsListLike
+public interface ITransaction : IDisposable
 {
     /// <summary>
     ///     Gets the temporary id for the transaction
@@ -64,7 +64,7 @@ public interface ITransaction : IDisposable, IDatomsListLike
         throw new NotSupportedException();
     }
     
-    void Add(IDatomLikeRO datom)
+    void Add(ValueDatom datom)
     {
         throw new NotSupportedException();
     }

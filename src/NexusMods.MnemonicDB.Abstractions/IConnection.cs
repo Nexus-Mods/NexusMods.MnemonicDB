@@ -65,7 +65,7 @@ public interface IConnection : IDisposable, IQueryMixin
     ///     Starts a new transaction.
     /// </summary>
     /// <returns></returns>
-    public IMainTransaction BeginTransaction();
+    public MainTransaction BeginTransaction();
 
     /// <summary>
     /// The analyzers that are available for this connection
@@ -87,6 +87,8 @@ public interface IConnection : IDisposable, IQueryMixin
     /// Update the database's schema with the given attributes.
     /// </summary>
     public Task UpdateSchema(params IAttribute[] attribute);
+
+    public ICommitResult Commit(Datoms datoms);
 
     /// <summary>
     /// Observe a slice of the database, as datoms are added or removed from the database, the observer will be updated

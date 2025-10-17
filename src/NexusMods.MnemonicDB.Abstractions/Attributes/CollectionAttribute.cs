@@ -44,16 +44,6 @@ public abstract class CollectionAttribute<TValue, TLowLevel, TSerializer>(string
         return new Values<TValue>(segment, range, this);
         */
     }
-
-    /// <summary>
-    /// Retracts all values for this attribute on the given entity
-    /// </summary>
-    public void RetractAll(IAttachedEntity entityWithTx)
-    {
-        foreach (var value in Get(entityWithTx))
-        {
-            Retract(entityWithTx, value);
-        }
-    }
+    
 
 }

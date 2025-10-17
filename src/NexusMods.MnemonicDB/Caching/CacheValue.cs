@@ -17,13 +17,13 @@ public struct CacheValue : IEquatable<CacheValue>
     /// <summary>
     /// The cached index segment.
     /// </summary>
-    public readonly DatomList Segment;
+    public readonly Datoms Segment;
     
     /// <summary>
     /// Create a new cache value.
     /// </summary>
     /// <param name="segment"></param>
-    public CacheValue(DatomList segment)
+    public CacheValue(Datoms segment)
     {
         LastAccessed = CreateLastAccessed();
         Segment = segment;

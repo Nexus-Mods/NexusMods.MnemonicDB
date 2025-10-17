@@ -13,7 +13,7 @@ public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<IRead
 {
     private readonly IDb _db;
     private readonly EntityId _id;
-    private readonly DatomList _segment;
+    private readonly Datoms _segment;
 
     /// <summary>
     /// An entity is a reference to the attributes of a specific EnityId. Think of this as a hashmap
@@ -70,5 +70,5 @@ public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<IRead
     }
 
     /// <inheritdoc />
-    public DatomList EntitySegment => _segment;
+    public Datoms EntitySegment => _segment;
 }

@@ -16,9 +16,7 @@ public abstract unsafe class ADatomComparator<TA, TB, TC, TD> : IDatomComparator
     where TC : IElementComparer
     where TD : IElementComparer
 {
-    public int CompareInstance<TD1, TD2>(in TD1 d1, in TD2 d2) 
-        where TD1 : IDatomLikeRO, allows ref struct 
-        where TD2 : IDatomLikeRO, allows ref struct
+    public int CompareInstance(in ValueDatom d1, in ValueDatom d2)
     {
         var cmp = TA.Compare(d1, d2);
         if (cmp != 0) return cmp;
@@ -29,9 +27,7 @@ public abstract unsafe class ADatomComparator<TA, TB, TC, TD> : IDatomComparator
         return TD.Compare(d1, d2);
     }
 
-    public static int Compare<TD1, TD2>(in TD1 d1, in TD2 d2) 
-        where TD1 : IDatomLikeRO, allows ref struct 
-        where TD2 : IDatomLikeRO, allows ref struct
+    public static int Compare(in ValueDatom d1, in ValueDatom d2)
     {
         var cmp = TA.Compare(d1, d2);
         if (cmp != 0) return cmp;

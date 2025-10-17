@@ -24,9 +24,9 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
     private IConnection? _connection;
     public ISnapshot Snapshot => _snapshot;
 
-    private readonly Lazy<DatomList> _recentlyAdded;
+    private readonly Lazy<Datoms> _recentlyAdded;
     private readonly TSnapshot _snapshot;
-    public DatomList RecentlyAdded => _recentlyAdded.Value;
+    public Datoms RecentlyAdded => _recentlyAdded.Value;
 
     internal Dictionary<Type, object> AnalyzerData { get; } = new();
 
@@ -38,12 +38,12 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         _recentlyAdded = new (() => snapshot.Datoms(SliceDescriptor.Create(txId)));
     }
 
-    internal Db(TSnapshot newSnapshot, TxId newTxId, DatomList addedDatoms, Db<TSnapshot, TLowLevelIterator> src) : base(src, addedDatoms) 
+    internal Db(TSnapshot newSnapshot, TxId newTxId, Datoms addedDatoms, Db<TSnapshot, TLowLevelIterator> src) : base(src, addedDatoms) 
     {
         _connection = src._connection;
         _snapshot = newSnapshot;
         BasisTxId = newTxId;
-        _recentlyAdded = new Lazy<DatomList>(() => addedDatoms);
+        _recentlyAdded = new Lazy<Datoms>(() => addedDatoms);
     }
 
     /// <summary>
@@ -97,12 +97,12 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         BackReferenceCache.Clear();
     }
     
-    public DatomList Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)
+    public Datoms Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)
     {
         return Datoms(SliceDescriptor.Create(attribute, value, AttributeCache));
     }
     
-    public DatomList Datoms(IAttribute attribute)
+    public Datoms Datoms(IAttribute attribute)
     {
         return Datoms(SliceDescriptor.Create(attribute, AttributeCache));
     }
@@ -110,7 +110,7 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
     [MustDisposeResource]
     public override TLowLevelIterator GetRefDatomEnumerator(bool totalOrdered) => _snapshot.GetRefDatomEnumerator(totalOrdered);
 
-    public DatomList Datoms(TxId txId)
+    public Datoms Datoms(TxId txId)
     {
         return Snapshot.Datoms(SliceDescriptor.Create(txId));
     }

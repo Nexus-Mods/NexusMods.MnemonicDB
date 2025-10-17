@@ -162,14 +162,14 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     /// way to interact with the entity before it is commited to the database.
     /// </summary>
     public partial struct New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
-        private readonly __ABSTRACTIONS__.IDatomsListLike _datoms;
+        private readonly __ABSTRACTIONS__.Datoms _datoms;
 
         {{if model.Includes.Count == 0}}
         
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with a generated temporary id.
         /// </summary>
-        public New(__ABSTRACTIONS__.IDatomsListLike tx) {
+        public New(__ABSTRACTIONS__.Datoms tx) {
             Id = TempId.Next();
             _datoms = tx;
         }
@@ -179,7 +179,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with the given entity id.
         /// </summary>
-        public New(__ABSTRACTIONS__.IDatomsListLike tx, out __ABSTRACTIONS__.EntityId id) {
+        public New(__ABSTRACTIONS__.Datoms tx, out __ABSTRACTIONS__.EntityId id) {
             _datoms = tx;
             Id = TempId.Next();
             id = Id;
@@ -188,7 +188,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with the given entity partition for the generated temporary id.
         /// </summary>
-        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.PartitionId partition, out __ABSTRACTIONS__.EntityId id) {
+        public New(__ABSTRACTIONS__.Datoms tx, __ABSTRACTIONS__.PartitionId partition, out __ABSTRACTIONS__.EntityId id) {
             _datoms = tx;
             Id = TempId.Next(partition);
             id = Id;
@@ -199,7 +199,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with the given entity id.
         /// </summary>
-        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.EntityId eid) {
+        public New(__ABSTRACTIONS__.Datoms tx, __ABSTRACTIONS__.EntityId eid) {
             _datoms = tx;
             Id = eid;
         }
@@ -208,7 +208,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// <summary>
         /// Gets the included entity of type {{= include.Name}} from the transaction.
         /// </summary>
-        public {{= include.ToDisplayString()}}.New Get{{=include.Name}}(__ABSTRACTIONS__.ITransaction tx) {
+        public {{= include.ToDisplayString()}}.New Get{{=include.Name}}(__ABSTRACTIONS__.Datoms tx) {
             throw new NotImplementedException();
         }
 
@@ -228,6 +228,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// </summary>
         public void AddTo(__ABSTRACTIONS__.ITransaction tx)
         {
+        /*
             {{each attr in model.Attributes}}
             {{if attr.IsCollection}}
             foreach (var itm in {{= attr.ContextualName}}) {
@@ -259,6 +260,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 
             {{/if}}
             {{/each}}
+            */
         }
 
         /// <summary>
@@ -313,14 +315,14 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            /// <summary>
            /// The database segment containing the datoms for this entity in EAVT order.
            /// </summary>
-           public readonly __ABSTRACTIONS__.DatomList EntitySegment;
+           public readonly __ABSTRACTIONS__.Datoms EntitySegment;
            
-           __ABSTRACTIONS__.DatomList __MODELS__.IHasIdAndEntitySegment.EntitySegment => this.EntitySegment; 
+           __ABSTRACTIONS__.Datoms __MODELS__.IHasIdAndEntitySegment.EntitySegment => this.EntitySegment; 
 
            /// <summary>
            /// Constructs a new ReadOnly model of the entity from the given segment and id.
            /// </summary>
-           public ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.DatomList segment, __ABSTRACTIONS__.EntityId id) {
+           public ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.Datoms segment, __ABSTRACTIONS__.EntityId id) {
                Db = db;
                Id = id;
                EntitySegment = segment;
