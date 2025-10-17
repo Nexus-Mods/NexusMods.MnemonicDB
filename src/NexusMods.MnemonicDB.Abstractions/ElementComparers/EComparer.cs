@@ -33,4 +33,10 @@ public sealed class EComparer : IElementComparer
         var keyB = KeyPrefix.Read(b);
         return keyA.E.CompareTo(keyB.E);
     }
+
+    /// <inheritdoc />
+    public static int Compare(in Datom a, in Datom b)
+    {
+        return a.Prefix.E.CompareTo(b.Prefix.E);
+    }
 }

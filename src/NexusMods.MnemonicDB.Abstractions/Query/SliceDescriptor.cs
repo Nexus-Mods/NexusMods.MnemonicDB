@@ -141,4 +141,12 @@ public static class SliceDescriptor
     {
         return new AttributeStartingAtId(attrId, id);
     }
+
+    /// <summary>
+    /// Wraps the slice in a slice that forces it to query the history variant of the same index
+    /// </summary>
+    public static HistorySlice<TParent> History<TParent>(this TParent parent) where TParent : ISliceDescriptor
+    {
+        return new HistorySlice<TParent>(parent);
+    }
 }

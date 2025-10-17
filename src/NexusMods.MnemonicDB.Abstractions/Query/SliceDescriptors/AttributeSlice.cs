@@ -28,4 +28,11 @@ public readonly struct AttributeSlice(AttributeId attrId) : ISliceDescriptor
 
     /// <inheritdoc />
     public bool IsTotalOrdered => false;
+
+    /// <inheritdoc />
+    public void Deconstruct(out Datom fromDatom, out Datom toDatom)
+    {
+        fromDatom = new Datom(new KeyPrefix(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false, ValueTag.Null, IndexType.AEVTCurrent), Null.Instance);
+        toDatom = new Datom(new KeyPrefix(EntityId.MaxValueNoPartition, attrId, TxId.MaxValue, false, ValueTag.Null, IndexType.AEVTCurrent), Null.Instance);
+    }
 }

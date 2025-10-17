@@ -27,4 +27,11 @@ public readonly struct AllEntitiesInPartition(PartitionId partitionId) : ISliceD
     }
 
     public bool IsTotalOrdered => true;
+
+    /// <inheritdoc />
+    public void Deconstruct(out Datom fromDatom, out Datom toDatom)
+    {
+        fromDatom = new Datom(new KeyPrefix(partitionId.MakeEntityId(0), AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTCurrent), Null.Instance);
+        toDatom = new Datom(new KeyPrefix(partitionId.MakeEntityId(uint.MaxValue), AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTCurrent), Null.Instance);
+    }
 }

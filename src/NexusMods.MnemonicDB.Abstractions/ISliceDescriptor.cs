@@ -28,4 +28,9 @@ public interface ISliceDescriptor
     ///  - TxLog - it covers more than one T value
     /// </summary>
     public bool IsTotalOrdered { get; }
+
+    /// <summary>
+    /// Deconstruct the slice into a start/end datom
+    /// </summary>
+    public void Deconstruct(out Datom fromDatom, out Datom toDatom);
 }

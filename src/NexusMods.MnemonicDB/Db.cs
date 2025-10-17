@@ -93,16 +93,6 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         BackReferenceCache.Clear();
     }
     
-    public Datoms Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)
-    {
-        return Datoms(SliceDescriptor.Create(attribute, value, AttributeCache));
-    }
-    
-    public Datoms Datoms(IAttribute attribute)
-    {
-        return Datoms(SliceDescriptor.Create(attribute, AttributeCache));
-    }
-
     [MustDisposeResource]
     public override TLowLevelIterator GetRefDatomEnumerator(bool totalOrdered) => _snapshot.GetRefDatomEnumerator(totalOrdered);
 

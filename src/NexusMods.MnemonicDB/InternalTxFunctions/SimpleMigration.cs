@@ -34,7 +34,7 @@ internal class SimpleMigration : AInternalFn
     {
         var batch = store.Backend.CreateBatch();
         var cache = store.AttributeCache;
-        using var builder = new IndexSegmentBuilder(cache);
+        var datoms = new Datoms(cache);
         var madeChanges = false;
         foreach (var attribute in _declaredAttributes)
         {
@@ -45,7 +45,7 @@ internal class SimpleMigration : AInternalFn
             if (!cache.TryGetAttributeId(attribute.Id, out var aid))
             {
                 madeChanges = true;
-                AddAttribute(attribute, builder);
+                AddAttribute(attribute, datoms);
                 continue;
             }
 
@@ -67,8 +67,7 @@ internal class SimpleMigration : AInternalFn
         if (!madeChanges) 
             return;
         
-        var built = builder.Build();
-        store.LogDatoms(batch, built, advanceTx: true);
+        store.LogDatoms(batch, datoms, advanceTx: true);
         store.AttributeCache.Reset(store.CurrentSnapshot.MakeDb(store.AsOfTxId, store.AttributeCache));
     }
 
@@ -91,26 +90,23 @@ internal class SimpleMigration : AInternalFn
     /// <summary>
     /// Remove add indexed datoms for a specific attribute
     /// </summary>
-    internal static void AddIndex(DatomStore store, AttributeId id, IWriteBatch batch, IndexedFlags newFlags)
+    internal static void AddIndex(DatomStore store, AttributeId attrId, IWriteBatch batch, IndexedFlags newFlags)
     {
-        throw new NotImplementedException();
-        /*
-        foreach (var datom in store.CurrentSnapshot.Datoms(SliceDescriptor.Create(id)))
+        foreach (var datom in store.CurrentSnapshot[attrId])
         {
-            batch.Add(IndexType.AVETCurrent, datom);
+            batch.Add(datom.With(IndexType.AEVTCurrent));
         }
         
-        foreach (var datom in store.CurrentSnapshot.Datoms(SliceDescriptor.Create(id)))
+        foreach (var datom in store.CurrentSnapshot[attrId])
         {
-            batch.Add(IndexType.AVETHistory, datom);
+            batch.Add(datom.With(IndexType.AEVTHistory));
         }
         
-        using var builder = new IndexSegmentBuilder(store.AttributeCache);
-        builder.Add(EntityId.From(id.Value), AttributeDefinition.Indexed, newFlags);
-        var built = builder.Build();
-        
-        store.LogDatoms(batch, built);
-        */
+        var datoms = new Datoms(store.AttributeCache)
+        {
+            { EntityId.From(attrId.Value), AttributeDefinition.Indexed, newFlags }
+        };
+        store.LogDatoms(batch, datoms);
     }
 
     /// <summary>

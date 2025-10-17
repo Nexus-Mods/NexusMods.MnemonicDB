@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -30,26 +32,29 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// </summary>
     ISnapshot Snapshot { get; }
     
-    /// <summary>
-    ///     Gets the datoms for the given transaction id.
-    /// </summary>
-    public Datoms Datoms(TxId txId);
     
-    /// <summary>
-    /// Finds all datoms that have the given attribute
-    /// </summary>
-    Datoms Datoms(IAttribute attribute);
+    public Datoms Datoms<THighLevel, TLowLevel, TSerializer>(Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value) 
+        where THighLevel : notnull 
+        where TLowLevel : notnull 
+        where TSerializer : IValueSerializer<TLowLevel>
+    {
+        return Datoms(SliceDescriptor.Create(attr, value, AttributeCache));
+    }
     
-    /// <summary>
-    /// Finds all the datoms that have the given attribute with the given value.
-    /// </summary>
-    Datoms Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value);
-    
+    public Datoms Datoms(IAttribute attribute)
+    {
+        return Datoms(SliceDescriptor.Create(attribute, AttributeCache));
+    }
+
     /// <summary>
     /// Gets and caches all the models that point to the given entity via the given attribute.
     /// </summary>
     public IEnumerable<TModel> GetBackrefModels<TModel>(AttributeId attribute, EntityId id)
-        where TModel : IReadOnlyModel<TModel>;
+        where TModel : IReadOnlyModel<TModel>
+    {
+        return this[attribute, id]
+            .Select(d => TModel.Create(this, (EntityId)d.Value));
+    }
 
     /// <summary>
     /// Gets and caches all the models that point to the given entity via the given attribute.

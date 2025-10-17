@@ -25,4 +25,9 @@ public interface IElementComparer
     /// Compare two datom spans
     /// </summary>
     public static abstract int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
+
+    /// <summary>
+    /// Compare two datoms
+    /// </summary>
+    public static abstract int Compare(in Datom a, in Datom b);
 }

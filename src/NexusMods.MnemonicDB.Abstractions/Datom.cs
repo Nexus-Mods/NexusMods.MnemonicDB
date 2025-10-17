@@ -10,7 +10,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 
 public readonly record struct TaggedValue(ValueTag Tag, object Value);
 
-public struct Datom
+public struct Datom : IComparable<Datom>
 {
     public KeyPrefix Prefix { get; }
     public object Value { get; }
@@ -188,4 +188,10 @@ public struct Datom
     /// A datom with the maximum values for each property
     /// </summary>
     public static readonly Datom Max = new(new KeyPrefix(EntityId.MaxValueNoPartition, AttributeId.Max, TxId.MaxValue, true, ValueTag.Null), Null.Instance);
+
+    /// <inheritdoc />
+    public int CompareTo(Datom other)
+    {
+        return GlobalComparer.Compare(this, other);
+    }
 }

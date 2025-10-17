@@ -14,6 +14,20 @@ public abstract unsafe class ADatomComparator<TA, TB, TC, TD> : IDatomComparator
     where TC : IElementComparer
     where TD : IElementComparer
 {
+
+    public static int Compare(in Datom a, in Datom b)
+    {
+        var cmp = TA.Compare(in a, in b);
+        if (cmp != 0) return cmp;
+        
+        cmp = TB.Compare(in a, in b);
+        if (cmp != 0) return cmp;
+        
+        cmp = TC.Compare(in a, in b);
+        if (cmp != 0) return cmp;
+        
+        return TD.Compare(in a, in b);
+    }
     
     /// <inheritdoc />
     public static int Compare(KeyPrefix* aPrefix, byte* aPtr, int aLen, KeyPrefix* bPrefix, byte* bPtr, int bLen)

@@ -494,28 +494,6 @@ public sealed partial class DatomStore : IDatomStore
         if (assert.Prefix.ValueTag == ValueTag.Reference)
             batch.Add(assert.With(IndexType.VAETCurrent));
     }
-    
-    /// <summary>
-    /// Updates the data in _prevWriter to be a retraction of the data in that write.
-    /// </summary>
-    private void SwitchPrevToRetraction()
-    {
-        var prevKey = MemoryMarshal.Read<KeyPrefix>(_retractWriter.GetWrittenSpan());
-        prevKey = prevKey with {T = _thisTx, IsRetract = true};
-        MemoryMarshal.Write(_retractWriter.GetWrittenSpanWritable(), prevKey);
-    }
-    
-    private void ProcessAssert(IWriteBatch batch, AttributeId attributeId, Datom datom)
-    {
-        batch.Add(IndexType.TxLog, datom);
-        batch.Add(EAVTCurrent, datom);
-        batch.Add(AEVTCurrent, datom);
-        if (_attributeCache.IsReference(attributeId))
-            batch.Add(VAETCurrent, datom);
-        if (_attributeCache.IsIndexed(attributeId))
-            batch.Add(AVETCurrent, datom);
-    }
-
     #endregion
 
 

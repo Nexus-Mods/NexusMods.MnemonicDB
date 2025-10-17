@@ -29,4 +29,10 @@ public sealed class TxComparer : IElementComparer
         var keyB = KeyPrefix.Read(b);
         return keyA.T.CompareTo(keyB.T);
     }
+
+    /// <inheritdoc />
+    public static int Compare(in Datom a, in Datom b)
+    {
+        return a.Prefix.T.CompareTo(b.Prefix.T);
+    }
 }
