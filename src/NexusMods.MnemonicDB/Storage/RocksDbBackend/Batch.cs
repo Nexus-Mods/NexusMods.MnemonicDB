@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using Reloaded.Memory.Extensions;
@@ -46,42 +45,6 @@ internal class Batch(RocksDb db) : IWriteBatch
         }
     }
 
-    public void Add(Datom datom)
-    {
-        throw new NotImplementedException();
-    }
-
-    /// <inheritdoc />
-    public void Delete(Datom datom)
-    {
-        if (datom.Prefix.ValueTag == ValueTag.HashedBlob)
-        {
-            Span<byte> keySpan = stackalloc byte[Serializer.HashedBlobPrefixSize];
-
-            MemoryMarshal.Write(keySpan, datom.Prefix);
-            datom.ValueSpan.SliceFast(0, Serializer.HashedBlobHeaderSize).CopyTo(keySpan.SliceFast(KeyPrefix.Size));
-            _batch.Delete(keySpan);
-        }
-        else if (datom.ValueSpan.Length < 256)
-        {
-            Span<byte> keySpan = stackalloc byte[KeyPrefix.Size + datom.ValueSpan.Length];
-
-            MemoryMarshal.Write(keySpan, datom.Prefix);
-            datom.ValueSpan.CopyTo(keySpan.SliceFast(KeyPrefix.Size));
-
-            _batch.Delete(keySpan);
-        }
-        else
-        {
-            var keySpan = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + datom.ValueSpan.Length).AsSpan();
-
-            MemoryMarshal.Write(keySpan, datom.Prefix);
-            datom.ValueSpan.CopyTo(keySpan[KeyPrefix.Size..]);
-
-            _batch.Delete(keySpan);
-        }
-    }
-    
     public void Delete(Datom datom)
     {
         if (datom.Prefix.ValueTag == ValueTag.HashedBlob)

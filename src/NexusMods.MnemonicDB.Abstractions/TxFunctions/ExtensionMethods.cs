@@ -23,15 +23,15 @@ public static class ExtensionMethods
     /// <param name="tx"></param>
     /// <param name="id"></param>
     /// <param name="recursive"></param>
-    public static void Delete(this ITransaction tx, EntityId id, bool recursive = false)
+    public static void Delete(this Datoms tx, EntityId id, bool recursive = false)
     {
         if (recursive)
         {
-            tx.Add(id, DeleteRecursive);
+            tx.AddTxFn((tx, db) => DeleteRecursive(tx, db, id));
         }
         else
         {
-            tx.Add(id, DeleteThisOnly);
+            tx.AddTxFn((tx, db) => DeleteThisOnly(tx, db, id));
         }
     }
 

@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
-using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB;
 
@@ -80,9 +78,7 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
             _connection = value;
         }
     }
-    
-    public Entities<TModel> GetBackrefModels<TModel>(AttributeId aid, EntityId id) where TModel : IReadOnlyModel<TModel> 
-        => GetBackrefModels<TModel>(aid, id);
+
 
     TReturn IDb.AnalyzerData<TAnalyzer, TReturn>()
     {

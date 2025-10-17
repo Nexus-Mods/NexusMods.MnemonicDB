@@ -59,7 +59,7 @@ public class Datoms : List<Datom>
         base.Add(datom);
     }
 
-    public void TxFn(Action<Datoms, IDb> txFn)
+    public void AddTxFn(Action<Datoms, IDb> txFn)
     {
         throw new NotImplementedException();
     }

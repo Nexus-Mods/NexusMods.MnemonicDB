@@ -29,9 +29,7 @@ public partial class DatomStore
 
     private bool TryOwnerOfUnique(AttributeId a, TaggedValue v, out EntityId e)
     {
-        using var writer = new PooledMemoryBufferWriter();
-        v.Tag.Write(v.Value, writer);
-        using var iterator = _currentDb!.LightweightDatoms(SliceDescriptor.Create(a, v.Tag, writer.WrittenMemory));
+        using var iterator = _currentDb!.LightweightDatoms(SliceDescriptor.Create(a, v.Tag, v.Value));
         if (!iterator.MoveNext())
         {
             e = default;

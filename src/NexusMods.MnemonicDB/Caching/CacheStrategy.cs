@@ -1,8 +1,5 @@
-using System;
 using System.Collections.Generic;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Traits;
 using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.Caching;

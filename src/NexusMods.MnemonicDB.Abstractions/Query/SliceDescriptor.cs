@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -33,23 +34,15 @@ public static class SliceDescriptor
     /// <summary>
     /// Creates a slice descriptor for the given attribute in the current AVET index
     /// </summary>
-    public static ISliceDescriptor Create<THighLevel>(IWritableAttribute<THighLevel> attr, THighLevel value, AttributeCache attributeCache)
+    [MustDisposeResource]
+    public static IndexedValueSlice Create<THighLevel, TLowLevel, TSerializer>(Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value, AttributeCache attributeCache) 
+        where THighLevel : notnull 
+        where TLowLevel : notnull 
+        where TSerializer : IValueSerializer<TLowLevel>
     {
-        var id = attributeCache.GetAttributeId(attr.Id);
-        var tag = attributeCache.GetValueTag(id);
-        if (tag != ValueTag.Reference && !attributeCache.IsIndexed(id))
-            throw new InvalidOperationException($"Attribute {attr.Id} must be indexed or a reference");
-
-        if (tag == ValueTag.Reference)
-            return new BackRefSlice(id, (EntityId)(object)value!);
-        
-        var index = attr.IsReference ? IndexType.VAETCurrent : IndexType.AVETCurrent;
-        return new SliceDescriptor
-        {
-            From = Datom(EntityId.MinValueNoPartition, attr, value, TxId.MinValue, false, attributeCache, index),
-            To = Datom(EntityId.MaxValueNoPartition, attr, value, TxId.MaxValue, false, attributeCache, index),
-            IsReverse = false
-        };
+        var converted = attr.ToLowLevel(value);
+        var attrId = attributeCache.GetAttributeId(attr.Id);
+        return IndexedValueSlice.Create(attrId, converted, attributeCache);
     }
     
     /// <summary>
@@ -108,46 +101,9 @@ public static class SliceDescriptor
     /// <summary>
     /// Creates a slice descriptor for the entire index
     /// </summary>
-    public static SliceDescriptor Create(IndexType index)
+    public static IndexSlice Create(IndexType index)
     {
-        if (index is IndexType.VAETCurrent or IndexType.VAETHistory)
-        {
-            // VAET has a special case where we need to include the reference type and an actual reference
-            // in the slice
-            var from = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + sizeof(ulong));
-            from.AsSpan().Clear();
-
-            var fromPrefix = new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false, ValueTag.Reference);
-            MemoryMarshal.Write(from, fromPrefix);
-
-
-            var to = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size + sizeof(ulong));
-            to.AsSpan().Fill(byte.MaxValue);
-
-            var toPrefix = new KeyPrefix(EntityId.MaxValueNoPartition, AttributeId.Max, TxId.MaxValue, true, ValueTag.Reference);
-            MemoryMarshal.Write(to, toPrefix);
-
-            return new SliceDescriptor
-            {
-                From = new Datom(from, Null.Instance).With(index),
-                To = new Datom(to).With(index),
-                IsReverse = false
-            };
-        }
-        else
-        {
-            var from = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size);
-            from.AsSpan().Clear();
-            var to = GC.AllocateUninitializedArray<byte>(KeyPrefix.Size);
-            to.AsSpan().Fill(byte.MaxValue);
-            return new SliceDescriptor
-            {
-                From = new Datom(from).WithIndex(index),
-                To = new Datom(to).WithIndex(index),
-                IsReverse = false
-            };
-        }
-
+        return new IndexSlice(index);
     }
 
     /// <summary>
@@ -158,46 +114,22 @@ public static class SliceDescriptor
         KeyPrefix prefix = new(e, a, id, isRetract, ValueTag.Null, indexType);
         return new Datom(prefix, ReadOnlyMemory<byte>.Empty);
     }
-
-    /// <summary>
-    /// Creates a with a value from the given attribute and value
-    /// </summary>
-    public static Datom Datom<THighLevel>(EntityId e, IWritableAttribute<THighLevel> a, THighLevel value, TxId tx, bool isRetract, AttributeCache attributeCache, 
-        IndexType indexType = IndexType.None)
-    {
-        // TODO: optimize this
-        using var pooled = new PooledMemoryBufferWriter();
-        a.Write(e, attributeCache, value, tx, isRetract, pooled);
-        return new Datom(pooled.WrittenMemory.ToArray()).WithIndex(indexType);
-    }
-
+    
     /// <summary>
     /// Creates a slice descriptor for the given entity range, for the current EAVT index
     /// </summary>
-    public static SliceDescriptor Create(EntityId from, EntityId to)
+    public static EntityRangeSlice Create(EntityId from, EntityId to)
     {
-        return new SliceDescriptor
-        {
-            From = Datom(from, AttributeId.Min, TxId.MinValue, false, IndexType.EAVTCurrent),
-            To = Datom(to, AttributeId.Max, TxId.MaxValue, false, IndexType.EAVTCurrent),
-            IsReverse = false
-        };
+        return new EntityRangeSlice(from, to);
     }
     
     /// <summary>
     /// Creates a new slice descriptor for the given reference attribute and prefix value tag
     /// </summary>
-    public static SliceDescriptor Create(AttributeId referenceAttribute, ValueTag prefixValueTag, ReadOnlyMemory<byte> datomValueSpan)
+    [MustDisposeResource]
+    public static IndexedValueSlice Create(AttributeId attrId, ValueTag tag, object value)
     {
-        var fromPrefix = new KeyPrefix(EntityId.MinValueNoPartition, referenceAttribute, TxId.MinValue, false, prefixValueTag, IndexType.AVETCurrent);
-        var toPrefix = new KeyPrefix(EntityId.MaxValueNoPartition, referenceAttribute, TxId.MaxValue, false, prefixValueTag, IndexType.AVETCurrent);
-
-        return new SliceDescriptor
-        {
-            From = new Datom(fromPrefix, datomValueSpan),
-            To = new Datom(toPrefix, datomValueSpan),
-            IsReverse = false
-        };
+        return new IndexedValueSlice(attrId, tag, value);
     }
 
     public static AllEntitiesInPartition AllEntities(PartitionId partition) 

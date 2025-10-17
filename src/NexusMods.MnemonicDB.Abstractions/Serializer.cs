@@ -238,6 +238,15 @@ public static class Serializer
         return typeA.Compare(aPtr, aLen, bPtr, bLen);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+    public static unsafe int Compare(this ValueTag tag, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    {
+        fixed (byte* aPtr = a, bPtr = b)
+        {
+            return tag.Compare(aPtr, a.Length, bPtr, b.Length);
+        }
+    }
+
     /// <summary>
     /// Compare two values of the given tag
     /// </summary>

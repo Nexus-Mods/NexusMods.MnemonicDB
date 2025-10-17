@@ -1,15 +1,8 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
-using NexusMods.MnemonicDB.Abstractions.Traits;
 using NexusMods.MnemonicDB.Caching;
 
 namespace NexusMods.MnemonicDB;
@@ -75,14 +68,4 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
     public IndexSegmentCache<EntityId> EntityCache { get; }
 
     public IndexSegmentCache<(AttributeId A, EntityId E)> BackReferenceCache { get; }
-
-    public void BulkCache(EntityIds ids)
-    {
-        throw new NotImplementedException();
-
-    }
-    public void BulkCache(ReadOnlySpan<EntityId> ids)
-    {
-        throw new NotImplementedException();
-    }
 }

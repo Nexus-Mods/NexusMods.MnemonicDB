@@ -4,8 +4,6 @@ using System.Threading;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 
@@ -75,7 +73,7 @@ internal class SimpleMigration : AInternalFn
     }
 
 
-    private void AddAttribute(IAttribute definition, in IndexSegmentBuilder builder)
+    private void AddAttribute(IAttribute definition, in Datoms builder)
     {
         var id = TempId(PartitionId.Attribute);
         builder.Add(id, AttributeDefinition.UniqueId, definition.Id);

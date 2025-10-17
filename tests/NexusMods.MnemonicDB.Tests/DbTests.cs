@@ -424,7 +424,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 {
                     using var txInner = Connection.BeginTransaction();
                     // Send the function for the update, not update itself
-                    txInner.TxFn((datoms, db) =>
+                    txInner.AddTxFn((datoms, db) =>
                     {
                         // Actual work is done here, we load the entity and update it this is executed serially
                         // by the transaction executor

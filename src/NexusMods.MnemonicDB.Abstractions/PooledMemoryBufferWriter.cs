@@ -141,28 +141,7 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
     {
         Length = 0;
     }
-
-    /// <summary>
-    ///     Writes the given span to the buffer, and advances the length.
-    /// </summary>
-    public void Write(ReadOnlySpan<byte> span)
-    {
-        span.CopyTo(GetSpan(span.Length));
-        Advance(span.Length);
-    }
-
-    /// <summary>
-    /// Writes the given datom to the buffer.
-    /// </summary>
-    /// <param name="datom"></param>
-    public void Write(in Datom datom)
-    {
-        var span = GetSpan(KeyPrefix.Size + datom.ValueSpan.Length);
-        MemoryMarshal.Write(span, datom.Prefix);
-        datom.ValueSpan.CopyTo(span.SliceFast(KeyPrefix.Size));
-        Advance(KeyPrefix.Size + datom.ValueSpan.Length);
-    }
-
+    
     /// <summary>
     /// Writes the value to the buffer as-is, via MemoryMarshal.Write.
     /// </summary>

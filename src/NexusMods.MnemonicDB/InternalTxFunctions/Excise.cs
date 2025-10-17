@@ -1,7 +1,5 @@
 using System;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage;
 using static NexusMods.MnemonicDB.Abstractions.IndexType;
 
