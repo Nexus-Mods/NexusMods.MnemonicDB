@@ -120,7 +120,7 @@ public class MigrationTests : AMnemonicDBTest
 
         var db = connection.Db;
         var attrs = db.Datoms(AttributeDefinition.UniqueId);
-        var datoms = new List<Datom>();
+        var datoms = new Datoms(AttributeCache);
         foreach (var attr in attrs)
             datoms.AddRange(db[attr.E]);
 

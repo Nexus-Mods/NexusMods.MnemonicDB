@@ -18,13 +18,7 @@ public static class ExtensionMethods
     public static void Add<T>(this ITransaction tx, T arg, Action<ITransaction, IDb, T> fn) =>
     throw new NotImplementedException();
         //tx.Add(new TxFunction<T>(fn, arg));
-
-    /// <summary>
-    /// Adds a function to the transaction as a TxFunction
-    /// </summary>
-    public static void Add<TA, TB>(this ITransaction tx, TA a, TB b, Action<ITransaction, IDb, TA, TB> fn) =>
-        throw new NotImplementedException();
-        //tx.Add(new TxFunction<TA, TB>(fn, a, b));
+    
 
     /// <summary>
     /// Adds a function to the transaction that will delete the entity with the given id. If `recursive` is true, it will

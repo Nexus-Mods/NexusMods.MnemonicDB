@@ -424,7 +424,14 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 {
                     using var txInner = Connection.BeginTransaction();
                     // Send the function for the update, not update itself
-                    txInner.Add(id, 1, AddToName);
+                    txInner.TxFn((datoms, db) =>
+                    {
+                        // Actual work is done here, we load the entity and update it this is executed serially
+                        // by the transaction executor
+                        var loadout = Loadout.Load(db, id);
+                        var oldAmount = int.Parse(loadout.Name.Split(":")[1].Trim());
+                        datoms.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + i)}");
+                    });
                     await txInner.Commit();
                 }));
             }
@@ -438,13 +445,10 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         return;
 
-        // Actual work is done here, we load the entity and update it this is executed serially
-        // by the transaction executor
-        void AddToName(ITransaction tx, IDb db, EntityId eid, int amount)
+
+        void AddToName(ATransaction tx, IDb db, EntityId eid, int amount)
         {
-            var loadout = Loadout.Load(db, eid);
-            var oldAmount = int.Parse(loadout.Name.Split(":")[1].Trim());
-            tx.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + amount)}");
+
         }
     }
 
@@ -1353,7 +1357,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var history = Connection.History();
 
-        await Assert.That(history.Datoms(l2RO.Id)
+        await Assert.That(history[l2RO.Id]
             .Resolved(Connection)
             .OfType<StringAttribute.ReadDatom>()
             .Select(d => (!d.IsRetract, d.V)))
@@ -1367,9 +1371,9 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         history = Connection.History();
 
-        await Assert.That(history.Datoms(l2RO.Id).ToArray()).IsEmpty();
+        await Assert.That(history[l2RO.Id]).IsEmpty();
 
-        await Assert.That(history.Datoms(l1RO.Id).ToArray()).IsNotEmpty();
+        await Assert.That(history[l1RO.Id]).IsNotEmpty();
     }
 
     [Test]

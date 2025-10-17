@@ -68,7 +68,7 @@ internal class InternalTransaction(IDb basisDb, Datoms datoms) : ITransaction
     }
 
     /// <inheritdoc />
-    public ISubTransaction CreateSubTransaction()
+    public SubTransaction CreateSubTransaction()
     {
         throw new NotSupportedException();
     }

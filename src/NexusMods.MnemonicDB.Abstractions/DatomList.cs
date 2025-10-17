@@ -55,6 +55,11 @@ public class Datoms : List<ValueDatom>
         Add(datomLike);
     }
 
+    public void TxFn(Action<Datoms, IDb> txFn)
+    {
+        throw new NotImplementedException();
+    }
+
     public void Add<THighLevel, TLowLevel, TSerializer>(EntityId e,
         Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value)
         where THighLevel : notnull

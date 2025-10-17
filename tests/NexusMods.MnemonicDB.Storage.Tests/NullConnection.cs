@@ -26,6 +26,11 @@ public class NullConnection : IConnection
         throw new NotSupportedException();
     }
 
+    MainTransaction IConnection.BeginTransaction()
+    {
+        throw new NotImplementedException();
+    }
+
     public IMainTransaction BeginTransaction()
     {
         throw new NotSupportedException();
@@ -46,6 +51,11 @@ public class NullConnection : IConnection
     public Task UpdateSchema(params IAttribute[] attribute)
     {
         throw new NotSupportedException();
+    }
+
+    public Task<ICommitResult> Commit(Datoms datoms)
+    {
+        throw new NotImplementedException();
     }
 
     public IObservable<ChangeSet<Datom, DatomKey, IDb>> ObserveDatoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
@@ -84,4 +94,8 @@ public class NullConnection : IConnection
     }
 
     public HyperDuck.DuckDB DuckDBQueryEngine => throw new NotSupportedException();
+    Query<TResult> IQueryMixin.Query<TResult>(string sql)
+    {
+        throw new NotImplementedException();
+    }
 }

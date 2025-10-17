@@ -44,16 +44,16 @@ public abstract class ATransaction : Datoms, IMainTransaction, ISubTransaction
         CheckAccess();
         Debug.Assert(_parentTransaction is null);
 
+        var result = await _connection.Commit(this);
         lock (_lock)
         {
-            var result = _connection.Commit(this);
             _committed = true;
             Reset();
-            return result;
         }
+        return result;
     }
 
-    public ISubTransaction CreateSubTransaction()
+    public SubTransaction CreateSubTransaction()
     {
         throw new NotImplementedException();
         //return new Transaction(_connection, parentTransaction: this);
@@ -92,3 +92,9 @@ public class MainTransaction : ATransaction
     }
 }
 
+public class SubTransaction : ATransaction
+{
+    public SubTransaction(IConnection connection, ATransaction parentTx) : base(connection, parentTx)
+    {
+    }
+}

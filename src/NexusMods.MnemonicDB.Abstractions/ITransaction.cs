@@ -81,7 +81,7 @@ public interface ITransaction : IDisposable
     /// <summary>
     /// Creates a sub-transaction.
     /// </summary>
-    ISubTransaction CreateSubTransaction();
+    SubTransaction CreateSubTransaction();
 
     /// <summary>
     /// Resets the transaction.

@@ -88,7 +88,7 @@ public interface IConnection : IDisposable, IQueryMixin
     /// </summary>
     public Task UpdateSchema(params IAttribute[] attribute);
 
-    public ICommitResult Commit(Datoms datoms);
+    public Task<ICommitResult> Commit(Datoms datoms);
 
     /// <summary>
     /// Observe a slice of the database, as datoms are added or removed from the database, the observer will be updated

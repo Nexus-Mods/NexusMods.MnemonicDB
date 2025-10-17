@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Transactions;
 using DynamicData;
 using Jamarino.IntervalTree;
 using Microsoft.Extensions.DependencyInjection;
@@ -455,10 +456,12 @@ public sealed class Connection : IConnection
     }
 
     /// <inheritdoc />
-    public IMainTransaction BeginTransaction()
+    MainTransaction IConnection.BeginTransaction()
     {
-        return new Transaction(connection: this);
+        return new MainTransaction(connection: this);
     }
+    
+
 
     /// <inheritdoc />
     public IAnalyzer[] Analyzers => _analyzers;
@@ -493,6 +496,13 @@ public sealed class Connection : IConnection
     {
         return Transact(new SimpleMigration(attribute));
     }
+
+    /// <inheritdoc />
+    public Task<ICommitResult> Commit(Datoms datoms)
+    {
+        return Transact(new IndexSegmentTransaction(datoms));
+    }
+    
 
     public IObservable<DatomChangeSet> ObserveDatoms<TDescriptor>(TDescriptor descriptor) 
         where TDescriptor : ISliceDescriptor
