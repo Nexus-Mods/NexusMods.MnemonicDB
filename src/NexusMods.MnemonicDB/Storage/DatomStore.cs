@@ -408,32 +408,6 @@ public sealed partial class DatomStore : IDatomStore
         CurrentSnapshot = Backend.GetSnapshot();
     }
     
-    public bool TryGetPreviousDatom(ValueDatom d, out ValueDatom found)
-    {
-        var slice = SliceDescriptor.Create(d.E, d.A);
-        using var iterator = _currentDb!.Snapshot.LightweightDatoms(slice);
-        if (!iterator.MoveNext())
-        {
-            found = default!;
-            return false;
-        }
-
-        found = ValueDatom.Create(iterator);
-        return true;
-    }
-
-    /// <summary>
-    /// Once we're all done processing a transaction, we need to check for any unique violations that may have occurred
-    /// </summary>
-    private void CheckForUniqueViolations()
-    {
-        foreach (var (datom, state) in _currentUniqueDatoms)
-        {
-            if (state == UniqueState.Violation)
-                throw new UniqueConstraintException(datom);
-        }
-    }
-
     /// <summary>
     /// Log a collection of datoms to the store using the given batch. If advanceTx is true, the transaction will be advanced
     /// and this specific transaction will be considered as committed, use this in combination with other log methods
@@ -469,11 +443,11 @@ public sealed partial class DatomStore : IDatomStore
     {
         var id = EntityId.From(_thisTx.Value);
         var taggedValue = new TaggedValue(ValueTag.Int64, _timeProvider.GetUtcNow().UtcTicks);
-        var datom = ValueDatom.Create(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), taggedValue, _thisTx, true);
+        var datom = Datom.Create(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), taggedValue, _thisTx, true);
         LogAssert(batch, datom);
     }
 
-    private void LogRetract(IWriteBatch batch, in ValueDatom oldDatom, TxId newTxId)
+    private void LogRetract(IWriteBatch batch, in Datom oldDatom, TxId newTxId)
     {
         Debug.Assert(!oldDatom.Prefix.IsRetract, "The datom handed to LogRetract is expected to be the old datom");
         Debug.Assert(oldDatom.Prefix.T < newTxId, "The datom handed to LogRetract is expected to be the old datom");
@@ -517,7 +491,7 @@ public sealed partial class DatomStore : IDatomStore
         }
     }
 
-    private void LogAssert(IWriteBatch batch, in ValueDatom assert)
+    private void LogAssert(IWriteBatch batch, in Datom assert)
     {
         batch.Add(assert.With(IndexType.TxLog));
         batch.Add(assert.With(IndexType.EAVTCurrent));
@@ -527,122 +501,7 @@ public sealed partial class DatomStore : IDatomStore
         if (assert.Prefix.ValueTag == ValueTag.Reference)
             batch.Add(assert.With(IndexType.VAETCurrent));
     }
-
-    /// <summary>
-    /// Log a single datom, this is the inner loop of the transaction processing
-    /// </summary>
-    internal void LogDatom(in ValueDatom datom, IWriteBatch batch)
-    {
-        _writer.Reset();
-
-        var isRemapped = datom.E.InPartition(PartitionId.Temp);
-
-        var currentPrefix = datom.Prefix;
-        var attrId = currentPrefix.A;
-
-        var newE = isRemapped ? Remap(currentPrefix.E) : currentPrefix.E;
-        var keyPrefix = currentPrefix with {E = newE, T = _thisTx};
-
-        {
-            _writer.WriteMarshal(keyPrefix);
-            throw new NotImplementedException();
-            Serializer.Write(keyPrefix.ValueTag, datom.Value, _writer);
-            /*var valueSpan = datom.ValueSpan;
-            var span = _writer.GetSpan(valueSpan.Length);
-            valueSpan.CopyTo(span);
-            keyPrefix.ValueTag.Remap(span, _remapFunc);
-            _writer.Advance(valueSpan.Length);*/
-        }
-
-        var newSpan = _writer.AsDatom();
-
-        ProcessMaybeUnique(attrId, newSpan);
-        if (keyPrefix.IsRetract)
-        {
-            ProcessRetract(batch, attrId, newSpan, CurrentSnapshot!);
-            return;
-        }
-
-        switch (GetPreviousState(isRemapped, attrId, CurrentSnapshot!, newSpan))
-        {
-            case PrevState.Duplicate:
-                return;
-            case PrevState.NotExists:
-                ProcessAssert(batch, attrId, newSpan);
-                break;
-            case PrevState.Exists:
-                SwitchPrevToRetraction();
-                ProcessRetract(batch, attrId, _retractWriter.AsDatom(), CurrentSnapshot!);
-                ProcessAssert(batch, attrId, newSpan);
-                break;
-        }
-    }
-
-    private void ProcessMaybeUnique(AttributeId attrId, in Datom datom)
-    {
-        if (!_attributeCache.IsUnique(attrId))
-            return;
-
-        var cloned = datom.Clone();
-        var currentState = _currentUniqueDatoms.GetValueOrDefault(cloned, UniqueState.None);
-
-        switch (currentState, datom.Prefix.IsRetract)
-        {
-            // We've never seen this unique datom before
-            case (UniqueState.None, true) or (UniqueState.None, false):
-            {
-                // Let's see what the previous snapshot has
-                var datoms = CurrentSnapshot!.Datoms(SliceDescriptor.Create(datom.Prefix.A, datom.Prefix.ValueTag, datom.ValueMemory));
-                if (datoms.Any())
-                {
-                    // We're retracting a unique datom that already exists, another place will make sure we are retracting the 
-                    // correct EntityID
-                    if (datom.Prefix.IsRetract)
-                    {
-                        // This should really never happen
-                        if (datoms.First().E != datom.E)
-                            throw new InvalidOperationException("Retraction of unique datom with different entity id");
-                        // Mark this unique datom as retracted
-                        _currentUniqueDatoms.Add(cloned, UniqueState.Retracted);
-                    }
-                    else
-                    {
-                        // So far, it's a violation, unless we get a matching retraction
-                        _currentUniqueDatoms.Add(cloned, UniqueState.Violation);
-                    }
-                }
-                else
-                {
-                    _currentUniqueDatoms.Add(cloned, UniqueState.Asserted);
-                }
-                break;
-            }
-            // Asserted, then retracted. This is allowed. 
-            case (UniqueState.Asserted, true):
-                _currentUniqueDatoms.Remove(cloned);
-                break;
-            // Asserted, then reasserted. This is a violation
-            case (UniqueState.Asserted, false):
-                throw new UniqueConstraintException(datom);
-            // Double retracted, this should never happen
-            case (UniqueState.Retracted, true):
-                throw new InvalidOperationException("Double retraction of a unique datom");
-            // Retracted, then added. This is allowed
-            case (UniqueState.Retracted, false):
-                _currentUniqueDatoms[cloned] = UniqueState.Asserted;
-                break;
-            // A violation, then retracted. This is allowed.
-            case (UniqueState.Violation, true):
-                _currentUniqueDatoms.Remove(cloned);
-                break;
-            // A violation, then asserted. This is a violation
-            case (UniqueState.Violation, false):
-                throw new UniqueConstraintException(datom);
-            default:
-                throw new InvalidOperationException("Invalid unique state");
-        }
-    }
-
+    
     /// <summary>
     /// Updates the data in _prevWriter to be a retraction of the data in that write.
     /// </summary>
@@ -652,96 +511,7 @@ public sealed partial class DatomStore : IDatomStore
         prevKey = prevKey with {T = _thisTx, IsRetract = true};
         MemoryMarshal.Write(_retractWriter.GetWrittenSpanWritable(), prevKey);
     }
-
-    private void ProcessRetract(IWriteBatch batch, AttributeId attrId, Datom datom, ISnapshot iterator)
-    {
-        _prevWriter.Reset();
-        _prevWriter.Write(datom);
-        var prevKey = MemoryMarshal.Read<KeyPrefix>(_prevWriter.GetWrittenSpan());
-
-        prevKey = prevKey with {T = TxId.MinValue, IsRetract = false};
-        MemoryMarshal.Write(_prevWriter.GetWrittenSpanWritable(), prevKey);
-
-        var low = new Datom(_prevWriter.GetWrittenSpan().ToArray());
-
-        prevKey = prevKey with {T = TxId.MaxValue, IsRetract = false};
-        MemoryMarshal.Write(_prevWriter.GetWrittenSpanWritable(), prevKey);
-        var high = new Datom(_prevWriter.GetWrittenSpan().ToArray());
-
-        var sliceDescriptor = new SliceDescriptor
-        {
-            From = low.WithIndex(EAVTCurrent),
-            To = high.WithIndex(EAVTCurrent),
-            IsReverse = false
-        };
-
-        throw new NotImplementedException();
-        /*
-        var prevDatom = iterator.Datoms(sliceDescriptor)
-            .Select(d => d.Clone())
-            .FirstOrDefault();
-
-        #if DEBUG
-            // In debug mode, we perform additional checks to make sure the retraction found a datom to retract
-            // The only time this fails is if the datom lookup functions `.Datoms()` are broken
-            RetractionSantiyCheck(datom, prevDatom);
-        #endif
-
-        // Delete the datom from the current indexes
-        batch.Delete(EAVTCurrent, prevDatom);
-        batch.Delete(AEVTCurrent, prevDatom);
-        if (_attributeCache.IsReference(attrId))
-            batch.Delete(VAETCurrent, prevDatom);
-        if (_attributeCache.IsIndexed(attrId))
-            batch.Delete(AVETCurrent, prevDatom);
-        
-        // Put the retraction in the log
-        batch.Add(IndexType.TxLog, datom);
-        
-        // If the attribute is a no history attribute, we don't need to put the retraction in the history indexes
-        // so we can skip the rest of the processing
-        if (_attributeCache.IsNoHistory(attrId))
-            return;
-
-        // Move the datom to the history index and also record the retraction
-        batch.Add(EAVTHistory, prevDatom);
-        batch.Add(EAVTHistory, datom);
-
-        // Move the datom to the history index and also record the retraction
-        batch.Add(AEVTHistory, prevDatom);
-        batch.Add(AEVTHistory, datom);
-
-        if (_attributeCache.IsReference(attrId))
-        {
-            batch.Add(VAETHistory, prevDatom);
-            batch.Add(VAETHistory, datom);
-        }
-
-        if (_attributeCache.IsIndexed(attrId))
-        {
-            batch.Add(AVETHistory, prevDatom);
-            batch.Add(AVETHistory, datom);
-        }
-        */
-    }
-
-    private static unsafe void RetractionSantiyCheck(Datom datom, Datom prevDatom)
-    {
-        Debug.Assert(prevDatom.Valid, "Previous datom should exist");
-        var debugKey = prevDatom.Prefix;
-
-        var otherPrefix = datom.Prefix;
-        Debug.Assert(debugKey.E == otherPrefix.E, "Entity should match");
-        Debug.Assert(debugKey.A == otherPrefix.A, "Attribute should match");
-
-        fixed (byte* aTmp = prevDatom.ValueSpan)
-        fixed (byte* bTmp = datom.ValueSpan)
-        {
-            var cmp = Serializer.Compare(prevDatom.Prefix.ValueTag, aTmp, prevDatom.ValueSpan.Length, otherPrefix.ValueTag, bTmp, datom.ValueSpan.Length);
-            Debug.Assert(cmp == 0, "Values should match");
-        }
-    }
-
+    
     private void ProcessAssert(IWriteBatch batch, AttributeId attributeId, Datom datom)
     {
         batch.Add(IndexType.TxLog, datom);
@@ -752,86 +522,6 @@ public sealed partial class DatomStore : IDatomStore
         if (_attributeCache.IsIndexed(attributeId))
             batch.Add(AVETCurrent, datom);
     }
-
-    /// <summary>
-    /// Used to communicate the state of a given datom
-    /// </summary>
-    enum PrevState
-    {
-        Exists,
-        NotExists,
-        Duplicate
-    }
-
-    private unsafe PrevState GetPreviousState(bool isRemapped, AttributeId attrId, ISnapshot snapshot, Datom toFind)
-    {
-        if (isRemapped) return PrevState.NotExists;
-
-        var keyPrefix = toFind.Prefix;
-
-        if (!_avCache.TryGetValue(toFind.E, out var cached))
-        {
-            cached = _currentDb!.Datoms(SliceDescriptor.Create(keyPrefix.E));
-            _avCache.Add(toFind.E, cached);
-        }
-
-        throw new NotImplementedException();
-        /*
-        if (_attributeCache.IsCardinalityMany(attrId))
-        {
-            var indexOf = FirstIndexOf(cached, attrId);
-            if (indexOf < 0) 
-                return PrevState.NotExists;
-
-            for (var i = indexOf; i < cached.Count; i++)
-            {
-                var aPrefix = cached[i].Prefix;
-                var aSpan = cached[i].ValueSpan;
-
-                fixed (byte* a = aSpan)
-                fixed (byte* b = toFind.ValueSpan)
-                {
-                    var cmp = Serializer.Compare(aPrefix.ValueTag, a, aSpan.Length, keyPrefix.ValueTag, b, toFind.ValueSpan.Length);
-                    if (cmp == 0) return PrevState.Duplicate;
-                }
-            }
-            return PrevState.NotExists;
-        }
-        else
-        {
-            var indexOf = FirstIndexOf(cached, attrId);
-            if (indexOf < 0)
-                return PrevState.NotExists;
-            
-            var aPrefix = cached[indexOf].Prefix;
-            var aSpan = cached[indexOf].ValueSpan;
-            
-            var bPrefix = toFind.Prefix;
-            var bSpan = toFind.ValueSpan;
-            fixed (byte* a = aSpan)
-            fixed (byte* b = bSpan)
-            {
-                var cmp = Serializer.Compare(aPrefix.ValueTag, a, aSpan.Length, bPrefix.ValueTag, b, bSpan.Length);
-                if (cmp == 0) return PrevState.Duplicate;
-            }
-
-            _retractWriter.Reset();
-            _retractWriter.Write(cached[indexOf]);
-
-            return PrevState.Exists;
-        }
-        */
-
-    }
-
-    private static int FirstIndexOf(IndexSegment segment, AttributeId atttrId)
-    {
-        for (var i = 0; i < segment.Count; i++)
-            if (segment[i].A == atttrId)
-                return i;
-        return -1;
-    }
-
 
     #endregion
 

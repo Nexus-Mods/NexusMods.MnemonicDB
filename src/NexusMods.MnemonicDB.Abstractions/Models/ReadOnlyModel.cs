@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
 namespace NexusMods.MnemonicDB.Abstractions.Models;
 
@@ -9,7 +8,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Models;
 /// An entity is a reference to the attributes of a specific EnityId. Think of this as a hashmap
 /// of attributes, or a row in a database table.
 /// </summary>
-public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<IReadDatom>
+public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<ResolvedDatom>
 {
     private readonly IDb _db;
     private readonly EntityId _id;
@@ -34,7 +33,7 @@ public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<IRead
     public IDb Db => _db;
 
     /// <inheritdoc />
-    public IEnumerator<IReadDatom> GetEnumerator()
+    public IEnumerator<ResolvedDatom> GetEnumerator()
     {
         var segment = EntitySegment;
         var resolver = Db.Connection.AttributeResolver;

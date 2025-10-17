@@ -43,5 +43,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
     <PackageVersion Include="BenchmarkDotNet" Version="0.14.0" />
+    <PackageVersion Include="ZLinq" Version="1.5.3" />
+    <PackageVersion Include="ZLinq.DropInGenerator" Version="1.5.3" />
   </ItemGroup>
 </Project>

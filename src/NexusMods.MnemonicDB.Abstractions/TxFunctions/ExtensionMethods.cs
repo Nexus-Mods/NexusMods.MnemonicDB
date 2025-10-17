@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
@@ -39,7 +35,7 @@ public static class ExtensionMethods
         }
     }
 
-    private static void DeleteRecursive(ITransaction tx, IDb db, EntityId eid)
+    private static void DeleteRecursive(Datoms tx, IDb db, EntityId eid)
     {
         HashSet<EntityId> seen = [];
         Stack<EntityId> remain = new();
@@ -67,7 +63,7 @@ public static class ExtensionMethods
                 else
                 {
                     // Otherwise, just delete the reference
-                    tx.Add(reference.WithRetract(true));
+                    tx.Add(reference.WithRetract());
                 }
             }
         }
@@ -77,7 +73,7 @@ public static class ExtensionMethods
     /// Decide if the entity that contains the given datom should be deleted recursively if this
     /// datom needs to be removed.
     /// </summary>
-    private static bool ShouldRecursiveDelete(IDb db, AttributeCache cache, ValueDatom referenceDatom)
+    private static bool ShouldRecursiveDelete(IDb db, AttributeCache cache, Datom referenceDatom)
     {
         // If the reference is not a collection, then we can delete the whole thing as it's a child of this entity
         // We can get more detailed, but for now we assume that if the reference is a collection, we should not delete it
@@ -86,7 +82,7 @@ public static class ExtensionMethods
         
     }
 
-    private static void DeleteThisOnly(ITransaction tx, IDb db, EntityId eid)
+    private static void DeleteThisOnly(Datoms tx, IDb db, EntityId eid)
     {
         foreach (var datom in db[eid])
         {

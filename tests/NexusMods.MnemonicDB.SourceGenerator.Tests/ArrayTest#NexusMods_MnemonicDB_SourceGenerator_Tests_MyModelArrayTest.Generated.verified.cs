@@ -249,7 +249,7 @@ public partial class MyModelArrayTest : __MODELS__.IModelFactory<MyModelArrayTes
 
 
            /// <inheritdoc />
-           public IEnumerator<IReadDatom> GetEnumerator()
+           public IEnumerator<ResolvedDatom> GetEnumerator()
            {
                var resolver = Db.Connection.AttributeResolver;
                foreach (var datom in EntitySegment)

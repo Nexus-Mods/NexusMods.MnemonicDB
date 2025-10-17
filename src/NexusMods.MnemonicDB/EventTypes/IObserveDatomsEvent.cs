@@ -8,5 +8,5 @@ namespace NexusMods.MnemonicDB.EventTypes;
 
 public interface IObserveDatomsEvent : IEvent
 {
-    internal (Datom From, Datom To, IObserver<ChangeSet<ValueDatom, DatomKey, IDb>> Observer) Prime(IDb db);
+    internal (Datom From, Datom To, IObserver<ChangeSet<Datom, DatomKey, IDb>> Observer) Prime(IDb db);
 }

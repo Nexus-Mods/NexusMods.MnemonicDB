@@ -104,9 +104,9 @@ internal class InternalTransaction(IDb basisDb, Datoms datoms) : ITransaction
     {
     }
 
-    public List<ValueDatom> Datoms => datoms;
+    public List<Datom> Datoms => datoms;
     public AttributeCache AttributeCache => datoms.AttributeCache;
-    public IEnumerator<ValueDatom> GetEnumerator()
+    public IEnumerator<Datom> GetEnumerator()
     {
         return Datoms.GetEnumerator();
     }

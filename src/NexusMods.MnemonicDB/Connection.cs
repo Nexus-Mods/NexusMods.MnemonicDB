@@ -548,7 +548,7 @@ public sealed class Connection : IConnection
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static DatomKey CreateKey(ValueDatom datom, AttributeId attrId, bool isMany = false) 
+    internal static DatomKey CreateKey(Datom datom, AttributeId attrId, bool isMany = false) 
     {
         return new DatomKey(datom.E, attrId, isMany ? datom.Value : null);
     }

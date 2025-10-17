@@ -1,7 +1,5 @@
 ﻿using System;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions.DatomComparators;
 
@@ -20,12 +18,7 @@ public unsafe interface IDatomComparator
     /// Compares two elements of a datom from the given pointers
     /// </summary>
     public static abstract int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen);
-
-    /// <summary>
-    /// Compares the elements from two datoms.
-    /// </summary>
-    public static abstract int Compare(in Datom a, in Datom b);
-
+    
     /// <summary>
     /// Compare two datom spans
     /// </summary>
@@ -40,17 +33,7 @@ public unsafe interface IDatomComparator
     /// Compares two elements of a datom from the given pointers
     /// </summary>
     public int CompareInstance(byte* aPtr, int aLen, byte* bPtr, int bLen);
-
-    /// <summary>
-    /// Compares the elements from two datoms.
-    /// </summary>
-    public int CompareInstance(in Datom a, in Datom b);
-
-    public int CompareInstance(in ValueDatom d1, in ValueDatom d2);
-
-    public static abstract int Compare(in ValueDatom d1, in ValueDatom d2);
     
-
     /// <summary>
     /// Compare two datom spans
     /// </summary>

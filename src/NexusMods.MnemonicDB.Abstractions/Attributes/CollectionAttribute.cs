@@ -1,6 +1,5 @@
 ﻿using System;
 using JetBrains.Annotations;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
 namespace NexusMods.MnemonicDB.Abstractions.Attributes;
@@ -19,7 +18,7 @@ public abstract class CollectionAttribute<TValue, TLowLevel, TSerializer>(string
     /// <summary>
     /// Gets all values for this attribute on the given entity
     /// </summary>
-    public Values<TValue> Get(IHasIdAndEntitySegment ent)
+    public Datoms Get(IHasIdAndEntitySegment ent)
     {
         var segment = ent.EntitySegment;
         var dbId = ent.Db.AttributeCache.GetAttributeId(Id);
@@ -34,7 +33,7 @@ public abstract class CollectionAttribute<TValue, TLowLevel, TSerializer>(string
     /// Gets all values for this attribute on the given entity, this performs a lookup in the database
     /// so prefer using the overload with IHasIdAndIndexSegment if you already have the segment.
     /// </summary>
-    protected Values<TValue> Get(IHasEntityIdAndDb ent)
+    protected Datoms Get(IHasEntityIdAndDb ent)
     {
         var segment = ent.Db[ent.Id];
         var dbId = ent.Db.AttributeCache.GetAttributeId(Id);

@@ -1,6 +1,4 @@
 using System;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using Reloaded.Memory.Pointers;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -23,9 +21,16 @@ public interface ISliceDescriptor
     /// Given the current iterator position, and this key, should we continue iterating (is the given span inside the bounds of the iterator)?
     /// </summary>
     public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool history = false);
-    
+
     /// <summary>
-    /// Deconstruct the slice descriptor into its constituent parts.
+    /// Returns true if the slice requires total ordering from RocksDB. That is to say, the slice extends beyond the first
+    /// segment in the database.
+    /// For:
+    ///  - EAVT - it covers more than one E value
+    ///  - AEVT - it covers more than one A value
+    ///  - AVET - it covers more than one A value
+    ///  - VAET - it covers more than one V value
+    ///  - TxLog - it covers more than one T value
     /// </summary>
-    public void Deconstruct(out Datom from, out Datom to, out bool isReversed);
+    public bool IsTotalOrdered { get; }
 }

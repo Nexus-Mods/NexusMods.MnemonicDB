@@ -148,7 +148,7 @@ public abstract class ABackendTest(
         var (tx, _) = await DatomStore.TransactAsync(segment);
     }
 
-    private static Func<ValueDatom, ValueDatom, int> CompareDatoms(IDatomComparator comparer)
+    private static Func<Datom, Datom, int> CompareDatoms(IDatomComparator comparer)
     {
         return (a, b) => comparer.CompareInstance(a, b);
     }

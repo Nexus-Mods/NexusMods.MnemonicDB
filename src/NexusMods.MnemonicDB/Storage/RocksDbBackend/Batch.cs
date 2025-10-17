@@ -24,7 +24,7 @@ internal class Batch(RocksDb db) : IWriteBatch
     
     
     /// <inheritdoc />
-    public void Add(ValueDatom datom)
+    public void Add(Datom datom)
     {
         if (datom.Prefix.ValueTag == ValueTag.HashedBlob)
         {
@@ -82,7 +82,7 @@ internal class Batch(RocksDb db) : IWriteBatch
         }
     }
     
-    public void Delete(ValueDatom datom)
+    public void Delete(Datom datom)
     {
         if (datom.Prefix.ValueTag == ValueTag.HashedBlob)
         {

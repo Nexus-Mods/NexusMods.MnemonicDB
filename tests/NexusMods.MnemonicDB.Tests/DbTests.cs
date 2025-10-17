@@ -213,7 +213,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task CanGetCommitUpdates()
     {
-        List<IReadDatom[]> updates = new();
+        List<ResolvedDatom[]> updates = new();
 
 
         var tx = Connection.BeginTransaction();
@@ -1359,7 +1359,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         await Assert.That(history[l2RO.Id]
             .Resolved(Connection)
-            .OfType<StringAttribute.ReadDatom>()
+            .OfType<StringAttribute.ResolvedDatom>()
             .Select(d => (!d.IsRetract, d.V)))
             .IsEquivalentTo([
                 (true, "Test Loadout 2"),

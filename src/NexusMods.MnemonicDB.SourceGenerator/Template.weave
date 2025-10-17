@@ -24,7 +24,6 @@ using global::System.Diagnostics.Contracts;
 
 using __ABSTRACTIONS__ = NexusMods.MnemonicDB.Abstractions;
 using __MODELS__ = NexusMods.MnemonicDB.Abstractions.Models;
-using __SEGMENTS__ = NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using __DI__ = Microsoft.Extensions.DependencyInjection;
 using __COMPARERS__ = NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
@@ -52,7 +51,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     /// <summary>
     /// Finds all {{= model.Name}} entities with the given value for the {{= attr.Name}} attribute.
     /// </summary>
-    public static __SEGMENTS__.Entities<{{= model.Name}}.ReadOnly> FindBy{{= attr.Name}}(__ABSTRACTIONS__.IDb db, {{= attr.HighLevelType.ToDisplayString()}} value) {
+    public static IEnumerable<{{= model.Name}}.ReadOnly> FindBy{{= attr.Name}}(__ABSTRACTIONS__.IDb db, {{= attr.HighLevelType.ToDisplayString()}} value) {
     {{if attr.IsReference}}
         return db.GetBackrefModels<{{= model.Name}}.ReadOnly>({{= attr.FieldName}}, value);    
     {{else}}
@@ -99,7 +98,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     /// <summary>
     /// Returns all {{= model.Name}} entities in the database.
     /// </summary>
-    public static __SEGMENTS__.Entities<{{=model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
+    public static IEnumerable<{{=model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
         //return db.Datoms(PrimaryAttribute).AsModels<{{= model.Name}}.ReadOnly>(db);
         throw new NotImplementedException();
     }
@@ -366,12 +365,12 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 
 
            /// <inheritdoc />
-           public IEnumerator<IReadDatom> GetEnumerator()
+           public IEnumerator<ResolvedDatom> GetEnumerator()
            {
                var resolver = Db.Connection.AttributeResolver;
                foreach (var datom in EntitySegment)
                {
-                   yield return resolver.Resolve(datom);
+                   yield return new __ABSTRACTIONS__.ResolvedDatom(datom, resolver);
                }
            }
 

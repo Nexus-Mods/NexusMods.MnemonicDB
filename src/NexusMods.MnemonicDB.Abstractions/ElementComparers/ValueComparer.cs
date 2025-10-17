@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Abstractions.Traits;
 using Reloaded.Memory.Extensions;
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
@@ -37,28 +35,7 @@ public sealed class ValueComparer : IElementComparer
         
         return typeA.Compare(aPtr + KeyPrefix.Size, aLen - KeyPrefix.Size, bPtr + KeyPrefix.Size, bLen - KeyPrefix.Size);
     }
-
-    /// <inheritdoc />
-    public static int Compare(in Datom a, in Datom b)
-    {
-        var typeA = a.Prefix.ValueTag;
-        var typeB = b.Prefix.ValueTag;
-        
-        if (typeA != typeB)
-            return typeA.CompareTo(typeB);
-        
-        unsafe
-        {
-            fixed (byte* aPtr = a.ValueSpan)
-            {
-                fixed (byte* bPtr = b.ValueSpan)
-                {
-                    return typeA.Compare(aPtr, a.ValueSpan.Length, bPtr, b.ValueSpan.Length);
-                }
-            }
-        }
-    }
-
+    
     /// <inheritdoc />
     public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
@@ -78,13 +55,5 @@ public sealed class ValueComparer : IElementComparer
                 }
             }
         }
-    }
-
-    public static int Compare(in ValueDatom a, in ValueDatom b)
-    {
-        var tcmp = a.Tag.CompareTo(b.Tag);
-        if (tcmp != 0)
-            return tcmp;
-        return a.Tag.Compare(a.Value, b.Value);
     }
 }

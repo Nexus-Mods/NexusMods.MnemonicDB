@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Query.SliceDescriptors;
@@ -43,8 +42,8 @@ public struct SliceDescriptor : ISliceDescriptor
 
     private void CreateHistoryVariants()
     {
-        _fromHistory ??= From.WithIndex(From.Prefix.Index.HistoryVariant());
-        _toHistory ??= To.WithIndex(To.Prefix.Index.HistoryVariant());
+        _fromHistory ??= From.With(From.Prefix.Index.HistoryVariant());
+        _toHistory ??= To.With(To.Prefix.Index.HistoryVariant());
     }
 
     /// <summary>
@@ -65,8 +64,8 @@ public struct SliceDescriptor : ISliceDescriptor
     /// </summary>
     public static readonly SliceDescriptor All = new()
     {
-        From = DatomIterators.Datom.Min,
-        To = DatomIterators.Datom.Max,
+        From = Abstractions.Datom.Min,
+        To = Abstractions.Datom.Max,
         IsReverse = false,
     };
 
@@ -75,8 +74,8 @@ public struct SliceDescriptor : ISliceDescriptor
     /// </summary>
     public SliceDescriptor WithIndex(IndexType index) => new()
     {
-        From = From.WithIndex(index),
-        To = To.WithIndex(index),
+        From = From.With(index),
+        To = To.With(index),
         IsReverse = IsReverse,
     };
 
@@ -257,7 +256,7 @@ public struct SliceDescriptor : ISliceDescriptor
 
             return new SliceDescriptor
             {
-                From = new Datom(from).WithIndex(index),
+                From = new Datom(from).With(index),
                 To = new Datom(to).WithIndex(index),
                 IsReverse = false
             };

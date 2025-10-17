@@ -1,14 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NexusMods.MnemonicDB.Abstractions.Attributes;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Models;
-using NexusMods.MnemonicDB.Abstractions.Traits;
-using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -55,20 +49,7 @@ public interface ITransaction : IDisposable
         }
         */
     }
-
-    /// <summary>
-    /// Retract a specific datom
-    /// </summary>
-    void Add(Datom datom)
-    {
-        throw new NotSupportedException();
-    }
     
-    void Add(ValueDatom datom)
-    {
-        throw new NotSupportedException();
-    }
-
     /// <summary>
     /// Tries to find and return a previously attached entity by ID.
     /// </summary>

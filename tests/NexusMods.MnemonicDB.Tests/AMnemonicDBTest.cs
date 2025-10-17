@@ -158,18 +158,18 @@ public class AMnemonicDBTest : IDisposable
     protected DatomStoreSettings Config { get; set; }
 
     protected SettingsTask VerifyModel<T>(T model)
-    where T : IEnumerable<IReadDatom>
+    where T : IEnumerable<ResolvedDatom>
     {
         return VerifyTable(model);
     }
 
     protected SettingsTask VerifyModel<T>(IEnumerable<T> models)
-    where T : IEnumerable<IReadDatom>
+    where T : IEnumerable<ResolvedDatom>
     {
         return VerifyTable(models.SelectMany(e => e));
     }
 
-    protected SettingsTask VerifyTable(IEnumerable<IReadDatom> datoms)
+    protected SettingsTask VerifyTable(IEnumerable<ResolvedDatom> datoms)
     {
         return Verify(ToTable(datoms, AttributeCache, r => (r.E, r.A, r.ObjectValue, r.T, r.IsRetract)));
     }

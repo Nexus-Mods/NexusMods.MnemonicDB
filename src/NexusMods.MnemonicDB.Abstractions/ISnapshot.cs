@@ -1,7 +1,4 @@
-﻿using JetBrains.Annotations;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-
-namespace NexusMods.MnemonicDB.Abstractions;
+﻿namespace NexusMods.MnemonicDB.Abstractions;
 
 /// <summary>
 ///     Represents a snapshot of the database at a specific point of time. Snapshots are immutable

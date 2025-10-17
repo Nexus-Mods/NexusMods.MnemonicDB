@@ -78,7 +78,7 @@ public abstract class ATransaction : Datoms, IMainTransaction, ISubTransaction
         if (_committed) throw new InvalidOperationException("Transaction has already been committed!");
     }
 
-    public IEnumerator<ValueDatom> GetEnumerator()
+    public IEnumerator<Datom> GetEnumerator()
     {
         return GetEnumerator();
     }

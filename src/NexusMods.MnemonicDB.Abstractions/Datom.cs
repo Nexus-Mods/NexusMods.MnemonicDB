@@ -1,179 +1,191 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
+using NexusMods.HyperDuck;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 using Reloaded.Memory.Extensions;
 
-namespace NexusMods.MnemonicDB.Abstractions.DatomIterators;
+namespace NexusMods.MnemonicDB.Abstractions;
 
-/// <summary>
-/// Represents a raw (unparsed) datom from an index. Most of the time this datom is only valid for the
-/// lifetime of the current iteration. It is not safe to store this datom for later use.
-/// </summary>
-public readonly struct Datom : IEquatable<Datom>, IComparable<Datom>
+public readonly record struct TaggedValue(ValueTag Tag, object Value);
+
+public struct Datom
 {
-    private readonly KeyPrefix _prefix;
-    private readonly ReadOnlyMemory<byte> _valueBlob;
-
-    /// <summary>
-    /// Create a new datom from the given prefix and value
-    /// </summary>
-    public Datom(in KeyPrefix prefix, ReadOnlyMemory<byte> value)
-    {
-        _prefix = prefix;
-        _valueBlob = value;
-    }
-
-    /// <summary>
-    /// Create a new datom from the given datom memory span and registry
-    /// </summary>
-    public Datom(ReadOnlyMemory<byte> datom)
-    {
-        _prefix = KeyPrefix.Read(datom.Span);
-        _valueBlob = datom[KeyPrefix.Size..];
-    }
-
-    /// <summary>
-    /// Converts the entire datom into a byte array
-    /// </summary>
-    public byte[] ToArray()
-    {
-        var array = new byte[KeyPrefix.Size + _valueBlob.Length];
-        MemoryMarshal.Write(array, _prefix);
-        _valueBlob.Span.CopyTo(array.AsSpan(KeyPrefix.Size));
-        return array;
-    }
+    public KeyPrefix Prefix { get; }
+    public object Value { get; }
     
-
-    /// <summary>
-    /// The KeyPrefix of the datom
-    /// </summary>
-    public KeyPrefix Prefix
-    {
-        get => _prefix;
-        init => _prefix = value;
-    }
-
-    /// <summary>
-    /// The valuespan of the datom
-    /// </summary>
-    public ReadOnlySpan<byte> ValueSpan => _valueBlob.Span;
-    
-    /// <summary>
-    /// The value memory of the datom
-    /// </summary>
-    public ReadOnlyMemory<byte> ValueMemory => _valueBlob;
-    
-    /// <summary>
-    /// EntityId of the datom
-    /// </summary>
     public EntityId E => Prefix.E;
-
-    /// <summary>
-    /// AttributeId of the datom
-    /// </summary>
+    
     public AttributeId A => Prefix.A;
-
-    /// <summary>
-    /// TxId of the datom
-    /// </summary>
+    
     public TxId T => Prefix.T;
-
-    /// <summary>
-    /// True if the datom is a retract
-    /// </summary>
+    
+    public ValueTag Tag => Prefix.ValueTag;
+    
+    public TaggedValue TaggedValue => new(Prefix.ValueTag, Value);
+    
     public bool IsRetract => Prefix.IsRetract;
 
-    /// <summary>
-    /// Copies the data of this datom onto the heap so it's detached from the current iteration.
-    /// </summary>
-    public Datom Clone()
+    public Datom(KeyPrefix prefix, object value)
     {
-        return new Datom(_prefix, _valueBlob.ToArray());
+        Prefix = prefix;
+        Value = value;
     }
 
-    /// <summary>
-    /// Returns true if the datom is valid
-    /// </summary>
-    public bool Valid => _prefix.IsValid;
-
-    /// <summary>
-    /// The minimum most possible datom
-    /// </summary>
-    public static Datom Min => new(KeyPrefix.Min, ReadOnlyMemory<byte>.Empty);
+    public readonly Datom With(IndexType indexType) 
+        => new(Prefix with { Index = indexType }, Value);
     
-    /// <summary>
-    /// The maximum most possible datom
-    /// </summary>
-    public static Datom Max => new(KeyPrefix.Max, ReadOnlyMemory<byte>.Empty);
+    public readonly Datom With(TxId txId) 
+        => new(Prefix with { T = txId }, Value);
 
-    /// <inheritdoc />
-    public override string ToString()
+    public readonly Datom WithRemaps(Func<EntityId, EntityId> remapFn)
     {
-        if (_prefix.Index == IndexType.None) 
-            return $"[E: {E}, A: {A}, T: {T}, IsRetract: {IsRetract}, Value: {Prefix.ValueTag.Read<object>(ValueSpan)}]";
-        return $"[Index: {_prefix.Index}, E: {E}, A: {A}, T: {T}, IsRetract: {IsRetract}, Value: {Prefix.ValueTag.Read<object>(ValueSpan)}]";
+        var newPrefix = Prefix with { E = remapFn(Prefix.E) };
+        switch (Prefix.ValueTag)
+        {
+            case ValueTag.Reference:
+                return new Datom(newPrefix, remapFn((EntityId)Value));
+            case ValueTag.Tuple3_Ref_UShort_Utf8I:
+            {
+                var (r, u, s) = (ValueTuple<EntityId, ushort, string>)Value;
+                var newValue = (remapFn(r), u, s);
+                return new Datom(newPrefix, newValue);
+            }
+            default:
+                return new Datom(newPrefix, Value);
+        }
     }
 
-    /// <summary>
-    /// Returns the resolved version of this datom
-    /// </summary>
-    public IReadDatom Resolved(AttributeResolver resolver)
+    public static Datom Create<T>(EntityId e, AttributeId attr, ValueTag tag, T value) 
+        where T : notnull
     {
-        return resolver.Resolve(this);
+        var prefix = new KeyPrefix(e, attr, TxId.Tmp, false, tag);
+        return new Datom(prefix, value);
     }
     
-    /// <summary>
-    /// Returns the resolved version of this datom
-    /// </summary>
-    public IReadDatom Resolved(IConnection conn)
+    public static Datom Create(EntityId e, AttributeId attr, TaggedValue tValue)
     {
-        return conn.AttributeResolver.Resolve(this);
+        var prefix = new KeyPrefix(e, attr, TxId.Tmp, false, tValue.Tag);
+        return new Datom(prefix, tValue.Value);
+    }
+    
+    public static Datom Create(EntityId e, AttributeId attr, TaggedValue tValue, TxId tx)
+    {
+        var prefix = new KeyPrefix(e, attr, tx, false, tValue.Tag);
+        return new Datom(prefix, tValue.Value);
+    }
+    
+    public static Datom Create(EntityId e, AttributeId attr, TaggedValue tValue, TxId tx, bool isRetract)
+    {
+        var prefix = new KeyPrefix(e, attr, tx, isRetract, tValue.Tag);
+        return new Datom(prefix, tValue.Value);
+    }
+    
+    public static Datom Create<THighLevel, TLowLevel, TSerializer>(EntityId e, Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value, AttributeCache attributeCache) 
+        where THighLevel : notnull 
+        where TLowLevel : notnull
+        where TSerializer : IValueSerializer<TLowLevel>
+    {
+        var attrId = attributeCache.GetAttributeId(attr.Id);
+        var prefix = new KeyPrefix(e, attrId, TxId.Tmp, false, attr.LowLevelType);
+        var converted = attr.ToLowLevel(value);
+        return new Datom(prefix, converted);
+    }
+    
+    public static Datom Create<THighLevel, TLowLevel, TSerializer>(EntityId e, Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value, bool isRetract, AttributeCache attributeCache) 
+        where THighLevel : notnull 
+        where TLowLevel : notnull
+        where TSerializer : IValueSerializer<TLowLevel>
+    {
+        var attrId = attributeCache.GetAttributeId(attr.Id);
+        var prefix = new KeyPrefix(e, attrId, TxId.Tmp, isRetract, attr.LowLevelType);
+        var converted = attr.ToLowLevel(value);
+        return new Datom(prefix, converted);
+    }
+    
+    public static Datom Create(KeyPrefix prefix, Datom src)
+    {
+        return new Datom(prefix, src.Value);
+    }
+    
+    public static Datom Create(KeyPrefix prefix, ReadOnlySpan<byte> valueSpan)
+    {
+        switch (prefix.ValueTag)
+        {
+            case ValueTag.Null:
+                return new Datom(prefix, Null.Instance);
+            case ValueTag.UInt8:
+                return new Datom(prefix, prefix.ValueTag.Read<byte>(valueSpan));
+            case ValueTag.UInt16:
+                return new Datom(prefix, prefix.ValueTag.Read<ushort>(valueSpan));
+            case ValueTag.UInt32:
+                return new Datom(prefix, prefix.ValueTag.Read<uint>(valueSpan));
+            case ValueTag.UInt64:
+                return new Datom(prefix, prefix.ValueTag.Read<ulong>(valueSpan));
+            case ValueTag.UInt128:
+                return new Datom(prefix, prefix.ValueTag.Read<UInt128>(valueSpan));
+            case ValueTag.Int16:
+                return new Datom(prefix, prefix.ValueTag.Read<short>(valueSpan));
+            case ValueTag.Int32:
+                return new Datom(prefix, prefix.ValueTag.Read<int>(valueSpan));
+            case ValueTag.Int64:
+                return new Datom(prefix, prefix.ValueTag.Read<long>(valueSpan));
+            case ValueTag.Int128:
+                return new Datom(prefix, prefix.ValueTag.Read<Int128>(valueSpan));
+            case ValueTag.Float32:
+                return new Datom(prefix, prefix.ValueTag.Read<float>(valueSpan));
+            case ValueTag.Float64:
+                return new Datom(prefix, prefix.ValueTag.Read<double>(valueSpan));
+            case ValueTag.Ascii:
+                return new Datom(prefix, prefix.ValueTag.Read<string>(valueSpan));
+            case ValueTag.Utf8:
+                return new Datom(prefix, prefix.ValueTag.Read<string>(valueSpan));
+            case ValueTag.Utf8Insensitive:
+                return new Datom(prefix, prefix.ValueTag.Read<string>(valueSpan));
+            case ValueTag.Blob:
+                return new Datom(prefix, prefix.ValueTag.Read<Memory<byte>>(valueSpan));
+            case ValueTag.HashedBlob:
+                return new Datom(prefix, prefix.ValueTag.Read<Memory<byte>>(valueSpan));
+            case ValueTag.Reference:
+                return new Datom(prefix, prefix.ValueTag.Read<EntityId>(valueSpan));
+            case ValueTag.Tuple2_UShort_Utf8I:
+                return new Datom(prefix, prefix.ValueTag.Read<(ushort, string)>(valueSpan));
+            case ValueTag.Tuple3_Ref_UShort_Utf8I:
+                return new Datom(prefix, prefix.ValueTag.Read<(EntityId, ushort, string)>(valueSpan));
+            default:
+                throw new ArgumentOutOfRangeException(nameof(prefix), prefix, $"Unknown prefix tag {prefix.ValueTag}");
+        }
     }
 
-    /// <summary>
-    /// Returns -1 if this datom is less than the other, 0 if they are equal, and 1 if this datom is greater than the other.
-    /// in relation to the given index type.
-    /// </summary>
-    public int Compare(Datom other) => GlobalComparer.Compare(in this, in other);
+    public static Datom Create<TEnum>(in TEnum spanDatomLike) 
+        where TEnum : ISpanDatomLikeRO, allows ref struct
+    {
+        var prefix = spanDatomLike.Prefix;
+        if (prefix.ValueTag == ValueTag.HashedBlob)
+        {
+            var extraData = spanDatomLike.ExtraValueSpan;
+            var blob = GC.AllocateArray<byte>(extraData.Length + sizeof(ulong));
+            extraData.CopyTo(blob.AsSpan().SliceFast(sizeof(ulong)));
+            spanDatomLike.ValueSpan.CopyTo(blob.AsSpan());
+            return new(prefix, blob.AsMemory());
+        }
+
+        return Create(spanDatomLike.Prefix, spanDatomLike.ValueSpan);
+    }
+
+    public readonly Datom WithRetract(bool b = true)
+    {
+        return new Datom(Prefix with { IsRetract = b }, Value);   
+    }
     
     /// <summary>
-    /// Return a copy of this datom with the given index set as the index
+    /// A datom with the minimum values for each property
     /// </summary>
-    public Datom WithIndex(IndexType index)
-    {
-        return new Datom(_prefix with {Index = index}, _valueBlob);
-    }
-
+    public static readonly Datom Min = new(new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false, ValueTag.Null), Null.Instance);
+    
     /// <summary>
-    /// Clone this datom and return it as a retraction datom
+    /// A datom with the maximum values for each property
     /// </summary>
-    /// <returns></returns>
-    public Datom Retract()
-    {
-        return new Datom(_prefix with {IsRetract = true, T = TxId.Tmp}, _valueBlob);
-    }
-
-    /// <inheritdoc />
-    public bool Equals(Datom other)
-    {
-        return _prefix.Equals(other._prefix) && _valueBlob.Span.SequenceEqual(other._valueBlob.Span);
-    }
-
-    /// <inheritdoc />
-    public override bool Equals(object? obj)
-    {
-        return obj is Datom other && Equals(other);
-    }
-
-    /// <inheritdoc />
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(_prefix.GetHashCode());
-    }
-
-    /// <inheritdoc />
-    public int CompareTo(Datom other)
-    {
-        return Compare(other);
-    }
+    public static readonly Datom Max = new(new KeyPrefix(EntityId.MaxValueNoPartition, AttributeId.Max, TxId.MaxValue, true, ValueTag.Null), Null.Instance);
 }

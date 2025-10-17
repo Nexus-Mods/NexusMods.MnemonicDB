@@ -17,7 +17,7 @@ public partial class DatomStore
         using var iterator = _currentDb!.LightweightDatoms(slice);
         if (iterator.MoveNext())
         {
-            var datom = ValueDatom.Create(iterator);
+            var datom = Datom.Create(iterator);
             value = datom.TaggedValue;
             t = iterator.T;
             return true;
@@ -56,7 +56,7 @@ public partial class DatomStore
     /// </summary>
     /// <param name="datoms"></param>
     /// <returns></returns>
-    private (Datoms Retracts, Datoms Asserts) NormalizeWithTxIds(ReadOnlySpan<ValueDatom> datoms)
+    private (Datoms Retracts, Datoms Asserts) NormalizeWithTxIds(ReadOnlySpan<Datom> datoms)
     {
         // ---- PASS 1: collect final intent ----
 
@@ -101,7 +101,7 @@ public partial class DatomStore
             {
                 // Temp: no old lookup, never retract
                 if (haveFinal) 
-                    asserts.Add(ValueDatom.Create(E, A, final.Tag, final.Value));
+                    asserts.Add(Datom.Create(E, A, final.Tag, final.Value));
                 continue;
             }
 
@@ -112,11 +112,11 @@ public partial class DatomStore
                 if (haveOld)
                 {
                     if (haveRetract.Add((E, A, old)))
-                        retracts.Add(ValueDatom.Create(E, A, old, oldTx));
+                        retracts.Add(Datom.Create(E, A, old, oldTx));
                 }
 
                 if (haveFinal)
-                    asserts.Add(ValueDatom.Create(E, A, final));
+                    asserts.Add(Datom.Create(E, A, final));
             }
         }
 
@@ -135,7 +135,7 @@ public partial class DatomStore
             {
                 // Temp: no old values; only add new
                 foreach (var v in finalSet)
-                    asserts.Add(ValueDatom.Create(E, A, v));
+                    asserts.Add(Datom.Create(E, A, v));
                 continue;
             }
 
@@ -171,13 +171,13 @@ public partial class DatomStore
             // final \ old -> asserts
             foreach (var v in finalSet)
                 if (!oldMap.ContainsKey(v))
-                    asserts.Add(ValueDatom.Create(E, A, v));
+                    asserts.Add(Datom.Create(E, A, v));
 
             // old \ final -> retracts (with old txid)
             foreach (var (v, txid) in oldMap)
             {
                 if (!finalSet.Contains(v) && haveRetract.Add((E, A, v)))
-                    retracts.Add(ValueDatom.Create(E, A, v, txid));
+                    retracts.Add(Datom.Create(E, A, v, txid));
             }
         }
 

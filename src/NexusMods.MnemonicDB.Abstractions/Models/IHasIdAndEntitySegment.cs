@@ -1,6 +1,3 @@
-using System;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
-
 namespace NexusMods.MnemonicDB.Abstractions.Models;
 
 /// <summary>

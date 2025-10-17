@@ -3,7 +3,6 @@ using System.Buffers;
 using System.Threading.Tasks;
 using DynamicData;
 using NexusMods.HyperDuck;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions;

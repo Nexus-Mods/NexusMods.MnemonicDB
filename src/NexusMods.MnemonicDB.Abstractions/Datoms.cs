@@ -3,15 +3,19 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Traits;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
+using Reloaded.Memory.Extensions;
+using ZLinq;
+using ZLinq.Linq;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
-public class Datoms : List<ValueDatom>
+public class Datoms : List<Datom>
 {
     public Datoms(AttributeCache attributeCache) : base()
     {
@@ -50,9 +54,9 @@ public class Datoms : List<ValueDatom>
 
     [field: AllowNull, MaybeNull] public AttributeCache AttributeCache { get; }
     
-    public void Add(ValueDatom datomLike)
+    public void Add(Datom datom)
     {
-        Add(datomLike);
+        base.Add(datom);
     }
 
     public void TxFn(Action<Datoms, IDb> txFn)
@@ -96,7 +100,7 @@ public class Datoms : List<ValueDatom>
         var attrId = AttributeCache!.GetAttributeId(attr.Id);
         var prefix = new KeyPrefix(e, attrId, txId, isRetract, attr.LowLevelType);
         var converted = attr.ToLowLevel(value);
-        Add(new ValueDatom(prefix, converted));
+        Add(new Datom(prefix, converted));
     }
 
     /// <summary>
@@ -104,14 +108,14 @@ public class Datoms : List<ValueDatom>
     /// </summary>
     public void Add(ITxFunction txFunction)
     {
-        Add(ValueDatom.Create(EntityId.MinValueNoPartition, AttributeId.Max, ValueTag.TxFunction, txFunction));
+        Add(Datom.Create(EntityId.MinValueNoPartition, AttributeId.Max, ValueTag.TxFunction, txFunction));
     }
 
     /// <summary>
     /// Adds all the datoms in the given list to the datoms list.
     /// </summary>
     /// <param name="datoms"></param>
-    public void Add(List<ValueDatom> datoms)
+    public void Add(List<Datom> datoms)
     {
         AddRange(datoms);
     }
@@ -127,7 +131,7 @@ public class Datoms : List<ValueDatom>
     public void Add<TEnum>(in TEnum spanDatomLike)
         where TEnum : ISpanDatomLikeRO, allows ref struct
     {
-        Add(ValueDatom.Create(spanDatomLike));
+        Add(Datom.Create(spanDatomLike));
     }
 
     public bool TryGetOne(IAttribute attr, out object value)
@@ -156,5 +160,62 @@ public class Datoms : List<ValueDatom>
         }
 
         return false;
+    }
+    
+    /// <summary>
+    /// Assumes that the list is sorted by AttributeId, selects the range of datoms that match the attributeId
+    /// </summary>
+    public ReadOnlySpan<Datom> Range(AttributeId attrId)
+    {
+        var startIdx = FindRangeStart(attrId);
+        if (startIdx == -1)
+            return ReadOnlySpan<Datom>.Empty;
+
+        var endIdx = FindRangeEnd(attrId, startIdx);
+        return CollectionsMarshal.AsSpan(this).SliceFast(startIdx, endIdx - startIdx);
+    }
+
+    private int FindRangeStart(AttributeId attrId)
+    {
+        var left = 0;
+        var right = Count - 1;
+
+        while (left <= right)
+        {
+            var mid = (left + right) / 2;
+            var midAttr = this[mid].Prefix.A;
+
+            if (midAttr == attrId && (mid == 0 || this[mid - 1].Prefix.A < attrId))
+                return mid;
+
+            if (midAttr < attrId)
+                left = mid + 1;
+            else
+                right = mid - 1;
+        }
+
+        return -1;
+    }
+
+    private int FindRangeEnd(AttributeId attrId, int startIdx)
+    {
+        var left = startIdx;
+        var right = Count - 1;
+
+        while (left <= right)
+        {
+            var mid = (left + right) / 2;
+            var midAttr = this[mid].Prefix.A;
+
+            if (midAttr == attrId && (mid == Count - 1 || this[mid + 1].Prefix.A > attrId))
+                return mid + 1;
+
+            if (midAttr <= attrId)
+                left = mid + 1;
+            else
+                right = mid - 1;
+        }
+
+        return startIdx + 1;
     }
 }

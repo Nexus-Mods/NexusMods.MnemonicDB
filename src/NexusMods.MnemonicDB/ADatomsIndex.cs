@@ -47,7 +47,7 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         var currentResult = new Datoms(AttributeCache);
         while (iterator.MoveNext(descriptor))
         {
-            currentResult.Add(ValueDatom.Create(iterator));
+            currentResult.Add(Datom.Create(iterator));
             if (currentResult.Count == chunkSize)
             {
                 yield return currentResult;

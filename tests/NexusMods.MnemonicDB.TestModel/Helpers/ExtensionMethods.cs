@@ -12,7 +12,7 @@ namespace NexusMods.MnemonicDB.TestModel.Helpers;
 
 public static class ExtensionMethods
 {
-    public static string ToTable(this IEnumerable<ValueDatom> datoms, AttributeResolver resolver)
+    public static string ToTable(this IEnumerable<Datom> datoms, AttributeResolver resolver)
     {
         var cache = resolver.AttributeCache;
         int timestampCount = 0;

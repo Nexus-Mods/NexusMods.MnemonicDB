@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
-using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
@@ -22,16 +20,9 @@ public interface IElementComparer
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     public static abstract unsafe int Compare(byte* aPtr, int aLen, byte* bPtr, int bLen);
-
-    /// <summary>
-    /// Compares the elements from two datoms.
-    /// </summary>
-    public static abstract int Compare(in Datom a, in Datom b);
-
+    
     /// <summary>
     /// Compare two datom spans
     /// </summary>
     public static abstract int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
-    
-    public static abstract int Compare(in ValueDatom a, in ValueDatom b);
 }

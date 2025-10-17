@@ -3,8 +3,6 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -45,30 +43,8 @@ public sealed class AttributeResolver
     /// <summary>
     /// Resolves a datom into a IReadDatom
     /// </summary>
-    public IReadDatom Resolve(Datom datom)
-    {
-        var dbId = datom.A;
-        var symbol = AttributeCache.GetSymbol(dbId);
-        if (!_attrsById.TryGetValue(symbol, out var attr))
-        {
-            throw new InvalidOperationException($"Attribute {symbol} not found");
-        }
-        return attr.Resolve(datom.Prefix, datom.ValueSpan, this);
-    }
-    
-    /// <summary>
-    /// Resolves a datom into a IReadDatom
-    /// </summary>
-    public IReadDatom Resolve(ValueDatom datom)
-    {
-        var dbId = datom.A;
-        var symbol = AttributeCache.GetSymbol(dbId);
-        if (!_attrsById.TryGetValue(symbol, out var attr))
-        {
-            throw new InvalidOperationException($"Attribute {symbol} not found");
-        }
-        return attr.Resolve(datom, this);
-    }
+    public ResolvedDatom Resolve(Datom datom) 
+        => new(datom, this);
 
     public bool TryGetAttribute(AttributeId id, out IAttribute attr)
     {

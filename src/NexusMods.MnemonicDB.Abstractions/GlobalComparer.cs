@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -54,26 +53,6 @@ public sealed class GlobalComparer : IComparer<byte[]>
                 return Compare(aPtr, a.Length, bPtr, b.Length);
             }
         }
-    }
-
-    /// <summary>
-    /// Compare two datoms
-    /// </summary>
-    public static int Compare(in Datom a, in Datom b)
-    {
-        var cmp = ((byte)a.Prefix.Index).CompareTo((byte)b.Prefix.Index);
-        if (cmp != 0)
-            return cmp;
-        
-        return a.Prefix.Index switch
-        {
-            IndexType.TxLog => TxLogComparator.Compare(a, b),
-            IndexType.EAVTCurrent or IndexType.EAVTHistory => EAVTComparator.Compare(a, b),
-            IndexType.AEVTCurrent or IndexType.AEVTHistory => AEVTComparator.Compare(a, b),
-            IndexType.AVETCurrent or IndexType.AVETHistory => AVETComparator.Compare(a, b),
-            IndexType.VAETCurrent or IndexType.VAETHistory => VAETComparator.Compare(a, b),
-            _ => ThrowArgumentOutOfRangeException()
-        };
     }
 
     private static int ThrowArgumentOutOfRangeException()
