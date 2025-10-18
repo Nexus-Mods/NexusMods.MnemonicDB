@@ -413,7 +413,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            /// <inheritdoc cref="{{= model.Name}}.{{= attr.ContextualName}}" />
            {{if attr.IsCollection && attr.IsReference && !attr.IsMarker}}
            public IEnumerable<__ABSTRACTIONS__.EntityId> {{= attr.ContextualName}} => EntitySegment.GetAllResolved({{= attr.FieldName}}, Db.Connection.AttributeResolver);
-           public IEnumerable<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => throw new NotImplementedException(); //__SEGMENTS__.ValuesExtensions.AsModels<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly>({{= attr.FieldName}}.Get(this), Db);
+           public IEnumerable<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => {{= attr.FieldName}}.GetAllModels<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly>(Db, EntitySegment);
            {{elif attr.IsCollection}}
            public IEnumerable<{{=attr.HighLevelType.ToDisplayString()}}> {{= attr.ContextualName}} => EntitySegment.GetAllResolved({{= attr.FieldName}}, Db.Connection.AttributeResolver);
            {{elif attr.IsMarker}}
@@ -437,7 +437,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 
            {{each backref in model.BackReferences}}
 
-           public IEnumerable<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly> {{= backref.Name}} => throw new NotImplementedException(); // Db.GetBackrefModels<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly>({{= backref.OtherAttribute.ToDisplayString()}}, this.Id);
+           public IEnumerable<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly> {{= backref.Name}} => Db.GetBackrefModels<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly>({{= backref.OtherAttribute.ToDisplayString()}}, this.Id);
            {{/each}}
 
            /// <summary>

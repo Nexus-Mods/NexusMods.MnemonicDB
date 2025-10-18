@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DynamicData;
@@ -349,8 +350,7 @@ public sealed class Connection : IConnection
                     var oldDatom = datom.IsRetract ? datom : nextDatom;
 
                     // Skip the paired datom and issue an update.
-                    throw new NotImplementedException();
-                    //_localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Update, CreateKey(datom, attr), newDatom, oldDatom));
+                    _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Update, CreateKey(datom, attr), newDatom, oldDatom));
                     i++;
                     goto PROCESS_CHANGES;
                 }
@@ -359,13 +359,11 @@ public sealed class Connection : IConnection
             if (datom.IsRetract)
             {
                 var key = CreateKey(datom, attr, isMany);
-                throw new NotImplementedException();
-                //_localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, key, datom));
+                _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Remove, key, datom));
             }
             else
             {
-                throw new NotImplementedException();
-                //_localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, attr, isMany), datom));
+                _localChanges.Add(new Change<Datom, DatomKey>(ChangeReason.Add, CreateKey(datom, attr, isMany), datom));
             }
 
             // Yes, I know this is a goto, but we need a way to run some code at the end of each loop after we early exit
@@ -377,16 +375,13 @@ public sealed class Connection : IConnection
             // We could likely be cleaner about how we do this, but this will work for now
             foreach (var index in IndexTypes)
             {
-                throw new NotImplementedException();
-                /*
-                var reindex = datom.WithIndex(index);
+                var reindex = datom.With(index);
                 foreach (var overlap in _datomObservers.Query(reindex))
                 {
                     ref var changeSet = ref CollectionsMarshal.GetValueRefOrAddDefault(_changeSets, overlap, out _);
                     changeSet ??= new DatomChangeSet(db);
                     changeSet.AddRange(_localChanges);
                 }
-                */
             }
         }
         

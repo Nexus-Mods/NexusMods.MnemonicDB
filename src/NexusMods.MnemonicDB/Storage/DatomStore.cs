@@ -353,14 +353,13 @@ public sealed partial class DatomStore : IDatomStore
         };
     }
 
-    internal void LogDatoms(Datoms datoms, bool advanceTx = true, bool enableStats = false)
+    internal void LogDatoms(IWriteBatch batch, Datoms datoms, bool advanceTx = true, bool enableStats = false)
     {
         var datomCount = 0;
         var swPrepare = Stopwatch.StartNew();
         var datomsSpan = CollectionsMarshal.AsSpan(datoms);
         var (retracts, asserts) = NormalizeWithTxIds(datomsSpan);
         
-        using var batch = Backend.CreateBatch();
         datomCount += asserts.Count;
         
         // Retracts first
@@ -400,30 +399,11 @@ public sealed partial class DatomStore : IDatomStore
         // Update the snapshot
         CurrentSnapshot = Backend.GetSnapshot();
     }
-    
-    /// <summary>
-    /// Log a collection of datoms to the store using the given batch. If advanceTx is true, the transaction will be advanced
-    /// and this specific transaction will be considered as committed, use this in combination with other log methods
-    /// to build up a single write batch and finish off with this method. 
-    /// </summary>
-    internal void LogDatoms<TSource>(IWriteBatch batch, TSource datoms,  bool advanceTx = false)
-        where TSource : IEnumerable<Datom>
+
+    internal void LogDatoms(Datoms datoms, bool advanceTx = false, bool enableStats = false)
     {
-        throw new NotImplementedException();
-        //foreach (var datom in datoms)
-        //    LogDatom(in datom, batch);
-        
-        if (advanceTx) 
-            LogTx(batch);
-        
-        batch.Commit();
-        
-        // Advance the TX counter, if requested (not default)
-        if (advanceTx)
-            _asOfTx = _thisTx;
-        
-        // Update the snapshot
-        CurrentSnapshot = Backend.GetSnapshot();
+        using var batch = Backend.CreateBatch();
+        LogDatoms(batch, datoms, advanceTx, enableStats);
     }
     
 
