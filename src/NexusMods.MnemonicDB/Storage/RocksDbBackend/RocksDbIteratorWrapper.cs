@@ -47,8 +47,8 @@ internal struct RocksDbIteratorWrapper(RocksDbSharp.RocksDb db, RocksDbSharp.Sna
                 .SetSnapshot(snapshot)
                 .SetPinData(false);
             _iterator = db.NewIterator(null, _readOptions);
-            descriptor.Reset(this, useHistory);
         }
+        descriptor.Reset(this, useHistory);
     }
 
 

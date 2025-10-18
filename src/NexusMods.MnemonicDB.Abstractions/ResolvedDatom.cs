@@ -23,7 +23,7 @@ public readonly struct ResolvedDatom
         else
         {
             A = attr;
-            V = new ResolvedDatom(d, resolver);
+            V = attr.FromLowLevelObject(d.Value, resolver);
         }
     }
     
