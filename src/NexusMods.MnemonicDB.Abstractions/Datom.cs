@@ -204,4 +204,9 @@ public struct Datom : IComparable<Datom>
     {
         return GlobalComparer.Compare(this, other);
     }
+
+    public override string ToString()
+    {
+        return $"({Prefix.E}, {Prefix.A}, {Prefix.ValueTag}, {Value}, {Prefix.T}, {Prefix.IsRetract})";
+    }
 }

@@ -23,13 +23,13 @@ internal class AsOfSnapshot(Snapshot inner, TxId asOfTxId, AttributeCache attrib
         throw new NotSupportedException();
     }
 
-    public override ResultIterator GetRefDatomEnumerator(bool totalOrder = false)
+    public override ResultIterator GetRefDatomEnumerator()
     {
         // I don't want to hear it, this looks like absolute garbage, but it's fast, and C# needs better generic support
         // and/or macros
         return new ResultIterator(
-            new TimeFilteredRetractionEnumerator<RocksDbIteratorWrapper>(inner.GetRefDatomEnumerator(totalOrder), asOfTxId),
-            new TimeFilteredEnumerator<RocksDbIteratorWrapper>(inner.GetRefDatomEnumerator(totalOrder), asOfTxId));
+            new TimeFilteredRetractionEnumerator<RocksDbIteratorWrapper>(inner.GetRefDatomEnumerator(), asOfTxId),
+            new TimeFilteredEnumerator<RocksDbIteratorWrapper>(inner.GetRefDatomEnumerator(), asOfTxId));
 
     }
 

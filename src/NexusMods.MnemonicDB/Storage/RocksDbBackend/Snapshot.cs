@@ -66,14 +66,8 @@ internal sealed class Snapshot : ADatomsIndex<RocksDbIteratorWrapper>, IRefDatom
         return false;
     }
 
-    public override RocksDbIteratorWrapper GetRefDatomEnumerator(bool totalOrdered)
+    public override RocksDbIteratorWrapper GetRefDatomEnumerator()
     {
-        if (!totalOrdered) 
-            return new RocksDbIteratorWrapper(_backend.Db!.NewIterator(null, _readOptions));
-        var options = new ReadOptions()
-            .SetTotalOrderSeek(true)
-            .SetSnapshot(_snapshot)
-            .SetPinData(true);
-        return new RocksDbIteratorWrapper(_backend.Db!.NewIterator(null, options));
+        return new RocksDbIteratorWrapper(_backend.Db!, _snapshot, _readOptions);;
     }
 }

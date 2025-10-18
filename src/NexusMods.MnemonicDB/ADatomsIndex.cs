@@ -63,7 +63,7 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
     public ILightweightDatomSegment LightweightDatoms<TDescriptor>(TDescriptor descriptor, bool totalOrdered = false)
         where TDescriptor : ISliceDescriptor
     {
-        var enumerator = GetRefDatomEnumerator(totalOrdered);
+        var enumerator = GetRefDatomEnumerator();
         return new LightweightDatomSegment<TRefEnumerator, TDescriptor>(enumerator, descriptor);
     }
 
@@ -97,5 +97,5 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
     }
     
     /// <inheritdoc />
-    public abstract TRefEnumerator GetRefDatomEnumerator(bool totalOrder = false);
+    public abstract TRefEnumerator GetRefDatomEnumerator();
 }

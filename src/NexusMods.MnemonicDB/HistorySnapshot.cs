@@ -24,8 +24,8 @@ internal class HistorySnapshot(Snapshot inner, AttributeCache attributeCache) : 
         throw new NotSupportedException();
     }
 
-    public override ResultIterator GetRefDatomEnumerator(bool totalOrder = false)
+    public override ResultIterator GetRefDatomEnumerator()
     {
-        return new ResultIterator(inner.GetRefDatomEnumerator(totalOrder), inner.GetRefDatomEnumerator(totalOrder));
+        return new ResultIterator(inner.GetRefDatomEnumerator(), inner.GetRefDatomEnumerator());
     }
 }

@@ -9,7 +9,7 @@ namespace NexusMods.MnemonicDB.Storage.RocksDbBackend
     /// </summary>
     /// <typeparam name="TInner"></typeparam>
     public struct TimeFilteredRetractionEnumerator<TInner> : IRefDatomEnumerator
-        where TInner : IRefDatomPeekingEnumerator
+        where TInner : IRefDatomEnumerator
     {
         private TInner _inner;
         private readonly TxId _txId;

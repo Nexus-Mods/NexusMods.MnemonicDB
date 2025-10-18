@@ -39,7 +39,7 @@ public class Datoms : List<Datom>
         where TSlice : ISliceDescriptor, allows ref struct
         where TEnum : IRefDatomEnumerator
     {
-        using var enumerator = factory.GetRefDatomEnumerator(totalOrdered);
+        using var enumerator = factory.GetRefDatomEnumerator();
         return Create(enumerator, slice, attributeCache);
     }
 
