@@ -23,7 +23,7 @@ where TDescriptor : ISliceDescriptor
         }
         
         Observer.OnNext(changes);
-        var (from, to, _) = Descriptor;
+        var (from, to) = Descriptor;
         return (from, to, Observer);
     }
 }

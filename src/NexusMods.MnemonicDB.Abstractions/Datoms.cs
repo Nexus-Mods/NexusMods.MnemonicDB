@@ -15,6 +15,7 @@ using ZLinq.Linq;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
+
 public class Datoms : List<Datom>
 {
     public Datoms(AttributeCache attributeCache) : base()

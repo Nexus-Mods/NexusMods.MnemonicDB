@@ -66,48 +66,10 @@ public readonly struct ResolvedDatom
     /// Returns true if the datom is equal when comparing the entity, attribute and value.
     /// </summary>
     public bool EqualsByValue(ResolvedDatom other) => A.Equals(other.A) && E.Equals(other.E) && V.Equals(other.V);
-
-
+    
     /// <summary>
     /// Hashcode of just the entity, attribute and value.
     /// </summary>
     public int HashCodeByValue() => HashCode.Combine(E, A, V);
 }
 
-/// <summary>
-/// A wrapper around a datom that compares only on the EAV values
-/// </summary>
-public readonly struct ReadDatomKey : IEquatable<ReadDatomKey>
-{
-    private readonly ResolvedDatom _datom;
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ReadDatomKey"/> struct.
-    /// </summary>
-    public ReadDatomKey(ResolvedDatom datom)
-    {
-        _datom = datom;
-    }
-
-    /// <inheritdoc />
-    public override bool Equals(object? obj)
-    {
-        if (obj is not ReadDatomKey key)
-            return false;
-
-        return _datom.EqualsByValue(key._datom);
-    }
-
-    /// <inheritdoc />
-    public override int GetHashCode()
-    {
-        return _datom.HashCodeByValue();
-    }
-
-    /// <inheritdoc />
-    public bool Equals(ReadDatomKey other)
-    {
-        return _datom.EqualsByValue(other._datom);
-    }
-
-}

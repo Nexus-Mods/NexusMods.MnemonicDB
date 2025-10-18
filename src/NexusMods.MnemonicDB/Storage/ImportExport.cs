@@ -83,6 +83,8 @@ public partial class DatomStore
         {
             while (true)
             {
+                throw new NotImplementedException();
+                /*
                 var index = (IndexType)binaryReader.ReadByte();
                 var datomCount = binaryReader.ReadUInt32();
                 var chunkSize = binaryReader.ReadUInt32();
@@ -96,6 +98,7 @@ public partial class DatomStore
 
                 batch.Commit();
                 importedCount += (int)datomCount;
+                */
             }
         }
         catch (EndOfStreamException)

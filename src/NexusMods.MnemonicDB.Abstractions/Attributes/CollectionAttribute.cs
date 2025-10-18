@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
@@ -18,15 +19,11 @@ public abstract class CollectionAttribute<TValue, TLowLevel, TSerializer>(string
     /// <summary>
     /// Gets all values for this attribute on the given entity
     /// </summary>
-    public Datoms Get(IHasIdAndEntitySegment ent)
+    public IEnumerable<TValue> Get(IHasIdAndEntitySegment ent)
     {
         var segment = ent.EntitySegment;
         var dbId = ent.Db.AttributeCache.GetAttributeId(Id);
-        throw new NotImplementedException();
-        /*
-        var range = segment.GetRange(dbId);
-        return new Values<TValue>(segment, range, this);
-        */
+        return segment.Range(dbId);
     }
     
     /// <summary>
