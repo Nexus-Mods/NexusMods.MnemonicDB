@@ -38,4 +38,6 @@ public unsafe interface IDatomComparator
     /// Compare two datom spans
     /// </summary>
     public int CompareInstance(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b);
+
+    public int CompareInstance(in Datom a, in Datom b);
 }

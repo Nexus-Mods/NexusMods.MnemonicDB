@@ -1,7 +1,6 @@
 using DynamicData;
 using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Storage.Tests;
@@ -58,12 +57,8 @@ public class NullConnection : IConnection
         throw new NotImplementedException();
     }
 
-    public IObservable<ChangeSet<Datom, DatomKey, IDb>> ObserveDatoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
-    {
-        throw new NotSupportedException();
-    }
-
-    public IObservable<ChangeSet<Datom, DatomKey, IDb>> ObserveDatoms(SliceDescriptor descriptor)
+    public IObservable<ChangeSet<Datom, DatomKey, IDb>> ObserveDatoms<TDescriptor>(TDescriptor descriptor)
+        where TDescriptor : ISliceDescriptor
     {
         throw new NotSupportedException();
     }

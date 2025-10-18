@@ -42,7 +42,7 @@ public static class ExtensionMethods
             sb.Append($"({attrId}) {symColumn}");
             sb.Append(" | ");
 
-            var o = resolved.ObjectValue;
+            var o = resolved.V;
             if (o is DateTimeOffset)
             {
                 sb.Append(TruncateOrPad("DateTime : " + timestampCount, 48));
@@ -62,7 +62,7 @@ public static class ExtensionMethods
             }
             else
             {
-                sb.Append(TruncateOrPad(resolved.ObjectValue.ToString() ?? "", 48));
+                sb.Append(TruncateOrPad(resolved.V.ToString() ?? "", 48));
             }
 
             sb.Append(" | ");

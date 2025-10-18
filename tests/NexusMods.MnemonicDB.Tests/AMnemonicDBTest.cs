@@ -171,7 +171,7 @@ public class AMnemonicDBTest : IDisposable
 
     protected SettingsTask VerifyTable(IEnumerable<ResolvedDatom> datoms)
     {
-        return Verify(ToTable(datoms, AttributeCache, r => (r.E, r.A, r.ObjectValue, r.T, r.IsRetract)));
+        return Verify(ToTable(datoms, AttributeCache, r => (r.E, r.A, r.V, r.T, r.IsRetract)));
     }
 
     protected SettingsTask VerifyTable(IEnumerable<(EntityId E, string A, string V, TxId Tx)> datoms)

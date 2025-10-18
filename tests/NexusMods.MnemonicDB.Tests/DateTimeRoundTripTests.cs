@@ -28,7 +28,7 @@ public class DateTimeRoundTripTests : AMnemonicDBTest
         var txDatoms = Connection.Db
             .Datoms(Transaction.Timestamp)
             .Resolved(Connection)
-            .ToDictionary(d => d.E, d => (DateTimeOffset)d.ObjectValue);
+            .ToDictionary(d => d.E, d => (DateTimeOffset)d.V);
 
         // Compare per Id for exact equality
         foreach (var (id, ts) in rows)

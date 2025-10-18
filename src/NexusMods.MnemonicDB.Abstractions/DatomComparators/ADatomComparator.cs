@@ -119,4 +119,19 @@ public abstract unsafe class ADatomComparator<TA, TB, TC, TD> : IDatomComparator
 
         return TD.Compare(a, b);
     }
+    
+    /// <inheritdoc />
+    public int CompareInstance(in Datom a, in Datom b)
+    {
+        var cmp = TA.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        cmp = TB.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        cmp = TC.Compare(a, b);
+        if (cmp != 0) return cmp;
+
+        return TD.Compare(a, b);
+    }
 }

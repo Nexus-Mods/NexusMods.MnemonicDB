@@ -176,6 +176,52 @@ public class Datoms : List<Datom>
         return CollectionsMarshal.AsSpan(this).SliceFast(startIdx, endIdx - startIdx);
     }
 
+    public IEnumerable<THighLevel> GetAllResolved<THighLevel, TLowLevel, TSerializer>(
+        Attribute<THighLevel, TLowLevel, TSerializer> attr, AttributeResolver resolver) 
+        where THighLevel : notnull 
+        where TLowLevel : notnull 
+        where TSerializer : IValueSerializer<TLowLevel>
+    {
+        var attrId = resolver.AttributeCache.GetAttributeId(attr.Id);
+        var range = Range(attrId);
+        var result = GC.AllocateUninitializedArray<THighLevel>(range.Length);
+        for (var index = 0; index < range.Length; index++)
+        {
+            var datom = range[index];
+            result[index] = attr.FromLowLevel((TLowLevel)datom.Value, resolver);
+        }
+        return result;
+    }
+
+    public THighLevel GetResolved<THighLevel, TLowLevel, TSerializer>(
+        Attribute<THighLevel, TLowLevel, TSerializer> attr, AttributeResolver resolver)
+        where THighLevel : notnull
+        where TLowLevel : notnull
+        where TSerializer : IValueSerializer<TLowLevel>
+    {
+        var attrId = resolver.AttributeCache.GetAttributeId(attr.Id);
+        var startIdx = FindRangeStart(attrId);
+        if (startIdx == -1)
+            throw new KeyNotFoundException($"Attribute not found in datoms: {attr.Id}");
+        return attr.FromLowLevel((TLowLevel)this[startIdx].Value, resolver);
+    }
+
+    public bool TryGetResolved<THighLevel, TLowLevel, TSerializer>(
+        Attribute<THighLevel, TLowLevel, TSerializer> attr, AttributeResolver resolver, out THighLevel value)
+        where THighLevel : notnull
+        where TLowLevel : notnull
+        where TSerializer : IValueSerializer<TLowLevel>
+    {
+        var attrId = resolver.AttributeCache.GetAttributeId(attr.Id);
+        var startIdx = FindRangeStart(attrId);
+        if (startIdx == -1)
+        {
+            value = default!;
+            return false;
+        }
+        value = attr.FromLowLevel((TLowLevel)this[startIdx].Value, resolver);
+        return true;
+    }
     private int FindRangeStart(AttributeId attrId)
     {
         var left = 0;
@@ -218,5 +264,18 @@ public class Datoms : List<Datom>
         }
 
         return startIdx + 1;
+    }
+
+    public IEnumerable<ResolvedDatom> Resolved(AttributeResolver attributeResolver)
+    {
+        foreach (var datom in this)
+            yield return new ResolvedDatom(datom, attributeResolver);
+    }
+    
+    public IEnumerable<ResolvedDatom> Resolved(IConnection conn)
+    {
+        var resolver = conn.AttributeResolver;
+        foreach (var datom in this)
+            yield return new ResolvedDatom(datom, resolver);
     }
 }

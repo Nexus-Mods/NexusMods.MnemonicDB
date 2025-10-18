@@ -12,7 +12,6 @@ public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<Resol
 {
     private readonly IDb _db;
     private readonly EntityId _id;
-    private readonly Datoms _segment;
 
     /// <summary>
     /// An entity is a reference to the attributes of a specific EnityId. Think of this as a hashmap
@@ -35,12 +34,7 @@ public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<Resol
     /// <inheritdoc />
     public IEnumerator<ResolvedDatom> GetEnumerator()
     {
-        var segment = EntitySegment;
-        var resolver = Db.Connection.AttributeResolver;
-        foreach (var datom in segment)
-        {
-            yield return resolver.Resolve(datom);
-        }
+        return EntitySegment.Resolved(Db.Connection.AttributeResolver).GetEnumerator();
     }
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -69,5 +63,5 @@ public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<Resol
     }
 
     /// <inheritdoc />
-    public Datoms EntitySegment => _segment;
+    public Datoms EntitySegment { get; }
 }

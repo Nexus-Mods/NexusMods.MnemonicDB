@@ -36,4 +36,12 @@ public class ResolvedDatoms : List<ResolvedDatom>
         }
         throw new KeyNotFoundException($"Attribute {attribute} not found in datoms");
     }
+
+    public bool Contains(IAttribute attr)
+    {
+        foreach (var datom in this)
+            if (ReferenceEquals(datom.A, attr))
+                return true;
+        return false;
+    }
 }

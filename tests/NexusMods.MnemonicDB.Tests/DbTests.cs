@@ -8,13 +8,10 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
-using NexusMods.MnemonicDB.Abstractions.Traits;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 using NexusMods.MnemonicDB.TestModel;
@@ -267,8 +264,8 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             .Resolved(Connection)
             .First(d => d.A == Transaction.Timestamp);
         
-        await Assert.That(recentTimestamp.ObjectValue).IsAssignableTo<DateTimeOffset>();
-                    await Assert.That((DateTimeOffset)recentTimestamp.ObjectValue)
+        await Assert.That(recentTimestamp.V).IsAssignableTo<DateTimeOffset>();
+                    await Assert.That((DateTimeOffset)recentTimestamp.V)
             .IsAfter(DateTimeOffset.UtcNow.AddSeconds(-100))
             .And.IsBefore(DateTimeOffset.UtcNow.AddSeconds(100));
     }
@@ -633,7 +630,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             // Add the changes to the list
             .Subscribe(x =>
             {
-                var data = x.Select(o => o.ObjectValue.ToString()!).Order().ToArray();
+                var data = x.Select(o => o.V.ToString()!).Order().ToArray();
                 changes.Add(data);
             });
 
@@ -691,13 +688,13 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var update = changeSet.Single(change => change.Reason == ChangeReason.Update);
         var resolver = Connection.AttributeResolver;
 
-        var currentName = resolver.Resolve(update.Current).ObjectValue?.ToString();
+        var currentName = resolver.Resolve(update.Current).V?.ToString();
         await Assert.That(currentName).IsEqualTo(newName);
 
         var previous = update.Previous;
         await Assert.That(previous.HasValue).IsTrue();
 
-        var previousName = resolver.Resolve(previous.Value).ObjectValue?.ToString();
+        var previousName = resolver.Resolve(previous.Value).V?.ToString();
         await Assert.That(previousName).IsEqualTo(originalName);
     }
 
@@ -721,7 +718,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                     if (change.Reason != ChangeReason.Add)
                         continue;
 
-                    var value = resolver.Resolve(change.Current).ObjectValue?.ToString();
+                    var value = resolver.Resolve(change.Current).V?.ToString();
                     if (value == newTag)
                     {
                         tcs.TrySetResult(changeSet);
@@ -743,7 +740,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(changeSet.Updates).IsEqualTo(0);
 
         var addition = changeSet.Single(change => change.Reason == ChangeReason.Add);
-        var addedValue = resolver.Resolve(addition.Current).ObjectValue?.ToString();
+        var addedValue = resolver.Resolve(addition.Current).V?.ToString();
         await Assert.That(addedValue).IsEqualTo(newTag);
     }
 
@@ -772,7 +769,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                     if (change.Reason != ChangeReason.Remove)
                         continue;
 
-                    var value = resolver.Resolve(change.Current).ObjectValue?.ToString();
+                    var value = resolver.Resolve(change.Current).V?.ToString();
                     if (value == tagToRemove)
                     {
                         tcs.TrySetResult(changeSet);
@@ -794,7 +791,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(changeSet.Updates).IsEqualTo(0);
 
         var removal = changeSet.Single(change => change.Reason == ChangeReason.Remove);
-        var removedValue = resolver.Resolve(removal.Current).ObjectValue?.ToString();
+        var removedValue = resolver.Resolve(removal.Current).V?.ToString();
         await Assert.That(removedValue).IsEqualTo(tagToRemove);
     }
 
@@ -817,7 +814,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             {
                 foreach (var change in changeSet)
                 {
-                    var value = resolver.Resolve(change.Current).ObjectValue?.ToString();
+                    var value = resolver.Resolve(change.Current).V?.ToString();
                     switch (change.Reason)
                     {
                         case ChangeReason.Remove when value == originalName:
@@ -851,7 +848,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(removeChanges.Updates).IsEqualTo(0);
 
         var removal = removeChanges.Single(change => change.Reason == ChangeReason.Remove);
-        var removedName = resolver.Resolve(removal.Current).ObjectValue?.ToString();
+        var removedName = resolver.Resolve(removal.Current).V?.ToString();
         await Assert.That(removedName).IsEqualTo(originalName);
 
         await Assert.That(addChanges.Adds).IsEqualTo(1).Because("scalar asserts in their own transaction should surface as adds");
@@ -859,7 +856,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(addChanges.Updates).IsEqualTo(0);
 
         var addition = addChanges.Single(change => change.Reason == ChangeReason.Add);
-        var addedName = resolver.Resolve(addition.Current).ObjectValue?.ToString();
+        var addedName = resolver.Resolve(addition.Current).V?.ToString();
         await Assert.That(addedName).IsEqualTo(replacementName);
     }
 
@@ -882,7 +879,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var sw = Stopwatch.StartNew();
         await tx.Commit();
 
-        var allLoadouts = Loadout.All(Connection.Db).Count;
+        var allLoadouts = Loadout.All(Connection.Db).Count();
         await Assert.That(sw.ElapsedMilliseconds).IsLessThan(5000).Because("the ObserveDatoms algorithm isn't stupidly slow");
 
         await Assert.That(list.Items).HasCount(10000);
@@ -895,7 +892,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx2.Add(loadout.E, Loadout.Name, "Test Loadout 10 Updated");
         await tx2.Commit();
         
-        await Assert.That(list.Items.First(datom => datom.E == loadout.E).Resolved(Connection.AttributeResolver).ObjectValue).IsEqualTo("Test Loadout 10 Updated");
+        await Assert.That(list.Items.First(datom => datom.E == loadout.E).Resolved(Connection.AttributeResolver).V).IsEqualTo("Test Loadout 10 Updated");
         await Assert.That(allLoadouts).IsEqualTo(10000);
     }
 
@@ -1036,7 +1033,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         // If the above is working correctly we'll only have one entityId for the client, if it's wrong, the
         // one of the parents may have a different entityId
-        await VerifyTable(result.Db.Datoms(result.NewTx).Resolved(Connection));
+        await VerifyTable(result.Db[result.NewTx].Resolved(Connection));
     }
     [Test]
     public async Task MultipleIncludesCanBeConstructedSeparately()
@@ -1067,7 +1064,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         // If the above is working correctly we'll only have one entityId for the client, if it's wrong, the
         // one of the parents may have a different entityId
-        await VerifyTable(result.Db.Datoms(result.NewTx).Resolved(Connection));
+        await VerifyTable(result.Db[result.NewTx].Resolved(Connection));
     }
 
     [Test]
@@ -1224,8 +1221,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         await Assert.That(history[l2RO.Id]
             .Resolved(Connection)
-            .OfType<StringAttribute.ResolvedDatom>()
-            .Select(d => (!d.IsRetract, d.V)))
+            .Select(d => (!d.IsRetract, (string)d.V)))
             .IsEquivalentTo([
                 (true, "Test Loadout 2"),
                 (false, "Test Loadout 2"),

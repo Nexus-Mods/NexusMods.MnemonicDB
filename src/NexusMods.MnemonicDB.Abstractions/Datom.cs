@@ -178,6 +178,16 @@ public struct Datom : IComparable<Datom>
     {
         return new Datom(Prefix with { IsRetract = b }, Value);   
     }
+
+    public ResolvedDatom Resolved(AttributeResolver resolver)
+    {
+        return new ResolvedDatom(this, resolver);
+    }
+
+    public ResolvedDatom Resolved(IConnection conn)
+    {
+        return Resolved(conn.AttributeResolver);
+    }
     
     /// <summary>
     /// A datom with the minimum values for each property
