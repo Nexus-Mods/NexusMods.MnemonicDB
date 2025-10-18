@@ -28,4 +28,10 @@ public readonly struct EntityIdSlice(EntityId entityId) : ISliceDescriptor
     }
 
     public bool IsTotalOrdered => false;
+    
+    public void Deconstruct(out Datom fromDatom, out Datom toDatom)
+    {
+        fromDatom = new Datom(new KeyPrefix(entityId, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTCurrent), Null.Instance);
+        toDatom = new Datom(new KeyPrefix(entityId, AttributeId.Max, TxId.MaxValue, false, ValueTag.Null, IndexType.EAVTCurrent), Null.Instance);
+    }
 }

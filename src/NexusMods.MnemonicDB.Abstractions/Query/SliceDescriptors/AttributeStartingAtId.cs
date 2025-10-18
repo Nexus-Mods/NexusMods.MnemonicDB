@@ -27,4 +27,9 @@ public readonly struct AttributeStartingAtId(AttributeId attrId, EntityId eid) :
     }
 
     public bool IsTotalOrdered => false;
+    public void Deconstruct(out Datom fromDatom, out Datom toDatom)
+    {
+        fromDatom = new Datom(new KeyPrefix(eid, attrId, TxId.MinValue, false, ValueTag.Null, IndexType.AEVTCurrent), Null.Instance);
+        toDatom = new Datom(new KeyPrefix(eid, attrId, TxId.MaxValue, false, ValueTag.Null, IndexType.AEVTCurrent), Null.Instance);
+    }
 }

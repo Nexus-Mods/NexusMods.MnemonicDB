@@ -30,4 +30,10 @@ public readonly struct TxIdSlice(TxId txId) : ISliceDescriptor
     }
 
     public bool IsTotalOrdered => false;
+    
+    public void Deconstruct(out Datom fromDatom, out Datom toDatom)
+    {
+        fromDatom = new Datom(new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, txId, false, ValueTag.Null, IndexType.TxLog), Null.Instance);
+        toDatom = new Datom(new KeyPrefix(EntityId.MaxValueNoPartition, AttributeId.Max, txId, false, ValueTag.Null, IndexType.TxLog), Null.Instance);
+    }
 }

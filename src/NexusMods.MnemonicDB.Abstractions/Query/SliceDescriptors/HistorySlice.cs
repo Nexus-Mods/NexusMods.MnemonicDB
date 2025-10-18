@@ -22,4 +22,11 @@ public struct HistorySlice<TParent>(TParent parent) : ISliceDescriptor
     }
 
     public bool IsTotalOrdered => parent.IsTotalOrdered;
+    
+    public void Deconstruct(out Datom fromDatom, out Datom toDatom)
+    {
+        var (otherFrom, otherTo) = parent;
+        fromDatom = new Datom(otherFrom.Prefix with {Index = otherFrom.Prefix.Index.HistoryVariant()}, otherFrom.Value);
+        toDatom = new Datom(otherTo.Prefix with {Index = otherTo.Prefix.Index.HistoryVariant()}, otherTo.Value);
+    }
 }

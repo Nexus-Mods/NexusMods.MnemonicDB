@@ -35,4 +35,10 @@ public readonly struct BackRefSlice(AttributeId aid, EntityId eid) : ISliceDescr
     }
 
     public bool IsTotalOrdered => false;
+    
+    public void Deconstruct(out Datom fromDatom, out Datom toDatom)
+    {
+        fromDatom = new Datom(new KeyPrefix(EntityId.MinValueNoPartition, aid, TxId.MinValue, false, ValueTag.Reference, IndexType.VAETCurrent), eid);
+        toDatom = new Datom(new KeyPrefix(EntityId.MaxValueNoPartition, aid, TxId.MaxValue, false, ValueTag.Reference, IndexType.VAETCurrent), eid);
+    }
 }

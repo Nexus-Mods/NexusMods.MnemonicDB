@@ -26,4 +26,10 @@ public readonly struct IndexSlice(IndexType index) : ISliceDescriptor
 
     /// <inheritdoc />
     public bool IsTotalOrdered => true;
+
+    public void Deconstruct(out Datom fromDatom, out Datom toDatom)
+    {
+        fromDatom = new Datom(new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, index), Null.Instance);
+        toDatom = new Datom(new KeyPrefix(EntityId.MaxValueNoPartition, AttributeId.Max, TxId.MaxValue, false, ValueTag.Null, index), Null.Instance);
+    }
 }

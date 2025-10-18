@@ -27,4 +27,10 @@ public readonly struct EntityRangeSlice(EntityId fromId, EntityId toId) : ISlice
     }
 
     public bool IsTotalOrdered => true;
+    
+    public void Deconstruct(out Datom fromDatom, out Datom toDatom)
+    {
+       fromDatom = new Datom(new KeyPrefix(fromId, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTCurrent), Null.Instance);
+       toDatom = new Datom(new KeyPrefix(toId, AttributeId.Max, TxId.MaxValue, false, ValueTag.Null, IndexType.EAVTCurrent), Null.Instance);
+    }
 }

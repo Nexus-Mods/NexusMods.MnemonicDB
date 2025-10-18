@@ -13,6 +13,7 @@ namespace NexusMods.MnemonicDB.Abstractions.Query.SliceDescriptors;
 public struct IndexedValueSlice : ISliceDescriptor, IDisposable
 {
     private readonly PooledMemoryBufferWriter _writer;
+    
     public IndexedValueSlice(AttributeId attrId, object value, AttributeCache cache)
     {
         Debug.Assert(cache.IsIndexed(attrId));
@@ -78,6 +79,13 @@ public struct IndexedValueSlice : ISliceDescriptor, IDisposable
     }
 
     public bool IsTotalOrdered => false;
+    public void Deconstruct(out Datom fromDatom, out Datom toDatom)
+    {
+        var prefix = KeyPrefix.Read(_writer.GetWrittenSpan());
+        var value = prefix.ValueTag.Read<object>(_writer.GetWrittenSpan().SliceFast(KeyPrefix.Size));
+        fromDatom = new Datom(new KeyPrefix(EntityId.MinValueNoPartition, prefix.A, TxId.MinValue, false, prefix.ValueTag, IndexType.VAETCurrent), value);
+        toDatom = new Datom(new KeyPrefix(EntityId.MaxValueNoPartition, prefix.A, TxId.MaxValue, false, prefix.ValueTag, IndexType.VAETCurrent), value);
+    }
 
     public void Dispose()
     {
