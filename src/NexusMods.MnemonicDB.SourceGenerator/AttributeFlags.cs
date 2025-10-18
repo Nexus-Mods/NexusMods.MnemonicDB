@@ -9,4 +9,5 @@ internal enum AttributeFlags
     Scalar = 2,
     Collection = 4,
     Reference = 8,
+    Unmanaged = 16,
 }
