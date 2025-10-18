@@ -296,14 +296,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} { get; set; }
         {{elif attr.IsMarker}}
         public bool Is{{= attr.ContextualName}} { get; set; } = false;
-        {{elif attr.IsOptional}}
-         public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}}{{= attr.Postfix}} {{= attr.ContextualName}} 
-         {
-             get => throw new NotImplementedException();
-             set => _datoms.Add(Id, {{= attr.FieldName}}, value{{= attr.NullRemovePostfix}});
-         }       
         {{else}}
-        public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}}{{= attr.Postfix}} {{= attr.ContextualName}} 
+        public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} 
         {
             get => throw new NotImplementedException();
             set => _datoms.Add(Id, {{= attr.FieldName}}, value);
