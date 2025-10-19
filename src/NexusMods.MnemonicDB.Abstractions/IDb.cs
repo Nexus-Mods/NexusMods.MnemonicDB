@@ -53,7 +53,7 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
         where TModel : IReadOnlyModel<TModel>
     {
         return this[attribute, id]
-            .Select(d => TModel.Create(this, (EntityId)d.Value));
+            .Select(d => TModel.Create(this, d.E));
     }
 
     /// <summary>

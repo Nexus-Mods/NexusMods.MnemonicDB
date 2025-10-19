@@ -26,8 +26,6 @@ public interface IDatomsIndex
     /// <summary>
     /// Get all the datoms that are references to the given entity id, via the given attribute.
     /// </summary>
-    /// <param name="e"></param>
-    /// <param name="a"></param>
     public Datoms this[AttributeId a, EntityId e] { get; }
     
     

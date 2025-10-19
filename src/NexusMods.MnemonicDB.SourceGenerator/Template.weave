@@ -289,7 +289,11 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         
         /// <inheritdoc cref="{{= model.Name}}.{{= attr.ContextualName}}" />
         {{if attr.IsReference && !attr.IsCollection}}
-        public {{= attr.Prefix}} {{= attr.ReferenceType.ToDisplayString()}}Id {{= attr.ContextualName}} { get; set; }
+        public {{= attr.Prefix}} {{= attr.ReferenceType.ToDisplayString()}}Id {{= attr.ContextualName}} 
+        { 
+           get => throw new NotImplementedException();
+           set => _datoms.Add(Id, {{= attr.FieldName}}, value);
+        }
         {{elif attr.IsCollection}}
         public IEnumerable<{{= attr.HighLevelType.ToDisplayString()}}> {{= attr.ContextualName}} { get; set; } = [];
         {{elif attr.IsReference}}
