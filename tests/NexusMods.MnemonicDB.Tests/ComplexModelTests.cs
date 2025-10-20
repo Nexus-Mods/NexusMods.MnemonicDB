@@ -101,7 +101,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         //totalSize.Should().BeGreaterThan(Size.FromLong(modCount * filesPerMod * "File ".Length), "total size should be the sum of all file sizes");
 
         Logger.LogInformation(
-            $"Loadout: {loadout.Name} ({modCount * filesPerMod} entities) loaded in {sw.ElapsedMilliseconds}ms");
+            $"Loadout: {loadoutRO.Name} ({modCount * filesPerMod} entities) loaded in {sw.ElapsedMilliseconds}ms");
 
     }
 
@@ -247,10 +247,9 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
             },
         };
 
-        await Assert.That(archiveFile.GetFile(tx).Path).IsEqualTo("foo");
-        throw new NotImplementedException();
-        //archiveFile.GetFile(tx).Path = "bar";
-        await Assert.That(archiveFile.GetFile(tx).Path).IsEqualTo("bar");
+        await Assert.That(ArchiveFile.Load(tx.AsIf(), archiveFile).Path).IsEqualTo("foo");
+        archiveFile.Path = "bar";
+        await Assert.That(ArchiveFile.Load(tx.AsIf(), archiveFile).Path).IsEqualTo("bar");
 
         var result = await tx.Commit();
         var remap = result.Remap(archiveFile);

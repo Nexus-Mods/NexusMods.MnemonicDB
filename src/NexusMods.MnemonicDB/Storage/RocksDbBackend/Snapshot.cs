@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -66,15 +67,26 @@ internal sealed class Snapshot : ADatomsIndex<RocksDbIteratorWrapper>, IRefDatom
 
     public ISnapshot AsIf(Datoms datoms)
     {
-        var (retracts, asserts) = TxProcessing.NormalizeWithTxIds(CollectionsMarshal.AsSpan(datoms), this);
+        var (retracts, asserts) = TxProcessing.NormalizeWithTxIds(CollectionsMarshal.AsSpan(datoms), this, KeyPrefix.MaxPossibleTxId);
         var batch = new WriteBatchWithIndex(this, AttributeCache);
         
         foreach (var retract in retracts)
-            TxProcessing.LogRetract(batch, retract, TxId.Tmp, AttributeCache);
-        
+            TxProcessing.LogRetract(batch, retract, KeyPrefix.MaxPossibleTxId, AttributeCache);
+
         foreach (var assert in asserts)
-            TxProcessing.LogAssert(batch, assert, AttributeCache);
+        {
+            var newAssert = assert.WithRemaps(RemapFn);
+            TxProcessing.LogAssert(batch, newAssert, AttributeCache);
+        }
+
         return batch;
+
+        EntityId RemapFn(EntityId id)
+        {
+            return id;
+        }
+
+
     }
 
     public override RocksDbIteratorWrapper GetRefDatomEnumerator()

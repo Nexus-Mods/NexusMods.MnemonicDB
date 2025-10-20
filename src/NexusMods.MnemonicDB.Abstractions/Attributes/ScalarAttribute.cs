@@ -36,10 +36,10 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     /// <summary>
     ///  Tries to get the value of the attribute from the entity.
     /// </summary>
-    public bool TryGetValue(Datoms segment, [NotNullWhen(true)] out TValue? value) 
+    public bool TryGetValue(Datoms segment, AttributeResolver resolver, [NotNullWhen(true)] out TValue? value) 
     {
         var attributeId = segment.AttributeCache.GetAttributeId(Id);
-        if (segment.TryGetOne(this, out var foundValue))
+        if (segment.TryGetOne(this, resolver, out var foundValue))
         {
             value = (TValue)foundValue;
             return true;
@@ -55,7 +55,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     public TValue Get<T>(T entity, Datoms segment)
         where T : IHasEntityIdAndDb
     {
-        if (TryGetValue(segment, out var value)) 
+        if (TryGetValue(segment, entity.Db.Connection.AttributeResolver, out var value)) 
             return value;
         if (DefaultValue.HasValue) 
             return DefaultValue.Value;
@@ -68,8 +68,8 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     public TValue Get<T>(T entity)
         where T : IHasIdAndEntitySegment
     {
-        var aid = entity.Db.AttributeCache.GetAttributeId(Id);
-        if (!entity.EntitySegment.TryGetOne(this, out var value))
+        var resolver = entity.Db.Connection.AttributeResolver;
+        if (!entity.EntitySegment.TryGetOne(this, resolver, out var value))
             return DefaultValue.HasValue ? DefaultValue.Value : ThrowKeyNotfoundException(entity.Id);
         return (TValue)value;
     }
@@ -80,8 +80,8 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     public Optional<TValue> GetOptional<T>(T entity)
         where T : IHasIdAndEntitySegment
     {
-        var aid = entity.Db.AttributeCache.GetAttributeId(Id);
-        if (entity.EntitySegment.TryGetOne(this, out var value))
+        var resolver = entity.Db.Connection.AttributeResolver;
+        if (entity.EntitySegment.TryGetOne(this, resolver, out var value))
             return (TValue)value;
         return DefaultValue.HasValue ? DefaultValue : Optional<TValue>.None;
     }

@@ -270,4 +270,61 @@ public abstract class ABackendTest(
 
         await Verify(attrs.ToTable(AttributeResolver));
     }
+
+    [Test]
+    [Arguments(IndexType.TxLog)]
+    [Arguments(IndexType.EAVTHistory)]
+    [Arguments(IndexType.EAVTCurrent)]
+    [Arguments(IndexType.AEVTCurrent)]
+    [Arguments(IndexType.AEVTHistory)]
+    [Arguments(IndexType.VAETCurrent)]
+    [Arguments(IndexType.VAETHistory)]
+    [Arguments(IndexType.AVETCurrent)]
+    [Arguments(IndexType.AVETHistory)]
+    public async Task AsIfShowsAllDatoms(IndexType type)
+    {
+        var id = NextTempId();
+        var id2 = NextTempId();
+        var modId = NextTempId();
+
+        StoreResult tx1, tx2;
+
+        {
+            var segment = new Datoms(AttributeCache)
+            {
+                { id, File.Path, "foo/bar" },
+                { id, File.Hash, Hash.From(0xDEADBEEF) },
+                { id, File.Size, Size.From(42) },
+                { id, File.ModId, modId },
+                
+                { id2, File.Path, "foo/bar2" },
+                { id2, File.Hash, Hash.From(0xDEADBEE2) },
+                { id2, File.Size, Size.From(44) },
+                { id2, File.ModId, modId }
+            };
+
+            (tx1, _) = await DatomStore.TransactAsync(segment);
+        }
+
+        id = tx1.Remaps[id];
+        modId = tx1.Remaps[modId];
+
+        var segment2 = new Datoms(AttributeCache)
+        {
+            { id, File.Path, "foo/bar", true },
+            { id, File.Hash, Hash.From(0xDEADBEEF), true },
+            { id, File.Size, Size.From(42), true },
+            { id, File.ModId, modId, true }
+        };
+        
+        var asIf = DatomStore.GetSnapshot().AsIf(segment2);
+
+
+        var datoms = asIf
+            .Datoms(SliceDescriptor.Create(type))
+            .ToArray();
+        await Verify(datoms.ToTable(AttributeResolver))
+            .UseDirectory("BackendTestVerifyData")
+            .UseParameters(type);
+    }
 }

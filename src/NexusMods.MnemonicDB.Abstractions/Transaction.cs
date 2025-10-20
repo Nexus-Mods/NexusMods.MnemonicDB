@@ -9,16 +9,22 @@ namespace NexusMods.MnemonicDB.Abstractions;
 public abstract class ATransaction : Datoms, IMainTransaction, ISubTransaction 
 {
     private readonly ATransaction? _parentTransaction;
+    private IDb _asIfDb;
+    private int _datomCountOfAsIf = 0;
 
     private readonly IConnection _connection;
     private readonly Lock _lock = new();
 
     private bool _disposed;
     private bool _committed;
+    private readonly IDb _basisDb;
 
     public ATransaction(IConnection connection, ATransaction? parentTransaction = null) : base(connection.AttributeCache)
     {
         _connection = connection;
+        _asIfDb = connection.Db;
+        _basisDb = connection.Db;
+        _datomCountOfAsIf = 0;
         _parentTransaction = parentTransaction;
     }
     
@@ -37,6 +43,24 @@ public abstract class ATransaction : Datoms, IMainTransaction, ISubTransaction
         Debug.Assert(_parentTransaction is not null);
         throw new NotImplementedException();
         //(_parentTransaction).Add(_datoms);
+    }
+
+    /// <summary>
+    /// Get the database as if this transaction was committed. This operation has a certain level of overhead
+    /// and has to be recomputed after every change to the datoms list. The value is cached internally, but
+    /// be aware that calling it in a loop, combined with additions will have a significant performance performance impact.
+    /// </summary>
+    public IDb AsIf()
+    {
+        lock (_lock)
+        {
+            if (_datomCountOfAsIf == Count)
+                return _asIfDb;
+            
+            _asIfDb = _basisDb.AsIf(this);
+            _datomCountOfAsIf = Count;
+            return _asIfDb;
+        }
     }
 
     public async Task<ICommitResult> Commit()

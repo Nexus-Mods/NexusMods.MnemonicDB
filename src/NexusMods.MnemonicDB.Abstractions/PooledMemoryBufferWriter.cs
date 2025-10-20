@@ -121,7 +121,7 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
             return _data.Span.SliceFast(Length);
         }
 
-        if (Length + sizeHint >= _size)
+        if (Length + sizeHint > _size)
             Expand(Length + sizeHint);
 
         Debug.Assert(Length + sizeHint <= _size);
@@ -189,7 +189,7 @@ public sealed class PooledMemoryBufferWriter : IBufferWriter<byte>, IDisposable
             newSize *= 2;
 
         var newData = new Memory<byte>(new byte[newSize]);
-        _data.CopyTo(newData);
+        _data.Span.SliceFast(0, _size).CopyTo(newData.Span);
         _data = newData;
         _size = newSize;
     }

@@ -204,13 +204,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         }
 
         {{each include in model.Includes}}
-        /// <summary>
-        /// Gets the included entity of type {{= include.Name}} from the transaction.
-        /// </summary>
-        public {{= include.ToDisplayString()}}.New Get{{=include.Name}}(__ABSTRACTIONS__.Datoms tx) {
-            throw new NotImplementedException();
-        }
-
+        
         /// <summary>
         /// Sets the included entity of type {{= include.Name}} in the transaction.
         /// </summary>
@@ -220,6 +214,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
                     throw new InvalidOperationException("The id of the included entity must match the id of the including entity.");
             }
         }
+        
         {{/each}}
 
         /// <summary>
@@ -295,7 +290,11 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            set => _datoms.Add(Id, {{= attr.FieldName}}, value);
         }
         {{elif attr.IsCollection}}
-        public IEnumerable<{{= attr.HighLevelType.ToDisplayString()}}> {{= attr.ContextualName}} { get; set; } = [];
+        public IEnumerable<{{= attr.HighLevelType.ToDisplayString()}}> {{= attr.ContextualName}} 
+        { 
+           get => throw new NotImplementedException();
+           set => _datoms.Add(Id, {{= attr.FieldName}}, value);
+        }
         {{elif attr.IsReference}}
         public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} { get; set; }
         {{elif attr.IsMarker}}

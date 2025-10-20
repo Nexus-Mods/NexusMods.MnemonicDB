@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
@@ -73,6 +74,16 @@ public class Datoms : List<Datom>
     {
         Add(e, attr, value, false, TxId.Tmp);
     }
+    
+    public void Add<THighLevel, TLowLevel, TSerializer>(EntityId e,
+        CollectionAttribute<THighLevel, TLowLevel, TSerializer> attr, IEnumerable<THighLevel> values)
+        where THighLevel : notnull
+        where TLowLevel : notnull
+        where TSerializer : IValueSerializer<TLowLevel>
+    {
+        foreach (var value in values)
+            Add(e, attr, value, false, TxId.Tmp);
+    }
 
     public void Retract<THighLevel, TLowLevel, TSerializer>(EntityId e,
         Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value)
@@ -135,14 +146,14 @@ public class Datoms : List<Datom>
         Add(Datom.Create(spanDatomLike));
     }
 
-    public bool TryGetOne(IAttribute attr, out object value)
+    public bool TryGetOne(IAttribute attr, AttributeResolver resolver, out object value)
     {
         var id = AttributeCache.GetAttributeId(attr.Id);
         for (var index = 0; index < Count; index++)
         {
             var t = this[index];
             if (t.Prefix.A != id) continue;
-            value = t.Value;
+            value = attr.FromLowLevelObject(t.Value, resolver);
             return true;
         }
 

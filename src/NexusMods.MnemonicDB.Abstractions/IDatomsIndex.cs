@@ -28,6 +28,11 @@ public interface IDatomsIndex
     /// </summary>
     public Datoms this[AttributeId a, EntityId e] { get; }
     
+    /// <summary>
+    /// Get all the datoms in a given index
+    /// </summary>
+    public Datoms this[IndexType t] { get; }
+    
     
     /// <summary>
     /// Get the datoms for a specific descriptor

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
 
@@ -61,6 +62,11 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
             var result = analyzer.Analyze(prev, this);
             AnalyzerData[analyzer.GetType()] = result;
         }
+    }
+
+    public IDb AsIf(Datoms datoms)
+    {
+        return _snapshot.AsIf(datoms).MakeDb(KeyPrefix.MaxPossibleTxId, AttributeCache, Connection);
     }
 
     public TxId BasisTxId { get; }

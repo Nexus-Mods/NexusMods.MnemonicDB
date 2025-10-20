@@ -33,6 +33,9 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
 
     /// <inheritdoc />
     public Datoms this[TxId t] => Load(SliceDescriptor.Create(t));
+
+    /// <inheritdoc />
+    public Datoms this[IndexType t] => Load(SliceDescriptor.Create(t));
     
     /// <inheritdoc />
     public Datoms this[AttributeId a, EntityId e] => Load(SliceDescriptor.Create(a, e));

@@ -32,7 +32,8 @@ public static class TxProcessing
 
     private static bool TryOwnerOfUnique(IDatomsIndex index, AttributeId a, TaggedValue v, out EntityId e)
     {
-        using var iterator = index.LightweightDatoms(SliceDescriptor.Create(a, v.Tag, v.Value));
+        using var slice = SliceDescriptor.Create(a, v.Tag, v.Value);
+        using var iterator = index.LightweightDatoms(slice);
         if (!iterator.MoveNext())
         {
             e = default;
@@ -57,7 +58,7 @@ public static class TxProcessing
     /// </summary>
     /// <param name="datoms"></param>
     /// <returns></returns>
-    public static (Datoms Retracts, Datoms Asserts) NormalizeWithTxIds(ReadOnlySpan<Datom> datoms, IDatomsIndex index)
+    public static (Datoms Retracts, Datoms Asserts) NormalizeWithTxIds(ReadOnlySpan<Datom> datoms, IDatomsIndex index, TxId thisTxId)
     {
         var attributeCache = index.AttributeCache;
         // ---- PASS 1: collect final intent ----
@@ -118,7 +119,7 @@ public static class TxProcessing
                 }
 
                 if (haveFinal)
-                    asserts.Add(Datom.Create(E, A, final));
+                    asserts.Add(Datom.Create(E, A, final, thisTxId));
             }
         }
 
@@ -137,7 +138,7 @@ public static class TxProcessing
             {
                 // Temp: no old values; only add new
                 foreach (var v in finalSet)
-                    asserts.Add(Datom.Create(E, A, v));
+                    asserts.Add(Datom.Create(E, A, v, thisTxId));
                 continue;
             }
 
@@ -173,7 +174,7 @@ public static class TxProcessing
             // final \ old -> asserts
             foreach (var v in finalSet)
                 if (!oldMap.ContainsKey(v))
-                    asserts.Add(Datom.Create(E, A, v));
+                    asserts.Add(Datom.Create(E, A, v, thisTxId));
 
             // old \ final -> retracts (with old txid)
             foreach (var (v, txid) in oldMap)

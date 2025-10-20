@@ -356,7 +356,7 @@ public sealed partial class DatomStore : IDatomStore
         var datomCount = 0;
         var swPrepare = Stopwatch.StartNew();
         var datomsSpan = CollectionsMarshal.AsSpan(datoms);
-        var (retracts, asserts) = TxProcessing.NormalizeWithTxIds(datomsSpan, CurrentSnapshot!);
+        var (retracts, asserts) = TxProcessing.NormalizeWithTxIds(datomsSpan, CurrentSnapshot!, _thisTx);
         
         datomCount += asserts.Count;
         
@@ -369,7 +369,7 @@ public sealed partial class DatomStore : IDatomStore
         // Asserts next
         foreach (var assert in asserts)
         {
-            var withTx = assert.With(_thisTx).WithRemaps(_remapFunc);
+            var withTx = assert.WithRemaps(_remapFunc);
             TxProcessing.LogAssert(batch, withTx, AttributeCache);
         }
         

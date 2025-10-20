@@ -555,14 +555,15 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var result = await tx.Commit();
 
         var remapped = result.Remap(modWithDescription);
+        var resolver = result.Db.Connection.AttributeResolver;
         await Assert.That(remapped.Contains(Mod.Description)).IsTrue();
-        await Assert.That(Mod.Description.TryGetValue(remapped.EntitySegment, out var foundDesc)).IsTrue();
+        await Assert.That(Mod.Description.TryGetValue(remapped.EntitySegment, resolver, out var foundDesc)).IsTrue();
         await Assert.That(foundDesc).IsEqualTo("Test Description");
         await Assert.That(remapped.Description.Value).IsEqualTo("Test Description");
 
         var remapped2 = result.Remap(modWithoutDiscription);
         await Assert.That(remapped2.Contains(Mod.Description)).IsFalse();
-        await Assert.That(Mod.Description.TryGetValue(remapped2.EntitySegment, out var foundDesc2)).IsFalse();
+        await Assert.That(Mod.Description.TryGetValue(remapped2.EntitySegment, resolver, out var foundDesc2)).IsFalse();
     }
 
     [Test]

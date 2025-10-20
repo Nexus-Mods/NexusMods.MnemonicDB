@@ -166,6 +166,12 @@ public struct KeyPrefix
     /// Returns true if this key is valid
     /// </summary>
     public bool IsValid => Upper != 0;
+    
+    /// <summary>
+    /// The largest possible TxId that can roundtrip through the KeyPrefix. With all the bitbashing this class does, we
+    /// have a maximum of ~1 trillion transactions supported by the KeyPrefix.
+    /// </summary>
+    public static readonly TxId MaxPossibleTxId = TxId.From(PartitionId.Transactions.MakeEntityId(0x000000FFFFFFFFFF).Value);
 
     #endregion
 }
