@@ -98,10 +98,14 @@ internal struct WriteBatchWithIndexEnumerator(RocksDb db, RocksDbSharp.WriteBatc
 {
     private Ptr _key;
     private Iterator? _iterator = null;
+    private Iterator? _baseIterator = null;
     private RocksDbSharp.ReadOptions? _readOptions = null;
 
-    public void Dispose() => 
+    public void Dispose()
+    {
         _iterator?.Dispose();
+        _baseIterator?.Dispose();
+    }
 
     public unsafe bool MoveNext<TSliceDescriptor>(TSliceDescriptor descriptor, bool useHistory = false) 
         where TSliceDescriptor : ISliceDescriptor, allows ref struct
@@ -125,8 +129,8 @@ internal struct WriteBatchWithIndexEnumerator(RocksDb db, RocksDbSharp.WriteBatc
         Debug.Assert(_iterator == null);
         if (!descriptor.IsTotalOrdered)
         {
-            var inner = db.NewIterator(null, globalReadOptions);
-            _iterator = batch.CreateIteratorWithBase(inner);
+            _baseIterator = db.NewIterator(null, globalReadOptions);
+            _iterator = batch.CreateIteratorWithBase(_baseIterator);
         }
         else
         {
@@ -134,8 +138,8 @@ internal struct WriteBatchWithIndexEnumerator(RocksDb db, RocksDbSharp.WriteBatc
                 .SetTotalOrderSeek(true)
                 .SetSnapshot(snapshot)
                 .SetPinData(false);
-            var inner = db.NewIterator(null, _readOptions);
-            _iterator = batch.CreateIteratorWithBase(inner);
+            _baseIterator = db.NewIterator(null, _readOptions);
+            _iterator = batch.CreateIteratorWithBase(_baseIterator);
         }
         descriptor.Reset(this, useHistory);
     }
