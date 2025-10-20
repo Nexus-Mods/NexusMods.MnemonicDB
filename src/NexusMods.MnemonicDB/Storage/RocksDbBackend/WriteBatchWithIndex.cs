@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
@@ -10,12 +11,22 @@ using IWriteBatch = NexusMods.MnemonicDB.Storage.Abstractions.IWriteBatch;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-internal sealed class WriteBatchWithIndex(Snapshot baseSnapshot, AttributeCache cache)
-    : ADatomsIndex<WriteBatchWithIndexEnumerator>(cache),
+internal sealed class WriteBatchWithIndex : ADatomsIndex<WriteBatchWithIndexEnumerator>,
         IRefDatomEnumeratorFactory<WriteBatchWithIndexEnumerator>, IWriteBatch, ISnapshot
 {
-    private readonly RocksDbSharp.WriteBatchWithIndex _batch = new();
+    private readonly RocksDbSharp.WriteBatchWithIndex _batch;
     private readonly PooledMemoryBufferWriter _writer = new();
+    private readonly Snapshot _baseSnapshot;
+
+    public WriteBatchWithIndex(Snapshot baseSnapshot, AttributeCache cache) : base(cache)
+    {
+        _baseSnapshot = baseSnapshot;
+        var ctor = typeof(RocksDbSharp.WriteBatchWithIndex).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, new[] {typeof(IntPtr)});
+        var handle = Native.Instance.rocksdb_writebatch_wi_create_with_params(NativeComparators.ComparatorPtr, 0, true, 0, 0);
+        _batch = (RocksDbSharp.WriteBatchWithIndex)ctor!.Invoke([handle]);
+            
+            
+    }
 
 
     public void Dispose()
@@ -26,8 +37,8 @@ internal sealed class WriteBatchWithIndex(Snapshot baseSnapshot, AttributeCache 
 
     public override WriteBatchWithIndexEnumerator GetRefDatomEnumerator()
     {
-        return new WriteBatchWithIndexEnumerator(baseSnapshot.Backend.Db!, _batch, baseSnapshot.NativeSnapshot,
-            baseSnapshot.ReadOptions);
+        return new WriteBatchWithIndexEnumerator(_baseSnapshot.Backend.Db!, _batch, _baseSnapshot.NativeSnapshot,
+            _baseSnapshot.ReadOptions);
     }
 
     public void Commit()
@@ -130,6 +141,7 @@ internal struct WriteBatchWithIndexEnumerator(RocksDb db, RocksDbSharp.WriteBatc
         if (!descriptor.IsTotalOrdered)
         {
             _baseIterator = db.NewIterator(null, globalReadOptions);
+            batch.CreateIteratorWithBase(_baseIterator);
             _iterator = batch.CreateIteratorWithBase(_baseIterator);
         }
         else
