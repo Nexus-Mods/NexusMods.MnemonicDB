@@ -18,6 +18,12 @@ public interface ISnapshot : IDatomsIndex
     /// Get the max id currently used in the given partition, returns false if not found
     /// </summary>
     public bool TryGetMaxIdInPartition(PartitionId partitionId, out EntityId id);
+
+    /// <summary>
+    /// Create a new snapshot that acts as if the given datoms were already transacted into the store. No changes
+    /// will be made to the underlying datastore.
+    /// </summary>
+    public ISnapshot AsIf(Datoms datoms);
 }
 
 

@@ -23,6 +23,11 @@ internal class AsOfSnapshot(Snapshot inner, TxId asOfTxId, AttributeCache attrib
         throw new NotSupportedException();
     }
 
+    public ISnapshot AsIf(Datoms datoms)
+    {
+        throw new NotSupportedException("Cannot currently create an AsIf database on top of an AsOf database");
+    }
+
     public override ResultIterator GetRefDatomEnumerator()
     {
         // I don't want to hear it, this looks like absolute garbage, but it's fast, and C# needs better generic support

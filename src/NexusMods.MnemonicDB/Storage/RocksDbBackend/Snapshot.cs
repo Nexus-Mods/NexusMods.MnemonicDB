@@ -11,43 +11,41 @@ internal sealed class Snapshot : ADatomsIndex<RocksDbIteratorWrapper>, IRefDatom
     /// <summary>
     /// The backend, needed to create iterators
     /// </summary>
-    private readonly Backend _backend;
+    internal readonly Backend Backend;
 
     /// <summary>
     /// The read options, pre-populated with the snapshot
     /// </summary>
-    private readonly ReadOptions _readOptions;
+    internal readonly ReadOptions ReadOptions;
     
     /// <summary>
     /// We keep this here, so that it's not finalized while we're using it
     /// </summary>
     // ReSharper disable once NotAccessedField.Local
-    private readonly RocksDbSharp.Snapshot _snapshot;
+    internal readonly RocksDbSharp.Snapshot NativeSnapshot;
 
-    public Snapshot(Backend backend, AttributeCache attributeCache, ReadOptions readOptions, RocksDbSharp.Snapshot snapshot) : base(attributeCache)
+    public Snapshot(Backend backend, AttributeCache attributeCache, ReadOptions readOptions, RocksDbSharp.Snapshot nativeSnapshot) : base(attributeCache)
     {
-        _backend = backend;
-        _readOptions = readOptions;
-        _snapshot = snapshot;
+        Backend = backend;
+        ReadOptions = readOptions;
+        NativeSnapshot = nativeSnapshot;
     }
     
-    internal RocksDbSharp.Snapshot NativeSnapshot => _snapshot;
-
     public IDb MakeDb(TxId txId, AttributeCache attributeCache, IConnection? connection)
     {
         return new Db<Snapshot, RocksDbIteratorWrapper>(this, txId, attributeCache, connection);
     }
 
-    public unsafe bool TryGetMaxIdInPartition(PartitionId partitionId, out EntityId id)
+    public bool TryGetMaxIdInPartition(PartitionId partitionId, out EntityId id)
     {
         var prefix = new KeyPrefix(partitionId.MaxValue, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTCurrent);
         var spanTo = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in prefix, 1));
         
         var options = new ReadOptions()
             .SetTotalOrderSeek(true)
-            .SetSnapshot(_snapshot)
+            .SetSnapshot(NativeSnapshot)
             .SetPinData(false);
-        using var it = _backend.Db!.NewIterator(null, options);
+        using var it = Backend.Db!.NewIterator(null, options);
         it.Seek(spanTo);
         it.Prev();
 
@@ -66,8 +64,21 @@ internal sealed class Snapshot : ADatomsIndex<RocksDbIteratorWrapper>, IRefDatom
         return false;
     }
 
+    public ISnapshot AsIf(Datoms datoms)
+    {
+        var (retracts, asserts) = TxProcessing.NormalizeWithTxIds(CollectionsMarshal.AsSpan(datoms), this);
+        var batch = new WriteBatchWithIndex(this, AttributeCache);
+        
+        foreach (var retract in retracts)
+            TxProcessing.LogRetract(batch, retract, TxId.Tmp, AttributeCache);
+        
+        foreach (var assert in asserts)
+            TxProcessing.LogAssert(batch, assert, AttributeCache);
+        return batch;
+    }
+
     public override RocksDbIteratorWrapper GetRefDatomEnumerator()
     {
-        return new RocksDbIteratorWrapper(_backend.Db!, _snapshot, _readOptions);;
+        return new RocksDbIteratorWrapper(Backend.Db!, NativeSnapshot, ReadOptions);;
     }
 }

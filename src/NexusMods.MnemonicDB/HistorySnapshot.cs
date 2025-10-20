@@ -24,6 +24,11 @@ internal class HistorySnapshot(Snapshot inner, AttributeCache attributeCache) : 
         throw new NotSupportedException();
     }
 
+    public ISnapshot AsIf(Datoms datoms)
+    {
+        throw new NotSupportedException("Cannot (currently) perform an as-if on a History database");
+    }
+
     public override ResultIterator GetRefDatomEnumerator()
     {
         return new ResultIterator(inner.GetRefDatomEnumerator(), inner.GetRefDatomEnumerator());

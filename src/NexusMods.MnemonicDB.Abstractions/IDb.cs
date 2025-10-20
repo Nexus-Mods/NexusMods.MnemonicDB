@@ -96,4 +96,12 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// Process and store the data from the given analyzers.
     /// </summary>
     void Analyze(IDb? prev, IAnalyzer[] analyzers);
+
+    /// <summary>
+    /// Create a (temporary) database that acts like the current database, but with the given datoms transacted into
+    /// it. No changes to the underlying datastore will be made, but this Db can be handed to any query functions and
+    /// will perform as expected. Note: any datoms added this way will still retain their temporary ids, as the actual
+    /// ids will be assigned when the transaction is comitted.
+    /// </summary>
+    IDb AsIf(Datoms datoms);
 }

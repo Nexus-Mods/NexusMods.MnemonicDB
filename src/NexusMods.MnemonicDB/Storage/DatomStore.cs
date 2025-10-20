@@ -10,10 +10,8 @@ using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.InternalTxFunctions;
 using NexusMods.MnemonicDB.Storage.Abstractions;
-using static NexusMods.MnemonicDB.Abstractions.IndexType;
 
 namespace NexusMods.MnemonicDB.Storage;
 
@@ -358,21 +356,21 @@ public sealed partial class DatomStore : IDatomStore
         var datomCount = 0;
         var swPrepare = Stopwatch.StartNew();
         var datomsSpan = CollectionsMarshal.AsSpan(datoms);
-        var (retracts, asserts) = NormalizeWithTxIds(datomsSpan);
+        var (retracts, asserts) = TxProcessing.NormalizeWithTxIds(datomsSpan, CurrentSnapshot!);
         
         datomCount += asserts.Count;
         
         // Retracts first
         foreach (var retract in retracts)
         {
-            LogRetract(batch, retract, _thisTx);
+            TxProcessing.LogRetract(batch, retract, _thisTx, AttributeCache);
         }
         
         // Asserts next
         foreach (var assert in asserts)
         {
             var withTx = assert.With(_thisTx).WithRemaps(_remapFunc);
-            LogAssert(batch, withTx);
+            TxProcessing.LogAssert(batch, withTx, AttributeCache);
         }
         
         if (advanceTx) 
@@ -417,63 +415,12 @@ public sealed partial class DatomStore : IDatomStore
         var id = EntityId.From(_thisTx.Value);
         var taggedValue = new TaggedValue(ValueTag.Int64, _timeProvider.GetUtcNow().UtcTicks);
         var datom = Datom.Create(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), taggedValue, _thisTx, true);
-        LogAssert(batch, datom);
+        TxProcessing.LogAssert(batch, datom, AttributeCache);
     }
 
-    private void LogRetract(IWriteBatch batch, in Datom oldDatom, TxId newTxId)
-    {
-        Debug.Assert(!oldDatom.Prefix.IsRetract, "The datom handed to LogRetract is expected to be the old datom");
-        Debug.Assert(oldDatom.Prefix.T < newTxId, "The datom handed to LogRetract is expected to be the old datom");
-        
-        var a = oldDatom.Prefix.A;
-        var isIndexed = _attributeCache.IsIndexed(a);
-        var isReference = _attributeCache.IsReference(a);
-        
-        // First we issue deletes for all the old datoms
-        batch.Delete(oldDatom.With(EAVTCurrent));
-        batch.Delete(oldDatom.With(AEVTCurrent));
-        if (isIndexed) 
-            batch.Delete(oldDatom.With(AVETCurrent));
-        if (isReference)
-            batch.Delete(oldDatom.With(VAETCurrent));
 
-        // The retract datom is the input datom, marked as an retract and with the TxId of the retracting transaction
-        var retractDatom = oldDatom.With(newTxId).WithRetract(true);
-        // Add the retract datom to the tx log
-        batch.Add(retractDatom.With(IndexType.TxLog));
-        
-        // Now we move the datom into the history index, but only if the attribute is not a no history attribute
-        if (!_attributeCache.IsNoHistory(a))
-        {
-            batch.Add(oldDatom.With(EAVTHistory));
-            batch.Add(retractDatom.With(EAVTHistory));
-            
-            batch.Add(oldDatom.With(AEVTHistory));
-            batch.Add(retractDatom.With(AEVTHistory));
-            
-            if (isIndexed)
-            {
-                batch.Add(oldDatom.With(AVETHistory));
-                batch.Add(retractDatom.With(AVETHistory));
-            }
-            if (isReference)
-            {
-                batch.Add(oldDatom.With(VAETHistory));
-                batch.Add(retractDatom.With(VAETHistory));
-            }
-        }
-    }
 
-    private void LogAssert(IWriteBatch batch, in Datom assert)
-    {
-        batch.Add(assert.With(IndexType.TxLog));
-        batch.Add(assert.With(IndexType.EAVTCurrent));
-        batch.Add(assert.With(IndexType.AEVTCurrent));
-        if (_attributeCache.IsIndexed(assert.Prefix.A))
-            batch.Add(assert.With(IndexType.AVETCurrent));
-        if (assert.Prefix.ValueTag == ValueTag.Reference)
-            batch.Add(assert.With(IndexType.VAETCurrent));
-    }
+
     #endregion
 
 

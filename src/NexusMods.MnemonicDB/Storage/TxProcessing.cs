@@ -1,20 +1,23 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Query;
+using NexusMods.MnemonicDB.Storage.Abstractions;
+using static NexusMods.MnemonicDB.Abstractions.IndexType;
 
 namespace NexusMods.MnemonicDB.Storage;
 
-public partial class DatomStore
+public static class TxProcessing
 {
     private record struct ManyKey(EntityId E, AttributeId A, object V);
 
-    private bool TryGetCurrentSingleWithTxId(EntityId e, AttributeId a, out TaggedValue value, out TxId t)
+    private static bool TryGetCurrentSingleWithTxId(IDatomsIndex index, EntityId e, AttributeId a, out TaggedValue value, out TxId t)
     {
         var slice = SliceDescriptor.Create(e, a);
-        using var iterator = _currentDb!.LightweightDatoms(slice);
+        using var iterator = index.LightweightDatoms(slice);
         if (iterator.MoveNext())
         {
             var datom = Datom.Create(iterator);
@@ -27,9 +30,9 @@ public partial class DatomStore
         return false;
     }
 
-    private bool TryOwnerOfUnique(AttributeId a, TaggedValue v, out EntityId e)
+    private static bool TryOwnerOfUnique(IDatomsIndex index, AttributeId a, TaggedValue v, out EntityId e)
     {
-        using var iterator = _currentDb!.LightweightDatoms(SliceDescriptor.Create(a, v.Tag, v.Value));
+        using var iterator = index.LightweightDatoms(SliceDescriptor.Create(a, v.Tag, v.Value));
         if (!iterator.MoveNext())
         {
             e = default;
@@ -54,8 +57,9 @@ public partial class DatomStore
     /// </summary>
     /// <param name="datoms"></param>
     /// <returns></returns>
-    private (Datoms Retracts, Datoms Asserts) NormalizeWithTxIds(ReadOnlySpan<Datom> datoms)
+    public static (Datoms Retracts, Datoms Asserts) NormalizeWithTxIds(ReadOnlySpan<Datom> datoms, IDatomsIndex index)
     {
+        var attributeCache = index.AttributeCache;
         // ---- PASS 1: collect final intent ----
 
         // Card-1: last assert per (E,A)
@@ -70,7 +74,7 @@ public partial class DatomStore
         {
             var keyEA = (d.Prefix.E, d.Prefix.A);
 
-            if (!_attributeCache.IsCardinalityMany(d.Prefix.A))
+            if (!attributeCache.IsCardinalityMany(d.Prefix.A))
             {
                 seenEA1.Add(keyEA);
                 if (!d.Prefix.IsRetract) lastAssert1[keyEA] = d.TaggedValue; // last assertion wins
@@ -84,8 +88,8 @@ public partial class DatomStore
 
         // ---- PASS 2: emit minimal deltas (capturing old txids for retracts) ----
 
-        var retracts = new Datoms(_attributeCache);
-        var asserts  = new Datoms(_attributeCache);
+        var retracts = new Datoms(attributeCache);
+        var asserts  = new Datoms(attributeCache);
 
         // Dedup retracts by (E,A,V) (txid is implied by snapshot's current)
         var haveRetract = new HashSet<(EntityId E, AttributeId A, object V)>();
@@ -103,7 +107,7 @@ public partial class DatomStore
                 continue;
             }
 
-            var haveOld = TryGetCurrentSingleWithTxId(E, A, out var old, out var oldTx);
+            var haveOld = TryGetCurrentSingleWithTxId(index, E, A, out var old, out var oldTx);
 
             if (!Equals(final, old))
             {
@@ -140,7 +144,7 @@ public partial class DatomStore
             // OLD: dictionary value -> txid for direct emit on retract
             var oldMap = new Dictionary<TaggedValue, TxId>();
             {
-                using var iterator = _currentDb!.LightweightDatoms(SliceDescriptor.Create(E, A));
+                using var iterator = index.LightweightDatoms(SliceDescriptor.Create(E, A));
                 while (iterator.MoveNext())
                 {
                     var valueTag = iterator.Prefix.ValueTag;
@@ -185,7 +189,7 @@ public partial class DatomStore
 
         foreach (var a in asserts)
         {
-            if (!_attributeCache.IsUnique(a.Prefix.A)) continue;
+            if (!attributeCache.IsUnique(a.Prefix.A)) continue;
             var key = (a.Prefix.A, a.Value);
 
             if (txClaim.TryGetValue(key, out var prevE) && !Equals(prevE, a.Prefix.E))
@@ -194,7 +198,7 @@ public partial class DatomStore
 
             txClaim[key] = a.Prefix.E;
 
-            if (TryOwnerOfUnique(a.Prefix.A, a.TaggedValue, out var owner) && !Equals(owner, a.Prefix.E))
+            if (TryOwnerOfUnique(index, a.Prefix.A, a.TaggedValue, out var owner) && !Equals(owner, a.Prefix.E))
                 throw new Exception(
                     $"Unique constraint violation: attribute {a.Prefix.A}, value '{a.Value}' already owned by entity {owner}, cannot assert for entity {a.Prefix.E}.");
         }
@@ -203,4 +207,64 @@ public partial class DatomStore
         return (retracts, asserts);
     }
 
+    /// <summary>
+    /// Logs all the puts for asserting a datom into the current index of the database
+    /// </summary>
+    public static void LogAssert(IWriteBatch batch, in Datom assert, AttributeCache cache)
+    {
+        batch.Add(assert.With(TxLog));
+        batch.Add(assert.With(EAVTCurrent));
+        batch.Add(assert.With(AEVTCurrent));
+        if (cache.IsIndexed(assert.Prefix.A))
+            batch.Add(assert.With(AVETCurrent));
+        if (assert.Prefix.ValueTag == ValueTag.Reference)
+            batch.Add(assert.With(VAETCurrent));
+    }
+    
+    /// <summary>
+    /// Logs all the puts/deletes for updating the state of a retracted datom
+    /// </summary>
+    public static void LogRetract(IWriteBatch batch, in Datom oldDatom, TxId newTxId, AttributeCache cache)
+    {
+        Debug.Assert(!oldDatom.Prefix.IsRetract, "The datom handed to LogRetract is expected to be the old datom");
+        Debug.Assert(oldDatom.Prefix.T < newTxId, "The datom handed to LogRetract is expected to be the old datom");
+        
+        var a = oldDatom.Prefix.A;
+        var isIndexed = cache.IsIndexed(a);
+        var isReference = cache.IsReference(a);
+        
+        // First we issue deletes for all the old datoms
+        batch.Delete(oldDatom.With(EAVTCurrent));
+        batch.Delete(oldDatom.With(AEVTCurrent));
+        if (isIndexed) 
+            batch.Delete(oldDatom.With(AVETCurrent));
+        if (isReference)
+            batch.Delete(oldDatom.With(VAETCurrent));
+
+        // The retract datom is the input datom, marked as an retract and with the TxId of the retracting transaction
+        var retractDatom = oldDatom.With(newTxId).WithRetract(true);
+        // Add the retract datom to the tx log
+        batch.Add(retractDatom.With(TxLog));
+        
+        // Now we move the datom into the history index, but only if the attribute is not a no history attribute
+        if (!cache.IsNoHistory(a))
+        {
+            batch.Add(oldDatom.With(EAVTHistory));
+            batch.Add(retractDatom.With(EAVTHistory));
+            
+            batch.Add(oldDatom.With(AEVTHistory));
+            batch.Add(retractDatom.With(AEVTHistory));
+            
+            if (isIndexed)
+            {
+                batch.Add(oldDatom.With(AVETHistory));
+                batch.Add(retractDatom.With(AVETHistory));
+            }
+            if (isReference)
+            {
+                batch.Add(oldDatom.With(VAETHistory));
+                batch.Add(retractDatom.With(VAETHistory));
+            }
+        }
+    }
 }
