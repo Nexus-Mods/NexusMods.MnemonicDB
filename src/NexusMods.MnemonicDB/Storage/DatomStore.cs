@@ -414,7 +414,7 @@ public sealed partial class DatomStore : IDatomStore
     {
         var id = EntityId.From(_thisTx.Value);
         var taggedValue = new TaggedValue(ValueTag.Int64, _timeProvider.GetUtcNow().UtcTicks);
-        var datom = Datom.Create(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), taggedValue, _thisTx, true);
+        var datom = Datom.Create(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), taggedValue, _thisTx, false);
         TxProcessing.LogAssert(batch, datom, AttributeCache);
     }
 

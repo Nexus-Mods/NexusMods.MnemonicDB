@@ -126,9 +126,13 @@ internal struct WriteBatchWithIndexEnumerator(RocksDb db, RocksDbSharp.WriteBatc
         else
             _iterator!.Next();
 
-        if (!_iterator!.Valid()) 
+        if (!_iterator!.Valid())
+        {
+            _iterator?.Dispose();
+            _iterator = null;
             return false;
-        
+        }
+
         var kPtr = Native.Instance.rocksdb_iter_key(_iterator!.Handle, out var kLen);
         _key = new Ptr((byte*)kPtr, (int)kLen);
         return descriptor.ShouldContinue(_key.Span, useHistory);
