@@ -28,9 +28,16 @@ internal sealed class WriteBatchWithIndex : ADatomsIndex<WriteBatchWithIndexEnum
             
     }
 
+    ~WriteBatchWithIndex()
+    {
+        _writer.Dispose();
+        _batch.Dispose();
+    }
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
+        _batch.Dispose();
         _writer.Dispose();
     }
 
@@ -117,6 +124,8 @@ internal struct WriteBatchWithIndexEnumerator(RocksDb db, RocksDbSharp.WriteBatc
         _iterator?.Dispose();
         _baseIterator?.Dispose();
     }
+    
+    
 
     public unsafe bool MoveNext<TSliceDescriptor>(TSliceDescriptor descriptor, bool useHistory = false) 
         where TSliceDescriptor : ISliceDescriptor, allows ref struct
