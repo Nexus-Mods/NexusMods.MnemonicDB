@@ -12,7 +12,7 @@
     <PackageVersion Include="Microsoft.Extensions.ObjectPool" Version="9.0.7" />
     <PackageVersion Include="ObservableCollections" Version="3.3.4" />
     <PackageVersion Include="Reloaded.Memory" Version="9.4.2" />
-    <PackageVersion Include="RocksDB" Version="9.10.0.55496" />
+    <PackageVersion Include="RocksDB" Version="10.4.2.62171" />
     <PackageVersion Include="System.Reactive" Version="6.0.1" />
     <PackageVersion Include="TransparentValueObjects" Version="1.1.0" />
     <PackageVersion Include="TransparentValueObjects.Abstractions" Version="1.1.0" />
