@@ -145,7 +145,6 @@ internal struct WriteBatchWithIndexEnumerator(RocksDb db, RocksDbSharp.WriteBatc
         if (!descriptor.IsTotalOrdered)
         {
             _baseIterator = db.NewIterator(null, globalReadOptions);
-            batch.CreateIteratorWithBase(_baseIterator);
             _iterator = batch.CreateIteratorWithBase(_baseIterator);
         }
         else
