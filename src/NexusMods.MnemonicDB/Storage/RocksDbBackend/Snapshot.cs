@@ -75,18 +75,11 @@ internal sealed class Snapshot : ADatomsIndex<RocksDbIteratorWrapper>, IRefDatom
 
         foreach (var assert in asserts)
         {
-            var newAssert = assert.WithRemaps(RemapFn);
+            var newAssert = assert.With(KeyPrefix.MaxPossibleTxId);
             TxProcessing.LogAssert(batch, newAssert, AttributeCache);
         }
 
         return batch;
-
-        EntityId RemapFn(EntityId id)
-        {
-            return id;
-        }
-
-
     }
 
     public override RocksDbIteratorWrapper GetRefDatomEnumerator()
