@@ -237,23 +237,23 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         var archiveFile = new ArchiveFile.New(tx, out var id)
         {
             Hash = Hash.Zero,
-            Path = "foo",
+            Path = "archive",
             File = new File.New(tx, id)
             {
                 Hash = Hash.Zero,
-                Path = "foo",
+                Path = "file",
                 Size = Size.One,
                 ModId = tx.TempId(),
             },
         };
 
-        await Assert.That(ArchiveFile.Load(tx.AsIf(), archiveFile).Path).IsEqualTo("foo");
-        archiveFile.Path = "bar";
-        await Assert.That(ArchiveFile.Load(tx.AsIf(), archiveFile).Path).IsEqualTo("bar");
+        await Assert.That(ArchiveFile.Load(tx.AsIf(), archiveFile).Path).IsEqualTo("archive");
+        archiveFile.Path = "archive2";
+        await Assert.That(ArchiveFile.Load(tx.AsIf(), archiveFile).Path).IsEqualTo("archive2");
 
         var result = await tx.Commit();
         var remap = result.Remap(archiveFile);
-        await Assert.That(remap.AsFile().Path).IsEqualTo("bar");
+        await Assert.That(remap.AsFile().Path).IsEqualTo("file");
     }
 
     private static Hash HashAsUtf8(string value) => Hash.FromLong(Encoding.UTF8.GetBytes(value).xxHash3());
