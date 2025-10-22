@@ -427,7 +427,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                         // by the transaction executor
                         var loadout = Loadout.Load(db, id);
                         var oldAmount = int.Parse(loadout.Name.Split(":")[1].Trim());
-                        datoms.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + i)}");
+                        datoms.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + 1)}");
                     });
                     await txInner.Commit();
                 }));

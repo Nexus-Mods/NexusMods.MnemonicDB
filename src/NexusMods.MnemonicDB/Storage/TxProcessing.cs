@@ -6,6 +6,8 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.TxFunctions;
+using System.Runtime.InteropServices;
 using static NexusMods.MnemonicDB.Abstractions.IndexType;
 
 namespace NexusMods.MnemonicDB.Storage;
@@ -42,6 +44,96 @@ public static class TxProcessing
 
         e = iterator.Prefix.E;
         return true;
+    }
+
+    private static int FindTxFn(ReadOnlySpan<Datom> datoms)
+    {
+        for (int i = 0; i < datoms.Length; i++)
+        {
+            if (datoms[i].Tag == ValueTag.TxFunction)
+                return i;
+        }
+        return -1;
+    }
+
+    public static (Datoms Retracts, Datoms Asserts) RunTxFnsAndNormalize(ReadOnlySpan<Datom> datoms, IDb basisDb, TxId thisTxId)
+    {
+        // Collect applied datoms (excluding tx-function markers)
+        var applied = new Datoms(basisDb);
+
+        // Pending tx functions generated during execution that must run before continuing
+        var pending = new Queue<Datom>();
+
+        void ExecuteTxFn(Datom fnDatom)
+        {
+            // Capture count to find newly-added datoms
+            var start = applied.Count;
+
+            // Support both delegate-style and ITxFunction-style
+            switch (fnDatom.Value)
+            {
+                case Action<Datoms, IDb> action:
+                    action(applied, basisDb);
+                    break;
+                case ITxFunction itx:
+                {
+                    using var tx = new InternalTransaction(basisDb, applied);
+                    itx.Apply(tx, basisDb);
+                    // Allow any temporary entities to materialize their datoms
+                    tx.ProcessTemporaryEntities();
+                    break;
+                }
+                default:
+                    throw new InvalidOperationException("Unsupported TxFunction payload type: " + fnDatom.Value?.GetType().FullName);
+            }
+
+            // Scan newly-added datoms for nested tx functions; queue them in insertion order
+            // then remove them from 'applied' without disturbing order of non-functions
+            if (applied.Count > start)
+            {
+                var newFnDatoms = new List<Datom>();
+                var removeIdx = new List<int>();
+                for (int i = start; i < applied.Count; i++)
+                {
+                    var d = applied[i];
+                    if (d.Tag == ValueTag.TxFunction)
+                    {
+                        newFnDatoms.Add(d);
+                        removeIdx.Add(i);
+                    }
+                }
+                // Remove from the end to preserve indices
+                for (int i = removeIdx.Count - 1; i >= 0; i--)
+                    applied.RemoveAt(removeIdx[i]);
+                // Enqueue in the order they were added
+                foreach (var d in newFnDatoms)
+                    pending.Enqueue(d);
+            }
+        }
+
+        // Process original datoms in order, interleaving any generated tx functions immediately
+        for (int i = 0; i < datoms.Length; i++)
+        {
+            var d = datoms[i];
+            if (d.Tag == ValueTag.TxFunction)
+            {
+                ExecuteTxFn(d);
+            }
+            else
+            {
+                applied.Add(d);
+            }
+
+            // Drain any queued tx functions before moving on, preserving order
+            while (pending.Count > 0)
+            {
+                var nextFn = pending.Dequeue();
+                ExecuteTxFn(nextFn);
+            }
+        }
+
+        var span = CollectionsMarshal.AsSpan(applied);
+        return NormalizeWithTxIds(span, basisDb, thisTxId);
     }
 
     /// <summary>

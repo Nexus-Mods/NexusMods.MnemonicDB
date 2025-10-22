@@ -63,7 +63,7 @@ public class Datoms : List<Datom>
 
     public void AddTxFn(Action<Datoms, IDb> txFn)
     {
-        throw new NotImplementedException();
+        base.Add(Datom.Create(EntityId.MaxValueNoPartition, AttributeId.Max, ValueTag.TxFunction, txFn));
     }
 
     public void Add<THighLevel, TLowLevel, TSerializer>(EntityId e,
