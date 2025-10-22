@@ -49,7 +49,7 @@ public interface IDatomsIndex
     /// <summary>
     /// A lightweight datom segment doesn't load the entire set into memory.
     /// </summary>
-    public ILightweightDatomSegment LightweightDatoms<TDescriptor>(TDescriptor descriptor, bool totalOrdered = false)
+    public ILightweightDatomSegment LightweightDatoms<TDescriptor>(TDescriptor descriptor)
         where TDescriptor : ISliceDescriptor;
 
     /// <summary>

@@ -43,10 +43,10 @@ public struct IndexedValueSlice : ISliceDescriptor, IDisposable
         Debug.Assert(cache.IsIndexed(attrId));
         var tag = cache.GetValueTag(attrId);
         var writer = new PooledMemoryBufferWriter(sizeof(ulong) + KeyPrefix.Size);
-        var prefix = new KeyPrefix(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false, tag, IndexType.VAETCurrent);
+        var prefix = new KeyPrefix(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false, tag, IndexType.AVETCurrent);
         writer.Write(prefix);
         tag.Write(value, writer);
-        return new IndexedValueSlice();
+        return new IndexedValueSlice(writer);
     }
     
     

@@ -288,7 +288,7 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
         {
             return new LocalInitData
             {
-                Segment = db.LightweightDatoms(SliceDescriptor.AllEntities(PartitionId.Entity), totalOrdered: true),
+                Segment = db.LightweightDatoms(SliceDescriptor.AllEntities(PartitionId.Entity)),
                 Mappings = mappings,
             };
         }

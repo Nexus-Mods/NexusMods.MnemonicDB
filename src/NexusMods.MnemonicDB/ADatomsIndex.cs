@@ -63,7 +63,7 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
     /// A lightweight datom segment doesn't load the entire set into memory.
     /// </summary>
     [MustDisposeResource]
-    public ILightweightDatomSegment LightweightDatoms<TDescriptor>(TDescriptor descriptor, bool totalOrdered = false)
+    public ILightweightDatomSegment LightweightDatoms<TDescriptor>(TDescriptor descriptor)
         where TDescriptor : ISliceDescriptor
     {
         var enumerator = GetRefDatomEnumerator();

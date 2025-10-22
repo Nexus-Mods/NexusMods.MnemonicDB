@@ -1,14 +1,14 @@
 ﻿Initial Results
 ------------------------------------
-| EId:200000000000002 | Mod1 - Updated |
-| EId:200000000000006 | Mod2 - Updated |
-| EId:20000000000000A | Mod3 - Updated |
+| EId:0200000000000002 | Mod1 - Updated |
+| EId:0200000000000006 | Mod2 - Updated |
+| EId:020000000000000A | Mod3 - Updated |
 ------------------------------------
 
 After update, new DB
 ------------------------------------
-| EId:200000000000002 | Renamed - Mod  |
-| EId:200000000000006 | Mod2 - Updated |
-| EId:20000000000000A | Mod3 - Updated |
+| EId:0200000000000002 | Renamed - Mod  |
+| EId:0200000000000006 | Mod2 - Updated |
+| EId:020000000000000A | Mod3 - Updated |
 ------------------------------------
 

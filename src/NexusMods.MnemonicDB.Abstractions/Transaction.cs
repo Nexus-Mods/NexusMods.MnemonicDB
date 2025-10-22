@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
-public abstract class ATransaction : Datoms, IMainTransaction, ISubTransaction 
+public abstract class Transaction : Datoms, IMainTransaction, ISubTransaction 
 {
-    private readonly ATransaction? _parentTransaction;
+    private readonly Transaction? _parentTransaction;
     private IDb _asIfDb;
     private int _datomCountOfAsIf = 0;
 
@@ -19,7 +19,7 @@ public abstract class ATransaction : Datoms, IMainTransaction, ISubTransaction
     private bool _committed;
     private readonly IDb _basisDb;
 
-    public ATransaction(IConnection connection, ATransaction? parentTransaction = null) : base(connection.AttributeCache)
+    public Transaction(IConnection connection, Transaction? parentTransaction = null) : base(connection.AttributeCache)
     {
         _connection = connection;
         _asIfDb = connection.Db;
@@ -107,18 +107,19 @@ public abstract class ATransaction : Datoms, IMainTransaction, ISubTransaction
         return GetEnumerator();
     }
 
+    public IDb BasisDb => _basisDb;
 }
 
-public class MainTransaction : ATransaction
+public class MainTransaction : Transaction
 {
     public MainTransaction(IConnection connection) : base(connection)
     {
     }
 }
 
-public class SubTransaction : ATransaction
+public class SubTransaction : Transaction
 {
-    public SubTransaction(IConnection connection, ATransaction parentTx) : base(connection, parentTx)
+    public SubTransaction(IConnection connection, Transaction parentTx) : base(connection, parentTx)
     {
     }
 }

@@ -1,7 +1,7 @@
 ﻿Initial Results all mods
 ------------------------------------
-| EId:200000000000002 | Mod1 - Updated | [tag1, tag2, tag3] |
-| EId:200000000000006 | Mod2 - Updated | []                 |
-| EId:20000000000000A | Mod3 - Updated | []                 |
+| EId:0200000000000002 | Mod1 - Updated | [tag1, tag2, tag3] |
+| EId:0200000000000006 | Mod2 - Updated | []                 |
+| EId:020000000000000A | Mod3 - Updated | []                 |
 ------------------------------------
 
