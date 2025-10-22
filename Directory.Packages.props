@@ -10,6 +10,8 @@
     <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.7" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.7" />
     <PackageVersion Include="Microsoft.Extensions.ObjectPool" Version="9.0.7" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.1.0" />
+    <PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.0.1" />
     <PackageVersion Include="ObservableCollections" Version="3.3.4" />
     <PackageVersion Include="Reloaded.Memory" Version="9.4.2" />
     <PackageVersion Include="RocksDB" Version="9.10.0.55496" />
