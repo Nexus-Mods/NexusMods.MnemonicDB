@@ -369,7 +369,7 @@ public sealed partial class DatomStore : IDatomStore
         // Asserts next
         foreach (var assert in asserts)
         {
-            var withTx = assert.WithRemaps(_remapFunc);
+            var withTx = assert.With(_thisTx).WithRemaps(_remapFunc);
             TxProcessing.LogAssert(batch, withTx, AttributeCache);
         }
         
@@ -414,7 +414,7 @@ public sealed partial class DatomStore : IDatomStore
     {
         var id = EntityId.From(_thisTx.Value);
         var taggedValue = new TaggedValue(ValueTag.Int64, _timeProvider.GetUtcNow().UtcTicks);
-        var datom = Datom.Create(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), taggedValue, _thisTx, true);
+        var datom = Datom.Create(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), taggedValue, _thisTx, false);
         TxProcessing.LogAssert(batch, datom, AttributeCache);
     }
 

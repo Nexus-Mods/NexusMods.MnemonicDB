@@ -1,6 +1,6 @@
 <Project>
   <ItemGroup>
-    <PackageVersion Include="DuckDB.NativeBinaries" Version="1.4.0" />
+    <PackageVersion Include="DuckDB.NativeBinaries" Version="1.4.1" />
     <PackageVersion Include="DynamicData" Version="9.3.2" />
     <PackageVersion Include="Halgari.Jamarino.IntervalTree" Version="1.0.0-alpha" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.7" />
