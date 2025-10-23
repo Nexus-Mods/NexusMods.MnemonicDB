@@ -91,7 +91,3 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
-
-# Verify
-*.received.*
-*.received/
