@@ -28,9 +28,16 @@ internal sealed class WriteBatchWithIndex : ADatomsIndex<WriteBatchWithIndexEnum
             
     }
 
+    ~WriteBatchWithIndex()
+    {
+        _writer.Dispose();
+        _batch.Dispose();
+    }
 
     public void Dispose()
     {
+        GC.SuppressFinalize(this);
+        _batch.Dispose();
         _writer.Dispose();
     }
 
@@ -117,6 +124,8 @@ internal struct WriteBatchWithIndexEnumerator(RocksDb db, RocksDbSharp.WriteBatc
         _iterator?.Dispose();
         _baseIterator?.Dispose();
     }
+    
+    
 
     public unsafe bool MoveNext<TSliceDescriptor>(TSliceDescriptor descriptor, bool useHistory = false) 
         where TSliceDescriptor : ISliceDescriptor, allows ref struct
@@ -126,9 +135,13 @@ internal struct WriteBatchWithIndexEnumerator(RocksDb db, RocksDbSharp.WriteBatc
         else
             _iterator!.Next();
 
-        if (!_iterator!.Valid()) 
+        if (!_iterator!.Valid())
+        {
+            _iterator?.Dispose();
+            _iterator = null;
             return false;
-        
+        }
+
         var kPtr = Native.Instance.rocksdb_iter_key(_iterator!.Handle, out var kLen);
         _key = new Ptr((byte*)kPtr, (int)kLen);
         return descriptor.ShouldContinue(_key.Span, useHistory);
@@ -141,7 +154,6 @@ internal struct WriteBatchWithIndexEnumerator(RocksDb db, RocksDbSharp.WriteBatc
         if (!descriptor.IsTotalOrdered)
         {
             _baseIterator = db.NewIterator(null, globalReadOptions);
-            batch.CreateIteratorWithBase(_baseIterator);
             _iterator = batch.CreateIteratorWithBase(_baseIterator);
         }
         else

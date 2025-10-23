@@ -100,8 +100,7 @@ public interface IConnection : IDisposable, IQueryMixin
     /// if None, no changes are made. If Update, the datom is updated via the value written to the valueOutput buffer.
     /// if Delete, the datom is deleted.
     /// </summary>
-    public delegate ScanResultType ScanFunction(ref KeyPrefix keyPrefix, ReadOnlySpan<byte> value,
-        in IBufferWriter<byte> valueOutput);
+    public delegate ScanResultType ScanFunction(ref Datom datom);
 
     /// <summary>
     /// Update the data with the given scan function. This function will be handed every datom in the database (in

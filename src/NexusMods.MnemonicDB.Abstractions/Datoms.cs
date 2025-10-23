@@ -8,6 +8,7 @@ using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Traits;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 using Reloaded.Memory.Extensions;
@@ -63,7 +64,7 @@ public class Datoms : List<Datom>
 
     public void AddTxFn(Action<Datoms, IDb> txFn)
     {
-        throw new NotImplementedException();
+        base.Add(Datom.Create(EntityId.MaxValueNoPartition, AttributeId.Max, ValueTag.TxFunction, txFn));
     }
 
     public void Add<THighLevel, TLowLevel, TSerializer>(EntityId e,
@@ -288,5 +289,12 @@ public class Datoms : List<Datom>
         var resolver = conn.AttributeResolver;
         foreach (var datom in this)
             yield return new ResolvedDatom(datom, resolver);
+    }
+
+    public IEnumerable<TModel> AsModels<TModel>(IDb db) 
+        where TModel : IReadOnlyModel<TModel>
+    {
+        foreach (var datom in this)
+            yield return TModel.Create(db, datom.Prefix.E);
     }
 }

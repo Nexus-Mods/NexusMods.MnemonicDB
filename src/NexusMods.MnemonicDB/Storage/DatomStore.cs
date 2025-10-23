@@ -356,7 +356,7 @@ public sealed partial class DatomStore : IDatomStore
         var datomCount = 0;
         var swPrepare = Stopwatch.StartNew();
         var datomsSpan = CollectionsMarshal.AsSpan(datoms);
-        var (retracts, asserts) = TxProcessing.NormalizeWithTxIds(datomsSpan, CurrentSnapshot!, _thisTx);
+        var (retracts, asserts) = TxProcessing.RunTxFnsAndNormalize(datomsSpan, _currentDb!, _thisTx);
         
         datomCount += asserts.Count;
         
@@ -398,7 +398,7 @@ public sealed partial class DatomStore : IDatomStore
         CurrentSnapshot = Backend.GetSnapshot();
     }
 
-    internal void LogDatoms(Datoms datoms, bool advanceTx = false, bool enableStats = false)
+    internal void LogDatoms(Datoms datoms, bool advanceTx = true, bool enableStats = false)
     {
         using var batch = Backend.CreateBatch();
         LogDatoms(batch, datoms, advanceTx, enableStats);

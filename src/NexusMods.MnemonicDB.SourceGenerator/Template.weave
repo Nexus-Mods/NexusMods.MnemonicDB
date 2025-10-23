@@ -55,8 +55,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     {{if attr.IsReference}}
         return db.GetBackrefModels<{{= model.Name}}.ReadOnly>({{= attr.FieldName}}, value);    
     {{else}}
-        //return db.Datoms({{= attr.FieldName}}, value).AsModels<{{= model.Name}}.ReadOnly>(db);
-        throw new NotImplementedException();
+        return db.Datoms({{= attr.FieldName}}, value).AsModels<{{= model.Name}}.ReadOnly>(db);
     {{/if}}    
     }
     {{/if}}
@@ -99,10 +98,8 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     /// Returns all {{= model.Name}} entities in the database.
     /// </summary>
     public static IEnumerable<{{=model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
-        //return db.Datoms(PrimaryAttribute).AsModels<{{= model.Name}}.ReadOnly>(db);
-        throw new NotImplementedException();
+        return db.Datoms(PrimaryAttribute).AsModels<{{= model.Name}}.ReadOnly>(db);
     }
-
 
     /// <summary>
     /// Loads a model from the database, not providing any validation
@@ -161,14 +158,14 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     /// way to interact with the entity before it is commited to the database.
     /// </summary>
     public partial struct New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
-        private readonly __ABSTRACTIONS__.Datoms _datoms;
+        private readonly __ABSTRACTIONS__.Transaction _datoms;
 
         {{if model.Includes.Count == 0}}
         
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with a generated temporary id.
         /// </summary>
-        public New(__ABSTRACTIONS__.Datoms tx) {
+        public New(__ABSTRACTIONS__.Transaction tx) {
             Id = TempId.Next();
             _datoms = tx;
         }
@@ -178,7 +175,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with the given entity id.
         /// </summary>
-        public New(__ABSTRACTIONS__.Datoms tx, out __ABSTRACTIONS__.EntityId id) {
+        public New(__ABSTRACTIONS__.Transaction tx, out __ABSTRACTIONS__.EntityId id) {
             _datoms = tx;
             Id = TempId.Next();
             id = Id;
@@ -187,7 +184,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with the given entity partition for the generated temporary id.
         /// </summary>
-        public New(__ABSTRACTIONS__.Datoms tx, __ABSTRACTIONS__.PartitionId partition, out __ABSTRACTIONS__.EntityId id) {
+        public New(__ABSTRACTIONS__.Transaction tx, __ABSTRACTIONS__.PartitionId partition, out __ABSTRACTIONS__.EntityId id) {
             _datoms = tx;
             Id = TempId.Next(partition);
             id = Id;
@@ -198,7 +195,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with the given entity id.
         /// </summary>
-        public New(__ABSTRACTIONS__.Datoms tx, __ABSTRACTIONS__.EntityId eid) {
+        public New(__ABSTRACTIONS__.Transaction tx, __ABSTRACTIONS__.EntityId eid) {
             _datoms = tx;
             Id = eid;
         }
@@ -285,14 +282,12 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// <inheritdoc cref="{{= model.Name}}.{{= attr.ContextualName}}" />
         {{if attr.IsReference && !attr.IsCollection}}
         public {{= attr.Prefix}} {{= attr.ReferenceType.ToDisplayString()}}Id {{= attr.ContextualName}} 
-        { 
-           get => throw new NotImplementedException();
+        {
            set => _datoms.Add(Id, {{= attr.FieldName}}, value);
         }
         {{elif attr.IsCollection}}
         public IEnumerable<{{= attr.HighLevelType.ToDisplayString()}}> {{= attr.ContextualName}} 
-        { 
-           get => throw new NotImplementedException();
+        {
            set => _datoms.Add(Id, {{= attr.FieldName}}, value);
         }
         {{elif attr.IsReference}}
@@ -302,7 +297,6 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         {{else}}
         public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} 
         {
-            get => throw new NotImplementedException();
             set => _datoms.Add(Id, {{= attr.FieldName}}, value);
         }
         {{/if}}

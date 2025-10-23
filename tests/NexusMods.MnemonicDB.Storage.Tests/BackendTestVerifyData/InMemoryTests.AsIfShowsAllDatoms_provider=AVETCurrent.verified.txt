@@ -18,5 +18,5 @@
 + | EId:0000000000000019 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Mod/Loadout       | Tx:0100000000000002
 + | EId:0000000000000018 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Mod/Name          | Tx:0100000000000002
 + | EId:0000000000000008 | (0001) UniqueId                 | NexusMods.MnemonicDB.Transaction/Timestamp       | Tx:0100000000000001
-+ | EId:0200000000000003 | (0014) Path                     | foo/bar2                                         | Tx:0100000000000000
-+ | EId:0200000000000003 | (0015) Hash                     | 0x00000000DEADBEE2                               | Tx:0100000000000000
++ | EId:0200000000000003 | (0014) Path                     | foo/bar2                                         | Tx:0100000000000003
++ | EId:0200000000000003 | (0015) Hash                     | 0x00000000DEADBEE2                               | Tx:0100000000000003

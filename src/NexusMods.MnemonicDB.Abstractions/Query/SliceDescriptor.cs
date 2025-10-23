@@ -149,4 +149,6 @@ public static class SliceDescriptor
     {
         return new HistorySlice<TParent>(parent);
     }
+    
+    public static readonly AllSlice All = new();
 }

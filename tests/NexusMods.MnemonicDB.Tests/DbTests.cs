@@ -19,6 +19,8 @@ using NexusMods.MnemonicDB.TestModel.Analyzers;
 using NexusMods.Paths;
 using TUnit.Assertions.AssertConditions.Throws;
 using File = NexusMods.MnemonicDB.TestModel.File;
+using Transaction = NexusMods.MnemonicDB.Abstractions.Transaction;
+
 namespace NexusMods.MnemonicDB.Tests;
 
 [WithServiceProvider]
@@ -262,7 +264,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         var recentTimestamp = result.Db.RecentlyAdded
             .Resolved(Connection)
-            .First(d => d.A == Transaction.Timestamp);
+            .First(d => d.A == Abstractions.BuiltInEntities.Transaction.Timestamp);
         
         await Assert.That(recentTimestamp.V).IsAssignableTo<DateTimeOffset>();
                     await Assert.That((DateTimeOffset)recentTimestamp.V)
@@ -307,7 +309,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(firstMod.Loadout.Id.InPartition(PartitionId.Entity)).IsTrue().Because("LoadoutId should in the entity partition");
         await Assert.That(firstMod.LoadoutId).IsEquivalentTo(loadoutWritten.LoadoutId);
         await Assert.That(firstMod.Db).IsEqualTo(newDb);
-        await Assert.That(loadout.Name).IsEqualTo("Test Loadout");
+        await Assert.That(firstMod.Name).IsEqualTo("Test Mod 1");
         await Assert.That(firstMod.Loadout.Name).IsEqualTo("Test Loadout");
     }
 
@@ -337,7 +339,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(mod.Contains(Mod.Source)).IsTrue();
         await Assert.That(mod.Contains(Loadout.Name)).IsFalse();
 
-        await Assert.That(mod.ToString()).IsEqualTo("Mod<EId:200000000000002>");
+        await Assert.That(mod.ToString()).IsEqualTo("Mod<EId:0200000000000002>");
 
         await VerifyTable(mod);
     }
@@ -427,7 +429,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                         // by the transaction executor
                         var loadout = Loadout.Load(db, id);
                         var oldAmount = int.Parse(loadout.Name.Split(":")[1].Trim());
-                        datoms.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + i)}");
+                        datoms.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + 1)}");
                     });
                     await txInner.Commit();
                 }));
@@ -443,7 +445,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         return;
 
 
-        void AddToName(ATransaction tx, IDb db, EntityId eid, int amount)
+        void AddToName(Transaction tx, IDb db, EntityId eid, int amount)
         {
 
         }
@@ -1367,12 +1369,12 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         return;
 
-        ScanResultType UpdateFunc(ref KeyPrefix prefix, ReadOnlySpan<byte> input, in IBufferWriter<byte> output)
+        ScanResultType UpdateFunc(ref Datom datom)
         {
-            if (prefix.ValueTag != ValueTag.Utf8)
+            if (datom.Tag != ValueTag.Utf8)
                 return ScanResultType.None;
 
-            var value = Utf8Serializer.Read(input);
+            var value = (string)datom.Value;
             switch (value)
             {
                 case "Test Mod 1":
@@ -1380,7 +1382,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 case "Test Mod 2":
                     return ScanResultType.Delete;
                 case "Test Mod 3":
-                    Utf8Serializer.Write("UPDATED Test Mod 3 !!", output);
+                    datom = new Datom(datom.Prefix, "UPDATED Test Mod 3 !!");
                     return ScanResultType.Update;
                 default:
                     return ScanResultType.None;

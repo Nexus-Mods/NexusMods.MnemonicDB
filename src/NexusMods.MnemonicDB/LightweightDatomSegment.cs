@@ -60,10 +60,8 @@ internal sealed class LightweightDatomSegment<TEnumerator, TDescriptor> : ILight
                 return false; // No items to process
             }
         }
-
-        throw new NotImplementedException();
-        /*
-        while (_enumerator.KeyPrefix.E < eid)
+        
+        while (_enumerator.E < eid)
         {
             if (!_enumerator.MoveNext(_descriptor))
             {
@@ -73,8 +71,7 @@ internal sealed class LightweightDatomSegment<TEnumerator, TDescriptor> : ILight
             }
         }
 
-        return _enumerator.KeyPrefix.E == eid;
-        */
+        return _enumerator.E == eid;
     }
 
     public void Dispose()

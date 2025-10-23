@@ -104,7 +104,7 @@ public enum ValueTag : byte
     /// <summary>
     /// Never actually written to the database, but used to represent a transaction function encoded as a datom
     /// </summary>
-    TxFunction = byte.MaxValue,
+    TxFunction = 127,
 }
 
 public static class ValueTagsExtensions

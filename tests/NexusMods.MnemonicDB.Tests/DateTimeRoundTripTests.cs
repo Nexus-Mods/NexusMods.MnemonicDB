@@ -3,6 +3,7 @@ using System.Linq;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.Traits;
+using Transaction = NexusMods.MnemonicDB.Abstractions.BuiltInEntities.Transaction;
 
 namespace NexusMods.MnemonicDB.Tests;
 

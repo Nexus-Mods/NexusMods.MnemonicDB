@@ -314,7 +314,9 @@ public abstract class ABackendTest(
             { id, File.Path, "foo/bar", true },
             { id, File.Hash, Hash.From(0xDEADBEEF), true },
             { id, File.Size, Size.From(42), true },
-            { id, File.ModId, modId, true }
+            { id, File.ModId, modId, true },
+            
+            { id2, File.Size, Size.From(44) }
         };
         
         var asIf = DatomStore.GetSnapshot().AsIf(segment2);

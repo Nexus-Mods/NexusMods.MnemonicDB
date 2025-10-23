@@ -1,5 +1,6 @@
 using System;
 using NexusMods.MnemonicDB.Abstractions;
+using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage;
 
 namespace NexusMods.MnemonicDB.InternalTxFunctions;
@@ -16,41 +17,37 @@ internal class ScanUpdate : AInternalFn
     
     public override void Execute(DatomStore store)
     {
-        throw new NotImplementedException();
-        /* 
         using var batch = store.Backend.CreateBatch();
         using var writer = new PooledMemoryBufferWriter();
 
         var changes = false;
-        foreach (var segment in store.CurrentSnapshot.DatomsChunked(SliceDescriptor.All, 1024))
+        using var iter = store.CurrentSnapshot.LightweightDatoms(SliceDescriptor.All);
+        while(iter.MoveNext())
         {
-            foreach (var datom in segment)
+            var prefix = iter.Prefix;
+            writer.Reset();
+            var datom = Datom.Create(iter);
+            var type = _function(ref datom);
+            switch (type)
             {
-                var prefix = datom.Prefix;
-                writer.Reset();
-                var type = _function(ref prefix, datom.ValueSpan, writer);
-                switch (type)
-                {
-                    case ScanResultType.None:
-                        break;
-                    case ScanResultType.Update:
-                        batch.Delete(datom);
-                        var newDatom = new Datom(prefix, writer.WrittenMemory); 
-                        batch.Add(newDatom);
-                        changes = true;
-                        break;
-                    case ScanResultType.Delete:
-                        batch.Delete(datom);
-                        changes = true;
-                        break;
-                }
+                case ScanResultType.None:
+                    break;
+                case ScanResultType.Update:
+                    batch.Delete(Datom.Create(iter));
+                    batch.Add(datom);
+                    changes = true;
+                    break;
+                case ScanResultType.Delete:
+                    batch.Delete(Datom.Create(iter));
+                    changes = true;
+                    break;
             }
         }
+
         
         if (changes)
         {
-            store.LogDatoms(batch, Array.Empty<Datom>(), advanceTx: false);
+            store.LogDatoms(batch, new Datoms(store.AttributeCache), advanceTx: false);
         }
-        */
     }
 }
