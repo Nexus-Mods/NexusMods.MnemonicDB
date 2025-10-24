@@ -286,14 +286,12 @@ public static class TxProcessing
             var key = (a.Prefix.A, a.Value);
 
             if (txClaim.TryGetValue(key, out var prevE) && !Equals(prevE, a.Prefix.E))
-                throw new Exception(
-                    $"Unique constraint violation in transaction: attribute {a.Prefix.A}, value '{a.Value}' asserted by entities {prevE} and {a.Prefix.E}.");
-
+                throw new UniqueConstraintException(a, prevE);
+            
             txClaim[key] = a.Prefix.E;
 
             if (TryOwnerOfUnique(index, a.Prefix.A, a.TaggedValue, out var owner) && !Equals(owner, a.Prefix.E))
-                throw new Exception(
-                    $"Unique constraint violation: attribute {a.Prefix.A}, value '{a.Value}' already owned by entity {owner}, cannot assert for entity {a.Prefix.E}.");
+                throw new UniqueConstraintException(a, owner);
         }
 
         // Retracts-first then asserts is still a safe apply order for your index moves.
