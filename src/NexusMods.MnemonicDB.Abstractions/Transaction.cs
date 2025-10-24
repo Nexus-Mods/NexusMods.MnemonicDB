@@ -41,8 +41,7 @@ public abstract class Transaction : Datoms, IMainTransaction, ISubTransaction
     {
         CheckAccess();
         Debug.Assert(_parentTransaction is not null);
-        throw new NotImplementedException();
-        //(_parentTransaction).Add(_datoms);
+        _parentTransaction.AddRange(this);
     }
 
     /// <summary>
@@ -79,8 +78,7 @@ public abstract class Transaction : Datoms, IMainTransaction, ISubTransaction
 
     public SubTransaction CreateSubTransaction()
     {
-        throw new NotImplementedException();
-        //return new Transaction(_connection, parentTransaction: this);
+        return new SubTransaction(_connection, this);
     }
 
     public void Reset()
