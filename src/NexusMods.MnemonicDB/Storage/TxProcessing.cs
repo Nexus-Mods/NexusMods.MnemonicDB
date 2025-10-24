@@ -280,6 +280,14 @@ public static class TxProcessing
 
         var txClaim = new Dictionary<(AttributeId A, object V), EntityId>();
 
+        // Build a quick lookup for unique attribute values that this transaction retracts
+        var uniqueRetractsThisTx = new HashSet<(AttributeId A, object V, EntityId E)>();
+        foreach (var r in retracts)
+        {
+            if (!attributeCache.IsUnique(r.Prefix.A)) continue;
+            uniqueRetractsThisTx.Add((r.Prefix.A, r.Value, r.Prefix.E));
+        }
+
         foreach (var a in asserts)
         {
             if (!attributeCache.IsUnique(a.Prefix.A)) continue;
@@ -291,7 +299,12 @@ public static class TxProcessing
             txClaim[key] = a.Prefix.E;
 
             if (TryOwnerOfUnique(index, a.Prefix.A, a.TaggedValue, out var owner) && !Equals(owner, a.Prefix.E))
-                throw new UniqueConstraintException(a, owner);
+            {
+                // Allow moving ownership within the same transaction: if this tx also retracts
+                // the unique value from the current owner, do not throw.
+                if (!uniqueRetractsThisTx.Contains((a.Prefix.A, a.Value, owner)))
+                    throw new UniqueConstraintException(a, owner);
+            }
         }
 
         // Retracts-first then asserts is still a safe apply order for your index moves.
