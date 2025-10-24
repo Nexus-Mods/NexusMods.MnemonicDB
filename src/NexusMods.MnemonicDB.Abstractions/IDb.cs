@@ -38,7 +38,8 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
         where TLowLevel : notnull 
         where TSerializer : IValueSerializer<TLowLevel>
     {
-        return Datoms(SliceDescriptor.Create(attr, value, AttributeCache));
+        using var slice = SliceDescriptor.Create(attr, value, AttributeCache);
+        return Datoms(slice);
     }
     
     public Datoms Datoms(IAttribute attribute)

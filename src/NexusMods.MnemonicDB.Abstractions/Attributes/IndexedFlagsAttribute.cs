@@ -43,4 +43,14 @@ public class IndexedFlagsAttribute : ScalarAttribute<IndexedFlags, byte, UInt8Se
     {
         return (IndexedFlags)value;
     }
+
+    public override object FromLowLevelObject(object value, AttributeResolver resolver)
+    {
+        return value switch
+        {
+            Null => IndexedFlags.Indexed,
+            byte b => (IndexedFlags)b,
+            _ => throw new ArgumentException("Invalid value", nameof(value))
+        };
+    }
 }

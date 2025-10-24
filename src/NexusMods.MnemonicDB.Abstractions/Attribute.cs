@@ -40,7 +40,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
 
     public string ShortName { get; }
 
-    public object FromLowLevelObject(object lowLevel, AttributeResolver resolver)
+    public virtual object FromLowLevelObject(object lowLevel, AttributeResolver resolver)
     {
         return FromLowLevel((TLowLevelType)lowLevel, resolver);
     }

@@ -42,8 +42,11 @@ public static class SliceDescriptor
     {
         var converted = attr.ToLowLevel(value);
         var attrId = attributeCache.GetAttributeId(attr.Id);
+        if (!attributeCache.IsIndexed(attrId))
+            throw new InvalidOperationException($"Attribute {attr.Id} is not indexed");
         return IndexedValueSlice.Create(attrId, converted, attributeCache);
     }
+
     
     /// <summary>
     /// Creates a slice descriptor for the given reference attribute and entity that is being pointed to.
