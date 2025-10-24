@@ -143,18 +143,7 @@ public class AMnemonicDBTest : IDisposable
             return _sb.ToString();
         }
     }
-
-
-
-    protected async Task LoadDatamodel(RelativePath name)
-    {
-        var fullPath = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("Resources").Combine(name);
-
-        await using var stream = fullPath.Read();
-        await using var decompressStream = new DeflateStream(stream, CompressionMode.Decompress);
-        await _store.ImportAsync(decompressStream);
-    }
-
+    
     protected DatomStoreSettings Config { get; set; }
 
     protected SettingsTask VerifyModel<T>(T model)
