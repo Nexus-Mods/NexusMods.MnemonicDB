@@ -21,7 +21,6 @@ using global::System.Diagnostics.Contracts;
 
 using __ABSTRACTIONS__ = NexusMods.MnemonicDB.Abstractions;
 using __MODELS__ = NexusMods.MnemonicDB.Abstractions.Models;
-using __SEGMENTS__ = NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using __DI__ = Microsoft.Extensions.DependencyInjection;
 using __COMPARERS__ = NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
@@ -66,10 +65,9 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
     /// <summary>
     /// Returns all MyModel entities in the database.
     /// </summary>
-    public static __SEGMENTS__.Entities<MyModel.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
+    public static IEnumerable<MyModel.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
         return db.Datoms(PrimaryAttribute).AsModels<MyModel.ReadOnly>(db);
     }
-
 
     /// <summary>
     /// Loads a model from the database, not providing any validation
@@ -127,24 +125,25 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
     /// Constructs a new MyModel model from the given entity id, used to provide a typed structured
     /// way to interact with the entity before it is commited to the database.
     /// </summary>
-    public partial class New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
+    public partial struct New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
+        private readonly __ABSTRACTIONS__.Transaction _datoms;
 
     
     /// <summary>
     /// Constructs a new MyModel model from the given transaction with a generated temporary id.
     /// </summary>
-    public New(__ABSTRACTIONS__.ITransaction tx) : base() {
-        Id = tx.TempId();
-        tx.Attach(this);
+    public New(__ABSTRACTIONS__.Transaction tx) {
+        Id = TempId.Next();
+        _datoms = tx;
     }
     
 
         /// <summary>
         /// Constructs a new MyModel model from the given transaction with the given entity id.
         /// </summary>
-        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.EntityId eid) : base() {
+        public New(__ABSTRACTIONS__.Transaction tx, __ABSTRACTIONS__.EntityId eid) {
+            _datoms = tx;
             Id = eid;
-            tx.Attach(this);
         }
 
 
@@ -153,9 +152,11 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
         /// </summary>
         public void AddTo(__ABSTRACTIONS__.ITransaction tx)
         {
+        /*
             tx.Add(Id, NexusMods.MnemonicDB.SourceGenerator.Tests.MyModel.Name, Name, false);
 
 
+            */
         }
 
         /// <summary>
@@ -183,7 +184,10 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
         #region Attributes
         
         /// <inheritdoc cref="MyModel.Name" />
-        public required string Name { get; set; }
+    public required string Name 
+    {
+        set => _datoms.Add(Id, NexusMods.MnemonicDB.SourceGenerator.Tests.MyModel.Name, value);
+    }
         #endregion
     }
 
@@ -198,14 +202,14 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
            /// <summary>
            /// The database segment containing the datoms for this entity in EAVT order.
            /// </summary>
-           public readonly __SEGMENTS__.EntitySegment EntitySegment;
+           public readonly __ABSTRACTIONS__.Datoms EntitySegment;
            
-           __SEGMENTS__.EntitySegment __MODELS__.IHasIdAndEntitySegment.EntitySegment => this.EntitySegment; 
+           __ABSTRACTIONS__.Datoms __MODELS__.IHasIdAndEntitySegment.EntitySegment => this.EntitySegment; 
 
            /// <summary>
            /// Constructs a new ReadOnly model of the entity from the given segment and id.
            /// </summary>
-           public ReadOnly(__ABSTRACTIONS__.IDb db, __SEGMENTS__.EntitySegment segment, __ABSTRACTIONS__.EntityId id) {
+           public ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.Datoms segment, __ABSTRACTIONS__.EntityId id) {
                Db = db;
                Id = id;
                EntitySegment = segment;
@@ -215,7 +219,7 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
            /// Constructs a new ReadOnly model of the entity.
            /// </summary>
            public ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) :
-               this(db, db.Get(id), id)
+               this(db, db[id], id)
            {
            }
 
@@ -241,7 +245,7 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
            /// Constructs a new ReadOnly model of the entity.
            /// </summary>
            public static ReadOnly Create(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) {
-               return new ReadOnly(db, db.Get(id), id);
+               return new ReadOnly(db, db[id], id);
            }
 
            /// <inheritdoc />
@@ -249,12 +253,12 @@ public partial class MyModel : __MODELS__.IModelFactory<MyModel, MyModel.ReadOnl
 
 
            /// <inheritdoc />
-           public IEnumerator<IReadDatom> GetEnumerator()
+           public IEnumerator<ResolvedDatom> GetEnumerator()
            {
                var resolver = Db.Connection.AttributeResolver;
                foreach (var datom in EntitySegment)
                {
-                   yield return resolver.Resolve(datom);
+                   yield return new __ABSTRACTIONS__.ResolvedDatom(datom, resolver);
                }
            }
 

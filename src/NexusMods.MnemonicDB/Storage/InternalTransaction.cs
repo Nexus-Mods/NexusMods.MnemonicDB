@@ -4,16 +4,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.Attributes;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
 namespace NexusMods.MnemonicDB.Storage;
 
-internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : ITransaction
+internal class InternalTransaction(IDb basisDb, Datoms datoms) : ITransaction
 {
     private ulong _tempId = PartitionId.Temp.MakeEntityId(0).Value;
     private List<ITemporaryEntity>? _temporaryEntities = null;
@@ -35,29 +31,7 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
         var actualId = ((ulong)partition.Value << 40) | tempId;
         return EntityId.From(actualId);
     }
-
-    /// <inheritdoc />
-    public void Add<TVal, TAttribute>(EntityId entityId, TAttribute attribute, TVal val, bool isRetract = false) 
-        where TAttribute : IWritableAttribute<TVal>
-    {
-        datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
-    }
-
-    public void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false) where TSerializer : IValueSerializer<TLowLevel> where TVal : notnull
-    {
-        datoms.Add(entityId, attribute, val, ThisTxId, isRetract);
-    }
-
-    public void Add(EntityId entityId, ReferencesAttribute attribute, IEnumerable<EntityId> ids)
-    {
-        throw new NotSupportedException();
-    }
-
-    public void Add(EntityId e, AttributeId a, ValueTag valueTag, ReadOnlySpan<byte> valueSpan, bool isRetract = false)
-    {
-        datoms.Add(e, a, valueTag, valueSpan, isRetract);
-    }
-
+    
     /// <inheritdoc />
     public void Add(ITxFunction fn)
     {
@@ -68,12 +42,7 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
         _temporaryEntities ??= new();
         _temporaryEntities.Add(entity);
     }
-
-    public void Add(Datom datom)
-    {
-        datoms.Add(datom);
-    }
-
+    
     public bool TryGet<TEntity>(EntityId entityId, [NotNullWhen(true)] out TEntity? entity)
         where TEntity : class, ITemporaryEntity
     {
@@ -93,7 +62,7 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
     }
 
     /// <inheritdoc />
-    public ISubTransaction CreateSubTransaction()
+    public SubTransaction CreateSubTransaction()
     {
         throw new NotSupportedException();
     }
@@ -128,4 +97,12 @@ internal class InternalTransaction(IDb basisDb, IndexSegmentBuilder datoms) : IT
     public void Dispose()
     {
     }
+
+    public List<Datom> Datoms => datoms;
+    public AttributeCache AttributeCache => datoms.AttributeCache;
+    public IEnumerator<Datom> GetEnumerator()
+    {
+        return Datoms.GetEnumerator();
+    }
+
 }

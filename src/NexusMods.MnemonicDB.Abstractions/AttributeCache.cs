@@ -4,7 +4,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -61,13 +60,13 @@ public sealed class AttributeCache
     public void Reset(IDb db)
     {
         var symbols = db.Datoms(AttributeDefinition.UniqueId);
-        var maxIndex = (int)symbols.MaxBy(static x => x.E.Value).E.Value + 1;
+        var maxIndex = (int)symbols.MaxBy(static x => x.E.Value)!.E.Value + 1;
 
         var newSymbols = new Symbol[maxIndex];
         foreach (var datom in symbols)
         {
             var id = datom.E.Value;
-            var symbol = AttributeDefinition.UniqueId.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, null!);
+            var symbol = Symbol.InternPreSanitized((string)datom.Value);
             newSymbols[id] = symbol;
             _attributeIdsBySymbol[symbol] = AttributeId.From((ushort)id);
         }
@@ -79,7 +78,7 @@ public sealed class AttributeCache
         foreach (var datom in types)
         {
             var id = datom.E.Value;
-            var type = AttributeDefinition.ValueType.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, null!);
+            var type = (ValueTag)datom.Value;
             newTypes[id] = type;
             newIsReference[(int)id] = type == ValueTag.Reference;
         }
@@ -93,7 +92,7 @@ public sealed class AttributeCache
             var flags = datom.Prefix.ValueTag switch
             {
                 ValueTag.Null => IndexedFlags.Indexed,
-                ValueTag.UInt8 => (IndexedFlags)datom.ValueSpan[0],
+                ValueTag.UInt8 => (IndexedFlags)datom.Value,
                 _ => IndexedFlags.None
             };
             
@@ -120,7 +119,7 @@ public sealed class AttributeCache
         foreach (var datom in isCardinalityMany)
         {
             var id = datom.E.Value;
-            newIsCardinalityMany[(int)id] = AttributeDefinition.Cardinality.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, null!) == Cardinality.Many;
+            newIsCardinalityMany[(int)id] = (Cardinality)(byte)datom.Value == Cardinality.Many;
         }
         _isCardinalityMany = newIsCardinalityMany;
         
@@ -129,7 +128,7 @@ public sealed class AttributeCache
         foreach (var datom in valueTags)
         {
             var id = datom.E.Value;
-            var type = AttributeDefinition.ValueType.ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, null!);
+            var type = (ValueTag)datom.Value;
             newValueTags[id] = type;
         }
         _valueTags = newValueTags;

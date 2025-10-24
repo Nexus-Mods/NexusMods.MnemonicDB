@@ -3,8 +3,6 @@ using NexusMods.MnemonicDB.TestModel.Helpers;
 using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage.Tests.TestAttributes;
 using NexusMods.MnemonicDB.TestModel;
@@ -33,10 +31,9 @@ public abstract class ABackendTest(
     {
         var tx = await GenerateData();
         var datoms = tx.Snapshot
-            .Datoms(SliceDescriptor.Create(type))
-            .ToArray();
+            .Datoms(SliceDescriptor.Create(type));
 
-        await Verify(datoms.ToTable(AttributeCache))
+        await Verify(datoms.ToTable(AttributeResolver))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }
@@ -67,21 +64,22 @@ public abstract class ABackendTest(
 
         for (var i = 0; i < 4; i++)
         {
-            using var segment = new IndexSegmentBuilder(AttributeCache);
+            var segment = new Datoms(AttributeCache);
             var entityId = NextTempId();
-            segment.Add(entityId, Blobs.InKeyBlob, smallData);
-            segment.Add(entityId, Blobs.InValueBlob, largeData);
-            var (result, _) = await DatomStore.TransactAsync(segment.Build());
+            var (result, _) = await DatomStore.TransactAsync(new Datoms(DatomStore) {
+                { entityId, Blobs.InKeyBlob, smallData },
+                { entityId, Blobs.InValueBlob, largeData }
+            });
             ids.Add(result.Remaps[entityId]);
         }
 
         // Retract the first 2
         for (var i = 0; i < 2; i++)
         {
-            using var segment = new IndexSegmentBuilder(AttributeCache);
-            segment.Add(ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true);
-            segment.Add(ids[i], Blobs.InValueBlob, largeData.AsMemory(), true);
-            await DatomStore.TransactAsync(segment.Build());
+            await DatomStore.TransactAsync(new Datoms(DatomStore) {
+                { ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true },
+                { ids[i], Blobs.InValueBlob, largeData.AsMemory(), true }
+            });
         }
 
         smallData[0] = 1;
@@ -90,17 +88,17 @@ public abstract class ABackendTest(
         // Change the other 2
         for (var i = 5; i < 2; i++)
         {
-            using var segment = new IndexSegmentBuilder(AttributeCache);
-            segment.Add(ids[i], Blobs.InKeyBlob, smallData);
-            segment.Add(ids[i], Blobs.InValueBlob, largeData);
-            await DatomStore.TransactAsync(segment.Build());
+            await DatomStore.TransactAsync(new Datoms(DatomStore) {
+                { ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true },
+                { ids[i], Blobs.InValueBlob, largeData.AsMemory(), true },
+            });
         }
 
         var datoms = DatomStore.GetSnapshot()
             .Datoms(SliceDescriptor.Create(type))
             .ToArray();
 
-        await Verify(datoms.ToTable(AttributeCache))
+        await Verify(datoms.ToTable(AttributeResolver))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }
@@ -125,7 +123,7 @@ public abstract class ABackendTest(
             .Merge(history, CompareDatoms(comparer))
             .ToArray();
 
-        await Verify(merged.ToTable(AttributeCache))
+        await Verify(merged.ToTable(AttributeResolver))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }
@@ -133,15 +131,18 @@ public abstract class ABackendTest(
     [Test]
     public async Task CaseInsenstiveUTF8DoesntCrashTheComparator()
     {
-        using var segment = new IndexSegmentBuilder(AttributeCache);
         var id1 = NextTempId();
         var id2 = NextTempId();
         var id3 = NextTempId();
-        segment.Add(id1, File.Path, "foo/bar");
-        segment.Add(id2, File.Path, "foo/bar");
-        segment.Add(id3, File.Path, "foo/bar");
-        
-        var (tx, _) = await DatomStore.TransactAsync(segment.Build());
+
+        var segment = new Datoms(AttributeCache)
+        {
+            { id1, File.Path, "foo/bar" },
+            { id2, File.Path, "foo/bar" },
+            { id3, File.Path, "foo/bar" }
+        };
+
+        var (tx, _) = await DatomStore.TransactAsync(segment);
     }
 
     private static Func<Datom, Datom, int> CompareDatoms(IDatomComparator comparer)
@@ -165,29 +166,28 @@ public abstract class ABackendTest(
 
         {
 
-            using var segment = new IndexSegmentBuilder(AttributeCache);
-
-            segment.Add(id1, File.Path, "foo/bar");
-            segment.Add(id1, File.Hash, Hash.From(0xDEADBEEF));
-            segment.Add(id1, File.Size, Size.From(42));
-            segment.Add(id2, File.Path, "qix/bar");
-            segment.Add(id2, File.Hash, Hash.From(0xDEADBEAF));
-            segment.Add(id2, File.Size, Size.From(77));
-            segment.Add(id1, File.ModId, modId1);
-            segment.Add(id2, File.ModId, modId1);
-
-            segment.Add(modId1, Mod.Name, "Test Mod 1");
-            segment.Add(modId1, Mod.LoadoutId, loadoutId);
-            segment.Add(modId2, Mod.Name, "Test Mod 2");
-            segment.Add(modId2, Mod.LoadoutId, loadoutId);
-            segment.Add(loadoutId, Loadout.Name, "Test Loadout 1");
-            segment.Add(collectionId, Collection.Name, "Test Collection 1");
-            segment.Add(collectionId, Collection.LoadoutId, loadoutId);
-            segment.Add(collectionId, Collection.ModIds, modId1);
-            segment.Add(collectionId, Collection.ModIds, modId2);
-
-
-            (tx, _) = await DatomStore.TransactAsync(segment.Build());
+            var segment = new Datoms(AttributeCache)
+            {
+                { id1, File.Path, "foo/bar" },
+                { id1, File.Hash, Hash.From(0xDEADBEEF) },
+                { id1, File.Size, Size.From(42) },
+                { id2, File.Path, "qix/bar" },
+                { id2, File.Hash, Hash.From(0xDEADBEAF) },
+                { id2, File.Size, Size.From(77) },
+                { id1, File.ModId, modId1 },
+                { id2, File.ModId, modId1 },
+                { modId1, Mod.Name, "Test Mod 1" },
+                { modId1, Mod.LoadoutId, loadoutId },
+                { modId2, Mod.Name, "Test Mod 2" },
+                { modId2, Mod.LoadoutId, loadoutId },
+                { loadoutId, Loadout.Name, "Test Loadout 1" },
+                { collectionId, Collection.Name, "Test Collection 1" },
+                { collectionId, Collection.LoadoutId, loadoutId },
+                { collectionId, Collection.ModIds, modId1 },
+                { collectionId, Collection.ModIds, modId2 }
+            };
+            
+            (tx, _) = await DatomStore.TransactAsync(segment);
         }
 
         id1 = tx.Remaps[id1];
@@ -196,11 +196,13 @@ public abstract class ABackendTest(
         collectionId = tx.Remaps[collectionId];
 
         {
-            using var segment = new IndexSegmentBuilder(AttributeCache);
-            segment.Add(id2, File.Path, "foo/qux");
-            segment.Add(id1, File.ModId, modId2);
-            segment.Add(collectionId, Collection.ModIds, modId2, true);
-            (tx, _) = await DatomStore.TransactAsync(segment.Build());
+            var segment = new Datoms(AttributeCache)
+            {
+                { id2, File.Path, "foo/qux" },
+                { id1, File.ModId, modId2 },
+                { collectionId, Collection.ModIds, modId2, true }
+            };
+            (tx, _) = await DatomStore.TransactAsync(segment);
         }
         return tx;
     }
@@ -223,28 +225,30 @@ public abstract class ABackendTest(
         StoreResult tx1, tx2;
 
         {
-            using var segment = new IndexSegmentBuilder(AttributeCache);
+            var segment = new Datoms(AttributeCache)
+            {
+                { id, File.Path, "foo/bar" },
+                { id, File.Hash, Hash.From(0xDEADBEEF) },
+                { id, File.Size, Size.From(42) },
+                { id, File.ModId, modId }
+            };
 
-            segment.Add(id, File.Path, "foo/bar");
-            segment.Add(id, File.Hash, Hash.From(0xDEADBEEF));
-            segment.Add(id, File.Size, Size.From(42));
-            segment.Add(id, File.ModId, modId);
-
-            (tx1, _) = await DatomStore.TransactAsync(segment.Build());
+            (tx1, _) = await DatomStore.TransactAsync(segment);
         }
 
         id = tx1.Remaps[id];
         modId = tx1.Remaps[modId];
 
         {
-            using var segment = new IndexSegmentBuilder(AttributeCache);
+            var segment = new Datoms(AttributeCache)
+            {
+                { id, File.Path, "foo/bar", true },
+                { id, File.Hash, Hash.From(0xDEADBEEF), true },
+                { id, File.Size, Size.From(42), true },
+                { id, File.ModId, modId, true }
+            };
 
-            segment.Add(id, File.Path, "foo/bar", true);
-            segment.Add(id, File.Hash, Hash.From(0xDEADBEEF), true);
-            segment.Add(id, File.Size, Size.From(42), true);
-            segment.Add(id, File.ModId, modId, true);
-
-            (tx2, _) = await DatomStore.TransactAsync(segment.Build());
+            (tx2, _) = await DatomStore.TransactAsync(segment);
 
         }
 
@@ -252,7 +256,7 @@ public abstract class ABackendTest(
         var datoms = tx2.Snapshot
             .Datoms(SliceDescriptor.Create(type))
             .ToArray();
-        await Verify(datoms.ToTable(AttributeCache))
+        await Verify(datoms.ToTable(AttributeResolver))
             .UseDirectory("BackendTestVerifyData")
             .UseParameters(type);
     }
@@ -264,6 +268,65 @@ public abstract class ABackendTest(
         var attrs = DatomStore.GetSnapshot().Datoms(SliceDescriptor.Create(AttributeDefinition.UniqueId, AttributeCache))
             .ToArray();
 
-        await Verify(attrs.ToTable(AttributeCache));
+        await Verify(attrs.ToTable(AttributeResolver));
+    }
+
+    [Test]
+    [Arguments(IndexType.TxLog)]
+    [Arguments(IndexType.EAVTHistory)]
+    [Arguments(IndexType.EAVTCurrent)]
+    [Arguments(IndexType.AEVTCurrent)]
+    [Arguments(IndexType.AEVTHistory)]
+    [Arguments(IndexType.VAETCurrent)]
+    [Arguments(IndexType.VAETHistory)]
+    [Arguments(IndexType.AVETCurrent)]
+    [Arguments(IndexType.AVETHistory)]
+    public async Task AsIfShowsAllDatoms(IndexType type)
+    {
+        var id = NextTempId();
+        var id2 = NextTempId();
+        var modId = NextTempId();
+
+        StoreResult tx1, tx2;
+
+        {
+            var segment = new Datoms(AttributeCache)
+            {
+                { id, File.Path, "foo/bar" },
+                { id, File.Hash, Hash.From(0xDEADBEEF) },
+                { id, File.Size, Size.From(42) },
+                { id, File.ModId, modId },
+                
+                { id2, File.Path, "foo/bar2" },
+                { id2, File.Hash, Hash.From(0xDEADBEE2) },
+                { id2, File.Size, Size.From(44) },
+                { id2, File.ModId, modId }
+            };
+
+            (tx1, _) = await DatomStore.TransactAsync(segment);
+        }
+
+        id = tx1.Remaps[id];
+        modId = tx1.Remaps[modId];
+
+        var segment2 = new Datoms(AttributeCache)
+        {
+            { id, File.Path, "foo/bar", true },
+            { id, File.Hash, Hash.From(0xDEADBEEF), true },
+            { id, File.Size, Size.From(42), true },
+            { id, File.ModId, modId, true },
+            
+            { id2, File.Size, Size.From(44) }
+        };
+        
+        var asIf = DatomStore.GetSnapshot().AsIf(segment2);
+
+
+        var datoms = asIf
+            .Datoms(SliceDescriptor.Create(type))
+            .ToArray();
+        await Verify(datoms.ToTable(AttributeResolver))
+            .UseDirectory("BackendTestVerifyData")
+            .UseParameters(type);
     }
 }

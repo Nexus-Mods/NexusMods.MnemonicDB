@@ -13,16 +13,16 @@ public readonly struct DatomKey : IEqualityComparer<DatomKey>
 {
     private readonly EntityId _eid;
     private readonly AttributeId _attributeId;
-    private readonly ReadOnlyMemory<byte> _valueMemory;
+    private readonly object? _value;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DatomKey"/> struct.
     /// </summary>
-    public DatomKey(EntityId eid, AttributeId attributeId, ReadOnlyMemory<byte> valueMemory)
+    public DatomKey(EntityId eid, AttributeId attributeId, object? value)
     {
         _eid = eid;
         _attributeId = attributeId;
-        _valueMemory = valueMemory;
+        _value = value;
     }
     
     /// <summary>
@@ -44,10 +44,7 @@ public readonly struct DatomKey : IEqualityComparer<DatomKey>
         if (x._attributeId != y._attributeId)
             return false;
 
-        if (x._valueMemory.IsEmpty && y._valueMemory.IsEmpty)
-            return true;
-        
-        return x._valueMemory.Span.SequenceEqual(y._valueMemory.Span);
+        return Equals(x._value, y._value);
     }
 
     /// <inheritdoc />
@@ -56,16 +53,16 @@ public readonly struct DatomKey : IEqualityComparer<DatomKey>
         var hash = new HashCode();
         hash.Add(obj._eid);
         hash.Add(obj._attributeId);
-        hash.AddBytes(obj._valueMemory.Span);
+        hash.Add(obj._value);
         return hash.ToHashCode();
     }
 
     /// <inheritdoc />
     public override string ToString()
     {
-        if (_valueMemory.IsEmpty)
+        if (_value == null)
             return $"({_eid}, {_attributeId})";
-        return $"({_eid}, {_attributeId}, {ToHexString(_valueMemory)})";
+        return $"({_eid}, {_attributeId}, {_value})";
     }
     
     private static string ToHexString(ReadOnlyMemory<byte> memory)

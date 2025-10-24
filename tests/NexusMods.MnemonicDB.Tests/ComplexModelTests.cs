@@ -86,7 +86,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         await Assert.That(loadoutRO.Collections.Count).IsEqualTo(2).Because("all collections should be loaded");
 
         await Assert.That(loadoutRO.Collections.SelectMany(c => c.ModIds).Count())
-            .IsEqualTo(loadoutRO.Mods.Count)
+            .IsEqualTo(loadoutRO.Mods.Count())
             .Because("all mods should be in a collection");
 
         sw.Restart();
@@ -101,7 +101,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         //totalSize.Should().BeGreaterThan(Size.FromLong(modCount * filesPerMod * "File ".Length), "total size should be the sum of all file sizes");
 
         Logger.LogInformation(
-            $"Loadout: {loadout.Name} ({modCount * filesPerMod} entities) loaded in {sw.ElapsedMilliseconds}ms");
+            $"Loadout: {loadoutRO.Name} ({modCount * filesPerMod} entities) loaded in {sw.ElapsedMilliseconds}ms");
 
     }
 
@@ -237,23 +237,23 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
         var archiveFile = new ArchiveFile.New(tx, out var id)
         {
             Hash = Hash.Zero,
-            Path = "foo",
+            Path = "archive",
             File = new File.New(tx, id)
             {
                 Hash = Hash.Zero,
-                Path = "foo",
+                Path = "file",
                 Size = Size.One,
                 ModId = tx.TempId(),
             },
         };
 
-        await Assert.That(archiveFile.GetFile(tx).Path).IsEqualTo("foo");
-        archiveFile.GetFile(tx).Path = "bar";
-        await Assert.That(archiveFile.GetFile(tx).Path).IsEqualTo("bar");
+        await Assert.That(ArchiveFile.Load(tx.AsIf(), archiveFile).Path).IsEqualTo("archive");
+        archiveFile.Path = "archive2";
+        await Assert.That(ArchiveFile.Load(tx.AsIf(), archiveFile).Path).IsEqualTo("archive2");
 
         var result = await tx.Commit();
         var remap = result.Remap(archiveFile);
-        await Assert.That(remap.AsFile().Path).IsEqualTo("bar");
+        await Assert.That(remap.AsFile().Path).IsEqualTo("file");
     }
 
     private static Hash HashAsUtf8(string value) => Hash.FromLong(Encoding.UTF8.GetBytes(value).xxHash3());

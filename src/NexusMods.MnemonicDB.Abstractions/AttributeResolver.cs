@@ -3,7 +3,6 @@ using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -14,7 +13,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 public sealed class AttributeResolver
 {
     private readonly FrozenDictionary<Symbol,IAttribute> _attrsById;
-    private readonly AttributeCache _attributeCache;
+    public readonly AttributeCache AttributeCache;
 
     /// <summary>
     /// Occasionally we need to turn the raw datoms from the database into a IReadDatom, this class
@@ -23,7 +22,7 @@ public sealed class AttributeResolver
     public AttributeResolver(IServiceProvider provider, AttributeCache cache)
     {
         ServiceProvider = provider;
-        _attributeCache = cache;
+        AttributeCache = cache;
         _attrsById = provider.GetServices<IAttribute>().ToDictionary(a => a.Id).ToFrozenDictionary();
         
         ValidateAttributes();
@@ -44,20 +43,12 @@ public sealed class AttributeResolver
     /// <summary>
     /// Resolves a datom into a IReadDatom
     /// </summary>
-    public IReadDatom Resolve(Datom datom)
-    {
-        var dbId = datom.A;
-        var symbol = _attributeCache.GetSymbol(dbId);
-        if (!_attrsById.TryGetValue(symbol, out var attr))
-        {
-            throw new InvalidOperationException($"Attribute {symbol} not found");
-        }
-        return attr.Resolve(datom.Prefix, datom.ValueSpan, this);
-    }
+    public ResolvedDatom Resolve(Datom datom) 
+        => new(datom, this);
 
     public bool TryGetAttribute(AttributeId id, out IAttribute attr)
     {
-        if (_attrsById.TryGetValue(_attributeCache.GetSymbol(id), out var found))
+        if (_attrsById.TryGetValue(AttributeCache.GetSymbol(id), out var found))
         {
             attr = found;
             return true;

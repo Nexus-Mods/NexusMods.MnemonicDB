@@ -21,7 +21,7 @@ public static class EntityExtensions
         if (model.Count == 0) return defaultValue;
         var minTx = model.Min(m => m.T);
 
-        var tx = new Transaction.ReadOnly(model.Db, EntityId.From(minTx.Value));
-        return Transaction.Timestamp.Get(tx);
+        var tx = new BuiltInEntities.Transaction.ReadOnly(model.Db, EntityId.From(minTx.Value));
+        return BuiltInEntities.Transaction.Timestamp.Get(tx);
     }
 }

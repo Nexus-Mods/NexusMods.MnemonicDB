@@ -9,7 +9,7 @@ namespace NexusMods.MnemonicDB.Storage.RocksDbBackend
     /// </summary>
     /// <typeparam name="TInner"></typeparam>
     public struct TimeFilteredRetractionEnumerator<TInner> : IRefDatomEnumerator
-        where TInner : IRefDatomPeekingEnumerator
+        where TInner : IRefDatomEnumerator
     {
         private TInner _inner;
         private readonly TxId _txId;
@@ -111,7 +111,7 @@ namespace NexusMods.MnemonicDB.Storage.RocksDbBackend
             }
         }
 
-        public KeyPrefix KeyPrefix => _keyCache.Ptr.Read<KeyPrefix>(0);
+        public KeyPrefix Prefix => _keyCache.Ptr.Read<KeyPrefix>(0);
         public Ptr Current => _keyCache.Ptr;
         public Ptr ValueSpan => _keyCache.Ptr.SliceFast(KeyPrefix.Size);
         public Ptr ExtraValueSpan => _extraCache.Ptr;

@@ -2,7 +2,6 @@
 using System.Diagnostics.CodeAnalysis;
 using DynamicData.Kernel;
 using JetBrains.Annotations;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
 
 namespace NexusMods.MnemonicDB.Abstractions.Attributes;
@@ -15,6 +14,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     Attribute<TValue, TLowLevel, TSerializer>(ns, name)
     where TSerializer : IValueSerializer<TLowLevel>
     where TValue : notnull
+    where TLowLevel : notnull
 {
     /// <summary>
     /// True if the attribute is optional, and not required by models
@@ -36,28 +36,26 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     /// <summary>
     ///  Tries to get the value of the attribute from the entity.
     /// </summary>
-    public bool TryGetValue(EntitySegment segment, [NotNullWhen(true)] out TValue? value)
+    public bool TryGetValue(Datoms segment, AttributeResolver resolver, [NotNullWhen(true)] out TValue? value) 
     {
-        var attributeId = segment.Db.AttributeCache.GetAttributeId(Id);
-        return segment.TryGetValue(this, attributeId, out value);
+        var attributeId = segment.AttributeCache.GetAttributeId(Id);
+        if (segment.TryGetOne(this, resolver, out var foundValue))
+        {
+            value = (TValue)foundValue;
+            return true;
+        }
+        value = default;
+        return false;
     }
 
-    /// <summary>
-    /// Tries to get the value of the attribute from the entity.
-    /// </summary>
-    public bool TryGetValue<T>(T entity, [NotNullWhen(true)] out TValue? value)
-        where T : IHasIdAndEntitySegment
-    {
-        return TryGetValue(segment: entity.EntitySegment, out value);
-    }
 
     /// <summary>
     /// Gets the value of the attribute from the entity.
     /// </summary>
-    public TValue Get<T>(T entity, EntitySegment segment)
+    public TValue Get<T>(T entity, Datoms segment)
         where T : IHasEntityIdAndDb
     {
-        if (TryGetValue(segment, out var value)) 
+        if (TryGetValue(segment, entity.Db.Connection.AttributeResolver, out var value)) 
             return value;
         if (DefaultValue.HasValue) 
             return DefaultValue.Value;
@@ -70,10 +68,10 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     public TValue Get<T>(T entity)
         where T : IHasIdAndEntitySegment
     {
-        var aid = entity.Db.AttributeCache.GetAttributeId(Id);
-        if (!entity.EntitySegment.TryGetValue<ScalarAttribute<TValue, TLowLevel, TSerializer>, TValue>(this, aid, out var value))
+        var resolver = entity.Db.Connection.AttributeResolver;
+        if (!entity.EntitySegment.TryGetOne(this, resolver, out var value))
             return DefaultValue.HasValue ? DefaultValue.Value : ThrowKeyNotfoundException(entity.Id);
-        return value;
+        return (TValue)value;
     }
 
     /// <summary>
@@ -82,19 +80,12 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     public Optional<TValue> GetOptional<T>(T entity)
         where T : IHasIdAndEntitySegment
     {
-        var aid = entity.Db.AttributeCache.GetAttributeId(Id);
-        if (entity.EntitySegment.TryGetValue<ScalarAttribute<TValue, TLowLevel, TSerializer>, TValue>(this, aid, out var value))
-            return value;
+        var resolver = entity.Db.Connection.AttributeResolver;
+        if (entity.EntitySegment.TryGetOne(this, resolver, out var value))
+            return (TValue)value;
         return DefaultValue.HasValue ? DefaultValue : Optional<TValue>.None;
     }
-
-    /// <summary>
-    /// Retracts the attribute from the entity.
-    /// </summary>
-    public void Retract(IAttachedEntity entityWithTx)
-    {
-        Retract(entityWithTx, value: Get(entityWithTx, segment: entityWithTx.Db.Get(entityWithTx.Id)));
-    }
+    
 
     [DoesNotReturn]
     private TValue ThrowKeyNotfoundException(EntityId entityId)

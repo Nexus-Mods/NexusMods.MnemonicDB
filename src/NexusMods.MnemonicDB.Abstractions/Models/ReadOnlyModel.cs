@@ -1,6 +1,6 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
 namespace NexusMods.MnemonicDB.Abstractions.Models;
 
@@ -8,11 +8,11 @@ namespace NexusMods.MnemonicDB.Abstractions.Models;
 /// An entity is a reference to the attributes of a specific EnityId. Think of this as a hashmap
 /// of attributes, or a row in a database table.
 /// </summary>
-public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<IReadDatom>
+public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<ResolvedDatom>
 {
     private readonly IDb _db;
     private readonly EntityId _id;
-    private readonly EntitySegment _segment;
+    private readonly Datoms _segment;
 
     /// <summary>
     /// An entity is a reference to the attributes of a specific EnityId. Think of this as a hashmap
@@ -22,7 +22,7 @@ public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<IRead
     {
         _db = db;
         _id = id;
-        _segment = db.Get(id);
+        _segment = db[id];
     }
 
     /// <inheritdoc />
@@ -32,14 +32,9 @@ public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<IRead
     public IDb Db => _db;
 
     /// <inheritdoc />
-    public IEnumerator<IReadDatom> GetEnumerator()
+    public IEnumerator<ResolvedDatom> GetEnumerator()
     {
-        var segment = EntitySegment;
-        var resolver = Db.Connection.AttributeResolver;
-        foreach (var datom in segment)
-        {
-            yield return resolver.Resolve(datom);
-        }
+        return EntitySegment.Resolved(Db.Connection.AttributeResolver).GetEnumerator();
     }
 
     IEnumerator IEnumerable.GetEnumerator()
@@ -68,5 +63,5 @@ public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<IRead
     }
 
     /// <inheritdoc />
-    public EntitySegment EntitySegment => _segment;
+    public Datoms EntitySegment => _segment;
 }

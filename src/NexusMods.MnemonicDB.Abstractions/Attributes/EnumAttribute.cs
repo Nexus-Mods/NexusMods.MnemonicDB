@@ -12,7 +12,7 @@ public sealed class EnumAttribute<T>(string ns, string name) : ScalarAttribute<T
     where T : Enum
 {
     /// <inheritdoc />
-    protected override int ToLowLevel(T value)
+    public override int ToLowLevel(T value)
     {
         // NOTE(halgari): Looks like an allocation, but the cast to object is removed by the JIT since the type of
         // T is a compile-time constant. Verified via sharpLab.io:
@@ -21,7 +21,7 @@ public sealed class EnumAttribute<T>(string ns, string name) : ScalarAttribute<T
     }
 
     /// <inheritdoc />
-    protected override T FromLowLevel(int value, AttributeResolver resolver)
+    public override T FromLowLevel(int value, AttributeResolver resolver)
     {
         // Same as ToLowLevel, the cast to object is removed by the JIT
         return (T)(object)value;
@@ -36,7 +36,7 @@ public sealed class EnumByteAttribute<T>(string ns, string name) : ScalarAttribu
     where T : Enum
 {
     /// <inheritdoc />
-    protected override byte ToLowLevel(T value)
+    public override byte ToLowLevel(T value)
     {
         // NOTE(halgari): Looks like an allocation, but the cast to object is removed by the JIT since the type of
         // T is a compile-time constant. Verified via sharpLab.io:
@@ -45,7 +45,7 @@ public sealed class EnumByteAttribute<T>(string ns, string name) : ScalarAttribu
     }
 
     /// <inheritdoc />
-    protected override T FromLowLevel(byte value, AttributeResolver resolver)
+    public override T FromLowLevel(byte value, AttributeResolver resolver)
     {
         // Same as ToLowLevel, the cast to object is removed by the JIT
         return (T)(object)value;

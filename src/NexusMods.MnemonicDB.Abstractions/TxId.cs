@@ -26,6 +26,6 @@ public readonly partial struct TxId
     /// <inheritdoc />
     public override string ToString()
     {
-        return "Tx:" + Value.ToString("X");
+        return "Tx:" + Value.ToString("X16");
     }
 }

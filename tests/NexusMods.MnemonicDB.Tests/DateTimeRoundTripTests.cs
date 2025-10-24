@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
+using NexusMods.MnemonicDB.Abstractions.Traits;
+using Transaction = NexusMods.MnemonicDB.Abstractions.BuiltInEntities.Transaction;
 
 namespace NexusMods.MnemonicDB.Tests;
 
@@ -27,7 +29,7 @@ public class DateTimeRoundTripTests : AMnemonicDBTest
         var txDatoms = Connection.Db
             .Datoms(Transaction.Timestamp)
             .Resolved(Connection)
-            .ToDictionary(d => d.E, d => (DateTimeOffset)d.ObjectValue);
+            .ToDictionary(d => d.E, d => (DateTimeOffset)d.V);
 
         // Compare per Id for exact equality
         foreach (var (id, ts) in rows)

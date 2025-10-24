@@ -4,7 +4,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
@@ -16,6 +15,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 /// </summary>
 public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> : IAttribute<TValueType>
     where TValueType : notnull
+    where TLowLevelType : notnull
     where TSerializer : IValueSerializer<TLowLevelType>
 {
     
@@ -40,15 +40,20 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
 
     public string ShortName { get; }
 
+    public virtual object FromLowLevelObject(object lowLevel, AttributeResolver resolver)
+    {
+        return FromLowLevel((TLowLevelType)lowLevel, resolver);
+    }
+
     /// <summary>
     /// Converts a high-level value to a low-level value
     /// </summary>
-    protected abstract TLowLevelType ToLowLevel(TValueType value);
+    public abstract TLowLevelType ToLowLevel(TValueType value);
     
     /// <summary>
     /// Converts a high-level value to a low-level value
     /// </summary>
-    protected abstract TValueType FromLowLevel(TLowLevelType value, AttributeResolver resolver);
+    public abstract TValueType FromLowLevel(TLowLevelType value, AttributeResolver resolver);
 
     /// <inheritdoc />
     public ValueTag LowLevelType => TSerializer.ValueTag;
@@ -92,29 +97,6 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
 
     /// <inheritdoc />
     public bool IsReference => LowLevelType == ValueTag.Reference;
-
-    /// <inheritdoc />
-    IReadDatom IAttribute.Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, AttributeResolver resolver)
-    {
-        return new ReadDatom(in prefix, ReadValue(valueSpan, prefix.ValueTag, resolver), this);
-    }
-    
-    /// <summary>
-    /// Resolves the value from the given value span into a high-level ReadDatom
-    /// </summary>
-    public ReadDatom Resolve(in KeyPrefix prefix, ReadOnlySpan<byte> valueSpan, AttributeResolver resolver)
-    {
-        return new ReadDatom(in prefix, ReadValue(valueSpan, prefix.ValueTag, resolver), this);
-    }
-
-    /// <summary>
-    /// Resolves the low-level Datom into a high-level ReadDatom
-    /// </summary>
-    public ReadDatom Resolve(in Datom datom, AttributeResolver resolver)
-    {
-        var prefix = datom.Prefix;
-        return new ReadDatom(in prefix, ReadValue(datom.ValueSpan, datom.Prefix.ValueTag, resolver), this);
-    }
     
     [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
     private void AssertTag(ValueTag tag)
@@ -150,8 +132,12 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
     /// </summary>
     public bool IsIn(IDb db, EntityId id)
     {
-        var index = db.Get(id);
-        return index.Contains(this);
+        var attrId = db.AttributeCache.GetAttributeId(Id);
+        var index = db[id];
+        foreach (var datom in index)
+            if (datom.Prefix.A == attrId)
+                return true;
+        return false;
     }
 
     /// <summary>
@@ -163,120 +149,9 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
         return entity.EntitySegment.Contains(this);
     }
     
-    /// <summary>
-    /// Adds a datom to the active transaction for this entity that adds the given value to this attribute
-    /// </summary>
-    public void Add(IAttachedEntity entity, TValueType value)
-    {
-        entity.Transaction.Add(entity.Id, this, value);
-    }
-
-
-    /// <inheritdoc />
-    public void Add(ITransaction tx, EntityId entityId, TValueType value, bool isRetract = false)
-    {
-        tx.Add(entityId, this, value, isRetract);
-    }
-
-    /// <inheritdoc />
-    public void Add(ITransaction tx, EntityId entityId, object value, bool isRetract)
-    {
-        tx.Add(entityId, this, (TValueType)value, isRetract);
-    }
-
-    /// <summary>
-    /// Adds a datom to the active transaction for this entity that retracts the given value from this attribute
-    /// </summary>
-    public void Retract(IAttachedEntity entity, TValueType value)
-    {
-        entity.Transaction.Add(entity.Id, this, value, isRetract:true);
-    }
-
-
     /// <inheritdoc />
     public override string ToString()
     {
         return Id.ToString();
-    }
-    
-    /// <summary>
-    ///     Typed datom for this attribute
-    /// </summary>
-    public readonly record struct ReadDatom : IReadDatom
-    {
-        /// <summary>
-        /// The key prefix for this datom, contains the E, A, T, IsRetract and ValueTag values for this datom
-        /// </summary>
-        public readonly KeyPrefix Prefix;
-
-        /// <summary>
-        ///     Typed datom for this attribute
-        /// </summary>
-        public ReadDatom(in KeyPrefix prefix, TValueType v, Attribute<TValueType, TLowLevelType, TSerializer> a)
-        {
-            Prefix = prefix;
-            TypedAttribute = a;
-            V = v;
-        }
-
-        /// <summary>
-        /// The typed attribute for this datom
-        /// </summary>
-        public readonly Attribute<TValueType, TLowLevelType, TSerializer> TypedAttribute;
-        
-        /// <summary>
-        /// The abstract attribute for this datom
-        /// </summary>
-        public IAttribute A => TypedAttribute;
-
-        /// <summary>
-        ///     The value for this datom
-        /// </summary>
-        public readonly TValueType V;
-        
-        /// <summary>
-        ///     The entity id for this datom
-        /// </summary>
-        public EntityId E => Prefix.E;
-
-        /// <summary>
-        ///     The transaction id for this datom
-        /// </summary>
-        public TxId T => Prefix.T;
-
-        /// <inheritdoc />
-        public bool IsRetract => Prefix.IsRetract;
-        
-        /// <inheritdoc />
-        public void Retract(ITransaction tx)
-        {
-            tx.Add(E, (Attribute<TValueType, TLowLevelType, TSerializer>)A, V, true);
-        }
-
-        /// <inheritdoc />
-        public object ObjectValue => V!;
-
-        /// <inheritdoc />
-        public Type ValueType => typeof(TValueType);
-        
-        /// <inheritdoc />
-        public override string ToString()
-        {
-            return $"({(IsRetract ? "-" : "+")}, {E.Value:x}, {A.Id.Name}, {V}, {T.Value:x})";
-        }
-
-        /// <inheritdoc />
-        public bool EqualsByValue(IReadDatom other)
-        {
-            if (other is not ReadDatom o)
-                return false;
-            return A == o.A && E == o.E && V!.Equals(o.V);
-        }
-
-        /// <inheritdoc />
-        public int HashCodeByValue()
-        {
-            return HashCode.Combine(A, E, V);
-        }
     }
 }

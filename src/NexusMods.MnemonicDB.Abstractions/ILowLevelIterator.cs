@@ -1,4 +1,8 @@
 using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -7,22 +11,15 @@ public interface ILowLevelIterator : IDisposable
     /// <summary>
     /// Move the iterator to the first datom that matches the given span.
     /// </summary>
-    /// <param name="span"></param>
     public void SeekTo(scoped ReadOnlySpan<byte> span);
 
     /// <summary>
-    /// Move the iterator to the first datom before the given span.
+    /// Move the iterator to the first datom that matches the given span (assumes a ValueTag of Null)
     /// </summary>
-    public void SeekToPrev(scoped ReadOnlySpan<byte> span);
-    
-    /// <summary>
-    /// Move to the next datom
-    /// </summary>
-    /// <returns></returns>
-    public void Next();
-    
-    /// <summary>
-    /// Move to the previous datom
-    /// </summary>
-    public void Prev();
+    public void SeekTo(in KeyPrefix prefix)
+    {
+        Debug.Assert(prefix.ValueTag == ValueTag.Null);
+        var spanTo = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in prefix, 1));
+        SeekTo(spanTo);
+    }
 }

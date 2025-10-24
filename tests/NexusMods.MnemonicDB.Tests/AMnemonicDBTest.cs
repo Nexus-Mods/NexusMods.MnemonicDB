@@ -143,35 +143,24 @@ public class AMnemonicDBTest : IDisposable
             return _sb.ToString();
         }
     }
-
-
-
-    protected async Task LoadDatamodel(RelativePath name)
-    {
-        var fullPath = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory).Combine("Resources").Combine(name);
-
-        await using var stream = fullPath.Read();
-        await using var decompressStream = new DeflateStream(stream, CompressionMode.Decompress);
-        await _store.ImportAsync(decompressStream);
-    }
-
+    
     protected DatomStoreSettings Config { get; set; }
 
     protected SettingsTask VerifyModel<T>(T model)
-    where T : IEnumerable<IReadDatom>
+    where T : IEnumerable<ResolvedDatom>
     {
         return VerifyTable(model);
     }
 
     protected SettingsTask VerifyModel<T>(IEnumerable<T> models)
-    where T : IEnumerable<IReadDatom>
+    where T : IEnumerable<ResolvedDatom>
     {
         return VerifyTable(models.SelectMany(e => e));
     }
 
-    protected SettingsTask VerifyTable(IEnumerable<IReadDatom> datoms)
+    protected SettingsTask VerifyTable(IEnumerable<ResolvedDatom> datoms)
     {
-        return Verify(ToTable(datoms, AttributeCache, r => (r.E, r.A, r.ObjectValue, r.T, r.IsRetract)));
+        return Verify(ToTable(datoms, AttributeCache, r => (r.E, r.A, r.V, r.T, r.IsRetract)));
     }
 
     protected SettingsTask VerifyTable(IEnumerable<(EntityId E, string A, string V, TxId Tx)> datoms)

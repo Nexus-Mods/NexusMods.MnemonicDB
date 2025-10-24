@@ -3,18 +3,14 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Reactive.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using DynamicData;
 using Jamarino.IntervalTree;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.EventTypes;
 using NexusMods.MnemonicDB.InternalTxFunctions;
 using NexusMods.MnemonicDB.QueryFunctions;
@@ -375,7 +371,7 @@ public sealed class Connection : IConnection
             // We could likely be cleaner about how we do this, but this will work for now
             foreach (var index in IndexTypes)
             {
-                var reindex = datom.WithIndex(index);
+                var reindex = datom.With(index);
                 foreach (var overlap in _datomObservers.Query(reindex))
                 {
                     ref var changeSet = ref CollectionsMarshal.GetValueRefOrAddDefault(_changeSets, overlap, out _);
@@ -444,10 +440,12 @@ public sealed class Connection : IConnection
     }
 
     /// <inheritdoc />
-    public IMainTransaction BeginTransaction()
+    MainTransaction IConnection.BeginTransaction()
     {
-        return new Transaction(connection: this);
+        return new MainTransaction(connection: this);
     }
+    
+
 
     /// <inheritdoc />
     public IAnalyzer[] Analyzers => _analyzers;
@@ -456,18 +454,14 @@ public sealed class Connection : IConnection
     /// <inheritdoc />
     public async Task<ICommitResult> Excise(EntityId[] entityIds)
     {
-        var tx = new Transaction(this);
-        tx.Set(new Excise(entityIds));
-        return await tx.Commit();
+        return await Transact(new Excise(entityIds));
     }
 
 
     /// <inheritdoc />
     public async Task<ICommitResult> ScanUpdate(IConnection.ScanFunction function)
     {
-        var tx = new Transaction(this);
-        tx.Set(new ScanUpdate(function));
-        return await tx.Commit();
+        return await Transact(new ScanUpdate(function));
     }
     
     public Task FlushQueries()
@@ -478,9 +472,7 @@ public sealed class Connection : IConnection
     /// <inheritdoc />
     public async Task<ICommitResult> FlushAndCompact(bool verify = false)
     {
-        var tx = new Transaction(this);
-        tx.Set(new FlushAndCompact(verify));
-        return await tx.Commit();
+        return await Transact(new FlushAndCompact(verify));
     }
 
     /// <inheritdoc />
@@ -489,13 +481,20 @@ public sealed class Connection : IConnection
         return Transact(new SimpleMigration(attribute));
     }
 
+    /// <inheritdoc />
+    public Task<ICommitResult> Commit(Datoms datoms)
+    {
+        return Transact(new IndexSegmentTransaction(datoms));
+    }
+    
+
     public IObservable<DatomChangeSet> ObserveDatoms<TDescriptor>(TDescriptor descriptor) 
         where TDescriptor : ISliceDescriptor
     {
         return Observable.Create<DatomChangeSet>(observer =>
         {
             if (_isDisposed) return Disposable.Empty;
-
+            
             try
             {
                 _pendingEvents.Add(new ObserveDatomsEvent<TDescriptor>(descriptor, observer), _cts.Token);
@@ -532,9 +531,9 @@ public sealed class Connection : IConnection
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static DatomKey CreateKey(Datom datom, AttributeId attrId, bool isMany = false)
+    internal static DatomKey CreateKey(Datom datom, AttributeId attrId, bool isMany = false) 
     {
-        return new DatomKey(datom.E, attrId, isMany ? datom.ValueMemory : Memory<byte>.Empty);
+        return new DatomKey(datom.E, attrId, isMany ? datom.Value : null);
     }
 
     /// <inheritdoc />

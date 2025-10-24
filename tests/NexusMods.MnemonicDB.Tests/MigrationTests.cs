@@ -5,7 +5,6 @@ using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.MnemonicDB.TestModel;
@@ -120,9 +119,9 @@ public class MigrationTests : AMnemonicDBTest
 
         var db = connection.Db;
         var attrs = db.Datoms(AttributeDefinition.UniqueId);
-        var datoms = new List<Datom>();
+        var datoms = new Datoms(AttributeCache);
         foreach (var attr in attrs)
-            datoms.AddRange(db.Datoms(attr.E));
+            datoms.AddRange(db[attr.E]);
 
         var cache = connection.AttributeCache;
         foreach (var attr in AttributeDefinition.All(db))

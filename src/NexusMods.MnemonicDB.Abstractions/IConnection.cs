@@ -3,7 +3,6 @@ using System.Buffers;
 using System.Threading.Tasks;
 using DynamicData;
 using NexusMods.HyperDuck;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions;
@@ -65,7 +64,7 @@ public interface IConnection : IDisposable, IQueryMixin
     ///     Starts a new transaction.
     /// </summary>
     /// <returns></returns>
-    public IMainTransaction BeginTransaction();
+    public MainTransaction BeginTransaction();
 
     /// <summary>
     /// The analyzers that are available for this connection
@@ -88,6 +87,8 @@ public interface IConnection : IDisposable, IQueryMixin
     /// </summary>
     public Task UpdateSchema(params IAttribute[] attribute);
 
+    public Task<ICommitResult> Commit(Datoms datoms);
+
     /// <summary>
     /// Observe a slice of the database, as datoms are added or removed from the database, the observer will be updated
     /// with the changeset of datoms that have been added or removed.
@@ -99,8 +100,7 @@ public interface IConnection : IDisposable, IQueryMixin
     /// if None, no changes are made. If Update, the datom is updated via the value written to the valueOutput buffer.
     /// if Delete, the datom is deleted.
     /// </summary>
-    public delegate ScanResultType ScanFunction(ref KeyPrefix keyPrefix, ReadOnlySpan<byte> value,
-        in IBufferWriter<byte> valueOutput);
+    public delegate ScanResultType ScanFunction(ref Datom datom);
 
     /// <summary>
     /// Update the data with the given scan function. This function will be handed every datom in the database (in

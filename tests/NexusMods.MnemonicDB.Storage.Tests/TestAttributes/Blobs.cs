@@ -17,14 +17,14 @@ public class Blobs
 
 public sealed class TestBlobAttribute(string ns, string name) : ScalarAttribute<Memory<byte>, Memory<byte>, BlobSerializer>(ns, name)
 {
-    protected override Memory<byte> ToLowLevel(Memory<byte> value) => value;
+    public override Memory<byte> ToLowLevel(Memory<byte> value) => value;
 
-    protected override Memory<byte> FromLowLevel(Memory<byte> value, AttributeResolver resolver) => value;
+    public override Memory<byte> FromLowLevel(Memory<byte> value, AttributeResolver resolver) => value;
 }
 
 public class TestHashedBlobAttribute(string ns, string name) : ScalarAttribute<Memory<byte>, Memory<byte>, HashedBlobSerializer>(ns, name)
 {
-    protected override Memory<byte> ToLowLevel(Memory<byte> value) => value;
+    public override Memory<byte> ToLowLevel(Memory<byte> value) => value;
 
-    protected override Memory<byte> FromLowLevel(Memory<byte> value, AttributeResolver resolver) => value;
+    public override Memory<byte> FromLowLevel(Memory<byte> value, AttributeResolver resolver) => value;
 }

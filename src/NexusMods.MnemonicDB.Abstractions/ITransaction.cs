@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using JetBrains.Annotations;
-using NexusMods.MnemonicDB.Abstractions.Attributes;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Models;
-using NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -33,81 +28,41 @@ public interface ITransaction : IDisposable
     /// </summary>
     /// <returns></returns>
     EntityId TempId();
-
-    /// <summary>
-    ///     Adds a new datom to the transaction
-    /// </summary>
-    void Add<TVal, TAttribute>(EntityId entityId, TAttribute attribute, TVal val, bool isRetract = false) 
-        where TAttribute : IWritableAttribute<TVal>;
     
-    /// <summary>
-    ///    Adds a new datom to the transaction
-    /// </summary>
-    void Add<TVal, TLowLevel, TSerializer>(EntityId entityId, Attribute<TVal, TLowLevel, TSerializer> attribute, TVal val, bool isRetract = false)
-        where TSerializer : IValueSerializer<TLowLevel> where TVal : notnull;
-    
-    /// <summary>
-    ///     Adds datoms for adding the given ids to the transaction under the given attribute
-    /// </summary>
-    void Add(EntityId entityId, ReferencesAttribute attribute, IEnumerable<EntityId> ids);
-    
-    /// <summary>
-    /// Adds a new datom using spans for the 
-    /// </summary>
-    void Add(EntityId e, AttributeId a, ValueTag valueTag, ReadOnlySpan<byte> valueSpan, bool isRetract = false);
-
-    /// <summary>
-    /// Adds a transactor function to the transaction
-    /// </summary>
-    /// <param name="fn"></param>
-    void Add(ITxFunction fn);
-
-    /// <summary>
-    /// Attach a temporary entity to the transaction, when this transaction is commited,
-    /// the entity's `AddTo` method will be called.
-    /// </summary>
-    /// <param name="entity"></param>
-    void Attach(ITemporaryEntity entity);
-
-    /// <summary>
-    ///     Adds a new datom to the transaction, that retracts the value for the given attribute
-    /// </summary>
-    void Retract<TVal, TAttribute>(EntityId entityId, TAttribute attribute, TVal val)
-    where TAttribute : IWritableAttribute<TVal>
-        => Add(entityId, attribute, val, isRetract: true);
-
     /// <summary>
     /// Retracts all datoms for the given attribute for the given entity as seen by the given db. If none are found,
     /// nothing happens
     /// </summary>
     void RetractAll(IDb db, EntityId entityId, IAttribute attribute)
     {
-        var ent = db.Get(entityId);
+        var ent = db[entityId];
         var aid = db.AttributeCache.GetAttributeId(attribute.Id);
+        throw new NotImplementedException();
+        /*
         var range = ent.GetRange(aid);
 
         for (var idx = range.Start.Value; idx < range.End.Value; idx++)
         {
-            var span = ent.GetValueSpan(idx, out var valueTag);
-            Add(entityId, aid, valueTag, span, isRetract: true);
+            throw new NotImplementedException();
+            //var span = ent.GetValueSpan(idx, out var valueTag);
+            //Add(entityId, aid, valueTag, span, isRetract: true);
         }
+        */
     }
     
-    /// <summary>
-    /// Retract a specific datom
-    /// </summary>
-    void Add(Datom datom);
-
     /// <summary>
     /// Tries to find and return a previously attached entity by ID.
     /// </summary>
     bool TryGet<TEntity>(EntityId entityId, [NotNullWhen(true)] out TEntity? entity)
-        where TEntity : class, ITemporaryEntity;
+        where TEntity : class, ITemporaryEntity
+    {
+        throw new NotImplementedException();
+    }
 
     /// <summary>
     /// Creates a sub-transaction.
     /// </summary>
-    ISubTransaction CreateSubTransaction();
+    SubTransaction CreateSubTransaction();
 
     /// <summary>
     /// Resets the transaction.

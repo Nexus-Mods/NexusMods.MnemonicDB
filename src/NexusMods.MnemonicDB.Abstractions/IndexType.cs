@@ -1,7 +1,6 @@
 ﻿using System;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.Internals;
+
 // ReSharper disable InconsistentNaming
 
 namespace NexusMods.MnemonicDB.Abstractions;

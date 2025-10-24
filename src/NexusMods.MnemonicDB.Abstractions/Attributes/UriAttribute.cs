@@ -11,8 +11,8 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 public sealed class UriAttribute(string ns, string name) : ScalarAttribute<Uri, string, Utf8Serializer>(ns, name)
 {
     /// <inheritdoc />
-    protected override string ToLowLevel(Uri value) => value.ToString();
+    public override string ToLowLevel(Uri value) => value.ToString();
 
     /// <inheritdoc />
-    protected override Uri FromLowLevel(string value, AttributeResolver resolver) => new(value);
+    public override Uri FromLowLevel(string value, AttributeResolver resolver) => new(value);
 }

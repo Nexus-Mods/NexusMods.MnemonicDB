@@ -62,6 +62,7 @@ public class QueryEngine : IQueryEngine, IAsyncDisposable
         RegisterModels();
         DuckDb.Register(new DatomsTableFunction(this));
         DuckDb.Register(new ActiveConnectionsTable(this));
+        _db.SetupFunctions();
     }
 
     private void RegisterModels()

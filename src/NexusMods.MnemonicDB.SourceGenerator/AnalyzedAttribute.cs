@@ -29,6 +29,8 @@ internal class AnalyzedAttribute
     public bool IsScalar => Flags.HasFlag(AttributeFlags.Scalar);
     public bool IsIndexed => Markers.Contains("IsIndexed");
     public bool IsOptional => Markers.Contains("IsOptional");
+    
+    public bool IsUnmanaged => Flags.HasFlag(AttributeFlags.Unmanaged);
 
     /// <summary>
     /// True if this is a value type.
@@ -44,6 +46,11 @@ internal class AnalyzedAttribute
     /// The part of the attribute definition that comes after the type
     /// </summary>
     public string Postfix => IsOptional ? "?" : "";
+    
+    /// <summary>
+    /// The part of the attribute definition that comes after the type
+    /// </summary>
+    public string NullRemovePostfix => IsUnmanaged ? "!.Value" : "!";
 
     /// <summary>
     /// True if this is a marker attribute.

@@ -152,7 +152,7 @@ public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
             if (datoms.FastForwardTo(rowId))
             {
                 writer.SetStart();
-                while (datoms.KeyPrefix.E.Value == rowId)
+                while (datoms.E.Value == rowId)
                 {
                     if (typeof(TType) == typeof(StringElement))
                     {

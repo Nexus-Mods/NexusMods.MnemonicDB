@@ -38,7 +38,7 @@ public struct HistoryRefDatomEnumerator<THistory, TCurrent> : IRefDatomEnumerato
     }
 
     /// <inheritdoc />
-    public KeyPrefix KeyPrefix => _useSide == UseSide.History ? _history.KeyPrefix : _current.KeyPrefix;
+    public KeyPrefix Prefix => _useSide == UseSide.History ? _history.Prefix : _current.Prefix;
 
     /// <inheritdoc />
     public Ptr Current => _useSide == UseSide.History ? _history.Current : _current.Current;

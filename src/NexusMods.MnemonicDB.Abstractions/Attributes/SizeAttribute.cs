@@ -11,8 +11,8 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 public sealed class SizeAttribute(string ns, string name) : ScalarAttribute<Size, ulong, UInt64Serializer>(ns, name)
 {
     /// <inheritdoc/>
-    protected override ulong ToLowLevel(Size value) => value.Value;
+    public override ulong ToLowLevel(Size value) => value.Value;
 
     /// <inheritdoc/>
-    protected override Size FromLowLevel(ulong value, AttributeResolver resolver) => Size.From(value);
+    public override Size FromLowLevel(ulong value, AttributeResolver resolver) => Size.From(value);
 }

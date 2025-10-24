@@ -1,9 +1,5 @@
 ﻿using System;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomComparators;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Storage.Abstractions.ElementComparers;
-using NexusMods.Paths;
 
 namespace NexusMods.MnemonicDB.Storage.Abstractions;
 

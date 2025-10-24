@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
+using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
 namespace NexusMods.MnemonicDB;

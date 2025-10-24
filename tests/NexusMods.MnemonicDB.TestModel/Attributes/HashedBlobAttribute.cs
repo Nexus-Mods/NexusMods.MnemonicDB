@@ -6,12 +6,12 @@ namespace NexusMods.MnemonicDB.TestModel.Attributes;
 
 public class HashedBlobAttribute(string ns, string name) : ScalarAttribute<Memory<byte>, Memory<byte>, HashedBlobSerializer>(ns, name)
 {
-    protected override Memory<byte> ToLowLevel(Memory<byte> value)
+    public override Memory<byte> ToLowLevel(Memory<byte> value)
     {
         return value;
     }
 
-    protected override Memory<byte> FromLowLevel(Memory<byte> value, AttributeResolver resolver)
+    public override Memory<byte> FromLowLevel(Memory<byte> value, AttributeResolver resolver)
     {
         return value;
     }

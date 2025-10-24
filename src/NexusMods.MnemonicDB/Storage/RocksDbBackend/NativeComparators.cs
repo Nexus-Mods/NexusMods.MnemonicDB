@@ -4,6 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.DatomComparators;
+using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
@@ -13,6 +14,11 @@ namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 /// </summary>
 internal static unsafe class NativeComparators
 {
+    public static readonly IntPtr ComparatorPtr = Native.Instance.rocksdb_comparator_create(IntPtr.Zero, 
+        NativeComparators.GetDestructorPtr(),
+        NativeComparators.GetNativeFnPtr(),
+        NativeComparators.GetNamePtr());
+    
     public static IntPtr GetNativeFnPtr()
     {
         delegate* unmanaged[Cdecl]<byte*, byte*, int, byte*, int, int> ptr;

@@ -5,6 +5,7 @@ using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.MnemonicDB.Storage.Tests.TestAttributes;
 using NexusMods.MnemonicDB.TestModel;
+using Transaction = NexusMods.MnemonicDB.Abstractions.BuiltInEntities.Transaction;
 
 namespace NexusMods.MnemonicDB.Storage.Tests;
 

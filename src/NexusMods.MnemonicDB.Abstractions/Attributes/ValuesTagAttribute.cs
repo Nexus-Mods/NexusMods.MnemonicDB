@@ -11,8 +11,8 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 public sealed class ValuesTagAttribute(string ns, string name) : ScalarAttribute<ValueTag, byte, UInt8Serializer>(ns, name)
 {
     /// <inheritdoc />
-    protected override byte ToLowLevel(ValueTag value) => (byte)value;
+    public override byte ToLowLevel(ValueTag value) => (byte)value;
 
     /// <inheritdoc />
-    protected override ValueTag FromLowLevel(byte value, AttributeResolver resolver) => (ValueTag)value;
+    public override ValueTag FromLowLevel(byte value, AttributeResolver resolver) => (ValueTag)value;
 }

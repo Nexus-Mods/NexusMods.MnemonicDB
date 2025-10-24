@@ -18,6 +18,11 @@
         <PackageReference Include="TransparentValueObjects" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
         <PackageReference Include="TransparentValueObjects.Abstractions" />
         <PackageReference Update="JetBrains.Annotations"/>
+        <PackageReference Include="ZLinq" />
+        <PackageReference Include="ZLinq.DropInGenerator">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
         <ProjectReference Include="..\..\src\NexusMods.MnemonicDB.SourceGenerator\NexusMods.MnemonicDB.SourceGenerator.csproj"  OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
         <ProjectReference Include="..\NexusMods.HyperDuck\NexusMods.HyperDuck.csproj" />
     </ItemGroup>

@@ -1,7 +1,6 @@
 using System;
 using DynamicData;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 
 namespace NexusMods.MnemonicDB.EventTypes;
 
@@ -24,7 +23,7 @@ where TDescriptor : ISliceDescriptor
         }
         
         Observer.OnNext(changes);
-        var (from, to, _) = Descriptor;
+        var (from, to) = Descriptor;
         return (from, to, Observer);
     }
 }

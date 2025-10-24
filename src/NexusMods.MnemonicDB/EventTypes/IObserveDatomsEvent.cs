@@ -1,7 +1,6 @@
 using System;
 using DynamicData;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 
 namespace NexusMods.MnemonicDB.EventTypes;
 

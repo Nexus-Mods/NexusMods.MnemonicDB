@@ -278,11 +278,14 @@ internal class ModelAnalyzer
                         flags |= AttributeFlags.Reference;
 
                     lowLevel = namedTypeSymbol.TypeArguments[1];
-                    
+                    if (lowLevel.IsUnmanagedType || lowLevel.IsValueType)
+                        flags |= AttributeFlags.Unmanaged;
+
                     serializer = namedTypeSymbol.TypeArguments[2];
-                    
+
                     return true;
                 }
+                
 
                 type = namedTypeSymbol.BaseType;
             }
