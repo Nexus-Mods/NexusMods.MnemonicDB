@@ -19,7 +19,7 @@ public struct IndexedValueSlice : ISliceDescriptor, IDisposable
         Debug.Assert(cache.IsIndexed(attrId));
         var tag = cache.GetValueTag(attrId);
         _writer = new PooledMemoryBufferWriter(sizeof(ulong) + KeyPrefix.Size);
-        var prefix = new KeyPrefix(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false, tag, IndexType.VAETCurrent);
+        var prefix = new KeyPrefix(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false, tag, IndexType.AVETCurrent);
         _writer.Write(prefix);
         tag.Write(value, _writer);
     }
@@ -57,7 +57,7 @@ public struct IndexedValueSlice : ISliceDescriptor, IDisposable
             Span<byte> innerSpan = stackalloc byte[_writer.GetWrittenSpan().Length];
             _writer.GetWrittenSpan().CopyTo(innerSpan);
             ref var prefixRef = ref innerSpan.CastFast<byte, KeyPrefix>().DangerousGetReference();
-            prefixRef = prefixRef with { Index = IndexType.VAETHistory };
+            prefixRef = prefixRef with { Index = IndexType.AVETHistory };
             iterator.SeekTo(innerSpan);
         }
         else
