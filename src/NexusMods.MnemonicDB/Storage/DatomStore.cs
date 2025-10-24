@@ -400,8 +400,6 @@ public sealed partial class DatomStore : IDatomStore
     /// <summary>
     /// Logs the transaction entity to the batch
     /// </summary>
-    /// <param name="batch"></param>
-    /// <exception cref="NotImplementedException"></exception>
     private void LogTx(IWriteBatch batch)
     {
         var id = EntityId.From(_thisTx.Value);

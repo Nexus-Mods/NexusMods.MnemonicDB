@@ -234,16 +234,13 @@ public sealed class Connection : IConnection
                 Debug.Assert(observeDatomsEvent is not null);
 
                 var (from, to, observer) = observeDatomsEvent.Prime(Db);
-                throw new NotImplementedException();
-                //_datomObservers.Add(from, to, observer);
+                _datomObservers.Add(from, to, observer);
             }
         }
         else
         {
             _pendingObservers.Clear();
 
-            throw new NotImplementedException();
-            /*
             Parallel.For(fromInclusive: range.Start.Value, toExclusive: range.End.Value, i =>
             {
                 var observeDatomsEvent = events[i] as IObserveDatomsEvent;
@@ -259,7 +256,6 @@ public sealed class Connection : IConnection
             }
 
             _pendingObservers.Clear();
-            */
         }
     }
 
@@ -498,11 +494,10 @@ public sealed class Connection : IConnection
         return Observable.Create<DatomChangeSet>(observer =>
         {
             if (_isDisposed) return Disposable.Empty;
-
-            throw new NotImplementedException();
+            
             try
             {
-                //_pendingEvents.Add(new ObserveDatomsEvent<TDescriptor>(descriptor, observer), _cts.Token);
+                _pendingEvents.Add(new ObserveDatomsEvent<TDescriptor>(descriptor, observer), _cts.Token);
             }
             catch (Exception e) when (e is OperationCanceledException or InvalidOperationException)
             {
