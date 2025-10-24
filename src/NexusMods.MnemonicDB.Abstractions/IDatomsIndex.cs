@@ -18,6 +18,12 @@ public interface IDatomsIndex
     public Datoms this[AttributeId a] { get; }
     
     /// <summary>
+    /// Get all the datoms for the given attribute
+    /// </summary>
+    /// <param name="a"></param>
+    public Datoms this[IAttribute a] { get; }
+    
+    /// <summary>
     /// Get all the datoms for the given transaction id.
     /// </summary>
     /// <param name="tx"></param>

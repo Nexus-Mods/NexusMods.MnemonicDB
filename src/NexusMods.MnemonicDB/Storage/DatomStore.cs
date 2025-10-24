@@ -30,16 +30,13 @@ public sealed partial class DatomStore : IDatomStore
 
     private readonly BlockingCollection<IInternalTxFunctionImpl> _pendingTransactions;
     private readonly DbStream _dbStream;
-    private readonly PooledMemoryBufferWriter _writer;
-    private readonly PooledMemoryBufferWriter _prevWriter;
     private TxId _asOfTx = TxId.MinValue;
     
     private IDb? _currentDb;
 
     private static readonly TimeSpan TransactionTimeout = TimeSpan.FromMinutes(120);
-    
-    private Dictionary<EntityId, Datoms> _avCache = new();
 
+    
     /// <summary>
     /// Cached function to remap temporary entity ids to real entity ids
     /// </summary>
@@ -114,9 +111,7 @@ public sealed partial class DatomStore : IDatomStore
         _pendingTransactions = new BlockingCollection<IInternalTxFunctionImpl>(new ConcurrentQueue<IInternalTxFunctionImpl>());
 
         Backend = backend;
-        _writer = new PooledMemoryBufferWriter();
         _retractWriter = new PooledMemoryBufferWriter();
-        _prevWriter = new PooledMemoryBufferWriter();
 
         Logger = logger;
         Settings = settings;
@@ -200,9 +195,7 @@ public sealed partial class DatomStore : IDatomStore
         _shutdownToken.Cancel();
         _pendingTransactions.CompleteAdding();
         _dbStream.Dispose();
-        _writer.Dispose();
-        _retractWriter.Dispose();
-
+        
         _isDisposed = true;
     }
 
@@ -392,8 +385,7 @@ public sealed partial class DatomStore : IDatomStore
         // Advance the TX counter, if requested (default)
         if (advanceTx)
             _asOfTx = _thisTx;
-        
-        _avCache.Clear();
+
         // Update the snapshot
         CurrentSnapshot = Backend.GetSnapshot();
     }

@@ -4,6 +4,7 @@ using System.Threading;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
+using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Storage;
 using NexusMods.MnemonicDB.Storage.Abstractions;
 
@@ -94,12 +95,12 @@ internal class SimpleMigration : AInternalFn
     {
         foreach (var datom in store.CurrentSnapshot[attrId])
         {
-            batch.Add(datom.With(IndexType.AEVTCurrent));
+            batch.Add(datom.With(IndexType.AVETCurrent));
         }
         
         foreach (var datom in store.CurrentSnapshot[attrId])
         {
-            batch.Add(datom.With(IndexType.AEVTHistory));
+            batch.Add(datom.With(IndexType.AVETHistory));
         }
         
         var datoms = new Datoms(store.AttributeCache)
@@ -114,23 +115,21 @@ internal class SimpleMigration : AInternalFn
     /// </summary>
     internal static void RemoveIndex(DatomStore store, AttributeId id, IWriteBatch batch, IndexedFlags newFlags)
     {
-        throw new NotImplementedException();
-        /*
-        foreach (var datom in store.CurrentSnapshot.Datoms(SliceDescriptor.Create(id)))
+        foreach (var datom in store.CurrentSnapshot[id])
         {
-            batch.Delete(IndexType.AVETCurrent, datom);
+            batch.Delete(datom.With(IndexType.AVETCurrent));
         }
         
-        foreach (var datom in store.CurrentSnapshot.Datoms(SliceDescriptor.Create(id)))
+        foreach (var datom in store.CurrentSnapshot[id])
         {
-            batch.Delete(IndexType.AVETHistory, datom);
+            batch.Delete(datom.With(IndexType.AVETHistory));;
         }
         
-        using var builder = new IndexSegmentBuilder(store.AttributeCache);
-        builder.Add(EntityId.From(id.Value), AttributeDefinition.Indexed, newFlags);
-        var built = builder.Build();
-        
-        store.LogDatoms(batch, built);
-        */
+        var datoms = new Datoms(store.AttributeCache)
+        {
+            { EntityId.From(id.Value), AttributeDefinition.Indexed, newFlags }
+        };
+
+        store.LogDatoms(batch, datoms);
     }
 }

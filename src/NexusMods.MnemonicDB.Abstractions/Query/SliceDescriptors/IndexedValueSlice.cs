@@ -32,7 +32,7 @@ public struct IndexedValueSlice : ISliceDescriptor, IDisposable
     public IndexedValueSlice(AttributeId attrId, ValueTag tag, object value)
     {
         _writer = new PooledMemoryBufferWriter(sizeof(ulong) + KeyPrefix.Size);
-        var prefix = new KeyPrefix(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false, tag, IndexType.VAETCurrent);
+        var prefix = new KeyPrefix(EntityId.MinValueNoPartition, attrId, TxId.MinValue, false, tag, IndexType.AVETCurrent);
         _writer.Write(prefix);
         tag.Write(value, _writer);
     }
@@ -68,7 +68,7 @@ public struct IndexedValueSlice : ISliceDescriptor, IDisposable
 
     public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool history = false)
     {
-        var index = history ? IndexType.VAETHistory : IndexType.VAETCurrent;
+        var index = history ? IndexType.AVETHistory : IndexType.AVETCurrent;
         var prefix = KeyPrefix.Read(keySpan);
         var thisPrefix = KeyPrefix.Read(_writer.GetWrittenSpan());
         return prefix.A == thisPrefix.A &&
@@ -83,8 +83,8 @@ public struct IndexedValueSlice : ISliceDescriptor, IDisposable
     {
         var prefix = KeyPrefix.Read(_writer.GetWrittenSpan());
         var value = prefix.ValueTag.Read<object>(_writer.GetWrittenSpan().SliceFast(KeyPrefix.Size));
-        fromDatom = new Datom(new KeyPrefix(EntityId.MinValueNoPartition, prefix.A, TxId.MinValue, false, prefix.ValueTag, IndexType.VAETCurrent), value);
-        toDatom = new Datom(new KeyPrefix(EntityId.MaxValueNoPartition, prefix.A, TxId.MaxValue, false, prefix.ValueTag, IndexType.VAETCurrent), value);
+        fromDatom = new Datom(new KeyPrefix(EntityId.MinValueNoPartition, prefix.A, TxId.MinValue, false, prefix.ValueTag, IndexType.AVETCurrent), value);
+        toDatom = new Datom(new KeyPrefix(EntityId.MaxValueNoPartition, prefix.A, TxId.MaxValue, false, prefix.ValueTag, IndexType.AVETCurrent), value);
     }
 
     public void Dispose()
