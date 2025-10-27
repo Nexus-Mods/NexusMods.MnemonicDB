@@ -597,6 +597,8 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx3.Delete(loadout.Id, true);
         var result3 = await tx3.Commit();
 
+        await Connection.FlushQueries();
+        
         await Assert.That(loadoutNames).HasCount(4).Because("All revisions should be loaded");
 
         await Assert.That(loadoutNames).IsEquivalentTo(["Test Loadout", "Update 1", "Update 2", "DONE"]);
