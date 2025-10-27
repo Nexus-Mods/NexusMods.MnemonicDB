@@ -64,22 +64,6 @@ public sealed class GlobalComparer : IComparer<byte[]>
         };
     }
 
-
-    /// <summary>
-    /// Compare two datoms represented as spans
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static unsafe int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
-    {
-        fixed (byte* aPtr = a)
-        {
-            fixed (byte* bPtr = b)
-            {
-                return Compare(aPtr, a.Length, bPtr, b.Length);
-            }
-        }
-    }
-
     private static int ThrowArgumentOutOfRangeException()
     {
         throw new ArgumentOutOfRangeException();

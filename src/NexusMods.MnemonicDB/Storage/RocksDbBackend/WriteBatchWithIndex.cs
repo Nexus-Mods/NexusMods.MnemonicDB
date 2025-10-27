@@ -183,6 +183,4 @@ internal struct WriteBatchWithIndexEnumerator(RocksDb db, RocksDbSharp.WriteBatc
     }
     public void SeekTo(ReadOnlySpan<byte> span) => 
         _iterator!.Seek(span);
-    public void Next() => 
-        _iterator!.Next();
 }

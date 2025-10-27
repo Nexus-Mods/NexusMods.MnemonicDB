@@ -95,11 +95,6 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
     [MustDisposeResource]
     public override TLowLevelIterator GetRefDatomEnumerator() => _snapshot.GetRefDatomEnumerator();
 
-    public Datoms Datoms(TxId txId)
-    {
-        return Snapshot.Datoms(SliceDescriptor.Create(txId));
-    }
-
     public bool Equals(IDb? other)
     {
         if (other is null)

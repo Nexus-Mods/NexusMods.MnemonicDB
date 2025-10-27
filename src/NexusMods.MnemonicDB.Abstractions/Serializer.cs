@@ -282,59 +282,5 @@ public static class Serializer
         };
     }
     #endregion
-    
-    #region Remap
-    
-    /// <summary>
-    /// Use the given function to remap any references found in the span
-    /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
-    public static void Remap(this ValueTag tag, Span<byte> span, Func<EntityId, EntityId> remapFn)
-    {
-        switch (tag)
-        {
-            case ValueTag.Reference:
-                EntityIdSerializer.Remap(span, remapFn);
-                break;
-            case ValueTag.Tuple3_Ref_UShort_Utf8I:
-                Tuple3_Ref_UShort_Utf8I_Serializer.Remap(span, remapFn);
-                break;
-            default:
-                return;
-        }
-    }
-    #endregion
-
-    #region ValueConversion
-    
-    /// <summary>
-    /// Convert the value from the source tag to the destination tag if possible, throws an exception if the conversion is not supported
-    /// </summary>
-    public static void ConvertValue<TWriter>(this ValueTag srcTag, ReadOnlySpan<byte> srcSpan, ValueTag destTag, TWriter destWriter)
-        where TWriter : IBufferWriter<byte>
-    {
-
-        try
-        {
-            switch (srcTag, destTag)
-            {
-                case (ValueTag.UInt8, ValueTag.UInt16):
-                    UInt16Serializer.Write(UInt8Serializer.Read(srcSpan), destWriter);
-                    break;
-                case (ValueTag.Utf8, ValueTag.UInt64):
-                    UInt64Serializer.Write(ulong.Parse(Utf8Serializer.Read(srcSpan)), destWriter);
-                    break;
-                default:
-                    throw new NotSupportedException("Conversion not supported from " + srcTag + " to " + destTag);
-            }
-        }
-        catch (Exception e)
-        {
-            throw new InvalidOperationException($"Failed to convert ({srcTag.Read<object>(srcSpan)}) value from " + srcTag + " to " + destTag, e);
-        }
-    }
-
-    #endregion
-
 }
 

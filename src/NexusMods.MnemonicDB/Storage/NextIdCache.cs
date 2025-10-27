@@ -13,11 +13,7 @@ namespace NexusMods.MnemonicDB.Storage;
 public struct NextIdCache
 {
     private ulong _nextId;
-
-    /// <summary>
-    /// Gets the most recent transaction id
-    /// </summary>
-    public TxId AsOfTxId => TxId.From(this[(byte)PartitionId.Transactions]);
+    
 
     /// <summary>
     /// Gets the next id for the given partition
@@ -34,18 +30,7 @@ public struct NextIdCache
         var newId = ++this[partition];
         return partitionId.MakeEntityId(newId);
     }
-
-    /// <summary>
-    /// Resets all the caches
-    /// </summary>
-    public void ResetCaches()
-    {
-        for (var i = 0; i < 256; i++)
-        {
-            this[i] = 0;
-        }
-    }
-
+    
     /// <summary>
     /// Gets the last recorded entity in the partition in the snapshot
     /// </summary>
