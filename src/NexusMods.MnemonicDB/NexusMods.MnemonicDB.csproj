@@ -5,6 +5,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
     <ItemGroup>
+        <PackageReference Include="CommunityToolkit.HighPerformance" />
         <PackageReference Include="DynamicData"/>
         <PackageReference Include="Halgari.Jamarino.IntervalTree" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />

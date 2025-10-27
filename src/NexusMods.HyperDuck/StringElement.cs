@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using System.Text;
+using CommunityToolkit.HighPerformance.Buffers;
 
 namespace NexusMods.HyperDuck;
 
@@ -30,6 +31,22 @@ public unsafe struct StringElement
         else
         {
             return Encoding.UTF8.GetString(Pointer.Ptr, (int)Pointer.Length);
+        }
+    }
+    
+    public string GetString(StringPool pool)
+    {
+        if (IsInline)
+        {
+            fixed (byte* data = Inline.Data)
+            {
+                var span = new ReadOnlySpan<byte>(data, (int)Inline.Length);
+                return pool.GetOrAdd(span, Encoding.UTF8);
+            }
+        }
+        else
+        {
+            return pool.GetOrAdd(new ReadOnlySpan<byte>(Pointer.Ptr, (int)Pointer.Length), Encoding.UTF8);
         }
     }
 
