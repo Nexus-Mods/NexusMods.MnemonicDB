@@ -41,4 +41,9 @@ public readonly struct BackRefSlice(AttributeId aid, EntityId eid) : ISliceDescr
         fromDatom = new Datom(new KeyPrefix(EntityId.MinValueNoPartition, aid, TxId.MinValue, false, ValueTag.Reference, IndexType.VAETCurrent), eid);
         toDatom = new Datom(new KeyPrefix(EntityId.MaxValueNoPartition, aid, TxId.MaxValue, false, ValueTag.Reference, IndexType.VAETCurrent), eid);
     }
+
+    /// <summary>
+    /// Uncachable slice.
+    /// </summary>
+    public object? CacheKey => (typeof(BackRefSlice), aid, eid);
 }

@@ -34,4 +34,9 @@ public readonly struct EntityIdSlice(EntityId entityId) : ISliceDescriptor
         fromDatom = new Datom(new KeyPrefix(entityId, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTCurrent), Null.Instance);
         toDatom = new Datom(new KeyPrefix(entityId, AttributeId.Max, TxId.MaxValue, false, ValueTag.Null, IndexType.EAVTCurrent), Null.Instance);
     }
+
+    /// <summary>
+    /// Uncachable slice.
+    /// </summary>
+    public object? CacheKey => (typeof(EntityIdSlice), entityId);
 }

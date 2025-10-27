@@ -91,4 +91,9 @@ public struct IndexedValueSlice : ISliceDescriptor, IDisposable
     {
         _writer.Dispose();
     }
+    
+    /// <summary>
+    /// Uncachable slice.
+    /// </summary>
+    public object? CacheKey => null;
 }

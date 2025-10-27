@@ -30,4 +30,9 @@ public readonly struct AllSlice : ISliceDescriptor
         fromDatom = new Datom(new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.TxLog), Null.Instance);
         toDatom = new Datom(new KeyPrefix(EntityId.MaxValueNoPartition, AttributeId.Max, TxId.MaxValue, false, ValueTag.Null, IndexType.AVETHistory), Null.Instance);
     }
+    
+    /// <summary>
+    /// Uncachable slice.
+    /// </summary>
+    public object? CacheKey => null;
 }

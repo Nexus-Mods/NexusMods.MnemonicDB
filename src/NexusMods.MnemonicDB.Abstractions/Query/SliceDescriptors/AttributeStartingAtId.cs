@@ -32,4 +32,9 @@ public readonly struct AttributeStartingAtId(AttributeId attrId, EntityId eid) :
         fromDatom = new Datom(new KeyPrefix(eid, attrId, TxId.MinValue, false, ValueTag.Null, IndexType.AEVTCurrent), Null.Instance);
         toDatom = new Datom(new KeyPrefix(eid, attrId, TxId.MaxValue, false, ValueTag.Null, IndexType.AEVTCurrent), Null.Instance);
     }
+    
+    /// <summary>
+    /// Uncachable slice.
+    /// </summary>
+    public object? CacheKey => null;
 }

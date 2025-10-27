@@ -29,4 +29,9 @@ public struct HistorySlice<TParent>(TParent parent) : ISliceDescriptor
         fromDatom = new Datom(otherFrom.Prefix with {Index = otherFrom.Prefix.Index.HistoryVariant()}, otherFrom.Value);
         toDatom = new Datom(otherTo.Prefix with {Index = otherTo.Prefix.Index.HistoryVariant()}, otherTo.Value);
     }
+    
+    /// <summary>
+    /// Uncachable slice.
+    /// </summary>
+    public object? CacheKey => null;
 }

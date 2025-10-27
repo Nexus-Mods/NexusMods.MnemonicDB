@@ -33,4 +33,9 @@ public readonly struct EntityRangeSlice(EntityId fromId, EntityId toId) : ISlice
        fromDatom = new Datom(new KeyPrefix(fromId, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTCurrent), Null.Instance);
        toDatom = new Datom(new KeyPrefix(toId, AttributeId.Max, TxId.MaxValue, false, ValueTag.Null, IndexType.EAVTCurrent), Null.Instance);
     }
+    
+    /// <summary>
+    /// Uncachable slice.
+    /// </summary>
+    public object? CacheKey => null;
 }

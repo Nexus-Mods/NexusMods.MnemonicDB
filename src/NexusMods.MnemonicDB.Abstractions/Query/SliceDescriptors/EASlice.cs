@@ -34,4 +34,9 @@ public readonly struct EASlice(EntityId entityId, AttributeId attrId) : ISliceDe
         fromDatom = new Datom(new KeyPrefix(entityId, attrId, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTCurrent), Null.Instance);
         toDatom = new Datom(new KeyPrefix(entityId, attrId, TxId.MaxValue, false, ValueTag.Null, IndexType.EAVTCurrent), Null.Instance);
     }
+    
+    /// <summary>
+    /// Uncachable slice.
+    /// </summary>
+    public object? CacheKey => null;
 }

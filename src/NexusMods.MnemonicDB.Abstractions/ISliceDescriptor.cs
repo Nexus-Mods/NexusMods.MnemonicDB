@@ -33,4 +33,9 @@ public interface ISliceDescriptor
     /// Deconstruct the slice into a start/end datom
     /// </summary>
     public void Deconstruct(out Datom fromDatom, out Datom toDatom);
+    
+    /// <summary>
+    /// Get the cache key for this slice, if null is returned, the slice is uncachable.
+    /// </summary>
+    public object? CacheKey { get; }
 }
