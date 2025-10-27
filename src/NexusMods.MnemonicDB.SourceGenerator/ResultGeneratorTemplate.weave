@@ -1,0 +1,52 @@
+@namespace NexusMods.MnemonicDB.SourceGenerator
+@methodname Render
+@model SqlResultGenerator.ResultData
+
+#nullable enable
+
+public class {{= model.Symbol.Name }}AdapterFactory : global::NexusMods.HyperDuck.Adaptor.IRowAdaptorFactory
+{
+    private static readonly global::System.Type[] ElementTypes = [{{each parameter in model.Parameters}}typeof({{= parameter.DisplayString}}){{delimit}},{{/each}}];
+
+    public bool TryExtractElementTypes(global::System.ReadOnlySpan<global::NexusMods.HyperDuck.Result.ColumnInfo> result, global::System.Type resultType, out global::System.Type[] elementTypes, out int priority)
+    {
+        if (resultType != typeof({{= model.DisplayString}}))
+        {
+            elementTypes = [];
+            priority = int.MinValue;
+            return false;
+        }
+
+        elementTypes = ElementTypes;
+        priority = int.MaxValue;
+        return true;
+    }
+
+    public global::System.Type CreateType(global::System.Type resultType, global::System.Type[] elementTypes, global::System.Type[] elementAdaptors)
+    {
+        return typeof({{= model.Symbol.Name }}Adapter<{{= new string(',', count: model.Parameters.Length)}}>).MakeGenericType(elementAdaptors);
+    }
+}
+
+public class {{= model.Symbol.Name }}Adapter<{{each parameter in model.Parameters}}TParam{{= parameter.Index }}Adaptor{{delimit}},{{/each}}>
+    : global::NexusMods.HyperDuck.Adaptor.IRowAdaptor<{{= model.DisplayString }}>
+    {{each parameter in model.Parameters}}
+    where TParam{{= parameter.Index }}Adaptor : global::NexusMods.HyperDuck.Adaptor.IValueAdaptor<{{= parameter.DisplayString }}>
+    {{/each}}
+{
+    public static bool Adapt(global::NexusMods.HyperDuck.Adaptor.RowCursor cursor, ref {{= model.DisplayString }} value)
+    {
+        var valueCursor = new global::NexusMods.HyperDuck.Adaptor.ValueCursor(cursor);
+
+        {{each parameter in model.Parameters}}
+        var param{{= parameter.Index }} = value.{{= parameter.Identifier.ValueText }};
+        var param{{= parameter.Index }}Eq = TParam{{= parameter.Index }}Adaptor.Adapt(valueCursor, ref param{{= parameter.Index }})
+        if (!param{{= parameter.Index }}Eq) value.{{= parameter.Identifier.ValueText }} = param{{= parameter.Index }};
+        valueCursor.ColumnIndex++;
+        {{delimit}}
+
+        {{/each}}
+
+        return {{each parameter in model.Parameters}} param{{= parameter.Index }}Eq {{delimit}} || {{/each}};
+    }
+}
