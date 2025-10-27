@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
 
@@ -13,8 +13,6 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
     where TSnapshot : IRefDatomEnumeratorFactory<TLowLevelIterator>, IDatomsIndex, ISnapshot
     where TLowLevelIterator : IRefDatomEnumerator
 {
-    //private readonly IndexSegmentCache _cache;
-    
     /// <summary>
     /// The connection is used by several methods to navigate the graph of objects of Db, Connection, Datom Store, and
     /// Attribute Registry. However, we want the Datom Store and Connection to be decoupled, so the Connection starts null
@@ -23,9 +21,9 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
     private IConnection? _connection;
     public ISnapshot Snapshot => _snapshot;
 
-    private readonly Lazy<IndexSegment> _recentlyAdded;
+    private readonly Lazy<Datoms> _recentlyAdded;
     private readonly TSnapshot _snapshot;
-    public IndexSegment RecentlyAdded => _recentlyAdded.Value;
+    public Datoms RecentlyAdded => _recentlyAdded.Value;
 
     internal Dictionary<Type, object> AnalyzerData { get; } = new();
 
@@ -37,12 +35,12 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         _recentlyAdded = new (() => snapshot.Datoms(SliceDescriptor.Create(txId)));
     }
 
-    internal Db(TSnapshot newSnapshot, TxId newTxId, IndexSegment addedDatoms, Db<TSnapshot, TLowLevelIterator> src) : base(src, addedDatoms) 
+    internal Db(TSnapshot newSnapshot, TxId newTxId, Datoms addedDatoms, Db<TSnapshot, TLowLevelIterator> src) : base(src, addedDatoms) 
     {
         _connection = src._connection;
         _snapshot = newSnapshot;
         BasisTxId = newTxId;
-        _recentlyAdded = new Lazy<IndexSegment>(() => addedDatoms);
+        _recentlyAdded = new Lazy<Datoms>(() => addedDatoms);
     }
 
     /// <summary>
@@ -51,7 +49,7 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
     /// </summary>
     public IDb WithNext(StoreResult storeResult, TxId txId)
     {
-        var newDatoms = storeResult.Snapshot.Datoms(txId);
+        var newDatoms = storeResult.Snapshot[txId];
         return new Db<TSnapshot, TLowLevelIterator>((TSnapshot)storeResult.Snapshot, txId, newDatoms, this);
     }
     
@@ -62,6 +60,11 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
             var result = analyzer.Analyze(prev, this);
             AnalyzerData[analyzer.GetType()] = result;
         }
+    }
+
+    public IDb AsIf(Datoms datoms)
+    {
+        return _snapshot.AsIf(datoms).MakeDb(KeyPrefix.MaxPossibleTxId, AttributeCache, Connection);
     }
 
     public TxId BasisTxId { get; }
@@ -79,9 +82,7 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
             _connection = value;
         }
     }
-    
-    public Entities<TModel> GetBackrefModels<TModel>(AttributeId aid, EntityId id) where TModel : IReadOnlyModel<TModel> 
-        => GetBackrefModels<TModel>(this, aid, id);
+
 
     TReturn IDb.AnalyzerData<TAnalyzer, TReturn>()
     {
@@ -90,29 +91,9 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         throw new KeyNotFoundException($"Analyzer {typeof(TAnalyzer).Name} not found");
     }
 
-    public void ClearIndexCache()
-    {
-        EntityCache.Clear();
-        BackReferenceCache.Clear();
-    }
     
-    public IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value)
-    {
-        return Datoms(SliceDescriptor.Create(attribute, value, AttributeCache));
-    }
-    
-    public IndexSegment Datoms(IAttribute attribute)
-    {
-        return Datoms(SliceDescriptor.Create(attribute, AttributeCache));
-    }
-
     [MustDisposeResource]
-    public override TLowLevelIterator GetRefDatomEnumerator(bool totalOrdered) => _snapshot.GetRefDatomEnumerator(totalOrdered);
-
-    public IndexSegment Datoms(TxId txId)
-    {
-        return Snapshot.Datoms(SliceDescriptor.Create(txId));
-    }
+    public override TLowLevelIterator GetRefDatomEnumerator() => _snapshot.GetRefDatomEnumerator();
 
     public bool Equals(IDb? other)
     {

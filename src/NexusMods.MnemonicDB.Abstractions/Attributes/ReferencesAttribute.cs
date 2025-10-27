@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System.Collections.Generic;
+using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 
@@ -11,10 +12,10 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 public class ReferencesAttribute(string ns, string name) : CollectionAttribute<EntityId, EntityId, EntityIdSerializer>(ns, name)
 {
     /// <inheritdoc />
-    protected override EntityId ToLowLevel(EntityId value) => value;
+    public override EntityId ToLowLevel(EntityId value) => value;
 
     /// <inheritdoc />
-    protected override EntityId FromLowLevel(EntityId value, AttributeResolver resolver) => value;
+    public override EntityId FromLowLevel(EntityId value, AttributeResolver resolver) => value;
 }
 
 /// <summary>
@@ -22,4 +23,13 @@ public class ReferencesAttribute(string ns, string name) : CollectionAttribute<E
 /// </summary>
 [PublicAPI]
 public sealed class ReferencesAttribute<T>(string ns, string name) : ReferencesAttribute(ns, name)
-where T : IModelDefinition;
+    where T : IModelDefinition
+{
+    public IEnumerable<TModel> GetAllModels<TModel>(IDb db, Datoms datoms) 
+        where TModel : IReadOnlyModel<TModel>
+    {
+        var ids = datoms.GetAllResolved(this, db.Connection.AttributeResolver);
+        foreach (var id in ids)
+            yield return TModel.Create(db, id);
+    }
+}

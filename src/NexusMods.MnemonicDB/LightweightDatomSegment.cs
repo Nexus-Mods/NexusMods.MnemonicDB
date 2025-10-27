@@ -1,6 +1,7 @@
 using System;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Internals;
+using NexusMods.MnemonicDB.Abstractions.Traits;
 
 namespace NexusMods.MnemonicDB;
 
@@ -30,7 +31,7 @@ internal sealed class LightweightDatomSegment<TEnumerator, TDescriptor> : ILight
         _state = State.NotStarted;
     }
     
-    public KeyPrefix KeyPrefix => _enumerator.KeyPrefix;
+    public KeyPrefix Prefix => _enumerator.Prefix;
     public ReadOnlySpan<byte> ValueSpan => _enumerator.ValueSpan.Span;
     public ReadOnlySpan<byte> ExtraValueSpan => _enumerator.ExtraValueSpan.Span;
     
@@ -59,8 +60,8 @@ internal sealed class LightweightDatomSegment<TEnumerator, TDescriptor> : ILight
                 return false; // No items to process
             }
         }
-
-        while (_enumerator.KeyPrefix.E < eid)
+        
+        while (_enumerator.E < eid)
         {
             if (!_enumerator.MoveNext(_descriptor))
             {
@@ -70,7 +71,7 @@ internal sealed class LightweightDatomSegment<TEnumerator, TDescriptor> : ILight
             }
         }
 
-        return _enumerator.KeyPrefix.E == eid;
+        return _enumerator.E == eid;
     }
 
     public void Dispose()

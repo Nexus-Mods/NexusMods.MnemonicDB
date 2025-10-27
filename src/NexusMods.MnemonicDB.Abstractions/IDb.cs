@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Models;
+using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -23,51 +25,42 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// <summary>
     ///     The datoms that were added in the most recent transaction (indicated by the basis TxId).
     /// </summary>
-    IndexSegment RecentlyAdded { get; }
+    Datoms RecentlyAdded { get; }
 
     /// <summary>
     /// The snapshot that this database is based on.
     /// </summary>
     ISnapshot Snapshot { get; }
-
-    /// <summary>
-    /// The attribute cache for this database.
-    /// </summary>
-    AttributeCache AttributeCache { get; }
     
-    /// <summary>
-    /// Get all the datoms for the given entity id.
-    /// </summary>
-    public EntitySegment Datoms(EntityId id)
+    
+    public Datoms Datoms<THighLevel, TLowLevel, TSerializer>(Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value) 
+        where THighLevel : notnull 
+        where TLowLevel : notnull 
+        where TSerializer : IValueSerializer<TLowLevel>
     {
-        return GetEntitySegment(this, id);
+        using var slice = SliceDescriptor.Create(attr, value, AttributeCache);
+        return Datoms(slice);
     }
     
-    /// <summary>
-    ///     Gets the datoms for the given transaction id.
-    /// </summary>
-    public IndexSegment Datoms(TxId txId);
-    
-    /// <summary>
-    /// Finds all datoms that have the given attribute
-    /// </summary>
-    IndexSegment Datoms(IAttribute attribute);
-    
-    /// <summary>
-    /// Finds all the datoms that have the given attribute with the given value.
-    /// </summary>
-    IndexSegment Datoms<TValue>(IWritableAttribute<TValue> attribute, TValue value);
-    
-    /// <summary>
-    /// Gets and caches all the models that point to the given entity via the given attribute.
-    /// </summary>
-    public Entities<TModel> GetBackrefModels<TModel>(AttributeId attribute, EntityId id)
-        where TModel : IReadOnlyModel<TModel>;
+    public Datoms Datoms(IAttribute attribute)
+    {
+        return Datoms(SliceDescriptor.Create(attribute, AttributeCache));
+    }
 
     /// <summary>
     /// Gets and caches all the models that point to the given entity via the given attribute.
     /// </summary>
-    public Entities<TModel> GetBackrefModels<TModel>(ReferencesAttribute attribute, EntityId id)
+    public IEnumerable<TModel> GetBackrefModels<TModel>(AttributeId attribute, EntityId id)
+        where TModel : IReadOnlyModel<TModel>
+    {
+        return this[attribute, id]
+            .Select(d => TModel.Create(this, d.E));
+    }
+
+    /// <summary>
+    /// Gets and caches all the models that point to the given entity via the given attribute.
+    /// </summary>
+    public IEnumerable<TModel> GetBackrefModels<TModel>(ReferencesAttribute attribute, EntityId id)
         where TModel : IReadOnlyModel<TModel>
     {
         var aid = AttributeCache.GetAttributeId(attribute.Id);
@@ -77,7 +70,7 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     /// <summary>
     /// Gets and caches all the models that point to the given entity via the given attribute.
     /// </summary>
-    public Entities<TModel> GetBackrefModels<TModel>(ReferenceAttribute attribute, EntityId id)
+    public IEnumerable<TModel> GetBackrefModels<TModel>(ReferenceAttribute attribute, EntityId id)
         where TModel : IReadOnlyModel<TModel>
     {
         var aid = AttributeCache.GetAttributeId(attribute.Id);
@@ -91,22 +84,9 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
         where TAnalyzer : IAnalyzer<TReturn>;
     
     /// <summary>
-    /// Clears the internal cache of the database.
-    /// </summary>
-    void ClearIndexCache();
-    
-    /// <summary>
     /// Create the next version of the database with the given result and the transaction id that the result was assigned.
     /// </summary>
     IDb WithNext(StoreResult result, TxId resultAssignedTxId);
-    
-    /// <summary>
-    /// Gets the index segment for the given entity id.
-    /// </summary>
-    public EntitySegment Get(EntityId entityId)
-    {
-        return GetEntitySegment(this, entityId);
-    }
 
     /// <summary>
     /// Process and store the data from the given analyzers.
@@ -114,9 +94,10 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     void Analyze(IDb? prev, IAnalyzer[] analyzers);
 
     /// <summary>
-    /// Caches all the entities in the provided entity id segment. This load operation is done in bulk so it's often
-    /// faster to run this method before accessing the provided models randomly.
+    /// Create a (temporary) database that acts like the current database, but with the given datoms transacted into
+    /// it. No changes to the underlying datastore will be made, but this Db can be handed to any query functions and
+    /// will perform as expected. Note: any datoms added this way will still retain their temporary ids, as the actual
+    /// ids will be assigned when the transaction is comitted.
     /// </summary>
-    void BulkCache(EntityIds ids);
-    
+    IDb AsIf(Datoms datoms);
 }

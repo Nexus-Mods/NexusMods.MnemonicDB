@@ -1,4 +1,4 @@
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
+using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Storage;
 
 namespace NexusMods.MnemonicDB.InternalTxFunctions;
@@ -8,12 +8,12 @@ namespace NexusMods.MnemonicDB.InternalTxFunctions;
 /// </summary>
 internal sealed class IndexSegmentTransaction : AInternalFn
 {
-    private readonly IndexSegment _indexSegment;
+    private readonly Datoms _indexSegment;
 
     /// <summary>
     /// A standard transaction that simply processes an index segment
     /// </summary>
-    public IndexSegmentTransaction(IndexSegment indexSegment)
+    public IndexSegmentTransaction(Datoms indexSegment)
     {
         _indexSegment = indexSegment;
     }

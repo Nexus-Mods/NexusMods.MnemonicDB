@@ -18,7 +18,6 @@ namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 public class Backend : IStoreBackend
 {
     internal RocksDb? Db = null!;
-    private IntPtr _comparator;
     private readonly bool _isReadOnly;
     private Env? _env;
     private IntPtr _sliceTransform;
@@ -58,11 +57,6 @@ public class Backend : IStoreBackend
     /// <inheritdoc />
     public void Init(DatomStoreSettings settings)
     {
-        _comparator = Native.Instance.rocksdb_comparator_create(IntPtr.Zero, 
-            NativeComparators.GetDestructorPtr(),
-            NativeComparators.GetNativeFnPtr(),
-            NativeComparators.GetNamePtr());
-
         _sliceTransform = NativePrefixExtractor.MakeSliceTransform();
         
         if (settings.IsInMemory)
@@ -74,7 +68,7 @@ public class Backend : IStoreBackend
             .SetCreateIfMissing()
             .SetCreateMissingColumnFamilies()
             .SetCompression(Compression.Zstd)
-            .SetComparator(_comparator)
+            .SetComparator(NativeComparators.ComparatorPtr)
             .SetPrefixExtractor(_sliceTransform)
             .SetEnv(_env.Handle);
 

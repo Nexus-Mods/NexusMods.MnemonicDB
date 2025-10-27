@@ -15,6 +15,6 @@ public interface IRefDatomEnumeratorFactory<out TRefEnumerator>
     /// improves performance. It will need to be true if an entire index is being iterated over.
     /// </summary>
     [MustDisposeResource]
-    public TRefEnumerator GetRefDatomEnumerator(bool totalOrdered);
+    public TRefEnumerator GetRefDatomEnumerator();
     
 }

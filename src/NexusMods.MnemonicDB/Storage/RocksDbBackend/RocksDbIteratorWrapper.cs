@@ -1,49 +1,58 @@
 using System;
+using System.Diagnostics;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using RocksDbSharp;
 
 namespace NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
-internal struct RocksDbIteratorWrapper : ILowLevelIterator, IRefDatomPeekingEnumerator
+internal struct RocksDbIteratorWrapper(RocksDbSharp.RocksDb db, RocksDbSharp.Snapshot snapshot, RocksDbSharp.ReadOptions globalReadOptions) 
+    : ILowLevelIterator, IRefDatomEnumerator
 {
     private Ptr _key;
-    private bool _started;
-    private readonly Iterator _iterator;
-
-    public RocksDbIteratorWrapper(Iterator iterator)
-    {
-        _iterator = iterator;
-        _started = false;
-    }
+    private Iterator? _iterator = null;
+    private RocksDbSharp.ReadOptions? _readOptions = null;
 
     public void Dispose() => 
-        _iterator.Dispose();
+        _iterator?.Dispose();
 
     public unsafe bool MoveNext<TSliceDescriptor>(TSliceDescriptor descriptor, bool useHistory = false) 
         where TSliceDescriptor : ISliceDescriptor, allows ref struct
     {
-        if (_started == false)
+        if (_iterator == null)
+            Setup(descriptor, useHistory);
+        else
+            _iterator!.Next();
+
+        if (!_iterator!.Valid()) 
+            return false;
+        
+        var kPtr = Native.Instance.rocksdb_iter_key(_iterator!.Handle, out var kLen);
+        _key = new Ptr((byte*)kPtr, (int)kLen);
+        return descriptor.ShouldContinue(_key.Span, useHistory);
+    }
+
+    private void Setup<TSliceDescriptor>(TSliceDescriptor descriptor, bool useHistory) 
+        where TSliceDescriptor : ISliceDescriptor, allows ref struct
+    {
+        Debug.Assert(_iterator == null);
+        if (!descriptor.IsTotalOrdered)
         {
-            descriptor.Reset(this, useHistory);
-            _started = true;
+            _iterator = db.NewIterator(null, globalReadOptions);
         }
         else
         {
-            descriptor.MoveNext(this);
+            _readOptions = new ReadOptions()
+                .SetTotalOrderSeek(true)
+                .SetSnapshot(snapshot)
+                .SetPinData(false);
+            _iterator = db.NewIterator(null, _readOptions);
         }
-            
-        if (_iterator.Valid())
-        {
-            var kPtr = Native.Instance.rocksdb_iter_key(_iterator.Handle, out var kLen);
-            _key = new Ptr((byte*)kPtr, (int)kLen);
-            return descriptor.ShouldContinue(_key.Span, useHistory);
-        }
-        return false;
+        descriptor.Reset(this, useHistory);
     }
 
 
-    public KeyPrefix KeyPrefix => _key.Read<KeyPrefix>(0);
+    public KeyPrefix Prefix => _key.Read<KeyPrefix>(0);
     public Ptr Current => _key;
     public Ptr ValueSpan => _key.SliceFast(KeyPrefix.Size);
 
@@ -51,32 +60,10 @@ internal struct RocksDbIteratorWrapper : ILowLevelIterator, IRefDatomPeekingEnum
     {
         get 
         {
-            var vPtr = Native.Instance.rocksdb_iter_value(_iterator.Handle, out var vLen);
+            var vPtr = Native.Instance.rocksdb_iter_value(_iterator!.Handle, out var vLen);
             return new Ptr((byte*)vPtr, (int)vLen);
         }
     }
-
-    public bool TryGetRetractionId(out TxId id)
-    {
-        throw new NotImplementedException();
-    }
-
-
     public void SeekTo(ReadOnlySpan<byte> span) => 
-        _iterator.Seek(span);
-
-    public void SeekToPrev(ReadOnlySpan<byte> span)
-    {
-        _iterator.Seek(span);
-        if (!_iterator.Valid())
-            _iterator.SeekToLast();
-        else
-            _iterator.Prev();
-    }
-
-    public void Next() => 
-        _iterator.Next();
-
-    public void Prev() => 
-        _iterator.Prev();
+        _iterator!.Seek(span);
 }

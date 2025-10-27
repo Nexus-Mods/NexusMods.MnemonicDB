@@ -1,5 +1,4 @@
 ﻿using System;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
@@ -37,19 +36,7 @@ public abstract unsafe class APartialDatomComparator<TA, TB, TC> : IDatomCompara
 
         return TC.Compare(aPtr, aLen, bPtr, bLen);
     }
-
-    /// <inheritdoc />
-    public static int Compare(in Datom a, in Datom b)
-    {
-        var cmp = TA.Compare(a, b);
-        if (cmp != 0) return cmp;
-
-        cmp = TB.Compare(a, b);
-        if (cmp != 0) return cmp;
-
-        return TC.Compare(a, b);
-    }
-
+    
     /// <inheritdoc />
     public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
@@ -85,9 +72,9 @@ public abstract unsafe class APartialDatomComparator<TA, TB, TC> : IDatomCompara
 
         return TC.Compare(aPtr, aLen, bPtr, bLen);
     }
-
+    
     /// <inheritdoc />
-    public int CompareInstance(in Datom a, in Datom b)
+    public int CompareInstance(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         var cmp = TA.Compare(a, b);
         if (cmp != 0) return cmp;
@@ -99,7 +86,7 @@ public abstract unsafe class APartialDatomComparator<TA, TB, TC> : IDatomCompara
     }
 
     /// <inheritdoc />
-    public int CompareInstance(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
+    public int CompareInstance(in Datom a, in Datom b)
     {
         var cmp = TA.Compare(a, b);
         if (cmp != 0) return cmp;

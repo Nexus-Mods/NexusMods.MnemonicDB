@@ -1,7 +1,6 @@
 using DynamicData;
 using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB.Storage.Tests;
@@ -26,6 +25,11 @@ public class NullConnection : IConnection
         throw new NotSupportedException();
     }
 
+    MainTransaction IConnection.BeginTransaction()
+    {
+        throw new NotImplementedException();
+    }
+
     public IMainTransaction BeginTransaction()
     {
         throw new NotSupportedException();
@@ -48,12 +52,13 @@ public class NullConnection : IConnection
         throw new NotSupportedException();
     }
 
-    public IObservable<ChangeSet<Datom, DatomKey, IDb>> ObserveDatoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
+    public Task<ICommitResult> Commit(Datoms datoms)
     {
-        throw new NotSupportedException();
+        throw new NotImplementedException();
     }
 
-    public IObservable<ChangeSet<Datom, DatomKey, IDb>> ObserveDatoms(SliceDescriptor descriptor)
+    public IObservable<ChangeSet<Datom, DatomKey, IDb>> ObserveDatoms<TDescriptor>(TDescriptor descriptor)
+        where TDescriptor : ISliceDescriptor
     {
         throw new NotSupportedException();
     }
@@ -84,4 +89,8 @@ public class NullConnection : IConnection
     }
 
     public HyperDuck.DuckDB DuckDBQueryEngine => throw new NotSupportedException();
+    Query<TResult> IQueryMixin.Query<TResult>(string sql)
+    {
+        throw new NotImplementedException();
+    }
 }

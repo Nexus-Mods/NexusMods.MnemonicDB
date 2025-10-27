@@ -5,6 +5,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
     <ItemGroup>
+        <PackageReference Include="CommunityToolkit.HighPerformance" />
         <PackageReference Include="DynamicData"/>
         <PackageReference Include="Halgari.Jamarino.IntervalTree" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
@@ -28,8 +29,5 @@
     </ItemGroup>
     <ItemGroup>
         <Compile Remove="SourceGenerationContext.cs"/>
-        <Compile Update="Storage\ImportExport.cs">
-          <DependentUpon>DatomStore.cs</DependentUpon>
-        </Compile>
     </ItemGroup>
 </Project>

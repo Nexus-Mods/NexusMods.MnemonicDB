@@ -1,6 +1,4 @@
 using System;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using Reloaded.Memory.Pointers;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -15,17 +13,29 @@ public interface ISliceDescriptor
     public void Reset<T>(T iterator, bool history = false) where T : ILowLevelIterator, allows ref struct;
     
     /// <summary>
-    /// Move the iterator to the next element, which should either call `Next` or `Prev` on the iterator.
-    /// </summary>
-    public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct;
-
-    /// <summary>
     /// Given the current iterator position, and this key, should we continue iterating (is the given span inside the bounds of the iterator)?
     /// </summary>
     public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool history = false);
+
+    /// <summary>
+    /// Returns true if the slice requires total ordering from RocksDB. That is to say, the slice extends beyond the first
+    /// segment in the database.
+    /// For:
+    ///  - EAVT - it covers more than one E value
+    ///  - AEVT - it covers more than one A value
+    ///  - AVET - it covers more than one A value
+    ///  - VAET - it covers more than one V value
+    ///  - TxLog - it covers more than one T value
+    /// </summary>
+    public bool IsTotalOrdered { get; }
+
+    /// <summary>
+    /// Deconstruct the slice into a start/end datom
+    /// </summary>
+    public void Deconstruct(out Datom fromDatom, out Datom toDatom);
     
     /// <summary>
-    /// Deconstruct the slice descriptor into its constituent parts.
+    /// Get the cache key for this slice, if null is returned, the slice is uncachable.
     /// </summary>
-    public void Deconstruct(out Datom from, out Datom to, out bool isReversed);
+    public object? CacheKey { get; }
 }

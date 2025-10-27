@@ -50,30 +50,29 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
 
     private void ExecuteOneAttribute(FunctionInfo functionInfo, LocalBindData state, LocalInitData initData)
     {
-
         var chunk = functionInfo.Chunk;
         var eVec = functionInfo.GetWritableVector(0).GetData<ulong>();
         var vVec = functionInfo.GetWritableVector(1);
         var vData = vVec.GetData();
         var tVec = functionInfo.GetWritableVector(2).GetData<ulong>();
         var lowLevelType = state.Attribute!.LowLevelType;
-        
+
         Span<byte> isRetract = Span<byte>.Empty;
-        
+
         if (state.History)
             isRetract = functionInfo.GetWritableVector(3).GetData<byte>();
-        
+
         var iterator = initData.Segment;
         var row = 0;
         while (iterator.MoveNext())
         {
             if (!eVec.IsEmpty)
-                eVec[row] = iterator.KeyPrefix.E.Value;
-            if (!tVec.IsEmpty) 
-                tVec[row] = iterator.KeyPrefix.T.Value;
+                eVec[row] = iterator.E.Value;
+            if (!tVec.IsEmpty)
+                tVec[row] = iterator.T.Value;
             if (state.History && !isRetract.IsEmpty)
-                isRetract[row] = iterator.KeyPrefix.IsRetract ? (byte)1 : (byte)0;
-            
+                isRetract[row] = iterator.IsRetract ? (byte)1 : (byte)0;
+
             if (vVec.IsValid)
             {
                 switch (lowLevelType)
@@ -132,7 +131,7 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
             if (row >= eVec.Length)
                 break;
         }
-        
+
         chunk.Size = (ulong)row;
     }
 
@@ -154,10 +153,10 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
         while (iterator.MoveNext())
         {
             if (!eVec.IsEmpty)
-                eVec[row] = iterator.KeyPrefix.E.Value;
+                eVec[row] = iterator.E.Value;
             if (!aVec.IsEmpty)
             {
-                if (!mappings.TryGetValue(iterator.KeyPrefix.A, out var value))
+                if (!mappings.TryGetValue(iterator.A, out var value))
                     value = 0; // Translates to "UNKNOWN"
 
                 if (width == 1)
@@ -167,15 +166,15 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
             }
 
             if (!tVec.IsEmpty) 
-                tVec[row] = iterator.KeyPrefix.T.Value;
+                tVec[row] = iterator.T.Value;
             
             if (vVec.IsValid)
                 vVec.WriteBlob((ulong)row, iterator.ValueSpan);
 
             if (!vTagVec.IsEmpty)
-                vTagVec[row] = (byte)iterator.KeyPrefix.ValueTag;
+                vTagVec[row] = (byte)iterator.ValueTag;
             if (!historyVector.IsEmpty)
-                historyVector[row] = (byte)(iterator.KeyPrefix.IsRetract ? 1 : 0);
+                historyVector[row] = (byte)(iterator.IsRetract ? 1 : 0);
                 
             row++;
             if (row >= eVec.Length)
@@ -289,7 +288,7 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
         {
             return new LocalInitData
             {
-                Segment = db.LightweightDatoms(SliceDescriptor.AllEntities(PartitionId.Entity), totalOrdered: true),
+                Segment = db.LightweightDatoms(SliceDescriptor.AllEntities(PartitionId.Entity)),
                 Mappings = mappings,
             };
         }

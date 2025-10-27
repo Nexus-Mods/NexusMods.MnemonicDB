@@ -1,9 +1,7 @@
-using System;
 using System.Buffers;
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Query;
 
 namespace NexusMods.MnemonicDB;
@@ -17,43 +15,68 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
     }
     public AttributeCache AttributeCache { get; }
 
-    /// <summary>
-    /// Get datoms for a specific descriptor
-    /// </summary>
-    public IndexSegment Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor
+    protected virtual Datoms Load<TSlice>(TSlice slice)
+       where TSlice : ISliceDescriptor, allows ref struct
     {
-        using var builder = new IndexSegmentBuilder(AttributeCache);
-        using var iterator = GetRefDatomEnumerator(descriptor is SliceDescriptor);
-        builder.AddRange(iterator, descriptor);
-        return builder.Build();
+        using var en = GetRefDatomEnumerator();
+        return Abstractions.Datoms.Create(en, slice, AttributeCache);
     }
     
-    public IEnumerable<IndexSegment> DatomsChunked<TSliceDescriptor>(TSliceDescriptor descriptor, int chunkSize) 
+    public Datoms Datoms<TSlice>(TSlice slice) where TSlice : ISliceDescriptor, allows ref struct 
+        => Load(slice);
+
+    /// <inheritdoc />
+    public Datoms this[EntityId e] => Load(SliceDescriptor.Create(e));
+
+    /// <inheritdoc />
+    public Datoms this[AttributeId a] => Load(SliceDescriptor.Create(a));
+
+    /// <inheritdoc />
+    public Datoms this[IAttribute a]
+    {
+        get
+        {
+            var attrId = AttributeCache.GetAttributeId(a.Id);
+            return Load(SliceDescriptor.Create(attrId));
+        }
+    }
+
+    /// <inheritdoc />
+    public Datoms this[TxId t] => Load(SliceDescriptor.Create(t));
+
+    /// <inheritdoc />
+    public Datoms this[IndexType t] => Load(SliceDescriptor.Create(t));
+    
+    /// <inheritdoc />
+    public Datoms this[AttributeId a, EntityId e] => Load(SliceDescriptor.Create(a, e));
+
+    public IEnumerable<Datoms> DatomsChunked<TSliceDescriptor>(TSliceDescriptor descriptor, int chunkSize) 
         where TSliceDescriptor : ISliceDescriptor
     {
-        using var builder = new IndexSegmentBuilder(AttributeCache);
         using var iterator = GetRefDatomEnumerator();
+        var currentResult = new Datoms(AttributeCache);
         while (iterator.MoveNext(descriptor))
         {
-            builder.AddCurrent(iterator);
-            if (builder.Count == chunkSize)
+            currentResult.Add(Datom.Create(iterator));
+            if (currentResult.Count == chunkSize)
             {
-                yield return builder.Build();
-                builder.Reset();
+                yield return currentResult;
+                currentResult = new(AttributeCache);
             }
         }
-        if (builder.Count > 0)
-            yield return builder.Build();
+
+        if (currentResult.Count > 0)
+            yield return currentResult;
     }
 
     /// <summary>
     /// A lightweight datom segment doesn't load the entire set into memory.
     /// </summary>
     [MustDisposeResource]
-    public ILightweightDatomSegment LightweightDatoms<TDescriptor>(TDescriptor descriptor, bool totalOrdered = false)
+    public ILightweightDatomSegment LightweightDatoms<TDescriptor>(TDescriptor descriptor)
         where TDescriptor : ISliceDescriptor
     {
-        var enumerator = GetRefDatomEnumerator(totalOrdered);
+        var enumerator = GetRefDatomEnumerator();
         return new LightweightDatomSegment<TRefEnumerator, TDescriptor>(enumerator, descriptor);
     }
 
@@ -67,7 +90,7 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         int chunkOffset = 0;
         while (iterator.MoveNext(slice))
         {
-            chunk[chunkOffset] = iterator.KeyPrefix.E;
+            chunk[chunkOffset] = iterator.E;
             chunkOffset++;
             if (chunkOffset >= chunk.Length)
             {
@@ -81,46 +104,11 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         return (result.Count - 1) * chunkSize + chunkOffset;
     }
     
-    
-    public virtual EntitySegment GetEntitySegment(IDb db, EntityId entityId)
+    public Datoms ReferencesTo(EntityId eid)
     {
-        using var builder = new IndexSegmentBuilder(AttributeCache);
-        using var iterator = GetRefDatomEnumerator();
-        builder.AddRange(iterator, SliceDescriptor.Create(entityId));
-        var avSegment = AVSegment.Build(builder);
-        return new EntitySegment(entityId, new AVSegment(avSegment), db);
-    }
-
-    public virtual EntityIds GetEntityIdsPointingTo(AttributeId attrId, EntityId entityId)
-    {
-        var slice = SliceDescriptor.Create(attrId, entityId);
-        using var builder = new IndexSegmentBuilder(AttributeCache);
-        using var iterator = GetRefDatomEnumerator();
-        builder.AddRange(iterator, slice);
-        return new EntityIds { Data = EntityIds.Build(builder) };
+        return Load(SliceDescriptor.CreateReferenceTo(eid));
     }
     
-    public virtual EntityIds GetBackRefs(AttributeId attribute, EntityId id)
-    {
-        return GetEntityIdsPointingTo(attribute, id);
-    }
-
-    public IndexSegment ReferencesTo(EntityId eid)
-    {
-        using var builder = new IndexSegmentBuilder(AttributeCache);
-        using var iterator = GetRefDatomEnumerator();
-        builder.AddRange(iterator, SliceDescriptor.CreateReferenceTo(eid));
-        return builder.Build();
-    }
-
-    public IndexSegment Datoms(TxId txId)
-    {
-        using var builder = new IndexSegmentBuilder(AttributeCache);
-        using var iterator = GetRefDatomEnumerator();
-        builder.AddRange(iterator, SliceDescriptor.Create(txId));
-        return builder.Build();
-    }
-
     /// <inheritdoc />
-    public abstract TRefEnumerator GetRefDatomEnumerator(bool totalOrder = false);
+    public abstract TRefEnumerator GetRefDatomEnumerator();
 }

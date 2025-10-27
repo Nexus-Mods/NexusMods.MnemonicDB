@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
 namespace NexusMods.MnemonicDB.Abstractions.ElementComparers;
@@ -26,18 +25,18 @@ public sealed class AComparer : IElementComparer
         // Use simple if/else to compare.
         return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
     }
-
-    /// <inheritdoc />
-    public static int Compare(in Datom a, in Datom b)
-    {
-        return a.A.CompareTo(b.A);
-    }
-
+    
     /// <inheritdoc />
     public static int Compare(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b)
     {
         var keyA = KeyPrefix.Read(a);
         var keyB = KeyPrefix.Read(b);
         return keyA.A.CompareTo(keyB.A);
+    }
+
+    /// <inheritdoc />
+    public static int Compare(in Datom a, in Datom b)
+    {
+        return a.Prefix.A.CompareTo(b.Prefix.A);
     }
 }

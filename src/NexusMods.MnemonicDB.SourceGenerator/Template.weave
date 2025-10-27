@@ -24,7 +24,6 @@ using global::System.Diagnostics.Contracts;
 
 using __ABSTRACTIONS__ = NexusMods.MnemonicDB.Abstractions;
 using __MODELS__ = NexusMods.MnemonicDB.Abstractions.Models;
-using __SEGMENTS__ = NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using __DI__ = Microsoft.Extensions.DependencyInjection;
 using __COMPARERS__ = NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
@@ -52,7 +51,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     /// <summary>
     /// Finds all {{= model.Name}} entities with the given value for the {{= attr.Name}} attribute.
     /// </summary>
-    public static __SEGMENTS__.Entities<{{= model.Name}}.ReadOnly> FindBy{{= attr.Name}}(__ABSTRACTIONS__.IDb db, {{= attr.HighLevelType.ToDisplayString()}} value) {
+    public static IEnumerable<{{= model.Name}}.ReadOnly> FindBy{{= attr.Name}}(__ABSTRACTIONS__.IDb db, {{= attr.HighLevelType.ToDisplayString()}} value) {
     {{if attr.IsReference}}
         return db.GetBackrefModels<{{= model.Name}}.ReadOnly>({{= attr.FieldName}}, value);    
     {{else}}
@@ -98,10 +97,9 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     /// <summary>
     /// Returns all {{= model.Name}} entities in the database.
     /// </summary>
-    public static __SEGMENTS__.Entities<{{=model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
+    public static IEnumerable<{{=model.Name}}.ReadOnly> All(__ABSTRACTIONS__.IDb db) {
         return db.Datoms(PrimaryAttribute).AsModels<{{= model.Name}}.ReadOnly>(db);
     }
-
 
     /// <summary>
     /// Loads a model from the database, not providing any validation
@@ -159,16 +157,17 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
     /// Constructs a new {{= model.Name}} model from the given entity id, used to provide a typed structured
     /// way to interact with the entity before it is commited to the database.
     /// </summary>
-    public partial class New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
+    public partial struct New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
+        private readonly __ABSTRACTIONS__.Transaction _datoms;
 
         {{if model.Includes.Count == 0}}
         
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with a generated temporary id.
         /// </summary>
-        public New(__ABSTRACTIONS__.ITransaction tx) : base() {
-            Id = tx.TempId();
-            tx.Attach(this);
+        public New(__ABSTRACTIONS__.Transaction tx) {
+            Id = TempId.Next();
+            _datoms = tx;
         }
         
         {{else}}
@@ -176,19 +175,19 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with the given entity id.
         /// </summary>
-        public New(__ABSTRACTIONS__.ITransaction tx, out __ABSTRACTIONS__.EntityId id) : base() {
-            Id = tx.TempId();
+        public New(__ABSTRACTIONS__.Transaction tx, out __ABSTRACTIONS__.EntityId id) {
+            _datoms = tx;
+            Id = TempId.Next();
             id = Id;
-            tx.Attach(this);
         }
         
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with the given entity partition for the generated temporary id.
         /// </summary>
-        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.PartitionId partition, out __ABSTRACTIONS__.EntityId id) : base() {
-            Id = tx.TempId(partition);
+        public New(__ABSTRACTIONS__.Transaction tx, __ABSTRACTIONS__.PartitionId partition, out __ABSTRACTIONS__.EntityId id) {
+            _datoms = tx;
+            Id = TempId.Next(partition);
             id = Id;
-            tx.Attach(this);
         }
         
         {{/if}}
@@ -196,22 +195,13 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// <summary>
         /// Constructs a new {{= model.Name}} model from the given transaction with the given entity id.
         /// </summary>
-        public New(__ABSTRACTIONS__.ITransaction tx, __ABSTRACTIONS__.EntityId eid) : base() {
+        public New(__ABSTRACTIONS__.Transaction tx, __ABSTRACTIONS__.EntityId eid) {
+            _datoms = tx;
             Id = eid;
-            tx.Attach(this);
         }
 
         {{each include in model.Includes}}
-        /// <summary>
-        /// Gets the included entity of type {{= include.Name}} from the transaction.
-        /// </summary>
-        public {{= include.ToDisplayString()}}.New Get{{=include.Name}}(__ABSTRACTIONS__.ITransaction tx) {
-            if (!tx.TryGet<{{= include.ToDisplayString()}}.New>(Id, out var value))
-                throw new InvalidOperationException($"Unable to find {typeof({{= include.ToDisplayString()}}.New)} with ID {Id} in transaction!");
-
-            return value;
-        }
-
+        
         /// <summary>
         /// Sets the included entity of type {{= include.Name}} in the transaction.
         /// </summary>
@@ -221,6 +211,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
                     throw new InvalidOperationException("The id of the included entity must match the id of the including entity.");
             }
         }
+        
         {{/each}}
 
         /// <summary>
@@ -228,6 +219,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         /// </summary>
         public void AddTo(__ABSTRACTIONS__.ITransaction tx)
         {
+        /*
             {{each attr in model.Attributes}}
             {{if attr.IsCollection}}
             foreach (var itm in {{= attr.ContextualName}}) {
@@ -259,6 +251,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 
             {{/if}}
             {{/each}}
+            */
         }
 
         /// <summary>
@@ -288,15 +281,24 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
         
         /// <inheritdoc cref="{{= model.Name}}.{{= attr.ContextualName}}" />
         {{if attr.IsReference && !attr.IsCollection}}
-        public {{= attr.Prefix}} {{= attr.ReferenceType.ToDisplayString()}}Id {{= attr.ContextualName}} { get; set; }
+        public {{= attr.Prefix}} {{= attr.ReferenceType.ToDisplayString()}}Id {{= attr.ContextualName}} 
+        {
+           set => _datoms.Add(Id, {{= attr.FieldName}}, value);
+        }
         {{elif attr.IsCollection}}
-        public IEnumerable<{{= attr.HighLevelType.ToDisplayString()}}> {{= attr.ContextualName}} { get; set; } = [];
+        public IEnumerable<{{= attr.HighLevelType.ToDisplayString()}}> {{= attr.ContextualName}} 
+        {
+           set => _datoms.Add(Id, {{= attr.FieldName}}, value);
+        }
         {{elif attr.IsReference}}
         public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} { get; set; }
         {{elif attr.IsMarker}}
         public bool Is{{= attr.ContextualName}} { get; set; } = false;
         {{else}}
-        public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}}{{= attr.Postfix}} {{= attr.ContextualName}} { get; set; }
+        public {{= attr.Prefix}} {{= attr.HighLevelType.ToDisplayString()}} {{= attr.ContextualName}} 
+        {
+            set => _datoms.Add(Id, {{= attr.FieldName}}, value);
+        }
         {{/if}}
         {{/each}}
         #endregion
@@ -313,14 +315,14 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            /// <summary>
            /// The database segment containing the datoms for this entity in EAVT order.
            /// </summary>
-           public readonly __SEGMENTS__.EntitySegment EntitySegment;
+           public readonly __ABSTRACTIONS__.Datoms EntitySegment;
            
-           __SEGMENTS__.EntitySegment __MODELS__.IHasIdAndEntitySegment.EntitySegment => this.EntitySegment; 
+           __ABSTRACTIONS__.Datoms __MODELS__.IHasIdAndEntitySegment.EntitySegment => this.EntitySegment; 
 
            /// <summary>
            /// Constructs a new ReadOnly model of the entity from the given segment and id.
            /// </summary>
-           public ReadOnly(__ABSTRACTIONS__.IDb db, __SEGMENTS__.EntitySegment segment, __ABSTRACTIONS__.EntityId id) {
+           public ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.Datoms segment, __ABSTRACTIONS__.EntityId id) {
                Db = db;
                Id = id;
                EntitySegment = segment;
@@ -330,7 +332,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            /// Constructs a new ReadOnly model of the entity.
            /// </summary>
            public ReadOnly(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) :
-               this(db, db.Get(id), id)
+               this(db, db[id], id)
            {
            }
 
@@ -356,7 +358,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            /// Constructs a new ReadOnly model of the entity.
            /// </summary>
            public static ReadOnly Create(__ABSTRACTIONS__.IDb db, __ABSTRACTIONS__.EntityId id) {
-               return new ReadOnly(db, db.Get(id), id);
+               return new ReadOnly(db, db[id], id);
            }
 
            /// <inheritdoc />
@@ -364,12 +366,12 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 
 
            /// <inheritdoc />
-           public IEnumerator<IReadDatom> GetEnumerator()
+           public IEnumerator<ResolvedDatom> GetEnumerator()
            {
                var resolver = Db.Connection.AttributeResolver;
                foreach (var datom in EntitySegment)
                {
-                   yield return resolver.Resolve(datom);
+                   yield return new __ABSTRACTIONS__.ResolvedDatom(datom, resolver);
                }
            }
 
@@ -411,10 +413,10 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            {{each attr in model.Attributes}}
            /// <inheritdoc cref="{{= model.Name}}.{{= attr.ContextualName}}" />
            {{if attr.IsCollection && attr.IsReference && !attr.IsMarker}}
-           public __SEGMENTS__.Values<__ABSTRACTIONS__.EntityId> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
-           public __SEGMENTS__.ValueEntities<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => __SEGMENTS__.ValuesExtensions.AsModels<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly>({{= attr.FieldName}}.Get(this), Db);
+           public IEnumerable<__ABSTRACTIONS__.EntityId> {{= attr.ContextualName}} => EntitySegment.GetAllResolved({{= attr.FieldName}}, Db.Connection.AttributeResolver);
+           public IEnumerable<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => {{= attr.FieldName}}.GetAllModels<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly>(Db, EntitySegment);
            {{elif attr.IsCollection}}
-           public __SEGMENTS__.Values<{{=attr.HighLevelType.ToDisplayString()}}> {{= attr.ContextualName}} => {{= attr.FieldName}}.Get(this);
+           public IEnumerable<{{=attr.HighLevelType.ToDisplayString()}}> {{= attr.ContextualName}} => EntitySegment.GetAllResolved({{= attr.FieldName}}, Db.Connection.AttributeResolver);
            {{elif attr.IsMarker}}
            public bool Is{{= attr.ContextualName}} => {{= attr.FieldName}}.Contains(this);
            {{elif attr.IsReference}}
@@ -436,7 +438,7 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
 
            {{each backref in model.BackReferences}}
 
-           public __SEGMENTS__.Entities<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly> {{= backref.Name}} => Db.GetBackrefModels<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly>({{= backref.OtherAttribute.ToDisplayString()}}, this.Id);
+           public IEnumerable<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly> {{= backref.Name}} => Db.GetBackrefModels<{{= backref.OtherModel.ToDisplayString()}}.ReadOnly>({{= backref.OtherAttribute.ToDisplayString()}}, this.Id);
            {{/each}}
 
            /// <summary>

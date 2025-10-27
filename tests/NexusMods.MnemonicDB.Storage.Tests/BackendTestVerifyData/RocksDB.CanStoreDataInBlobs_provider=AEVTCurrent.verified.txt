@@ -1,86 +1,86 @@
-﻿+ | 0000000000000001 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/UniqueId         | 0100000000000001
-+ | 0000000000000002 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/ValueType        | 0100000000000001
-+ | 0000000000000003 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Indexed          | 0100000000000001
-+ | 0000000000000004 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Optional         | 0100000000000001
-+ | 0000000000000005 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/NoHistory        | 0100000000000001
-+ | 0000000000000006 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Cardinality      | 0100000000000001
-+ | 0000000000000007 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Documentation    | 0100000000000001
-+ | 0000000000000008 | (0001) UniqueId                 | NexusMods.MnemonicDB.Transaction/Timestamp       | 0100000000000001
-+ | 0000000000000014 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Path         | 0100000000000002
-+ | 0000000000000015 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Hash         | 0100000000000002
-+ | 0000000000000016 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Size         | 0100000000000002
-+ | 0000000000000017 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Mod          | 0100000000000002
-+ | 0000000000000018 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Mod/Name          | 0100000000000002
-+ | 0000000000000019 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Mod/Loadout       | 0100000000000002
-+ | 000000000000001A | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Loadout/Name      | 0100000000000002
-+ | 000000000000001B | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Collection/Name   | 0100000000000002
-+ | 000000000000001C | (0001) UniqueId                 | NexusMods.MnemonicDB.T...del.Collection/Loadout  | 0100000000000002
-+ | 000000000000001D | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Collection/Mod    | 0100000000000002
-+ | 000000000000001E | (0001) UniqueId                 | NexusMods.MnemonicDB.S...stAttributes/InKeyBlob  | 0100000000000002
-+ | 000000000000001F | (0001) UniqueId                 | NexusMods.MnemonicDB.S...Attributes/InValueBlob  | 0100000000000002
-+ | 0000000000000001 | (0002) ValueType                | Ascii                                            | 0100000000000001
-+ | 0000000000000002 | (0002) ValueType                | UInt8                                            | 0100000000000001
-+ | 0000000000000003 | (0002) ValueType                | UInt8                                            | 0100000000000001
-+ | 0000000000000004 | (0002) ValueType                | Null                                             | 0100000000000001
-+ | 0000000000000005 | (0002) ValueType                | Null                                             | 0100000000000001
-+ | 0000000000000006 | (0002) ValueType                | UInt8                                            | 0100000000000001
-+ | 0000000000000007 | (0002) ValueType                | Utf8                                             | 0100000000000001
-+ | 0000000000000008 | (0002) ValueType                | Int64                                            | 0100000000000001
-+ | 0000000000000014 | (0002) ValueType                | Utf8Insensitive                                  | 0100000000000002
-+ | 0000000000000015 | (0002) ValueType                | UInt64                                           | 0100000000000002
-+ | 0000000000000016 | (0002) ValueType                | UInt64                                           | 0100000000000002
-+ | 0000000000000017 | (0002) ValueType                | Reference                                        | 0100000000000002
-+ | 0000000000000018 | (0002) ValueType                | Utf8                                             | 0100000000000002
-+ | 0000000000000019 | (0002) ValueType                | Reference                                        | 0100000000000002
-+ | 000000000000001A | (0002) ValueType                | Utf8                                             | 0100000000000002
-+ | 000000000000001B | (0002) ValueType                | Utf8                                             | 0100000000000002
-+ | 000000000000001C | (0002) ValueType                | Reference                                        | 0100000000000002
-+ | 000000000000001D | (0002) ValueType                | Reference                                        | 0100000000000002
-+ | 000000000000001E | (0002) ValueType                | Blob                                             | 0100000000000002
-+ | 000000000000001F | (0002) ValueType                | HashedBlob                                       | 0100000000000002
-+ | 0000000000000001 | (0003) Indexed                  | 0                                                | 0100000000000001
-+ | 0000000000000014 | (0003) Indexed                  | 1                                                | 0100000000000002
-+ | 0000000000000015 | (0003) Indexed                  | 1                                                | 0100000000000002
-+ | 0000000000000016 | (0003) Indexed                  | 0                                                | 0100000000000002
-+ | 0000000000000017 | (0003) Indexed                  | 0                                                | 0100000000000002
-+ | 0000000000000018 | (0003) Indexed                  | 1                                                | 0100000000000002
-+ | 0000000000000019 | (0003) Indexed                  | 0                                                | 0100000000000002
-+ | 000000000000001A | (0003) Indexed                  | 1                                                | 0100000000000002
-+ | 000000000000001B | (0003) Indexed                  | 0                                                | 0100000000000002
-+ | 000000000000001C | (0003) Indexed                  | 0                                                | 0100000000000002
-+ | 000000000000001D | (0003) Indexed                  | 0                                                | 0100000000000002
-+ | 000000000000001E | (0003) Indexed                  | 1                                                | 0100000000000002
-+ | 000000000000001F | (0003) Indexed                  | 1                                                | 0100000000000002
-+ | 0000000000000007 | (0004) Optional                 |                                                  | 0100000000000001
-+ | 0000000000000001 | (0006) Cardinality              | 1                                                | 0100000000000001
-+ | 0000000000000002 | (0006) Cardinality              | 1                                                | 0100000000000001
-+ | 0000000000000003 | (0006) Cardinality              | 1                                                | 0100000000000001
-+ | 0000000000000004 | (0006) Cardinality              | 1                                                | 0100000000000001
-+ | 0000000000000005 | (0006) Cardinality              | 1                                                | 0100000000000001
-+ | 0000000000000006 | (0006) Cardinality              | 1                                                | 0100000000000001
-+ | 0000000000000007 | (0006) Cardinality              | 1                                                | 0100000000000001
-+ | 0000000000000008 | (0006) Cardinality              | 1                                                | 0100000000000001
-+ | 0000000000000014 | (0006) Cardinality              | 1                                                | 0100000000000002
-+ | 0000000000000015 | (0006) Cardinality              | 1                                                | 0100000000000002
-+ | 0000000000000016 | (0006) Cardinality              | 1                                                | 0100000000000002
-+ | 0000000000000017 | (0006) Cardinality              | 1                                                | 0100000000000002
-+ | 0000000000000018 | (0006) Cardinality              | 1                                                | 0100000000000002
-+ | 0000000000000019 | (0006) Cardinality              | 1                                                | 0100000000000002
-+ | 000000000000001A | (0006) Cardinality              | 1                                                | 0100000000000002
-+ | 000000000000001B | (0006) Cardinality              | 1                                                | 0100000000000002
-+ | 000000000000001C | (0006) Cardinality              | 1                                                | 0100000000000002
-+ | 000000000000001D | (0006) Cardinality              | 2                                                | 0100000000000002
-+ | 000000000000001E | (0006) Cardinality              | 1                                                | 0100000000000002
-+ | 000000000000001F | (0006) Cardinality              | 1                                                | 0100000000000002
-+ | 0100000000000001 | (0008) Timestamp                | DateTime : 0                                     | 0100000000000001
-+ | 0100000000000002 | (0008) Timestamp                | DateTime : 1                                     | 0100000000000002
-+ | 0100000000000003 | (0008) Timestamp                | DateTime : 2                                     | 0100000000000003
-+ | 0100000000000004 | (0008) Timestamp                | DateTime : 3                                     | 0100000000000004
-+ | 0100000000000005 | (0008) Timestamp                | DateTime : 4                                     | 0100000000000005
-+ | 0100000000000006 | (0008) Timestamp                | DateTime : 5                                     | 0100000000000006
-+ | 0100000000000007 | (0008) Timestamp                | DateTime : 6                                     | 0100000000000007
-+ | 0100000000000008 | (0008) Timestamp                | DateTime : 7                                     | 0100000000000008
-+ | 0200000000000003 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000005
-+ | 0200000000000004 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | 0100000000000006
-+ | 0200000000000003 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | 0100000000000005
-+ | 0200000000000004 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | 0100000000000006
+﻿+ | EId:0000000000000001 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/UniqueId         | Tx:0100000000000001
++ | EId:0000000000000002 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/ValueType        | Tx:0100000000000001
++ | EId:0000000000000003 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Indexed          | Tx:0100000000000001
++ | EId:0000000000000004 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Optional         | Tx:0100000000000001
++ | EId:0000000000000005 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/NoHistory        | Tx:0100000000000001
++ | EId:0000000000000006 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Cardinality      | Tx:0100000000000001
++ | EId:0000000000000007 | (0001) UniqueId                 | NexusMods.MnemonicDB.DatomStore/Documentation    | Tx:0100000000000001
++ | EId:0000000000000008 | (0001) UniqueId                 | NexusMods.MnemonicDB.Transaction/Timestamp       | Tx:0100000000000001
++ | EId:0000000000000014 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Path         | Tx:0100000000000002
++ | EId:0000000000000015 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Hash         | Tx:0100000000000002
++ | EId:0000000000000016 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Size         | Tx:0100000000000002
++ | EId:0000000000000017 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.File/Mod          | Tx:0100000000000002
++ | EId:0000000000000018 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Mod/Name          | Tx:0100000000000002
++ | EId:0000000000000019 | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Mod/Loadout       | Tx:0100000000000002
++ | EId:000000000000001A | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Loadout/Name      | Tx:0100000000000002
++ | EId:000000000000001B | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Collection/Name   | Tx:0100000000000002
++ | EId:000000000000001C | (0001) UniqueId                 | NexusMods.MnemonicDB.T...del.Collection/Loadout  | Tx:0100000000000002
++ | EId:000000000000001D | (0001) UniqueId                 | NexusMods.MnemonicDB.TestModel.Collection/Mod    | Tx:0100000000000002
++ | EId:000000000000001E | (0001) UniqueId                 | NexusMods.MnemonicDB.S...stAttributes/InKeyBlob  | Tx:0100000000000002
++ | EId:000000000000001F | (0001) UniqueId                 | NexusMods.MnemonicDB.S...Attributes/InValueBlob  | Tx:0100000000000002
++ | EId:0000000000000001 | (0002) ValueType                | Ascii                                            | Tx:0100000000000001
++ | EId:0000000000000002 | (0002) ValueType                | UInt8                                            | Tx:0100000000000001
++ | EId:0000000000000003 | (0002) ValueType                | UInt8                                            | Tx:0100000000000001
++ | EId:0000000000000004 | (0002) ValueType                | Null                                             | Tx:0100000000000001
++ | EId:0000000000000005 | (0002) ValueType                | Null                                             | Tx:0100000000000001
++ | EId:0000000000000006 | (0002) ValueType                | UInt8                                            | Tx:0100000000000001
++ | EId:0000000000000007 | (0002) ValueType                | Utf8                                             | Tx:0100000000000001
++ | EId:0000000000000008 | (0002) ValueType                | Int64                                            | Tx:0100000000000001
++ | EId:0000000000000014 | (0002) ValueType                | Utf8Insensitive                                  | Tx:0100000000000002
++ | EId:0000000000000015 | (0002) ValueType                | UInt64                                           | Tx:0100000000000002
++ | EId:0000000000000016 | (0002) ValueType                | UInt64                                           | Tx:0100000000000002
++ | EId:0000000000000017 | (0002) ValueType                | Reference                                        | Tx:0100000000000002
++ | EId:0000000000000018 | (0002) ValueType                | Utf8                                             | Tx:0100000000000002
++ | EId:0000000000000019 | (0002) ValueType                | Reference                                        | Tx:0100000000000002
++ | EId:000000000000001A | (0002) ValueType                | Utf8                                             | Tx:0100000000000002
++ | EId:000000000000001B | (0002) ValueType                | Utf8                                             | Tx:0100000000000002
++ | EId:000000000000001C | (0002) ValueType                | Reference                                        | Tx:0100000000000002
++ | EId:000000000000001D | (0002) ValueType                | Reference                                        | Tx:0100000000000002
++ | EId:000000000000001E | (0002) ValueType                | Blob                                             | Tx:0100000000000002
++ | EId:000000000000001F | (0002) ValueType                | HashedBlob                                       | Tx:0100000000000002
++ | EId:0000000000000001 | (0003) Indexed                  | None                                             | Tx:0100000000000001
++ | EId:0000000000000014 | (0003) Indexed                  | Indexed                                          | Tx:0100000000000002
++ | EId:0000000000000015 | (0003) Indexed                  | Indexed                                          | Tx:0100000000000002
++ | EId:0000000000000016 | (0003) Indexed                  | None                                             | Tx:0100000000000002
++ | EId:0000000000000017 | (0003) Indexed                  | None                                             | Tx:0100000000000002
++ | EId:0000000000000018 | (0003) Indexed                  | Indexed                                          | Tx:0100000000000002
++ | EId:0000000000000019 | (0003) Indexed                  | None                                             | Tx:0100000000000002
++ | EId:000000000000001A | (0003) Indexed                  | Indexed                                          | Tx:0100000000000002
++ | EId:000000000000001B | (0003) Indexed                  | None                                             | Tx:0100000000000002
++ | EId:000000000000001C | (0003) Indexed                  | None                                             | Tx:0100000000000002
++ | EId:000000000000001D | (0003) Indexed                  | None                                             | Tx:0100000000000002
++ | EId:000000000000001E | (0003) Indexed                  | Indexed                                          | Tx:0100000000000002
++ | EId:000000000000001F | (0003) Indexed                  | Indexed                                          | Tx:0100000000000002
++ | EId:0000000000000007 | (0004) Optional                 | Null                                             | Tx:0100000000000001
++ | EId:0000000000000001 | (0006) Cardinality              | One                                              | Tx:0100000000000001
++ | EId:0000000000000002 | (0006) Cardinality              | One                                              | Tx:0100000000000001
++ | EId:0000000000000003 | (0006) Cardinality              | One                                              | Tx:0100000000000001
++ | EId:0000000000000004 | (0006) Cardinality              | One                                              | Tx:0100000000000001
++ | EId:0000000000000005 | (0006) Cardinality              | One                                              | Tx:0100000000000001
++ | EId:0000000000000006 | (0006) Cardinality              | One                                              | Tx:0100000000000001
++ | EId:0000000000000007 | (0006) Cardinality              | One                                              | Tx:0100000000000001
++ | EId:0000000000000008 | (0006) Cardinality              | One                                              | Tx:0100000000000001
++ | EId:0000000000000014 | (0006) Cardinality              | One                                              | Tx:0100000000000002
++ | EId:0000000000000015 | (0006) Cardinality              | One                                              | Tx:0100000000000002
++ | EId:0000000000000016 | (0006) Cardinality              | One                                              | Tx:0100000000000002
++ | EId:0000000000000017 | (0006) Cardinality              | One                                              | Tx:0100000000000002
++ | EId:0000000000000018 | (0006) Cardinality              | One                                              | Tx:0100000000000002
++ | EId:0000000000000019 | (0006) Cardinality              | One                                              | Tx:0100000000000002
++ | EId:000000000000001A | (0006) Cardinality              | One                                              | Tx:0100000000000002
++ | EId:000000000000001B | (0006) Cardinality              | One                                              | Tx:0100000000000002
++ | EId:000000000000001C | (0006) Cardinality              | One                                              | Tx:0100000000000002
++ | EId:000000000000001D | (0006) Cardinality              | Many                                             | Tx:0100000000000002
++ | EId:000000000000001E | (0006) Cardinality              | One                                              | Tx:0100000000000002
++ | EId:000000000000001F | (0006) Cardinality              | One                                              | Tx:0100000000000002
++ | EId:0100000000000001 | (0008) Timestamp                | DateTime : 0                                     | Tx:0100000000000001
++ | EId:0100000000000002 | (0008) Timestamp                | DateTime : 1                                     | Tx:0100000000000002
++ | EId:0100000000000003 | (0008) Timestamp                | DateTime : 2                                     | Tx:0100000000000003
++ | EId:0100000000000004 | (0008) Timestamp                | DateTime : 3                                     | Tx:0100000000000004
++ | EId:0100000000000005 | (0008) Timestamp                | DateTime : 4                                     | Tx:0100000000000005
++ | EId:0100000000000006 | (0008) Timestamp                | DateTime : 5                                     | Tx:0100000000000006
++ | EId:0100000000000007 | (0008) Timestamp                | DateTime : 6                                     | Tx:0100000000000007
++ | EId:0100000000000008 | (0008) Timestamp                | DateTime : 7                                     | Tx:0100000000000008
++ | EId:0200000000000003 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | Tx:0100000000000005
++ | EId:0200000000000004 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | Tx:0100000000000006
++ | EId:0200000000000003 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | Tx:0100000000000005
++ | EId:0200000000000004 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | Tx:0100000000000006

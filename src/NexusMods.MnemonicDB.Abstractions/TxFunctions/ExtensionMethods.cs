@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 
 namespace NexusMods.MnemonicDB.Abstractions.TxFunctions;
 
@@ -15,13 +12,9 @@ public static class ExtensionMethods
     /// Adds a function to the transaction as a TxFunction
     /// </summary>
     public static void Add<T>(this ITransaction tx, T arg, Action<ITransaction, IDb, T> fn) =>
-        tx.Add(new TxFunction<T>(fn, arg));
-
-    /// <summary>
-    /// Adds a function to the transaction as a TxFunction
-    /// </summary>
-    public static void Add<TA, TB>(this ITransaction tx, TA a, TB b, Action<ITransaction, IDb, TA, TB> fn) =>
-        tx.Add(new TxFunction<TA, TB>(fn, a, b));
+    throw new NotImplementedException();
+        //tx.Add(new TxFunction<T>(fn, arg));
+    
 
     /// <summary>
     /// Adds a function to the transaction that will delete the entity with the given id. If `recursive` is true, it will
@@ -30,19 +23,19 @@ public static class ExtensionMethods
     /// <param name="tx"></param>
     /// <param name="id"></param>
     /// <param name="recursive"></param>
-    public static void Delete(this ITransaction tx, EntityId id, bool recursive)
+    public static void Delete(this Datoms tx, EntityId id, bool recursive = false)
     {
         if (recursive)
         {
-            tx.Add(id, DeleteRecursive);
+            tx.AddTxFn((tx, db) => DeleteRecursive(tx, db, id));
         }
         else
         {
-            tx.Add(id, DeleteThisOnly);
+            tx.AddTxFn((tx, db) => DeleteThisOnly(tx, db, id));
         }
     }
 
-    private static void DeleteRecursive(ITransaction tx, IDb db, EntityId eid)
+    private static void DeleteRecursive(Datoms tx, IDb db, EntityId eid)
     {
         HashSet<EntityId> seen = [];
         Stack<EntityId> remain = new();
@@ -70,7 +63,7 @@ public static class ExtensionMethods
                 else
                 {
                     // Otherwise, just delete the reference
-                    tx.Add(reference.Retract());
+                    tx.Add(reference.WithRetract());
                 }
             }
         }
@@ -89,11 +82,11 @@ public static class ExtensionMethods
         
     }
 
-    private static void DeleteThisOnly(ITransaction tx, IDb db, EntityId eid)
+    private static void DeleteThisOnly(Datoms tx, IDb db, EntityId eid)
     {
-        foreach (var datom in db.Get(eid))
+        foreach (var datom in db[eid])
         {
-            tx.Add(datom.Retract());
+            tx.Add(datom.WithRetract());
         }
     }
 }

@@ -12,10 +12,10 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 public sealed class AbsolutePathAttribute(string ns, string name) : ScalarAttribute<AbsolutePath, string, Utf8InsensitiveSerializer>(ns, name)
 {
     /// <inheritdoc/>
-    protected override string ToLowLevel(AbsolutePath value) => value.ToString();
+    public override string ToLowLevel(AbsolutePath value) => value.ToString();
 
     /// <inheritdoc/>
-    protected override AbsolutePath FromLowLevel(string value, AttributeResolver resolver)
+    public override AbsolutePath FromLowLevel(string value, AttributeResolver resolver)
     {
         return resolver.ServiceProvider.GetRequiredService<IFileSystem>().FromUnsanitizedFullPath(value);
     }

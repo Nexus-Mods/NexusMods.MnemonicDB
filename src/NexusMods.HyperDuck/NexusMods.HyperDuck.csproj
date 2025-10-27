@@ -7,6 +7,7 @@
     </PropertyGroup>
     
     <ItemGroup>
+      <PackageReference Include="CommunityToolkit.HighPerformance" />
       <PackageReference Include="DuckDB.NativeBinaries" />
       <PackageReference Include="DynamicData" />
       <PackageReference Include="JetBrains.Annotations" />

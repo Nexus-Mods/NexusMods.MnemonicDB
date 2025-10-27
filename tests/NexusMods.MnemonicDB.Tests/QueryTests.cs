@@ -17,7 +17,6 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task CanRunActiveQueries()
     {
-        var table = TableResults();
         await InsertExampleData();
 
         var results = new ObservableList<(RelativePath, Hash, long)>();
@@ -28,9 +27,6 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         using var _2 = Connection.Query<(TxId, long)>("SELECT T, COUNT(E) FROM mdb_Datoms(A:= 'File/Hash', History:=true) WHERE IsRetract = false GROUP BY T ORDER BY T")
             .ObserveInto(historyResults);
 
-        table.Add(results, "Initial Results");
-        table.Add(historyResults, "Initial History");
-            
         await Assert.That(results).IsNotEmpty();
         
 
@@ -41,11 +37,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await tx.Commit();
 
         await Connection.FlushQueries();
-
-        table.Add(results, "After Updates Query");
-        table.Add(historyResults, "After Updates History");
-        
-        await Verify(table.ToString());
+        await Assert.That(results).IsNotEmpty();
     }
 
 

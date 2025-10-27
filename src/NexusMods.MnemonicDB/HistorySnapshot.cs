@@ -1,6 +1,5 @@
 using System;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
 namespace NexusMods.MnemonicDB;
@@ -25,8 +24,13 @@ internal class HistorySnapshot(Snapshot inner, AttributeCache attributeCache) : 
         throw new NotSupportedException();
     }
 
-    public override ResultIterator GetRefDatomEnumerator(bool totalOrder = false)
+    public ISnapshot AsIf(Datoms datoms)
     {
-        return new ResultIterator(inner.GetRefDatomEnumerator(totalOrder), inner.GetRefDatomEnumerator(totalOrder));
+        throw new NotSupportedException("Cannot (currently) perform an as-if on a History database");
+    }
+
+    public override ResultIterator GetRefDatomEnumerator()
+    {
+        return new ResultIterator(inner.GetRefDatomEnumerator(), inner.GetRefDatomEnumerator());
     }
 }

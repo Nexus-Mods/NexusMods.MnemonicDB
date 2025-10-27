@@ -8,9 +8,7 @@ using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Hashing.xxHash3;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
@@ -21,6 +19,8 @@ using NexusMods.MnemonicDB.TestModel.Analyzers;
 using NexusMods.Paths;
 using TUnit.Assertions.AssertConditions.Throws;
 using File = NexusMods.MnemonicDB.TestModel.File;
+using Transaction = NexusMods.MnemonicDB.Abstractions.Transaction;
+
 namespace NexusMods.MnemonicDB.Tests;
 
 [WithServiceProvider]
@@ -90,7 +90,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         foreach (var txId in txEs)
         {
             var db = Connection.AsOf(txId);
-            var resolved = db.Datoms(modId).Resolved(Connection);
+            var resolved = db[modId].Resolved(Connection);
             await VerifyTable(resolved).UseTextForParameters("mod data_" + txId.Value);
 
             // Make sure we can still look up mods by indexed attributes
@@ -212,7 +212,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task CanGetCommitUpdates()
     {
-        List<IReadDatom[]> updates = new();
+        List<ResolvedDatom[]> updates = new();
 
 
         var tx = Connection.BeginTransaction();
@@ -264,10 +264,10 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         var recentTimestamp = result.Db.RecentlyAdded
             .Resolved(Connection)
-            .First(d => d.A == Transaction.Timestamp);
+            .First(d => d.A == Abstractions.BuiltInEntities.Transaction.Timestamp);
         
-        await Assert.That(recentTimestamp.ObjectValue).IsAssignableTo<DateTimeOffset>();
-                    await Assert.That((DateTimeOffset)recentTimestamp.ObjectValue)
+        await Assert.That(recentTimestamp.V).IsAssignableTo<DateTimeOffset>();
+                    await Assert.That((DateTimeOffset)recentTimestamp.V)
             .IsAfter(DateTimeOffset.UtcNow.AddSeconds(-100))
             .And.IsBefore(DateTimeOffset.UtcNow.AddSeconds(100));
     }
@@ -309,7 +309,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(firstMod.Loadout.Id.InPartition(PartitionId.Entity)).IsTrue().Because("LoadoutId should in the entity partition");
         await Assert.That(firstMod.LoadoutId).IsEquivalentTo(loadoutWritten.LoadoutId);
         await Assert.That(firstMod.Db).IsEqualTo(newDb);
-        await Assert.That(loadout.Name).IsEqualTo("Test Loadout");
+        await Assert.That(firstMod.Name).IsEqualTo("Test Mod 1");
         await Assert.That(firstMod.Loadout.Name).IsEqualTo("Test Loadout");
     }
 
@@ -339,7 +339,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(mod.Contains(Mod.Source)).IsTrue();
         await Assert.That(mod.Contains(Loadout.Name)).IsFalse();
 
-        await Assert.That(mod.ToString()).IsEqualTo("Mod<EId:200000000000002>");
+        await Assert.That(mod.ToString()).IsEqualTo("Mod<EId:0200000000000002>");
 
         await VerifyTable(mod);
     }
@@ -423,7 +423,14 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 {
                     using var txInner = Connection.BeginTransaction();
                     // Send the function for the update, not update itself
-                    txInner.Add(id, 1, AddToName);
+                    txInner.AddTxFn((datoms, db) =>
+                    {
+                        // Actual work is done here, we load the entity and update it this is executed serially
+                        // by the transaction executor
+                        var loadout = Loadout.Load(db, id);
+                        var oldAmount = int.Parse(loadout.Name.Split(":")[1].Trim());
+                        datoms.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + 1)}");
+                    });
                     await txInner.Commit();
                 }));
             }
@@ -437,13 +444,10 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         return;
 
-        // Actual work is done here, we load the entity and update it this is executed serially
-        // by the transaction executor
-        void AddToName(ITransaction tx, IDb db, EntityId eid, int amount)
+
+        void AddToName(Transaction tx, IDb db, EntityId eid, int amount)
         {
-            var loadout = Loadout.Load(db, eid);
-            var oldAmount = int.Parse(loadout.Name.Split(":")[1].Trim());
-            tx.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + amount)}");
+
         }
     }
 
@@ -553,14 +557,15 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var result = await tx.Commit();
 
         var remapped = result.Remap(modWithDescription);
+        var resolver = result.Db.Connection.AttributeResolver;
         await Assert.That(remapped.Contains(Mod.Description)).IsTrue();
-        await Assert.That(Mod.Description.TryGetValue(remapped.EntitySegment, out var foundDesc)).IsTrue();
+        await Assert.That(Mod.Description.TryGetValue(remapped.EntitySegment, resolver, out var foundDesc)).IsTrue();
         await Assert.That(foundDesc).IsEqualTo("Test Description");
         await Assert.That(remapped.Description.Value).IsEqualTo("Test Description");
 
         var remapped2 = result.Remap(modWithoutDiscription);
         await Assert.That(remapped2.Contains(Mod.Description)).IsFalse();
-        await Assert.That(Mod.Description.TryGetValue(remapped2.EntitySegment, out var foundDesc2)).IsFalse();
+        await Assert.That(Mod.Description.TryGetValue(remapped2.EntitySegment, resolver, out var foundDesc2)).IsFalse();
     }
 
     [Test]
@@ -592,6 +597,8 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx3.Delete(loadout.Id, true);
         var result3 = await tx3.Commit();
 
+        await Connection.FlushQueries();
+        
         await Assert.That(loadoutNames).HasCount(4).Because("All revisions should be loaded");
 
         await Assert.That(loadoutNames).IsEquivalentTo(["Test Loadout", "Update 1", "Update 2", "DONE"]);
@@ -628,7 +635,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             // Add the changes to the list
             .Subscribe(x =>
             {
-                var data = x.Select(o => o.ObjectValue.ToString()!).Order().ToArray();
+                var data = x.Select(o => o.V.ToString()!).Order().ToArray();
                 changes.Add(data);
             });
 
@@ -686,13 +693,13 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var update = changeSet.Single(change => change.Reason == ChangeReason.Update);
         var resolver = Connection.AttributeResolver;
 
-        var currentName = resolver.Resolve(update.Current).ObjectValue?.ToString();
+        var currentName = resolver.Resolve(update.Current).V?.ToString();
         await Assert.That(currentName).IsEqualTo(newName);
 
         var previous = update.Previous;
         await Assert.That(previous.HasValue).IsTrue();
 
-        var previousName = resolver.Resolve(previous.Value).ObjectValue?.ToString();
+        var previousName = resolver.Resolve(previous.Value).V?.ToString();
         await Assert.That(previousName).IsEqualTo(originalName);
     }
 
@@ -716,7 +723,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                     if (change.Reason != ChangeReason.Add)
                         continue;
 
-                    var value = resolver.Resolve(change.Current).ObjectValue?.ToString();
+                    var value = resolver.Resolve(change.Current).V?.ToString();
                     if (value == newTag)
                     {
                         tcs.TrySetResult(changeSet);
@@ -738,7 +745,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(changeSet.Updates).IsEqualTo(0);
 
         var addition = changeSet.Single(change => change.Reason == ChangeReason.Add);
-        var addedValue = resolver.Resolve(addition.Current).ObjectValue?.ToString();
+        var addedValue = resolver.Resolve(addition.Current).V?.ToString();
         await Assert.That(addedValue).IsEqualTo(newTag);
     }
 
@@ -767,7 +774,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                     if (change.Reason != ChangeReason.Remove)
                         continue;
 
-                    var value = resolver.Resolve(change.Current).ObjectValue?.ToString();
+                    var value = resolver.Resolve(change.Current).V?.ToString();
                     if (value == tagToRemove)
                     {
                         tcs.TrySetResult(changeSet);
@@ -789,7 +796,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(changeSet.Updates).IsEqualTo(0);
 
         var removal = changeSet.Single(change => change.Reason == ChangeReason.Remove);
-        var removedValue = resolver.Resolve(removal.Current).ObjectValue?.ToString();
+        var removedValue = resolver.Resolve(removal.Current).V?.ToString();
         await Assert.That(removedValue).IsEqualTo(tagToRemove);
     }
 
@@ -812,7 +819,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             {
                 foreach (var change in changeSet)
                 {
-                    var value = resolver.Resolve(change.Current).ObjectValue?.ToString();
+                    var value = resolver.Resolve(change.Current).V?.ToString();
                     switch (change.Reason)
                     {
                         case ChangeReason.Remove when value == originalName:
@@ -846,7 +853,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(removeChanges.Updates).IsEqualTo(0);
 
         var removal = removeChanges.Single(change => change.Reason == ChangeReason.Remove);
-        var removedName = resolver.Resolve(removal.Current).ObjectValue?.ToString();
+        var removedName = resolver.Resolve(removal.Current).V?.ToString();
         await Assert.That(removedName).IsEqualTo(originalName);
 
         await Assert.That(addChanges.Adds).IsEqualTo(1).Because("scalar asserts in their own transaction should surface as adds");
@@ -854,7 +861,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(addChanges.Updates).IsEqualTo(0);
 
         var addition = addChanges.Single(change => change.Reason == ChangeReason.Add);
-        var addedName = resolver.Resolve(addition.Current).ObjectValue?.ToString();
+        var addedName = resolver.Resolve(addition.Current).V?.ToString();
         await Assert.That(addedName).IsEqualTo(replacementName);
     }
 
@@ -877,7 +884,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var sw = Stopwatch.StartNew();
         await tx.Commit();
 
-        var allLoadouts = Loadout.All(Connection.Db).Count;
+        var allLoadouts = Loadout.All(Connection.Db).Count();
         await Assert.That(sw.ElapsedMilliseconds).IsLessThan(5000).Because("the ObserveDatoms algorithm isn't stupidly slow");
 
         await Assert.That(list.Items).HasCount(10000);
@@ -890,7 +897,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tx2.Add(loadout.E, Loadout.Name, "Test Loadout 10 Updated");
         await tx2.Commit();
         
-        await Assert.That(list.Items.First(datom => datom.E == loadout.E).Resolved(Connection.AttributeResolver).ObjectValue).IsEqualTo("Test Loadout 10 Updated");
+        await Assert.That(list.Items.First(datom => datom.E == loadout.E).Resolved(Connection.AttributeResolver).V).IsEqualTo("Test Loadout 10 Updated");
         await Assert.That(allLoadouts).IsEqualTo(10000);
     }
 
@@ -943,142 +950,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
 
     }
-
-    [Test]
-    public async Task CanQueryTwoAttributesAtOnce()
-    {
-        using var tx = Connection.BeginTransaction();
-        var loadout = new Loadout.New(tx)
-        {
-            Name = "Test Loadout"
-        };
-
-        var uniqueId = Guid.NewGuid().ToString();
-        
-        for (var i = 0; i < 10; i++)
-        {
-            _ = new Mod.New(tx)
-            {
-                Name = i % 2 == 0 ? "_" : uniqueId,
-                Source = new Uri("http://test.com"),
-                LoadoutId = loadout
-            };
-        }
-
-        var result = await tx.Commit();
-        var loadoutId = result[loadout.Id];
-
-        var db = Connection.Db;
-
-        var matchingSet = Mod.FindByLoadout(db, loadoutId)
-            .Where(m => m.Name == uniqueId)
-            .Select(m => m.Id)
-            .ToHashSet();
-
-        var queryBoth = db.Datoms((Mod.Name, uniqueId), (Mod.Loadout, loadoutId))
-            .ToHashSet();
-        
-        var found = queryBoth.ToHashSet();
-        
-        await Assert.That(found).IsEquivalentTo(matchingSet);
-    }
     
-    [Test]
-    public async Task CanQueryThreeAttributesAtOnce()
-    {
-        using var tx = Connection.BeginTransaction();
-        var loadout = new Loadout.New(tx)
-        {
-            Name = "Test Loadout"
-        };
-
-        var uniqueId = Guid.NewGuid().ToString();
-        
-        for (var i = 0; i < 10; i++)
-        {
-            _ = new Mod.New(tx)
-            {
-                Name = uniqueId,
-                Source = new Uri("http://test.com"),
-                IsMarked = i % 2 == 0,
-                LoadoutId = loadout
-            };
-        }
-
-        var result = await tx.Commit();
-        var loadoutId = result[loadout.Id];
-
-        var db = Connection.Db;
-
-        var matchingSet = Mod.FindByLoadout(db, loadoutId)
-            .Where(m => m.Name == uniqueId && m.IsMarked)
-            .Select(m => m.Id)
-            .ToHashSet();
-
-        var queryBoth = db.Datoms(
-                (Mod.Name, uniqueId), 
-                (Mod.Loadout, loadoutId),
-                (Mod.Marked, Null.Instance))
-            .ToHashSet();
-        
-        var found = queryBoth.ToHashSet();
-        
-        await Assert.That(found).IsEquivalentTo(matchingSet);
-    }
-    
-    [Test]
-    public async Task CanQueryFourAttributesAtOnce()
-    {
-        using var tx = Connection.BeginTransaction();
-        var loadout = new Loadout.New(tx)
-        {
-            Name = "Test Loadout"
-        };
-
-        var uniqueId = Guid.NewGuid().ToString();
-        
-        for (var i = 0; i < 10; i++)
-        {
-            _ = new Mod.New(tx)
-            {
-                Name = uniqueId,
-                Source = new Uri("http://test.com"),
-                IsMarked = i % 2 == 0,
-                LoadoutId = loadout
-            };
-        }
-
-        var result = await tx.Commit();
-        var loadoutId = result[loadout.Id];
-
-        var db = Connection.Db;
-
-        var matchingSet = Mod.FindByLoadout(db, loadoutId)
-            .Where(m => m.Name == uniqueId && m.IsMarked)
-            .Select(m => m.Id)
-            .ToHashSet();
-
-        var queryBoth = db.Datoms(
-                (Mod.Name, uniqueId), 
-                (Mod.Loadout, loadoutId),
-                (Mod.Marked, Null.Instance),
-                (Mod.Name, uniqueId))
-            .ToHashSet();
-        
-        var found = queryBoth.ToHashSet();
-        await Assert.That(AreEqual(matchingSet, found)).IsTrue();
-
-        bool AreEqual(HashSet<EntityId> a, HashSet<EntityId> b)
-        {
-            if (a.Count != b.Count) return false;
-            foreach (var id in a)
-            {
-                if (!b.Contains(id)) return false;
-            }
-            return true;
-        }
-    }
-
     [Test]
     public async Task CanGetInitialDbStateFromObservable()
     {
@@ -1166,7 +1038,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         // If the above is working correctly we'll only have one entityId for the client, if it's wrong, the
         // one of the parents may have a different entityId
-        await VerifyTable(result.Db.Datoms(result.NewTx).Resolved(Connection));
+        await VerifyTable(result.Db[result.NewTx].Resolved(Connection));
     }
     [Test]
     public async Task MultipleIncludesCanBeConstructedSeparately()
@@ -1197,7 +1069,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         // If the above is working correctly we'll only have one entityId for the client, if it's wrong, the
         // one of the parents may have a different entityId
-        await VerifyTable(result.Db.Datoms(result.NewTx).Resolved(Connection));
+        await VerifyTable(result.Db[result.NewTx].Resolved(Connection));
     }
 
     [Test]
@@ -1352,10 +1224,9 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         var history = Connection.History();
 
-        await Assert.That(history.Datoms(l2RO.Id)
+        await Assert.That(history[l2RO.Id]
             .Resolved(Connection)
-            .OfType<StringAttribute.ReadDatom>()
-            .Select(d => (!d.IsRetract, d.V)))
+            .Select(d => (!d.IsRetract, (string)d.V)))
             .IsEquivalentTo([
                 (true, "Test Loadout 2"),
                 (false, "Test Loadout 2"),
@@ -1366,9 +1237,9 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         history = Connection.History();
 
-        await Assert.That(history.Datoms(l2RO.Id).ToArray()).IsEmpty();
+        await Assert.That(history[l2RO.Id]).IsEmpty();
 
-        await Assert.That(history.Datoms(l1RO.Id).ToArray()).IsNotEmpty();
+        await Assert.That(history[l1RO.Id]).IsNotEmpty();
     }
 
     [Test]
@@ -1500,12 +1371,12 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         return;
 
-        ScanResultType UpdateFunc(ref KeyPrefix prefix, ReadOnlySpan<byte> input, in IBufferWriter<byte> output)
+        ScanResultType UpdateFunc(ref Datom datom)
         {
-            if (prefix.ValueTag != ValueTag.Utf8)
+            if (datom.Tag != ValueTag.Utf8)
                 return ScanResultType.None;
 
-            var value = Utf8Serializer.Read(input);
+            var value = (string)datom.Value;
             switch (value)
             {
                 case "Test Mod 1":
@@ -1513,7 +1384,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 case "Test Mod 2":
                     return ScanResultType.Delete;
                 case "Test Mod 3":
-                    Utf8Serializer.Write("UPDATED Test Mod 3 !!", output);
+                    datom = new Datom(datom.Prefix, "UPDATED Test Mod 3 !!");
                     return ScanResultType.Update;
                 default:
                     return ScanResultType.None;

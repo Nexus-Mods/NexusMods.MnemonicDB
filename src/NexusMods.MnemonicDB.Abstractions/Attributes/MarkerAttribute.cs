@@ -12,8 +12,8 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 public sealed class MarkerAttribute(string ns, string name) : ScalarAttribute<Null, Null, NullSerializer>(ns, name)
 {
     /// <inheritdoc />
-    protected override Null ToLowLevel(Null value) => value;
+    public override Null ToLowLevel(Null value) => value;
 
     /// <inheritdoc />
-    protected override Null FromLowLevel(Null value, AttributeResolver resolver) => value;
+    public override Null FromLowLevel(Null value, AttributeResolver resolver) => value;
 }

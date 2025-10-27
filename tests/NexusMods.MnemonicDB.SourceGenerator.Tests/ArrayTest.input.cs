@@ -13,12 +13,12 @@ public partial class MyModelArrayTest : IModelDefinition
 
 public sealed class MyAttribute(string ns, string name) : ScalarAttribute<int[], int, Int32Serializer>(ns, name)
 {
-    protected override int ToLowLevel(int[] value)
+    public override int ToLowLevel(int[] value)
     {
         throw new NotImplementedException();
     }
 
-    protected override int[] FromLowLevel(int value, AttributeResolver resolver)
+    public override int[] FromLowLevel(int value, AttributeResolver resolver)
     {
         throw new NotImplementedException();
     }

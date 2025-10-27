@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.InteropServices;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using Reloaded.Memory.Extensions;
@@ -22,12 +21,6 @@ public readonly struct ReferencesSlice(EntityId e) : ISliceDescriptor
         MemoryMarshal.Write(fullSpan.SliceFast(KeyPrefix.Size), e);
         iterator.SeekTo(fullSpan);
     }
-    
-    /// <inheritdoc />
-    public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct
-    {
-        iterator.Next();
-    }
 
     /// <inheritdoc />
     public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool useHistory)
@@ -41,15 +34,15 @@ public readonly struct ReferencesSlice(EntityId e) : ISliceDescriptor
         return eidValue == e;
     }
 
-
-    /// <inheritdoc />
-    public void Deconstruct(out Datom from, out Datom to, out bool isReversed)
+    public bool IsTotalOrdered => false;
+    public void Deconstruct(out Datom fromDatom, out Datom toDatom)
     {
-        var valueMemory = GC.AllocateUninitializedArray<byte>(sizeof(ulong));
-        MemoryMarshal.Write(valueMemory, e);
-
-        from = new Datom(new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false, ValueTag.Reference, IndexType.VAETCurrent), valueMemory);
-        to = new Datom(new KeyPrefix(EntityId.MaxValueNoPartition, AttributeId.Max, TxId.MaxValue, false, ValueTag.Reference, IndexType.VAETCurrent), valueMemory);
-        isReversed = false;
-    }   
+        fromDatom = new Datom(new KeyPrefix(EntityId.MinValueNoPartition, AttributeId.Min, TxId.MinValue, false, ValueTag.Reference, IndexType.VAETCurrent), e);
+        toDatom = new Datom(new KeyPrefix(EntityId.MaxValueNoPartition, AttributeId.Max, TxId.MaxValue, false, ValueTag.Reference, IndexType.VAETCurrent), e);
+    }
+    
+    /// <summary>
+    /// Uncachable slice.
+    /// </summary>
+    public object? CacheKey => null;
 }

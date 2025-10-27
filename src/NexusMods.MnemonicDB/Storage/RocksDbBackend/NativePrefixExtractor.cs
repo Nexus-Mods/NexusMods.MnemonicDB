@@ -71,14 +71,6 @@ public static class NativePrefixExtractor
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     private static IntPtr NameFunc() => Marshal.StringToHGlobalAnsi("ExtractorV1");
-    
-    /// <summary>
-    /// Get the function pointer for the method of the given name
-    /// </summary>
-    public static IntPtr GetNativeFnPtr(string name)
-    {
-        return typeof(NativePrefixExtractor).GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic)!.MethodHandle.GetFunctionPointer();
-    }
 
     public static unsafe IntPtr MakeSliceTransform()
     {

@@ -1,6 +1,7 @@
 using System;
 using System.Buffers;
 using System.Text;
+using NexusMods.HyperDuck.Adaptor.Impls.ValueAdaptor;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 
 namespace NexusMods.MnemonicDB.Abstractions.ValueSerializers;
@@ -33,7 +34,7 @@ public class Utf8Serializer : IValueSerializer<string>
     /// <inheritdoc />
     public static string Read(ReadOnlySpan<byte> span)
     {
-        return Encoding.GetString(span);
+        return StringAdaptorFactory.GlobalStringPool.GetOrAdd(span, Encoding.UTF8);
     }
 
     /// <inheritdoc />
@@ -80,7 +81,7 @@ public class AsciiSerializer : IValueSerializer<string>
     /// <inheritdoc />
     public static string Read(ReadOnlySpan<byte> span)
     {
-        return Encoding.GetString(span);
+        return StringAdaptorFactory.GlobalStringPool.GetOrAdd(span, Encoding.ASCII);
     }
 
     /// <inheritdoc />
@@ -133,7 +134,7 @@ public class Utf8InsensitiveSerializer : IValueSerializer<string>
     /// <inheritdoc />
     public static string Read(ReadOnlySpan<byte> span)
     {
-        return Encoding.GetString(span);
+        return StringAdaptorFactory.GlobalStringPool.GetOrAdd(span, Encoding.UTF8);
     }
 
     /// <inheritdoc />

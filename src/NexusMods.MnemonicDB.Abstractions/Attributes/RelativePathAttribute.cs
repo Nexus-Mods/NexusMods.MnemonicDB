@@ -14,10 +14,10 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 public sealed class RelativePathAttribute(string ns, string name) : ScalarAttribute<RelativePath, string, Utf8InsensitiveSerializer>(ns, name)
 {
     /// <inheritdoc/>
-    protected override string ToLowLevel(RelativePath value) => value.ToString();
+    public override string ToLowLevel(RelativePath value) => value.ToString();
 
     /// <inheritdoc/>
-    protected override RelativePath FromLowLevel(string value, AttributeResolver resolver)
+    public override RelativePath FromLowLevel(string value, AttributeResolver resolver)
     {
         // NOTE(erri120): Stored data should be sanitized already.
         Debug.Assert(PathHelpers.IsSanitized(value), $"Path {value} is not sanitized!");

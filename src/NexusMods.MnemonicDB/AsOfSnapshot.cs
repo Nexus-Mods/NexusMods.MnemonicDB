@@ -1,6 +1,5 @@
 ﻿using System;
 using NexusMods.MnemonicDB.Abstractions;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 
 namespace NexusMods.MnemonicDB;
@@ -24,13 +23,18 @@ internal class AsOfSnapshot(Snapshot inner, TxId asOfTxId, AttributeCache attrib
         throw new NotSupportedException();
     }
 
-    public override ResultIterator GetRefDatomEnumerator(bool totalOrder = false)
+    public ISnapshot AsIf(Datoms datoms)
+    {
+        throw new NotSupportedException("Cannot currently create an AsIf database on top of an AsOf database");
+    }
+
+    public override ResultIterator GetRefDatomEnumerator()
     {
         // I don't want to hear it, this looks like absolute garbage, but it's fast, and C# needs better generic support
         // and/or macros
         return new ResultIterator(
-            new TimeFilteredRetractionEnumerator<RocksDbIteratorWrapper>(inner.GetRefDatomEnumerator(totalOrder), asOfTxId),
-            new TimeFilteredEnumerator<RocksDbIteratorWrapper>(inner.GetRefDatomEnumerator(totalOrder), asOfTxId));
+            new TimeFilteredRetractionEnumerator<RocksDbIteratorWrapper>(inner.GetRefDatomEnumerator(), asOfTxId),
+            new TimeFilteredEnumerator<RocksDbIteratorWrapper>(inner.GetRefDatomEnumerator(), asOfTxId));
 
     }
 

@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.IndexSegments;
 using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.MnemonicDB.Storage.Tests.TestAttributes;
 using NexusMods.MnemonicDB.TestModel;
@@ -20,6 +19,7 @@ public abstract class AStorageTest : IDisposable
     public Backend Backend { get; }
 
     protected AttributeCache AttributeCache => DatomStore.AttributeCache;
+    protected AttributeResolver AttributeResolver { get; }
 
     protected readonly ILogger Logger;
 
@@ -36,41 +36,44 @@ public abstract class AStorageTest : IDisposable
         {
             Path = isInMemory ? null : _path,
         };
-
+        
         Backend = new Backend();
         DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), DatomStoreSettings, new Backend());
         
-        Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
+        AttributeResolver = new AttributeResolver(_provider, AttributeCache);
         
-        using var segmentBuilder = new IndexSegmentBuilder(AttributeCache);
-        AddAttr(segmentBuilder, File.Path, AttributeId.From(20));
-        AddAttr(segmentBuilder, File.Hash, AttributeId.From(21));
-        AddAttr(segmentBuilder, File.Size, AttributeId.From(22));
-        AddAttr(segmentBuilder, File.ModId, AttributeId.From(23));
-        AddAttr(segmentBuilder, Mod.Name, AttributeId.From(24));
-        AddAttr(segmentBuilder, Mod.LoadoutId, AttributeId.From(25));
-        AddAttr(segmentBuilder, Loadout.Name, AttributeId.From(26));
-        AddAttr(segmentBuilder, Collection.Name, AttributeId.From(27));
-        AddAttr(segmentBuilder, Collection.LoadoutId, AttributeId.From(28));
-        AddAttr(segmentBuilder, Collection.ModIds, AttributeId.From(29));
-        AddAttr(segmentBuilder, Blobs.InKeyBlob, AttributeId.From(30));
-        AddAttr(segmentBuilder, Blobs.InValueBlob, AttributeId.From(31));
-        var (_, db) = DatomStore.Transact(segmentBuilder.Build());
+        Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
+
+        var tx = new Datoms(DatomStore.AttributeCache);
+        AddAttr(tx, File.Path, AttributeId.From(20));
+        AddAttr(tx, File.Hash, AttributeId.From(21));
+        AddAttr(tx, File.Size, AttributeId.From(22));
+        AddAttr(tx, File.ModId, AttributeId.From(23));
+        AddAttr(tx, Mod.Name, AttributeId.From(24));
+        AddAttr(tx, Mod.LoadoutId, AttributeId.From(25));
+        AddAttr(tx, Loadout.Name, AttributeId.From(26));
+        AddAttr(tx, Collection.Name, AttributeId.From(27));
+        AddAttr(tx, Collection.LoadoutId, AttributeId.From(28));
+        AddAttr(tx, Collection.ModIds, AttributeId.From(29));
+        AddAttr(tx, Blobs.InKeyBlob, AttributeId.From(30));
+        AddAttr(tx, Blobs.InValueBlob, AttributeId.From(31));
+        var (_, db) = DatomStore.Transact(tx);
         AttributeCache.Reset(db);
     }
 
 
-    private void AddAttr(IndexSegmentBuilder segmentBuilder, IAttribute attribute, AttributeId attributeId)
+    private void AddAttr(Datoms tx, IAttribute attribute, AttributeId attributeId)
     { 
-        segmentBuilder.Add(EntityId.From(attributeId.Value), AttributeDefinition.UniqueId, attribute.Id);
-        segmentBuilder.Add(EntityId.From(attributeId.Value), AttributeDefinition.ValueType, attribute.LowLevelType);
-        segmentBuilder.Add(EntityId.From(attributeId.Value), AttributeDefinition.Cardinality, attribute.Cardinalty);
-        segmentBuilder.Add(EntityId.From(attributeId.Value), AttributeDefinition.Indexed, attribute.IndexedFlags);
-        
+        var eid = EntityId.From(attributeId.Value);
+        tx.Add(eid, AttributeDefinition.UniqueId, attribute.Id);
+        tx.Add(eid, AttributeDefinition.ValueType, attribute.LowLevelType);
+        tx.Add(eid, AttributeDefinition.Cardinality, attribute.Cardinalty);
+        tx.Add(eid, AttributeDefinition.Indexed, attribute.IndexedFlags);
+
         if (attribute.NoHistory)
-            segmentBuilder.Add(EntityId.From(attributeId.Value), AttributeDefinition.NoHistory, Null.Instance);
+            tx.Add(eid, AttributeDefinition.NoHistory, Null.Instance);
         if (attribute.DeclaredOptional)
-            segmentBuilder.Add(EntityId.From(attributeId.Value), AttributeDefinition.Optional, Null.Instance);
+            tx.Add(eid, AttributeDefinition.Optional, Null.Instance);
     }
 
     public void Dispose()

@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System.Collections.Generic;
+using JetBrains.Annotations;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 
@@ -11,10 +12,10 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 public class ReferenceAttribute(string ns, string name) : ScalarAttribute<EntityId, EntityId, EntityIdSerializer>(ns, name)
 {
     /// <inheritdoc />
-    protected override EntityId ToLowLevel(EntityId value) => value;
+    public override EntityId ToLowLevel(EntityId value) => value;
 
     /// <inheritdoc />
-    protected override EntityId FromLowLevel(EntityId value, AttributeResolver resolver) => value;
+    public override EntityId FromLowLevel(EntityId value, AttributeResolver resolver) => value;
 }
 
 /// <summary>
@@ -22,4 +23,12 @@ public class ReferenceAttribute(string ns, string name) : ScalarAttribute<Entity
 /// </summary>
 [PublicAPI]
 public sealed class ReferenceAttribute<T>(string ns, string name) : ReferenceAttribute(ns, name)
-where T : IModelDefinition;
+    where T : IModelDefinition
+{
+    public TModel GetModel<TModel>(IDb db, Datoms datoms) 
+        where TModel : IReadOnlyModel<TModel>
+    {
+        var value = datoms.GetResolved(this, db.Connection.AttributeResolver);
+        return TModel.Create(db, value);
+    }
+}

@@ -10,8 +10,8 @@ namespace NexusMods.MnemonicDB.Abstractions.Attributes;
 public sealed class UInt32Attribute(string ns, string name) : ScalarAttribute<uint, uint, UInt32Serializer>(ns, name)
 {
     /// <inheritdoc />
-    protected override uint ToLowLevel(uint value) => value;
+    public override uint ToLowLevel(uint value) => value;
 
     /// <inheritdoc />
-    protected override uint FromLowLevel(uint value, AttributeResolver resolver) => value;
+    public override uint FromLowLevel(uint value, AttributeResolver resolver) => value;
 }

@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.InteropServices;
-using NexusMods.MnemonicDB.Abstractions.DatomIterators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 
@@ -16,14 +15,9 @@ public readonly struct AllEntitiesInPartition(PartitionId partitionId) : ISliceD
     {
         var index = history ? IndexType.EAVTHistory : IndexType.EAVTCurrent;
         var prefix = new KeyPrefix(partitionId.MinValue, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, index);
-        var spanTo = MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(in prefix, 1));
-        iterator.SeekTo(spanTo);
+        iterator.SeekTo(prefix);
     }
-
-    /// <inheritdoc />
-    public void MoveNext<T>(T iterator) where T : ILowLevelIterator, allows ref struct 
-        => iterator.Next();
-
+    
     /// <inheritdoc />
     public bool ShouldContinue(ReadOnlySpan<byte> keySpan, bool history = false)
     {
@@ -31,12 +25,18 @@ public readonly struct AllEntitiesInPartition(PartitionId partitionId) : ISliceD
         var prefix = KeyPrefix.Read(keySpan);
         return prefix.Index == index && prefix.E.Partition == partitionId;
     }
-    
+
+    public bool IsTotalOrdered => true;
+
     /// <inheritdoc />
-    public void Deconstruct(out Datom from, out Datom to, out bool isReversed)
+    public void Deconstruct(out Datom fromDatom, out Datom toDatom)
     {
-        from = new Datom(new KeyPrefix(partitionId.MinValue, AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTCurrent), ReadOnlyMemory<byte>.Empty);
-        to = new Datom(new KeyPrefix(partitionId.MaxValue, AttributeId.Max, TxId.MaxValue, false, ValueTag.Null, IndexType.EAVTCurrent), ReadOnlyMemory<byte>.Empty);
-        isReversed = false;
+        fromDatom = new Datom(new KeyPrefix(partitionId.MakeEntityId(0), AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTCurrent), Null.Instance);
+        toDatom = new Datom(new KeyPrefix(partitionId.MakeEntityId(uint.MaxValue), AttributeId.Min, TxId.MinValue, false, ValueTag.Null, IndexType.EAVTCurrent), Null.Instance);
     }
+
+    /// <summary>
+    /// Uncachable slice.
+    /// </summary>
+    public object? CacheKey => null;
 }
