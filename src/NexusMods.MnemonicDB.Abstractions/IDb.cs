@@ -84,11 +84,6 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
         where TAnalyzer : IAnalyzer<TReturn>;
     
     /// <summary>
-    /// Clears the internal cache of the database.
-    /// </summary>
-    void ClearIndexCache();
-    
-    /// <summary>
     /// Create the next version of the database with the given result and the transaction id that the result was assigned.
     /// </summary>
     IDb WithNext(StoreResult result, TxId resultAssignedTxId);

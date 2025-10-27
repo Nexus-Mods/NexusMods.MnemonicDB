@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Caching;
@@ -14,58 +15,62 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
     ADatomsIndex<TRefEnumerator>
     where TRefEnumerator : IRefDatomEnumerator
 {
+    private CacheRoot _root;
+    private readonly CacheStrategy _strategy;
+    
     protected ACachingDatomsIndex(ACachingDatomsIndex<TRefEnumerator> other, Datoms addedDatoms) : base(other.AttributeCache)
     {
-        EntityCache = other.EntityCache.Fork(addedDatoms, new EntityCacheStrategy(this));
-        BackReferenceCache = other.BackReferenceCache.Fork(addedDatoms, new BackReferenceCacheStrategy(this));
+        _root = other._root.Evict(addedDatoms);
+        _strategy = other._strategy;
     }
+
+    protected override Datoms Load<TSlice>(TSlice slice)
+    {
+        var key = slice.CacheKey;
+        if (key is null)
+            return base.Load(slice);
+        
+        if (_root.Cache.TryGetValue(key, out var value))
+        {
+            value.Hit();
+            return value.Segment; 
+        }
+        
+        return LoadAndCache(key, slice);
+    }
+
+    private Datoms LoadAndCache<TSlice>(object key, TSlice slice) 
+        where TSlice : ISliceDescriptor, allows ref struct
+    {
+        var datoms = base.Load(slice);
+        return AddValue(key, datoms);
+    }
+    
+    private Datoms AddValue(object key, Datoms datoms)
+    {
+        while (true)
+        {
+            var oldRoot = _root;
+            
+            // If the cache somehow now contains the key, return the value.
+            if (oldRoot.Cache.TryGetValue(key, out var newlyAdded))
+                return newlyAdded.Segment;
+            
+            // Otherwise, add the new value to the cache.
+            var newRoot = oldRoot.With(key, datoms).Evict(_strategy.MaxTotalCount, _strategy.MaxEntries, _strategy.EvictPercentage);
+            var result = Interlocked.CompareExchange(ref _root, newRoot, oldRoot);
+            if (ReferenceEquals(result, oldRoot))
+                return datoms;
+        }
+    }
+
 
     /// <summary>
     /// A wrapper for a datoms index that caches several index segment types
     /// </summary>
     protected ACachingDatomsIndex(AttributeCache attributeCache) : base(attributeCache)
     {
-        EntityCache = new IndexSegmentCache<EntityId>(new EntityCacheStrategy(this));
-        BackReferenceCache = new IndexSegmentCache<(AttributeId A, EntityId E)>(new BackReferenceCacheStrategy(this));
+        _root = CacheRoot.Create();
+        _strategy = new CacheStrategy();
     }
-
-    private class EntityCacheStrategy(ACachingDatomsIndex<TRefEnumerator> parent) : CacheStrategy<EntityId>
-    {
-        public override Datoms GetDatoms(EntityId key)
-        {
-            var datoms = new Datoms(parent.AttributeCache);
-            using var iterator = parent.GetRefDatomEnumerator();
-            datoms.Add(iterator, SliceDescriptor.Create(key));
-            return datoms;
-        }
-        public override IEnumerable<EntityId> GetKeysFromRecentlyAdded(Datoms segment)
-        {
-            foreach (var datom in segment)
-            {
-                yield return datom.E;
-            }
-        }
-    }
-    
-    private class BackReferenceCacheStrategy(ACachingDatomsIndex<TRefEnumerator> parent) : CacheStrategy<(AttributeId A, EntityId E)>
-    {
-        public override Datoms GetDatoms((AttributeId A, EntityId E) key)
-        {
-            var datoms = new Datoms(parent.AttributeCache);
-            using var iterator = parent.GetRefDatomEnumerator();
-            datoms.Add(iterator, SliceDescriptor.Create(key.A, key.E));
-            return datoms;
-        }
-
-        public override IEnumerable<(AttributeId A, EntityId E)> GetKeysFromRecentlyAdded(Datoms segment)
-        {
-            return segment
-                .Where(static d => d.Value is EntityId)
-                .Select(static d => (d.A, (EntityId)d.Value));
-        }
-    }
-
-    public IndexSegmentCache<EntityId> EntityCache { get; }
-
-    public IndexSegmentCache<(AttributeId A, EntityId E)> BackReferenceCache { get; }
 }

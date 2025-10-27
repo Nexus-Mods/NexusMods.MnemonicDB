@@ -43,7 +43,8 @@ public interface IDatomsIndex
     /// <summary>
     /// Get the datoms for a specific descriptor
     /// </summary>
-    public Datoms Datoms<TDescriptor>(TDescriptor descriptor) where TDescriptor : ISliceDescriptor;
+    public Datoms Datoms<TDescriptor>(TDescriptor descriptor) 
+        where TDescriptor : ISliceDescriptor, allows ref struct;
 
     /// <summary>
     /// Return a chunked sequence of datoms for a specific descriptor, chunks will be of the specified size

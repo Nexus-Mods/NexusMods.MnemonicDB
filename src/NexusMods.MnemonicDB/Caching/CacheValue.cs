@@ -7,7 +7,7 @@ namespace NexusMods.MnemonicDB.Caching;
 /// <summary>
 /// The value of a cache entry.
 /// </summary>
-public struct CacheValue : IEquatable<CacheValue>
+public struct CacheValue
 {
     /// <summary>
     /// The last time the cache entry was accessed.
@@ -42,23 +42,5 @@ public struct CacheValue : IEquatable<CacheValue>
     public void Hit()
     {
         LastAccessed = CreateLastAccessed();
-    }
-
-    /// <inheritdoc />
-    public bool Equals(CacheValue other)
-    {
-        return LastAccessed == other.LastAccessed && Segment.Equals(other.Segment);
-    }
-
-    /// <inheritdoc />
-    public override bool Equals(object? obj)
-    {
-        return obj is CacheValue other && Equals(other);
-    }
-
-    /// <inheritdoc />
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(LastAccessed, Segment);
     }
 }

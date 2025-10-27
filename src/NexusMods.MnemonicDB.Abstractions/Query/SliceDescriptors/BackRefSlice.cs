@@ -33,7 +33,7 @@ public readonly struct BackRefSlice(AttributeId aid, EntityId eid) : ISliceDescr
         var eidValue = MemoryMarshal.Read<EntityId>(keySpan.SliceFast(KeyPrefix.Size));
         return eidValue == eid;
     }
-
+    
     public bool IsTotalOrdered => false;
     
     public void Deconstruct(out Datom fromDatom, out Datom toDatom)

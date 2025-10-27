@@ -15,14 +15,14 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
     }
     public AttributeCache AttributeCache { get; }
 
-    private Datoms Load<TSlice>(TSlice slice)
+    protected virtual Datoms Load<TSlice>(TSlice slice)
        where TSlice : ISliceDescriptor, allows ref struct
     {
         using var en = GetRefDatomEnumerator();
         return Abstractions.Datoms.Create(en, slice, AttributeCache);
     }
     
-    public Datoms Datoms<TSlice>(TSlice slice) where TSlice : ISliceDescriptor 
+    public Datoms Datoms<TSlice>(TSlice slice) where TSlice : ISliceDescriptor, allows ref struct 
         => Load(slice);
 
     /// <inheritdoc />

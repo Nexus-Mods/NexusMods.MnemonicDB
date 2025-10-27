@@ -13,8 +13,6 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
     where TSnapshot : IRefDatomEnumeratorFactory<TLowLevelIterator>, IDatomsIndex, ISnapshot
     where TLowLevelIterator : IRefDatomEnumerator
 {
-    //private readonly IndexSegmentCache _cache;
-    
     /// <summary>
     /// The connection is used by several methods to navigate the graph of objects of Db, Connection, Datom Store, and
     /// Attribute Registry. However, we want the Datom Store and Connection to be decoupled, so the Connection starts null
@@ -93,11 +91,6 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         throw new KeyNotFoundException($"Analyzer {typeof(TAnalyzer).Name} not found");
     }
 
-    public void ClearIndexCache()
-    {
-        EntityCache.Clear();
-        BackReferenceCache.Clear();
-    }
     
     [MustDisposeResource]
     public override TLowLevelIterator GetRefDatomEnumerator() => _snapshot.GetRefDatomEnumerator();
