@@ -1,5 +1,12 @@
 ## Changelog
 
+### 0.50.0 - 2025-10-27
+* Massive rewrite of the project.
+* Datoms are now structs combining a key prefix with a object pointer
+* Indexes and transactions are now List<Datom> aka Datoms
+* Most of the interface has been simplifed around this new pattern
+* Source generator for creating query result records in the format of a class
+
 ### 0.28.2 - 2025-10-13
 * Fix the encoding of dates into DuckDB
 
