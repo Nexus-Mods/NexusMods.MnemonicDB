@@ -27,8 +27,12 @@
 
     <ItemGroup>
         <WeaveTemplate Include="Template.weave" />
+
         <None Remove="AmbientSqlTemplate.weave" />
         <WeaveTemplate Include="AmbientSqlTemplate.weave" />
+
+        <None Remove="ResultGeneratorTemplate.weave" />
+        <WeaveTemplate Include="ResultGeneratorTemplate.weave" />
     </ItemGroup>
 
     <Import Project="$([MSBuild]::GetPathOfFileAbove('NuGet.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
