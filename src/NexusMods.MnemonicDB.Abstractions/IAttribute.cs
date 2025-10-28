@@ -80,6 +80,11 @@ public interface IAttribute
     /// Returns the high level value converted from the low level value
     /// </summary>
     object FromLowLevelObject(object o, AttributeResolver resolver);
+    
+    /// <summary>
+    /// Returns the low level value converted from the high level value
+    /// </summary>
+    object ToLowLevelObject(object value);
 }
 
 /// <summary>

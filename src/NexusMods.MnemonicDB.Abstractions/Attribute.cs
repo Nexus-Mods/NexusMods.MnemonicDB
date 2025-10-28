@@ -44,6 +44,11 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
     {
         return FromLowLevel((TLowLevelType)lowLevel, resolver);
     }
+    
+    public virtual object ToLowLevelObject(object lowLevel)
+    {
+        return ToLowLevel((TValueType)lowLevel);
+    }
 
     /// <summary>
     /// Converts a high-level value to a low-level value

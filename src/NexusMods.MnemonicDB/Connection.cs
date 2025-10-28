@@ -517,13 +517,10 @@ public sealed class Connection : IConnection
 
     /// <inheritdoc />
     public IObservable<IDb> Revisions => _dbStream;
-    
-    internal async Task<ICommitResult> Transact(IInternalTxFunction fn)
-    {
-        StoreResult newTx;
-        IDb newDb;
 
-        (newTx, newDb) = await _store.TransactAsync(fn);
+    private async Task<ICommitResult> Transact(IInternalTxFunction fn)
+    {
+        var (newTx, newDb) = await _store.TransactAsync(fn);
         newDb.Connection = this;
         var result = new CommitResult(newDb, newTx.Remaps);
         return result;

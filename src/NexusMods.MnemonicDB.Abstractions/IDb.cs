@@ -37,7 +37,7 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
         where THighLevel : notnull
     {
         var attrId = AttributeResolver.AttributeCache[attr];
-        using var slice = SliceDescriptor.Create(attrId, attr.LowLevelType, attr.FromLowLevelObject(value, AttributeResolver));
+        using var slice = SliceDescriptor.Create(attrId, attr.LowLevelType, attr.ToLowLevelObject(value));
         return Datoms(slice);
     }
     
