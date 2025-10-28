@@ -56,10 +56,10 @@ public static class TxProcessing
         return -1;
     }
 
-    public static (Datoms Retracts, Datoms Asserts) RunTxFnsAndNormalize(ReadOnlySpan<Datom> datoms, IDb basisDb, TxId thisTxId)
+    public static (Datoms Retracts, Datoms Asserts) RunTxFnsAndNormalize(ReadOnlySpan<Datom> datoms, IDb basisDb, TxId thisTxId, IConnection connection)
     {
         // Collect applied datoms (excluding tx-function markers)
-        var applied = new Datoms(basisDb);
+        var applied = new MainTransaction(connection);
 
         // Pending tx functions generated during execution that must run before continuing
         var pending = new Queue<Datom>();
@@ -72,15 +72,9 @@ public static class TxProcessing
             // Support both delegate-style and ITxFunction-style
             switch (fnDatom.V)
             {
-                case Action<Datoms, IDb> action:
-                    action(applied, basisDb);
-                    break;
                 case ITxFunction itx:
                 {
-                    using var tx = new InternalTransaction(basisDb, applied);
-                    itx.Apply(tx, basisDb);
-                    // Allow any temporary entities to materialize their datoms
-                    tx.ProcessTemporaryEntities();
+                    itx.Apply(applied);
                     break;
                 }
                 default:

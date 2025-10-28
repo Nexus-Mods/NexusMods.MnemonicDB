@@ -71,5 +71,42 @@ public readonly struct ResolvedDatom
     /// Hashcode of just the entity, attribute and value.
     /// </summary>
     public int HashCodeByValue() => HashCode.Combine(E, A, V);
+    
+    /// <summary>
+    /// (E, A, V) deconstructor
+    /// </summary>
+    public void Deconstruct(out EntityId e, out AttributeId a, out object v)
+    {
+        e = Prefix.E;
+        a = Prefix.A;
+        v = V;   
+    }
+    
+    /// <summary>
+    /// (E, A, V, T) deconstuctor   
+    /// </summary>
+    /// <param name="e"></param>
+    /// <param name="a"></param>
+    /// <param name="v"></param>
+    /// <param name="t"></param>
+    public void Deconstruct(out EntityId e, out AttributeId a, out object v, out TxId t)
+    {
+        e = Prefix.E;
+        a = Prefix.A;
+        v = V;
+        t = Prefix.T;
+    }
+
+    /// <summary>
+    /// (E, A, V, T, IsRetract) deconstuctor  
+    /// </summary>
+    public void Deconstruct(out EntityId e, out AttributeId a, out object v, out TxId t, out bool isRetract)
+    {
+        e = Prefix.E;
+        a = Prefix.A;
+        v = V;
+        t = Prefix.T;
+        isRetract = Prefix.IsRetract;
+    }
 }
 

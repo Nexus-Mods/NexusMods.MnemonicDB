@@ -1,6 +1,4 @@
 using System;
-using System.Runtime.InteropServices;
-using NexusMods.HyperDuck;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Traits;
@@ -10,7 +8,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 
 public readonly record struct TaggedValue(ValueTag Tag, object Value);
 
-public struct Datom : IComparable<Datom>
+public readonly struct Datom : IComparable<Datom>
 {
     public KeyPrefix Prefix { get; }
     
@@ -204,6 +202,43 @@ public struct Datom : IComparable<Datom>
     public int CompareTo(Datom other)
     {
         return GlobalComparer.Compare(this, other);
+    }
+
+    /// <summary>
+    /// (E, A, V) deconstructor
+    /// </summary>
+    public void Deconstruct(out EntityId e, out AttributeId a, out object v)
+    {
+        e = Prefix.E;
+        a = Prefix.A;
+        v = V;   
+    }
+    
+    /// <summary>
+    /// (E, A, V, T) deconstuctor   
+    /// </summary>
+    /// <param name="e"></param>
+    /// <param name="a"></param>
+    /// <param name="v"></param>
+    /// <param name="t"></param>
+    public void Deconstruct(out EntityId e, out AttributeId a, out object v, out TxId t)
+    {
+        e = Prefix.E;
+        a = Prefix.A;
+        v = V;
+        t = Prefix.T;
+    }
+
+    /// <summary>
+    /// (E, A, V, T, IsRetract) deconstuctor  
+    /// </summary>
+    public void Deconstruct(out EntityId e, out AttributeId a, out object v, out TxId t, out bool isRetract)
+    {
+        e = Prefix.E;
+        a = Prefix.A;
+        v = V;
+        t = Prefix.T;
+        isRetract = Prefix.IsRetract;
     }
 
     public override string ToString()

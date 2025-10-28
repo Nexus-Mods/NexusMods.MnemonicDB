@@ -33,12 +33,11 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     ISnapshot Snapshot { get; }
     
     
-    public Datoms Datoms<THighLevel, TLowLevel, TSerializer>(Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value) 
-        where THighLevel : notnull 
-        where TLowLevel : notnull 
-        where TSerializer : IValueSerializer<TLowLevel>
+    public Datoms Datoms<THighLevel>(IWritableAttribute<THighLevel> attr, THighLevel value) 
+        where THighLevel : notnull
     {
-        using var slice = SliceDescriptor.Create(attr, value, AttributeResolver.AttributeCache);
+        var attrId = AttributeResolver.AttributeCache[attr];
+        using var slice = SliceDescriptor.Create(attrId, attr.LowLevelType, attr.FromLowLevelObject(value, AttributeResolver));
         return Datoms(slice);
     }
     
@@ -78,21 +77,10 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     }
     
     /// <summary>
-    /// Get the cached data for the given analyzer.
-    /// </summary>
-    TReturn AnalyzerData<TAnalyzer, TReturn>() 
-        where TAnalyzer : IAnalyzer<TReturn>;
-    
-    /// <summary>
     /// Create the next version of the database with the given result and the transaction id that the result was assigned.
     /// </summary>
     IDb WithNext(StoreResult result, TxId resultAssignedTxId);
-
-    /// <summary>
-    /// Process and store the data from the given analyzers.
-    /// </summary>
-    void Analyze(IDb? prev, IAnalyzer[] analyzers);
-
+    
     /// <summary>
     /// Create a (temporary) database that acts like the current database, but with the given datoms transacted into
     /// it. No changes to the underlying datastore will be made, but this Db can be handed to any query functions and

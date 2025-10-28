@@ -9,14 +9,6 @@ namespace NexusMods.MnemonicDB.Abstractions.TxFunctions;
 public static class ExtensionMethods
 {
     /// <summary>
-    /// Adds a function to the transaction as a TxFunction
-    /// </summary>
-    public static void Add<T>(this ITransaction tx, T arg, Action<ITransaction, IDb, T> fn) =>
-    throw new NotImplementedException();
-        //tx.Add(new TxFunction<T>(fn, arg));
-    
-
-    /// <summary>
     /// Adds a function to the transaction that will delete the entity with the given id. If `recursive` is true, it will
     /// also delete any entities that reference the given entity.
     /// </summary>
@@ -27,43 +19,47 @@ public static class ExtensionMethods
     {
         if (recursive)
         {
-            tx.AddTxFn((tx, db) => DeleteRecursive(tx, db, id));
+            tx.Add(new DeleteRecursiveFn(id));
         }
         else
         {
-            tx.AddTxFn((tx, db) => DeleteThisOnly(tx, db, id));
+            tx.Add(new DeleteThisOnlyFn(id));
         }
     }
 
-    private static void DeleteRecursive(Datoms tx, IDb db, EntityId eid)
+    private readonly record struct DeleteRecursiveFn(EntityId Eid) : ITxFunction
     {
-        HashSet<EntityId> seen = [];
-        Stack<EntityId> remain = new();
-        remain.Push(eid);
-        var cache = db.AttributeResolver.AttributeCache;
-
-        while (remain.Count > 0)
+        public void Apply(Transaction tx)
         {
-            var current = remain.Pop();
-            seen.Add(current);
-            DeleteThisOnly(tx, db, current);
+            var db = tx.BasisDb;
+            HashSet<EntityId> seen = [];
+            Stack<EntityId> remain = new();
+            remain.Push(Eid);
+            var cache = db.AttributeResolver.AttributeCache;
 
-            var references = db.ReferencesTo(current);
-
-            foreach (var reference in references)
+            while (remain.Count > 0)
             {
-                if (!seen.Add(reference.E))
-                    continue;
+                var current = remain.Pop();
+                seen.Add(current);
+                new DeleteThisOnlyFn(Eid).Apply(tx);
 
-                // If recursive, add it to the list of entities to delete
-                if (ShouldRecursiveDelete(db, cache, reference))
+                var references = db.ReferencesTo(current);
+
+                foreach (var reference in references)
                 {
-                    remain.Push(reference.E);
-                }
-                else
-                {
-                    // Otherwise, just delete the reference
-                    tx.Add(reference.WithRetract());
+                    if (!seen.Add(reference.E))
+                        continue;
+
+                    // If recursive, add it to the list of entities to delete
+                    if (ShouldRecursiveDelete(db, cache, reference))
+                    {
+                        remain.Push(reference.E);
+                    }
+                    else
+                    {
+                        // Otherwise, just delete the reference
+                        tx.Add(reference.WithRetract());
+                    }
                 }
             }
         }
@@ -82,11 +78,15 @@ public static class ExtensionMethods
         
     }
 
-    private static void DeleteThisOnly(Datoms tx, IDb db, EntityId eid)
+    private readonly record struct DeleteThisOnlyFn(EntityId Eid) : ITxFunction
     {
-        foreach (var datom in db[eid])
+        public void Apply(Transaction tx)
         {
-            tx.Add(datom.WithRetract());
+            foreach (var datom in tx.BasisDb[Eid])
+            {
+                tx.Add(datom.WithRetract());
+            }
         }
     }
+
 }

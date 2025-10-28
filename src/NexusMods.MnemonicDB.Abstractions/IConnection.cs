@@ -65,11 +65,6 @@ public interface IConnection : IDisposable, IQueryMixin
     /// </summary>
     /// <returns></returns>
     public MainTransaction BeginTransaction();
-
-    /// <summary>
-    /// The analyzers that are available for this connection
-    /// </summary>
-    public IAnalyzer[] Analyzers { get; }
     
     /// <summary>
     /// Deletes the entities with the given ids, also deleting them from any historical indexes. Returns the total number

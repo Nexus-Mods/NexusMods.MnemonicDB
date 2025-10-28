@@ -1,21 +1,16 @@
-﻿using System.Buffers;
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Reactive.Linq;
 using DynamicData;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.Hashing.xxHash3;
-using NexusMods.MnemonicDB.Abstractions.Attributes;
 using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
-using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Query;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
-using NexusMods.MnemonicDB.Abstractions.ValueSerializers;
 using NexusMods.MnemonicDB.TestModel;
-using NexusMods.MnemonicDB.TestModel.Analyzers;
 using NexusMods.Paths;
 using TUnit.Assertions.AssertConditions.Throws;
 using File = NexusMods.MnemonicDB.TestModel.File;
@@ -423,14 +418,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 {
                     using var txInner = Connection.BeginTransaction();
                     // Send the function for the update, not update itself
-                    txInner.AddTxFn((datoms, db) =>
-                    {
-                        // Actual work is done here, we load the entity and update it this is executed serially
-                        // by the transaction executor
-                        var loadout = Loadout.Load(db, id);
-                        var oldAmount = int.Parse(loadout.Name.Split(":")[1].Trim());
-                        datoms.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + 1)}");
-                    });
+                    txInner.Add(new MyTxFunction(id));
                     await txInner.Commit();
                 }));
             }
@@ -443,11 +431,17 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(loadoutRO.Name).IsEqualTo("Test Loadout: 1001");
 
         return;
+    }
 
-
-        void AddToName(Transaction tx, IDb db, EntityId eid, int amount)
+    private record MyTxFunction(EntityId Id) : ITxFunction
+    {
+        public void Apply(Transaction tx)
         {
-
+            // Actual work is done here, we load the entity and update it this is executed serially
+            // by the transaction executor
+            var loadout = Loadout.Load(tx.BasisDb, Id);
+            var oldAmount = int.Parse(loadout.Name.Split(":")[1].Trim());
+            tx.Add(loadout.Id, Loadout.Name, $"Test Loadout: {(oldAmount + 1)}");
         }
     }
 
@@ -1071,35 +1065,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         // one of the parents may have a different entityId
         await VerifyTable(result.Db[result.NewTx].Resolved(Connection));
     }
-
-    [Test]
-    public async Task CanGetAnalyzerData()
-    {
-        using var tx = Connection.BeginTransaction();
-        
-        var loadout1 = new Loadout.New(tx)
-        {
-            Name = "Test Loadout"
-        };
-        
-        var mod = new Mod.New(tx)
-        {
-            Name = "Test Mod",
-            Source = new Uri("http://test.com"),
-            LoadoutId = loadout1 
-        };
-
-        var result = await tx.Commit();
-
-        await Assert.That(result.Db).IsEqualTo(Connection.Db);
-        
-        var countData = Connection.Db.AnalyzerData<DatomCountAnalyzer, int>();
-        await Assert.That(countData).IsEqualTo(result.Db.RecentlyAdded.Count);
-
-        var attrs = Connection.Db.AnalyzerData<AttributesAnalyzer, HashSet<Symbol>>();
-        await Assert.That(attrs).IsNotEmpty();
-    }
-
+    
     [Test]
     public async Task CanGetAttributesThatRequireDI()
     {

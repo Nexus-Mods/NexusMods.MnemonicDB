@@ -11,7 +11,6 @@ using NexusMods.MnemonicDB.Storage.RocksDbBackend;
 using NexusMods.Hashing.xxHash3;
 using NexusMods.HyperDuck.Adaptor;
 using NexusMods.MnemonicDB.TestModel;
-using NexusMods.MnemonicDB.TestModel.Analyzers;
 using NexusMods.Paths;
 using File = NexusMods.MnemonicDB.TestModel.File;
 
@@ -21,20 +20,19 @@ public class AMnemonicDBTest : IDisposable
 {
     private readonly IAttribute[] _attributes;
     protected readonly IServiceProvider Provider;
-    protected AttributeCache AttributeCache => _store.AttributeCache;
-    private Backend _backend;
+    protected AttributeCache AttributeCache => Connection.AttributeCache;
 
-    private DatomStore _store;
     protected IConnection Connection;
     protected ILogger Logger;
-    private readonly IAnalyzer[] _analyzers;
-    
+    protected IConnectionFactory ConnectionFactory;
+
     protected TemporaryFileManager TemporaryFileManager;
     private readonly Dictionary<string, IAttribute> _attrShortNames;
     
     protected AMnemonicDBTest(IServiceProvider provider)
     {
         Provider = provider;
+        ConnectionFactory = provider.GetRequiredService<IConnectionFactory>();
         TemporaryFileManager = provider.GetRequiredService<TemporaryFileManager>();
         _attributes = provider.GetRequiredService<IEnumerable<IAttribute>>().ToArray();
 
@@ -45,24 +43,11 @@ public class AMnemonicDBTest : IDisposable
             Path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory)
                 .Combine("tests_MnemonicDB" + Guid.NewGuid())
         };
-        
-        var resolver = new AttributeResolver(provider, new AttributeCache());
-        _backend = new Backend(resolver);
 
-        _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), Config, _backend);
-
-        _analyzers =
-        [
-            new DatomCountAnalyzer(),
-            new AttributesAnalyzer()
-        ];
-        
-        Connection = new Connection(provider.GetRequiredService<ILogger<Connection>>(), _store, provider, _analyzers, provider.GetRequiredService<IQueryEngine>());
-        
+        Connection = provider.GetRequiredService<IConnectionFactory>().Create(provider, Config);
         Logger = provider.GetRequiredService<ILogger<AMnemonicDBTest>>();
-        
-
     }
+
 
     protected TableData TableResults()
     {
@@ -77,7 +62,7 @@ public class AMnemonicDBTest : IDisposable
         {
             _sb.AppendLine(heading);
             _sb.AppendLine("------------------------------------");
-            List<List<string>> cells = new();
+            List<List<string>> cells = [];
             foreach (var item in data)
             {
                 var row = new List<string>();
@@ -283,25 +268,17 @@ public class AMnemonicDBTest : IDisposable
     public void Dispose()
     {
         Connection.Dispose();
-        _store.Dispose();
-        _backend.Dispose();
     }
 
 
     protected async Task RestartDatomStore()
     {
         await Task.Yield();
-        _store.Dispose();
-        _backend.Dispose();
+        Connection.Dispose();
 
         GC.Collect();
 
-        Connection.Dispose();
-        var resolver = new AttributeResolver(Provider, new AttributeCache());
-        _backend = new Backend(resolver);
-        _store = new DatomStore(Provider.GetRequiredService<ILogger<DatomStore>>(), Config, _backend);
-
-        Connection = new Connection(Provider.GetRequiredService<ILogger<Connection>>(), _store, Provider, _analyzers);
+        Connection = Provider.GetRequiredService<IConnectionFactory>().Create(Provider, Config);
     }
 
 }

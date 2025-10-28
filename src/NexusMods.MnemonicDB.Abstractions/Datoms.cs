@@ -1,19 +1,10 @@
-using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using NexusMods.MnemonicDB.Abstractions.Attributes;
-using NexusMods.MnemonicDB.Abstractions.DatomComparators;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.Abstractions.Internals;
 using NexusMods.MnemonicDB.Abstractions.Models;
 using NexusMods.MnemonicDB.Abstractions.Traits;
 using NexusMods.MnemonicDB.Abstractions.TxFunctions;
-using Reloaded.Memory.Extensions;
-using ZLinq;
-using ZLinq.Linq;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
@@ -59,7 +50,7 @@ public class Datoms : List<Datom>
         base.Add(datom);
     }
 
-    public void AddTxFn(Action<Datoms, IDb> txFn)
+    public void Add(ITxFunction txFn)
     {
         base.Add(Datom.Create(EntityId.MaxValueNoPartition, AttributeId.Max, ValueTag.TxFunction, txFn));
     }

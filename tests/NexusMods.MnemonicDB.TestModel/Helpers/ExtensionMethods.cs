@@ -28,45 +28,43 @@ public static class ExtensionMethods
         var sb = new StringBuilder();
         foreach (var datom in datoms)
         {
-            var resolved = resolver.Resolve(datom);
-            var isRetract = datom.IsRetract;
+            var (e, a, v, t, isRetract) = resolver.Resolve(datom);
 
-            var aName = cache.GetSymbol(datom.A);
+            var aName = cache.GetSymbol(a);
             var symColumn = TruncateOrPad(aName.Name, 24);
-            var attrId = datom.A.Value.ToString("X4");
+            var attrId = a.Value.ToString("X4");
 
             sb.Append(isRetract ? "-" : "+");
             sb.Append(" | ");
-            sb.Append(datom.E);
+            sb.Append(e);
             sb.Append(" | ");
             sb.Append($"({attrId}) {symColumn}");
             sb.Append(" | ");
-
-            var o = resolved.V;
-            if (o is DateTimeOffset)
+            
+            if (v is DateTimeOffset)
             {
                 sb.Append(TruncateOrPad("DateTime : " + timestampCount, 48));
                 timestampCount++;
             }
             else if (datom.Tag == ValueTag.Blob)
             {
-                var memory = (Memory<byte>)datom.V;
-                var hash = ((Memory<byte>)datom.V).xxHash3();
+                var memory = (Memory<byte>)v;
+                var hash = ((Memory<byte>)v).xxHash3();
                 sb.Append(TruncateOrPad($"Blob {hash} {memory.Length} bytes" , 48));
             }
             else if (datom.Tag == ValueTag.HashedBlob)
             {
-                var memory = (Memory<byte>)datom.V;
-                var hash = ((Memory<byte>)datom.V).xxHash3();
+                var memory = (Memory<byte>)v;
+                var hash = ((Memory<byte>)v).xxHash3();
                 sb.Append(TruncateOrPad($"HashedBlob {hash} {memory.Length} bytes", 48));
             }
             else
             {
-                sb.Append(TruncateOrPad(resolved.V.ToString() ?? "", 48));
+                sb.Append(TruncateOrPad(v.ToString() ?? "", 48));
             }
 
             sb.Append(" | ");
-            sb.Append(datom.T);
+            sb.Append(t);
 
             sb.AppendLine();
         }

@@ -53,15 +53,6 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
         var newDatoms = storeResult.Snapshot[txId];
         return new Db<TSnapshot, TLowLevelIterator>((TSnapshot)storeResult.Snapshot, txId, newDatoms, this);
     }
-    
-    public void Analyze(IDb? prev, IAnalyzer[] analyzers)
-    {
-        foreach (var analyzer in analyzers)
-        {
-            var result = analyzer.Analyze(prev, this);
-            AnalyzerData[analyzer.GetType()] = result;
-        }
-    }
 
     public IDb AsIf(Datoms datoms)
     {
@@ -83,15 +74,6 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
             _connection = value;
         }
     }
-
-
-    TReturn IDb.AnalyzerData<TAnalyzer, TReturn>()
-    {
-        if (AnalyzerData.TryGetValue(typeof(TAnalyzer), out var value))
-            return (TReturn)value;
-        throw new KeyNotFoundException($"Analyzer {typeof(TAnalyzer).Name} not found");
-    }
-
     
     [MustDisposeResource]
     public override TLowLevelIterator GetRefDatomEnumerator() => _snapshot.GetRefDatomEnumerator();

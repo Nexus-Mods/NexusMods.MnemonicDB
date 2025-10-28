@@ -12,6 +12,7 @@ using NexusMods.MnemonicDB.Abstractions.BuiltInEntities;
 using NexusMods.MnemonicDB.Abstractions.ElementComparers;
 using NexusMods.MnemonicDB.InternalTxFunctions;
 using NexusMods.MnemonicDB.Storage.Abstractions;
+using Transaction = NexusMods.MnemonicDB.Abstractions.BuiltInEntities.Transaction;
 
 namespace NexusMods.MnemonicDB.Storage;
 
@@ -69,8 +70,7 @@ public sealed partial class DatomStore : IDatomStore
         ILogger<DatomStore> logger,
         DatomStoreSettings settings,
         IStoreBackend backend,
-        TimeProvider? timeProvider = null,
-        bool bootstrap = true)
+        TimeProvider? timeProvider = null)
     {
         CurrentSnapshot = default!;
         _timeProvider = timeProvider ?? TimeProvider.System;
@@ -86,9 +86,6 @@ public sealed partial class DatomStore : IDatomStore
         Settings = settings;
         
         Backend.Init(settings);
-
-        if (bootstrap) 
-            Bootstrap();
     }
     
     /// <inheritdoc />
@@ -139,6 +136,8 @@ public sealed partial class DatomStore : IDatomStore
     /// <inheritdoc />
     public IObservable<IDb> TxLog => _dbStream;
 
+    public Connection Connection { get; set; } = null!;
+
     /// <inheritdoc />
     public (StoreResult, IDb) Transact(Datoms segment)
     {
@@ -167,6 +166,7 @@ public sealed partial class DatomStore : IDatomStore
         _shutdownToken.Cancel();
         _pendingTransactions.CompleteAdding();
         _dbStream.Dispose();
+        Backend.Dispose();
         
         _isDisposed = true;
     }
@@ -227,11 +227,15 @@ public sealed partial class DatomStore : IDatomStore
     /// <summary>
     ///     Sets up the initial state of the store.
     /// </summary>
-    private void Bootstrap()
+    internal void Bootstrap()
     {
         try
         {
             CurrentSnapshot = Backend.GetSnapshot();
+            _currentDb = CurrentSnapshot.MakeDb(TxId.MinValue, _attributeResolver);
+            _currentDb.Connection = Connection;
+            Connection.Db = _currentDb;
+            
             var lastTx = TxId.From(_nextIdCache.LastEntityInPartition(CurrentSnapshot, PartitionId.Transactions).Value);
             
             if (lastTx.Value == TxId.MinValue)
@@ -239,9 +243,7 @@ public sealed partial class DatomStore : IDatomStore
                 Logger.LogInformation("Bootstrapping the datom store no existing state found");
                 _currentDb = CurrentSnapshot.MakeDb(TxId.MinValue, _attributeResolver);
                 var tx = new Datoms(_attributeResolver);
-                var internalTx = new InternalTransaction(null!, tx);
                 AttributeDefinition.AddInitial(tx);
-                internalTx.ProcessTemporaryEntities();
                 // Call directly into `Log` as the transaction channel is not yet set up
                 Log(new IndexSegmentTransaction(tx));
                 CurrentSnapshot = Backend.GetSnapshot();
@@ -321,7 +323,7 @@ public sealed partial class DatomStore : IDatomStore
         var datomCount = 0;
         var swPrepare = Stopwatch.StartNew();
         var datomsSpan = CollectionsMarshal.AsSpan(datoms);
-        var (retracts, asserts) = TxProcessing.RunTxFnsAndNormalize(datomsSpan, _currentDb!, _thisTx);
+        var (retracts, asserts) = TxProcessing.RunTxFnsAndNormalize(datomsSpan, _currentDb!, _thisTx, Connection);
         
         datomCount += asserts.Count;
         

@@ -22,18 +22,14 @@ public static class Services
     /// <summary>
     ///     Registers the event sourcing services with the service collection.
     /// </summary>
-    public static IServiceCollection AddMnemonicDB(this IServiceCollection s)
-    {
-        s.AddSingleton<IConnection, Connection>();
-        s.AddSingleton<IQueryEngine, QueryEngine>();
-        s.AddSingleton<AScalarFunction, ToStringScalarFn>();
-        s.AddConverters();
-        s.AddMnemonicDBStorage();
+    public static IServiceCollection AddMnemonicDB(this IServiceCollection s) =>
+        s.AddSingleton<IConnectionFactory, ConnectionFactory>()
+            .AddSingleton<IQueryEngine, QueryEngine>()
+            .AddSingleton<AScalarFunction, ToStringScalarFn>()
+            .AddConverters()
+            .AddMnemonicDBStorage();
 
-        return s;
-    }
-
-    public static IServiceCollection AddConverters(this IServiceCollection s)
+    private static IServiceCollection AddConverters(this IServiceCollection s)
     {
         s.AddSingleton<IBindingConverter, DbBindingConverter>();
         s.AddSingleton<IBindingConverter, ConnectionBindingConverter>();
@@ -55,32 +51,11 @@ public static class Services
     /// <summary>
     /// Adds the MnemonicDB storage services to the service collection.
     /// </summary>
-    public static IServiceCollection AddMnemonicDBStorage(this IServiceCollection services)
+    private static IServiceCollection AddMnemonicDBStorage(this IServiceCollection services)
     {
         services.AddAttributeDefinitionModel()
             .AddAdapters()
-            .AddTransactionModel()
-            .AddSingleton<IDatomStore, DatomStore>()
-            .AddSingleton<DatomStore>(s => (DatomStore)s.GetRequiredService<IDatomStore>());
-        return services;
-    }
-    
-    /// <summary>
-    /// Adds the MnemonicDB storage settings to the service collection.
-    /// </summary>
-    public static IServiceCollection AddDatomStoreSettings(this IServiceCollection services,
-        DatomStoreSettings settings)
-    {
-        services.AddSingleton(settings);
-        return services;
-    }
-
-    /// <summary>
-    /// Adds the RocksDB backend to the service collection.
-    /// </summary>
-    public static IServiceCollection AddRocksDbBackend(this IServiceCollection services)
-    {
-        services.AddSingleton<IStoreBackend, Backend>(s => new Backend(new AttributeResolver(s, new AttributeCache())));
+            .AddTransactionModel();
         return services;
     }
 }

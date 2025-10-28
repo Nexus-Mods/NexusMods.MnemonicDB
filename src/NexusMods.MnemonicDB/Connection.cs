@@ -33,7 +33,6 @@ public sealed class Connection : IConnection
 
     private readonly DbStream _dbStream;
     private IDisposable? _dbStreamDisposable;
-    private readonly IAnalyzer[] _analyzers;
     
     /// <summary>
     /// A tree of observers that are interested in datoms of a given range
@@ -62,35 +61,30 @@ public sealed class Connection : IConnection
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers, IQueryEngine? queryEngine = null, bool readOnlyMode = false, string? prefix = null)
+    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, QueryEngine queryEngine, DatomStoreSettings settings, string? prefix = null)
     {
         ServiceProvider = provider;
         AttributeResolver = store.AttributeResolver;
         _logger = logger;
         _store = (DatomStore)store;
         _dbStream = new DbStream();
-        _analyzers = analyzers.ToArray();
         _prefix = prefix ?? "default";
-        ReadOnlyMode = readOnlyMode;
-        Bootstrap(readOnlyMode);
-        if (queryEngine is QueryEngine engine)
-        {
-            _queryEngine = engine;
-            _queryUId = _queryEngine.RegisterConnection(this, _prefix);
-            _reviser = Revisions
-                .Subscribe(r =>
+        ReadOnlyMode = settings.IsReadOnly;
+        _queryEngine = queryEngine;
+        _queryUId = _queryEngine.RegisterConnection(this, _prefix);
+        _reviser = Revisions
+            .Subscribe(r =>
+            {
+                var attrs = new HashSet<IAttribute>();
+                foreach (var d in r.RecentlyAdded)
                 {
-                    var attrs = new HashSet<IAttribute>();
-                    foreach (var d in r.RecentlyAdded)
-                    {
-                        if (AttributeResolver.TryGetAttribute(d.A, out var attr1))
-                            attrs.Add(attr1);
-                    }
+                    if (AttributeResolver.TryGetAttribute(d.A, out var attr1))
+                        attrs.Add(attr1);
+                }
 
-                    foreach (var tableFunction in _queryEngine?.RegisteredTableFunctions.OfType<IRevisableFromAttributes>() ?? [])
-                        tableFunction.ReviseFromAttrs(attrs);
-                });
-        }
+                foreach (var tableFunction in _queryEngine?.RegisteredTableFunctions.OfType<IRevisableFromAttributes>() ?? [])
+                    tableFunction.ReviseFromAttrs(attrs);
+            });
     }
 
     public bool ReadOnlyMode { get;}
@@ -206,16 +200,7 @@ public sealed class Connection : IConnection
         {
             var newRevisionEvent = events[i] as NewRevisionEvent;
             Debug.Assert(newRevisionEvent is not null);
-
-            try
-            {
-                newRevisionEvent.Db.Analyze(newRevisionEvent.Prev, _analyzers);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to analyze db");
-            }
-
+            
             _dbStream.OnNext(newRevisionEvent.Db);
             ProcessObservers(newRevisionEvent.Db);
             newRevisionEvent.OnFinished.Set();
@@ -400,10 +385,10 @@ public sealed class Connection : IConnection
         {
             var val = _dbStream;
             // ReSharper disable once ConditionIsAlwaysTrueOrFalseAccordingToNullableAPIContract
-            if (val == null)
-                ThrowNullDb();
+            if (val == null) ThrowNullDb();
             return _dbStream.Current;
         }
+        internal set => _dbStream.OnNext(value);
     }
 
     /// <inheritdoc />
@@ -445,12 +430,6 @@ public sealed class Connection : IConnection
         return new MainTransaction(connection: this);
     }
     
-
-
-    /// <inheritdoc />
-    public IAnalyzer[] Analyzers => _analyzers;
-
-
     /// <inheritdoc />
     public async Task<ICommitResult> Excise(EntityId[] entityIds)
     {
@@ -550,7 +529,7 @@ public sealed class Connection : IConnection
         return result;
     }
 
-    private void Bootstrap(bool readOnlyMode)
+    internal void Bootstrap()
     {
         try
         {
@@ -558,7 +537,6 @@ public sealed class Connection : IConnection
             var initialDb = initialSnapshot.MakeDb(TxId, AttributeResolver, this);
             initialDb.Connection = this;
             AttributeCache.Reset(initialDb);
-            initialDb.Analyze(null, _analyzers);
             
             var declaredAttributes = AttributeResolver.DefinedAttributes.OrderBy(a => a.Id.Id).ToArray();
             _dbStream.OnNext(initialDb);
@@ -570,7 +548,7 @@ public sealed class Connection : IConnection
             };
             _eventThread.Start();
             
-            if (!readOnlyMode)
+            if (!ReadOnlyMode)
                 _store.Transact(new SimpleMigration(declaredAttributes));
             
             _dbStreamDisposable = ProcessUpdates(_store.TxLog);
@@ -596,7 +574,8 @@ public sealed class Connection : IConnection
         _dbStreamDisposable?.Dispose();
         _pendingEvents.CompleteAdding();
         _pendingEvents.Dispose();
-
+        
+        _store.Dispose();
         _isDisposed = true;
     }
 
