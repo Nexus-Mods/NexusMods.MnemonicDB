@@ -49,7 +49,7 @@ public class Datoms : List<Datom>
 
     public Datoms(IDb db)
     {
-        _resolver = db.Connection.AttributeResolver;
+        _resolver = db.AttributeResolver;
     }
     
     public AttributeCache AttributeCache => _resolver.AttributeCache;
@@ -220,9 +220,9 @@ public class Datoms : List<Datom>
         
         var stopIdx = FindRangeEnd(attrId, startIdx);
         if (stopIdx == -1)
-            stopIdx = Count - 1;
+            stopIdx = Count;
         
-        for (var idx = 0; idx <= stopIdx; idx++)
+        for (var idx = startIdx; idx < stopIdx; idx++)
             yield return attr.FromLowLevel((TLowLevel)this[idx].Value, _resolver);
     }
 
