@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.52.1 - 2025-10-28
+* Fix several bugs with attribute getters
+
 ### 0.52.0 - 2025-10-28
 * Standardize creation of connections around IConnectionFactory
 * Remove all non-traditional transaction/connection types
