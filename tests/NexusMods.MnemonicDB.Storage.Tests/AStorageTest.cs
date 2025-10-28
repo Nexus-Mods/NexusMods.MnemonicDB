@@ -16,15 +16,13 @@ public abstract class AStorageTest : IDisposable
     private readonly AbsolutePath _path;
     private readonly IServiceProvider _provider;
     protected readonly DatomStoreSettings DatomStoreSettings;
-    public Backend Backend { get; }
-
     protected AttributeCache AttributeCache => DatomStore.AttributeCache;
-    protected AttributeResolver AttributeResolver { get; }
+    protected AttributeResolver AttributeResolver => Connection.AttributeResolver;
 
     protected readonly ILogger Logger;
 
     private ulong _tempId = 1;
-    protected IDatomStore DatomStore;
+    protected IDatomStore DatomStore => Connection.DatomStore;
 
     protected AStorageTest(IServiceProvider provider, bool isInMemory)
     {
@@ -37,50 +35,15 @@ public abstract class AStorageTest : IDisposable
             Path = isInMemory ? null : _path,
         };
         
-        var resolver = new AttributeResolver(provider, new AttributeCache());
-        Backend = new Backend(resolver);
-        DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), DatomStoreSettings, Backend);
-        
-        AttributeResolver = new AttributeResolver(_provider, AttributeCache);
-        
+        Connection = provider.GetRequiredService<IConnectionFactory>().Create(provider, DatomStoreSettings);
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
-
-        var tx = new Datoms(DatomStore.AttributeResolver);
-        AddAttr(tx, File.Path, AttributeId.From(20));
-        AddAttr(tx, File.Hash, AttributeId.From(21));
-        AddAttr(tx, File.Size, AttributeId.From(22));
-        AddAttr(tx, File.ModId, AttributeId.From(23));
-        AddAttr(tx, Mod.Name, AttributeId.From(24));
-        AddAttr(tx, Mod.LoadoutId, AttributeId.From(25));
-        AddAttr(tx, Loadout.Name, AttributeId.From(26));
-        AddAttr(tx, Collection.Name, AttributeId.From(27));
-        AddAttr(tx, Collection.LoadoutId, AttributeId.From(28));
-        AddAttr(tx, Collection.ModIds, AttributeId.From(29));
-        AddAttr(tx, Blobs.InKeyBlob, AttributeId.From(30));
-        AddAttr(tx, Blobs.InValueBlob, AttributeId.From(31));
-        var (_, db) = DatomStore.Transact(tx);
-        AttributeCache.Reset(db);
     }
 
-
-    private void AddAttr(Datoms tx, IAttribute attribute, AttributeId attributeId)
-    { 
-        var eid = EntityId.From(attributeId.Value);
-        tx.Add(eid, AttributeDefinition.UniqueId, attribute.Id);
-        tx.Add(eid, AttributeDefinition.ValueType, attribute.LowLevelType);
-        tx.Add(eid, AttributeDefinition.Cardinality, attribute.Cardinalty);
-        tx.Add(eid, AttributeDefinition.Indexed, attribute.IndexedFlags);
-
-        if (attribute.NoHistory)
-            tx.Add(eid, AttributeDefinition.NoHistory, Null.Instance);
-        if (attribute.DeclaredOptional)
-            tx.Add(eid, AttributeDefinition.Optional, Null.Instance);
-    }
+    public IConnection Connection { get; set; }
 
     public void Dispose()
     {
-        DatomStore.Dispose();
-        Backend.Dispose();
+        Connection.Dispose();
     }
 
     public EntityId NextTempId()

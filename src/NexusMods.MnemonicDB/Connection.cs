@@ -61,7 +61,7 @@ public sealed class Connection : IConnection
     /// <summary>
     ///     Main connection class, co-ordinates writes and immutable reads
     /// </summary>
-    public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, QueryEngine queryEngine, DatomStoreSettings settings, string? prefix = null)
+    internal Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, QueryEngine queryEngine, DatomStoreSettings settings, string? prefix = null)
     {
         ServiceProvider = provider;
         AttributeResolver = store.AttributeResolver;

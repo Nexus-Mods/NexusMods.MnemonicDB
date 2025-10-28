@@ -66,7 +66,7 @@ public sealed partial class DatomStore : IDatomStore
     /// <summary>
     /// DI constructor
     /// </summary>
-    public DatomStore(
+    internal DatomStore(
         ILogger<DatomStore> logger,
         DatomStoreSettings settings,
         IStoreBackend backend,

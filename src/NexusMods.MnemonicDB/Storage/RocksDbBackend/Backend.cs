@@ -26,7 +26,7 @@ public class Backend : IStoreBackend
     /// <summary>
     /// Default constructor
     /// </summary>
-    public Backend(AttributeResolver resolver, bool readOnly = false)
+    internal Backend(AttributeResolver resolver, bool readOnly = false)
     {
         _disposed = false;
         _isReadOnly = readOnly;

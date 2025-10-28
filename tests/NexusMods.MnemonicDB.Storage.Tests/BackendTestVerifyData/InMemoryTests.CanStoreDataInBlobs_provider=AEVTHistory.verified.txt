@@ -1,8 +1,8 @@
-﻿+ | EId:0200000000000001 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | Tx:0100000000000003
-- | EId:0200000000000001 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | Tx:0100000000000007
-+ | EId:0200000000000002 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | Tx:0100000000000004
-- | EId:0200000000000002 | (001E) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | Tx:0100000000000008
-+ | EId:0200000000000001 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | Tx:0100000000000003
-- | EId:0200000000000001 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | Tx:0100000000000007
-+ | EId:0200000000000002 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | Tx:0100000000000004
-- | EId:0200000000000002 | (001F) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | Tx:0100000000000008
+﻿+ | EId:0200000000000001 | (000C) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | Tx:0100000000000003
+- | EId:0200000000000001 | (000C) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | Tx:0100000000000007
++ | EId:0200000000000002 | (000C) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | Tx:0100000000000004
+- | EId:0200000000000002 | (000C) InKeyBlob                | Blob 0xB85FD37A0A050E63 255 bytes                | Tx:0100000000000008
++ | EId:0200000000000001 | (000D) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | Tx:0100000000000003
+- | EId:0200000000000001 | (000D) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | Tx:0100000000000007
++ | EId:0200000000000002 | (000D) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | Tx:0100000000000004
+- | EId:0200000000000002 | (000D) InValueBlob              | HashedBlob 0x8FFA0F9DFCB11153 16777216 bytes     | Tx:0100000000000008
