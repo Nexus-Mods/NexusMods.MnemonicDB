@@ -1,6 +1,6 @@
 ## Changelog
 
-### 0.52.0 - 2025-11-03
+### 0.52.0 - 2025-10-28
 * Standardize creation of connections around IConnectionFactory
 * Remove all non-traditional transaction/connection types
 * Cleanup TxFunctions
