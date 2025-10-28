@@ -80,7 +80,7 @@ public static class Services
     /// </summary>
     public static IServiceCollection AddRocksDbBackend(this IServiceCollection services)
     {
-        services.AddSingleton<IStoreBackend, Backend>();
+        services.AddSingleton<IStoreBackend, Backend>(s => new Backend(new AttributeResolver(s, new AttributeCache())));
         return services;
     }
 }

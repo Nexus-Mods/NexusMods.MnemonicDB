@@ -1,5 +1,9 @@
 ## Changelog
 
+### 0.51.0 - 2025-10-28
+* Bring AttributeCache and AttributeResolver closer together and weave them together through the project
+* .Add functions and getters on Tx and Dtoms are now much cleaner
+
 ### 0.50.0 - 2025-10-27
 * Massive rewrite of the project.
 * Datoms are now structs combining a key prefix with a object pointer
