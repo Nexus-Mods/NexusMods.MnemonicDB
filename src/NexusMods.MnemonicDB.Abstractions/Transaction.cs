@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NexusMods.MnemonicDB.Abstractions;
 
-public abstract class Transaction : Datoms, IMainTransaction, ISubTransaction 
+public abstract class Transaction : Datoms
 {
     private readonly Transaction? _parentTransaction;
     private IDb _asIfDb;

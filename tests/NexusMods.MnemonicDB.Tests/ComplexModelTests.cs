@@ -118,7 +118,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
     [Arguments(128, 1024, 128)]
     public async Task CanRestartStorage(int modCount, int filesPerMod, int extraFiles)
     {
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
 
         var newLoadout = new Loadout.New(tx)
         {
@@ -216,7 +216,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
                     .Because("every mod should have the same amount of files");
         }
 
-        using var tx2 = Connection.BeginTransaction();
+        var tx2 = Connection.BeginTransaction();
         var newNewLoadOutNew = new Loadout.New(tx2)
         {
             Name = "My Loadout 2"
@@ -232,7 +232,7 @@ public class ComplexModelTests(IServiceProvider provider) : AMnemonicDBTest(prov
     [Test]
     public async Task CanGetFromTransaction()
     {
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
 
         var archiveFile = new ArchiveFile.New(tx, out var id)
         {

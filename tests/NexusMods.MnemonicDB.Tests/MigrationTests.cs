@@ -24,7 +24,7 @@ public class MigrationTests : AMnemonicDBTest
 
     private async Task AddData()
     {
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         for (var l = 0; l < 10; l++)
         {
             var loadout = new Loadout.New(tx)

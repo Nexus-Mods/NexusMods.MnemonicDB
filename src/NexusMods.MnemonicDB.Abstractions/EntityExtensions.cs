@@ -22,6 +22,6 @@ public static class EntityExtensions
         var minTx = model.Min(m => m.T);
 
         var tx = new BuiltInEntities.Transaction.ReadOnly(model.Db, EntityId.From(minTx.Value));
-        return BuiltInEntities.Transaction.Timestamp.Get(tx);
+        return BuiltInEntities.Transaction.Timestamp.GetFrom(tx);
     }
 }

@@ -125,7 +125,7 @@ public partial class MyModelArrayTest : __MODELS__.IModelFactory<MyModelArrayTes
     /// Constructs a new MyModelArrayTest model from the given entity id, used to provide a typed structured
     /// way to interact with the entity before it is commited to the database.
     /// </summary>
-    public partial struct New : __MODELS__.ITemporaryEntity, __MODELS__.IHasEntityId {
+    public partial struct New : __MODELS__.IHasEntityId {
         private readonly __ABSTRACTIONS__.Transaction _datoms;
 
     
@@ -146,18 +146,6 @@ public partial class MyModelArrayTest : __MODELS__.IModelFactory<MyModelArrayTes
             Id = eid;
         }
 
-
-        /// <summary>
-        /// Adds this model to the given transaction.
-        /// </summary>
-        public void AddTo(__ABSTRACTIONS__.ITransaction tx)
-        {
-        /*
-            tx.Add(Id, NexusMods.MnemonicDB.SourceGenerator.Tests.MyModelArrayTest.MyAttribute, MyAttribute, false);
-
-
-            */
-        }
 
         /// <summary>
         /// Implicit conversion from the model to the entity id.
@@ -292,7 +280,7 @@ public partial class MyModelArrayTest : __MODELS__.IModelFactory<MyModelArrayTes
 
 
            /// <inheritdoc cref="MyModelArrayTest.MyAttribute" />
-           public int[] MyAttribute => NexusMods.MnemonicDB.SourceGenerator.Tests.MyModelArrayTest.MyAttribute.Get(this);
+           public int[] MyAttribute => NexusMods.MnemonicDB.SourceGenerator.Tests.MyModelArrayTest.MyAttribute.GetFrom(this);
 
 
 

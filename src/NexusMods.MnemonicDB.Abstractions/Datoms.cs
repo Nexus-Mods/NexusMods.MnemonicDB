@@ -222,7 +222,7 @@ public class Datoms : List<Datom>
             value = default!;
             return false;
         }
-        value = attr.FromLowLevel((TLowLevel)this[startIdx].V, _resolver);
+        value = (THighLevel)attr.FromLowLevelObject(this[startIdx].V, _resolver);
         return true;
     }
     private int FindRangeStart(AttributeId attrId)
@@ -288,4 +288,6 @@ public class Datoms : List<Datom>
         foreach (var datom in this)
             yield return TModel.Create(db, datom.Prefix.E);
     }
+
+    public Datoms GetDatoms() => this;
 }

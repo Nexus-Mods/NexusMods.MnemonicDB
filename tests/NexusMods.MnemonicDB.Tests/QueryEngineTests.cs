@@ -61,7 +61,7 @@ public class QueryEngineTests : AMnemonicDBTest
     [Test]
     public async Task CanSelectTuples()
     {
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
 
         var loadout1 = new Loadout.New(tx)
         {

@@ -28,69 +28,47 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     /// <summary>
     /// True whether the index segment contains this attribute.
     /// </summary>
-    public bool Contains<T>(T entity) where T : IHasIdAndEntitySegment
-    {
-        return entity.EntitySegment.Contains(this);
-    }
+    public bool Contains<T>(T entity) where T : IHasIdAndEntitySegment 
+        => entity.EntitySegment.Contains(this);
 
     /// <summary>
     ///  Tries to get the value of the attribute from the entity.
     /// </summary>
-    public bool TryGetValue(Datoms segment, AttributeResolver resolver, [NotNullWhen(true)] out TValue? value) 
-    {
-        var attributeId = segment.AttributeCache.GetAttributeId(Id);
-        if (segment.TryGetOne(this, out var foundValue))
-        {
-            value = (TValue)foundValue;
-            return true;
-        }
-        value = default;
-        return false;
-    }
+    public bool TryGetValue<T>(T segment, [NotNullWhen(true)] out TValue? value) 
+        where T : IHasIdAndEntitySegment 
+        => segment.EntitySegment.TryGetResolved(this, out value);
 
 
     /// <summary>
     /// Gets the value of the attribute from the entity.
     /// </summary>
-    public TValue Get<T>(T entity, Datoms segment)
-        where T : IHasEntityIdAndDb
-    {
-        if (TryGetValue(segment, entity.Db.Connection.AttributeResolver, out var value)) 
-            return value;
-        if (DefaultValue.HasValue) 
-            return DefaultValue.Value;
-        return ThrowKeyNotfoundException(entity.Id);
-    }
-
-    /// <summary>
-    /// Gets the value of the attribute from the entity.
-    /// </summary>
-    public TValue Get<T>(T entity)
+    public TValue GetFrom<T>(T entity)
         where T : IHasIdAndEntitySegment
     {
-        var resolver = entity.Db.Connection.AttributeResolver;
-        if (!entity.EntitySegment.TryGetOne(this, out var value))
-            return DefaultValue.HasValue ? DefaultValue.Value : ThrowKeyNotfoundException(entity.Id);
-        return (TValue)value;
+        if (entity.EntitySegment.TryGetResolved(this, out var value))
+            return value;
+        if (DefaultValue.HasValue)
+            return DefaultValue.Value;
+        return ThrowKeyNotfoundException(entity);
     }
-
+    
+    
     /// <summary>
     /// Gets the value of the attribute from the entity, <see cref="DefaultValue"/>, or <see cref="Optional{TValue}.None"/>.
     /// </summary>
     public Optional<TValue> GetOptional<T>(T entity)
         where T : IHasIdAndEntitySegment
     {
-        var resolver = entity.Db.Connection.AttributeResolver;
-        if (entity.EntitySegment.TryGetOne(this, out var value))
-            return (TValue)value;
-        return DefaultValue.HasValue ? DefaultValue : Optional<TValue>.None;
+        if (entity.EntitySegment.TryGetResolved(this, out var value))
+            return value;
+        return Optional<TValue>.None;
     }
     
 
     [DoesNotReturn]
-    private TValue ThrowKeyNotfoundException(EntityId entityId)
+    private TValue ThrowKeyNotfoundException(object entity)
     {
-        throw new KeyNotFoundException($"Entity `{entityId}` doesn't have attribute {Id}");
+        throw new KeyNotFoundException($"Entity `{entity}` doesn't have attribute {Id}");
 #pragma warning disable CS0162 // Unreachable code detected
         return default!;
 #pragma warning restore CS0162 // Unreachable code detected

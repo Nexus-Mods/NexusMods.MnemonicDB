@@ -71,7 +71,7 @@ public class ObservableTests : AMnemonicDBTest
 
     private async ValueTask Add(params string[] names)
     {
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
 
         foreach (var name in names)
         {
@@ -88,7 +88,7 @@ public class ObservableTests : AMnemonicDBTest
     private async ValueTask Delete(params string[] names)
     {
         var db = Connection.Db;
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
 
         foreach (var name in names)
         {

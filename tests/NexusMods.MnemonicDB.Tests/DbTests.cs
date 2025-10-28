@@ -249,7 +249,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task TimestampsArentBorked()
     {
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         var loadout = new Loadout.New(tx)
         {
             Name = "Test Loadout"
@@ -343,7 +343,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     public async Task CanPutEntitiesInDifferentPartitions()
     {
 
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         var file1 = new File.New(tx)
         {
             Path = "test1.txt",
@@ -400,7 +400,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     {
         EntityId id;
         // Create a loadout with inital state
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         var loadout = new Loadout.New(tx)
         {
             Name = "Test Loadout: 1"
@@ -416,7 +416,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             {
                 tasks.Add(Task.Run(async () =>
                 {
-                    using var txInner = Connection.BeginTransaction();
+                    var txInner = Connection.BeginTransaction();
                     // Send the function for the update, not update itself
                     txInner.Add(new MyTxFunction(id));
                     await txInner.Commit();
@@ -456,7 +456,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         await Assert.That(loadout.Mods.Count).IsEqualTo(3);
 
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         tx.Delete(firstMod.Id, false);
         var result = await tx.Commit();
 
@@ -483,7 +483,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var firstDb = Connection.Db;
         var firstMod = loadout.Mods.First();
 
-        using var extraTx = Connection.BeginTransaction();
+        var extraTx = Connection.BeginTransaction();
         var collection = new Collection.New(extraTx)
         {
             Name = "Test Collection",
@@ -500,7 +500,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(loadout.Mods.ToArray()).HasCount(3);
         await Assert.That(loadout.Collections.Count).IsEqualTo(1);
 
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         tx.Delete(firstMod.Id, true);
         result = await tx.Commit();
 
@@ -532,7 +532,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(firstMod.Contains(Mod.Description)).IsFalse();
 
 
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         var modWithDescription = new Mod.New(tx)
         {
             LoadoutId = loadout,
@@ -551,15 +551,14 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var result = await tx.Commit();
 
         var remapped = result.Remap(modWithDescription);
-        var resolver = result.Db.Connection.AttributeResolver;
         await Assert.That(remapped.Contains(Mod.Description)).IsTrue();
-        await Assert.That(Mod.Description.TryGetValue(remapped.EntitySegment, resolver, out var foundDesc)).IsTrue();
+        await Assert.That(Mod.Description.TryGetValue(remapped, out var foundDesc)).IsTrue();
         await Assert.That(foundDesc).IsEqualTo("Test Description");
         await Assert.That(remapped.Description.Value).IsEqualTo("Test Description");
 
         var remapped2 = result.Remap(modWithoutDiscription);
         await Assert.That(remapped2.Contains(Mod.Description)).IsFalse();
-        await Assert.That(Mod.Description.TryGetValue(remapped2.EntitySegment, resolver, out var foundDesc2)).IsFalse();
+        await Assert.That(Mod.Description.TryGetValue(remapped2, out var foundDesc2)).IsFalse();
     }
 
     [Test]
@@ -579,15 +578,15 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         await Assert.That(loadoutNames).HasCount(1).Because("Only the current revision should be loaded");
 
-        using var tx1 = Connection.BeginTransaction();
+        var tx1 = Connection.BeginTransaction();
         tx1.Add(loadout.Id, Loadout.Name, "Update 1");
         var result = await tx1.Commit();
 
-        using var tx2 = Connection.BeginTransaction();
+        var tx2 = Connection.BeginTransaction();
         tx2.Add(loadout.Id, Loadout.Name, "Update 2");
         var result2 = await tx2.Commit();
 
-        using var tx3 = Connection.BeginTransaction();
+        var tx3 = Connection.BeginTransaction();
         tx3.Delete(loadout.Id, true);
         var result3 = await tx3.Commit();
 
@@ -634,17 +633,17 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             });
 
         // Rename a mod
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         tx.Add(loadout.Mods.First().Id, Mod.Name, "Test Mod 1");
         await tx.Commit();
 
         // Add a new mod
-        using var tx2 = Connection.BeginTransaction();
+        var tx2 = Connection.BeginTransaction();
         tx2.Add(tx2.TempId(), Mod.Name, "Test Mod 2");
         await tx2.Commit();
 
         // Delete the first mod
-        using var tx3 = Connection.BeginTransaction();
+        var tx3 = Connection.BeginTransaction();
         tx3.Retract(loadout.Mods.First().Id, Mod.Name, "Test Mod 1");
         await tx3.Commit();
 
@@ -672,7 +671,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 tcs.TrySetResult(changeSet);
             });
 
-        using (var tx = Connection.BeginTransaction())
+        var tx = Connection.BeginTransaction();
         {
             tx.Add(targetMod.Id, Mod.Name, newName);
             await tx.Commit();
@@ -726,7 +725,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 }
             });
 
-        using (var tx = Connection.BeginTransaction())
+        var tx = Connection.BeginTransaction();
         {
             tx.Add(targetMod.Id, Mod.Tags, newTag);
             await tx.Commit();
@@ -750,8 +749,8 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var targetMod = loadout.Mods.First();
         const string tagToRemove = "To Remove";
 
-        using (var tx = Connection.BeginTransaction())
         {
+            var tx = Connection.BeginTransaction();
             tx.Add(targetMod.Id, Mod.Tags, tagToRemove);
             await tx.Commit();
         }
@@ -777,8 +776,8 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 }
             });
 
-        using (var tx = Connection.BeginTransaction())
         {
+            var tx = Connection.BeginTransaction();
             tx.Retract(targetMod.Id, Mod.Tags, tagToRemove);
             await tx.Commit();
         }
@@ -826,16 +825,16 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
                 }
             });
 
-        using (var tx = Connection.BeginTransaction())
         {
+            var tx = Connection.BeginTransaction();
             tx.Retract(targetMod.Id, Mod.Name, originalName);
             await tx.Commit();
         }
 
         var removeChanges = await removeTcs.Task.WaitAsync(TimeSpan.FromSeconds(30));
 
-        using (var tx = Connection.BeginTransaction())
         {
+            var tx = Connection.BeginTransaction();
             tx.Add(targetMod.Id, Mod.Name, replacementName);
             await tx.Commit();
         }
@@ -866,7 +865,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             .Select(f => f)
             .AsObservableCache();
 
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         for (var i = 0; i < 10000; i++)
         {
             _ = new Loadout.New(tx)
@@ -884,7 +883,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await Assert.That(list.Items).HasCount(10000);
         
         
-        using var tx2 = Connection.BeginTransaction();
+        var tx2 = Connection.BeginTransaction();
 
         var loadout = list.Items.Skip(10).First();
         
@@ -919,7 +918,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             })
             .Subscribe();
         
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         var loadout = new Loadout.New(tx)
         {
             Name = "Test Loadout"
@@ -978,17 +977,17 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             .Subscribe(x => changes.Add(x));
 
         // Rename a mod, should result in a refresh, not a add and remove
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         tx.Add(loadout.Mods.First().Id, Mod.Name, "Test Mod 1");
         await tx.Commit();
 
         // Add a new mod
-        using var tx2 = Connection.BeginTransaction();
+        var tx2 = Connection.BeginTransaction();
         tx2.Add(tx2.TempId(), Mod.Name, "Test Mod 2");
         await tx2.Commit();
 
         // Delete the first mod
-        using var tx3 = Connection.BeginTransaction();
+        var tx3 = Connection.BeginTransaction();
         tx3.Retract(loadout.Mods.First().Id, Mod.Name, "Test Mod 1");
         await tx3.Commit();
 
@@ -1008,7 +1007,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task MultipleIncludesDontSplitEntities()
     {
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         var child = new Child.New(tx, out var id)
         {
             Name = "Test Child",
@@ -1037,7 +1036,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task MultipleIncludesCanBeConstructedSeparately()
     {
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         
         var parentA = new ParentA.New(tx)
         {
@@ -1073,7 +1072,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
         var path = fileSystem.GetKnownPath(KnownPath.EntryDirectory).Combine("foo/bar/qux.txt");
         
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         
         var loadout1 = new Loadout.New(tx)
         {
@@ -1089,7 +1088,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task CollectionAttributesAreSupportedOnModels()
     {
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         
         var loadout1 = new Loadout.New(tx)
         {
@@ -1161,7 +1160,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task CanExciseEntities()
     {
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         var l1 = new Loadout.New(tx)
         {
             Name = "Test Loadout 1"
@@ -1178,7 +1177,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var l2RO = results.Remap(l2);
 
         {
-            using var tx2 = Connection.BeginTransaction();
+            var tx2 = Connection.BeginTransaction();
             tx2.Add(l2RO, Loadout.Name, "Test Loadout 2 Updated");
             await tx2.Commit();
         }
@@ -1213,7 +1212,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     {
         List<EntityId> mods = new();
 
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
 
         // Create 10k mods
         for (var i = 0; i < 10000; i++)
@@ -1242,7 +1241,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             subs.Add(Mod.Observe(Connection, id).Subscribe());
         }
 
-        using var tx2 = Connection.BeginTransaction();
+        var tx2 = Connection.BeginTransaction();
 
         // Add a lot of new datoms
         for (var i = 0; i < 10000; i++)
@@ -1366,26 +1365,26 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var tmpId2 = PartitionId.Temp.MakeEntityId(0x43);
         
         // Two conflicting inserts
-        using var tx1 = Connection.BeginTransaction();
+        var tx1 = Connection.BeginTransaction();
         tx1.Add(tmpId1, ArchiveFile.Hash, Hash.From(0xDEADBEEF));
         tx1.Add(tmpId2, ArchiveFile.Hash, Hash.From(0xDEADBEEF));
         await Assert.That(async () => await tx1.Commit()).Throws<UniqueConstraintException>();
         
         // Two conflicts from different transactions
-        using var tx2 = Connection.BeginTransaction();
+        var tx2 = Connection.BeginTransaction();
         tx2.Add(tmpId1, ArchiveFile.Hash, Hash.From(0xDEADBEEF));
         var result = await tx2.Commit();
         var insertedId = result[tmpId1]; 
         
         // This should throw because a previous transaction inserted the same value
-        using var tx3 = Connection.BeginTransaction();
+        var tx3 = Connection.BeginTransaction();
         tx3.Add(tmpId2, ArchiveFile.Hash, Hash.From(0xDEADBEEF));
         await Assert.That(async () => await tx3.Commit()).Throws<UniqueConstraintException>();
         
         // Now let's retract the previous datom and set the datom again in the same transaction (out of order just to
         // make sure we can process that). This should not throw, because the datom is retracted for the other unique
         // constraint inside the same transaction that we are adding the new one.
-        using var tx4 = Connection.BeginTransaction();
+        var tx4 = Connection.BeginTransaction();
         tx4.Add(tmpId2, ArchiveFile.Hash, Hash.From(0xDEADBEEF));
         tx4.Retract(insertedId, ArchiveFile.Hash, Hash.From(0xDEADBEEF));
         await tx4.Commit();
@@ -1395,7 +1394,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     //[Test]
     private async Task ObserverFuzzingTests()
     {
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         var file = new File.New(tx)
         {
             Path = "test.txt",
@@ -1412,7 +1411,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         {
             for (var i = 0; i < 10_000; i++)
             {
-                using var tx2 = Connection.BeginTransaction();
+                var tx2 = Connection.BeginTransaction();
                 tx2.Add(fileId, File.Size, Size.From((ulong)i));
                 await tx2.Commit();
             }
@@ -1466,7 +1465,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task EntitiesCanStoreLongStrings()
     {
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         var loadout = new Loadout.New(tx)
         {
             Name = new string('A', 10000)
@@ -1482,18 +1481,18 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
     [Test]
     public async Task Test_NestedTransactions()
     {
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
 
         EntityId loadout1Id;
         EntityId loadout2Id;
-        using (var subTx1 = tx.CreateSubTransaction())
+        var subTx1 = tx.CreateSubTransaction();
         {
             loadout1Id = new Loadout.New(subTx1)
             {
                 Name = "Foo"
             };
 
-            using (var subTx2 = subTx1.CreateSubTransaction())
+            var subTx2 = subTx1.CreateSubTransaction();
             {
                 loadout2Id = new Loadout.New(subTx2)
                 {

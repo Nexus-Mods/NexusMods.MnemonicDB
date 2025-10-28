@@ -31,7 +31,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         
 
         // Update one hash to check that the queries update correctly
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         var ent = File.FindByPath(Connection.Db, "File1").First();
         tx.Add(ent.Id, File.Hash, Hash.FromLong(0x42));
         await tx.Commit();
@@ -61,7 +61,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         table.Add(results, "Initial Results");
         
         // Update one hash to check that the queries update correctly
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         var ent = File.FindByPath(Connection.Db, "File1").First();
         tx.Add(ent.Id, File.Hash, Hash.FromLong(0x42));
         await tx.Commit();
@@ -93,7 +93,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         tableResults.Add(results, "Initial Results");
         
         // Delete only one datom to check that we get an update even for retracted datoms, as long as the entity is still present
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         var ent = File.FindByPath(Connection.Db, "File1").First();
         tx.Retract(ent.Id, File.Hash, ent.Hash);
         await tx.Commit();
@@ -102,7 +102,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
 
         tableResults.Add(results, "After Retract");
         
-        using var tx2 = Connection.BeginTransaction();
+        var tx2 = Connection.BeginTransaction();
         tx2.Delete(ent.Id, recursive: false);
         await tx2.Commit();
         
@@ -121,7 +121,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var mods = Connection.Query<(EntityId, EntityId)>("SELECT Id, Mod FROM mdb_File()");
         var testMod = mods.First().Item2;
         
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         tx.Add(testMod, Mod.Marked, Null.Instance);
         await tx.Commit();
 
@@ -131,7 +131,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         var unmarkedMods = Connection.Query<(EntityId, string)>("SELECT Id, Name FROM mdb_Mod() WHERE Marked = false");
         await Assert.That(unmarkedMods).HasCount(2);
         
-        using var tx2 = Connection.BeginTransaction();
+        var tx2 = Connection.BeginTransaction();
         tx2.Add(testMod, Mod.Description, "Test Mod Description");
         await tx2.Commit();
 
@@ -165,7 +165,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         table.Add(result, "Initial Results");
         
         var id1 = result.First().Item1;
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         tx.Add(id1, Mod.Name, "Renamed - Mod");
         await tx.Commit();
         
@@ -189,7 +189,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         table.Add(result, "Initial Results");
         
         var id1 = result.First().Item1;
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         tx.Add(id1, Mod.Name, "Renamed - Mod");
         await tx.Commit();
         
@@ -258,7 +258,7 @@ public class QueryTests(IServiceProvider provider) : AMnemonicDBTest(provider)
         await InsertExampleData();
         var mod1 = Connection.Query<(EntityId, string)>($"SELECT Id, Name FROM mdb_Mod(Db=>{Connection})").First().Item1;
         
-        using var tx = Connection.BeginTransaction();
+        var tx = Connection.BeginTransaction();
         tx.Add(mod1, Mod.Tags, "tag1");
         tx.Add(mod1, Mod.Tags, "tag2");
         tx.Add(mod1, Mod.Tags, "tag3");
