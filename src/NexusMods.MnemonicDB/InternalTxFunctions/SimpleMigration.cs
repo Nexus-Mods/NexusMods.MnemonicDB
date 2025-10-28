@@ -35,7 +35,7 @@ internal class SimpleMigration : AInternalFn
     {
         var batch = store.Backend.CreateBatch();
         var cache = store.AttributeCache;
-        var datoms = new Datoms(cache);
+        var datoms = new Datoms(store.AttributeResolver);
         var madeChanges = false;
         foreach (var attribute in _declaredAttributes)
         {
@@ -69,7 +69,7 @@ internal class SimpleMigration : AInternalFn
             return;
         
         store.LogDatoms(batch, datoms, advanceTx: true);
-        store.AttributeCache.Reset(store.CurrentSnapshot.MakeDb(store.AsOfTxId, store.AttributeCache));
+        store.AttributeCache.Reset(store.CurrentSnapshot.MakeDb(store.AsOfTxId, store.AttributeResolver));
     }
 
 
@@ -103,7 +103,7 @@ internal class SimpleMigration : AInternalFn
             batch.Add(datom.With(IndexType.AVETHistory));
         }
         
-        var datoms = new Datoms(store.AttributeCache)
+        var datoms = new Datoms(store.AttributeResolver)
         {
             { EntityId.From(attrId.Value), AttributeDefinition.Indexed, newFlags }
         };
@@ -125,7 +125,7 @@ internal class SimpleMigration : AInternalFn
             batch.Delete(datom.With(IndexType.AVETHistory));;
         }
         
-        var datoms = new Datoms(store.AttributeCache)
+        var datoms = new Datoms(store.AttributeResolver)
         {
             { EntityId.From(id.Value), AttributeDefinition.Indexed, newFlags }
         };

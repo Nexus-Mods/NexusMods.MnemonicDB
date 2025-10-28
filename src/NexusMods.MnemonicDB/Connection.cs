@@ -65,8 +65,7 @@ public sealed class Connection : IConnection
     public Connection(ILogger<Connection> logger, IDatomStore store, IServiceProvider provider, IEnumerable<IAnalyzer> analyzers, IQueryEngine? queryEngine = null, bool readOnlyMode = false, string? prefix = null)
     {
         ServiceProvider = provider;
-        AttributeCache = store.AttributeCache;
-        AttributeResolver = new AttributeResolver(provider, AttributeCache);
+        AttributeResolver = store.AttributeResolver;
         _logger = logger;
         _store = (DatomStore)store;
         _dbStream = new DbStream();
@@ -324,7 +323,7 @@ public sealed class Connection : IConnection
     private void ProcessObservers(IDb db)
     {
         var recentlyAdded = db.RecentlyAdded;
-        var cache = db.AttributeCache;
+        var cache = db.AttributeResolver.AttributeCache;
         _changeSets.Clear();
         
         // For each recently added datom, we need to find listeners to it
@@ -411,7 +410,7 @@ public sealed class Connection : IConnection
     public AttributeResolver AttributeResolver { get; }
 
     /// <inheritdoc />
-    public AttributeCache AttributeCache { get; }
+    public AttributeCache AttributeCache => AttributeResolver.AttributeCache;
 
     private static void ThrowNullDb()
     {
@@ -429,14 +428,15 @@ public sealed class Connection : IConnection
         if (db.BasisTxId == txId) 
             return db;
         
-        var snapshot = new AsOfSnapshot((Snapshot)_store.GetSnapshot(), txId, AttributeCache);
-        return snapshot.MakeDb(txId, AttributeCache, this);
+        var snapshot = new AsOfSnapshot((Snapshot)_store.GetSnapshot(), txId, AttributeResolver);
+        return snapshot.MakeDb(txId, AttributeResolver, this);
     }
 
     /// <inheritdoc />
     public IDb History()
     {
-        return new HistorySnapshot((Snapshot)_store.GetSnapshot(), AttributeCache).MakeDb(TxId, AttributeCache, this);
+        return new HistorySnapshot((Snapshot)_store.GetSnapshot(), AttributeResolver)
+            .MakeDb(TxId, AttributeResolver, this);
     }
 
     /// <inheritdoc />
@@ -555,7 +555,7 @@ public sealed class Connection : IConnection
         try
         {
             var initialSnapshot = _store.GetSnapshot();
-            var initialDb = initialSnapshot.MakeDb(TxId, AttributeCache, this);
+            var initialDb = initialSnapshot.MakeDb(TxId, AttributeResolver, this);
             initialDb.Connection = this;
             AttributeCache.Reset(initialDb);
             initialDb.Analyze(null, _analyzers);

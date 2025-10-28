@@ -47,7 +47,7 @@ internal class ScanUpdate : AInternalFn
         
         if (changes)
         {
-            store.LogDatoms(batch, new Datoms(store.AttributeCache), advanceTx: false);
+            store.LogDatoms(batch, new Datoms(store.AttributeResolver), advanceTx: false);
         }
     }
 }

@@ -12,7 +12,6 @@ internal abstract class AInternalFn : IInternalTxFunctionImpl
     /// <summary>
     /// Execute the function on the store
     /// </summary>
-    /// <param name="store"></param>
     public abstract void Execute(DatomStore store);
 
     public Task<(StoreResult, IDb)> Task => _source.Task;

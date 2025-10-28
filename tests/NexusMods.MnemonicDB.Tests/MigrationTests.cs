@@ -113,16 +113,12 @@ public class MigrationTests : AMnemonicDBTest
         {
             Path = extractedFolder.Path / "MnemonicDB.rocksdb",
         };
-        using var backend = new Backend();
+        var resolver = new AttributeResolver(Provider, new AttributeCache());
+        using var backend = new Backend(resolver);
         using var store = new DatomStore(Provider.GetRequiredService<ILogger<DatomStore>>(), settings, backend);
         using var connection = new Connection(Provider.GetRequiredService<ILogger<Connection>>(), store, Provider, [], null, false);
 
         var db = connection.Db;
-        var attrs = db.Datoms(AttributeDefinition.UniqueId);
-        var datoms = new Datoms(AttributeCache);
-        foreach (var attr in attrs)
-            datoms.AddRange(db[attr.E]);
-
         var cache = connection.AttributeCache;
         foreach (var attr in AttributeDefinition.All(db))
         {

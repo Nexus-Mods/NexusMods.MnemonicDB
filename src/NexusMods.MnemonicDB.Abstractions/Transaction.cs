@@ -19,13 +19,28 @@ public abstract class Transaction : Datoms, IMainTransaction, ISubTransaction
     private bool _committed;
     private readonly IDb _basisDb;
 
-    public Transaction(IConnection connection, Transaction? parentTransaction = null) : base(connection.AttributeCache)
+    public Transaction(IConnection connection, Transaction? parentTransaction = null) : base(connection.AttributeResolver)
     {
         _connection = connection;
         _asIfDb = connection.Db;
         _basisDb = connection.Db;
         _datomCountOfAsIf = 0;
         _parentTransaction = parentTransaction;
+    }
+    
+    /// <summary>
+    /// Retracts all datoms for the given attribute for the given entity as seen by the given db. If none are found,
+    /// nothing happens
+    /// </summary>
+    void RetractAll(EntityId entityId, IAttribute attribute)
+    {
+        var ent = _basisDb[entityId];
+        var aid = _basisDb.AttributeResolver.AttributeCache.GetAttributeId(attribute.Id);
+
+        foreach (var value in ent.GetAllResolved(attribute))
+        {
+            this.Add(entityId, aid, value, isRetract: true);
+        }
     }
     
     /// <inheritdoc />

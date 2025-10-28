@@ -34,7 +34,7 @@ public readonly struct ReadOnlyModel : IHasIdAndEntitySegment, IEnumerable<Resol
     /// <inheritdoc />
     public IEnumerator<ResolvedDatom> GetEnumerator()
     {
-        return EntitySegment.Resolved(Db.Connection.AttributeResolver).GetEnumerator();
+        return EntitySegment.Resolved().GetEnumerator();
     }
 
     IEnumerator IEnumerable.GetEnumerator()

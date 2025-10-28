@@ -130,15 +130,7 @@ public abstract partial class Attribute<TValueType, TLowLevelType, TSerializer> 
     /// <summary>
     /// Returns true if the attribute is present on the entity
     /// </summary>
-    public bool IsIn(IDb db, EntityId id)
-    {
-        var attrId = db.AttributeCache.GetAttributeId(Id);
-        var index = db[id];
-        foreach (var datom in index)
-            if (datom.Prefix.A == attrId)
-                return true;
-        return false;
-    }
+    public bool IsIn(IDb db, EntityId id) => db[id].Contains(this);
 
     /// <summary>
     /// Returns true if the attribute is present on the entity

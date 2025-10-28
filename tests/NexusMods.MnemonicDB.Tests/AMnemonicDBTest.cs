@@ -45,7 +45,9 @@ public class AMnemonicDBTest : IDisposable
             Path = FileSystem.Shared.GetKnownPath(KnownPath.EntryDirectory)
                 .Combine("tests_MnemonicDB" + Guid.NewGuid())
         };
-        _backend = new Backend();
+        
+        var resolver = new AttributeResolver(provider, new AttributeCache());
+        _backend = new Backend(resolver);
 
         _store = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), Config, _backend);
 
@@ -295,7 +297,8 @@ public class AMnemonicDBTest : IDisposable
         GC.Collect();
 
         Connection.Dispose();
-        _backend = new Backend();
+        var resolver = new AttributeResolver(Provider, new AttributeCache());
+        _backend = new Backend(resolver);
         _store = new DatomStore(Provider.GetRequiredService<ILogger<DatomStore>>(), Config, _backend);
 
         Connection = new Connection(Provider.GetRequiredService<ILogger<Connection>>(), _store, Provider, _analyzers);

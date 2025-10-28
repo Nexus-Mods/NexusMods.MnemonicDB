@@ -37,14 +37,15 @@ public abstract class AStorageTest : IDisposable
             Path = isInMemory ? null : _path,
         };
         
-        Backend = new Backend();
-        DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), DatomStoreSettings, new Backend());
+        var resolver = new AttributeResolver(provider, new AttributeCache());
+        Backend = new Backend(resolver);
+        DatomStore = new DatomStore(provider.GetRequiredService<ILogger<DatomStore>>(), DatomStoreSettings, Backend);
         
         AttributeResolver = new AttributeResolver(_provider, AttributeCache);
         
         Logger = provider.GetRequiredService<ILogger<AStorageTest>>();
 
-        var tx = new Datoms(DatomStore.AttributeCache);
+        var tx = new Datoms(DatomStore.AttributeResolver);
         AddAttr(tx, File.Path, AttributeId.From(20));
         AddAttr(tx, File.Hash, AttributeId.From(21));
         AddAttr(tx, File.Size, AttributeId.From(22));

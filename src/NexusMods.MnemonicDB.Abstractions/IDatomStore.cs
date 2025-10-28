@@ -26,6 +26,11 @@ public interface IDatomStore : IDisposable
     AttributeCache AttributeCache { get; }
     
     /// <summary>
+    /// The attribute resolver the store is using.
+    /// </summary>
+    AttributeResolver AttributeResolver { get; }
+    
+    /// <summary>
     ///    Transacts (adds) the given datoms into the store.
     /// </summary>
     public (StoreResult, IDb) Transact(Datoms segment);

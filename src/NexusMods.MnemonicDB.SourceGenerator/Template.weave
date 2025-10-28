@@ -413,10 +413,10 @@ public partial class {{= model.Name}} : __MODELS__.IModelFactory<{{= model.Name}
            {{each attr in model.Attributes}}
            /// <inheritdoc cref="{{= model.Name}}.{{= attr.ContextualName}}" />
            {{if attr.IsCollection && attr.IsReference && !attr.IsMarker}}
-           public IEnumerable<__ABSTRACTIONS__.EntityId> {{= attr.ContextualName}} => EntitySegment.GetAllResolved({{= attr.FieldName}}, Db.Connection.AttributeResolver);
+           public IEnumerable<__ABSTRACTIONS__.EntityId> {{= attr.ContextualName}} => EntitySegment.GetAllResolved({{= attr.FieldName}});
            public IEnumerable<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly> {{= attr.Name}} => {{= attr.FieldName}}.GetAllModels<{{= attr.ReferenceType.ToDisplayString()}}.ReadOnly>(Db, EntitySegment);
            {{elif attr.IsCollection}}
-           public IEnumerable<{{=attr.HighLevelType.ToDisplayString()}}> {{= attr.ContextualName}} => EntitySegment.GetAllResolved({{= attr.FieldName}}, Db.Connection.AttributeResolver);
+           public IEnumerable<{{=attr.HighLevelType.ToDisplayString()}}> {{= attr.ContextualName}} => EntitySegment.GetAllResolved({{= attr.FieldName}});
            {{elif attr.IsMarker}}
            public bool Is{{= attr.ContextualName}} => {{= attr.FieldName}}.Contains(this);
            {{elif attr.IsReference}}

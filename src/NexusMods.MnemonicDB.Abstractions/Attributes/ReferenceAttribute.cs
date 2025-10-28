@@ -28,7 +28,7 @@ public sealed class ReferenceAttribute<T>(string ns, string name) : ReferenceAtt
     public TModel GetModel<TModel>(IDb db, Datoms datoms) 
         where TModel : IReadOnlyModel<TModel>
     {
-        var value = datoms.GetResolved(this, db.Connection.AttributeResolver);
+        var value = datoms.GetResolved(this);
         return TModel.Create(db, value);
     }
 }

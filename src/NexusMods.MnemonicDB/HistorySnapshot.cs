@@ -12,11 +12,11 @@ using ResultIterator = HistoryRefDatomEnumerator<RocksDbIteratorWrapper, RocksDb
 /// id, this requires merging two indexes together, and then the deduplication of the merged index (retractions
 /// removing assertions).
 /// </summary>
-internal class HistorySnapshot(Snapshot inner, AttributeCache attributeCache) : ADatomsIndex<ResultIterator>(attributeCache), IRefDatomEnumeratorFactory<ResultIterator>, ISnapshot
+internal class HistorySnapshot(Snapshot inner, AttributeResolver attributeCache) : ADatomsIndex<ResultIterator>(attributeCache), IRefDatomEnumeratorFactory<ResultIterator>, ISnapshot
 {
-    public IDb MakeDb(TxId txId, AttributeCache cache, IConnection? connection = null)
+    public IDb MakeDb(TxId txId, AttributeResolver attributeResolver, IConnection? connection = null)
     {
-        return new Db<HistorySnapshot, ResultIterator>(this, txId, cache, connection);
+        return new Db<HistorySnapshot, ResultIterator>(this, txId, attributeResolver, connection);
     }
 
     public bool TryGetMaxIdInPartition(PartitionId partitionId, out EntityId id)

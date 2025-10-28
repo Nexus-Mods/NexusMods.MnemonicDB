@@ -38,13 +38,13 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
         where TLowLevel : notnull 
         where TSerializer : IValueSerializer<TLowLevel>
     {
-        using var slice = SliceDescriptor.Create(attr, value, AttributeCache);
+        using var slice = SliceDescriptor.Create(attr, value, AttributeResolver.AttributeCache);
         return Datoms(slice);
     }
     
     public Datoms Datoms(IAttribute attribute)
     {
-        return Datoms(SliceDescriptor.Create(attribute, AttributeCache));
+        return Datoms(SliceDescriptor.Create(attribute, AttributeResolver.AttributeCache));
     }
 
     /// <summary>
@@ -63,7 +63,7 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     public IEnumerable<TModel> GetBackrefModels<TModel>(ReferencesAttribute attribute, EntityId id)
         where TModel : IReadOnlyModel<TModel>
     {
-        var aid = AttributeCache.GetAttributeId(attribute.Id);
+        var aid = AttributeResolver.AttributeCache.GetAttributeId(attribute.Id);
         return GetBackrefModels<TModel>(aid, id);
     }
     
@@ -73,7 +73,7 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
     public IEnumerable<TModel> GetBackrefModels<TModel>(ReferenceAttribute attribute, EntityId id)
         where TModel : IReadOnlyModel<TModel>
     {
-        var aid = AttributeCache.GetAttributeId(attribute.Id);
+        var aid = AttributeResolver.AttributeCache.GetAttributeId(attribute.Id);
         return GetBackrefModels<TModel>(aid, id);
     }
     

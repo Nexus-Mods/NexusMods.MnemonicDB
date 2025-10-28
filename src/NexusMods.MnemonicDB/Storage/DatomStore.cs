@@ -25,7 +25,7 @@ public sealed partial class DatomStore : IDatomStore
     
     internal readonly ILogger<DatomStore> Logger;
     private readonly PooledMemoryBufferWriter _retractWriter;
-    private readonly AttributeCache _attributeCache;
+    private readonly AttributeResolver _attributeResolver;
     public readonly DatomStoreSettings Settings;
 
     private readonly BlockingCollection<IInternalTxFunctionImpl> _pendingTransactions;
@@ -59,38 +59,8 @@ public sealed partial class DatomStore : IDatomStore
 
     private readonly CancellationTokenSource _shutdownToken = new();
     private TxId _thisTx;
-    
-    /// <summary>
-    /// Scratch spaced to create new datoms while processing transactions
-    /// </summary>
-    private readonly Memory<byte> _txScratchSpace;
-
     private readonly TimeProvider _timeProvider;
 
-    private enum UniqueState : byte
-    {
-        // We've never seen this datom before
-        None = 0,
-        
-        // The unique datom has been asserted in the current transaction
-        Asserted = 1,
-        
-        // The unique datom has been retracted in the current transaction
-        Retracted = 2,
-        
-        // The unique datom has a violated constraint in the current transaction
-        Violation = 3
-    }
-    
-    /// <summary>
-    /// A cache of datoms on unique attributes being processed in the current transaction. These constraints require a bit
-    /// of working memory, because a single transaction could remove a datom from one entity and add it to another, and the
-    /// order of these datoms in the transaction is undefined. So we may get the retraction before the assertion, or vice versa.
-    /// So this dictionary contains storage for a simple state machine to check for unique constraints. Once a transaction is about
-    /// to be commited we look in this dictionary for any unique constraints that have been violated and throw errors. At the start
-    /// of every transaction, this dictionary is cleared.
-    /// </summary>
-    private SortedDictionary<Datom, UniqueState> _currentUniqueDatoms = new(UniqueAttributeEqualityComparer.Instance);
 
     /// <summary>
     /// DI constructor
@@ -104,10 +74,9 @@ public sealed partial class DatomStore : IDatomStore
     {
         CurrentSnapshot = default!;
         _timeProvider = timeProvider ?? TimeProvider.System;
-        _txScratchSpace = new Memory<byte>(new byte[1024]);
         _remapFunc = Remap;
         _dbStream = new DbStream();
-        _attributeCache = backend.AttributeCache;
+        _attributeResolver = backend.AttributeResolver;
         _pendingTransactions = new BlockingCollection<IInternalTxFunctionImpl>(new ConcurrentQueue<IInternalTxFunctionImpl>());
 
         Backend = backend;
@@ -126,7 +95,10 @@ public sealed partial class DatomStore : IDatomStore
     public TxId AsOfTxId => _asOfTx;
 
     /// <inheritdoc />
-    public AttributeCache AttributeCache => _attributeCache;
+    public AttributeCache AttributeCache => _attributeResolver.AttributeCache;
+    
+    /// <inheritdoc />
+    public AttributeResolver AttributeResolver => _attributeResolver;
 
     /// <inheritdoc />
     public async Task<(StoreResult, IDb)> TransactAsync(IInternalTxFunction fn)
@@ -265,15 +237,15 @@ public sealed partial class DatomStore : IDatomStore
             if (lastTx.Value == TxId.MinValue)
             {
                 Logger.LogInformation("Bootstrapping the datom store no existing state found");
-                _currentDb = CurrentSnapshot.MakeDb(TxId.MinValue, _attributeCache);
-                var tx = new Datoms(_currentDb.AttributeCache);
+                _currentDb = CurrentSnapshot.MakeDb(TxId.MinValue, _attributeResolver);
+                var tx = new Datoms(_attributeResolver);
                 var internalTx = new InternalTransaction(null!, tx);
                 AttributeDefinition.AddInitial(tx);
                 internalTx.ProcessTemporaryEntities();
                 // Call directly into `Log` as the transaction channel is not yet set up
                 Log(new IndexSegmentTransaction(tx));
                 CurrentSnapshot = Backend.GetSnapshot();
-                _currentDb = CurrentSnapshot.MakeDb(_asOfTx, _attributeCache);
+                _currentDb = CurrentSnapshot.MakeDb(_asOfTx, _attributeResolver);
             }
             else
             {
@@ -288,7 +260,7 @@ public sealed partial class DatomStore : IDatomStore
             throw;
         }
         
-        _currentDb = CurrentSnapshot.MakeDb(_asOfTx, _attributeCache);
+        _currentDb = CurrentSnapshot.MakeDb(_asOfTx, _attributeResolver);
         _dbStream.OnNext(_currentDb);
         _loggerThread = new Thread(ConsumeTransactions)
         {
@@ -356,14 +328,14 @@ public sealed partial class DatomStore : IDatomStore
         // Retracts first
         foreach (var retract in retracts)
         {
-            TxProcessing.LogRetract(batch, retract, _thisTx, AttributeCache);
+            TxProcessing.LogRetract(batch, retract, _thisTx, _attributeResolver);
         }
         
         // Asserts next
         foreach (var assert in asserts)
         {
             var withTx = assert.With(_thisTx).WithRemaps(_remapFunc);
-            TxProcessing.LogAssert(batch, withTx, AttributeCache);
+            TxProcessing.LogAssert(batch, withTx, _attributeResolver);
         }
         
         if (advanceTx) 
@@ -404,8 +376,8 @@ public sealed partial class DatomStore : IDatomStore
     {
         var id = EntityId.From(_thisTx.Value);
         var taggedValue = new TaggedValue(ValueTag.Int64, _timeProvider.GetUtcNow().UtcTicks);
-        var datom = Datom.Create(id, AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), taggedValue, _thisTx, false);
-        TxProcessing.LogAssert(batch, datom, AttributeCache);
+        var datom = Datom.Create(id, _attributeResolver.AttributeCache.GetAttributeId(MnemonicDB.Abstractions.BuiltInEntities.Transaction.Timestamp.Id), taggedValue, _thisTx, false);
+        TxProcessing.LogAssert(batch, datom, _attributeResolver);
     }
 
 

@@ -40,7 +40,7 @@ public static class ExtensionMethods
         HashSet<EntityId> seen = [];
         Stack<EntityId> remain = new();
         remain.Push(eid);
-        var cache = db.AttributeCache;
+        var cache = db.AttributeResolver.AttributeCache;
 
         while (remain.Count > 0)
         {

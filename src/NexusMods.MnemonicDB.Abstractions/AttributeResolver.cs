@@ -27,6 +27,11 @@ public sealed class AttributeResolver
         
         ValidateAttributes();
     }
+    
+    /// <summary>
+    /// Get the attribute id for the given attribute.
+    /// </summary>
+    public AttributeId this[IAttribute attr] => AttributeCache.GetAttributeId(attr.Id);
 
     private void ValidateAttributes()
     {
@@ -57,6 +62,12 @@ public sealed class AttributeResolver
         attr = default!;
         return false;
     }
+    
+    /// <summary>
+    /// Get an attribute by its id.
+    /// </summary>
+    /// <param name="id"></param>
+    public IAttribute this[AttributeId id] => _attrsById[AttributeCache.GetSymbol(id)];
 
     /// <summary>
     /// Gets the service object of the specified type.

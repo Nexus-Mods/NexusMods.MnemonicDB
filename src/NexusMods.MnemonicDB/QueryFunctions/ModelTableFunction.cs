@@ -74,8 +74,7 @@ public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
             }
             
             var attr = _definition.AllAttributes[mapping - 1];
-            var attrId = initData.Db.AttributeCache.GetAttributeId(attr.Id);
-            var iterator = initData.Db.LightweightDatoms(SliceDescriptor.AttributesStartingAt(attrId, idVec[0]));
+            var iterator = initData.Db.LightweightDatoms(SliceDescriptor.AttributesStartingAt(initData.Db.AttributeResolver[attr], idVec[0]));
             var valueVector = outChunk[(ulong)columnIdx];
             if (attr.Cardinalty == Cardinality.Many)
                 WriteMultiCardinality(attr.LowLevelType, idVec, valueVector, iterator);

@@ -10,7 +10,7 @@ public class AttributesAnalyzer : IAnalyzer<HashSet<Symbol>>
     public object Analyze(IDb? dbOld, IDb dbNew)
     {
         var hashSet = new HashSet<Symbol>();
-        var cache = dbNew.AttributeCache;
+        var cache = dbNew.AttributeResolver.AttributeCache;
         foreach (var datom in dbNew.RecentlyAdded)
         {
             hashSet.Add(cache.GetSymbol(datom.A));

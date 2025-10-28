@@ -18,7 +18,7 @@ public static class Startup
             .AddTestModel()
             .AddSingleton<IAttribute>(Blobs.InKeyBlob)
             .AddSingleton<IAttribute>(Blobs.InValueBlob)
-            .AddSingleton<Backend>()
+            .AddSingleton<Backend>(s => new Backend(new AttributeResolver(s, new AttributeCache())))
             .AddLogging(builder => builder.AddConsole());
 }
 

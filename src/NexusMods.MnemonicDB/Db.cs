@@ -27,7 +27,8 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
 
     internal Dictionary<Type, object> AnalyzerData { get; } = new();
 
-    internal Db(TSnapshot snapshot, TxId txId, AttributeCache attributeCache, IConnection? connection = null) : base(attributeCache)
+    internal Db(TSnapshot snapshot, TxId txId, AttributeResolver attributeResolver, IConnection? connection = null) 
+        : base(attributeResolver)
     {
         _connection = connection;
         _snapshot = snapshot;
@@ -64,7 +65,7 @@ internal class Db<TSnapshot, TLowLevelIterator> : ACachingDatomsIndex<TLowLevelI
 
     public IDb AsIf(Datoms datoms)
     {
-        return _snapshot.AsIf(datoms).MakeDb(KeyPrefix.MaxPossibleTxId, AttributeCache, Connection);
+        return _snapshot.AsIf(datoms).MakeDb(KeyPrefix.MaxPossibleTxId, AttributeResolver, Connection);
     }
 
     public TxId BasisTxId { get; }

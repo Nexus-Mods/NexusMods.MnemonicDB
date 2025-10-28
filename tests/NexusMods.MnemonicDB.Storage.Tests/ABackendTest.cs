@@ -64,9 +64,9 @@ public abstract class ABackendTest(
 
         for (var i = 0; i < 4; i++)
         {
-            var segment = new Datoms(AttributeCache);
+            var segment = new Datoms(AttributeResolver);
             var entityId = NextTempId();
-            var (result, _) = await DatomStore.TransactAsync(new Datoms(DatomStore) {
+            var (result, _) = await DatomStore.TransactAsync(new Datoms(AttributeResolver) {
                 { entityId, Blobs.InKeyBlob, smallData },
                 { entityId, Blobs.InValueBlob, largeData }
             });
@@ -76,7 +76,7 @@ public abstract class ABackendTest(
         // Retract the first 2
         for (var i = 0; i < 2; i++)
         {
-            await DatomStore.TransactAsync(new Datoms(DatomStore) {
+            await DatomStore.TransactAsync(new Datoms(AttributeResolver) {
                 { ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true },
                 { ids[i], Blobs.InValueBlob, largeData.AsMemory(), true }
             });
@@ -88,7 +88,7 @@ public abstract class ABackendTest(
         // Change the other 2
         for (var i = 5; i < 2; i++)
         {
-            await DatomStore.TransactAsync(new Datoms(DatomStore) {
+            await DatomStore.TransactAsync(new Datoms(DatomStore.AttributeResolver) {
                 { ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true },
                 { ids[i], Blobs.InValueBlob, largeData.AsMemory(), true },
             });
@@ -135,7 +135,7 @@ public abstract class ABackendTest(
         var id2 = NextTempId();
         var id3 = NextTempId();
 
-        var segment = new Datoms(AttributeCache)
+        var segment = new Datoms(AttributeResolver)
         {
             { id1, File.Path, "foo/bar" },
             { id2, File.Path, "foo/bar" },
@@ -166,7 +166,7 @@ public abstract class ABackendTest(
 
         {
 
-            var segment = new Datoms(AttributeCache)
+            var segment = new Datoms(AttributeResolver)
             {
                 { id1, File.Path, "foo/bar" },
                 { id1, File.Hash, Hash.From(0xDEADBEEF) },
@@ -196,7 +196,7 @@ public abstract class ABackendTest(
         collectionId = tx.Remaps[collectionId];
 
         {
-            var segment = new Datoms(AttributeCache)
+            var segment = new Datoms(AttributeResolver)
             {
                 { id2, File.Path, "foo/qux" },
                 { id1, File.ModId, modId2 },
@@ -225,7 +225,7 @@ public abstract class ABackendTest(
         StoreResult tx1, tx2;
 
         {
-            var segment = new Datoms(AttributeCache)
+            var segment = new Datoms(AttributeResolver)
             {
                 { id, File.Path, "foo/bar" },
                 { id, File.Hash, Hash.From(0xDEADBEEF) },
@@ -240,7 +240,7 @@ public abstract class ABackendTest(
         modId = tx1.Remaps[modId];
 
         {
-            var segment = new Datoms(AttributeCache)
+            var segment = new Datoms(AttributeResolver)
             {
                 { id, File.Path, "foo/bar", true },
                 { id, File.Hash, Hash.From(0xDEADBEEF), true },
@@ -290,7 +290,7 @@ public abstract class ABackendTest(
         StoreResult tx1, tx2;
 
         {
-            var segment = new Datoms(AttributeCache)
+            var segment = new Datoms(AttributeResolver)
             {
                 { id, File.Path, "foo/bar" },
                 { id, File.Hash, Hash.From(0xDEADBEEF) },
@@ -309,7 +309,7 @@ public abstract class ABackendTest(
         id = tx1.Remaps[id];
         modId = tx1.Remaps[modId];
 
-        var segment2 = new Datoms(AttributeCache)
+        var segment2 = new Datoms(AttributeResolver)
         {
             { id, File.Path, "foo/bar", true },
             { id, File.Hash, Hash.From(0xDEADBEEF), true },

@@ -152,7 +152,7 @@ public static class TxProcessing
     /// <returns></returns>
     public static (Datoms Retracts, Datoms Asserts) NormalizeWithTxIds(ReadOnlySpan<Datom> datoms, IDatomsIndex index, TxId thisTxId)
     {
-        var attributeCache = index.AttributeCache;
+        var attributeResolver = index.AttributeResolver;
         // ---- PASS 1: collect final intent ----
 
         // Card-1: last assert per (E,A)
@@ -167,7 +167,7 @@ public static class TxProcessing
         {
             var keyEA = (d.Prefix.E, d.Prefix.A);
 
-            if (!attributeCache.IsCardinalityMany(d.Prefix.A))
+            if (!attributeResolver.AttributeCache.IsCardinalityMany(d.Prefix.A))
             {
                 seenEA1.Add(keyEA);
                 if (!d.Prefix.IsRetract) lastAssert1[keyEA] = d.TaggedValue; // last assertion wins
@@ -181,8 +181,8 @@ public static class TxProcessing
 
         // ---- PASS 2: emit minimal deltas (capturing old txids for retracts) ----
 
-        var retracts = new Datoms(attributeCache);
-        var asserts  = new Datoms(attributeCache);
+        var retracts = new Datoms(attributeResolver);
+        var asserts  = new Datoms(attributeResolver);
 
         // Dedup retracts by (E,A,V) (txid is implied by snapshot's current)
         var haveRetract = new HashSet<(EntityId E, AttributeId A, object V)>();
@@ -284,13 +284,13 @@ public static class TxProcessing
         var uniqueRetractsThisTx = new HashSet<(AttributeId A, object V, EntityId E)>();
         foreach (var r in retracts)
         {
-            if (!attributeCache.IsUnique(r.Prefix.A)) continue;
+            if (!attributeResolver.AttributeCache.IsUnique(r.Prefix.A)) continue;
             uniqueRetractsThisTx.Add((r.Prefix.A, r.Value, r.Prefix.E));
         }
 
         foreach (var a in asserts)
         {
-            if (!attributeCache.IsUnique(a.Prefix.A)) continue;
+            if (!attributeResolver.AttributeCache.IsUnique(a.Prefix.A)) continue;
             var key = (a.Prefix.A, a.Value);
 
             if (txClaim.TryGetValue(key, out var prevE) && !Equals(prevE, a.Prefix.E))
@@ -314,12 +314,12 @@ public static class TxProcessing
     /// <summary>
     /// Logs all the puts for asserting a datom into the current index of the database
     /// </summary>
-    public static void LogAssert(IWriteBatch batch, in Datom assert, AttributeCache cache)
+    public static void LogAssert(IWriteBatch batch, in Datom assert, AttributeResolver resolver)
     {
         batch.Add(assert.With(TxLog));
         batch.Add(assert.With(EAVTCurrent));
         batch.Add(assert.With(AEVTCurrent));
-        if (cache.IsIndexed(assert.Prefix.A))
+        if (resolver.AttributeCache.IsIndexed(assert.Prefix.A))
             batch.Add(assert.With(AVETCurrent));
         if (assert.Prefix.ValueTag == ValueTag.Reference)
             batch.Add(assert.With(VAETCurrent));
@@ -328,12 +328,13 @@ public static class TxProcessing
     /// <summary>
     /// Logs all the puts/deletes for updating the state of a retracted datom
     /// </summary>
-    public static void LogRetract(IWriteBatch batch, in Datom oldDatom, TxId newTxId, AttributeCache cache)
+    public static void LogRetract(IWriteBatch batch, in Datom oldDatom, TxId newTxId, AttributeResolver resolver)
     {
         Debug.Assert(!oldDatom.Prefix.IsRetract, "The datom handed to LogRetract is expected to be the old datom");
         Debug.Assert(oldDatom.Prefix.T < newTxId, "The datom handed to LogRetract is expected to be the old datom");
         
         var a = oldDatom.Prefix.A;
+        var cache = resolver.AttributeCache;
         var isIndexed = cache.IsIndexed(a);
         var isReference = cache.IsReference(a);
         

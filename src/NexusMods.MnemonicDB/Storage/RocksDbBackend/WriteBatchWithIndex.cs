@@ -18,7 +18,7 @@ internal sealed class WriteBatchWithIndex : ADatomsIndex<WriteBatchWithIndexEnum
     private readonly PooledMemoryBufferWriter _writer = new();
     private readonly Snapshot _baseSnapshot;
 
-    public WriteBatchWithIndex(Snapshot baseSnapshot, AttributeCache cache) : base(cache)
+    public WriteBatchWithIndex(Snapshot baseSnapshot, AttributeResolver resolver) : base(resolver)
     {
         _baseSnapshot = baseSnapshot;
         var ctor = typeof(RocksDbSharp.WriteBatchWithIndex).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, new[] {typeof(IntPtr)});
@@ -95,9 +95,9 @@ internal sealed class WriteBatchWithIndex : ADatomsIndex<WriteBatchWithIndexEnum
         }
     }
 
-    public IDb MakeDb(TxId txId, AttributeCache attributeCache, IConnection? connection = null)
+    public IDb MakeDb(TxId txId, AttributeResolver attributeResolver, IConnection? connection = null)
     {
-        return new Db<WriteBatchWithIndex, WriteBatchWithIndexEnumerator>(this, txId, attributeCache, connection);
+        return new Db<WriteBatchWithIndex, WriteBatchWithIndexEnumerator>(this, txId, attributeResolver, connection);
     }
 
     public bool TryGetMaxIdInPartition(PartitionId partitionId, out EntityId id)

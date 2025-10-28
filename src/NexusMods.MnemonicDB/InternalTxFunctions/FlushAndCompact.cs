@@ -1,3 +1,4 @@
+using NexusMods.MnemonicDB.Abstractions;
 using NexusMods.MnemonicDB.Storage;
 
 namespace NexusMods.MnemonicDB.InternalTxFunctions;

@@ -25,16 +25,17 @@ internal sealed class Snapshot : ADatomsIndex<RocksDbIteratorWrapper>, IRefDatom
     // ReSharper disable once NotAccessedField.Local
     internal readonly RocksDbSharp.Snapshot NativeSnapshot;
 
-    public Snapshot(Backend backend, AttributeCache attributeCache, ReadOptions readOptions, RocksDbSharp.Snapshot nativeSnapshot) : base(attributeCache)
+    public Snapshot(Backend backend, AttributeResolver attributeResolver, ReadOptions readOptions, RocksDbSharp.Snapshot nativeSnapshot) 
+        : base(attributeResolver)
     {
         Backend = backend;
         ReadOptions = readOptions;
         NativeSnapshot = nativeSnapshot;
     }
     
-    public IDb MakeDb(TxId txId, AttributeCache attributeCache, IConnection? connection)
+    public IDb MakeDb(TxId txId, AttributeResolver attributeResolver, IConnection? connection)
     {
-        return new Db<Snapshot, RocksDbIteratorWrapper>(this, txId, attributeCache, connection);
+        return new Db<Snapshot, RocksDbIteratorWrapper>(this, txId, attributeResolver, connection);
     }
 
     public bool TryGetMaxIdInPartition(PartitionId partitionId, out EntityId id)
@@ -68,15 +69,15 @@ internal sealed class Snapshot : ADatomsIndex<RocksDbIteratorWrapper>, IRefDatom
     public ISnapshot AsIf(Datoms datoms)
     {
         var (retracts, asserts) = TxProcessing.NormalizeWithTxIds(CollectionsMarshal.AsSpan(datoms), this, KeyPrefix.MaxPossibleTxId);
-        var batch = new WriteBatchWithIndex(this, AttributeCache);
+        var batch = new WriteBatchWithIndex(this, AttributeResolver);
         
         foreach (var retract in retracts)
-            TxProcessing.LogRetract(batch, retract, KeyPrefix.MaxPossibleTxId, AttributeCache);
+            TxProcessing.LogRetract(batch, retract, KeyPrefix.MaxPossibleTxId, AttributeResolver);
 
         foreach (var assert in asserts)
         {
             var newAssert = assert.With(KeyPrefix.MaxPossibleTxId);
-            TxProcessing.LogAssert(batch, newAssert, AttributeCache);
+            TxProcessing.LogAssert(batch, newAssert, AttributeResolver);
         }
 
         return batch;

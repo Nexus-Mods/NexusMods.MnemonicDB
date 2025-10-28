@@ -39,7 +39,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
     public bool TryGetValue(Datoms segment, AttributeResolver resolver, [NotNullWhen(true)] out TValue? value) 
     {
         var attributeId = segment.AttributeCache.GetAttributeId(Id);
-        if (segment.TryGetOne(this, resolver, out var foundValue))
+        if (segment.TryGetOne(this, out var foundValue))
         {
             value = (TValue)foundValue;
             return true;
@@ -69,7 +69,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
         where T : IHasIdAndEntitySegment
     {
         var resolver = entity.Db.Connection.AttributeResolver;
-        if (!entity.EntitySegment.TryGetOne(this, resolver, out var value))
+        if (!entity.EntitySegment.TryGetOne(this, out var value))
             return DefaultValue.HasValue ? DefaultValue.Value : ThrowKeyNotfoundException(entity.Id);
         return (TValue)value;
     }
@@ -81,7 +81,7 @@ public abstract class ScalarAttribute<TValue, TLowLevel, TSerializer>(string ns,
         where T : IHasIdAndEntitySegment
     {
         var resolver = entity.Db.Connection.AttributeResolver;
-        if (entity.EntitySegment.TryGetOne(this, resolver, out var value))
+        if (entity.EntitySegment.TryGetOne(this, out var value))
             return (TValue)value;
         return DefaultValue.HasValue ? DefaultValue : Optional<TValue>.None;
     }
