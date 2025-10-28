@@ -18,12 +18,12 @@ public readonly struct ResolvedDatom
         if (!resolver.TryGetAttribute(d.A, out var attr))
         {
             A = null!;
-            V = d.Value;
+            V = d.V;
         }
         else
         {
             A = attr;
-            V = attr.FromLowLevelObject(d.Value, resolver);
+            V = attr.FromLowLevelObject(d.V, resolver);
         }
     }
     

@@ -50,14 +50,14 @@ public static class ExtensionMethods
             }
             else if (datom.Tag == ValueTag.Blob)
             {
-                var memory = (Memory<byte>)datom.Value;
-                var hash = ((Memory<byte>)datom.Value).xxHash3();
+                var memory = (Memory<byte>)datom.V;
+                var hash = ((Memory<byte>)datom.V).xxHash3();
                 sb.Append(TruncateOrPad($"Blob {hash} {memory.Length} bytes" , 48));
             }
             else if (datom.Tag == ValueTag.HashedBlob)
             {
-                var memory = (Memory<byte>)datom.Value;
-                var hash = ((Memory<byte>)datom.Value).xxHash3();
+                var memory = (Memory<byte>)datom.V;
+                var hash = ((Memory<byte>)datom.V).xxHash3();
                 sb.Append(TruncateOrPad($"HashedBlob {hash} {memory.Length} bytes", 48));
             }
             else

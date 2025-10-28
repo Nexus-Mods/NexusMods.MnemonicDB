@@ -27,7 +27,7 @@ internal class Batch(RocksDb db) : IWriteBatch
     {
         if (datom.Prefix.ValueTag == ValueTag.HashedBlob)
         {
-            var value = (Memory<byte>)datom.Value;
+            var value = (Memory<byte>)datom.V;
             var outOfBandData = value.Span.SliceFast(Serializer.HashedBlobHeaderSize);
             Span<byte> keySpan = stackalloc byte[Serializer.HashedBlobPrefixSize];
 
@@ -40,7 +40,7 @@ internal class Batch(RocksDb db) : IWriteBatch
         {
             _writer.Reset();
             _writer.WriteMarshal(datom.Prefix);
-            datom.Prefix.ValueTag.Write(datom.Value, _writer);
+            datom.Prefix.ValueTag.Write(datom.V, _writer);
             _batch.Put(_writer.GetWrittenSpan(), ReadOnlySpan<byte>.Empty);
         }
     }
@@ -50,7 +50,7 @@ internal class Batch(RocksDb db) : IWriteBatch
         if (datom.Prefix.ValueTag == ValueTag.HashedBlob)
         {
             Span<byte> keySpan = stackalloc byte[Serializer.HashedBlobPrefixSize];
-            var value = (Memory<byte>)datom.Value;
+            var value = (Memory<byte>)datom.V;
             MemoryMarshal.Write(keySpan, datom.Prefix);
             value.Span.SliceFast(0, Serializer.HashedBlobHeaderSize).CopyTo(keySpan.SliceFast(KeyPrefix.Size));
             _batch.Delete(keySpan);
@@ -59,7 +59,7 @@ internal class Batch(RocksDb db) : IWriteBatch
         {
             _writer.Reset();
             _writer.WriteMarshal(datom.Prefix);
-            datom.Prefix.ValueTag.Write(datom.Value, _writer);
+            datom.Prefix.ValueTag.Write(datom.V, _writer);
             _batch.Delete(_writer.GetWrittenSpan());
         }
     }

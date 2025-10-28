@@ -150,7 +150,7 @@ public class Datoms : List<Datom>
         {
             var t = this[index];
             if (t.Prefix.A != id) continue;
-            value = attr.FromLowLevelObject(t.Value, _resolver);
+            value = attr.FromLowLevelObject(t.V, _resolver);
             return true;
         }
 
@@ -183,7 +183,7 @@ public class Datoms : List<Datom>
             stopIdx = Count - 1;
         
         for (var idx = 0; idx <= stopIdx; idx++)
-            yield return attr.FromLowLevelObject(this[idx].Value, _resolver);
+            yield return attr.FromLowLevelObject(this[idx].V, _resolver);
     }
 
     public IEnumerable<THighLevel> GetAllResolved<THighLevel, TLowLevel, TSerializer>(
@@ -202,7 +202,7 @@ public class Datoms : List<Datom>
             stopIdx = Count;
         
         for (var idx = startIdx; idx < stopIdx; idx++)
-            yield return attr.FromLowLevel((TLowLevel)this[idx].Value, _resolver);
+            yield return attr.FromLowLevel((TLowLevel)this[idx].V, _resolver);
     }
 
     public THighLevel GetResolved<THighLevel, TLowLevel, TSerializer>(
@@ -215,7 +215,7 @@ public class Datoms : List<Datom>
         var startIdx = FindRangeStart(attrId);
         if (startIdx == -1)
             throw new KeyNotFoundException($"Attribute not found in datoms: {attr.Id}");
-        return attr.FromLowLevel((TLowLevel)this[startIdx].Value, _resolver);
+        return attr.FromLowLevel((TLowLevel)this[startIdx].V, _resolver);
     }
     
     public bool TryGetResolved<THighLevel, TLowLevel, TSerializer>(
@@ -231,7 +231,7 @@ public class Datoms : List<Datom>
             value = default!;
             return false;
         }
-        value = attr.FromLowLevel((TLowLevel)this[startIdx].Value, _resolver);
+        value = attr.FromLowLevel((TLowLevel)this[startIdx].V, _resolver);
         return true;
     }
     private int FindRangeStart(AttributeId attrId)

@@ -81,7 +81,7 @@ public record CacheRoot(ulong TotalCount, ImmutableDictionary<object, CacheValue
         
             // Backrefs
             if (datom.Tag == ValueTag.Reference)
-                currentSize -= builder.Remove((typeof(BackRefSlice), datom.A, (EntityId)datom.Value)) ? 1UL : 0;
+                currentSize -= builder.Remove((typeof(BackRefSlice), datom.A, (EntityId)datom.V)) ? 1UL : 0;
         }
         return new CacheRoot(currentSize, builder.ToImmutable());
     }

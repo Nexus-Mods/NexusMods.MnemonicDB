@@ -61,6 +61,6 @@ public sealed class ValueComparer : IElementComparer
     public static int Compare(in Datom a, in Datom b)
     {
         var cmp = a.Prefix.ValueTag.CompareTo(b.Prefix.ValueTag);
-        return cmp != 0 ? cmp : a.Prefix.ValueTag.Compare(a.Value, b.Value);
+        return cmp != 0 ? cmp : a.Prefix.ValueTag.Compare(a.V, b.V);
     }
 }

@@ -13,7 +13,8 @@ public readonly record struct TaggedValue(ValueTag Tag, object Value);
 public struct Datom : IComparable<Datom>
 {
     public KeyPrefix Prefix { get; }
-    public object Value { get; }
+    
+    public object V { get; }
     
     public EntityId E => Prefix.E;
     
@@ -23,21 +24,21 @@ public struct Datom : IComparable<Datom>
     
     public ValueTag Tag => Prefix.ValueTag;
     
-    public TaggedValue TaggedValue => new(Prefix.ValueTag, Value);
+    public TaggedValue TaggedValue => new(Prefix.ValueTag, V);
     
     public bool IsRetract => Prefix.IsRetract;
 
     public Datom(KeyPrefix prefix, object value)
     {
         Prefix = prefix;
-        Value = value;
+        V = value;
     }
 
     public readonly Datom With(IndexType indexType) 
-        => new(Prefix with { Index = indexType }, Value);
+        => new(Prefix with { Index = indexType }, V);
     
     public readonly Datom With(TxId txId) 
-        => new(Prefix with { T = txId }, Value);
+        => new(Prefix with { T = txId }, V);
 
     public readonly Datom WithRemaps(Func<EntityId, EntityId> remapFn)
     {
@@ -45,15 +46,15 @@ public struct Datom : IComparable<Datom>
         switch (Prefix.ValueTag)
         {
             case ValueTag.Reference:
-                return new Datom(newPrefix, remapFn((EntityId)Value));
+                return new Datom(newPrefix, remapFn((EntityId)V));
             case ValueTag.Tuple3_Ref_UShort_Utf8I:
             {
-                var (r, u, s) = (ValueTuple<EntityId, ushort, string>)Value;
+                var (r, u, s) = (ValueTuple<EntityId, ushort, string>)V;
                 var newValue = (remapFn(r), u, s);
                 return new Datom(newPrefix, newValue);
             }
             default:
-                return new Datom(newPrefix, Value);
+                return new Datom(newPrefix, V);
         }
     }
 
@@ -106,7 +107,7 @@ public struct Datom : IComparable<Datom>
     
     public static Datom Create(KeyPrefix prefix, Datom src)
     {
-        return new Datom(prefix, src.Value);
+        return new Datom(prefix, src.V);
     }
     
     public static Datom Create(KeyPrefix prefix, ReadOnlySpan<byte> valueSpan)
@@ -176,7 +177,7 @@ public struct Datom : IComparable<Datom>
 
     public readonly Datom WithRetract(bool b = true)
     {
-        return new Datom(Prefix with { IsRetract = b }, Value);   
+        return new Datom(Prefix with { IsRetract = b }, V);   
     }
 
     public ResolvedDatom Resolved(AttributeResolver resolver)
@@ -207,6 +208,6 @@ public struct Datom : IComparable<Datom>
 
     public override string ToString()
     {
-        return $"({Prefix.E}, {Prefix.A}, {Prefix.ValueTag}, {Value}, {Prefix.T}, {Prefix.IsRetract})";
+        return $"({Prefix.E}, {Prefix.A}, {Prefix.ValueTag}, {V}, {Prefix.T}, {Prefix.IsRetract})";
     }
 }

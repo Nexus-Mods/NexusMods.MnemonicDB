@@ -70,7 +70,7 @@ public static class TxProcessing
             var start = applied.Count;
 
             // Support both delegate-style and ITxFunction-style
-            switch (fnDatom.Value)
+            switch (fnDatom.V)
             {
                 case Action<Datoms, IDb> action:
                     action(applied, basisDb);
@@ -84,7 +84,7 @@ public static class TxProcessing
                     break;
                 }
                 default:
-                    throw new InvalidOperationException("Unsupported TxFunction payload type: " + fnDatom.Value?.GetType().FullName);
+                    throw new InvalidOperationException("Unsupported TxFunction payload type: " + fnDatom.V?.GetType().FullName);
             }
 
             // Scan newly-added datoms for nested tx functions; queue them in insertion order
@@ -285,13 +285,13 @@ public static class TxProcessing
         foreach (var r in retracts)
         {
             if (!attributeResolver.AttributeCache.IsUnique(r.Prefix.A)) continue;
-            uniqueRetractsThisTx.Add((r.Prefix.A, r.Value, r.Prefix.E));
+            uniqueRetractsThisTx.Add((r.Prefix.A, r.V, r.Prefix.E));
         }
 
         foreach (var a in asserts)
         {
             if (!attributeResolver.AttributeCache.IsUnique(a.Prefix.A)) continue;
-            var key = (a.Prefix.A, a.Value);
+            var key = (a.Prefix.A, Value: a.V);
 
             if (txClaim.TryGetValue(key, out var prevE) && !Equals(prevE, a.Prefix.E))
                 throw new UniqueConstraintException(a, prevE);
@@ -302,7 +302,7 @@ public static class TxProcessing
             {
                 // Allow moving ownership within the same transaction: if this tx also retracts
                 // the unique value from the current owner, do not throw.
-                if (!uniqueRetractsThisTx.Contains((a.Prefix.A, a.Value, owner)))
+                if (!uniqueRetractsThisTx.Contains((a.Prefix.A, a.V, owner)))
                     throw new UniqueConstraintException(a, owner);
             }
         }

@@ -1376,7 +1376,7 @@ public class DbTests(IServiceProvider provider) : AMnemonicDBTest(provider)
             if (datom.Tag != ValueTag.Utf8)
                 return ScanResultType.None;
 
-            var value = (string)datom.Value;
+            var value = (string)datom.V;
             switch (value)
             {
                 case "Test Mod 1":
