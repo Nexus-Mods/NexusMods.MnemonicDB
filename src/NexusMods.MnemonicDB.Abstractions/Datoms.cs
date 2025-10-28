@@ -119,15 +119,7 @@ public class Datoms : List<Datom>
         var converted = attr.ToLowLevel(value);
         Add(new Datom(prefix, converted));
     }
-
-    /// <summary>
-    /// Adds a txFunction to the datoms list, this will be encoded as a special datom whos's value is the txFunction.
-    /// </summary>
-    public void Add(ITxFunction txFunction)
-    {
-        Add(Datom.Create(EntityId.MinValueNoPartition, AttributeId.Max, ValueTag.TxFunction, txFunction));
-    }
-
+    
     /// <summary>
     /// Adds all the datoms in the given list to the datoms list.
     /// </summary>
@@ -179,19 +171,6 @@ public class Datoms : List<Datom>
         return false;
     }
     
-    /// <summary>
-    /// Assumes that the list is sorted by AttributeId, selects the range of datoms that match the attributeId
-    /// </summary>
-    public ReadOnlySpan<Datom> Range(AttributeId attrId)
-    {
-        var startIdx = FindRangeStart(attrId);
-        if (startIdx == -1)
-            return ReadOnlySpan<Datom>.Empty;
-
-        var endIdx = FindRangeEnd(attrId, startIdx);
-        return CollectionsMarshal.AsSpan(this).SliceFast(startIdx, endIdx - startIdx);
-    }
-
     public IEnumerable<object> GetAllResolved(IAttribute attr)
     {
         var attrId = _resolver.AttributeCache.GetAttributeId(attr.Id);
