@@ -12,7 +12,7 @@ internal abstract class AInternalFn : IInternalTxFunctionImpl
     /// <summary>
     /// Execute the function on the store
     /// </summary>
-    public abstract void Execute(DatomStore store, AttributeResolver resolver);
+    public abstract void Execute(DatomStore store);
 
     public Task<(StoreResult, IDb)> Task => _source.Task;
     

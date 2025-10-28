@@ -13,12 +13,12 @@ namespace NexusMods.MnemonicDB.InternalTxFunctions;
 /// <param name="ids"></param>
 internal class Excise(EntityId[]  ids) : AInternalFn
 {
-    public override void Execute(DatomStore store, AttributeResolver resolver)
+    public override void Execute(DatomStore store)
     {
         // Find all datoms for the given entity ids
         var snapshot = store.CurrentSnapshot;
-        var currentDatoms = new Datoms(resolver);
-        var historyDatoms = new Datoms(resolver);
+        var currentDatoms = new Datoms(store.AttributeResolver);
+        var historyDatoms = new Datoms(store.AttributeResolver);
         foreach (var entityId in ids)
         {
             // All Current datoms
@@ -56,7 +56,7 @@ internal class Excise(EntityId[]  ids) : AInternalFn
         // Push through a marker transaction to make sure all indexes are updated
         {
             var txId = EntityId.From(PartitionId.Temp.MakeEntityId(0).Value);
-            var datoms = new Datoms(store.AttributeCache)
+            var datoms = new Datoms(store.AttributeResolver)
             {
                 { txId, Abstractions.BuiltInEntities.Transaction.ExcisedDatoms, (ulong)currentDatoms.Count }
             };

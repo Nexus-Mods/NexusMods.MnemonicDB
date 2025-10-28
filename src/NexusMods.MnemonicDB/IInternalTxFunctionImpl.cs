@@ -16,7 +16,7 @@ public interface IInternalTxFunctionImpl : IInternalTxFunction
     /// <summary>
     ///  Executes the function giving the function full access to the store
     /// </summary>
-    public void Execute(DatomStore store, AttributeResolver resolver);
+    public void Execute(DatomStore store);
 
     /// <summary>
     /// A task that will complete when the transaction is committed

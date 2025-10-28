@@ -13,7 +13,7 @@ where TDescriptor : ISliceDescriptor
     public (Datom From, Datom To, IObserver<ChangeSet<Datom, DatomKey, IDb>> Observer) Prime(IDb db)
     {
         var datoms = db.Datoms(Descriptor);
-        var cache = db.AttributeCache;
+        var cache = db.AttributeResolver.AttributeCache;
         var changes = new ChangeSet<Datom, DatomKey, IDb>(db);
 
         foreach (var datom in datoms)

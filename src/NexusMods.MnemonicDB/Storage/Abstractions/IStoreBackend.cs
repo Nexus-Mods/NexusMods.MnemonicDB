@@ -13,7 +13,7 @@ public interface IStoreBackend : IDisposable
     /// Returns the attribute cache for this store, this cache should be shared across
     /// the datom store, the connection, and the db instances
     /// </summary>
-    public AttributeCache AttributeCache { get; }
+    public AttributeResolver AttributeResolver { get; }
     
     /// <summary>
     /// Create a new write batch

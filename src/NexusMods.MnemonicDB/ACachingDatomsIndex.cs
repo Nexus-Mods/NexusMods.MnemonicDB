@@ -18,7 +18,7 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
     private CacheRoot _root;
     private readonly CacheStrategy _strategy;
     
-    protected ACachingDatomsIndex(ACachingDatomsIndex<TRefEnumerator> other, Datoms addedDatoms) : base(other.AttributeCache)
+    protected ACachingDatomsIndex(ACachingDatomsIndex<TRefEnumerator> other, Datoms addedDatoms) : base(other.AttributeResolver)
     {
         _root = other._root.Evict(addedDatoms);
         _strategy = other._strategy;
@@ -68,7 +68,7 @@ public abstract class ACachingDatomsIndex<TRefEnumerator> :
     /// <summary>
     /// A wrapper for a datoms index that caches several index segment types
     /// </summary>
-    protected ACachingDatomsIndex(AttributeCache attributeCache) : base(attributeCache)
+    protected ACachingDatomsIndex(AttributeResolver attributeResolver) : base(attributeResolver)
     {
         _root = CacheRoot.Create();
         _strategy = new CacheStrategy();

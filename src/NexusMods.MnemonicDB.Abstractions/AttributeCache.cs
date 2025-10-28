@@ -53,6 +53,11 @@ public sealed class AttributeCache
     /// Gets the largest declared attributeId
     /// </summary>
     public ushort MaxAttrId => _attributeIdsBySymbol.Values.Max(x => x.Value); 
+    
+    /// <summary>
+    /// Get the cached attribute id for the given attribute
+    /// </summary>
+    public AttributeId this[IAttribute attr] => _attributeIdsBySymbol[attr.Id];
 
     /// <summary>
     /// Resets the cache, causing it to re-query the database for the latest definitions.

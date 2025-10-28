@@ -275,7 +275,7 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
         {
             var aid = AttributeId.Max;
             // This attribute may not exist in the database, if it doesn't we'll use the max Id so we return no data
-            if (db.AttributeCache.TryGetAttributeId(bindData.Attribute!.Id, out var foundId))
+            if (db.AttributeResolver.AttributeCache.TryGetAttributeId(bindData.Attribute!.Id, out var foundId))
                 aid = foundId;
             
             return new LocalInitData

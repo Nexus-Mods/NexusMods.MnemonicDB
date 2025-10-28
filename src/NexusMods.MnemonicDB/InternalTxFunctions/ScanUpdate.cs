@@ -15,7 +15,7 @@ internal class ScanUpdate : AInternalFn
         
     }
     
-    public override void Execute(DatomStore store, AttributeResolver resolver)
+    public override void Execute(DatomStore store)
     {
         using var batch = store.Backend.CreateBatch();
         using var writer = new PooledMemoryBufferWriter();
@@ -47,7 +47,7 @@ internal class ScanUpdate : AInternalFn
         
         if (changes)
         {
-            store.LogDatoms(batch, new Datoms(store.AttributeCache), advanceTx: false);
+            store.LogDatoms(batch, new Datoms(store.AttributeResolver), advanceTx: false);
         }
     }
 }

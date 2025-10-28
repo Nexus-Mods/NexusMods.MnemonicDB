@@ -12,7 +12,7 @@ public interface ISnapshot : IDatomsIndex
     /// Construct a new DB with this snapshot and the given parameters, may feel backwards to create DBs this way, but it's so that
     /// the low level iterator types can be injected into the DBs.
     /// </summary>
-    public IDb MakeDb(TxId txId, AttributeCache attributeCache, IConnection? connection = null);
+    public IDb MakeDb(TxId txId, AttributeResolver attributeCache, IConnection? connection = null);
 
     /// <summary>
     /// Get the max id currently used in the given partition, returns false if not found

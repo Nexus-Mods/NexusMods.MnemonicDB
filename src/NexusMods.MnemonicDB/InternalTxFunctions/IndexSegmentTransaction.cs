@@ -19,7 +19,7 @@ internal sealed class IndexSegmentTransaction : AInternalFn
     }
 
     /// <inheritdoc />
-    public override void Execute(DatomStore store, AttributeResolver resolver)
+    public override void Execute(DatomStore store)
     {
         store.LogDatoms(_indexSegment);
     }

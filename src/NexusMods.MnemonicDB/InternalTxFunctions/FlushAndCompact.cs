@@ -8,7 +8,7 @@ namespace NexusMods.MnemonicDB.InternalTxFunctions;
 /// </summary>
 internal class FlushAndCompact(bool verify) : AInternalFn
 {
-    public override void Execute(DatomStore store, AttributeResolver resolver)
+    public override void Execute(DatomStore store)
     {
         store.Backend.FlushAndCompact(verify);
     }

@@ -26,15 +26,15 @@ public class Backend : IStoreBackend
     /// <summary>
     /// Default constructor
     /// </summary>
-    public Backend(bool readOnly = false)
+    public Backend(AttributeResolver resolver, bool readOnly = false)
     {
         _disposed = false;
         _isReadOnly = readOnly;
-        AttributeCache = new AttributeCache();
+        AttributeResolver = resolver;
     }
 
     /// <inheritdoc />
-    public AttributeCache AttributeCache { get; }
+    public AttributeResolver AttributeResolver { get; }
 
     /// <inheritdoc />
     public IWriteBatch CreateBatch()
@@ -50,7 +50,7 @@ public class Backend : IStoreBackend
             .SetTotalOrderSeek(false)
             .SetSnapshot(snapShot)
             .SetPinData(true);
-        var snapshot = new Snapshot(this, AttributeCache, readOptions, snapShot);
+        var snapshot = new Snapshot(this, AttributeResolver, readOptions, snapShot);
         return snapshot;
     }
 

@@ -27,6 +27,11 @@ public sealed class AttributeResolver
         
         ValidateAttributes();
     }
+    
+    /// <summary>
+    /// Get the attribute id for the given attribute.
+    /// </summary>
+    public AttributeId this[IAttribute attr] => AttributeCache.GetAttributeId(attr.Id);
 
     private void ValidateAttributes()
     {
