@@ -25,7 +25,7 @@ internal sealed class Snapshot : ADatomsIndex<RocksDbIteratorWrapper>, IRefDatom
     // ReSharper disable once NotAccessedField.Local
     internal readonly RocksDbSharp.Snapshot NativeSnapshot;
 
-    public Snapshot(Backend backend, AttributeCache attributeCache, ReadOptions readOptions, RocksDbSharp.Snapshot nativeSnapshot) : base(attributeCache)
+    public Snapshot(Backend backend, AttributeResolver attributeCache, ReadOptions readOptions, RocksDbSharp.Snapshot nativeSnapshot) : base(attributeCache)
     {
         Backend = backend;
         ReadOptions = readOptions;

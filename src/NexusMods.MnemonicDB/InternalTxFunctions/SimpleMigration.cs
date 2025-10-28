@@ -31,11 +31,11 @@ internal class SimpleMigration : AInternalFn
         return EntityId.From(actualId);
     }
     
-    public override void Execute(DatomStore store)
+    public override void Execute(DatomStore store, AttributeResolver resolver)
     {
         var batch = store.Backend.CreateBatch();
         var cache = store.AttributeCache;
-        var datoms = new Datoms(cache);
+        var datoms = new Datoms(resolver);
         var madeChanges = false;
         foreach (var attribute in _declaredAttributes)
         {

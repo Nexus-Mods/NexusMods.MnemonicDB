@@ -64,9 +64,9 @@ public abstract class ABackendTest(
 
         for (var i = 0; i < 4; i++)
         {
-            var segment = new Datoms(AttributeCache);
+            var segment = new Datoms(AttributeResolver);
             var entityId = NextTempId();
-            var (result, _) = await DatomStore.TransactAsync(new Datoms(DatomStore) {
+            var (result, _) = await DatomStore.TransactAsync(new Datoms(AttributeResolver) {
                 { entityId, Blobs.InKeyBlob, smallData },
                 { entityId, Blobs.InValueBlob, largeData }
             });
@@ -76,7 +76,7 @@ public abstract class ABackendTest(
         // Retract the first 2
         for (var i = 0; i < 2; i++)
         {
-            await DatomStore.TransactAsync(new Datoms(DatomStore) {
+            await DatomStore.TransactAsync(new Datoms(AttributeResolver) {
                 { ids[i], Blobs.InKeyBlob, smallData.AsMemory(), true },
                 { ids[i], Blobs.InValueBlob, largeData.AsMemory(), true }
             });

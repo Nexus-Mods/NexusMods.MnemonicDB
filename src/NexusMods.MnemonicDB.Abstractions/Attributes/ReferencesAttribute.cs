@@ -28,7 +28,7 @@ public sealed class ReferencesAttribute<T>(string ns, string name) : ReferencesA
     public IEnumerable<TModel> GetAllModels<TModel>(IDb db, Datoms datoms) 
         where TModel : IReadOnlyModel<TModel>
     {
-        var ids = datoms.GetAllResolved(this, db.Connection.AttributeResolver);
+        var ids = datoms.GetAllResolved(this);
         foreach (var id in ids)
             yield return TModel.Create(db, id);
     }

@@ -59,38 +59,8 @@ public sealed partial class DatomStore : IDatomStore
 
     private readonly CancellationTokenSource _shutdownToken = new();
     private TxId _thisTx;
-    
-    /// <summary>
-    /// Scratch spaced to create new datoms while processing transactions
-    /// </summary>
-    private readonly Memory<byte> _txScratchSpace;
-
     private readonly TimeProvider _timeProvider;
 
-    private enum UniqueState : byte
-    {
-        // We've never seen this datom before
-        None = 0,
-        
-        // The unique datom has been asserted in the current transaction
-        Asserted = 1,
-        
-        // The unique datom has been retracted in the current transaction
-        Retracted = 2,
-        
-        // The unique datom has a violated constraint in the current transaction
-        Violation = 3
-    }
-    
-    /// <summary>
-    /// A cache of datoms on unique attributes being processed in the current transaction. These constraints require a bit
-    /// of working memory, because a single transaction could remove a datom from one entity and add it to another, and the
-    /// order of these datoms in the transaction is undefined. So we may get the retraction before the assertion, or vice versa.
-    /// So this dictionary contains storage for a simple state machine to check for unique constraints. Once a transaction is about
-    /// to be commited we look in this dictionary for any unique constraints that have been violated and throw errors. At the start
-    /// of every transaction, this dictionary is cleared.
-    /// </summary>
-    private SortedDictionary<Datom, UniqueState> _currentUniqueDatoms = new(UniqueAttributeEqualityComparer.Instance);
 
     /// <summary>
     /// DI constructor
@@ -104,7 +74,6 @@ public sealed partial class DatomStore : IDatomStore
     {
         CurrentSnapshot = default!;
         _timeProvider = timeProvider ?? TimeProvider.System;
-        _txScratchSpace = new Memory<byte>(new byte[1024]);
         _remapFunc = Remap;
         _dbStream = new DbStream();
         _attributeCache = backend.AttributeCache;
@@ -334,7 +303,7 @@ public sealed partial class DatomStore : IDatomStore
         
         _remaps = new Dictionary<EntityId, EntityId>();
         
-        pendingTransaction.Execute(this);
+        pendingTransaction.Execute(this, _currentDb!.AttributeResolver);
         
         return new StoreResult
         {

@@ -9,17 +9,17 @@ namespace NexusMods.MnemonicDB;
 public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnumeratorFactory<TRefEnumerator>
     where TRefEnumerator : IRefDatomEnumerator
 {
-    protected ADatomsIndex(AttributeCache cache)
+    protected ADatomsIndex(AttributeResolver cache)
     {
-        AttributeCache = cache;
+        AttributeResolver = cache;
     }
-    public AttributeCache AttributeCache { get; }
+    public AttributeResolver AttributeResolver { get; }
 
     protected virtual Datoms Load<TSlice>(TSlice slice)
        where TSlice : ISliceDescriptor, allows ref struct
     {
         using var en = GetRefDatomEnumerator();
-        return Abstractions.Datoms.Create(en, slice, AttributeCache);
+        return Abstractions.Datoms.Create(en, slice, AttributeResolver);
     }
     
     public Datoms Datoms<TSlice>(TSlice slice) where TSlice : ISliceDescriptor, allows ref struct 
@@ -36,7 +36,7 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
     {
         get
         {
-            var attrId = AttributeCache.GetAttributeId(a.Id);
+            var attrId = AttributeResolver.AttributeCache.GetAttributeId(a.Id);
             return Load(SliceDescriptor.Create(attrId));
         }
     }
@@ -54,14 +54,14 @@ public abstract class ADatomsIndex<TRefEnumerator> : IDatomsIndex, IRefDatomEnum
         where TSliceDescriptor : ISliceDescriptor
     {
         using var iterator = GetRefDatomEnumerator();
-        var currentResult = new Datoms(AttributeCache);
+        var currentResult = new Datoms(AttributeResolver);
         while (iterator.MoveNext(descriptor))
         {
             currentResult.Add(Datom.Create(iterator));
             if (currentResult.Count == chunkSize)
             {
                 yield return currentResult;
-                currentResult = new(AttributeCache);
+                currentResult = new(AttributeResolver);
             }
         }
 

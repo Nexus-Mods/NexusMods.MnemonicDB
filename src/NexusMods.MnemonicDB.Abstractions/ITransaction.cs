@@ -29,26 +29,7 @@ public interface ITransaction : IDisposable
     /// <returns></returns>
     EntityId TempId();
     
-    /// <summary>
-    /// Retracts all datoms for the given attribute for the given entity as seen by the given db. If none are found,
-    /// nothing happens
-    /// </summary>
-    void RetractAll(IDb db, EntityId entityId, IAttribute attribute)
-    {
-        var ent = db[entityId];
-        var aid = db.AttributeCache.GetAttributeId(attribute.Id);
-        throw new NotImplementedException();
-        /*
-        var range = ent.GetRange(aid);
 
-        for (var idx = range.Start.Value; idx < range.End.Value; idx++)
-        {
-            throw new NotImplementedException();
-            //var span = ent.GetValueSpan(idx, out var valueTag);
-            //Add(entityId, aid, valueTag, span, isRetract: true);
-        }
-        */
-    }
     
     /// <summary>
     /// Tries to find and return a previously attached entity by ID.

@@ -11,7 +11,7 @@ using ResultIterator = HistoryRefDatomEnumerator<TimeFilteredRetractionEnumerato
 /// id, this requires merging two indexes together, and then the deduplication of the merged index (retractions
 /// removing assertions).
 /// </summary>
-internal class AsOfSnapshot(Snapshot inner, TxId asOfTxId, AttributeCache attributeCache) : ADatomsIndex<ResultIterator>(attributeCache), ISnapshot
+internal class AsOfSnapshot(Snapshot inner, TxId asOfTxId, AttributeResolver attributeCache) : ADatomsIndex<ResultIterator>(attributeCache), ISnapshot
 {
     public IDb MakeDb(TxId txId, AttributeCache cache, IConnection? connection = null)
     {

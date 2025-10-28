@@ -4,7 +4,7 @@ namespace NexusMods.MnemonicDB.Abstractions;
 
 public interface IDatomsIndex
 {
-    public AttributeCache AttributeCache { get; }
+    public AttributeResolver AttributeResolver { get; }
     
     /// <summary>
     /// Get all the datoms for the given entity id. 

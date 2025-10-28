@@ -20,12 +20,14 @@ namespace NexusMods.MnemonicDB.Abstractions;
 
 public class Datoms : List<Datom>
 {
-    public Datoms(AttributeCache attributeCache) : base()
+    private readonly AttributeResolver _resolver;
+    
+    public Datoms(AttributeResolver resolver) : base()
     {
-        AttributeCache = attributeCache;
+        _resolver = resolver;
     }
 
-    public static Datoms Create<TEnumerator, TSlice>(TEnumerator enumerator, TSlice slice, AttributeCache attributeCache)
+    public static Datoms Create<TEnumerator, TSlice>(TEnumerator enumerator, TSlice slice, AttributeResolver attributeCache)
         where TEnumerator : IRefDatomEnumerator, allows ref struct
         where TSlice : ISliceDescriptor, allows ref struct
     {
@@ -36,7 +38,7 @@ public class Datoms : List<Datom>
         return datoms;
     }
     
-    public static Datoms Create<TFactory, TEnum, TSlice>(in TFactory factory, TSlice slice, AttributeCache attributeCache, bool totalOrdered = false)
+    public static Datoms Create<TFactory, TEnum, TSlice>(in TFactory factory, TSlice slice, AttributeResolver attributeCache)
         where TFactory : IRefDatomEnumeratorFactory<TEnum>, allows ref struct
         where TSlice : ISliceDescriptor, allows ref struct
         where TEnum : IRefDatomEnumerator
@@ -47,15 +49,10 @@ public class Datoms : List<Datom>
 
     public Datoms(IDb db)
     {
-        AttributeCache = db.AttributeCache;
+        _resolver = db.Connection.AttributeResolver;
     }
-
-    public Datoms(IDatomStore store)
-    {
-        AttributeCache = store.AttributeCache;
-    }
-
-    [field: AllowNull, MaybeNull] public AttributeCache AttributeCache { get; }
+    
+    public AttributeCache AttributeCache => _resolver.AttributeCache;
     
     public void Add(Datom datom)
     {
@@ -103,6 +100,13 @@ public class Datoms : List<Datom>
     {
         Add(e, attr, value, isRetract, TxId.Tmp);
     }
+    
+    public void Add<TValue>(EntityId e, AttributeId attrId, TValue value, bool isRetract)
+    where TValue : notnull
+    {
+        var tag = _resolver.AttributeCache.GetValueTag(attrId);
+        Add(Datom.Create(e, attrId, new TaggedValue(tag, value), TxId.Tmp, isRetract));
+    }
 
     public void Add<THighLevel, TLowLevel, TSerializer>(EntityId e,
         Attribute<THighLevel, TLowLevel, TSerializer> attr, THighLevel value, bool isRetract, TxId txId)
@@ -110,7 +114,7 @@ public class Datoms : List<Datom>
         where TLowLevel : notnull
         where TSerializer : IValueSerializer<TLowLevel>
     {
-        var attrId = AttributeCache!.GetAttributeId(attr.Id);
+        var attrId = AttributeCache.GetAttributeId(attr.Id);
         var prefix = new KeyPrefix(e, attrId, txId, isRetract, attr.LowLevelType);
         var converted = attr.ToLowLevel(value);
         Add(new Datom(prefix, converted));
@@ -188,36 +192,53 @@ public class Datoms : List<Datom>
         return CollectionsMarshal.AsSpan(this).SliceFast(startIdx, endIdx - startIdx);
     }
 
+    public IEnumerable<object> GetAllResolved(IAttribute attr)
+    {
+        var attrId = _resolver.AttributeCache.GetAttributeId(attr.Id);
+        var startIdx = FindRangeStart(attrId);
+        if (startIdx == -1)
+            yield break;
+        
+        var stopIdx = FindRangeEnd(attrId, startIdx);
+        if (stopIdx == -1)
+            stopIdx = Count - 1;
+        
+        for (var idx = 0; idx <= stopIdx; idx++)
+            yield return attr.FromLowLevelObject(this[idx].Value, _resolver);
+    }
+
     public IEnumerable<THighLevel> GetAllResolved<THighLevel, TLowLevel, TSerializer>(
-        Attribute<THighLevel, TLowLevel, TSerializer> attr, AttributeResolver resolver) 
+        Attribute<THighLevel, TLowLevel, TSerializer> attr) 
         where THighLevel : notnull 
         where TLowLevel : notnull 
         where TSerializer : IValueSerializer<TLowLevel>
     {
-        var attrId = resolver.AttributeCache.GetAttributeId(attr.Id);
-        var range = Range(attrId);
-        var result = GC.AllocateUninitializedArray<THighLevel>(range.Length);
-        for (var index = 0; index < range.Length; index++)
-        {
-            var datom = range[index];
-            result[index] = attr.FromLowLevel((TLowLevel)datom.Value, resolver);
-        }
-        return result;
+        var attrId = _resolver.AttributeCache.GetAttributeId(attr.Id);
+        var startIdx = FindRangeStart(attrId);
+        if (startIdx == -1)
+            yield break;
+        
+        var stopIdx = FindRangeEnd(attrId, startIdx);
+        if (stopIdx == -1)
+            stopIdx = Count - 1;
+        
+        for (var idx = 0; idx <= stopIdx; idx++)
+            yield return attr.FromLowLevel((TLowLevel)this[idx].Value, _resolver);
     }
 
     public THighLevel GetResolved<THighLevel, TLowLevel, TSerializer>(
-        Attribute<THighLevel, TLowLevel, TSerializer> attr, AttributeResolver resolver)
+        Attribute<THighLevel, TLowLevel, TSerializer> attr)
         where THighLevel : notnull
         where TLowLevel : notnull
         where TSerializer : IValueSerializer<TLowLevel>
     {
-        var attrId = resolver.AttributeCache.GetAttributeId(attr.Id);
+        var attrId = _resolver.AttributeCache.GetAttributeId(attr.Id);
         var startIdx = FindRangeStart(attrId);
         if (startIdx == -1)
             throw new KeyNotFoundException($"Attribute not found in datoms: {attr.Id}");
-        return attr.FromLowLevel((TLowLevel)this[startIdx].Value, resolver);
+        return attr.FromLowLevel((TLowLevel)this[startIdx].Value, _resolver);
     }
-
+    
     public bool TryGetResolved<THighLevel, TLowLevel, TSerializer>(
         Attribute<THighLevel, TLowLevel, TSerializer> attr, AttributeResolver resolver, out THighLevel value)
         where THighLevel : notnull
