@@ -1,5 +1,10 @@
 ## Changelog
 
+### 0.52.0 - 2025-11-03
+* Standardize creation of connections around IConnectionFactory
+* Remove all non-traditional transaction/connection types
+* Cleanup TxFunctions
+
 ### 0.51.1 - 2025-10-28
 * Rename datom.Value to datom.V to match the other parts of the datom (E, A, T, etc)
 
