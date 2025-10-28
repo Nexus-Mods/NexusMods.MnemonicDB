@@ -151,14 +151,14 @@ public class Datoms : List<Datom>
         Add(Datom.Create(spanDatomLike));
     }
 
-    public bool TryGetOne(IAttribute attr, AttributeResolver resolver, out object value)
+    public bool TryGetOne(IAttribute attr, out object value)
     {
         var id = AttributeCache.GetAttributeId(attr.Id);
         for (var index = 0; index < Count; index++)
         {
             var t = this[index];
             if (t.Prefix.A != id) continue;
-            value = attr.FromLowLevelObject(t.Value, resolver);
+            value = attr.FromLowLevelObject(t.Value, _resolver);
             return true;
         }
 
@@ -240,19 +240,19 @@ public class Datoms : List<Datom>
     }
     
     public bool TryGetResolved<THighLevel, TLowLevel, TSerializer>(
-        Attribute<THighLevel, TLowLevel, TSerializer> attr, AttributeResolver resolver, out THighLevel value)
+        Attribute<THighLevel, TLowLevel, TSerializer> attr, out THighLevel value)
         where THighLevel : notnull
         where TLowLevel : notnull
         where TSerializer : IValueSerializer<TLowLevel>
     {
-        var attrId = resolver.AttributeCache.GetAttributeId(attr.Id);
+        var attrId = _resolver.AttributeCache.GetAttributeId(attr.Id);
         var startIdx = FindRangeStart(attrId);
         if (startIdx == -1)
         {
             value = default!;
             return false;
         }
-        value = attr.FromLowLevel((TLowLevel)this[startIdx].Value, resolver);
+        value = attr.FromLowLevel((TLowLevel)this[startIdx].Value, _resolver);
         return true;
     }
     private int FindRangeStart(AttributeId attrId)
@@ -299,10 +299,10 @@ public class Datoms : List<Datom>
         return startIdx + 1;
     }
 
-    public IEnumerable<ResolvedDatom> Resolved(AttributeResolver attributeResolver)
+    public IEnumerable<ResolvedDatom> Resolved()
     {
         foreach (var datom in this)
-            yield return new ResolvedDatom(datom, attributeResolver);
+            yield return new ResolvedDatom(datom, _resolver);
     }
     
     public IEnumerable<ResolvedDatom> Resolved(IConnection conn)
