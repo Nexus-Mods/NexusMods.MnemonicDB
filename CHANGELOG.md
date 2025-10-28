@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.51.1 - 2025-10-28
+* Rename datom.Value to datom.V to match the other parts of the datom (E, A, T, etc)
+
 ### 0.51.0 - 2025-10-28
 * Bring AttributeCache and AttributeResolver closer together and weave them together through the project
 * .Add functions and getters on Tx and Dtoms are now much cleaner
