@@ -41,7 +41,7 @@ public static class ExtensionMethods
             {
                 var current = remain.Pop();
                 seen.Add(current);
-                new DeleteThisOnlyFn(Eid).Apply(tx);
+                new DeleteThisOnlyFn(current).Apply(tx);
 
                 var references = db.ReferencesTo(current);
 

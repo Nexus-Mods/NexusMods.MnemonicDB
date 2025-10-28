@@ -37,6 +37,8 @@ public interface IDb : IDatomsIndex, IEquatable<IDb>
         where THighLevel : notnull
     {
         var attrId = AttributeResolver.AttributeCache[attr];
+        if (!AttributeResolver.AttributeCache.IsIndexed(attrId))
+            throw new InvalidOperationException($"Attribute {attr.Id} is not indexed");
         using var slice = SliceDescriptor.Create(attrId, attr.LowLevelType, attr.ToLowLevelObject(value));
         return Datoms(slice);
     }
