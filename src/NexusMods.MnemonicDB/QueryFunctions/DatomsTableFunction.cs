@@ -215,8 +215,7 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
         }
         else if (!dbNameParam.IsNull)
         {
-            var namedConn = _queryEngine.GetConnectionByName(dbNameParam.GetVarChar());
-            connection = namedConn ?? throw new Exception($"No database named {dbNameParam.GetVarChar()}");
+            connection = _queryEngine.GetConnectionByName(dbNameParam.GetVarChar());
             asOf = TxId.MinValue;
         }
         else

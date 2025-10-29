@@ -468,8 +468,7 @@ public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
         }
         else if (!dbNameParam.IsNull)
         {
-            var namedConn = _engine.GetConnectionByName(dbNameParam.GetVarChar());
-            conn = namedConn ?? throw new Exception($"No database named {dbNameParam.GetVarChar()}");
+            conn = _engine.GetConnectionByName(dbNameParam.GetVarChar());
         }
         else
         {
