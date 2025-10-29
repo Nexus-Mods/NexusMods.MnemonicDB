@@ -63,6 +63,13 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
             isRetract = functionInfo.GetWritableVector(3).GetData<byte>();
 
         var iterator = initData.Segment;
+
+        if (iterator == null)
+        {
+            chunk.Size = 0;
+            return;
+        }
+        
         var row = 0;
         while (iterator.MoveNext())
         {
@@ -138,6 +145,14 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
     private void ExecuteAllAttributes(FunctionInfo functionInfo, LocalBindData state, LocalInitData initData)
     {
         var chunk = functionInfo.Chunk;
+        var iterator = initData.Segment;
+
+        if (iterator == null)
+        {
+            chunk.Size = 0;
+            return;
+        }
+        
         var eVec = functionInfo.GetWritableVector(0).GetData<ulong>();
         var aVec = functionInfo.GetWritableVector(1).GetData<byte>();
         var vVec = functionInfo.GetWritableVector(2);
@@ -146,7 +161,6 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
         var historyVector = functionInfo.GetWritableVector(5).GetData<byte>();
         var mappings = initData.Mappings;
 
-        var iterator = initData.Segment;
         int row = 0;
         int width = _queryEngine.AttrEnumWidth;
         
@@ -191,7 +205,7 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
         
         using var dbParam = info.GetParameter("Db");
         using var dbNameParam = info.GetParameter("DbName");
-        IConnection connection;
+        IConnection? connection;
         TxId asOf;
         if (!dbParam.IsNull)
         {
@@ -261,14 +275,21 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
     protected override object? Init(InitInfo initInfo, InitData initData)
     {
         var bindData = initInfo.GetBindData<LocalBindData>();
-        IDb db;
+        IDb? db;
         if (bindData.AsOf == TxId.MinValue)
-            db = bindData.Connection.Db;
+            db = bindData.Connection?.Db;
         else
-            db = bindData.Connection.AsOf(bindData.AsOf);
+            db = bindData.Connection?.AsOf(bindData.AsOf);
         if (bindData.History)
-            db = bindData.Connection.History();
+            db = bindData.Connection?.History();
 
+        if (db == null)
+            return new LocalInitData
+            {
+                Segment = null,
+                Mappings = FrozenDictionary<AttributeId, ushort>.Empty,
+            };
+        
         var mappings = GetAttrIdToEnumMappings(db.Connection);
         
         if (bindData.Mode == ScanMode.SingleAttribute)
@@ -328,7 +349,7 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
 
     private class LocalBindData
     {
-        public required IConnection Connection;
+        public required IConnection? Connection;
         public required TxId AsOf;
         public bool History = false;
         public required ScanMode Mode;
@@ -337,7 +358,7 @@ public class DatomsTableFunction : ATableFunction, IRevisableFromAttributes
 
     private class LocalInitData
     {
-        public required ILightweightDatomSegment Segment;
+        public required ILightweightDatomSegment? Segment;
         public required FrozenDictionary<AttributeId, ushort> Mappings;
     }
 

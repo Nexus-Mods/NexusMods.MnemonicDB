@@ -48,7 +48,7 @@ public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
         var initData = functionInfo.GetInitInfo<LocalInitData>();
         var bindData = functionInfo.GetBindInfo<BindData>();
         var outChunk = functionInfo.Chunk;
-        if (!initData.NextChunk(out var idsChunk, out var emitSize))
+        if (initData.Db == null || !initData.NextChunk(out var idsChunk, out var emitSize))
         {
             outChunk.Size = 0;
             return;
@@ -74,7 +74,7 @@ public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
             }
             
             var attr = _definition.AllAttributes[mapping - 1];
-            var iterator = initData.Db.LightweightDatoms(SliceDescriptor.AttributesStartingAt(initData.Db.AttributeResolver[attr], idVec[0]));
+            var iterator = initData.Db!.LightweightDatoms(SliceDescriptor.AttributesStartingAt(initData.Db.AttributeResolver[attr], idVec[0]));
             var valueVector = outChunk[(ulong)columnIdx];
             if (attr.Cardinalty == Cardinality.Many)
                 WriteMultiCardinality(attr.LowLevelType, idVec, valueVector, iterator);
@@ -376,7 +376,7 @@ public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
     private class LocalInitData
     {
         public int NextId;
-        public required IDb Db;
+        public required IDb? Db;
         public required List<EntityId[]> Ids;
         public required int RowCount;
         public required int ChunkSize;
@@ -403,16 +403,26 @@ public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
     protected override object? Init(InitInfo initInfo, InitData initData)
     {
         var bindInfo = initInfo.GetBindData<BindData>();
-        IDb db;
+        IDb? db;
         // Asof 0 means "always use latest"
         if (bindInfo.AsOf == TxId.MinValue)
-            db = bindInfo.Connection.Db;
+            db = bindInfo.Connection?.Db;
         else 
-            db = bindInfo.Connection.AsOf(bindInfo.AsOf);
+            db = bindInfo.Connection?.AsOf(bindInfo.AsOf);
             
         // Load all the Ids here so we can load the rows in parallel.
-        var totalRows = db.IdsForPrimaryAttribute(bindInfo.PrimaryAttributeId, (int)GlobalConstants.DefaultVectorSize, out var chunks);
-        initInfo.SetMaxThreads(chunks.Count);
+        List<EntityId[]> chunks;
+        var totalRows = 0;
+        if (bindInfo.PrimaryAttributeId.HasValue && db != null)
+        {
+            totalRows = db.IdsForPrimaryAttribute(bindInfo!.PrimaryAttributeId.Value, (int)GlobalConstants.DefaultVectorSize, out chunks);
+            initInfo.SetMaxThreads(chunks.Count);
+        }
+        else
+        {
+            chunks = [];
+        }
+
         return new LocalInitData
         {
             Db = db,
@@ -426,8 +436,8 @@ public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
     private class BindData
     {
         public required TxId AsOf;
-        public AttributeId PrimaryAttributeId;
-        public required IConnection Connection;
+        public AttributeId? PrimaryAttributeId;
+        public required IConnection? Connection;
     }
     protected override void Bind(BindInfo info)
     {
@@ -450,11 +460,11 @@ public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
         using var asOfParam = info.GetParameter("AsOf");
         using var dbNameParam = info.GetParameter("DbName");
         TxId? asOf = null;
-        IConnection conn;
+        IConnection? conn;
 
         if (dbParam.IsNull && dbNameParam.IsNull)
         {
-            conn = _engine.GetConnectionByName()!;
+            conn = _engine.GetConnectionByName();
         }
         else if (!dbNameParam.IsNull)
         {
@@ -474,7 +484,7 @@ public class ModelTableFunction : ATableFunction, IRevisableFromAttributes
         asOf ??= TxId.MinValue;
         
         
-        var attrId = conn.AttributeCache.GetAttributeId(_definition.PrimaryAttribute.Id);
+        var attrId = conn?.AttributeCache.GetAttributeId(_definition.PrimaryAttribute.Id);
         
         var bindData = new BindData
         {
