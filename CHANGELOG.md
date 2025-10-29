@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.53.4 - 2025-10-29
+* Perform late-binding of DBName values in datom models
+
 ### 0.52.3 - 2025-10-29
 * Allow for binding against mdb_* functions withtout a valid connection
 
