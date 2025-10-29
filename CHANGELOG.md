@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.52.3 - 2025-10-29
+* Allow for binding against mdb_* functions withtout a valid connection
+
 ### 0.52.2 - 2025-10-28
 * Add `-- requires: {NS}` to ambient queries
 
