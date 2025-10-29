@@ -1,5 +1,8 @@
 ## Changelog
 
+### 0.52.2 - 2025-10-28
+* Add `-- requires: {NS}` to ambient queries
+
 ### 0.52.1 - 2025-10-28
 * Fix several bugs with attribute getters
 
