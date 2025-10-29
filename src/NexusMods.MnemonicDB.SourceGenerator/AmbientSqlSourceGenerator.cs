@@ -36,6 +36,7 @@ public class AmbientSqlSourceGenerator : IIncrementalGenerator
                     Namespace = GetNamespace(sql),
                     Name = item.Name,
                     Sql = CSharpVerbatimString(sql),
+                    RequiresCSharp = BuildRequiresCode(GetRequires(sql)),
                 };
 
                 var writer = new System.IO.StringWriter();
@@ -86,6 +87,38 @@ public class AmbientSqlSourceGenerator : IIncrementalGenerator
                     return l.Substring("-- namespace:".Length).Trim();
             }
             throw new Exception("No namespace found");
+        }
+
+        private static string[] GetRequires(string sql)
+        {
+            var list = new System.Collections.Generic.List<string>();
+            var lines = sql.Split('\n');
+            foreach (var line in lines)
+            {
+                var l = line.Trim();
+                if (l.StartsWith("-- requires:"))
+                {
+                    var req = l.Substring("-- requires:".Length).Trim();
+                    if (!string.IsNullOrWhiteSpace(req)) list.Add(req);
+                }
+            }
+            return list.ToArray();
+        }
+
+        private static string BuildRequiresCode(string[] requires)
+        {
+            if (requires.Length == 0) return "global::System.Array.Empty<string>()";
+            var sb = new StringBuilder();
+            sb.Append("new string[] { ");
+            for (int i = 0; i < requires.Length; i++)
+            {
+                if (i > 0) sb.Append(", ");
+                sb.Append('\"');
+                sb.Append(requires[i].Replace("\"", "\\\""));
+                sb.Append('\"');
+            }
+            sb.Append(" }");
+            return sb.ToString();
         }
 
         private static string Escape(string s) => s.Replace("\"", "\\\"");

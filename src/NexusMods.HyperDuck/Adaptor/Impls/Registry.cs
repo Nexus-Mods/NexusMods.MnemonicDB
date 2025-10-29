@@ -20,7 +20,7 @@ public class Registry : IRegistry
         _rowAdaptorFactories = rowAdaptors.ToArray();
         _valueAdaptorFactories = valueAdaptors.ToArray();
         _bindingConverters = bindingConverters.ToArray();
-        _fragments = sqlFragments.ToArray();
+        _fragments = TopologicallySort(sqlFragments);
     }
     
     public AmbientSqlFragment[] Fragments => _fragments;
@@ -161,5 +161,68 @@ public class Registry : IRegistry
         }
 
         return bestFactory.CreateType(this, logicalType.TypeId, logicalType, innerType, innerTypes, subAdaptors);
+    }
+
+    private static AmbientSqlFragment[] TopologicallySort(IEnumerable<AmbientSqlFragment> fragments)
+    {
+        var list = fragments.ToList();
+        // Map namespace -> indices of fragments with that namespace
+        var byNamespace = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+        for (var i = 0; i < list.Count; i++)
+        {
+            var ns = list[i].Namespace ?? string.Empty;
+            if (!byNamespace.TryGetValue(ns, out var bucket))
+            {
+                bucket = [];
+                byNamespace[ns] = bucket;
+            }
+            bucket.Add(i);
+        }
+
+        // Build graph: edge from dependency -> dependent
+        var edges = new List<int>[list.Count];
+        var inDegree = new int[list.Count];
+        for (var i = 0; i < list.Count; i++) edges[i] = [];
+
+        for (var i = 0; i < list.Count; i++)
+        {
+            var reqs = list[i].Requires;
+            foreach (var req in reqs)
+            {
+                if (byNamespace.TryGetValue(req, out var deps))
+                {
+                    foreach (var depIdx in deps)
+                    {
+                        edges[depIdx].Add(i);
+                        inDegree[i]++;
+                    }
+                }
+                // If the required namespace is not present, ignore; nothing to order against
+            }
+        }
+
+        // Kahn's algorithm
+        var queue = new Queue<int>();
+        for (int i = 0; i < list.Count; i++) if (inDegree[i] == 0) queue.Enqueue(i);
+
+        var result = new List<AmbientSqlFragment>(list.Count);
+        while (queue.Count > 0)
+        {
+            var n = queue.Dequeue();
+            result.Add(list[n]);
+            foreach (var m in edges[n])
+            {
+                inDegree[m]--;
+                if (inDegree[m] == 0) queue.Enqueue(m);
+            }
+        }
+
+        if (result.Count != list.Count)
+        {
+            // Cycle detected; fall back to input order to avoid deadlock
+            return list.ToArray();
+        }
+
+        return result.ToArray();
     }
 }

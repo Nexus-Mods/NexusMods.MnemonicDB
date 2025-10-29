@@ -14,7 +14,7 @@ public static class {{= model.Name }}Extensions
 {
     public static IServiceCollection Add{{= model.Name }}Sql(this IServiceCollection services)
     {
-        services.AddSingleton(new __HYPERDUCK__.AmbientSqlFragment("{{=model.Name}}", {{=model.Sql}}));
+        services.AddSingleton(new __HYPERDUCK__.AmbientSqlFragment("{{=model.Name}}", {{=model.Sql}}, "{{=model.Namespace}}", {{=model.RequiresCSharp}}));
         return services;
     }
 }
