@@ -15,7 +15,7 @@
         <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
 
         <!-- This is the URL to the main project, not the individual package. -->
-        <PackageProjectUrl>https://github.com/Nexus-Mods/NexusMods.App</PackageProjectUrl>
+        <PackageProjectUrl>https://github.com/Nexus-Mods/NexusMods.MnemonicDB</PackageProjectUrl>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
 
         <IncludeSymbols>true</IncludeSymbols>

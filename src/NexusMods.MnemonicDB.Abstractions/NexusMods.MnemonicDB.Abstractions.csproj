@@ -6,7 +6,6 @@
 
     <ItemGroup>
         <PackageReference Include="DynamicData"/>
-        <PackageReference Include="JetBrains.Annotations" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions"/>
         <PackageReference Include="Microsoft.Extensions.Hosting" />
         <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
@@ -17,7 +16,7 @@
         <PackageReference Include="System.IO.Hashing"/>
         <PackageReference Include="TransparentValueObjects" PrivateAssets="all" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
         <PackageReference Include="TransparentValueObjects.Abstractions" />
-        <PackageReference Update="JetBrains.Annotations"/>
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" ReferenceOutputAssembly="false" />
         <PackageReference Include="ZLinq" />
         <PackageReference Include="ZLinq.DropInGenerator">
           <PrivateAssets>all</PrivateAssets>

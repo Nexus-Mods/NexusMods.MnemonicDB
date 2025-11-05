@@ -7,6 +7,7 @@
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <InternalsVisibleTo>NexusMods.MnemonicDB.SourceGenerator.Tests</InternalsVisibleTo>
     </PropertyGroup>
+
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp"/>
         <PackageReference Include="Microsoft.Extensions.Hosting" />
@@ -14,8 +15,11 @@
         <PackageReference Include="Microsoft.Extensions.Logging" />
         <PackageReference Include="Microsoft.Extensions.Logging.Console" />
         <PackageReference Include="System.CodeDom"/>
-        <PackageReference Include="Weave"/>
-        <PackageReference Include="JetBrains.Annotations"/>
+        <PackageReference Include="Weave" OutputItemType="Analyzer" ReferenceOutputAssembly="false">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <ItemGroup>
@@ -24,15 +28,12 @@
         <None Include="$(OutputPath)\$(AssemblyName).pdb" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>
 
-
     <ItemGroup>
-        <WeaveTemplate Include="Template.weave" />
-
         <None Remove="AmbientSqlTemplate.weave" />
-        <WeaveTemplate Include="AmbientSqlTemplate.weave" />
-
         <None Remove="ResultGeneratorTemplate.weave" />
-        <WeaveTemplate Include="ResultGeneratorTemplate.weave" />
+        <WeaveTemplate Include="AmbientSqlGenerator\AmbientSqlTemplate.weave" />
+        <WeaveTemplate Include="ModelGenerator\Template.weave" />
+        <WeaveTemplate Include="QueryResultGenerator\ResultGeneratorTemplate.weave" />
     </ItemGroup>
 
     <Import Project="$([MSBuild]::GetPathOfFileAbove('NuGet.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
