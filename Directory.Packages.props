@@ -25,14 +25,11 @@
     <PackageVersion Include="NexusMods.Paths" Version="0.22.5" />
     <PackageVersion Include="R3" Version="1.3.0" />
     <PackageVersion Include="System.IO.Hashing" Version="9.0.10" />
-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.1.1" PrivateAssets="all" />
+    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="1.1.1" />
     <PackageVersion Include="TUnit" Version="0.25.21" />
     <PackageVersion Include="TUnit.Assertions" Version="0.25.21" />
     <PackageVersion Include="Verify.TUnit" Version="30.5.0-beta.1" />
-    <PackageVersion Include="Weave" Version="2.1.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageVersion>
+    <PackageVersion Include="Weave" Version="2.1.0"/>
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.9.2" />
     <PackageVersion Include="System.CodeDom" Version="9.0.10" />
     <PackageVersion Include="Verify" Version="30.5.0-beta.1" />

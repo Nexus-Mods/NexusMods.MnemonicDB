@@ -8,10 +8,6 @@
         <InternalsVisibleTo>NexusMods.MnemonicDB.SourceGenerator.Tests</InternalsVisibleTo>
     </PropertyGroup>
 
-    <PropertyGroup>
-        <NoWarn>CS1591</NoWarn>
-    </PropertyGroup>
-
     <ItemGroup>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp"/>
         <PackageReference Include="Microsoft.Extensions.Hosting" />
@@ -19,8 +15,11 @@
         <PackageReference Include="Microsoft.Extensions.Logging" />
         <PackageReference Include="Microsoft.Extensions.Logging.Console" />
         <PackageReference Include="System.CodeDom"/>
-        <PackageReference Include="Weave"/>
-        <PackageReference Include="JetBrains.Annotations"/>
+        <PackageReference Include="Weave" OutputItemType="Analyzer" ReferenceOutputAssembly="false">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="JetBrains.Annotations" PrivateAssets="all" ReferenceOutputAssembly="false" />
     </ItemGroup>
 
     <ItemGroup>
